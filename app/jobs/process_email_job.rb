@@ -34,7 +34,7 @@ class ProcessEmailJob < ApplicationJob
     # Create a failed expense record for debugging
     Expense.create!(
       email_account: email_account,
-      amount: 0.00,
+      amount: 0.01, # Use minimal amount to satisfy validation
       transaction_date: Time.current,
       description: "Failed to parse: #{errors.join(", ")}",
       raw_email_content: email_data[:body].to_s,

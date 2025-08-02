@@ -89,3 +89,4 @@ gem "rspec-rails", "~> 8.0"
 gem "simplecov", "~> 0.22.0", group: :test
 
 gem "shoulda-matchers", "~> 6.5", group: :test
+gem "rails-controller-testing", group: :test

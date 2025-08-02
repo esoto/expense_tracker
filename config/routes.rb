@@ -17,6 +17,7 @@ Rails.application.routes.draw do
   resources :expenses do
     collection do
       get :dashboard
+      post :sync_emails
     end
   end
   

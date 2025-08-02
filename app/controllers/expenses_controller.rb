@@ -108,6 +108,47 @@ class ExpensesController < ApplicationController
                            .sum(:amount)
                            .sort_by { |_, amount| -amount }
                            .first(10)
+
+    # Email accounts and sync status
+    @email_accounts = EmailAccount.active.order(:bank_name, :email)
+    @last_sync_info = get_last_sync_info
+  end
+
+  # POST /expenses/sync_emails
+  def sync_emails
+    email_account_id = params[:email_account_id]
+    
+    if email_account_id.present?
+      # Sync specific account
+      email_account = EmailAccount.find_by(id: email_account_id)
+      
+      if email_account.nil?
+        redirect_to dashboard_expenses_path, alert: "Cuenta de correo no encontrada."
+        return
+      end
+      
+      unless email_account.active?
+        redirect_to dashboard_expenses_path, alert: "La cuenta de correo está inactiva."
+        return
+      end
+      
+      ProcessEmailsJob.perform_later(email_account.id)
+      redirect_to dashboard_expenses_path, notice: "Sincronización iniciada para #{email_account.email}. Los nuevos gastos aparecerán en unos momentos."
+    else
+      # Sync all accounts
+      active_accounts = EmailAccount.active.count
+      
+      if active_accounts == 0
+        redirect_to dashboard_expenses_path, alert: "No hay cuentas de correo activas configuradas."
+        return
+      end
+      
+      ProcessEmailsJob.perform_later
+      redirect_to dashboard_expenses_path, notice: "Sincronización iniciada para #{active_accounts} cuenta#{'s' if active_accounts != 1} de correo. Los nuevos gastos aparecerán en unos momentos."
+    end
+  rescue StandardError => e
+    Rails.logger.error "Error starting email sync: #{e.message}"
+    redirect_to dashboard_expenses_path, alert: "Error al iniciar la sincronización. Por favor, inténtalo de nuevo."
   end
 
   private
@@ -118,5 +159,31 @@ class ExpensesController < ApplicationController
 
   def expense_params
     params.require(:expense).permit(:amount, :currency, :transaction_date, :merchant_name, :description, :category_id, :email_account_id, :notes)
+  end
+
+  def get_last_sync_info
+    # Get most recent expense from each email account to estimate last sync
+    last_expenses = Expense.select('email_account_id, MAX(created_at) as last_created')
+                          .group(:email_account_id)
+                          .includes(:email_account)
+    
+    sync_info = {}
+    last_expenses.each do |expense|
+      sync_info[expense.email_account_id] = {
+        last_sync: expense.last_created,
+        account: expense.email_account
+      }
+    end
+    
+    # Also check for running sync jobs
+    running_jobs = SolidQueue::Job.where(
+      class_name: 'ProcessEmailsJob',
+      finished_at: nil
+    ).where('created_at > ?', 5.minutes.ago)
+    
+    sync_info[:has_running_jobs] = running_jobs.exists?
+    sync_info[:running_job_count] = running_jobs.count
+    
+    sync_info
   end
 end

@@ -68,6 +68,9 @@ group :development, :test do
 
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
+
+  # Test data factories
+  gem "factory_bot_rails"
 end
 
 group :development do
@@ -82,3 +85,7 @@ group :test do
 end
 
 gem "rspec-rails", "~> 8.0"
+
+gem "simplecov", "~> 0.22.0", group: :test
+
+gem "shoulda-matchers", "~> 6.5", group: :test

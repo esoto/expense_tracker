@@ -8,6 +8,18 @@ abort("The Rails environment is running in production mode!") if Rails.env.produ
 # that will avoid rails generators crashing because migrations haven't been run yet
 # return unless Rails.env.test?
 require 'rspec/rails'
+require 'simplecov'
+SimpleCov.start 'rails'
+
+SimpleCov.start do
+  add_group "Models", "app/models"
+  add_group "Controllers", "app/controllers"
+  add_group "Long files" do |src_file|
+    src_file.lines.count > 100
+  end
+  # add_group "Short files", LineFilter.new(5) # Using the LineFilter class defined in Filters section above
+end
+
 # Add additional requires below this line. Rails is not loaded until this point!
 
 # Requires supporting ruby files with custom matchers and macros, etc, in
@@ -34,7 +46,24 @@ begin
 rescue ActiveRecord::PendingMigrationError => e
   abort e.to_s.strip
 end
+# Set up encryption for tests
+ActiveRecord::Encryption.configure(
+  primary_key: "test" * 8,  # 32 character key
+  deterministic_key: "test" * 8,
+  key_derivation_salt: "test_salt"
+)
+
+Shoulda::Matchers.configure do |config|
+  config.integrate do |with|
+    with.test_framework :rspec
+    with.library :rails
+  end
+end
+
 RSpec.configure do |config|
+  # Include FactoryBot methods
+  config.include FactoryBot::Syntax::Methods
+  
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
   config.fixture_paths = [
     Rails.root.join('spec/fixtures')

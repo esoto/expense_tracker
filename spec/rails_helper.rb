@@ -14,6 +14,7 @@ SimpleCov.start 'rails'
 SimpleCov.start do
   add_group "Models", "app/models"
   add_group "Controllers", "app/controllers"
+  add_group "Services", "app/services"
   add_group "Long files" do |src_file|
     src_file.lines.count > 100
   end
@@ -63,7 +64,7 @@ end
 RSpec.configure do |config|
   # Include FactoryBot methods
   config.include FactoryBot::Syntax::Methods
-  
+
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
   config.fixture_paths = [
     Rails.root.join('spec/fixtures')

@@ -18,6 +18,53 @@
 - Add private methods at the bottom of classes
 - Use meaningful commit messages following conventional commits format
 
+## Service Class Patterns
+
+### Service Class Structure
+```ruby
+# Good: Service class pattern
+class EmailParser
+  attr_reader :email_account, :email_data, :errors
+
+  def initialize(email_account, email_data)
+    @email_account = email_account
+    @email_data = email_data
+    @errors = []
+  end
+
+  def parse_expense
+    return nil unless valid_preconditions?
+    
+    begin
+      # Main business logic
+      create_expense(parsed_data)
+    rescue StandardError => e
+      add_error("Error parsing email: #{e.message}")
+      nil
+    end
+  end
+
+  private
+
+  def valid_preconditions?
+    # Validation logic
+  end
+
+  def add_error(message)
+    @errors << message
+    Rails.logger.error "[#{self.class.name}] #{message}"
+  end
+end
+```
+
+### Service Class Guidelines
+- Use dependency injection through initializer
+- Maintain immutable service state after initialization  
+- Provide clear public interface methods
+- Include comprehensive error handling and logging
+- Return meaningful results (objects, nil, or booleans)
+- Use private methods for internal logic breakdown
+
 ## Error Handling
 
 - Always handle potential errors gracefully

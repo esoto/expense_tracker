@@ -1,0 +1,186 @@
+<% content_for :title, "Dashboard - Expense Tracker" %>
+
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="text-center">
+    <h1 class="text-3xl font-bold text-gray-900">Dashboard de Gastos</h1>
+    <p class="text-gray-600 mt-2">Resumen completo de tus finanzas</p>
+  </div>
+
+  <!-- Key Metrics -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <!-- Total Expenses -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-blue-100">
+          <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-600">Total de Gastos</p>
+          <p class="text-2xl font-bold text-gray-900">₡<%= number_with_delimiter(@total_expenses.to_i) %></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Count -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-green-100">
+          <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-600">Número de Gastos</p>
+          <p class="text-2xl font-bold text-gray-900"><%= number_with_delimiter(@expense_count) %></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Current Month -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-purple-100">
+          <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-600">Este Mes</p>
+          <p class="text-2xl font-bold text-gray-900">₡<%= number_with_delimiter(@current_month_total.to_i) %></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly Change -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <div class="flex items-center">
+        <% 
+          change = @current_month_total - @last_month_total
+          percentage = @last_month_total > 0 ? ((change / @last_month_total) * 100) : 0
+          is_increase = change > 0
+        %>
+        <div class="p-3 rounded-full <%= is_increase ? 'bg-red-100' : 'bg-green-100' %>">
+          <svg class="w-8 h-8 <%= is_increase ? 'text-red-600' : 'text-green-600' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<%= is_increase ? 'M13 17h8m0 0V9m0 8l-8-8-4 4-6-6' : 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' %>"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm font-medium text-gray-600">vs Mes Anterior</p>
+          <p class="text-2xl font-bold <%= is_increase ? 'text-red-600' : 'text-green-600' %>">
+            <%= is_increase ? '+' : '' %><%= percentage.round(1) %>%
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Monthly Trend -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Tendencia Mensual</h2>
+      <%= line_chart @monthly_data, 
+          prefix: "₡", 
+          thousands: ",",
+          height: "300px",
+          colors: ["#3B82F6"] %>
+    </div>
+
+    <!-- Category Breakdown -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Gastos por Categoría</h2>
+      <%= pie_chart @sorted_categories.first(8), 
+          prefix: "₡", 
+          thousands: ",",
+          height: "300px" %>
+    </div>
+  </div>
+
+  <!-- Detailed Tables -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Top Merchants -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Comercios con Más Gastos</h2>
+      <div class="space-y-3">
+        <% @top_merchants.each_with_index do |(merchant, amount), index| %>
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div class="flex items-center space-x-3">
+              <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <span class="text-sm font-bold text-blue-600"><%= index + 1 %></span>
+              </div>
+              <span class="font-medium text-gray-900"><%= merchant.truncate(30) %></span>
+            </div>
+            <span class="font-bold text-gray-900">₡<%= number_with_delimiter(amount.to_i) %></span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Bank Breakdown -->
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Gastos por Banco</h2>
+      <div class="space-y-3">
+        <% @bank_totals.each do |bank, amount| %>
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div class="flex items-center space-x-3">
+              <div class="flex-shrink-0 w-8 h-8 <%= bank == 'BAC' ? 'bg-blue-100' : 'bg-gray-100' %> rounded-full flex items-center justify-center">
+                <span class="text-sm font-bold <%= bank == 'BAC' ? 'text-blue-600' : 'text-gray-600' %>">
+                  <%= bank == 'BAC' ? 'B' : 'M' %>
+                </span>
+              </div>
+              <span class="font-medium text-gray-900"><%= bank %></span>
+            </div>
+            <span class="font-bold text-gray-900">₡<%= number_with_delimiter(amount.to_i) %></span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Expenses -->
+  <div class="bg-white rounded-lg shadow">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-gray-900">Gastos Recientes</h2>
+        <%= link_to "Ver todos", expenses_path, class: "text-blue-600 hover:text-blue-800 text-sm font-medium" %>
+      </div>
+    </div>
+    <div class="p-6">
+      <div class="space-y-4">
+        <% @recent_expenses.first(5).each do |expense| %>
+          <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+            <div class="flex items-center space-x-4">
+              <div class="flex-shrink-0">
+                <% if expense.category %>
+                  <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" 
+                       style="background-color: <%= expense.category.color %>;">
+                    <%= expense.category.name.first %>
+                  </div>
+                <% else %>
+                  <div class="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white font-bold">
+                    ?
+                  </div>
+                <% end %>
+              </div>
+              <div>
+                <p class="font-medium text-gray-900"><%= expense.merchant_name %></p>
+                <p class="text-sm text-gray-600">
+                  <%= expense.transaction_date.strftime("%d/%m/%Y") %> • 
+                  <%= expense.category&.name || "Sin categoría" %> •
+                  <%= expense.bank_name %>
+                </p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="font-bold text-gray-900"><%= currency_symbol(expense) %><%= number_with_delimiter(expense.amount.to_i) %></p>
+              <p class="text-xs text-gray-500"><%= time_ago_in_words(expense.created_at) %> ago</p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

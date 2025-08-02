@@ -15,15 +15,15 @@ RSpec.describe ProcessEmailJob, type: :job do
   let(:sample_bac_email) do
     <<~EMAIL
       Estimado cliente,
-      
+
       Le informamos sobre una transacción realizada con su tarjeta de débito BAC:
-      
+
       Comercio: PTA LEONA SOC
       Ciudad: SAN JOSE
       Fecha: Ago 1, 2025, 14:16
       Monto: CRC 95,000.00
       Tipo de Transacción: COMPRA
-      
+
       Si no reconoce esta transacción, contacte inmediatamente al centro de atención al cliente.
     EMAIL
   end
@@ -35,16 +35,16 @@ RSpec.describe ProcessEmailJob, type: :job do
   describe '#perform' do
     context 'with valid email account and data' do
       it 'creates an expense successfully' do
-        expect { 
-          ProcessEmailJob.new.perform(email_account.id, email_data) 
+        expect {
+          ProcessEmailJob.new.perform(email_account.id, email_data)
         }.to change(Expense, :count).by(1)
       end
 
       it 'logs successful expense creation' do
         allow(Rails.logger).to receive(:info)
-        
+
         ProcessEmailJob.new.perform(email_account.id, email_data)
-        
+
         created_expense = Expense.last
         expect(Rails.logger).to have_received(:info).with(
           "Successfully created expense: #{created_expense.id} - #{created_expense.formatted_amount}"
@@ -53,9 +53,9 @@ RSpec.describe ProcessEmailJob, type: :job do
 
       it 'logs processing start' do
         allow(Rails.logger).to receive(:info)
-        
+
         ProcessEmailJob.new.perform(email_account.id, email_data)
-        
+
         expect(Rails.logger).to have_received(:info).with(
           "Processing individual email for: #{email_account.email}"
         )
@@ -63,9 +63,9 @@ RSpec.describe ProcessEmailJob, type: :job do
 
       it 'logs email data in debug mode' do
         allow(Rails.logger).to receive(:debug)
-        
+
         ProcessEmailJob.new.perform(email_account.id, email_data)
-        
+
         expect(Rails.logger).to have_received(:debug).with(
           "Email data: #{email_data.inspect}"
         )
@@ -73,7 +73,7 @@ RSpec.describe ProcessEmailJob, type: :job do
 
       it 'creates expense with correct attributes' do
         ProcessEmailJob.new.perform(email_account.id, email_data)
-        
+
         expense = Expense.last
         expect(expense.email_account).to eq(email_account)
         expect(expense.amount).to eq(95000.0)
@@ -84,16 +84,16 @@ RSpec.describe ProcessEmailJob, type: :job do
 
     context 'with non-existent email account' do
       it 'does not create an expense' do
-        expect { 
-          ProcessEmailJob.new.perform(99999, email_data) 
+        expect {
+          ProcessEmailJob.new.perform(99999, email_data)
         }.not_to change(Expense, :count)
       end
 
       it 'logs error for missing email account' do
         allow(Rails.logger).to receive(:error)
-        
+
         ProcessEmailJob.new.perform(99999, email_data)
-        
+
         expect(Rails.logger).to have_received(:error).with(
           "EmailAccount not found: 99999"
         )
@@ -101,7 +101,7 @@ RSpec.describe ProcessEmailJob, type: :job do
 
       it 'returns early without processing' do
         expect(EmailParser).not_to receive(:new)
-        
+
         ProcessEmailJob.new.perform(99999, email_data)
       end
     end
@@ -117,9 +117,9 @@ RSpec.describe ProcessEmailJob, type: :job do
 
       it 'does not create a valid expense' do
         initial_count = Expense.count
-        
+
         ProcessEmailJob.new.perform(email_account.id, invalid_email_data)
-        
+
         # Should create a failed expense record
         expect(Expense.count).to eq(initial_count + 1)
         failed_expense = Expense.last
@@ -129,9 +129,9 @@ RSpec.describe ProcessEmailJob, type: :job do
 
       it 'logs parsing failure' do
         allow(Rails.logger).to receive(:warn)
-        
+
         ProcessEmailJob.new.perform(email_account.id, invalid_email_data)
-        
+
         expect(Rails.logger).to have_received(:warn).with(
           a_string_matching(/Failed to create expense from email/)
         )
@@ -140,9 +140,9 @@ RSpec.describe ProcessEmailJob, type: :job do
       it 'calls save_failed_parsing method' do
         job = ProcessEmailJob.new
         allow(job).to receive(:save_failed_parsing)
-        
+
         job.perform(email_account.id, invalid_email_data)
-        
+
         expect(job).to have_received(:save_failed_parsing).with(
           email_account,
           invalid_email_data,
@@ -154,9 +154,9 @@ RSpec.describe ProcessEmailJob, type: :job do
     context 'when EmailParser raises an exception' do
       it 'handles parser exceptions gracefully' do
         allow(EmailParser).to receive(:new).and_raise(StandardError.new("Parser error"))
-        
-        expect { 
-          ProcessEmailJob.new.perform(email_account.id, email_data) 
+
+        expect {
+          ProcessEmailJob.new.perform(email_account.id, email_data)
         }.to raise_error(StandardError, "Parser error")
       end
     end
@@ -164,7 +164,7 @@ RSpec.describe ProcessEmailJob, type: :job do
 
   describe '#save_failed_parsing' do
     let(:job) { ProcessEmailJob.new }
-    let(:errors) { ["Amount not found", "Date format invalid"] }
+    let(:errors) { [ "Amount not found", "Date format invalid" ] }
     let(:failed_email_data) do
       {
         body: "Failed email content",
@@ -180,7 +180,7 @@ RSpec.describe ProcessEmailJob, type: :job do
 
     it 'sets correct attributes for failed expense' do
       job.send(:save_failed_parsing, email_account, failed_email_data, errors)
-      
+
       failed_expense = Expense.last
       expect(failed_expense.email_account).to eq(email_account)
       expect(failed_expense.amount).to eq(0.01)
@@ -194,11 +194,11 @@ RSpec.describe ProcessEmailJob, type: :job do
     it 'handles save errors gracefully' do
       allow(Expense).to receive(:create!).and_raise(ActiveRecord::RecordInvalid)
       allow(Rails.logger).to receive(:error)
-      
+
       expect {
         job.send(:save_failed_parsing, email_account, failed_email_data, errors)
       }.not_to raise_error
-      
+
       expect(Rails.logger).to have_received(:error).with(
         a_string_matching(/Failed to save failed parsing record/)
       )
@@ -207,7 +207,7 @@ RSpec.describe ProcessEmailJob, type: :job do
     context 'when email_account is nil' do
       it 'handles nil email_account gracefully' do
         allow(Rails.logger).to receive(:error)
-        
+
         expect {
           job.send(:save_failed_parsing, nil, failed_email_data, errors)
         }.not_to raise_error

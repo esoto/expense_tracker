@@ -227,7 +227,7 @@ RSpec.describe ApiToken, type: :model do
     it 'validates expires_at only when present during validation' do
       token = build(:api_token, expires_at: nil)
       expect(token).to be_valid
-      
+
       token.expires_at = 1.hour.from_now
       expect(token).to be_valid
     end
@@ -235,10 +235,10 @@ RSpec.describe ApiToken, type: :model do
     it 'handles authentication with multiple tokens having same name' do
       token1 = create(:api_token, name: 'Same Name')
       token2 = create(:api_token, name: 'Same Name')
-      
+
       result1 = ApiToken.authenticate(token1.token)
       result2 = ApiToken.authenticate(token2.token)
-      
+
       expect(result1).to eq(token1)
       expect(result2).to eq(token2)
     end
@@ -248,7 +248,7 @@ RSpec.describe ApiToken, type: :model do
     it 'does not generate token when updating existing record' do
       token = create(:api_token)
       original_digest = token.token_digest
-      
+
       token.update!(name: 'Updated Name')
       expect(token.token_digest).to eq(original_digest)
     end
@@ -257,7 +257,7 @@ RSpec.describe ApiToken, type: :model do
       token = build(:api_token)
       token.token = nil
       token.save!
-      
+
       expect(token.token).to be_present
       expect(token.token_digest).to be_present
     end

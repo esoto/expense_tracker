@@ -28,7 +28,7 @@ FactoryBot.define do
     trait :restaurantes do
       name { "Restaurantes" }
       description { "Comidas en restaurantes" }
-      association :parent, factory: [:category, :alimentacion]
+      association :parent, factory: [ :category, :alimentacion ]
     end
   end
 end

@@ -33,7 +33,7 @@ RSpec.describe EmailAccount, type: :model do
     end
 
     it 'validates provider inclusion' do
-      valid_providers = ['gmail', 'outlook', 'yahoo', 'custom', 'manual']
+      valid_providers = [ 'gmail', 'outlook', 'yahoo', 'custom', 'manual' ]
       valid_providers.each do |provider|
         email_account = build(:email_account, provider: provider)
         expect(email_account).to be_valid, "#{provider} should be valid"
@@ -51,7 +51,7 @@ RSpec.describe EmailAccount, type: :model do
     end
 
     it 'validates Costa Rican bank names' do
-      costa_rican_banks = ['BCR', 'BAC', 'Scotiabank', 'Banco Nacional']
+      costa_rican_banks = [ 'BCR', 'BAC', 'Scotiabank', 'Banco Nacional' ]
       costa_rican_banks.each do |bank|
         email_account = build(:email_account, bank_name: bank)
         expect(email_account).to be_valid, "#{bank} should be valid"
@@ -89,7 +89,7 @@ RSpec.describe EmailAccount, type: :model do
     it 'returns accounts for specific bank' do
       bac_account = create(:email_account, :bac)
       bcr_account = create(:email_account, :bcr)
-      
+
       expect(EmailAccount.for_bank('BAC')).to include(bac_account)
       expect(EmailAccount.for_bank('BAC')).not_to include(bcr_account)
     end

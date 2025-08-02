@@ -80,7 +80,7 @@ RSpec.describe EmailFetcher, type: :service do
     context 'with successful connection' do
       before do
         allow(fetcher).to receive(:connect_to_imap).and_yield(mock_imap)
-        allow(mock_imap).to receive(:list).with("", "*").and_return(['INBOX'])
+        allow(mock_imap).to receive(:list).with("", "*").and_return([ 'INBOX' ])
       end
 
       it 'returns true for successful connection' do
@@ -191,15 +191,15 @@ RSpec.describe EmailFetcher, type: :service do
 
   describe '#search_and_process_emails' do
     let(:since_date) { 3.days.ago }
-    let(:message_ids) { [1, 2, 3] }
+    let(:message_ids) { [ 1, 2, 3 ] }
     let(:mock_envelope) { instance_double('Net::IMAP::Envelope') }
     let(:mock_fetch_data) { instance_double('Net::IMAP::FetchData') }
 
     before do
-      allow(fetcher).to receive(:build_search_criteria).with(since_date).and_return(['SINCE', '30-Jul-2025'])
+      allow(fetcher).to receive(:build_search_criteria).with(since_date).and_return([ 'SINCE', '30-Jul-2025' ])
       allow(mock_imap).to receive(:search).and_return(message_ids)
       allow(mock_fetch_data).to receive(:attr).and_return({ 'ENVELOPE' => mock_envelope })
-      allow(mock_imap).to receive(:fetch).with(anything, 'ENVELOPE').and_return([mock_fetch_data])
+      allow(mock_imap).to receive(:fetch).with(anything, 'ENVELOPE').and_return([ mock_fetch_data ])
     end
 
     it 'builds correct search criteria' do
@@ -252,13 +252,13 @@ RSpec.describe EmailFetcher, type: :service do
     it 'builds IMAP search criteria with correct date format' do
       since_date = Date.new(2025, 7, 30)
       criteria = fetcher.send(:build_search_criteria, since_date)
-      expect(criteria).to eq(['SINCE', '30-Jul-2025'])
+      expect(criteria).to eq([ 'SINCE', '30-Jul-2025' ])
     end
 
     it 'handles different date formats' do
       since_date = Date.new(2025, 1, 5)
       criteria = fetcher.send(:build_search_criteria, since_date)
-      expect(criteria).to eq(['SINCE', '05-Jan-2025'])
+      expect(criteria).to eq([ 'SINCE', '05-Jan-2025' ])
     end
   end
 
@@ -270,23 +270,23 @@ RSpec.describe EmailFetcher, type: :service do
     let(:mock_body_structure) { instance_double('Net::IMAP::BodyTypeMultipart') }
 
     before do
-      allow(mock_envelope).to receive(:from).and_return([mock_from])
+      allow(mock_envelope).to receive(:from).and_return([ mock_from ])
       allow(mock_envelope).to receive(:subject).and_return('BAC Transaction')
       allow(mock_envelope).to receive(:date).and_return('Wed, 02 Aug 2025 14:16:00 +0000')
       allow(mock_fetch_data).to receive(:attr).and_return({ 'ENVELOPE' => mock_envelope })
-      allow(mock_imap).to receive(:fetch).with(message_id, 'ENVELOPE').and_return([mock_fetch_data])
+      allow(mock_imap).to receive(:fetch).with(message_id, 'ENVELOPE').and_return([ mock_fetch_data ])
       allow(ProcessEmailJob).to receive(:perform_later)
-      
+
       # Mock body structure fetching
       body_fetch_data = instance_double('Net::IMAP::FetchData')
       allow(body_fetch_data).to receive(:attr).and_return({ 'BODYSTRUCTURE' => mock_body_structure })
-      allow(mock_imap).to receive(:fetch).with(message_id, 'BODYSTRUCTURE').and_return([body_fetch_data])
-      
+      allow(mock_imap).to receive(:fetch).with(message_id, 'BODYSTRUCTURE').and_return([ body_fetch_data ])
+
       # Mock simple body fetch
       text_fetch_data = instance_double('Net::IMAP::FetchData')
       allow(text_fetch_data).to receive(:attr).and_return({ 'BODY[TEXT]' => 'Email body content' })
-      allow(mock_imap).to receive(:fetch).with(message_id, 'BODY[TEXT]').and_return([text_fetch_data])
-      
+      allow(mock_imap).to receive(:fetch).with(message_id, 'BODY[TEXT]').and_return([ text_fetch_data ])
+
       allow(mock_body_structure).to receive(:multipart?).and_return(false)
     end
 
@@ -397,9 +397,9 @@ RSpec.describe EmailFetcher, type: :service do
         allow(mock_imap).to receive(:select)
         allow(mock_imap).to receive(:logout)
         allow(mock_imap).to receive(:disconnect)
-        allow(mock_imap).to receive(:search).and_return([1, 2])
+        allow(mock_imap).to receive(:search).and_return([ 1, 2 ])
         allow(mock_fetch_data).to receive(:attr).and_return({ 'ENVELOPE' => mock_envelope })
-        allow(mock_imap).to receive(:fetch).with(anything, 'ENVELOPE').and_return([mock_fetch_data])
+        allow(mock_imap).to receive(:fetch).with(anything, 'ENVELOPE').and_return([ mock_fetch_data ])
         allow(mock_envelope).to receive(:subject).and_return('Notificación de transacción BAC')
         allow(fetcher).to receive(:process_email_message)
       end

@@ -77,12 +77,12 @@ RSpec.describe ParsingRule, type: :model do
     let(:email_content) do
       <<~EMAIL
         Hola ROGER ESTEBAN SOTO MADRIZ
-        
+
         Comercio: PTA LEONA SOC
         Fecha: Ago 1, 2025, 14:16
         Monto: CRC 95,000.00
         Tipo de Transacción: COMPRA
-        
+
         Si no reconoce esta transacción, comuníquese inmediatamente con BAC.
       EMAIL
     end

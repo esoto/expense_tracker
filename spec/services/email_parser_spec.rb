@@ -13,9 +13,9 @@ RSpec.describe EmailParser, type: :service do
       body: sample_bac_email
     }
   end
-  let(:parser) { 
+  let(:parser) {
     parsing_rule  # Ensure parsing rule exists first
-    EmailParser.new(email_account, email_data) 
+    EmailParser.new(email_account, email_data)
   }
 
   let(:sample_bac_email) do
@@ -125,7 +125,7 @@ RSpec.describe EmailParser, type: :service do
         )
         parsing_rule  # Ensure parsing rule exists
         invalid_parser = EmailParser.new(email_account, invalid_email)
-        
+
         result = invalid_parser.parse_expense
         expect(result).to be_nil
         expect(invalid_parser.errors).to include('Failed to parse essential expense data')
@@ -160,7 +160,7 @@ RSpec.describe EmailParser, type: :service do
         # Create parser with no parsing rule (will cause error)
         email_account.update(bank_name: 'UNKNOWN_BANK')
         error_parser = EmailParser.new(email_account, email_data)
-        
+
         result = error_parser.parse_expense
         expect(result).to be_nil
       end
@@ -208,7 +208,7 @@ RSpec.describe EmailParser, type: :service do
     context 'with parsing errors' do
       it 'returns error message' do
         allow_any_instance_of(ParsingRule).to receive(:test_patterns).and_raise(StandardError, 'Pattern error')
-        
+
         result = parser.test_parsing
         expect(result[:error]).to eq('Pattern error')
       end
@@ -460,15 +460,15 @@ RSpec.describe EmailParser, type: :service do
     it 'returns Other category if Sin Categoría not found' do
       Category.find_by(name: 'Sin Categoría').destroy
       create(:category, name: 'Other')
-      
+
       expense.merchant_name = 'UNKNOWN MERCHANT'
       category = parser.send(:guess_category, expense)
       expect(category.name).to eq('Other')
     end
 
     it 'returns nil if no default categories exist' do
-      Category.where(name: ['Sin Categoría', 'Other']).destroy_all
-      
+      Category.where(name: [ 'Sin Categoría', 'Other' ]).destroy_all
+
       expense.merchant_name = 'UNKNOWN MERCHANT'
       category = parser.send(:guess_category, expense)
       expect(category).to be_nil
@@ -520,7 +520,7 @@ RSpec.describe EmailParser, type: :service do
 
       it 'handles parsing rule with nil patterns' do
         parsing_rule.update(merchant_pattern: nil, description_pattern: nil)
-        
+
         expense = parser.parse_expense
         expect(expense).to be_a(Expense)
         expect(expense.merchant_name).to be_nil

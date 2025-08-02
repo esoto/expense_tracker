@@ -30,13 +30,13 @@ class ApiToken < ApplicationRecord
 
   def self.authenticate(token_string)
     return nil unless token_string.present?
-    
+
     ApiToken.active.find_each do |api_token|
       if BCrypt::Password.new(api_token.token_digest) == token_string
         return api_token if api_token.valid_token?
       end
     end
-    
+
     nil
   end
 
@@ -48,14 +48,14 @@ class ApiToken < ApplicationRecord
 
   def generate_token_if_blank
     return if token_digest.present?
-    
+
     self.token = self.class.generate_secure_token
     self.token_digest = BCrypt::Password.create(token)
   end
 
   def expires_at_in_future
     return unless expires_at.present?
-    
+
     errors.add(:expires_at, "must be in the future") if expires_at <= Time.current
   end
 end

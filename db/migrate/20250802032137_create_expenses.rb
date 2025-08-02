@@ -17,6 +17,6 @@ class CreateExpenses < ActiveRecord::Migration[8.0]
     add_index :expenses, :transaction_date
     add_index :expenses, :amount
     add_index :expenses, :status
-    add_index :expenses, [:email_account_id, :transaction_date]
+    add_index :expenses, [ :email_account_id, :transaction_date ]
   end
 end

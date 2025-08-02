@@ -15,7 +15,7 @@ class ParsingRule < ApplicationRecord
   # Instance methods
   def parse_email(email_content)
     parsed_data = {}
-    
+
     # Extract amount
     if amount_match = email_content.match(Regexp.new(amount_pattern, Regexp::IGNORECASE))
       amount_str = amount_match[1] || amount_match[0]
@@ -63,19 +63,19 @@ class ParsingRule < ApplicationRecord
   def parse_date(date_str)
     # Clean up the date string
     date_str = date_str.strip
-    
+
     # Handle Spanish abbreviated months
     spanish_months = {
-      'Ene' => 'Jan', 'Feb' => 'Feb', 'Mar' => 'Mar', 'Abr' => 'Apr',
-      'May' => 'May', 'Jun' => 'Jun', 'Jul' => 'Jul', 'Ago' => 'Aug',
-      'Sep' => 'Sep', 'Oct' => 'Oct', 'Nov' => 'Nov', 'Dic' => 'Dec'
+      "Ene" => "Jan", "Feb" => "Feb", "Mar" => "Mar", "Abr" => "Apr",
+      "May" => "May", "Jun" => "Jun", "Jul" => "Jul", "Ago" => "Aug",
+      "Sep" => "Sep", "Oct" => "Oct", "Nov" => "Nov", "Dic" => "Dec"
     }
-    
+
     # Convert Spanish months to English for parsing
     spanish_months.each do |spanish, english|
       date_str = date_str.gsub(spanish, english)
     end
-    
+
     # Try multiple date formats common in Costa Rica
     formats = [
       "%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d",
@@ -101,7 +101,7 @@ class ParsingRule < ApplicationRecord
 
   def test_pattern(pattern, text)
     return nil if pattern.blank?
-    
+
     match = text.match(Regexp.new(pattern, Regexp::IGNORECASE))
     return nil unless match
 

@@ -15,7 +15,7 @@ email_body = <<~EMAIL_BODY
   Fecha: Ago 1, 2025, 14:16
   Monto: CRC 95,000.00
   Tipo de Transacción: COMPRA
-  
+
   Si no reconoce esta transacción, comuníquese inmediatamente con BAC.
 EMAIL_BODY
 
@@ -32,7 +32,7 @@ parsed_data = rule.parse_email(email_body)
 puts "   Parsed amount: #{parsed_data[:amount]}"
 puts "   Type: #{parsed_data[:amount].class}"
 
-# Test date parsing  
+# Test date parsing
 puts "\n2. Date Pattern:"
 puts "   Pattern: #{rule.date_pattern}"
 puts "   Parsed date: #{parsed_data[:transaction_date]}"

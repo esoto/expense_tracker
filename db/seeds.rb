@@ -34,16 +34,16 @@ subcategories = [
   { parent: "Alimentación", name: "Restaurantes", description: "Comidas en restaurantes" },
   { parent: "Alimentación", name: "Supermercado", description: "Compras de comestibles" },
   { parent: "Alimentación", name: "Cafetería", description: "Café, desayunos, snacks" },
-  
+
   { parent: "Transporte", name: "Gasolina", description: "Combustible para vehículo" },
   { parent: "Transporte", name: "Uber/Taxi", description: "Servicios de transporte" },
   { parent: "Transporte", name: "Autobús", description: "Transporte público" },
-  
+
   { parent: "Servicios", name: "Electricidad", description: "Factura de electricidad" },
   { parent: "Servicios", name: "Agua", description: "Factura de agua" },
   { parent: "Servicios", name: "Internet", description: "Servicio de internet" },
   { parent: "Servicios", name: "Teléfono", description: "Servicio telefónico" },
-  
+
   { parent: "Compras", name: "Ropa", description: "Vestimenta y accesorios" },
   { parent: "Compras", name: "Electrónicos", description: "Dispositivos electrónicos" },
   { parent: "Compras", name: "Hogar", description: "Artículos para el hogar" }
@@ -72,7 +72,7 @@ api_tokens.each do |token_data|
     t.expires_at = token_data[:expires_at]
     t.active = true
   end
-  
+
   if token.token.present?
     created_tokens << { name: token.name, token: token.token }
     puts "  ✓ #{token.name}: #{token.token}"
@@ -88,9 +88,9 @@ parsing_rules = [
   {
     bank_name: "BAC",
     email_pattern: "(?:transacci[oó]n|notificaci[oó]n).*(?:BAC|PTA)",
-    amount_pattern: "(?:Monto|CRC)[:\\s]*([\\d,]+\\.\\d{2})",
-    date_pattern: "(?:Fecha)[:\\s]*(\\w{3}\\s+\\d{1,2},\\s+\\d{4})",
-    merchant_pattern: "(?:Comercio)[:\\s]*([A-Z\\s]+?)(?:\\s*$|\\n)",
+    amount_pattern: "(?:Monto)[: ]*(?:USD|CRC)[: ]*([\\d,]+\\.\\d{2})",
+    date_pattern: "Fecha:\\s*(.+?)(?=\\n|$)",
+    merchant_pattern: "(?:Comercio)[: ]*([A-Z0-9 .]+?)(?: *Ciudad| *Fecha| *VISA| *MASTER)",
     description_pattern: "(?:Tipo de Transacci[oó]n)[:\\s]*([A-Z]+)"
   },
   {
@@ -156,6 +156,6 @@ end
 puts ""
 puts "🚀 Ready to use! API endpoints:"
 puts "  • POST /api/webhooks/process_emails"
-puts "  • POST /api/webhooks/add_expense" 
+puts "  • POST /api/webhooks/add_expense"
 puts "  • GET /api/webhooks/recent_expenses"
 puts "  • GET /api/webhooks/expense_summary"

@@ -11,11 +11,11 @@ account.encrypted_password = app_password
 
 if account.save
   puts "✅ Password updated successfully!"
-  
+
   # Test the connection
   puts "\n🔗 Testing connection..."
   fetcher = EmailFetcher.new(account)
-  
+
   if fetcher.test_connection
     puts "✅ Gmail connection working!"
     puts "Ready to fetch BAC emails."

@@ -3,7 +3,7 @@ class ProcessEmailJob < ApplicationJob
 
   def perform(email_account_id, email_data)
     email_account = EmailAccount.find_by(id: email_account_id)
-    
+
     unless email_account
       Rails.logger.error "EmailAccount not found: #{email_account_id}"
       return
@@ -17,12 +17,12 @@ class ProcessEmailJob < ApplicationJob
 
     if expense
       Rails.logger.info "Successfully created expense: #{expense.id} - #{expense.formatted_amount}"
-      
+
       # Optionally notify about new expense
       # NotificationJob.perform_later(expense.id) if expense.amount > 100
     else
       Rails.logger.warn "Failed to create expense from email: #{parser.errors.join(", ")}"
-      
+
       # Could save failed parsing attempts for debugging
       save_failed_parsing(email_account, email_data, parser.errors)
     end

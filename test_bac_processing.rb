@@ -20,9 +20,9 @@ bac_email_content = {
     Fecha: Ago 1, 2025, 14:16
     Monto: CRC 95,000.00
     Tipo de Transacción: COMPRA
-    
+
     Si no reconoce esta transacción, comuníquese inmediatamente con BAC.
-    
+
     Gracias,
     BAC San José
   EMAIL_BODY
@@ -41,20 +41,20 @@ parser = EmailParser.new(account, bac_email_content)
 parsing_rule = ParsingRule.find_by(bank_name: 'BAC')
 if parsing_rule
   puts "✅ BAC parsing rule found"
-  
+
   # Test patterns
   puts "\n📋 Testing parsing patterns:"
   test_results = parsing_rule.test_patterns(bac_email_content[:body])
-  
+
   puts "  Amount: #{test_results[:amount]&.dig(:matched) ? '✅' : '❌'}"
   puts "  Date: #{test_results[:date]&.dig(:matched) ? '✅' : '❌'}"
   puts "  Merchant: #{test_results[:merchant]&.dig(:matched) ? '✅' : '❌'}"
   puts "  Description: #{test_results[:description]&.dig(:matched) ? '✅' : '❌'}"
-  
+
   # Actually parse the email
   puts "\n💰 Creating expense from email..."
   expense = parser.parse_expense
-  
+
   if expense
     puts "✅ SUCCESS! Expense created:"
     puts "   ID: #{expense.id}"
@@ -64,15 +64,15 @@ if parsing_rule
     puts "   Category: #{expense.category&.name || 'None'}"
     puts "   Status: #{expense.status}"
     puts "   Bank: #{expense.bank_name}"
-    
+
     puts "\n📊 Total expenses now: #{Expense.count}"
-    
+
   else
     puts "❌ Failed to create expense!"
     puts "Errors:"
     parser.errors.each { |error| puts "  - #{error}" }
   end
-  
+
 else
   puts "❌ No BAC parsing rule found!"
 end

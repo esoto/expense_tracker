@@ -45,7 +45,7 @@ rule = ParsingRule.find_by(bank_name: 'BAC')
 if rule
   puts "\n💰 Testing parsing with BAC rule:"
   parsed_data = rule.parse_email(extracted_text)
-  
+
   puts "Amount: #{parsed_data[:amount]}"
   puts "Date: #{parsed_data[:transaction_date]}"
   puts "Merchant: #{parsed_data[:merchant_name]}"

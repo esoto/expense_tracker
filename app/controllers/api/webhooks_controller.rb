@@ -47,7 +47,7 @@ class Api::WebhooksController < ApplicationController
   end
 
   def recent_expenses
-    limit = [params[:limit].to_i, 50].min
+    limit = [ params[:limit].to_i, 50 ].min
     limit = 10 if limit <= 0
 
     expenses = Expense.includes(:category, :email_account)
@@ -62,17 +62,17 @@ class Api::WebhooksController < ApplicationController
 
   def expense_summary
     period = params[:period] || "month"
-    
+
     summary = case period
-              when "week"
+    when "week"
                 weekly_summary
-              when "month"
+    when "month"
                 monthly_summary
-              when "year"
+    when "year"
                 yearly_summary
-              else
+    else
                 monthly_summary
-              end
+    end
 
     render json: {
       status: "success",
@@ -85,17 +85,17 @@ class Api::WebhooksController < ApplicationController
 
   def authenticate_api_token
     token = request.headers["Authorization"]&.remove("Bearer ")
-    
+
     unless token.present?
       render json: { error: "Missing API token" }, status: :unauthorized
       return
     end
 
     @current_api_token = ApiToken.authenticate(token)
-    
+
     unless @current_api_token
       render json: { error: "Invalid or expired API token" }, status: :unauthorized
-      return
+      nil
     end
   end
 
@@ -155,7 +155,7 @@ class Api::WebhooksController < ApplicationController
   def weekly_summary
     start_date = 1.week.ago.beginning_of_day
     end_date = Time.current.end_of_day
-    
+
     {
       total_amount: Expense.total_amount_for_period(start_date, end_date).to_f,
       expense_count: Expense.by_date_range(start_date, end_date).count,
@@ -172,7 +172,7 @@ class Api::WebhooksController < ApplicationController
   def monthly_summary
     start_date = 1.month.ago.beginning_of_day
     end_date = Time.current.end_of_day
-    
+
     {
       total_amount: Expense.total_amount_for_period(start_date, end_date).to_f,
       expense_count: Expense.by_date_range(start_date, end_date).count,
@@ -189,7 +189,7 @@ class Api::WebhooksController < ApplicationController
   def yearly_summary
     start_date = 1.year.ago.beginning_of_day
     end_date = Time.current.end_of_day
-    
+
     {
       total_amount: Expense.total_amount_for_period(start_date, end_date).to_f,
       expense_count: Expense.by_date_range(start_date, end_date).count,

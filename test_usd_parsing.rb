@@ -6,7 +6,7 @@ puts "================================="
 # Simulate the CLAUDE.AI subscription email content based on the screenshot
 usd_email_content = <<~EMAIL_BODY
   Hola ROGER ESTEBAN SOTO MADRIZ A continuación le detallamos la transacción realizada:
-  
+
   Comercio: CLAUDE.AI SUBSCRIPTION
   Ciudad y país: +14152360599, País no Definido
   Fecha: Ago 1, 2025, 00:25
@@ -15,7 +15,7 @@ usd_email_content = <<~EMAIL_BODY
   Referencia: 521306346420
   Tipo de Transacción: COMPRA
   Monto: USD 20.00
-  
+
   ¿Tiene dudas sobre esta transacción?
 EMAIL_BODY
 

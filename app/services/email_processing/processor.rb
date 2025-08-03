@@ -26,22 +26,6 @@ module EmailProcessing
       }
     end
 
-    # New method for processing messages directly (used by Fetcher)
-    def process_messages(messages)
-      return 0 if messages.empty?
-
-      processed_count = 0
-
-      messages.each do |message|
-        if process_single_message(message)
-          processed_count += 1
-        end
-      end
-
-      Rails.logger.info "Processed #{processed_count} transaction emails out of #{messages.count} total emails"
-      processed_count
-    end
-
     private
 
     def process_single_email(message_id, imap_service)
@@ -69,27 +53,6 @@ module EmailProcessing
     rescue StandardError => e
       Rails.logger.error "Error processing email #{message_id}: #{e.message}"
       add_error("Error processing email: #{e.message}")
-      false
-    end
-
-    def process_single_message(message)
-      subject = message[:subject] || ""
-
-      # Check if this is a transaction email based on subject
-      unless transaction_email?(subject)
-        Rails.logger.debug "Skipping non-transaction email: #{subject}"
-        return false
-      end
-
-      Rails.logger.info "Processing transaction email: #{subject}"
-
-      # Queue job to parse and create expense
-      ProcessEmailJob.perform_later(email_account.id, message)
-      true
-
-    rescue StandardError => e
-      Rails.logger.error "Error processing message: #{e.message}"
-      add_error("Error processing message: #{e.message}")
       false
     end
 

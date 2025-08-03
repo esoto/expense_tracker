@@ -20,6 +20,10 @@ This is a Ruby on Rails 8.0.2 application. Key commands:
 - `bundle exec rubocop` - Run Ruby linter (rubocop-rails-omakase)
 - `bundle exec brakeman` - Run security analysis
 
+## Git Pre-commit Hook
+
+A pre-commit hook has been configured to automatically run tests, RuboCop linting, and Brakeman security scanning before allowing commits. This ensures code quality and security standards are maintained.
+
 ## Architecture
 
 This is a fresh Rails 8 application with the following stack:

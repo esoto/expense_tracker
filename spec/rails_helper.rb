@@ -54,6 +54,9 @@ ActiveRecord::Encryption.configure(
   key_derivation_salt: "test_salt"
 )
 
+# Speed up BCrypt for testing (reduces cost from 12 to 4)
+BCrypt::Engine.cost = BCrypt::Engine::MIN_COST
+
 Shoulda::Matchers.configure do |config|
   config.integrate do |with|
     with.test_framework :rspec
@@ -79,6 +82,17 @@ RSpec.configure do |config|
   # examples within a transaction, remove the following line or assign false
   # instead of true.
   config.use_transactional_fixtures = true
+
+  # Performance optimizations for testing
+  config.before(:suite) do
+    # Ensure test database is clean
+    if defined?(ActiveRecord::Base)
+      ActiveRecord::Base.connection.execute("TRUNCATE TABLE #{ActiveRecord::Base.connection.tables.join(', ')} RESTART IDENTITY CASCADE") if ActiveRecord::Base.connection.tables.any?
+    end
+  end
+
+  # Speed up tests by avoiding loading Spring in test environment
+  config.disable_monkey_patching!
 
   # You can uncomment this line to turn off ActiveRecord support entirely.
   # config.use_active_record = false

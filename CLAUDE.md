@@ -29,7 +29,7 @@ A pre-commit hook has been configured to automatically run tests, RuboCop lintin
 This is a fresh Rails 8 application with the following stack:
 
 **Backend:**
-- Rails 8.0.2 with SQLite3 database
+- Rails 8.0.2 with PostgreSQL database
 - Solid Cache, Queue, and Cable for performance
 - Puma web server
 

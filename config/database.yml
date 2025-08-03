@@ -1,41 +1,66 @@
-# SQLite. Versions 3.8.0 and up are supported.
-#   gem install sqlite3
+# PostgreSQL. Versions 9.3 and up are supported.
 #
-#   Ensure the SQLite 3 gem is defined in your Gemfile
-#   gem "sqlite3"
+# Install the pg driver:
+#   gem install pg
+# On macOS with Homebrew:
+#   gem install pg -- --with-pg-config=/usr/local/bin/pg_config
+# On macOS with MacPorts:
+#   gem install pg -- --with-pg-config=/opt/local/lib/postgresql84/bin/pg_config
+# On Windows:
+#   gem install pg
+#       Choose the win32 build.
+#       Install PostgreSQL and put its /bin directory on your path.
+#
+# Configure Using Gemfile
+# gem "pg"
 #
 default: &default
-  adapter: sqlite3
+  adapter: postgresql
+  encoding: unicode
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  timeout: 5000
+  username: <%= ENV.fetch("POSTGRES_USER") { "postgres" } %>
+  password: <%= ENV.fetch("POSTGRES_PASSWORD") { "" } %>
+  host: <%= ENV.fetch("POSTGRES_HOST") { "localhost" } %>
+  port: <%= ENV.fetch("POSTGRES_PORT") { 5432 } %>
 
 development:
   <<: *default
-  database: storage/development.sqlite3
+  database: expense_tracker_development
 
-# Warning: The database defined as "test" will be erased and
-# re-generated from your development database when you run "rake".
-# Do not set this db to the same as development or production.
+# The test environment is used exclusively to run your application's
+# test suite. You never need to work with it otherwise. Remember that
+# your test database is "scratch space" for the test suite and is wiped
+# and recreated between test runs. Don't rely on the data there!
 test:
   <<: *default
-  database: storage/test.sqlite3
+  database: expense_tracker_test<%= ENV['TEST_ENV_NUMBER'] %>
+  # Optimize for testing performance
+  min_messages: WARNING
+  # Use template0 to avoid encoding issues
+  template: template0
 
-
-# Store production database in the storage/ directory, which by default
-# is mounted as a persistent Docker volume in config/deploy.yml.
+# Store production database configuration securely
 production:
   primary:
     <<: *default
-    database: storage/production.sqlite3
+    database: expense_tracker_production
+    username: <%= ENV.fetch("POSTGRES_USER") { "expense_tracker" } %>
+    password: <%= ENV["POSTGRES_PASSWORD"] %>
   cache:
     <<: *default
-    database: storage/production_cache.sqlite3
+    database: expense_tracker_production_cache
+    username: <%= ENV.fetch("POSTGRES_USER") { "expense_tracker" } %>
+    password: <%= ENV["POSTGRES_PASSWORD"] %>
     migrations_paths: db/cache_migrate
   queue:
     <<: *default
-    database: storage/production_queue.sqlite3
+    database: expense_tracker_production_queue
+    username: <%= ENV.fetch("POSTGRES_USER") { "expense_tracker" } %>
+    password: <%= ENV["POSTGRES_PASSWORD"] %>
     migrations_paths: db/queue_migrate
   cable:
     <<: *default
-    database: storage/production_cable.sqlite3
+    database: expense_tracker_production_cable
+    username: <%= ENV.fetch("POSTGRES_USER") { "expense_tracker" } %>
+    password: <%= ENV["POSTGRES_PASSWORD"] %>
     migrations_paths: db/cable_migrate

@@ -37,3 +37,6 @@
 !/app/assets/builds/.keep
 
 /config/credentials/development.key
+
+# Ignore test coverage reports
+/coverage/

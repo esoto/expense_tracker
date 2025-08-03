@@ -42,7 +42,7 @@ class Api::WebhooksController < ApplicationController
         status: "error",
         message: "Failed to create expense",
         errors: expense.errors.full_messages
-      }, status: :unprocessable_entity
+      }, status: :unprocessable_content
     end
   end
 
@@ -61,23 +61,12 @@ class Api::WebhooksController < ApplicationController
   end
 
   def expense_summary
-    period = params[:period] || "month"
-
-    summary = case period
-    when "week"
-                weekly_summary
-    when "month"
-                monthly_summary
-    when "year"
-                yearly_summary
-    else
-                monthly_summary
-    end
+    service = ExpenseSummaryService.new(params[:period])
 
     render json: {
       status: "success",
-      period: period,
-      summary: summary
+      period: service.period,
+      summary: service.summary
     }
   end
 
@@ -149,61 +138,6 @@ class Api::WebhooksController < ApplicationController
       bank_name: expense.bank_name,
       status: expense.status,
       created_at: expense.created_at.iso8601
-    }
-  end
-
-  def weekly_summary
-    start_date = 1.week.ago.beginning_of_day
-    end_date = Time.current.end_of_day
-
-    {
-      total_amount: Expense.total_amount_for_period(start_date, end_date).to_f,
-      expense_count: Expense.by_date_range(start_date, end_date).count,
-      start_date: start_date.iso8601,
-      end_date: end_date.iso8601,
-      by_category: Expense.joins(:category)
-                          .by_date_range(start_date, end_date)
-                          .group("categories.name")
-                          .sum(:amount)
-                          .transform_values(&:to_f)
-    }
-  end
-
-  def monthly_summary
-    start_date = 1.month.ago.beginning_of_day
-    end_date = Time.current.end_of_day
-
-    {
-      total_amount: Expense.total_amount_for_period(start_date, end_date).to_f,
-      expense_count: Expense.by_date_range(start_date, end_date).count,
-      start_date: start_date.iso8601,
-      end_date: end_date.iso8601,
-      by_category: Expense.joins(:category)
-                          .by_date_range(start_date, end_date)
-                          .group("categories.name")
-                          .sum(:amount)
-                          .transform_values(&:to_f)
-    }
-  end
-
-  def yearly_summary
-    start_date = 1.year.ago.beginning_of_day
-    end_date = Time.current.end_of_day
-
-    {
-      total_amount: Expense.total_amount_for_period(start_date, end_date).to_f,
-      expense_count: Expense.by_date_range(start_date, end_date).count,
-      start_date: start_date.iso8601,
-      end_date: end_date.iso8601,
-      by_category: Expense.joins(:category)
-                          .by_date_range(start_date, end_date)
-                          .group("categories.name")
-                          .sum(:amount)
-                          .transform_values(&:to_f),
-      monthly_breakdown: Expense.by_date_range(start_date, end_date)
-                                .group_by_month(:transaction_date)
-                                .sum(:amount)
-                                .transform_values(&:to_f)
     }
   end
 end

@@ -1,0 +1,109 @@
+class DashboardService
+  def initialize
+  end
+
+  def analytics
+    {
+      totals: calculate_totals,
+      recent_expenses: recent_expenses,
+      category_breakdown: category_breakdown,
+      monthly_trend: monthly_trend,
+      bank_breakdown: bank_breakdown,
+      top_merchants: top_merchants,
+      email_accounts: active_email_accounts,
+      sync_info: sync_info
+    }
+  end
+
+  private
+
+  def calculate_totals
+    {
+      total_expenses: Expense.sum(:amount),
+      expense_count: Expense.count,
+      current_month_total: current_month_total,
+      last_month_total: last_month_total
+    }
+  end
+
+  def current_month_total
+    Expense.where(
+      transaction_date: Date.current.beginning_of_month..Date.current.end_of_month
+    ).sum(:amount)
+  end
+
+  def last_month_total
+    Expense.where(
+      transaction_date: 1.month.ago.beginning_of_month..1.month.ago.end_of_month
+    ).sum(:amount)
+  end
+
+  def recent_expenses
+    Expense.includes(:category)
+           .order(transaction_date: :desc, created_at: :desc)
+           .limit(10)
+  end
+
+  def category_breakdown
+    category_totals = Expense.joins(:category)
+                            .group("categories.name")
+                            .sum(:amount)
+                            .transform_values(&:to_f)
+
+    {
+      totals: category_totals,
+      sorted: category_totals.sort_by { |_, amount| -amount }
+    }
+  end
+
+  def monthly_trend
+    Expense.where(
+      transaction_date: 6.months.ago.beginning_of_month..Date.current.end_of_month
+    ).group_by_month(:transaction_date)
+     .sum(:amount)
+     .transform_values(&:to_f)
+  end
+
+  def bank_breakdown
+    Expense.group(:bank_name)
+           .sum(:amount)
+           .sort_by { |_, amount| -amount }
+  end
+
+  def top_merchants
+    Expense.group(:merchant_name)
+           .sum(:amount)
+           .sort_by { |_, amount| -amount }
+           .first(10)
+  end
+
+  def active_email_accounts
+    EmailAccount.active.order(:bank_name, :email)
+  end
+
+  def sync_info
+    # Get most recent expense from each email account to estimate last sync
+    last_expenses = Expense.select("email_account_id, MAX(created_at) as last_created")
+                          .group(:email_account_id)
+                          .includes(:email_account)
+
+    sync_data = {}
+    last_expenses.each do |expense|
+      sync_data[expense.email_account_id] = {
+        last_sync: expense.last_created,
+        account: expense.email_account
+      }
+    end
+
+    # Also check for running sync jobs
+    running_jobs = SolidQueue::Job.where(
+      class_name: "ProcessEmailsJob",
+      finished_at: nil
+    ).where("created_at > ?", 5.minutes.ago)
+
+    sync_data[:has_running_jobs] = running_jobs.exists?
+    sync_data[:running_job_count] = running_jobs.count
+
+    sync_data
+  end
+end

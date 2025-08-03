@@ -56,7 +56,7 @@ class ExpensesController < ApplicationController
     else
       @categories = Category.all.order(:name)
       @email_accounts = EmailAccount.all.order(:email)
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -67,7 +67,7 @@ class ExpensesController < ApplicationController
     else
       @categories = Category.all.order(:name)
       @email_accounts = EmailAccount.all.order(:email)
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 
@@ -79,73 +79,34 @@ class ExpensesController < ApplicationController
 
   # GET /expenses/dashboard
   def dashboard
-    @total_expenses = Expense.sum(:amount)
-    @expense_count = Expense.count
-    @current_month_total = Expense.where(transaction_date: Date.current.beginning_of_month..Date.current.end_of_month).sum(:amount)
-    @last_month_total = Expense.where(transaction_date: 1.month.ago.beginning_of_month..1.month.ago.end_of_month).sum(:amount)
+    dashboard_data = DashboardService.new.analytics
 
-    # Recent expenses
-    @recent_expenses = Expense.includes(:category).order(transaction_date: :desc, created_at: :desc).limit(10)
+    # Extract data for view variables
+    totals = dashboard_data[:totals]
+    @total_expenses = totals[:total_expenses]
+    @expense_count = totals[:expense_count]
+    @current_month_total = totals[:current_month_total]
+    @last_month_total = totals[:last_month_total]
 
-    # Category breakdown
-    @category_totals = Expense.joins(:category)
-                             .group("categories.name")
-                             .sum(:amount)
-                             .transform_values(&:to_f)
-    @sorted_categories = @category_totals.sort_by { |_, amount| -amount }
+    @recent_expenses = dashboard_data[:recent_expenses]
 
-    # Monthly trend (last 6 months)
-    @monthly_data = Expense.where(transaction_date: 6.months.ago.beginning_of_month..Date.current.end_of_month)
-                          .group_by_month(:transaction_date)
-                          .sum(:amount)
-                          .transform_values(&:to_f)
+    category_data = dashboard_data[:category_breakdown]
+    @category_totals = category_data[:totals]
+    @sorted_categories = category_data[:sorted]
 
-    # Bank breakdown
-    @bank_totals = Expense.group(:bank_name).sum(:amount).sort_by { |_, amount| -amount }
-
-    # Top merchants
-    @top_merchants = Expense.group(:merchant_name)
-                           .sum(:amount)
-                           .sort_by { |_, amount| -amount }
-                           .first(10)
-
-    # Email accounts and sync status
-    @email_accounts = EmailAccount.active.order(:bank_name, :email)
-    @last_sync_info = get_last_sync_info
+    @monthly_data = dashboard_data[:monthly_trend]
+    @bank_totals = dashboard_data[:bank_breakdown]
+    @top_merchants = dashboard_data[:top_merchants]
+    @email_accounts = dashboard_data[:email_accounts]
+    @last_sync_info = dashboard_data[:sync_info]
   end
 
   # POST /expenses/sync_emails
   def sync_emails
-    email_account_id = params[:email_account_id]
-
-    if email_account_id.present?
-      # Sync specific account
-      email_account = EmailAccount.find_by(id: email_account_id)
-
-      if email_account.nil?
-        redirect_to dashboard_expenses_path, alert: "Cuenta de correo no encontrada."
-        return
-      end
-
-      unless email_account.active?
-        redirect_to dashboard_expenses_path, alert: "La cuenta de correo está inactiva."
-        return
-      end
-
-      ProcessEmailsJob.perform_later(email_account.id)
-      redirect_to dashboard_expenses_path, notice: "Sincronización iniciada para #{email_account.email}. Los nuevos gastos aparecerán en unos momentos."
-    else
-      # Sync all accounts
-      active_accounts = EmailAccount.active.count
-
-      if active_accounts == 0
-        redirect_to dashboard_expenses_path, alert: "No hay cuentas de correo activas configuradas."
-        return
-      end
-
-      ProcessEmailsJob.perform_later
-      redirect_to dashboard_expenses_path, notice: "Sincronización iniciada para #{active_accounts} cuenta#{'s' if active_accounts != 1} de correo. Los nuevos gastos aparecerán en unos momentos."
-    end
+    sync_result = SyncService.new.sync_emails(email_account_id: params[:email_account_id])
+    redirect_to dashboard_expenses_path, notice: sync_result[:message]
+  rescue SyncService::SyncError => e
+    redirect_to dashboard_expenses_path, alert: e.message
   rescue StandardError => e
     Rails.logger.error "Error starting email sync: #{e.message}"
     redirect_to dashboard_expenses_path, alert: "Error al iniciar la sincronización. Por favor, inténtalo de nuevo."
@@ -159,31 +120,5 @@ class ExpensesController < ApplicationController
 
   def expense_params
     params.require(:expense).permit(:amount, :currency, :transaction_date, :merchant_name, :description, :category_id, :email_account_id, :notes)
-  end
-
-  def get_last_sync_info
-    # Get most recent expense from each email account to estimate last sync
-    last_expenses = Expense.select("email_account_id, MAX(created_at) as last_created")
-                          .group(:email_account_id)
-                          .includes(:email_account)
-
-    sync_info = {}
-    last_expenses.each do |expense|
-      sync_info[expense.email_account_id] = {
-        last_sync: expense.last_created,
-        account: expense.email_account
-      }
-    end
-
-    # Also check for running sync jobs
-    running_jobs = SolidQueue::Job.where(
-      class_name: "ProcessEmailsJob",
-      finished_at: nil
-    ).where("created_at > ?", 5.minutes.ago)
-
-    sync_info[:has_running_jobs] = running_jobs.exists?
-    sync_info[:running_job_count] = running_jobs.count
-
-    sync_info
   end
 end

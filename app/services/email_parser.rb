@@ -98,17 +98,8 @@ class EmailParser
   end
 
   def set_currency(expense, parsed_data)
-    # Detect currency from email content or parsing rule
-    currency_text = "#{email_content} #{parsed_data[:amount]} #{parsed_data[:description]} #{parsed_data[:merchant_name]}".downcase
-
-    if currency_text.include?("$") || currency_text.include?("usd") || currency_text.include?("dollar")
-      expense.usd!
-    elsif currency_text.include?("€") || currency_text.include?("eur") || currency_text.include?("euro")
-      expense.eur!
-    else
-      # Default to CRC (Costa Rican Colón) - most common for Costa Rica banks
-      expense.crc!
-    end
+    currency_detector = CurrencyDetectorService.new(email_content: email_content)
+    currency_detector.apply_currency_to_expense(expense, parsed_data)
   end
 
   def guess_category(expense)

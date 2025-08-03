@@ -43,7 +43,7 @@ module EmailProcessing
         return false
       end
 
-      unless email_account.encrypted_password.present?
+      unless email_account.encrypted_password?
         add_error("Email account missing password")
         return false
       end

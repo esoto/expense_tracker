@@ -21,7 +21,7 @@
     <!-- Currency -->
     <div>
       <%= form.label :currency, "Moneda", class: "block text-sm font-medium text-gray-700 mb-2" %>
-      <%= form.select :currency, 
+      <%= form.select :currency,
           options_for_select(Expense.currencies.keys.map { |key| [key.upcase, key] }, expense.currency),
           {},
           { class: "w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" } %>
@@ -53,7 +53,7 @@
     <!-- Category -->
     <div>
       <%= form.label :category_id, "Categoría", class: "block text-sm font-medium text-gray-700 mb-2" %>
-      <%= form.select :category_id, 
+      <%= form.select :category_id,
           options_from_collection_for_select(@categories, :id, :name, expense.category_id),
           { include_blank: "Seleccionar categoría" },
           { class: "w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" } %>
@@ -78,7 +78,7 @@
 
   <!-- Submit Buttons -->
   <div class="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200">
-    <%= link_to "Cancelar", expense.persisted? ? expense : expenses_path, 
+    <%= link_to "Cancelar", expense.persisted? ? expense : expenses_path,
         class: "bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium" %>
     <%= form.submit expense.persisted? ? "Actualizar Gasto" : "Crear Gasto",
         class: "bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium" %>

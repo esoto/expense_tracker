@@ -18,8 +18,8 @@
     <div class="space-y-4">
       <%= form_with url: sync_emails_expenses_path, method: :post, local: true, class: "space-y-4" do |form| %>
         <div class="flex flex-col space-y-2">
-          <%= form.submit "Sincronizar Todos los Correos", 
-              class: "w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 #{@last_sync_info[:has_running_jobs] ? 'opacity-50 cursor-not-allowed' : ''}", 
+          <%= form.submit "Sincronizar Todos los Correos",
+              class: "w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 #{@last_sync_info[:has_running_jobs] ? 'opacity-50 cursor-not-allowed' : ''}",
               disabled: @last_sync_info[:has_running_jobs] %>
           <p class="text-xs text-gray-600">
             Busca nuevos gastos en todas las cuentas de correo activas
@@ -35,8 +35,8 @@
             <% @email_accounts.each do |account| %>
               <%= form_with url: sync_emails_expenses_path, method: :post, local: true, class: "flex items-center space-x-2" do |form| %>
                 <%= form.hidden_field :email_account_id, value: account.id %>
-                <%= form.submit account.display_name.truncate(30), 
-                    class: "text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 px-3 rounded transition-colors duration-200 #{@last_sync_info[:has_running_jobs] ? 'opacity-50 cursor-not-allowed' : ''}", 
+                <%= form.submit account.display_name.truncate(30),
+                    class: "text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 px-3 rounded transition-colors duration-200 #{@last_sync_info[:has_running_jobs] ? 'opacity-50 cursor-not-allowed' : ''}",
                     disabled: @last_sync_info[:has_running_jobs] %>
               <% end %>
             <% end %>
@@ -53,7 +53,7 @@
               </div>
               <div class="ml-3">
                 <p class="text-sm text-yellow-800">
-                  No hay cuentas de correo configuradas. 
+                  No hay cuentas de correo configuradas.
                   <%= link_to "Configurar cuenta", email_accounts_path, class: "font-medium underline" %>
                 </p>
               </div>
@@ -66,7 +66,6 @@
     <!-- Sync Status -->
     <div class="space-y-4">
       <h3 class="text-sm font-medium text-gray-700">Estado de sincronización:</h3>
-      
       <% if @email_accounts.any? %>
         <div class="space-y-3">
           <% @email_accounts.each do |account| %>
@@ -87,7 +86,7 @@
               <div class="text-right">
                 <% if @last_sync_info[account.id] %>
                   <p class="text-xs text-gray-600">
-                    Último: <%= time_ago_in_words(@last_sync_info[account.id][:last_sync]) %> ago
+                    Último: <%= format_datetime(@last_sync_info[account.id][:last_sync]) %>
                   </p>
                   <div class="flex items-center mt-1">
                     <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>

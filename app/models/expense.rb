@@ -31,6 +31,10 @@ class Expense < ApplicationRecord
     email_account.bank_name
   end
 
+  def category_name
+    category&.name || "Uncategorized"
+  end
+
   def display_description
     description.presence || merchant_name.presence || "Unknown Transaction"
   end

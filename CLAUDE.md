@@ -22,7 +22,7 @@ This is a Ruby on Rails 8.0.2 application. Key commands:
 
 ## Git Pre-commit Hook
 
-A pre-commit hook has been configured to automatically run tests, RuboCop linting, and Brakeman security scanning before allowing commits. This ensures code quality and security standards are maintained.
+A pre-commit hook has been configured to automatically run tests, RuboCop linting, Brakeman security scanning, and Rails Best Practices before allowing commits. This ensures code quality and security standards are maintained.
 
 ## Architecture
 

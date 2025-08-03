@@ -134,7 +134,7 @@ class Api::WebhooksController < ApplicationController
       description: expense.display_description,
       merchant_name: expense.merchant_name,
       transaction_date: expense.transaction_date.iso8601,
-      category: expense.category&.name,
+      category: expense.category_name,
       bank_name: expense.bank_name,
       status: expense.status,
       created_at: expense.created_at.iso8601

@@ -101,7 +101,7 @@ class ImapConnectionService
       raise ConnectionError, "Email account is not active"
     end
 
-    unless email_account.encrypted_password.present?
+    unless email_account.encrypted_password?
       raise ConnectionError, "Email account missing password"
     end
   end

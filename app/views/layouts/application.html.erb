@@ -35,7 +35,6 @@
             </div>
             <%= link_to "Expense Tracker", expenses_path, class: "text-xl font-bold text-gray-800" %>
           </div>
-          
           <div class="flex items-center space-x-4">
             <%= link_to "Dashboard", dashboard_expenses_path, class: "text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium #{'bg-blue-100 text-blue-600' if request.path == dashboard_expenses_path}" %>
             <%= link_to "Gastos", expenses_path, class: "text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium #{'bg-blue-100 text-blue-600' if request.path == expenses_path}" %>

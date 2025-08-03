@@ -1,0 +1,20 @@
+# Rails Best Practices Configuration
+
+# Add ignored files and directories
+IgnoreFiles:
+  - db/schema.rb
+  - db/migrate/*
+  - coverage/*
+  - spec/*
+  - test/*
+  - vendor/*
+  - node_modules/*
+  - tmp/*
+  - log/*
+
+# Customize checks
+UseQueryAttributeCheck: { enabled: false } 
+RemoveTrailingWhitespaceCheck: { enabled: true }
+MoveCodeIntoHelperCheck: { array_count: 5 }
+MoveCodeIntoModelCheck: { use_count: 6 } 
+OveruseRouteCustomizationsCheck: { customize_count: 5 }

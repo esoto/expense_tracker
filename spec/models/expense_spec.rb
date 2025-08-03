@@ -300,5 +300,21 @@ RSpec.describe Expense, type: :model do
         expect(expense.parsed_data).to eq(data.to_json)
       end
     end
+
+    describe '#category_name' do
+      let(:expense) { create(:expense, category: category, email_account: email_account) }
+
+      it 'returns category name when category is present' do
+        expect(expense.category_name).to eq(category.name)
+      end
+
+      context 'when category is nil' do
+        let(:expense_without_category) { create(:expense, category: nil, email_account: email_account) }
+
+        it 'returns "Uncategorized" when category is nil' do
+          expect(expense_without_category.category_name).to eq('Uncategorized')
+        end
+      end
+    end
   end
 end

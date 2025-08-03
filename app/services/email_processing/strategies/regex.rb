@@ -17,14 +17,14 @@ module EmailProcessing
         end
 
         # Extract merchant
-        if parsing_rule.merchant_pattern.present?
+        if parsing_rule.merchant_pattern?
           if merchant_match = email_content.match(Regexp.new(parsing_rule.merchant_pattern, Regexp::IGNORECASE))
             parsed_data[:merchant_name] = merchant_match[1] || merchant_match[0]
           end
         end
 
         # Extract description
-        if parsing_rule.description_pattern.present?
+        if parsing_rule.description_pattern?
           if desc_match = email_content.match(Regexp.new(parsing_rule.description_pattern, Regexp::IGNORECASE))
             parsed_data[:description] = desc_match[1] || desc_match[0]
           end

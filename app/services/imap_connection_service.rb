@@ -71,13 +71,13 @@ class ImapConnectionService
 
   def with_connection
     validate_account!
-    
+
     imap = create_connection
     authenticate_connection(imap)
     select_inbox(imap)
-    
+
     result = yield(imap)
-    
+
     cleanup_connection(imap)
     result
   rescue ConnectionError
@@ -108,7 +108,7 @@ class ImapConnectionService
 
   def create_connection
     settings = email_account.imap_settings
-    
+
     Net::IMAP.new(
       settings[:address],
       port: settings[:port],

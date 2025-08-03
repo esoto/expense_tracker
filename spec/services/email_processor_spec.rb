@@ -16,14 +16,14 @@ RSpec.describe EmailProcessor do
     context 'with empty message list' do
       it 'returns zero counts' do
         result = processor.process_emails([], mock_imap_service)
-        
+
         expect(result[:processed_count]).to eq(0)
         expect(result[:total_count]).to eq(0)
       end
     end
 
     context 'with transaction emails' do
-      let(:message_ids) { [1, 2, 3] }
+      let(:message_ids) { [ 1, 2, 3 ] }
       let(:transaction_envelope) { double('envelope', subject: 'BAC - Notificación de transacción') }
       let(:non_transaction_envelope) { double('envelope', subject: 'Regular email') }
 
@@ -31,7 +31,7 @@ RSpec.describe EmailProcessor do
         allow(mock_imap_service).to receive(:fetch_envelope).with(1).and_return(transaction_envelope)
         allow(mock_imap_service).to receive(:fetch_envelope).with(2).and_return(non_transaction_envelope)
         allow(mock_imap_service).to receive(:fetch_envelope).with(3).and_return(transaction_envelope)
-        
+
         allow(processor).to receive(:extract_email_data).and_return({
           message_id: 1,
           from: 'bank@bac.co.cr',
@@ -39,43 +39,43 @@ RSpec.describe EmailProcessor do
           date: Time.current,
           body: 'Transaction details'
         })
-        
+
         allow(ProcessEmailJob).to receive(:perform_later)
       end
 
       it 'processes only transaction emails' do
         result = processor.process_emails(message_ids, mock_imap_service)
-        
+
         expect(result[:processed_count]).to eq(2)
         expect(result[:total_count]).to eq(3)
       end
 
       it 'queues ProcessEmailJob for transaction emails' do
         processor.process_emails(message_ids, mock_imap_service)
-        
+
         expect(ProcessEmailJob).to have_received(:perform_later).twice
       end
     end
 
     context 'with missing envelope' do
-      let(:message_ids) { [1] }
-      
+      let(:message_ids) { [ 1 ] }
+
       before do
         allow(mock_imap_service).to receive(:fetch_envelope).and_return(nil)
       end
 
       it 'skips emails with missing envelopes' do
         result = processor.process_emails(message_ids, mock_imap_service)
-        
+
         expect(result[:processed_count]).to eq(0)
         expect(result[:total_count]).to eq(1)
       end
     end
 
     context 'with failed email data extraction' do
-      let(:message_ids) { [1] }
+      let(:message_ids) { [ 1 ] }
       let(:transaction_envelope) { double('envelope', subject: 'BAC - Notificación de transacción') }
-      
+
       before do
         allow(mock_imap_service).to receive(:fetch_envelope).and_return(transaction_envelope)
         allow(processor).to receive(:extract_email_data).and_return(nil)
@@ -84,7 +84,7 @@ RSpec.describe EmailProcessor do
 
       it 'skips emails when data extraction fails' do
         result = processor.process_emails(message_ids, mock_imap_service)
-        
+
         expect(result[:processed_count]).to eq(0)
         expect(result[:total_count]).to eq(1)
         expect(ProcessEmailJob).not_to have_received(:perform_later)
@@ -92,8 +92,8 @@ RSpec.describe EmailProcessor do
     end
 
     context 'with processing errors' do
-      let(:message_ids) { [1] }
-      
+      let(:message_ids) { [ 1 ] }
+
       before do
         allow(mock_imap_service).to receive(:fetch_envelope)
           .and_raise(StandardError, 'IMAP error')
@@ -101,7 +101,7 @@ RSpec.describe EmailProcessor do
 
       it 'handles errors gracefully and continues processing' do
         result = processor.process_emails(message_ids, mock_imap_service)
-        
+
         expect(result[:processed_count]).to eq(0)
         expect(result[:total_count]).to eq(1)
         expect(processor.errors).to include('Error processing email: IMAP error')
@@ -137,7 +137,7 @@ RSpec.describe EmailProcessor do
       double('envelope',
         subject: 'Test Transaction',
         date: Time.current,
-        from: [double('from', mailbox: 'bank', host: 'bac.co.cr')]
+        from: [ double('from', mailbox: 'bank', host: 'bac.co.cr') ]
       )
     end
     let(:email_body) { 'Transaction details here' }
@@ -148,7 +148,7 @@ RSpec.describe EmailProcessor do
 
     it 'extracts complete email data structure' do
       result = processor.send(:extract_email_data, message_id, envelope, mock_imap_service)
-      
+
       expect(result).to include(
         message_id: message_id,
         from: 'bank@bac.co.cr',
@@ -160,7 +160,7 @@ RSpec.describe EmailProcessor do
 
     it 'returns nil if body extraction fails' do
       allow(processor).to receive(:extract_email_body).and_return(nil)
-      
+
       result = processor.send(:extract_email_data, message_id, envelope, mock_imap_service)
       expect(result).to be_nil
     end
@@ -312,11 +312,11 @@ RSpec.describe EmailProcessor do
 
     context 'with multipart structure containing text' do
       let(:body_structure) do
-        double('structure', 
+        double('structure',
           multipart?: true,
           media_type: nil,
           subtype: nil,
-          parts: [text_part, html_part]
+          parts: [ text_part, html_part ]
         )
       end
 
@@ -332,7 +332,7 @@ RSpec.describe EmailProcessor do
           multipart?: true,
           media_type: nil,
           subtype: nil,
-          parts: [html_part]
+          parts: [ html_part ]
         )
       end
 
@@ -358,11 +358,11 @@ RSpec.describe EmailProcessor do
 
     context 'with multipart structure containing HTML' do
       let(:body_structure) do
-        double('structure', 
+        double('structure',
           multipart?: true,
           media_type: nil,
           subtype: nil,
-          parts: [text_part, html_part]
+          parts: [ text_part, html_part ]
         )
       end
 
@@ -401,7 +401,7 @@ RSpec.describe EmailProcessor do
     it 'handles ASCII-8BIT encoding' do
       html = '<html>Content</html>'
       html.force_encoding('ASCII-8BIT')
-      
+
       result = processor.send(:extract_text_from_html, html)
       expect(result).to eq('Content')
     end
@@ -409,10 +409,10 @@ RSpec.describe EmailProcessor do
     it 'covers the encoding error rescue block for CompatibilityError' do
       # Test the rescue block functionality by creating a controlled scenario
       html = "<html><body>Test content</body></html>"
-      
+
       # Create a test double that simulates the actual rescue block execution
       expect(Rails.logger).to receive(:warn).with(/HTML encoding error:/)
-      
+
       # Mock just the specific part that would trigger the rescue
       original_method = processor.method(:extract_text_from_html)
       allow(processor).to receive(:extract_text_from_html) do |content|
@@ -426,7 +426,7 @@ RSpec.describe EmailProcessor do
           simple_text.force_encoding("UTF-8")
         end
       end
-      
+
       result = processor.send(:extract_text_from_html, html)
       expect(result).to eq("Test content")
       expect(result.encoding.name).to eq('UTF-8')
@@ -435,10 +435,10 @@ RSpec.describe EmailProcessor do
     it 'covers the encoding error rescue block for UndefinedConversionError' do
       # Test the rescue block functionality by creating a controlled scenario
       html = "<html><body>Test content</body></html>"
-      
+
       # Create a test double that simulates the actual rescue block execution
       expect(Rails.logger).to receive(:warn).with(/HTML encoding error:/)
-      
+
       # Mock just the specific part that would trigger the rescue
       allow(processor).to receive(:extract_text_from_html) do |content|
         begin
@@ -451,7 +451,7 @@ RSpec.describe EmailProcessor do
           simple_text.force_encoding("UTF-8")
         end
       end
-      
+
       result = processor.send(:extract_text_from_html, html)
       expect(result).to eq("Test content")
       expect(result.encoding.name).to eq('UTF-8')
@@ -461,8 +461,8 @@ RSpec.describe EmailProcessor do
   describe '#build_from_address' do
     context 'with valid from address' do
       let(:envelope) do
-        double('envelope', 
-          from: [double('from', mailbox: 'notifications', host: 'bank.com')]
+        double('envelope',
+          from: [ double('from', mailbox: 'notifications', host: 'bank.com') ]
         )
       end
 

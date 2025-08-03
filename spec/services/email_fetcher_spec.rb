@@ -37,7 +37,7 @@ RSpec.describe EmailFetcher, type: :service do
           processed_emails_count: 3,
           total_emails_found: 5
         })
-        
+
         result = fetcher.fetch_new_emails(since: 1.day.ago)
         expect(result).to be_a(EmailFetcherResponse)
         expect(result.success?).to be true
@@ -135,7 +135,7 @@ RSpec.describe EmailFetcher, type: :service do
       end
 
       it 'collects errors from imap service' do
-        allow(mock_imap_service).to receive(:errors).and_return(['Service error'])
+        allow(mock_imap_service).to receive(:errors).and_return([ 'Service error' ])
         result = fetcher.test_connection
         expect(result.errors).to include('Service error')
       end
@@ -144,7 +144,7 @@ RSpec.describe EmailFetcher, type: :service do
     context 'with connection failure' do
       before do
         allow(mock_imap_service).to receive(:test_connection).and_return(false)
-        allow(mock_imap_service).to receive(:errors).and_return(['Connection failed'])
+        allow(mock_imap_service).to receive(:errors).and_return([ 'Connection failed' ])
       end
 
       it 'returns failure response and includes service errors' do
@@ -158,10 +158,10 @@ RSpec.describe EmailFetcher, type: :service do
 
   describe '#search_and_process_emails' do
     let(:since_date) { 1.day.ago }
-    let(:message_ids) { [1, 2, 3] }
+    let(:message_ids) { [ 1, 2, 3 ] }
 
     before do
-      allow(fetcher).to receive(:build_search_criteria).with(since_date).and_return(['SINCE', '01-Jan-2025'])
+      allow(fetcher).to receive(:build_search_criteria).with(since_date).and_return([ 'SINCE', '01-Jan-2025' ])
       allow(mock_imap_service).to receive(:search_emails).and_return(message_ids)
       allow(mock_email_processor).to receive(:process_emails).and_return({
         processed_count: 2,
@@ -176,7 +176,7 @@ RSpec.describe EmailFetcher, type: :service do
 
     it 'delegates email processing to EmailProcessor' do
       expect(mock_email_processor).to receive(:process_emails).with(message_ids, mock_imap_service)
-      
+
       result = fetcher.send(:search_and_process_emails, since_date)
       expect(result[:processed_emails_count]).to eq(2)
       expect(result[:total_emails_found]).to eq(3)
@@ -190,11 +190,11 @@ RSpec.describe EmailFetcher, type: :service do
     end
 
     it 'collects errors from both services' do
-      allow(mock_imap_service).to receive(:errors).and_return(['IMAP error'])
-      allow(mock_email_processor).to receive(:errors).and_return(['Processing error'])
-      
+      allow(mock_imap_service).to receive(:errors).and_return([ 'IMAP error' ])
+      allow(mock_email_processor).to receive(:errors).and_return([ 'Processing error' ])
+
       fetcher.send(:search_and_process_emails, since_date)
-      
+
       expect(fetcher.errors).to include('IMAP error')
       expect(fetcher.errors).to include('Processing error')
     end
@@ -233,8 +233,7 @@ RSpec.describe EmailFetcher, type: :service do
     it 'creates SINCE criteria with formatted date' do
       since_date = Date.new(2025, 1, 15)
       criteria = fetcher.send(:build_search_criteria, since_date)
-      expect(criteria).to eq(['SINCE', '15-Jan-2025'])
+      expect(criteria).to eq([ 'SINCE', '15-Jan-2025' ])
     end
   end
-
 end

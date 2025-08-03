@@ -16,7 +16,7 @@ RSpec.describe ImapConnectionService do
     context 'when connection succeeds' do
       it 'returns true for successful connection test' do
         allow(service).to receive(:with_connection).and_yield(mock_imap)
-        allow(mock_imap).to receive(:list).with("", "*").and_return(['INBOX'])
+        allow(mock_imap).to receive(:list).with("", "*").and_return([ 'INBOX' ])
 
         result = service.test_connection
 
@@ -37,16 +37,16 @@ RSpec.describe ImapConnectionService do
   end
 
   describe '#search_emails' do
-    let(:search_criteria) { ["SINCE", "01-Jan-2025"] }
+    let(:search_criteria) { [ "SINCE", "01-Jan-2025" ] }
 
     context 'when search succeeds' do
       it 'returns message IDs from search' do
         allow(service).to receive(:with_connection).and_yield(mock_imap)
-        allow(mock_imap).to receive(:search).with(search_criteria).and_return([1, 2, 3])
+        allow(mock_imap).to receive(:search).with(search_criteria).and_return([ 1, 2, 3 ])
 
         result = service.search_emails(search_criteria)
 
-        expect(result).to eq([1, 2, 3])
+        expect(result).to eq([ 1, 2, 3 ])
       end
     end
 
@@ -69,7 +69,7 @@ RSpec.describe ImapConnectionService do
     context 'when fetch succeeds' do
       it 'returns envelope data' do
         mock_fetch_result = double('fetch_result', attr: { "ENVELOPE" => mock_envelope })
-        mock_fetch_array = [mock_fetch_result]
+        mock_fetch_array = [ mock_fetch_result ]
 
         allow(service).to receive(:with_connection).and_yield(mock_imap)
         allow(mock_imap).to receive(:fetch).with(message_id, "ENVELOPE").and_return(mock_fetch_array)
@@ -98,7 +98,7 @@ RSpec.describe ImapConnectionService do
 
     it 'returns body structure data when successful' do
       mock_fetch_result = double('fetch_result', attr: { "BODYSTRUCTURE" => mock_structure })
-      mock_fetch_array = [mock_fetch_result]
+      mock_fetch_array = [ mock_fetch_result ]
 
       allow(service).to receive(:with_connection).and_yield(mock_imap)
       allow(mock_imap).to receive(:fetch).with(message_id, "BODYSTRUCTURE").and_return(mock_fetch_array)
@@ -125,7 +125,7 @@ RSpec.describe ImapConnectionService do
 
     it 'returns body part content when successful' do
       mock_fetch_result = double('fetch_result', attr: { "BODY[1]" => body_content })
-      mock_fetch_array = [mock_fetch_result]
+      mock_fetch_array = [ mock_fetch_result ]
 
       allow(service).to receive(:with_connection).and_yield(mock_imap)
       allow(mock_imap).to receive(:fetch).with(message_id, "BODY[1]").and_return(mock_fetch_array)
@@ -151,7 +151,7 @@ RSpec.describe ImapConnectionService do
 
     it 'returns text body content when successful' do
       mock_fetch_result = double('fetch_result', attr: { "BODY[TEXT]" => text_content })
-      mock_fetch_array = [mock_fetch_result]
+      mock_fetch_array = [ mock_fetch_result ]
 
       allow(service).to receive(:with_connection).and_yield(mock_imap)
       allow(mock_imap).to receive(:fetch).with(message_id, "BODY[TEXT]").and_return(mock_fetch_array)
@@ -235,7 +235,7 @@ RSpec.describe ImapConnectionService do
     context 'when authentication fails' do
       before do
         # Create a proper IMAP response data structure
-        error_data = double('error_data', 
+        error_data = double('error_data',
           data: double('data', text: 'Authentication failed'),
           text: 'Authentication failed'
         )

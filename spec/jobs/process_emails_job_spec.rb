@@ -138,7 +138,7 @@ RSpec.describe ProcessEmailsJob, type: :job do
     end
 
     context 'with success but warnings' do
-      let(:warnings) { ["Minor connection issue", "Slow response"] }
+      let(:warnings) { [ "Minor connection issue", "Slow response" ] }
       let(:success_with_warnings_response) do
         EmailFetcherResponse.success(
           processed_emails_count: 2,

@@ -520,5 +520,121 @@ RSpec.describe EmailParser, type: :service do
         expect(result).to be_nil
       end
     end
+
+    context 'additional edge cases' do
+      describe '#create_expense error handling' do
+        let(:parsed_data) do
+          {
+            amount: BigDecimal('100.50'),
+            transaction_date: Date.current,
+            merchant_name: 'Test Merchant',
+            description: 'Test Description'
+          }
+        end
+
+        it 'handles expense save failure' do
+          expense = instance_double(Expense, save: false)
+          allow(expense).to receive(:category=)
+          allow(expense).to receive(:crc!)
+          allow(expense).to receive(:errors).and_return(
+            double('errors', full_messages: [ 'Amount cannot be negative' ])
+          )
+          allow(Expense).to receive(:new).and_return(expense)
+          allow(parser).to receive(:find_duplicate_expense).and_return(nil)
+          allow(parser).to receive(:set_currency)
+          allow(parser).to receive(:guess_category).and_return(nil)
+
+          result = parser.send(:create_expense, parsed_data)
+
+          expect(result).to be_nil
+          expect(parser.errors).to include('Failed to save expense: Amount cannot be negative')
+        end
+
+        it 'logs successful expense creation' do
+          expense = instance_double(Expense,
+            save: true,
+            update: true,
+            formatted_amount: '$100.50'
+          )
+          allow(expense).to receive(:category=)
+          allow(Expense).to receive(:new).and_return(expense)
+          allow(parser).to receive(:find_duplicate_expense).and_return(nil)
+          allow(parser).to receive(:set_currency)
+          allow(parser).to receive(:guess_category).and_return(nil)
+
+          expect(Rails.logger).to receive(:info).with("Created expense: $100.50 from #{email_account.email}")
+
+          result = parser.send(:create_expense, parsed_data)
+          expect(result).to eq(expense)
+        end
+      end
+
+      describe '#set_currency with nil values' do
+        let(:expense) { instance_double(Expense, usd!: nil, eur!: nil, crc!: nil) }
+
+        it 'handles nil values in parsed_data gracefully' do
+          parsed_data = { amount: nil, description: nil, merchant_name: nil }
+
+          expect { parser.send(:set_currency, expense, parsed_data) }.not_to raise_error
+          expect(expense).to have_received(:crc!)  # Should default to CRC
+        end
+
+        it 'handles mixed nil and present values' do
+          parsed_data = {
+            amount: '$50.00',
+            description: nil,
+            merchant_name: 'Dollar Store'
+          }
+
+          parser.send(:set_currency, expense, parsed_data)
+          expect(expense).to have_received(:usd!)
+        end
+      end
+
+      describe '#guess_category with nil values' do
+        it 'handles expense with nil description and merchant_name' do
+          expense = instance_double(Expense, description: nil, merchant_name: nil)
+
+          category = parser.send(:guess_category, expense)
+
+          # Should return default category even with nil values
+          expect(category&.name).to be_in([ 'Sin Categoría', 'Other', nil ])
+        end
+
+        it 'handles expense with empty strings' do
+          expense = instance_double(Expense, description: '', merchant_name: '')
+
+          category = parser.send(:guess_category, expense)
+
+          # Should return default category for empty strings
+          expect(category&.name).to be_in([ 'Sin Categoría', 'Other', nil ])
+        end
+      end
+
+      describe '#email_content edge cases' do
+        it 'handles nil email body' do
+          parser.instance_variable_set(:@email_data, { body: nil })
+
+          content = parser.send(:email_content)
+          expect(content).to eq('')  # to_s converts nil to empty string
+        end
+
+        it 'handles missing body key' do
+          parser.instance_variable_set(:@email_data, {})
+
+          content = parser.send(:email_content)
+          expect(content).to eq('')  # to_s converts nil to empty string
+        end
+
+        it 'handles complex quoted-printable sequences' do
+          complex_body = "Test=20with=20spaces=\r\nNew=20line=3D=20equals=E2=82=AC"
+          parser.instance_variable_set(:@email_data, { body: complex_body })
+
+          content = parser.send(:email_content)
+          expect(content).to include('Test with spaces')
+          expect(content).to include('New line= equals€')
+        end
+      end
+    end
   end
 end

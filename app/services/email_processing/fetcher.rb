@@ -70,8 +70,8 @@ module EmailProcessing
     end
 
     def build_search_criteria(since_date)
-      formatted_date = since_date.strftime('%d-%b-%Y')
-      ['SINCE', formatted_date]
+      formatted_date = since_date.strftime("%d-%b-%Y")
+      [ "SINCE", formatted_date ]
     end
 
     def add_error(message)

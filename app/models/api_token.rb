@@ -1,3 +1,5 @@
+require "digest"
+
 class ApiToken < ApplicationRecord
   attr_accessor :token
 
@@ -31,13 +33,13 @@ class ApiToken < ApplicationRecord
   def self.authenticate(token_string)
     return nil unless token_string.present?
 
-    ApiToken.active.find_each do |api_token|
-      if BCrypt::Password.new(api_token.token_digest) == token_string
-        return api_token if api_token.valid_token?
-      end
-    end
+    # O(1) lookup using token_hash
+    token_hash = Digest::SHA256.hexdigest(token_string)
+    api_token = active.find_by(token_hash: token_hash)
 
-    nil
+    # If we found a token with matching hash, it's valid
+    # The SHA256 hash already proves the token is correct
+    api_token&.valid_token? ? api_token : nil
   end
 
   def self.generate_secure_token
@@ -51,6 +53,7 @@ class ApiToken < ApplicationRecord
 
     self.token = self.class.generate_secure_token
     self.token_digest = BCrypt::Password.create(token)
+    self.token_hash = Digest::SHA256.hexdigest(token)
   end
 
   def expires_at_in_future

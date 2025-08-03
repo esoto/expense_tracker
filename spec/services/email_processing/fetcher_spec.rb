@@ -28,7 +28,7 @@ RSpec.describe EmailProcessing::Fetcher, type: :service do
 
   describe '#fetch_new_emails' do
     context 'with valid account' do
-      let(:message_ids) { [1, 2] }
+      let(:message_ids) { [ 1, 2 ] }
 
       before do
         allow(fetcher).to receive(:valid_account?).and_return(true)
@@ -38,7 +38,7 @@ RSpec.describe EmailProcessing::Fetcher, type: :service do
 
       it 'successfully fetches and processes emails' do
         result = fetcher.fetch_new_emails(since: 1.day.ago)
-        
+
         expect(result).to be_a(EmailProcessing::FetcherResponse)
         expect(result.success?).to be true
         expect(result.processed_emails_count).to eq(2)
@@ -47,8 +47,8 @@ RSpec.describe EmailProcessing::Fetcher, type: :service do
 
       it 'builds search criteria and searches emails' do
         since_date = 2.days.ago
-        expect(mock_imap_service).to receive(:search_emails).with(['SINCE', since_date.strftime('%d-%b-%Y')])
-        
+        expect(mock_imap_service).to receive(:search_emails).with([ 'SINCE', since_date.strftime('%d-%b-%Y') ])
+
         fetcher.fetch_new_emails(since: since_date)
       end
 
@@ -167,7 +167,7 @@ RSpec.describe EmailProcessing::Fetcher, type: :service do
     end
 
     describe '#search_and_process_emails' do
-      let(:message_ids) { [1, 2] }
+      let(:message_ids) { [ 1, 2 ] }
       let(:since_date) { 1.day.ago }
 
       before do
@@ -176,7 +176,7 @@ RSpec.describe EmailProcessing::Fetcher, type: :service do
       end
 
       it 'searches emails and delegates processing' do
-        expect(mock_imap_service).to receive(:search_emails).with(['SINCE', since_date.strftime('%d-%b-%Y')])
+        expect(mock_imap_service).to receive(:search_emails).with([ 'SINCE', since_date.strftime('%d-%b-%Y') ])
         expect(mock_email_processor).to receive(:process_emails).with(message_ids, mock_imap_service)
 
         result = fetcher.send(:search_and_process_emails, since_date)
@@ -194,7 +194,7 @@ RSpec.describe EmailProcessing::Fetcher, type: :service do
       it 'creates SINCE criteria with formatted date' do
         since_date = Date.new(2025, 1, 15)
         criteria = fetcher.send(:build_search_criteria, since_date)
-        expect(criteria).to eq(['SINCE', '15-Jan-2025'])
+        expect(criteria).to eq([ 'SINCE', '15-Jan-2025' ])
       end
     end
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_02_142856) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_03_205052) do
   create_table "api_tokens", force: :cascade do |t|
     t.string "name", null: false
     t.string "token_digest", null: false
@@ -19,9 +19,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_02_142856) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "token_hash"
+    t.index ["active", "expires_at"], name: "index_api_tokens_on_active_and_expires_at"
     t.index ["active"], name: "index_api_tokens_on_active"
     t.index ["expires_at"], name: "index_api_tokens_on_expires_at"
     t.index ["token_digest"], name: "index_api_tokens_on_token_digest", unique: true
+    t.index ["token_hash"], name: "index_api_tokens_on_token_hash", unique: true
   end
 
   create_table "categories", force: :cascade do |t|
@@ -44,6 +47,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_02_142856) do
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["active", "bank_name"], name: "index_email_accounts_on_active_and_bank_name"
     t.index ["active"], name: "index_email_accounts_on_active"
     t.index ["bank_name"], name: "index_email_accounts_on_bank_name"
     t.index ["email"], name: "index_email_accounts_on_email", unique: true
@@ -64,11 +68,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_02_142856) do
     t.string "bank_name"
     t.integer "currency", default: 0, null: false
     t.index ["amount"], name: "index_expenses_on_amount"
+    t.index ["bank_name", "transaction_date"], name: "index_expenses_on_bank_name_and_transaction_date"
+    t.index ["category_id", "transaction_date"], name: "index_expenses_on_category_id_and_transaction_date"
     t.index ["category_id"], name: "index_expenses_on_category_id"
     t.index ["currency"], name: "index_expenses_on_currency"
+    t.index ["email_account_id", "created_at"], name: "index_expenses_on_email_account_id_and_created_at"
     t.index ["email_account_id", "transaction_date"], name: "index_expenses_on_email_account_id_and_transaction_date"
     t.index ["email_account_id"], name: "index_expenses_on_email_account_id"
+    t.index ["merchant_name", "amount"], name: "index_expenses_on_merchant_name_and_amount"
+    t.index ["status", "transaction_date"], name: "index_expenses_on_status_and_transaction_date"
     t.index ["status"], name: "index_expenses_on_status"
+    t.index ["transaction_date", "amount"], name: "index_expenses_on_transaction_date_and_amount"
     t.index ["transaction_date"], name: "index_expenses_on_transaction_date"
   end
 
@@ -83,6 +93,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_02_142856) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["active"], name: "index_parsing_rules_on_active"
+    t.index ["bank_name", "active"], name: "index_parsing_rules_on_bank_name_and_active"
     t.index ["bank_name"], name: "index_parsing_rules_on_bank_name"
   end
 

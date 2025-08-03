@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessor do
+RSpec.describe EmailProcessing::Processor do
   let(:email_account) { create(:email_account, :bac) }
   let(:processor) { described_class.new(email_account) }
   let(:mock_imap_service) { instance_double(ImapConnectionService) }
@@ -494,7 +494,7 @@ RSpec.describe EmailProcessor do
   describe 'error handling' do
     describe '#add_error' do
       it 'adds error to errors array and logs to Rails logger' do
-        expect(Rails.logger).to receive(:error).with("[EmailProcessor] #{email_account.email}: Test error")
+        expect(Rails.logger).to receive(:error).with("[EmailProcessing::Processor] #{email_account.email}: Test error")
 
         processor.send(:add_error, "Test error")
 

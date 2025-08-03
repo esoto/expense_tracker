@@ -1,0 +1,82 @@
+module EmailProcessing
+  class Fetcher
+    attr_reader :email_account, :errors, :imap_service, :email_processor
+
+    def initialize(email_account, imap_service: nil, email_processor: nil)
+      @email_account = email_account
+      @imap_service = imap_service || ImapConnectionService.new(email_account)
+      @email_processor = email_processor || EmailProcessing::Processor.new(email_account)
+      @errors = []
+    end
+
+    def fetch_new_emails(since: 1.week.ago)
+      unless valid_account?
+        return EmailProcessing::FetcherResponse.failure(errors: @errors)
+      end
+
+      begin
+        result = search_and_process_emails(since)
+        EmailProcessing::FetcherResponse.success(
+          processed_emails_count: result[:processed_emails_count],
+          total_emails_found: result[:total_emails_found],
+          errors: @errors
+        )
+      rescue ImapConnectionService::ConnectionError, ImapConnectionService::AuthenticationError => e
+        add_error("IMAP Error: #{e.message}")
+        EmailProcessing::FetcherResponse.failure(errors: @errors)
+      rescue StandardError => e
+        add_error("Unexpected error: #{e.message}")
+        EmailProcessing::FetcherResponse.failure(errors: @errors)
+      end
+    end
+
+    private
+
+    def valid_account?
+      if email_account.blank?
+        add_error("Email account not provided")
+        return false
+      end
+
+      unless email_account.active?
+        add_error("Email account is not active")
+        return false
+      end
+
+      unless email_account.encrypted_password.present?
+        add_error("Email account missing password")
+        return false
+      end
+
+      true
+    end
+
+    def search_and_process_emails(since)
+      # Build search criteria for emails since the specified date
+      search_criteria = build_search_criteria(since)
+      message_ids = imap_service.search_emails(search_criteria)
+      total_emails_found = message_ids.count
+
+      Rails.logger.info "[EmailProcessing::Fetcher] Found #{total_emails_found} emails for #{email_account.email}"
+
+      # Process emails using the email processor
+      result = email_processor.process_emails(message_ids, imap_service)
+      processed_emails_count = result[:processed_count]
+
+      {
+        processed_emails_count: processed_emails_count,
+        total_emails_found: total_emails_found
+      }
+    end
+
+    def build_search_criteria(since_date)
+      formatted_date = since_date.strftime('%d-%b-%Y')
+      ['SINCE', formatted_date]
+    end
+
+    def add_error(message)
+      @errors << message
+      Rails.logger.error "[EmailProcessing::Fetcher] #{email_account&.email || 'Unknown'}: #{message}"
+    end
+  end
+end

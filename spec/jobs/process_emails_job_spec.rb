@@ -4,7 +4,7 @@ RSpec.describe ProcessEmailsJob, type: :job do
   let(:parsing_rule) { create(:parsing_rule, :bac) }
   let(:email_account) { create(:email_account, :bac) }
   let(:inactive_email_account) { create(:email_account, :inactive) }
-  let(:mock_fetcher) { instance_double(EmailFetcher) }
+  let(:mock_fetcher) { instance_double(EmailProcessing::Fetcher) }
 
   before do
     parsing_rule # Ensure parsing rule exists
@@ -66,21 +66,21 @@ RSpec.describe ProcessEmailsJob, type: :job do
 
     context 'with valid active email account' do
       let(:success_response) do
-        EmailFetcherResponse.success(
+        EmailProcessing::FetcherResponse.success(
           processed_emails_count: 3,
           total_emails_found: 5
         )
       end
 
       before do
-        allow(EmailFetcher).to receive(:new).with(email_account).and_return(mock_fetcher)
+        allow(EmailProcessing::Fetcher).to receive(:new).with(email_account).and_return(mock_fetcher)
         allow(mock_fetcher).to receive(:fetch_new_emails).and_return(success_response)
       end
 
-      it 'creates EmailFetcher and fetches emails' do
+      it 'creates EmailProcessing::Fetcher and fetches emails' do
         job.send(:process_single_account, email_account.id, since_time)
 
-        expect(EmailFetcher).to have_received(:new).with(email_account)
+        expect(EmailProcessing::Fetcher).to have_received(:new).with(email_account)
         expect(mock_fetcher).to have_received(:fetch_new_emails).with(since: since_time)
       end
 
@@ -108,11 +108,11 @@ RSpec.describe ProcessEmailsJob, type: :job do
     context 'with fetch failure' do
       let(:fetch_errors) { [ "IMAP connection failed", "Authentication error" ] }
       let(:failure_response) do
-        EmailFetcherResponse.failure(errors: fetch_errors)
+        EmailProcessing::FetcherResponse.failure(errors: fetch_errors)
       end
 
       before do
-        allow(EmailFetcher).to receive(:new).with(email_account).and_return(mock_fetcher)
+        allow(EmailProcessing::Fetcher).to receive(:new).with(email_account).and_return(mock_fetcher)
         allow(mock_fetcher).to receive(:fetch_new_emails).and_return(failure_response)
       end
 
@@ -140,7 +140,7 @@ RSpec.describe ProcessEmailsJob, type: :job do
     context 'with success but warnings' do
       let(:warnings) { [ "Minor connection issue", "Slow response" ] }
       let(:success_with_warnings_response) do
-        EmailFetcherResponse.success(
+        EmailProcessing::FetcherResponse.success(
           processed_emails_count: 2,
           total_emails_found: 3,
           errors: warnings
@@ -148,7 +148,7 @@ RSpec.describe ProcessEmailsJob, type: :job do
       end
 
       before do
-        allow(EmailFetcher).to receive(:new).with(email_account).and_return(mock_fetcher)
+        allow(EmailProcessing::Fetcher).to receive(:new).with(email_account).and_return(mock_fetcher)
         allow(mock_fetcher).to receive(:fetch_new_emails).and_return(success_with_warnings_response)
       end
 
@@ -176,7 +176,7 @@ RSpec.describe ProcessEmailsJob, type: :job do
         expect(Rails.logger).to have_received(:error).with(
           "EmailAccount not found: 99999"
         )
-        expect(EmailFetcher).not_to receive(:new)
+        expect(EmailProcessing::Fetcher).not_to receive(:new)
       end
     end
 
@@ -189,21 +189,21 @@ RSpec.describe ProcessEmailsJob, type: :job do
         expect(Rails.logger).to have_received(:info).with(
           "Skipping inactive email account: #{inactive_email_account.email}"
         )
-        expect(EmailFetcher).not_to receive(:new)
+        expect(EmailProcessing::Fetcher).not_to receive(:new)
       end
 
-      it 'does not create EmailFetcher' do
-        allow(EmailFetcher).to receive(:new)
+      it 'does not create EmailProcessing::Fetcher' do
+        allow(EmailProcessing::Fetcher).to receive(:new)
 
         job.send(:process_single_account, inactive_email_account.id, since_time)
 
-        expect(EmailFetcher).not_to have_received(:new)
+        expect(EmailProcessing::Fetcher).not_to have_received(:new)
       end
     end
 
-    context 'when EmailFetcher raises exception' do
+    context 'when EmailProcessing::Fetcher raises exception' do
       before do
-        allow(EmailFetcher).to receive(:new).and_raise(StandardError.new("Connection error"))
+        allow(EmailProcessing::Fetcher).to receive(:new).and_raise(StandardError.new("Connection error"))
       end
 
       it 'allows exception to bubble up' do
@@ -317,9 +317,9 @@ RSpec.describe ProcessEmailsJob, type: :job do
     end
 
     it 'can be performed immediately' do
-      allow(EmailFetcher).to receive(:new).and_return(mock_fetcher)
+      allow(EmailProcessing::Fetcher).to receive(:new).and_return(mock_fetcher)
       allow(mock_fetcher).to receive(:fetch_new_emails).and_return(
-        EmailFetcherResponse.success(processed_emails_count: 2, total_emails_found: 3)
+        EmailProcessing::FetcherResponse.success(processed_emails_count: 2, total_emails_found: 3)
       )
 
       expect {
@@ -333,9 +333,9 @@ RSpec.describe ProcessEmailsJob, type: :job do
 
     context 'with string email account id' do
       it 'handles string id parameter' do
-        allow(EmailFetcher).to receive(:new).and_return(mock_fetcher)
+        allow(EmailProcessing::Fetcher).to receive(:new).and_return(mock_fetcher)
         allow(mock_fetcher).to receive(:fetch_new_emails).and_return(
-          EmailFetcherResponse.success(processed_emails_count: 1, total_emails_found: 2)
+          EmailProcessing::FetcherResponse.success(processed_emails_count: 1, total_emails_found: 2)
         )
 
         expect {
@@ -400,10 +400,10 @@ RSpec.describe ProcessEmailsJob, type: :job do
       let!(:parsing_rule) { create(:parsing_rule, :bac) }
       let!(:email_account) { create(:email_account, :bac) }
 
-      it 'can process single account end-to-end with mocked EmailFetcher' do
-        allow(EmailFetcher).to receive(:new).and_return(mock_fetcher)
+      it 'can process single account end-to-end with mocked EmailProcessing::Fetcher' do
+        allow(EmailProcessing::Fetcher).to receive(:new).and_return(mock_fetcher)
         allow(mock_fetcher).to receive(:fetch_new_emails).and_return(
-          EmailFetcherResponse.success(processed_emails_count: 0, total_emails_found: 0)
+          EmailProcessing::FetcherResponse.success(processed_emails_count: 0, total_emails_found: 0)
         )
 
         expect {

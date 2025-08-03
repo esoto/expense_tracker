@@ -100,7 +100,7 @@ RSpec.describe ProcessEmailJob, type: :job do
       end
 
       it 'returns early without processing' do
-        expect(EmailParser).not_to receive(:new)
+        expect(EmailProcessing::Parser).not_to receive(:new)
 
         ProcessEmailJob.new.perform(99999, email_data)
       end
@@ -151,9 +151,9 @@ RSpec.describe ProcessEmailJob, type: :job do
       end
     end
 
-    context 'when EmailParser raises an exception' do
+    context 'when EmailProcessing::Parser raises an exception' do
       it 'handles parser exceptions gracefully' do
-        allow(EmailParser).to receive(:new).and_raise(StandardError.new("Parser error"))
+        allow(EmailProcessing::Parser).to receive(:new).and_raise(StandardError.new("Parser error"))
 
         expect {
           ProcessEmailJob.new.perform(email_account.id, email_data)

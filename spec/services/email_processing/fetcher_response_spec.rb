@@ -1,9 +1,9 @@
 require 'rails_helper'
 
-RSpec.describe EmailFetcherResponse do
+RSpec.describe EmailProcessing::FetcherResponse do
   describe '#initialize' do
     it 'sets default values when no parameters provided' do
-      response = EmailFetcherResponse.new
+      response = EmailProcessing::FetcherResponse.new
 
       expect(response.success).to be false
       expect(response.errors).to eq([])
@@ -12,7 +12,7 @@ RSpec.describe EmailFetcherResponse do
     end
 
     it 'sets provided values' do
-      response = EmailFetcherResponse.new(
+      response = EmailProcessing::FetcherResponse.new(
         success: true,
         errors: [ 'Error 1', 'Error 2' ],
         processed_emails_count: 5,
@@ -26,67 +26,67 @@ RSpec.describe EmailFetcherResponse do
     end
 
     it 'converts single error to array' do
-      response = EmailFetcherResponse.new(errors: 'Single error')
+      response = EmailProcessing::FetcherResponse.new(errors: 'Single error')
       expect(response.errors).to eq([ 'Single error' ])
     end
   end
 
   describe '#success?' do
     it 'returns true when success is true' do
-      response = EmailFetcherResponse.new(success: true)
+      response = EmailProcessing::FetcherResponse.new(success: true)
       expect(response.success?).to be true
     end
 
     it 'returns false when success is false' do
-      response = EmailFetcherResponse.new(success: false)
+      response = EmailProcessing::FetcherResponse.new(success: false)
       expect(response.success?).to be false
     end
   end
 
   describe '#failure?' do
     it 'returns false when success is true' do
-      response = EmailFetcherResponse.new(success: true)
+      response = EmailProcessing::FetcherResponse.new(success: true)
       expect(response.failure?).to be false
     end
 
     it 'returns true when success is false' do
-      response = EmailFetcherResponse.new(success: false)
+      response = EmailProcessing::FetcherResponse.new(success: false)
       expect(response.failure?).to be true
     end
   end
 
   describe '#has_errors?' do
     it 'returns false when no errors' do
-      response = EmailFetcherResponse.new(errors: [])
+      response = EmailProcessing::FetcherResponse.new(errors: [])
       expect(response.has_errors?).to be false
     end
 
     it 'returns true when errors present' do
-      response = EmailFetcherResponse.new(errors: [ 'Error' ])
+      response = EmailProcessing::FetcherResponse.new(errors: [ 'Error' ])
       expect(response.has_errors?).to be true
     end
   end
 
   describe '#error_messages' do
     it 'returns empty string when no errors' do
-      response = EmailFetcherResponse.new(errors: [])
+      response = EmailProcessing::FetcherResponse.new(errors: [])
       expect(response.error_messages).to eq('')
     end
 
     it 'returns single error message' do
-      response = EmailFetcherResponse.new(errors: [ 'Error message' ])
+      response = EmailProcessing::FetcherResponse.new(errors: [ 'Error message' ])
       expect(response.error_messages).to eq('Error message')
     end
 
     it 'joins multiple error messages with comma' do
-      response = EmailFetcherResponse.new(errors: [ 'Error 1', 'Error 2' ])
+      response = EmailProcessing::FetcherResponse.new(errors: [ 'Error 1', 'Error 2' ])
       expect(response.error_messages).to eq('Error 1, Error 2')
     end
   end
 
   describe '#to_h' do
     it 'returns hash representation of response' do
-      response = EmailFetcherResponse.new(
+      response = EmailProcessing::FetcherResponse.new(
         success: true,
         errors: [ 'Warning' ],
         processed_emails_count: 3,
@@ -106,7 +106,7 @@ RSpec.describe EmailFetcherResponse do
 
   describe '.success' do
     it 'creates successful response with default values' do
-      response = EmailFetcherResponse.success
+      response = EmailProcessing::FetcherResponse.success
 
       expect(response.success?).to be true
       expect(response.processed_emails_count).to eq(0)
@@ -115,7 +115,7 @@ RSpec.describe EmailFetcherResponse do
     end
 
     it 'creates successful response with provided values' do
-      response = EmailFetcherResponse.success(
+      response = EmailProcessing::FetcherResponse.success(
         processed_emails_count: 7,
         total_emails_found: 12,
         errors: [ 'Warning message' ]
@@ -128,7 +128,7 @@ RSpec.describe EmailFetcherResponse do
     end
 
     it 'can have success response with errors (warnings)' do
-      response = EmailFetcherResponse.success(errors: [ 'Minor warning' ])
+      response = EmailProcessing::FetcherResponse.success(errors: [ 'Minor warning' ])
 
       expect(response.success?).to be true
       expect(response.has_errors?).to be true
@@ -138,7 +138,7 @@ RSpec.describe EmailFetcherResponse do
 
   describe '.failure' do
     it 'creates failure response with errors' do
-      response = EmailFetcherResponse.failure(errors: [ 'Connection failed' ])
+      response = EmailProcessing::FetcherResponse.failure(errors: [ 'Connection failed' ])
 
       expect(response.failure?).to be true
       expect(response.errors).to eq([ 'Connection failed' ])
@@ -147,7 +147,7 @@ RSpec.describe EmailFetcherResponse do
     end
 
     it 'creates failure response with partial processing counts' do
-      response = EmailFetcherResponse.failure(
+      response = EmailProcessing::FetcherResponse.failure(
         errors: [ 'Processing stopped' ],
         processed_emails_count: 2,
         total_emails_found: 8

@@ -26,7 +26,7 @@ class ProcessEmailsJob < ApplicationJob
 
     Rails.logger.info "Processing emails for: #{email_account.email}"
 
-    fetcher = EmailFetcher.new(email_account)
+    fetcher = EmailProcessing::Fetcher.new(email_account)
     result = fetcher.fetch_new_emails(since: since)
 
     if result.success?

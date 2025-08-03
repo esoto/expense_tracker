@@ -12,7 +12,7 @@ class ProcessEmailJob < ApplicationJob
     Rails.logger.info "Processing individual email for: #{email_account.email}"
     Rails.logger.debug "Email data: #{email_data.inspect}"
 
-    parser = EmailParser.new(email_account, email_data)
+    parser = EmailProcessing::Parser.new(email_account, email_data)
     expense = parser.parse_expense
 
     if expense

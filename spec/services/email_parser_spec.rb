@@ -169,51 +169,6 @@ RSpec.describe EmailParser, type: :service do
     # Note: Validation error scenarios are complex to mock properly and are tested in integration
   end
 
-  describe '#test_parsing' do
-    context 'with valid parsing rule' do
-      it 'returns parsing test results' do
-        result = parser.test_parsing
-        expect(result[:parsing_rule]).to eq('BAC')
-        expect(result[:email_content_preview]).to include('ROGER ESTEBAN')
-        expect(result[:pattern_tests]).to be_a(Hash)
-        expect(result[:parsed_data]).to be_a(Hash)
-      end
-
-      it 'includes pattern test results' do
-        result = parser.test_parsing
-        pattern_tests = result[:pattern_tests]
-        expect(pattern_tests[:amount]).to be_present
-        expect(pattern_tests[:date]).to be_present
-        expect(pattern_tests[:merchant]).to be_present
-        expect(pattern_tests[:description]).to be_present
-      end
-
-      it 'limits email content preview' do
-        result = parser.test_parsing
-        expect(result[:email_content_preview].length).to be <= 201  # Allow for slight variation
-      end
-    end
-
-    context 'with no parsing rule' do
-      before do
-        allow(parser).to receive(:parsing_rule).and_return(nil)
-      end
-
-      it 'returns error message' do
-        result = parser.test_parsing
-        expect(result[:error]).to eq('No parsing rule found')
-      end
-    end
-
-    context 'with parsing errors' do
-      it 'returns error message' do
-        allow_any_instance_of(ParsingRule).to receive(:test_patterns).and_raise(StandardError, 'Pattern error')
-
-        result = parser.test_parsing
-        expect(result[:error]).to eq('Pattern error')
-      end
-    end
-  end
 
   describe '#email_content' do
     it 'returns cleaned email content' do

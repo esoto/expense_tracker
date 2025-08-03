@@ -26,21 +26,6 @@ class EmailParser
     end
   end
 
-  def test_parsing
-    return { error: "No parsing rule found" } unless parsing_rule
-
-    begin
-      {
-        parsing_rule: parsing_rule.bank_name,
-        email_content_preview: email_content[0..200],
-        pattern_tests: parsing_rule.test_patterns(email_content),
-        parsed_data: parsing_rule.parse_email(email_content)
-      }
-    rescue StandardError => e
-      { error: e.message }
-    end
-  end
-
   private
 
   def find_parsing_rule

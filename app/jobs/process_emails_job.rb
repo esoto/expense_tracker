@@ -27,12 +27,16 @@ class ProcessEmailsJob < ApplicationJob
     Rails.logger.info "Processing emails for: #{email_account.email}"
 
     fetcher = EmailFetcher.new(email_account)
-    success = fetcher.fetch_new_emails(since: since)
+    result = fetcher.fetch_new_emails(since: since)
 
-    if success
-      Rails.logger.info "Successfully processed emails for: #{email_account.email}"
+    if result.success?
+      Rails.logger.info "Successfully processed emails for: #{email_account.email} - " \
+                       "Found: #{result.total_emails_found}, Processed: #{result.processed_emails_count}"
+      if result.has_errors?
+        Rails.logger.warn "Warnings during processing: #{result.error_messages}"
+      end
     else
-      Rails.logger.error "Failed to process emails for #{email_account.email}: #{fetcher.errors.join(", ")}"
+      Rails.logger.error "Failed to process emails for #{email_account.email}: #{result.error_messages}"
     end
   end
 

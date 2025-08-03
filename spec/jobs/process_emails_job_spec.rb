@@ -65,10 +65,16 @@ RSpec.describe ProcessEmailsJob, type: :job do
     let(:since_time) { 2.days.ago }
 
     context 'with valid active email account' do
+      let(:success_response) do
+        EmailFetcherResponse.success(
+          processed_emails_count: 3,
+          total_emails_found: 5
+        )
+      end
+
       before do
         allow(EmailFetcher).to receive(:new).with(email_account).and_return(mock_fetcher)
-        allow(mock_fetcher).to receive(:fetch_new_emails).and_return(true)
-        allow(mock_fetcher).to receive(:errors).and_return([])
+        allow(mock_fetcher).to receive(:fetch_new_emails).and_return(success_response)
       end
 
       it 'creates EmailFetcher and fetches emails' do
@@ -94,18 +100,20 @@ RSpec.describe ProcessEmailsJob, type: :job do
         job.send(:process_single_account, email_account.id, since_time)
 
         expect(Rails.logger).to have_received(:info).with(
-          "Successfully processed emails for: #{email_account.email}"
+          "Successfully processed emails for: #{email_account.email} - Found: 5, Processed: 3"
         )
       end
     end
 
     context 'with fetch failure' do
       let(:fetch_errors) { [ "IMAP connection failed", "Authentication error" ] }
+      let(:failure_response) do
+        EmailFetcherResponse.failure(errors: fetch_errors)
+      end
 
       before do
         allow(EmailFetcher).to receive(:new).with(email_account).and_return(mock_fetcher)
-        allow(mock_fetcher).to receive(:fetch_new_emails).and_return(false)
-        allow(mock_fetcher).to receive(:errors).and_return(fetch_errors)
+        allow(mock_fetcher).to receive(:fetch_new_emails).and_return(failure_response)
       end
 
       it 'logs error when fetch fails' do
@@ -125,6 +133,36 @@ RSpec.describe ProcessEmailsJob, type: :job do
 
         expect(Rails.logger).not_to have_received(:info).with(
           a_string_matching(/Successfully processed/)
+        )
+      end
+    end
+
+    context 'with success but warnings' do
+      let(:warnings) { ["Minor connection issue", "Slow response"] }
+      let(:success_with_warnings_response) do
+        EmailFetcherResponse.success(
+          processed_emails_count: 2,
+          total_emails_found: 3,
+          errors: warnings
+        )
+      end
+
+      before do
+        allow(EmailFetcher).to receive(:new).with(email_account).and_return(mock_fetcher)
+        allow(mock_fetcher).to receive(:fetch_new_emails).and_return(success_with_warnings_response)
+      end
+
+      it 'logs success and warnings' do
+        allow(Rails.logger).to receive(:info)
+        allow(Rails.logger).to receive(:warn)
+
+        job.send(:process_single_account, email_account.id, since_time)
+
+        expect(Rails.logger).to have_received(:info).with(
+          "Successfully processed emails for: #{email_account.email} - Found: 3, Processed: 2"
+        )
+        expect(Rails.logger).to have_received(:warn).with(
+          "Warnings during processing: #{warnings.join(", ")}"
         )
       end
     end
@@ -280,8 +318,9 @@ RSpec.describe ProcessEmailsJob, type: :job do
 
     it 'can be performed immediately' do
       allow(EmailFetcher).to receive(:new).and_return(mock_fetcher)
-      allow(mock_fetcher).to receive(:fetch_new_emails).and_return(true)
-      allow(mock_fetcher).to receive(:errors).and_return([])
+      allow(mock_fetcher).to receive(:fetch_new_emails).and_return(
+        EmailFetcherResponse.success(processed_emails_count: 2, total_emails_found: 3)
+      )
 
       expect {
         ProcessEmailsJob.perform_now(email_account.id, since: 1.day.ago)
@@ -295,8 +334,9 @@ RSpec.describe ProcessEmailsJob, type: :job do
     context 'with string email account id' do
       it 'handles string id parameter' do
         allow(EmailFetcher).to receive(:new).and_return(mock_fetcher)
-        allow(mock_fetcher).to receive(:fetch_new_emails).and_return(true)
-        allow(mock_fetcher).to receive(:errors).and_return([])
+        allow(mock_fetcher).to receive(:fetch_new_emails).and_return(
+          EmailFetcherResponse.success(processed_emails_count: 1, total_emails_found: 2)
+        )
 
         expect {
           job.perform(email_account.id.to_s, since: 1.day.ago)
@@ -362,8 +402,9 @@ RSpec.describe ProcessEmailsJob, type: :job do
 
       it 'can process single account end-to-end with mocked EmailFetcher' do
         allow(EmailFetcher).to receive(:new).and_return(mock_fetcher)
-        allow(mock_fetcher).to receive(:fetch_new_emails).and_return(true)
-        allow(mock_fetcher).to receive(:errors).and_return([])
+        allow(mock_fetcher).to receive(:fetch_new_emails).and_return(
+          EmailFetcherResponse.success(processed_emails_count: 0, total_emails_found: 0)
+        )
 
         expect {
           ProcessEmailsJob.perform_now(email_account.id, since: 1.day.ago)

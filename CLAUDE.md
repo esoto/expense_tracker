@@ -78,3 +78,46 @@ The following rules and guidelines should be followed when working on this proje
 - [Context Prime](rules/context-prime.md) - Prime Claude with comprehensive Rails project understanding
 - [Create Command](rules/create-command.md) - Guide for creating new custom Claude commands with proper structure
 - [Continuous Improvement](rules/continuous-improvement.md) - Systematic approach for improving Claude Rails development rules
+
+## Design System - Financial Confidence Color Palette
+
+This application uses the "Financial Confidence" color palette. ALL new features and updates MUST follow this color scheme:
+
+### Primary Colors
+- **Primary**: `teal-700` (#0F766E) - Main actions, navigation, primary buttons
+- **Primary Light**: `teal-50` - Active states, selected items
+- **Primary Medium**: `teal-100` - Icon backgrounds, badges
+
+### Secondary Colors  
+- **Secondary**: `amber-600` (#D97706) - Warnings, important highlights
+- **Secondary Light**: `amber-50` - Warning backgrounds
+- **Secondary Medium**: `amber-100` - Special highlights
+
+### Accent Colors
+- **Accent**: `rose-400` (#FB7185) - Critical actions, errors requiring attention
+- **Accent Light**: `rose-50` - Error backgrounds
+- **Accent Medium**: `rose-100` - Soft error states
+
+### Status Colors
+- **Success**: `emerald-500`, `emerald-600` - Positive states, confirmations
+- **Warning**: `amber-600`, `amber-700` - Caution states
+- **Error**: `rose-600`, `rose-700` - Error states
+- **Info**: `slate-600`, `slate-700` - Neutral information
+
+### Neutral Colors
+- **Text Primary**: `slate-900` - Main text
+- **Text Secondary**: `slate-600` - Secondary text
+- **Text Muted**: `slate-500` - Disabled/muted text
+- **Background**: `slate-50` - Page backgrounds
+- **Card Background**: `white` - Card backgrounds
+- **Borders**: `slate-200` - All borders
+
+### UI Components Style
+- **Cards**: `bg-white rounded-xl shadow-sm border border-slate-200`
+- **Primary Button**: `bg-teal-700 hover:bg-teal-800 text-white rounded-lg shadow-sm`
+- **Secondary Button**: `bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg`
+- **Input Focus**: `focus:border-teal-500 focus:ring-teal-500`
+- **Success Messages**: `bg-emerald-50 border-emerald-200 text-emerald-700`
+- **Error Messages**: `bg-rose-50 border-rose-200 text-rose-700`
+
+NEVER use the default blue colors (`blue-600`, `blue-500`, etc.) - always use the palette colors above.

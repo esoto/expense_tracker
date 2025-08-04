@@ -1,0 +1,262 @@
+<!-- Mobile-First Expense List Redesign Mockup -->
+<!-- This shows how expenses would appear on mobile devices as swipeable cards -->
+
+<div class="max-w-md mx-auto bg-gray-50 min-h-screen pb-20">
+  <!-- Mobile Header with Quick Stats -->
+  <div class="bg-white shadow-sm sticky top-0 z-10">
+    <div class="px-4 py-3">
+      <h1 class="text-lg font-semibold text-gray-900">Gastos</h1>
+      <div class="flex justify-between text-sm text-gray-600 mt-1">
+        <span>Diciembre 2024</span>
+        <span class="font-medium text-gray-900">₡1,245,350</span>
+      </div>
+    </div>
+    
+    <!-- Filter Pills -->
+    <div class="px-4 pb-3 flex gap-2 overflow-x-auto">
+      <button class="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full text-sm font-medium whitespace-nowrap">
+        Todos
+      </button>
+      <button class="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-full text-sm whitespace-nowrap">
+        Sin categoría
+      </button>
+      <button class="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-full text-sm whitespace-nowrap">
+        Esta semana
+      </button>
+    </div>
+  </div>
+
+  <!-- Date Group Header -->
+  <div class="sticky top-32 bg-gray-50 px-4 py-2 border-b border-gray-200">
+    <p class="text-sm font-medium text-gray-600">Hoy • 3 gastos</p>
+  </div>
+
+  <!-- Mobile Expense Cards -->
+  <div class="px-4 py-3 space-y-3">
+    <!-- Card 1: Swipe indicators visible -->
+    <div class="relative overflow-hidden rounded-lg shadow-sm">
+      <!-- Swipe Action Indicators -->
+      <div class="absolute inset-0 flex">
+        <div class="w-1/2 bg-blue-500 flex items-center px-4">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+          </svg>
+          <span class="ml-2 text-white font-medium">Ver</span>
+        </div>
+        <div class="w-1/2 bg-gray-500 flex items-center justify-end px-4">
+          <span class="mr-2 text-white font-medium">Editar</span>
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+        </div>
+      </div>
+      
+      <!-- Card Content (slightly swiped to show actions) -->
+      <div class="relative bg-white border border-gray-200 rounded-lg transform translate-x-8 transition-transform">
+        <div class="p-4">
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <h3 class="font-semibold text-gray-900">
+                Automercado
+              </h3>
+              <p class="text-sm text-gray-500 mt-0.5">
+                hace 2 horas • Débito BAC
+              </p>
+            </div>
+            <div class="text-right">
+              <p class="text-lg font-bold text-gray-900">
+                ₡45,250
+              </p>
+            </div>
+          </div>
+          
+          <div class="flex items-center gap-3 mt-3">
+            <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-green-50 rounded-full">
+              <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+              <span class="text-xs font-medium text-green-700">Supermercado</span>
+            </span>
+            <span class="text-xs text-gray-500">
+              Ref: 4521
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Normal state -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div class="p-4">
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900">
+              Uber Eats
+            </h3>
+            <p class="text-sm text-gray-500 mt-0.5">
+              hace 5 horas • Crédito Promerica
+            </p>
+          </div>
+          <div class="text-right">
+            <p class="text-lg font-bold text-gray-900">
+              ₡12,800
+            </p>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-3 mt-3">
+          <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-orange-50 rounded-full">
+            <span class="w-2 h-2 bg-orange-500 rounded-full"></span>
+            <span class="text-xs font-medium text-orange-700">Restaurantes</span>
+          </span>
+          <span class="text-xs text-gray-500">
+            Pedido #8934
+          </span>
+        </div>
+      </div>
+      
+      <!-- Quick Actions Bar -->
+      <div class="border-t border-gray-100 bg-gray-50 px-4 py-2 flex items-center justify-between">
+        <button class="text-xs text-gray-600 hover:text-gray-900">
+          Cambiar categoría
+        </button>
+        <div class="flex gap-4">
+          <button class="text-gray-400 hover:text-blue-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+          </button>
+          <button class="text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: No category -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div class="p-4">
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900">
+              Pago Sinpe Móvil
+            </h3>
+            <p class="text-sm text-gray-500 mt-0.5">
+              hace 8 horas • BCR
+            </p>
+          </div>
+          <div class="text-right">
+            <p class="text-lg font-bold text-gray-900">
+              ₡25,000
+            </p>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-3 mt-3">
+          <button class="inline-flex items-center gap-1.5 px-2 py-1 bg-amber-50 border border-amber-200 rounded-full hover:bg-amber-100 transition-colors">
+            <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <span class="text-xs font-medium text-amber-700">Sin categoría</span>
+          </button>
+          <span class="text-xs text-gray-500">
+            Juan Pérez
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Yesterday Group -->
+  <div class="sticky top-32 bg-gray-50 px-4 py-2 border-b border-gray-200 mt-4">
+    <p class="text-sm font-medium text-gray-600">Ayer • 5 gastos</p>
+  </div>
+
+  <div class="px-4 py-3 space-y-3">
+    <!-- More cards... -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div class="p-4">
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900">
+              Gasolinera Delta
+            </h3>
+            <p class="text-sm text-gray-500 mt-0.5">
+              Ayer 6:45 PM • Débito BAC
+            </p>
+          </div>
+          <div class="text-right">
+            <p class="text-lg font-bold text-gray-900">
+              ₡30,000
+            </p>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-3 mt-3">
+          <span class="inline-flex items-center gap-1.5 px-2 py-1 bg-blue-50 rounded-full">
+            <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+            <span class="text-xs font-medium text-blue-700">Transporte</span>
+          </span>
+          <span class="text-xs text-gray-500">
+            35.2 litros
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Action Button -->
+  <div class="fixed bottom-6 right-6">
+    <button class="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
+    <div class="grid grid-cols-4 py-2">
+      <a href="#" class="flex flex-col items-center py-2 text-blue-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+        </svg>
+        <span class="text-xs mt-1">Gastos</span>
+      </a>
+      <a href="#" class="flex flex-col items-center py-2 text-gray-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        <span class="text-xs mt-1">Dashboard</span>
+      </a>
+      <a href="#" class="flex flex-col items-center py-2 text-gray-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+        </svg>
+        <span class="text-xs mt-1">Categorías</span>
+      </a>
+      <a href="#" class="flex flex-col items-center py-2 text-gray-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <span class="text-xs mt-1">Ajustes</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Interaction Notes -->
+<div class="max-w-md mx-auto mt-8 p-4 bg-blue-50 rounded-lg">
+  <h3 class="font-semibold text-blue-900 mb-2">Mobile Interactions:</h3>
+  <ul class="text-sm text-blue-800 space-y-1">
+    <li>• Swipe right to view expense details</li>
+    <li>• Swipe left to edit expense</li>
+    <li>• Tap category pill to quickly change category</li>
+    <li>• Cards grouped by date with sticky headers</li>
+    <li>• Bottom navigation for quick access to main sections</li>
+    <li>• Floating action button for adding new expenses</li>
+  </ul>
+</div>

@@ -1,0 +1,259 @@
+<!-- Real-Time Email Sync Status Dashboard Mockup -->
+<!-- This shows how the sync status would appear with live updates -->
+
+<div class="max-w-6xl mx-auto p-6 bg-gray-50">
+  <!-- Dashboard Header -->
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Panel de Control</h1>
+    <p class="text-gray-600 mt-1">Monitorea tus gastos y sincronización de correos</p>
+  </div>
+
+  <!-- Active Sync Status - Shown when sync is running -->
+  <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-6 shadow-sm">
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-3">
+        <div class="relative">
+          <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </div>
+          <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full animate-pulse"></div>
+        </div>
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900">Sincronización en Progreso</h2>
+          <p class="text-sm text-gray-600">Procesando correos de tus cuentas bancarias</p>
+        </div>
+      </div>
+      <div class="text-right">
+        <p class="text-sm text-gray-500">Tiempo estimado</p>
+        <p class="text-lg font-semibold text-gray-900">2:45 restantes</p>
+      </div>
+    </div>
+
+    <!-- Overall Progress Bar -->
+    <div class="mb-6">
+      <div class="flex justify-between text-sm text-gray-600 mb-2">
+        <span>Progreso total</span>
+        <span class="font-medium">156 de 245 correos (64%)</span>
+      </div>
+      <div class="w-full bg-blue-100 rounded-full h-3 overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-500 to-indigo-500 h-full rounded-full transition-all duration-500 ease-out relative overflow-hidden"
+             style="width: 64%">
+          <div class="absolute inset-0 bg-white/20 animate-shimmer"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Per-Account Status -->
+    <div class="space-y-4">
+      <!-- BAC Account - Active -->
+      <div class="bg-white rounded-lg p-4 border border-gray-200">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-3">
+            <img src="https://via.placeholder.com/32x32/ff0000/ffffff?text=BAC" alt="BAC" class="w-8 h-8 rounded">
+            <div>
+              <h3 class="font-medium text-gray-900">BAC San José - Débito</h3>
+              <p class="text-xs text-gray-500">****4532</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+              <svg class="w-3 h-3 mr-1 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Procesando
+            </span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-sm">
+          <div class="flex items-center gap-4 text-gray-600">
+            <span>45 de 89 correos</span>
+            <span class="text-green-600 font-medium">12 gastos detectados</span>
+          </div>
+          <span class="text-xs text-gray-500">51% completo</span>
+        </div>
+        <div class="mt-2 w-full bg-gray-100 rounded-full h-1.5">
+          <div class="bg-blue-500 h-full rounded-full transition-all duration-300" style="width: 51%"></div>
+        </div>
+      </div>
+
+      <!-- Promerica Account - Completed -->
+      <div class="bg-white rounded-lg p-4 border border-green-200">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-3">
+            <img src="https://via.placeholder.com/32x32/0000ff/ffffff?text=PR" alt="Promerica" class="w-8 h-8 rounded">
+            <div>
+              <h3 class="font-medium text-gray-900">Promerica - Crédito</h3>
+              <p class="text-xs text-gray-500">****8921</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+              <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              Completado
+            </span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-sm">
+          <div class="flex items-center gap-4 text-gray-600">
+            <span>78 correos procesados</span>
+            <span class="text-green-600 font-medium">23 gastos agregados</span>
+          </div>
+          <span class="text-xs text-gray-500">hace 30 segundos</span>
+        </div>
+      </div>
+
+      <!-- BCR Account - Waiting -->
+      <div class="bg-white rounded-lg p-4 border border-gray-200 opacity-75">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-3">
+            <img src="https://via.placeholder.com/32x32/008000/ffffff?text=BCR" alt="BCR" class="w-8 h-8 rounded">
+            <div>
+              <h3 class="font-medium text-gray-900">BCR - Cuenta Corriente</h3>
+              <p class="text-xs text-gray-500">****1156</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
+              <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+              </svg>
+              En espera
+            </span>
+          </div>
+        </div>
+        <div class="text-sm text-gray-500">
+          78 correos por procesar • Iniciará después de BAC
+        </div>
+      </div>
+    </div>
+
+    <!-- Real-time Updates Section -->
+    <div class="mt-6 bg-gray-50 rounded-lg p-4">
+      <h3 class="text-sm font-medium text-gray-700 mb-2">Actividad Reciente</h3>
+      <div class="space-y-2 text-sm">
+        <div class="flex items-start gap-2">
+          <div class="w-1.5 h-1.5 bg-green-400 rounded-full mt-1.5 animate-pulse"></div>
+          <div class="flex-1">
+            <span class="text-gray-600">Nuevo gasto detectado:</span>
+            <span class="font-medium text-gray-900">₡45,250 en Automercado</span>
+            <span class="text-gray-500 text-xs ml-2">hace 5 segundos</span>
+          </div>
+        </div>
+        <div class="flex items-start gap-2">
+          <div class="w-1.5 h-1.5 bg-blue-400 rounded-full mt-1.5"></div>
+          <div class="flex-1">
+            <span class="text-gray-600">Procesando correo de BAC:</span>
+            <span class="text-gray-900">"Notificación de compra..."</span>
+            <span class="text-gray-500 text-xs ml-2">hace 12 segundos</span>
+          </div>
+        </div>
+        <div class="flex items-start gap-2">
+          <div class="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5"></div>
+          <div class="flex-1">
+            <span class="text-gray-600">3 correos omitidos (no son transacciones)</span>
+            <span class="text-gray-500 text-xs ml-2">hace 30 segundos</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error State Example -->
+  <div class="bg-red-50 border border-red-200 rounded-xl p-6 mb-6">
+    <div class="flex items-start gap-4">
+      <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div class="flex-1">
+        <h3 class="text-lg font-semibold text-red-900">Error de Sincronización - Scotiabank</h3>
+        <p class="text-sm text-red-700 mt-1">No se pudo conectar al servidor de correo. Verifica tus credenciales.</p>
+        <div class="mt-3 flex gap-3">
+          <button class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700">
+            Verificar Credenciales
+          </button>
+          <button class="px-4 py-2 bg-white text-red-600 text-sm font-medium rounded-lg border border-red-300 hover:bg-red-50">
+            Reintentar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success State - All Completed -->
+  <div class="bg-green-50 border border-green-200 rounded-xl p-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+          <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold text-green-900">Sincronización Completada</h3>
+          <p class="text-sm text-green-700 mt-1">Se procesaron 245 correos y se agregaron 58 nuevos gastos</p>
+        </div>
+      </div>
+      <div class="text-right">
+        <p class="text-sm text-gray-500">Completado hace</p>
+        <p class="text-lg font-semibold text-gray-900">2 minutos</p>
+      </div>
+    </div>
+    
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-4 gap-4 mt-6">
+      <div class="bg-white rounded-lg p-3 text-center">
+        <p class="text-2xl font-bold text-gray-900">245</p>
+        <p class="text-xs text-gray-600">Correos procesados</p>
+      </div>
+      <div class="bg-white rounded-lg p-3 text-center">
+        <p class="text-2xl font-bold text-green-600">58</p>
+        <p class="text-xs text-gray-600">Gastos detectados</p>
+      </div>
+      <div class="bg-white rounded-lg p-3 text-center">
+        <p class="text-2xl font-bold text-blue-600">4</p>
+        <p class="text-xs text-gray-600">Cuentas sincronizadas</p>
+      </div>
+      <div class="bg-white rounded-lg p-3 text-center">
+        <p class="text-2xl font-bold text-gray-900">3:42</p>
+        <p class="text-xs text-gray-600">Tiempo total</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CSS for animations -->
+<style>
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+</style>
+
+<!-- Implementation Notes -->
+<div class="max-w-6xl mx-auto mt-8 p-6 bg-blue-50 rounded-lg">
+  <h3 class="font-semibold text-blue-900 mb-2">Real-Time Features:</h3>
+  <ul class="text-sm text-blue-800 space-y-1">
+    <li>• Live progress updates via ActionCable WebSocket</li>
+    <li>• Per-account status tracking with visual indicators</li>
+    <li>• Real-time activity feed showing detected expenses</li>
+    <li>• Error states with actionable recovery options</li>
+    <li>• Success summary with detailed statistics</li>
+    <li>• Estimated time remaining based on processing speed</li>
+  </ul>
+</div>

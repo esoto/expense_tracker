@@ -21,10 +21,20 @@ class ExpensesController < ApplicationController
     # Summary statistics
     @total_amount = @expenses.sum(:amount)
     @expense_count = @expenses.count
-    @categories_summary = @expenses.joins(:category)
-                                  .group("categories.name")
-                                  .sum(:amount)
-                                  .sort_by { |_, amount| -amount }
+
+    # Create categories summary with fresh query to avoid GROUP BY conflicts with ORDER BY
+    categories_query = Expense.joins(:category)
+
+    # Apply same filters as main query
+    categories_query = categories_query.where(categories: { name: params[:category] }) if params[:category].present?
+    if params[:start_date].present? && params[:end_date].present?
+      categories_query = categories_query.where(transaction_date: params[:start_date]..params[:end_date])
+    end
+    categories_query = categories_query.where(bank_name: params[:bank]) if params[:bank].present?
+
+    @categories_summary = categories_query.group("categories.name")
+                                         .sum(:amount)
+                                         .sort_by { |_, amount| -amount }
   end
 
   # GET /expenses/1

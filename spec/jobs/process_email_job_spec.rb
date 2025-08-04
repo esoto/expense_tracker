@@ -195,6 +195,28 @@ RSpec.describe ProcessEmailJob, type: :job do
       expect(parsed_data['original_size']).to eq(failed_email_data[:body].bytesize)
     end
 
+    context 'with large email body' do
+      let(:large_body) { 'x' * 15_000 } # 15KB
+      let(:large_email_data) { failed_email_data.merge(body: large_body) }
+
+      it 'truncates large email bodies' do
+        job.send(:save_failed_parsing, email_account, large_email_data, errors)
+
+        failed_expense = Expense.last
+        expect(failed_expense.raw_email_content.bytesize).to be <= 10_000 + 50 # 10KB + truncation message
+        expect(failed_expense.raw_email_content).to end_with('... [truncated]')
+      end
+
+      it 'marks as truncated in parsed_data' do
+        job.send(:save_failed_parsing, email_account, large_email_data, errors)
+
+        failed_expense = Expense.last
+        parsed_data = JSON.parse(failed_expense.parsed_data)
+        expect(parsed_data['truncated']).to eq(true)
+        expect(parsed_data['original_size']).to eq(15_000)
+      end
+    end
+
     it 'handles save errors gracefully' do
       allow(Expense).to receive(:create!).and_raise(ActiveRecord::RecordInvalid)
       allow(Rails.logger).to receive(:error)

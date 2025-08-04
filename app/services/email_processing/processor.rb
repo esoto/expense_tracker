@@ -36,11 +36,11 @@ module EmailProcessing
 
       # Check if this is a transaction email based on subject
       unless transaction_email?(subject)
-        Rails.logger.debug "Skipping non-transaction email: #{subject}"
+        Rails.logger.info "[SKIP] Non-transaction email: #{subject}"
         return false
       end
 
-      Rails.logger.info "Processing transaction email: #{subject}"
+      Rails.logger.info "[PROCESS] Transaction email detected: #{subject}"
 
       # Extract email content and queue for processing
       email_data = extract_email_data(message_id, envelope, imap_service)
@@ -59,9 +59,15 @@ module EmailProcessing
     def transaction_email?(subject)
       return false if subject.nil?
 
-      # Check for BAC transaction email patterns
-      transaction_keywords = [ "transacci", "Notificaci" ]
-      transaction_keywords.any? { |keyword| subject.include?(keyword) }
+      # Check for transaction notification emails
+      # Primary pattern: "Notificación de transacción"
+      if subject.downcase.include?("notificación de transacción")
+        return true
+      end
+      
+      # Fallback patterns for other banks or variations
+      transaction_keywords = [ "transacción", "notificación de compra", "cargo a su cuenta" ]
+      transaction_keywords.any? { |keyword| subject.downcase.include?(keyword.downcase) }
     end
 
     def extract_email_data(message_id, envelope, imap_service)

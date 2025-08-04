@@ -87,7 +87,13 @@
               <%= expense.transaction_date.strftime("%d/%m/%Y") %>
             </td>
             <td class="px-6 py-4 text-sm text-gray-900">
-              <div class="font-medium"><%= expense.merchant_name %></div>
+              <div class="font-medium">
+                <% if expense.merchant_name? %>
+                <%= expense.merchant_name %>
+                <% else %>
+                <span class="text-red-600 italic">⚠️ Sin comercio (verificar)</span>
+                <% end %>
+              </div>
               <% if expense.description? && expense.description != expense.merchant_name %>
               <div class="text-gray-500 text-xs"><%= expense.description %></div>
               <% end %>
@@ -131,7 +137,7 @@
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
               <%= link_to "Ver", expense, class: "text-blue-600 hover:text-blue-900" %>
               <%= link_to "Editar", edit_expense_path(expense), class: "text-indigo-600 hover:text-indigo-900" %>
-              <%= link_to "Eliminar", expense, method: :delete,
+              <%= button_to "Eliminar", expense, method: :delete,
                     confirm: "¿Estás seguro?",
                     class: "text-red-600 hover:text-red-900" %>
             </td>

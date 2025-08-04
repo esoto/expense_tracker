@@ -6,6 +6,8 @@ class EmailAccount < ApplicationRecord
   # Associations
   has_many :expenses, dependent: :destroy
   has_many :parsing_rules, primary_key: :bank_name, foreign_key: :bank_name
+  has_many :sync_session_accounts, dependent: :destroy
+  has_many :sync_sessions, through: :sync_session_accounts
 
   # Validations
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }

@@ -2,10 +2,11 @@ module EmailProcessing
   class Fetcher
     attr_reader :email_account, :errors, :imap_service, :email_processor
 
-    def initialize(email_account, imap_service: nil, email_processor: nil)
+    def initialize(email_account, imap_service: nil, email_processor: nil, sync_session_account: nil)
       @email_account = email_account
       @imap_service = imap_service || ImapConnectionService.new(email_account)
       @email_processor = email_processor || EmailProcessing::Processor.new(email_account)
+      @sync_session_account = sync_session_account
       @errors = []
     end
 
@@ -59,8 +60,18 @@ module EmailProcessing
 
       Rails.logger.info "[EmailProcessing::Fetcher] Found #{total_emails_found} emails for #{email_account.email}"
 
-      # Process emails using the email processor
-      result = email_processor.process_emails(message_ids, imap_service)
+      # Update sync session with total emails
+      @sync_session_account&.update!(total_emails: total_emails_found)
+
+      # Process emails using the email processor with progress tracking
+      result = if @sync_session_account
+        email_processor.process_emails(message_ids, imap_service) do |processed_count, detected_expenses|
+          @sync_session_account.update_progress(processed_count, total_emails_found, detected_expenses)
+        end
+      else
+        email_processor.process_emails(message_ids, imap_service)
+      end
+
       processed_emails_count = result[:processed_count]
 
       {

@@ -2,22 +2,22 @@
 
 <div class="space-y-6">
   <!-- Header with Summary -->
-  <div class="bg-white rounded-lg shadow p-6">
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4">
-      <h1 class="text-2xl font-bold text-gray-900 mb-4 md:mb-0">Gastos</h1>
+      <h1 class="text-2xl font-bold text-slate-900 mb-4 md:mb-0">Gastos</h1>
       <!-- Summary Stats -->
       <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
-        <div class="bg-blue-50 rounded-lg p-3">
-          <div class="text-2xl font-bold text-blue-600">₡<%= number_with_delimiter(@total_amount.to_i) %></div>
-          <div class="text-sm text-gray-600">Total</div>
+        <div class="bg-teal-50 rounded-lg p-3">
+          <div class="text-2xl font-bold text-teal-700">₡<%= number_with_delimiter(@total_amount.to_i) %></div>
+          <div class="text-sm text-slate-600">Total</div>
         </div>
-        <div class="bg-green-50 rounded-lg p-3">
-          <div class="text-2xl font-bold text-green-600"><%= @expense_count %></div>
-          <div class="text-sm text-gray-600">Gastos</div>
+        <div class="bg-emerald-50 rounded-lg p-3">
+          <div class="text-2xl font-bold text-emerald-600"><%= @expense_count %></div>
+          <div class="text-sm text-slate-600">Gastos</div>
         </div>
-        <div class="bg-purple-50 rounded-lg p-3 col-span-2 md:col-span-1">
-          <div class="text-2xl font-bold text-purple-600"><%= @categories_summary.length %></div>
-          <div class="text-sm text-gray-600">Categorías</div>
+        <div class="bg-amber-50 rounded-lg p-3 col-span-2 md:col-span-1">
+          <div class="text-2xl font-bold text-amber-600"><%= @categories_summary.length %></div>
+          <div class="text-sm text-slate-600">Categorías</div>
         </div>
       </div>
     </div>
@@ -27,34 +27,34 @@
     <div class="flex-1">
       <%= form.select :category, options_from_collection_for_select(Category.all, :name, :name, params[:category]),
             { include_blank: "Todas las categorías" },
-            { class: "w-full rounded-md border-gray-300 shadow-sm" } %>
+            { class: "w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" } %>
     </div>
     <div class="flex-1">
       <%= form.select :bank, options_for_select([["Todos los bancos", ""], ["BAC", "BAC"], ["Manual Entry", "Manual Entry"]], params[:bank]),
-            {}, { class: "w-full rounded-md border-gray-300 shadow-sm" } %>
+            {}, { class: "w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" } %>
     </div>
     <div class="flex gap-2">
       <%= form.date_field :start_date, value: params[:start_date], placeholder: "Fecha inicio",
-            class: "rounded-md border-gray-300 shadow-sm" %>
+            class: "rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
       <%= form.date_field :end_date, value: params[:end_date], placeholder: "Fecha fin",
-            class: "rounded-md border-gray-300 shadow-sm" %>
+            class: "rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
     </div>
     <div class="flex gap-2">
-      <%= form.submit "Filtrar", class: "bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md" %>
-      <%= link_to "Limpiar", expenses_path, class: "bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md" %>
+      <%= form.submit "Filtrar", class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg shadow-sm" %>
+      <%= link_to "Limpiar", expenses_path, class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg" %>
     </div>
     <% end %>
   </div>
 
   <!-- Category Summary (when not filtered) -->
   <% if params[:category].blank? && @categories_summary.any? %>
-  <div class="bg-white rounded-lg shadow p-6">
-    <h2 class="text-lg font-semibold text-gray-900 mb-4">Resumen por Categoría</h2>
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <h2 class="text-lg font-semibold text-slate-900 mb-4">Resumen por Categoría</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <% @categories_summary.first(6).each do |category_name, amount| %>
-      <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-        <span class="font-medium text-gray-700"><%= category_name %></span>
-        <span class="font-bold text-gray-900">₡<%= number_with_delimiter(amount.to_i) %></span>
+      <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+        <span class="font-medium text-slate-700"><%= category_name %></span>
+        <span class="font-bold text-slate-900">₡<%= number_with_delimiter(amount.to_i) %></span>
       </div>
       <% end %>
     </div>
@@ -62,40 +62,40 @@
   <% end %>
 
   <!-- Expenses Table -->
-  <div class="bg-white rounded-lg shadow overflow-hidden">
-    <div class="px-6 py-4 bg-gray-50 border-b">
-      <h2 class="text-lg font-semibold text-gray-900">Lista de Gastos</h2>
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+      <h2 class="text-lg font-semibold text-slate-900">Lista de Gastos</h2>
     </div>
 
     <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comercio</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Banco</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Fecha</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Comercio</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Categoría</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Monto</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Banco</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Estado</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
           </tr>
         </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
+        <tbody class="bg-white divide-y divide-slate-100">
           <% @expenses.each do |expense| %>
-          <tr class="hover:bg-gray-50">
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+          <tr class="hover:bg-slate-50">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
               <%= expense.transaction_date.strftime("%d/%m/%Y") %>
             </td>
-            <td class="px-6 py-4 text-sm text-gray-900">
+            <td class="px-6 py-4 text-sm text-slate-900">
               <div class="font-medium">
                 <% if expense.merchant_name? %>
                 <%= expense.merchant_name %>
                 <% else %>
-                <span class="text-red-600 italic">⚠️ Sin comercio (verificar)</span>
+                <span class="text-rose-600 italic">⚠️ Sin comercio (verificar)</span>
                 <% end %>
               </div>
               <% if expense.description? && expense.description != expense.merchant_name %>
-              <div class="text-gray-500 text-xs"><%= expense.description %></div>
+              <div class="text-slate-500 text-xs"><%= expense.description %></div>
               <% end %>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm">
@@ -104,42 +104,42 @@
                 <%= expense.category.name %>
               </span>
               <% else %>
-              <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
+              <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-600">
                 Sin categoría
               </span>
               <% end %>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-900">
               <%= currency_symbol(expense) %><%= number_with_delimiter(expense.amount.to_i) %>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
               <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
-                           <%= expense.bank_name == 'BAC' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800' %>">
+                           <%= expense.bank_name == 'BAC' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-700' %>">
                 <%= expense.bank_name %>
               </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm">
               <% case expense.status %>
               <% when 'processed' %>
-              <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+              <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800">
                 Procesado
               </span>
               <% when 'pending' %>
-              <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+              <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-800">
                 Pendiente
               </span>
               <% when 'duplicate' %>
-              <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+              <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-rose-100 text-rose-800">
                 Duplicado
               </span>
               <% end %>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-              <%= link_to "Ver", expense, class: "text-blue-600 hover:text-blue-900" %>
-              <%= link_to "Editar", edit_expense_path(expense), class: "text-indigo-600 hover:text-indigo-900" %>
+              <%= link_to "Ver", expense, class: "text-teal-600 hover:text-teal-800" %>
+              <%= link_to "Editar", edit_expense_path(expense), class: "text-slate-600 hover:text-slate-800" %>
               <%= button_to "Eliminar", expense, method: :delete,
-                    confirm: "¿Estás seguro?",
-                    class: "text-red-600 hover:text-red-900" %>
+                    data: { turbo_confirm: "¿Estás seguro?" },
+                    class: "text-rose-600 hover:text-rose-800 inline" %>
             </td>
           </tr>
           <% end %>
@@ -148,7 +148,7 @@
     </div>
 
     <!-- Pagination -->
-    <div class="px-6 py-4 bg-gray-50 border-t text-center text-gray-600">
+    <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 text-center text-slate-600">
       Mostrando los <%= @expenses.count %> gastos más recientes
     </div>
   </div>

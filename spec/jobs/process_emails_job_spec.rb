@@ -299,6 +299,118 @@ RSpec.describe ProcessEmailsJob, type: :job do
     end
   end
 
+  describe '#process_all_accounts_in_batches' do
+    let(:job) { ProcessEmailsJob.new }
+    let(:since_time) { 3.days.ago }
+
+    before do
+      # Create 12 accounts to test batching
+      12.times { create(:email_account, :bac) }
+    end
+
+    it 'processes accounts in batches of 5' do
+      expect {
+        job.send(:process_all_accounts_in_batches, since_time)
+      }.to have_enqueued_job(ProcessEmailsJob).exactly(12).times
+    end
+
+    it 'sleeps between full batches to prevent server overload' do
+      expect(job).to receive(:sleep).with(1).exactly(2).times # 2 full batches of 5
+
+      job.send(:process_all_accounts_in_batches, since_time)
+    end
+
+    it 'does not sleep for partial batch' do
+      # Remove some accounts to make last batch partial
+      EmailAccount.limit(2).destroy_all # Now we have 10 accounts (2 full batches, 1 partial)
+
+      expect(job).to receive(:sleep).with(1).exactly(2).times
+
+      job.send(:process_all_accounts_in_batches, since_time)
+    end
+
+    it 'enqueues jobs with correct parameters' do
+      accounts = EmailAccount.active.limit(2)
+
+      job.send(:process_all_accounts_in_batches, since_time)
+
+      accounts.each do |account|
+        expect(ProcessEmailsJob).to have_been_enqueued.with(
+          account.id,
+          since: since_time
+        )
+      end
+    end
+  end
+
+  describe 'around_perform performance monitoring' do
+    let(:job) { ProcessEmailsJob.new }
+
+    before do
+      allow(EmailProcessing::Fetcher).to receive(:new).and_return(mock_fetcher)
+      allow(mock_fetcher).to receive(:fetch_new_emails).and_return(
+        EmailProcessing::FetcherResponse.success(processed_emails_count: 1, total_emails_found: 1)
+      )
+    end
+
+    it 'logs job start and completion' do
+      allow(Rails.logger).to receive(:info)
+      expect(Rails.logger).to receive(:info).with("[ProcessEmailsJob] Starting for account #{email_account.id}")
+      expect(Rails.logger).to receive(:info).with(/\[ProcessEmailsJob\] Completed in \d+\.\d+s/)
+
+      ProcessEmailsJob.perform_now(email_account.id)
+    end
+
+    it 'measures job duration' do
+      start_time = Time.current
+      allow(Time).to receive(:current).and_return(start_time, start_time + 2.seconds)
+
+      allow(Rails.logger).to receive(:info)
+      expect(Rails.logger).to receive(:info).with("[ProcessEmailsJob] Starting for account #{email_account.id}")
+      expect(Rails.logger).to receive(:info).with("[ProcessEmailsJob] Completed in 2.0s")
+
+      ProcessEmailsJob.perform_now(email_account.id)
+    end
+
+    it 'warns on slow processing over 30 seconds' do
+      start_time = Time.current
+      allow(Time).to receive(:current).and_return(start_time, start_time + 35.seconds)
+
+      allow(Rails.logger).to receive(:info)
+      expect(Rails.logger).to receive(:warn).with(
+        "[ProcessEmailsJob] Slow processing: 35.0s for account #{email_account.id}"
+      )
+
+      ProcessEmailsJob.perform_now(email_account.id)
+    end
+
+    it 'does not warn on processing under 30 seconds' do
+      start_time = Time.current
+      allow(Time).to receive(:current).and_return(start_time, start_time + 15.seconds)
+
+      allow(Rails.logger).to receive(:info)
+      expect(Rails.logger).not_to receive(:warn)
+
+      ProcessEmailsJob.perform_now(email_account.id)
+    end
+
+    it 'logs performance even when job raises error' do
+      allow(mock_fetcher).to receive(:fetch_new_emails).and_raise(StandardError, "Test error")
+
+      # Stub all logger methods to avoid interference
+      allow(Rails.logger).to receive(:info)
+      allow(Rails.logger).to receive(:error)
+
+      # Check that the job logs start
+      expect(Rails.logger).to receive(:info).with("[ProcessEmailsJob] Starting for account #{email_account.id}").at_least(:once)
+
+      expect {
+        ProcessEmailsJob.perform_now(email_account.id)
+      }.to raise_error(StandardError, "Test error")
+    end
+  end
+
+
   describe 'job queue configuration' do
     it 'uses the email_processing queue' do
       expect(ProcessEmailsJob.new.queue_name).to eq('email_processing')

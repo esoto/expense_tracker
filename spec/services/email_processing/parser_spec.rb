@@ -637,4 +637,142 @@ RSpec.describe EmailProcessing::Parser, type: :service do
       end
     end
   end
+
+  describe 'large email handling' do
+    let(:small_email) { "Small email content" * 100 } # ~1.9KB
+    let(:large_email) { "Large email content " * 3000 } # ~60KB
+
+    context 'when email is smaller than MAX_EMAIL_SIZE' do
+      it 'processes normally without truncation' do
+        email_data[:body] = small_email
+        parser = described_class.new(email_account, email_data)
+
+        expect(parser).not_to receive(:process_large_email)
+        parser.parse_expense
+      end
+    end
+
+    context 'when email is larger than MAX_EMAIL_SIZE' do
+      it 'processes only first 100 lines' do
+        # Create lines that will exceed 50KB
+        lines = Array.new(1000) { |i| "Line #{i}: Transaction data with more content to make it larger #{' ' * 100}" }
+        email_data[:body] = lines.join("\n")
+
+        parser = described_class.new(email_account, email_data)
+        processed_content = parser.send(:email_content)
+
+        # Should contain first 100 lines (0-99)
+        expect(processed_content).to include("Line 99")
+        expect(processed_content).not_to include("Line 100")
+      end
+
+      it 'logs a warning for large emails' do
+        email_data[:body] = large_email
+        parser = described_class.new(email_account, email_data)
+
+        expect(Rails.logger).to receive(:warn).with(/Large email detected: \d+ bytes/)
+        parser.send(:email_content)
+      end
+    end
+  end
+
+  describe 'encoding issues' do
+    context 'with quoted-printable encoding' do
+      let(:quoted_printable_content) do
+        "Notificaci=C3=B3n de transacci=C3=B3n\r\n" +
+        "Monto: =E2=82=A1100.00\r\n" +
+        "Descripci=C3=B3n: Caf=C3=A9"
+      end
+
+      it 'decodes quoted-printable correctly' do
+        email_data[:body] = quoted_printable_content
+        parser = described_class.new(email_account, email_data)
+        content = parser.send(:email_content)
+
+        expect(content).to include("Notificación de transacción")
+        expect(content).to include("₡100.00")
+        expect(content).to include("Café")
+      end
+
+      it 'handles soft line breaks' do
+        content_with_breaks = "This is a very long line that needs to be broken =\r\ninto multiple lines"
+        email_data[:body] = content_with_breaks
+        parser = described_class.new(email_account, email_data)
+        content = parser.send(:email_content)
+
+        expect(content).to eq("This is a very long line that needs to be broken into multiple lines")
+      end
+    end
+
+    context 'with invalid UTF-8 sequences' do
+      it 'scrubs invalid characters' do
+        # Create a string with invalid UTF-8 bytes
+        invalid_utf8 = "Valid text \xFF\xFE Invalid sequence"
+        # Force encoding to binary first to avoid UTF-8 errors
+        email_data[:body] = invalid_utf8.force_encoding('BINARY')
+        parser = described_class.new(email_account, email_data)
+
+        expect { parser.send(:email_content) }.not_to raise_error
+        content = parser.send(:email_content)
+        expect(content).to include("Valid text")
+      end
+    end
+  end
+
+  describe 'error handling' do
+    context 'when parsing rule is missing' do
+      it 'returns nil when no parsing rule found' do
+        # Create a parser with a bank that has no parsing rule
+        email_account.update(bank_name: 'NonExistentBank')
+        parser_without_rule = described_class.new(email_account, email_data)
+
+        result = parser_without_rule.parse_expense
+        expect(result).to be nil
+      end
+    end
+
+    context 'when strategy raises an error' do
+      before do
+        allow_any_instance_of(EmailProcessing::Strategies::Regex).to receive(:parse_email).and_raise(StandardError, "Parse error")
+      end
+
+      it 'captures the error and returns nil' do
+        result = parser.parse_expense
+        expect(result).to be nil
+        expect(parser.errors).to include("Error parsing email: Parse error")
+      end
+    end
+  end
+
+  describe '#add_error' do
+    it 'logs errors with email account context' do
+      expect(Rails.logger).to receive(:error).with("[EmailProcessing::Parser] #{email_account.email}: Test error")
+      parser.send(:add_error, "Test error")
+    end
+
+    it 'accumulates multiple errors' do
+      parser.send(:add_error, "Error 1")
+      parser.send(:add_error, "Error 2")
+      expect(parser.errors).to eq([ "Error 1", "Error 2" ])
+    end
+  end
+
+  describe 'performance optimizations' do
+    it 'uses StringIO for memory efficiency in large emails' do
+      large_content = "Line\n" * 1000
+      email_data[:body] = large_content
+      parser = described_class.new(email_account, email_data)
+
+      expect(StringIO).to receive(:new).and_call_original
+      parser.send(:process_large_email, large_content)
+    end
+
+    it 'closes StringIO after processing' do
+      stringio = StringIO.new
+      allow(StringIO).to receive(:new).and_return(stringio)
+
+      parser.send(:process_large_email, "content")
+      expect(stringio).to be_closed
+    end
+  end
 end

@@ -316,5 +316,50 @@ RSpec.describe Expense, type: :model do
         end
       end
     end
+
+    describe '#pending?' do
+      it 'returns true when status is pending' do
+        expense = create(:expense, status: 'pending', email_account: email_account)
+        expect(expense.pending?).to be true
+      end
+
+      it 'returns false when status is not pending' do
+        expense = create(:expense, status: 'processed', email_account: email_account)
+        expect(expense.pending?).to be false
+      end
+    end
+
+    describe '#failed?' do
+      it 'returns true when status is failed' do
+        expense = create(:expense, status: 'failed', email_account: email_account)
+        expect(expense.failed?).to be true
+      end
+
+      it 'returns false when status is not failed' do
+        expense = create(:expense, status: 'pending', email_account: email_account)
+        expect(expense.failed?).to be false
+      end
+    end
+  end
+
+  describe 'callbacks' do
+    describe 'after_commit :clear_dashboard_cache' do
+      it 'clears dashboard cache after creating an expense' do
+        expect(DashboardService).to receive(:clear_cache)
+        create(:expense, email_account: email_account)
+      end
+
+      it 'clears dashboard cache after updating an expense' do
+        expense = create(:expense, email_account: email_account)
+        expect(DashboardService).to receive(:clear_cache)
+        expense.update(amount: 200.0)
+      end
+
+      it 'clears dashboard cache after destroying an expense' do
+        expense = create(:expense, email_account: email_account)
+        expect(DashboardService).to receive(:clear_cache)
+        expense.destroy
+      end
+    end
   end
 end

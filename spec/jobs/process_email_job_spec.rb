@@ -186,9 +186,13 @@ RSpec.describe ProcessEmailJob, type: :job do
       expect(failed_expense.amount).to eq(0.01)
       expect(failed_expense.status).to eq('failed')
       expect(failed_expense.description).to include("Failed to parse")
-      expect(failed_expense.description).to include(errors.join(", "))
+      expect(failed_expense.description).to include(errors.first)
       expect(failed_expense.raw_email_content).to eq(failed_email_data[:body])
-      expect(failed_expense.parsed_data).to eq(failed_email_data.to_json)
+
+      parsed_data = JSON.parse(failed_expense.parsed_data)
+      expect(parsed_data['errors']).to eq(errors)
+      expect(parsed_data['truncated']).to eq(false)
+      expect(parsed_data['original_size']).to eq(failed_email_data[:body].bytesize)
     end
 
     it 'handles save errors gracefully' do

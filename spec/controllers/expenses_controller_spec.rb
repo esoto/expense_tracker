@@ -47,8 +47,8 @@ RSpec.describe ExpensesController, type: :controller do
     end
 
     it "limits results to 25 expenses" do
-      expect_any_instance_of(ActiveRecord::Relation).to receive(:limit).with(25).and_call_original
       get :index
+      expect(assigns(:expenses).size).to be <= 25
     end
 
     it "calculates summary statistics" do

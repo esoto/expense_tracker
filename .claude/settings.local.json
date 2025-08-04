@@ -5,7 +5,13 @@
       "Bash(bundle exec rspec:*)",
       "Bash(find:*)",
       "Bash(bundle exec rails_best_practices:*)",
-      "Bash(bundle exec rubocop:*)"
+      "Bash(bundle exec rubocop:*)",
+      "Bash(grep:*)",
+      "Bash(git checkout:*)",
+      "Bash(rails g:*)",
+      "Bash(bin/rails:*)",
+      "Bash(bundle exec brakeman:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }

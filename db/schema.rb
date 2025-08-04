@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_03_205052) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_04_032000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -70,15 +70,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_03_205052) do
     t.datetime "updated_at", null: false
     t.string "bank_name"
     t.integer "currency", default: 0, null: false
+    t.text "email_body"
     t.index ["amount"], name: "index_expenses_on_amount"
     t.index ["bank_name", "transaction_date"], name: "index_expenses_on_bank_name_and_transaction_date"
     t.index ["category_id", "transaction_date"], name: "index_expenses_on_category_id_and_transaction_date"
     t.index ["category_id"], name: "index_expenses_on_category_id"
     t.index ["currency"], name: "index_expenses_on_currency"
+    t.index ["email_account_id", "amount", "transaction_date"], name: "index_expenses_on_account_amount_date_for_duplicates"
     t.index ["email_account_id", "created_at"], name: "index_expenses_on_email_account_id_and_created_at"
     t.index ["email_account_id", "transaction_date"], name: "index_expenses_on_email_account_id_and_transaction_date"
     t.index ["email_account_id"], name: "index_expenses_on_email_account_id"
     t.index ["merchant_name", "amount"], name: "index_expenses_on_merchant_name_and_amount"
+    t.index ["merchant_name"], name: "index_expenses_on_merchant_name"
     t.index ["status", "transaction_date"], name: "index_expenses_on_status_and_transaction_date"
     t.index ["status"], name: "index_expenses_on_status"
     t.index ["transaction_date", "amount"], name: "index_expenses_on_transaction_date_and_amount"

@@ -64,7 +64,7 @@ module EmailProcessing
       if subject.downcase.include?("notificación de transacción")
         return true
       end
-      
+
       # Fallback patterns for other banks or variations
       transaction_keywords = [ "transacción", "notificación de compra", "cargo a su cuenta" ]
       transaction_keywords.any? { |keyword| subject.downcase.include?(keyword.downcase) }

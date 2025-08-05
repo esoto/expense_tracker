@@ -4,10 +4,9 @@ class DashboardService
   def initialize
   end
 
-  def analyics
+  def analytics
     # Don't cache sync_info as it needs real-time data
     sync_data = sync_info
-    sync_info = sync_info,
     sync_sessions = sync_session_data
 
     # Cache everything else
@@ -24,7 +23,7 @@ class DashboardService
     end
 
     # Merge real-time sync info with cached data
-    cached_analytics.merge(sync_info: sync_data, sync_info: sync_info, sync_sessions: sync_session_data)
+    cached_analytics.merge(sync_info: sync_data, sync_sessions: sync_sessions)
   end
 
   # Add cache clearing

@@ -3,22 +3,22 @@
 <div class="space-y-6">
   <!-- Header -->
   <div class="text-center">
-    <h1 class="text-3xl font-bold text-gray-900">Dashboard de Gastos</h1>
-    <p class="text-gray-600 mt-2">Resumen completo de tus finanzas</p>
+    <h1 class="text-3xl font-bold text-slate-900">Dashboard de Gastos</h1>
+    <p class="text-slate-600 mt-2">Resumen completo de tus finanzas</p>
   </div>
 
   <!-- Email Sync Section -->
-  <div class="bg-white rounded-lg shadow p-6">
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-900">Sincronización de Correos</h2>
+      <h2 class="text-lg font-semibold text-slate-900">Sincronización de Correos</h2>
       <% if @last_sync_info[:has_running_jobs] %>
-        <div class="flex items-center text-blue-600">
-          <svg class="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span class="text-sm font-medium">Sincronizando...</span>
-        </div>
+      <div class="flex items-center text-teal-600">
+        <svg class="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span class="text-sm font-medium">Sincronizando...</span>
+      </div>
       <% end %>
     </div>
 
@@ -26,108 +26,108 @@
       <!-- Sync All Button -->
       <div class="space-y-4">
         <%= form_with url: sync_emails_expenses_path, method: :post, local: true, class: "space-y-4" do |form| %>
-          <div class="flex flex-col space-y-2">
-            <%= form.submit "Sincronizar Todos los Correos",
-                class: "w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 #{@last_sync_info[:has_running_jobs] ? 'opacity-50 cursor-not-allowed' : ''}",
+        <div class="flex flex-col space-y-2">
+          <%= form.submit "Sincronizar Todos los Correos",
+                class: "w-full bg-teal-700 hover:bg-teal-800 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors duration-200 #{@last_sync_info[:has_running_jobs] ? 'opacity-50 cursor-not-allowed' : ''}",
                 disabled: @last_sync_info[:has_running_jobs] %>
-            <p class="text-xs text-gray-600">
-              Busca nuevos gastos en todas las cuentas de correo activas
-            </p>
-          </div>
+          <p class="text-xs text-slate-600">
+            Busca nuevos gastos en todas las cuentas de correo activas
+          </p>
+        </div>
         <% end %>
 
         <% if @email_accounts.any? %>
-          <!-- Individual Account Sync -->
-          <div class="border-t pt-4">
-            <h3 class="text-sm font-medium text-gray-700 mb-2">Sincronizar cuenta individual:</h3>
-            <div class="space-y-2">
-              <% @email_accounts.each do |account| %>
-                <%= form_with url: sync_emails_expenses_path, method: :post, local: true, class: "flex items-center space-x-2" do |form| %>
-                  <%= form.hidden_field :email_account_id, value: account.id %>
-                  <%= form.submit account.display_name.truncate(30),
-                      class: "text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 py-1 px-3 rounded transition-colors duration-200 #{@last_sync_info[:has_running_jobs] ? 'opacity-50 cursor-not-allowed' : ''}",
+        <!-- Individual Account Sync -->
+        <div class="border-t pt-4">
+          <h3 class="text-sm font-medium text-slate-700 mb-2">Sincronizar cuenta individual:</h3>
+          <div class="space-y-2">
+            <% @email_accounts.each do |account| %>
+            <%= form_with url: sync_emails_expenses_path, method: :post, local: true, class: "flex items-center space-x-2" do |form| %>
+            <%= form.hidden_field :email_account_id, value: account.id %>
+            <%= form.submit account.display_name.truncate(30),
+                      class: "text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 py-1 px-3 rounded transition-colors duration-200 #{@last_sync_info[:has_running_jobs] ? 'opacity-50 cursor-not-allowed' : ''}",
                       disabled: @last_sync_info[:has_running_jobs] %>
-                <% end %>
-              <% end %>
-            </div>
+            <% end %>
+            <% end %>
           </div>
+        </div>
         <% else %>
-          <div class="border-t pt-4">
-            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div class="flex">
-                <div class="flex-shrink-0">
-                  <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                  </svg>
-                </div>
-                <div class="ml-3">
-                  <p class="text-sm text-yellow-800">
-                    No hay cuentas de correo configuradas.
-                    <%= link_to "Configurar cuenta", email_accounts_path, class: "font-medium underline" %>
-                  </p>
-                </div>
+        <div class="border-t pt-4">
+          <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm text-amber-800">
+                  No hay cuentas de correo configuradas.
+                  <%= link_to "Configurar cuenta", email_accounts_path, class: "font-medium underline" %>
+                </p>
               </div>
             </div>
           </div>
+        </div>
         <% end %>
       </div>
 
       <!-- Sync Status -->
       <div class="space-y-4">
-        <h3 class="text-sm font-medium text-gray-700">Estado de sincronización:</h3>
+        <h3 class="text-sm font-medium text-slate-700">Estado de sincronización:</h3>
         <% if @email_accounts.any? %>
-          <div class="space-y-3">
-            <% @email_accounts.each do |account| %>
-              <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div class="flex items-center space-x-3">
-                  <div class="flex-shrink-0">
-                    <div class="w-8 h-8 <%= account.bank_name == 'BAC' ? 'bg-blue-100' : 'bg-gray-100' %> rounded-full flex items-center justify-center">
-                      <span class="text-xs font-bold <%= account.bank_name == 'BAC' ? 'text-blue-600' : 'text-gray-600' %>">
-                        <%= account.bank_name.first %>
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <p class="text-sm font-medium text-gray-900"><%= account.email %></p>
-                    <p class="text-xs text-gray-600"><%= account.bank_name %></p>
-                  </div>
-                </div>
-                <div class="text-right">
-                  <% if @last_sync_info[account.id] %>
-                    <p class="text-xs text-gray-600">
-                      Último: <%= format_datetime(@last_sync_info[account.id][:last_sync]) %>
-                    </p>
-                    <div class="flex items-center mt-1">
-                      <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
-                      <span class="text-xs text-green-600">Activa</span>
-                    </div>
-                  <% else %>
-                    <p class="text-xs text-gray-600">Sin gastos</p>
-                    <div class="flex items-center mt-1">
-                      <div class="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
-                      <span class="text-xs text-gray-600">Sin datos</span>
-                    </div>
-                  <% end %>
+        <div class="space-y-3">
+          <% @email_accounts.each do |account| %>
+          <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <div class="flex items-center space-x-3">
+              <div class="flex-shrink-0">
+                <div class="w-8 h-8 <%= account.bank_name == 'BAC' ? 'bg-teal-100' : 'bg-slate-100' %> rounded-full flex items-center justify-center">
+                  <span class="text-xs font-bold <%= account.bank_name == 'BAC' ? 'text-teal-700' : 'text-slate-600' %>">
+                    <%= account.bank_name.first %>
+                  </span>
                 </div>
               </div>
-            <% end %>
+              <div>
+                <p class="text-sm font-medium text-slate-900"><%= account.email %></p>
+                <p class="text-xs text-slate-600"><%= account.bank_name %></p>
+              </div>
+            </div>
+            <div class="text-right">
+              <% if @last_sync_info[account.id] %>
+              <p class="text-xs text-slate-600">
+                Último: <%= format_datetime(@last_sync_info[account.id][:last_sync]) %>
+              </p>
+              <div class="flex items-center mt-1">
+                <div class="w-2 h-2 bg-emerald-400 rounded-full mr-2"></div>
+                <span class="text-xs text-emerald-600">Activa</span>
+              </div>
+              <% else %>
+              <p class="text-xs text-slate-600">Sin gastos</p>
+              <div class="flex items-center mt-1">
+                <div class="w-2 h-2 bg-slate-400 rounded-full mr-2"></div>
+                <span class="text-xs text-slate-600">Sin datos</span>
+              </div>
+              <% end %>
+            </div>
           </div>
+          <% end %>
+        </div>
         <% else %>
-          <p class="text-sm text-gray-600">No hay cuentas de correo configuradas.</p>
+        <p class="text-sm text-slate-600">No hay cuentas de correo configuradas.</p>
         <% end %>
 
         <% if @last_sync_info[:has_running_jobs] %>
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <div class="flex items-center">
-              <svg class="animate-spin h-4 w-4 text-blue-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span class="text-sm text-blue-800">
-                <%= @last_sync_info[:running_job_count] %> sincronización<%= 'es' if @last_sync_info[:running_job_count] != 1 %> en progreso
-              </span>
-            </div>
+        <div class="bg-teal-50 border border-teal-200 rounded-lg p-3">
+          <div class="flex items-center">
+            <svg class="animate-spin h-4 w-4 text-teal-600 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="text-sm text-teal-800">
+              <%= @last_sync_info[:running_job_count] %> sincronización<%= 'es' if @last_sync_info[:running_job_count] != 1 %> en progreso
+            </span>
           </div>
+        </div>
         <% end %>
       </div>
     </div>
@@ -136,66 +136,66 @@
   <!-- Key Metrics -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
     <!-- Total Expenses -->
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
       <div class="flex items-center">
-        <div class="p-3 rounded-full bg-blue-100">
-          <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="p-3 rounded-full bg-teal-100">
+          <svg class="w-8 h-8 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
           </svg>
         </div>
         <div class="ml-4">
-          <p class="text-sm font-medium text-gray-600">Total de Gastos</p>
-          <p class="text-2xl font-bold text-gray-900">₡<%= number_with_delimiter(@total_expenses.to_i) %></p>
+          <p class="text-sm font-medium text-slate-600">Total de Gastos</p>
+          <p class="text-2xl font-bold text-slate-900">₡<%= number_with_delimiter(@total_expenses.to_i) %></p>
         </div>
       </div>
     </div>
 
     <!-- Total Count -->
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
       <div class="flex items-center">
-        <div class="p-3 rounded-full bg-green-100">
-          <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="p-3 rounded-full bg-emerald-100">
+          <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
           </svg>
         </div>
         <div class="ml-4">
-          <p class="text-sm font-medium text-gray-600">Número de Gastos</p>
-          <p class="text-2xl font-bold text-gray-900"><%= number_with_delimiter(@expense_count) %></p>
+          <p class="text-sm font-medium text-slate-600">Número de Gastos</p>
+          <p class="text-2xl font-bold text-slate-900"><%= number_with_delimiter(@expense_count) %></p>
         </div>
       </div>
     </div>
 
     <!-- Current Month -->
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
       <div class="flex items-center">
-        <div class="p-3 rounded-full bg-purple-100">
-          <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="p-3 rounded-full bg-amber-100">
+          <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
           </svg>
         </div>
         <div class="ml-4">
-          <p class="text-sm font-medium text-gray-600">Este Mes</p>
-          <p class="text-2xl font-bold text-gray-900">₡<%= number_with_delimiter(@current_month_total.to_i) %></p>
+          <p class="text-sm font-medium text-slate-600">Este Mes</p>
+          <p class="text-2xl font-bold text-slate-900">₡<%= number_with_delimiter(@current_month_total.to_i) %></p>
         </div>
       </div>
     </div>
 
     <!-- Monthly Change -->
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
       <div class="flex items-center">
         <%
           change = @current_month_total - @last_month_total
           percentage = @last_month_total > 0 ? ((change / @last_month_total) * 100) : 0
           is_increase = change > 0
         %>
-        <div class="p-3 rounded-full <%= is_increase ? 'bg-red-100' : 'bg-green-100' %>">
-          <svg class="w-8 h-8 <%= is_increase ? 'text-red-600' : 'text-green-600' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="p-3 rounded-full <%= is_increase ? 'bg-rose-100' : 'bg-emerald-100' %>">
+          <svg class="w-8 h-8 <%= is_increase ? 'text-rose-600' : 'text-emerald-600' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<%= is_increase ? 'M13 17h8m0 0V9m0 8l-8-8-4 4-6-6' : 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' %>"></path>
           </svg>
         </div>
         <div class="ml-4">
-          <p class="text-sm font-medium text-gray-600">vs Mes Anterior</p>
-          <p class="text-2xl font-bold <%= is_increase ? 'text-red-600' : 'text-green-600' %>">
+          <p class="text-sm font-medium text-slate-600">vs Mes Anterior</p>
+          <p class="text-2xl font-bold <%= is_increase ? 'text-rose-600' : 'text-emerald-600' %>">
             <%= is_increase ? '+' : '' %><%= percentage.round(1) %>%
           </p>
         </div>
@@ -206,18 +206,18 @@
   <!-- Charts Row -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <!-- Monthly Trend -->
-    <div class="bg-white rounded-lg shadow p-6">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4">Tendencia Mensual</h2>
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-lg font-semibold text-slate-900 mb-4">Tendencia Mensual</h2>
       <%= line_chart @monthly_data,
           prefix: "₡",
           thousands: ",",
           height: "300px",
-          colors: ["#3B82F6"] %>
+          colors: ["#0F766E"] %>
     </div>
 
     <!-- Category Breakdown -->
-    <div class="bg-white rounded-lg shadow p-6">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4">Gastos por Categoría</h2>
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-lg font-semibold text-slate-900 mb-4">Gastos por Categoría</h2>
       <%= pie_chart @sorted_categories.first(8),
           prefix: "₡",
           thousands: ",",
@@ -228,83 +228,82 @@
   <!-- Detailed Tables -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <!-- Top Merchants -->
-    <div class="bg-white rounded-lg shadow p-6">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4">Comercios con Más Gastos</h2>
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-lg font-semibold text-slate-900 mb-4">Comercios con Más Gastos</h2>
       <div class="space-y-3">
         <% @top_merchants.each_with_index do |(merchant, amount), index| %>
-          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div class="flex items-center space-x-3">
-              <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <span class="text-sm font-bold text-blue-600"><%= index + 1 %></span>
-              </div>
-              <span class="font-medium text-gray-900"><%= merchant.truncate(30) %></span>
+        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+          <div class="flex items-center space-x-3">
+            <div class="flex-shrink-0 w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
+              <span class="text-sm font-bold text-teal-700"><%= index + 1 %></span>
             </div>
-            <span class="font-bold text-gray-900">₡<%= number_with_delimiter(amount.to_i) %></span>
+            <span class="font-medium text-slate-900"><%= (merchant || "Sin comercio").truncate(30) %></span>
           </div>
+          <span class="font-bold text-slate-900">₡<%= number_with_delimiter(amount.to_i) %></span>
+        </div>
         <% end %>
       </div>
     </div>
 
     <!-- Bank Breakdown -->
-    <div class="bg-white rounded-lg shadow p-6">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4">Gastos por Banco</h2>
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-lg font-semibold text-slate-900 mb-4">Gastos por Banco</h2>
       <div class="space-y-3">
         <% @bank_totals.each do |bank, amount| %>
-          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div class="flex items-center space-x-3">
-              <div class="flex-shrink-0 w-8 h-8 <%= bank == 'BAC' ? 'bg-blue-100' : 'bg-gray-100' %> rounded-full flex items-center justify-center">
-                <span class="text-sm font-bold <%= bank == 'BAC' ? 'text-blue-600' : 'text-gray-600' %>">
-                  <%= bank == 'BAC' ? 'B' : 'M' %>
-                </span>
-              </div>
-              <span class="font-medium text-gray-900"><%= bank %></span>
+        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+          <div class="flex items-center space-x-3">
+            <div class="flex-shrink-0 w-8 h-8 <%= bank == 'BAC' ? 'bg-rose-100' : 'bg-amber-100' %> rounded-full flex items-center justify-center">
+              <span class="text-sm font-bold <%= bank == 'BAC' ? 'text-rose-600' : 'text-amber-700' %>">
+                <%= bank == 'BAC' ? 'B' : 'M' %>
+              </span>
             </div>
-            <span class="font-bold text-gray-900">₡<%= number_with_delimiter(amount.to_i) %></span>
+            <span class="font-medium text-slate-900"><%= bank %></span>
           </div>
+          <span class="font-bold text-slate-900">₡<%= number_with_delimiter(amount.to_i) %></span>
+        </div>
         <% end %>
       </div>
     </div>
   </div>
 
   <!-- Recent Expenses -->
-  <div class="bg-white rounded-lg shadow">
-    <div class="px-6 py-4 border-b border-gray-200">
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+    <div class="px-6 py-4 border-b border-slate-200">
       <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold text-gray-900">Gastos Recientes</h2>
-        <%= link_to "Ver todos", expenses_path, class: "text-blue-600 hover:text-blue-800 text-sm font-medium" %>
+        <h2 class="text-lg font-semibold text-slate-900">Gastos Recientes</h2>
+        <%= link_to "Ver todos", expenses_path, class: "text-teal-600 hover:text-teal-800 text-sm font-medium" %>
       </div>
     </div>
     <div class="p-6">
       <div class="space-y-4">
         <% @recent_expenses.first(5).each do |expense| %>
-          <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-            <div class="flex items-center space-x-4">
-              <div class="flex-shrink-0">
-                <% if expense.category %>
-                  <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                       style="background-color: <%= expense.category.color %>;">
-                    <%= expense.category.name.first %>
-                  </div>
-                <% else %>
-                  <div class="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white font-bold">
-                    ?
-                  </div>
-                <% end %>
+        <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+          <div class="flex items-center space-x-4">
+            <div class="flex-shrink-0">
+              <% if expense.category %>
+              <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-sm" style="background-color: <%= expense.category.color %>;">
+                <%= expense.category.name.first %>
               </div>
-              <div>
-                <p class="font-medium text-gray-900"><%= expense.merchant_name %></p>
-                <p class="text-sm text-gray-600">
-                  <%= expense.transaction_date.strftime("%d/%m/%Y") %> •
-                  <%= expense.category&.name || "Sin categoría" %> •
-                  <%= expense.bank_name %>
-                </p>
+              <% else %>
+              <div class="w-10 h-10 rounded-full bg-slate-400 flex items-center justify-center text-white font-bold">
+                ?
               </div>
+              <% end %>
             </div>
-            <div class="text-right">
-              <p class="font-bold text-gray-900"><%= currency_symbol(expense) %><%= number_with_delimiter(expense.amount.to_i) %></p>
-              <p class="text-xs text-gray-500"><%= format_datetime(expense.created_at) %></p>
+            <div>
+              <p class="font-medium text-slate-900"><%= expense.merchant_name || "Sin comercio" %></p>
+              <p class="text-sm text-slate-600">
+                <%= expense.transaction_date.strftime("%d/%m/%Y") %> •
+                <%= expense.category_name || "Sin categoría" %> •
+                <%= expense.bank_name %>
+              </p>
             </div>
           </div>
+          <div class="text-right">
+            <p class="font-bold text-slate-900"><%= currency_symbol(expense) %><%= number_with_delimiter(expense.amount.to_i) %></p>
+            <p class="text-xs text-slate-500"><%= format_datetime(expense.created_at) %></p>
+          </div>
+        </div>
         <% end %>
       </div>
     </div>

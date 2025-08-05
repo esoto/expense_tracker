@@ -1,5 +1,8 @@
 module EmailProcessing
   class Parser
+    MAX_EMAIL_SIZE = 50_000  # 50KB threshold
+    TRUNCATE_SIZE = 10_000   # Store only 10KB for large emails
+
     attr_reader :email_account, :email_data, :parsing_rule, :errors
 
     def initialize(email_account, email_data)
@@ -38,12 +41,11 @@ module EmailProcessing
       @email_content ||= begin
         content = email_data[:body].to_s
 
-        # Clean up email content
-        content = content.gsub(/=\r\n/, "") # Remove quoted-printable line breaks
-        content = content.gsub(/=([A-F0-9]{2})/) { [ $1.hex ].pack("C") } # Decode quoted-printable
-        content = content.force_encoding("UTF-8").scrub # Handle encoding issues
-
-        content
+        if content.bytesize > MAX_EMAIL_SIZE
+          process_large_email(content)
+        else
+          process_standard_email(content)
+        end
       end
     end
 
@@ -69,7 +71,9 @@ module EmailProcessing
         description: parsed_data[:description],
         raw_email_content: email_content,
         parsed_data: parsed_data.to_json,
-        status: "pending"
+        status: "pending",
+        email_body: email_data[:body].to_s,
+        bank_name: email_account.bank_name
       )
 
       # Set currency using enum methods
@@ -112,6 +116,32 @@ module EmailProcessing
     def add_error(message)
       @errors << message
       Rails.logger.error "[EmailProcessing::Parser] #{email_account.email}: #{message}"
+    end
+
+    def process_large_email(content)
+      # Extract only the essential parts for large emails
+      Rails.logger.warn "[EmailProcessing] Large email detected: #{content.bytesize} bytes"
+
+      # Process in chunks to avoid memory bloat
+      processed = StringIO.new
+      content.each_line.first(100).each do |line|  # Process only first 100 lines
+        processed << decode_quoted_printable_line(line)
+      end
+
+      result = processed.string.force_encoding("UTF-8").scrub
+      processed.close
+      result
+    end
+
+    def process_standard_email(content)
+      content = content.gsub(/=\r\n/, "")
+      content = content.gsub(/=([A-F0-9]{2})/) { [ $1.hex ].pack("C") }
+      content.force_encoding("UTF-8").scrub
+    end
+
+    def decode_quoted_printable_line(line)
+      line.gsub(/=\r\n/, "")
+          .gsub(/=([A-F0-9]{2})/) { [ $1.hex ].pack("C") }
     end
   end
 end

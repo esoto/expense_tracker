@@ -111,6 +111,23 @@ RSpec.describe SyncService do
           service.send(:sync_all_accounts)
         }.to raise_error(SyncService::SyncError, "No hay cuentas de correo activas configuradas.")
       end
+
+      context 'message pluralization' do
+        it 'uses singular form for one account' do
+          create(:email_account)
+
+          result = service.send(:sync_all_accounts)
+          expect(result[:message]).to include("1 cuenta de correo")
+          expect(result[:message]).not_to include("cuentas de correo")
+        end
+
+        it 'uses plural form for multiple accounts' do
+          2.times { create(:email_account) }
+
+          result = service.send(:sync_all_accounts)
+          expect(result[:message]).to include("2 cuentas de correo")
+        end
+      end
     end
   end
 

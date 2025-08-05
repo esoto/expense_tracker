@@ -47,8 +47,8 @@ RSpec.describe ExpensesController, type: :controller do
     end
 
     it "limits results to 25 expenses" do
-      expect_any_instance_of(ActiveRecord::Relation).to receive(:limit).with(25).and_call_original
       get :index
+      expect(assigns(:expenses).size).to be <= 25
     end
 
     it "calculates summary statistics" do
@@ -401,6 +401,96 @@ RSpec.describe ExpensesController, type: :controller do
     it "includes associations to avoid N+1 queries in index" do
       expect(Expense).to receive(:includes).with(:category, :email_account).and_call_original
       get :index
+    end
+  end
+
+  describe 'edge cases and error handling' do
+    describe 'GET #index with complex filters' do
+      let(:other_category) { create(:category, name: 'Other') }
+
+      before do
+        create(:expense, category: category, bank_name: 'BAC', transaction_date: 1.day.ago, amount: 100)
+        create(:expense, category: category, bank_name: 'BCR', transaction_date: 2.days.ago, amount: 200)
+        create(:expense, category: other_category, bank_name: 'BAC', transaction_date: 3.days.ago, amount: 300)
+      end
+
+      it 'handles multiple filters simultaneously' do
+        get :index, params: {
+          category: category.name,
+          bank: 'BAC',
+          start_date: 2.days.ago.to_date,
+          end_date: Date.current
+        }
+
+        expenses = assigns(:expenses)
+        expect(expenses.count).to eq(1)
+        expect(expenses.first.amount).to eq(100)
+      end
+
+      it 'handles invalid date formats gracefully' do
+        expect {
+          get :index, params: { start_date: 'invalid', end_date: 'date' }
+        }.not_to raise_error
+      end
+
+      it 'handles missing filter parameters' do
+        get :index, params: { category: '', bank: nil }
+        expect(response).to be_successful
+        expect(assigns(:expenses)).to be_present
+      end
+    end
+
+    describe 'error recovery' do
+      it 'handles missing associations' do
+        expense_without_category = create(:expense, category: nil)
+        get :show, params: { id: expense_without_category.id }
+
+        expect(response).to be_successful
+        expect(assigns(:expense).category).to be_nil
+      end
+    end
+
+    describe 'pagination and limits' do
+      before do
+        30.times { create(:expense) }
+      end
+
+      it 'limits results to 25 expenses' do
+        get :index
+        expect(assigns(:expenses).size).to eq(25)
+      end
+
+      it 'shows most recent expenses first' do
+        # Create expenses in a clean state
+        Expense.destroy_all
+
+        # Create an older expense with older transaction date
+        older_expense = create(:expense, transaction_date: 2.days.ago, created_at: 2.hours.ago)
+        # Create a recent expense with today's transaction date
+        recent_expense = create(:expense, transaction_date: Date.current, created_at: 1.minute.ago)
+
+        get :index
+        expect(assigns(:expenses).first.id).to eq(recent_expense.id)
+      end
+    end
+
+    describe 'currency handling' do
+      it 'handles different currency values in create' do
+        post :create, params: {
+          expense: valid_attributes.merge(currency: 'usd')
+        }
+
+        created_expense = Expense.last
+        expect(created_expense.currency).to eq('usd')
+      end
+
+      it 'defaults to CRC when currency is not provided' do
+        attributes_without_currency = valid_attributes.except(:currency)
+        post :create, params: { expense: attributes_without_currency }
+
+        created_expense = Expense.last
+        expect(created_expense.currency).to eq('crc')
+      end
     end
   end
 end

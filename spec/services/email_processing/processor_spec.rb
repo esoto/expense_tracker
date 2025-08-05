@@ -135,8 +135,8 @@ RSpec.describe EmailProcessing::Processor do
   end
 
   describe '#transaction_email?' do
-    it 'identifies transaction emails with "transacci"' do
-      result = processor.send(:transaction_email?, 'Información de transacci realizada')
+    it 'identifies transaction emails with "transacción"' do
+      result = processor.send(:transaction_email?, 'Información de transacción realizada')
       expect(result).to be true
     end
 

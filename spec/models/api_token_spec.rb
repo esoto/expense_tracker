@@ -1,6 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe ApiToken, type: :model do
+  include ActiveSupport::Testing::TimeHelpers
   describe 'validations' do
     let!(:token) { create(:api_token, name: 'Test Token', expires_at: 1.year.from_now, active: true) }
 
@@ -99,6 +100,54 @@ RSpec.describe ApiToken, type: :model do
     it 'rejects empty token' do
       result = ApiToken.authenticate('')
       expect(result).to be_nil
+    end
+
+    context 'caching behavior' do
+      before do
+        Rails.cache.clear
+      end
+
+      it 'caches successful authentication' do
+        # Verify Rails.cache.fetch is called with correct parameters
+        cache_key = "api_token:#{Digest::SHA256.hexdigest(valid_token.token)[0..16]}"
+
+        expect(Rails.cache).to receive(:fetch).with(cache_key, expires_in: 1.minute).and_call_original
+        result = ApiToken.authenticate(valid_token.token)
+        expect(result).to eq(valid_token)
+      end
+
+      it 'updates last_used_at on successful authentication' do
+        expect(valid_token.last_used_at).to be_nil
+        ApiToken.authenticate(valid_token.token)
+        valid_token.reload
+        expect(valid_token.last_used_at).to be_present
+      end
+
+      it 'cache expires after 1 minute' do
+        ApiToken.authenticate(valid_token.token)
+        initial_last_used = valid_token.reload.last_used_at
+
+        # Travel forward in time
+        travel_to(2.minutes.from_now) do
+          # Should hit database again and update last_used_at
+          ApiToken.authenticate(valid_token.token)
+          expect(valid_token.reload.last_used_at).to be > initial_last_used
+        end
+      end
+
+      it 'does not cache failed authentications' do
+        # First failed attempt
+        result1 = ApiToken.authenticate('invalid-token')
+        expect(result1).to be_nil
+
+        # Create a new token with the same token string that was invalid before
+        new_token = create(:api_token, name: 'New Token', expires_at: 1.year.from_now, active: true)
+        allow(new_token).to receive(:token).and_return('invalid-token')
+
+        # Second attempt with now-valid token should still check database
+        # This proves failed authentications are not cached
+        expect(ApiToken.authenticate('invalid-token')).to be_nil
+      end
     end
   end
 

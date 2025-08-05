@@ -1,0 +1,81 @@
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <h1 class="text-3xl font-bold text-slate-900 mb-8">Email Sync Status</h1>
+
+  <!-- Active sync session -->
+  <% if @active_session %>
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+      <h2 class="text-xl font-semibold text-slate-900 mb-4">Active Sync Session</h2>
+      <div class="space-y-4">
+        <div class="flex justify-between items-center">
+          <span class="text-slate-600">Status:</span>
+          <span class="px-3 py-1 rounded-full text-sm font-medium bg-teal-100 text-teal-700"><%= @active_session.status.humanize %></span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-slate-600">Progress:</span>
+          <span class="font-medium"><%= @active_session.progress_percentage %>%</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-slate-600">Emails Processed:</span>
+          <span class="font-medium"><%= @active_session.processed_emails %> / <%= @active_session.total_emails %></span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-slate-600">Expenses Detected:</span>
+          <span class="font-medium"><%= @active_session.detected_expenses %></span>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Start new sync -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+    <h2 class="text-xl font-semibold text-slate-900 mb-4">Start New Sync</h2>
+    <div class="flex gap-4">
+      <%= button_to "Sync All Accounts", sync_sessions_path, method: :post, class: "bg-teal-700 hover:bg-teal-800 text-white font-medium py-2 px-4 rounded-lg shadow-sm" %>
+    </div>
+  </div>
+
+  <!-- Recent sessions -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <h2 class="text-xl font-semibold text-slate-900 mb-4">Recent Sync Sessions</h2>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead>
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Started</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Progress</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Detected</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-slate-200">
+          <% @recent_sessions.each do |session| %>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                <%= session.created_at.strftime("%b %d, %Y %I:%M %p") %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                  <%= session.completed? ? 'bg-emerald-100 text-emerald-800' :
+                      session.failed? ? 'bg-rose-100 text-rose-800' :
+                      session.running? ? 'bg-teal-100 text-teal-800' :
+                      'bg-slate-100 text-slate-800' %>">
+                  <%= session.status.humanize %>
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                <%= session.processed_emails %> / <%= session.total_emails %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                <%= session.detected_expenses %>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                <%= link_to "View", sync_session_path(session), class: "text-teal-600 hover:text-teal-900" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

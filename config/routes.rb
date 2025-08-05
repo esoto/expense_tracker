@@ -21,6 +21,17 @@ Rails.application.routes.draw do
     end
   end
 
+
+  resources :sync_sessions, only: [ :index, :show, :create ] do
+    member do
+      post :cancel
+      post :retry
+    end
+    collection do
+      get :status
+    end
+  end
+
   resources :email_accounts
 
   # UX Mockups routes (development only)

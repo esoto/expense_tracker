@@ -6,6 +6,11 @@
       "Bash(find:*)",
       "Bash(bundle exec rails_best_practices:*)",
       "Bash(bundle exec rubocop:*)",
+      "Bash(RAILS_ENV=test rails console)",
+      "Bash(RAILS_ENV=test rails runner test_debug.rb)",
+      "Bash(RAILS_LOG_LEVEL=debug bundle exec rspec spec/requests/sync_sessions_spec.rb:223)",
+      "Bash(bundle exec rails console:*)",
+      "Bash(diff:*)"
       "Bash(grep:*)",
       "Bash(git checkout:*)",
       "Bash(rails g:*)",

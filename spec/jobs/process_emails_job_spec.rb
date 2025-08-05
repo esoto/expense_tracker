@@ -73,14 +73,14 @@ RSpec.describe ProcessEmailsJob, type: :job do
       end
 
       before do
-        allow(EmailProcessing::Fetcher).to receive(:new).with(email_account).and_return(mock_fetcher)
+        allow(EmailProcessing::Fetcher).to receive(:new).with(email_account, sync_session_account: nil).and_return(mock_fetcher)
         allow(mock_fetcher).to receive(:fetch_new_emails).and_return(success_response)
       end
 
       it 'creates EmailProcessing::Fetcher and fetches emails' do
         job.send(:process_single_account, email_account.id, since_time)
 
-        expect(EmailProcessing::Fetcher).to have_received(:new).with(email_account)
+        expect(EmailProcessing::Fetcher).to have_received(:new).with(email_account, sync_session_account: nil)
         expect(mock_fetcher).to have_received(:fetch_new_emails).with(since: since_time)
       end
 
@@ -112,7 +112,7 @@ RSpec.describe ProcessEmailsJob, type: :job do
       end
 
       before do
-        allow(EmailProcessing::Fetcher).to receive(:new).with(email_account).and_return(mock_fetcher)
+        allow(EmailProcessing::Fetcher).to receive(:new).with(email_account, sync_session_account: nil).and_return(mock_fetcher)
         allow(mock_fetcher).to receive(:fetch_new_emails).and_return(failure_response)
       end
 
@@ -148,7 +148,7 @@ RSpec.describe ProcessEmailsJob, type: :job do
       end
 
       before do
-        allow(EmailProcessing::Fetcher).to receive(:new).with(email_account).and_return(mock_fetcher)
+        allow(EmailProcessing::Fetcher).to receive(:new).with(email_account, sync_session_account: nil).and_return(mock_fetcher)
         allow(mock_fetcher).to receive(:fetch_new_emails).and_return(success_with_warnings_response)
       end
 
@@ -203,7 +203,7 @@ RSpec.describe ProcessEmailsJob, type: :job do
 
     context 'when EmailProcessing::Fetcher raises exception' do
       before do
-        allow(EmailProcessing::Fetcher).to receive(:new).and_raise(StandardError.new("Connection error"))
+        allow(EmailProcessing::Fetcher).to receive(:new).with(email_account, sync_session_account: nil).and_raise(StandardError.new("Connection error"))
       end
 
       it 'allows exception to bubble up' do
@@ -246,11 +246,13 @@ RSpec.describe ProcessEmailsJob, type: :job do
 
       expect(ProcessEmailsJob).to have_been_enqueued.with(
         active_account1.id,
-        since: since_time
+        since: since_time,
+        sync_session_id: nil
       )
       expect(ProcessEmailsJob).to have_been_enqueued.with(
         active_account2.id,
-        since: since_time
+        since: since_time,
+        sync_session_id: nil
       )
     end
 
@@ -259,7 +261,8 @@ RSpec.describe ProcessEmailsJob, type: :job do
 
       expect(ProcessEmailsJob).not_to have_been_enqueued.with(
         inactive_account.id,
-        since: since_time
+        since: since_time,
+        sync_session_id: nil
       )
     end
 
@@ -429,7 +432,7 @@ RSpec.describe ProcessEmailsJob, type: :job do
     end
 
     it 'can be performed immediately' do
-      allow(EmailProcessing::Fetcher).to receive(:new).and_return(mock_fetcher)
+      allow(EmailProcessing::Fetcher).to receive(:new).with(email_account, sync_session_account: nil).and_return(mock_fetcher)
       allow(mock_fetcher).to receive(:fetch_new_emails).and_return(
         EmailProcessing::FetcherResponse.success(processed_emails_count: 2, total_emails_found: 3)
       )
@@ -445,7 +448,7 @@ RSpec.describe ProcessEmailsJob, type: :job do
 
     context 'with string email account id' do
       it 'handles string id parameter' do
-        allow(EmailProcessing::Fetcher).to receive(:new).and_return(mock_fetcher)
+        allow(EmailProcessing::Fetcher).to receive(:new).with(email_account, sync_session_account: nil).and_return(mock_fetcher)
         allow(mock_fetcher).to receive(:fetch_new_emails).and_return(
           EmailProcessing::FetcherResponse.success(processed_emails_count: 1, total_emails_found: 2)
         )
@@ -513,7 +516,7 @@ RSpec.describe ProcessEmailsJob, type: :job do
       let!(:email_account) { create(:email_account, :bac) }
 
       it 'can process single account end-to-end with mocked EmailProcessing::Fetcher' do
-        allow(EmailProcessing::Fetcher).to receive(:new).and_return(mock_fetcher)
+        allow(EmailProcessing::Fetcher).to receive(:new).with(email_account, sync_session_account: nil).and_return(mock_fetcher)
         allow(mock_fetcher).to receive(:fetch_new_emails).and_return(
           EmailProcessing::FetcherResponse.success(processed_emails_count: 0, total_emails_found: 0)
         )

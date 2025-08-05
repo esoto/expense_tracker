@@ -19,6 +19,7 @@ RSpec.describe EmailProcessing::Processor do
 
         expect(result[:processed_count]).to eq(0)
         expect(result[:total_count]).to eq(0)
+        expect(result[:detected_expenses_count]).to eq(0)
       end
     end
 
@@ -48,12 +49,33 @@ RSpec.describe EmailProcessing::Processor do
 
         expect(result[:processed_count]).to eq(2)
         expect(result[:total_count]).to eq(3)
+        expect(result[:detected_expenses_count]).to eq(2)
       end
 
       it 'queues ProcessEmailJob for transaction emails' do
         processor.process_emails(message_ids, mock_imap_service)
 
         expect(ProcessEmailJob).to have_received(:perform_later).twice
+      end
+
+      it 'calls progress callback when provided' do
+        progress_calls = []
+
+        processor.process_emails(message_ids, mock_imap_service) do |processed, detected|
+          progress_calls << [ processed, detected ]
+        end
+
+        expect(progress_calls).to eq([
+          [ 1, 1 ],  # First email (transaction)
+          [ 2, 1 ],  # Second email (non-transaction)
+          [ 3, 2 ]   # Third email (transaction)
+        ])
+      end
+
+      it 'works without progress callback' do
+        expect {
+          processor.process_emails(message_ids, mock_imap_service)
+        }.not_to raise_error
       end
     end
 
@@ -69,6 +91,7 @@ RSpec.describe EmailProcessing::Processor do
 
         expect(result[:processed_count]).to eq(0)
         expect(result[:total_count]).to eq(1)
+        expect(result[:detected_expenses_count]).to eq(0)
       end
     end
 
@@ -87,6 +110,7 @@ RSpec.describe EmailProcessing::Processor do
 
         expect(result[:processed_count]).to eq(0)
         expect(result[:total_count]).to eq(1)
+        expect(result[:detected_expenses_count]).to eq(0)
         expect(ProcessEmailJob).not_to have_received(:perform_later)
       end
     end
@@ -104,6 +128,7 @@ RSpec.describe EmailProcessing::Processor do
 
         expect(result[:processed_count]).to eq(0)
         expect(result[:total_count]).to eq(1)
+        expect(result[:detected_expenses_count]).to eq(0)
         expect(processor.errors).to include('Error processing email: IMAP error')
       end
     end

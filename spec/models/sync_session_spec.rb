@@ -378,4 +378,103 @@ RSpec.describe SyncSession, type: :model do
       expect(session.error_details).to be_present
     end
   end
+
+  describe '#duration' do
+    context 'when session has not started' do
+      let(:sync_session) { build(:sync_session, started_at: nil) }
+
+      it 'returns nil' do
+        expect(sync_session.duration).to be_nil
+      end
+    end
+
+    context 'when session is running' do
+      let(:sync_session) { create(:sync_session, :running, started_at: 2.minutes.ago) }
+
+      it 'calculates duration from start to current time' do
+        expect(sync_session.duration).to be_within(1.second).of(120.seconds)
+      end
+    end
+
+    context 'when session is completed' do
+      let(:sync_session) do
+        build(:sync_session, :completed,
+              started_at: Time.current - 5.minutes,
+              completed_at: Time.current - 2.minutes)
+      end
+
+      it 'calculates duration from start to completion' do
+        expect(sync_session.duration).to be_within(1.second).of(180.seconds)
+      end
+    end
+  end
+
+  describe '#average_processing_time_per_email' do
+    context 'with no processed emails' do
+      let(:sync_session) { build(:sync_session, processed_emails: 0) }
+
+      it 'returns nil' do
+        expect(sync_session.average_processing_time_per_email).to be_nil
+      end
+    end
+
+    context 'with processed emails and duration' do
+      let(:sync_session) do
+        build(:sync_session,
+              started_at: Time.current - 10.minutes,
+              completed_at: Time.current,
+              processed_emails: 100)
+      end
+
+      it 'calculates average time per email' do
+        expect(sync_session.average_processing_time_per_email).to be_within(0.1.seconds).of(6.seconds)
+      end
+    end
+  end
+
+  describe 'callbacks' do
+    describe 'status change tracking' do
+      let(:sync_session) { create(:sync_session, :running) }
+
+      it 'sets completed_at when transitioning to completed' do
+        expect {
+          sync_session.update!(status: 'completed')
+        }.to change { sync_session.completed_at }.from(nil)
+      end
+
+      it 'logs status changes' do
+        allow(Rails.logger).to receive(:info)
+        sync_session.update!(status: 'completed')
+        expect(Rails.logger).to have_received(:info).with(/status changed from running to completed/)
+      end
+
+      it 'logs error details when failing' do
+        allow(Rails.logger).to receive(:info)
+        allow(Rails.logger).to receive(:error)
+
+        sync_session.update!(status: 'failed', error_details: 'Test error')
+        expect(Rails.logger).to have_received(:info).with(/SyncSession #{sync_session.id} status changed from running to failed/)
+        expect(Rails.logger).to have_received(:error).with(/SyncSession #{sync_session.id} failed: Test error/)
+      end
+    end
+  end
+
+  describe 'additional scopes' do
+    let!(:failed_session) { create(:sync_session, :failed) }
+    let!(:completed_session) { create(:sync_session, :completed) }
+    let!(:cancelled_session) { create(:sync_session, status: 'cancelled') }
+    let!(:running_session) { create(:sync_session, :running) }
+
+    describe '.failed' do
+      it 'returns only failed sessions' do
+        expect(SyncSession.failed).to eq([ failed_session ])
+      end
+    end
+
+    describe '.finished' do
+      it 'returns completed, failed, and cancelled sessions' do
+        expect(SyncSession.finished).to match_array([ failed_session, completed_session, cancelled_session ])
+      end
+    end
+  end
 end

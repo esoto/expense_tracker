@@ -9,6 +9,12 @@ class SyncSession < ApplicationRecord
   scope :recent, -> { order(created_at: :desc) }
   scope :active, -> { where(status: %w[pending running]) }
   scope :completed, -> { where(status: "completed") }
+  scope :failed, -> { where(status: "failed") }
+  scope :finished, -> { where(status: %w[completed failed cancelled]) }
+
+  # Add callbacks for better error tracking
+  before_save :track_status_changes
+  after_commit :log_status_change, if: :saved_change_to_status?
 
   def progress_percentage
     return 0 if total_emails.zero?
@@ -49,6 +55,10 @@ class SyncSession < ApplicationRecord
 
   def active?
     status.in?([ "pending", "running" ])
+  end
+
+  def finished?
+    status.in?([ "completed", "failed", "cancelled" ])
   end
 
   def start!
@@ -131,5 +141,32 @@ class SyncSession < ApplicationRecord
     # Handle optimistic locking conflict
     reload
     retry
+  end
+
+  def duration
+    return nil unless started_at
+    end_time = completed_at || Time.current
+    end_time - started_at
+  end
+
+  def average_processing_time_per_email
+    return nil if processed_emails.zero? || duration.nil?
+    duration / processed_emails
+  end
+
+  private
+
+  def track_status_changes
+    if status_changed? && status_was == "running" && finished?
+      self.completed_at ||= Time.current
+    end
+  end
+
+  def log_status_change
+    Rails.logger.info "SyncSession #{id} status changed from #{status_before_last_save} to #{status}"
+
+    if failed?
+      Rails.logger.error "SyncSession #{id} failed: #{error_details}"
+    end
   end
 end

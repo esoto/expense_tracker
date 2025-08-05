@@ -5,6 +5,9 @@ class SyncSessionMonitorJob < ApplicationJob
     sync_session = SyncSession.find_by(id: sync_session_id)
     return unless sync_session
 
+    # Reload to get the latest status
+    sync_session.reload
+
     # Don't monitor if already completed or failed
     return unless sync_session.running?
 

@@ -101,7 +101,7 @@ RSpec.describe "SyncSessions", type: :system do
 
       click_button "Cancel Sync"
 
-      expect(page).to have_content("Sincronización cancelada")
+      expect(page).to have_content("Sincronización cancelada exitosamente")
       expect(sync_session.reload).to be_cancelled
     end
   end

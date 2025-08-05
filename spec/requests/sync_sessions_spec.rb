@@ -34,9 +34,10 @@ RSpec.describe "SyncSessions", type: :request do
     end
 
     context 'with invalid id' do
-      it 'returns 404 not found' do
+      it 'redirects with alert for invalid id' do
         get sync_session_path(id: 99999)
-        expect(response).to have_http_status(:not_found)
+        expect(response).to redirect_to(sync_sessions_path)
+        expect(flash[:alert]).to eq("Sincronización no encontrada")
       end
     end
   end
@@ -110,9 +111,55 @@ RSpec.describe "SyncSessions", type: :request do
     end
 
     context 'with invalid email_account_id' do
-      it 'returns 404 not found' do
+      it 'redirects with error message' do
         post sync_sessions_path, params: { email_account_id: 99999 }
-        expect(response).to have_http_status(:not_found)
+        expect(response).to redirect_to(sync_sessions_path)
+        expect(flash[:alert]).to include("Cuenta de email no encontrada")
+      end
+    end
+
+    context 'with sync limit validation' do
+      before do
+        # Create an active sync session
+        create(:sync_session, status: 'running')
+      end
+
+      it 'prevents creating another sync session' do
+        expect {
+          post sync_sessions_path
+        }.not_to change(SyncSession, :count)
+
+        expect(response).to redirect_to(sync_sessions_path)
+        expect(flash[:alert]).to include("Ya hay una sincronización activa")
+      end
+    end
+
+    context 'with rate limit validation' do
+      before do
+        # Create 3 completed sync sessions in the last 5 minutes
+        3.times { create(:sync_session, status: 'completed', created_at: 2.minutes.ago) }
+      end
+
+      it 'prevents creating another sync session' do
+        expect {
+          post sync_sessions_path
+        }.not_to change(SyncSession, :count)
+
+        expect(response).to redirect_to(sync_sessions_path)
+        expect(flash[:alert]).to include("Has alcanzado el límite de sincronizaciones")
+      end
+    end
+
+    context 'with custom since parameter' do
+      it 'passes the since parameter to the job' do
+        post sync_sessions_path, params: { since: '2025-01-01' }
+        session = SyncSession.last
+
+        expect(ProcessEmailsJob).to have_received(:perform_later).with(
+          nil,
+          since: Date.parse('2025-01-01'),
+          sync_session_id: session.id
+        )
       end
     end
   end
@@ -154,8 +201,7 @@ RSpec.describe "SyncSessions", type: :request do
       it 'redirects with alert' do
         post cancel_sync_session_path(sync_session)
         expect(response).to redirect_to(sync_sessions_path)
-        follow_redirect!
-        expect(response.body).to include("No se puede cancelar esta sincronización")
+        expect(flash[:alert]).to eq("Esta sincronización no está activa")
       end
     end
   end
@@ -229,8 +275,43 @@ RSpec.describe "SyncSessions", type: :request do
       it 'redirects with alert' do
         post retry_sync_session_path(sync_session)
         expect(response).to redirect_to(sync_sessions_path)
-        follow_redirect!
-        expect(response.body).to include("No se puede reintentar esta sincronización")
+        expect(flash[:alert]).to eq("Solo se pueden reintentar sincronizaciones fallidas o canceladas")
+      end
+    end
+
+    context 'with rate limit exceeded' do
+      let(:sync_session) { create(:sync_session, :failed) }
+
+      before do
+        sync_session.email_accounts << email_account1
+        # Create 3 sync sessions to exceed rate limit
+        3.times { create(:sync_session, created_at: 2.minutes.ago) }
+      end
+
+      it 'prevents retry due to rate limit' do
+        expect {
+          post retry_sync_session_path(sync_session)
+        }.not_to change(SyncSession, :count)
+
+        expect(response).to redirect_to(sync_sessions_path)
+        expect(flash[:alert]).to include("Has alcanzado el límite de sincronizaciones")
+      end
+    end
+
+    context 'JSON format' do
+      let(:sync_session) { create(:sync_session, :failed) }
+
+      before do
+        sync_session.email_accounts << email_account1
+      end
+
+      it 'returns created status on success' do
+        post retry_sync_session_path(sync_session), as: :json
+
+        expect(response).to have_http_status(:created)
+        json = JSON.parse(response.body)
+        expect(json).to have_key('id')
+        expect(json['status']).to eq('pending')
       end
     end
   end

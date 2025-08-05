@@ -1,5 +1,9 @@
 class SyncSessionsController < ApplicationController
+  include SyncAuthorization
+  include SyncErrorHandling
+
   before_action :set_sync_session, only: [ :show, :cancel, :retry ]
+  before_action :authorize_sync_session_owner!, only: [ :show, :cancel, :retry ]
 
   def index
     @active_session = SyncSession.active.includes(:sync_session_accounts, :email_accounts).first
@@ -14,52 +18,102 @@ class SyncSessionsController < ApplicationController
   end
 
   def create
-    @sync_session = SyncSession.create!
+    # Validate sync can be created
+    validator = SyncSessionValidator.new
 
-    if params[:email_account_id].present?
-      # Single account sync
-      account = EmailAccount.find(params[:email_account_id])
-      @sync_session.email_accounts << account
-    else
-      # All accounts sync
-      @sync_session.email_accounts << EmailAccount.active
+    begin
+      validator.validate!
+    rescue SyncSessionValidator::SyncLimitExceeded
+      return handle_sync_limit_exceeded
+    rescue SyncSessionValidator::RateLimitExceeded
+      return handle_rate_limit_exceeded
     end
 
-    # Update the ProcessEmailsJob to accept sync_session_id
+    # Create sync session with transaction
+    @sync_session = SyncSession.transaction do
+      session = SyncSession.create!
+
+      if params[:email_account_id].present?
+        # Single account sync - verify ownership/access
+        account = EmailAccount.active.find(params[:email_account_id])
+        session.email_accounts << account
+      else
+        # All accounts sync
+        accounts = EmailAccount.active
+        if accounts.empty?
+          raise ActiveRecord::RecordInvalid.new(session), "No hay cuentas de email activas para sincronizar"
+        end
+        session.email_accounts << accounts
+      end
+
+      session
+    end
+
+    # Start sync job
     ProcessEmailsJob.perform_later(
       params[:email_account_id],
-      since: 1.week.ago,
+      since: params[:since]&.to_date || 1.week.ago,
       sync_session_id: @sync_session.id
     )
 
-    redirect_to sync_sessions_path, notice: "Sincronización iniciada exitosamente"
+    respond_to do |format|
+      format.html { redirect_to sync_sessions_path, notice: "Sincronización iniciada exitosamente" }
+      format.json { render json: { id: @sync_session.id, status: @sync_session.status }, status: :created }
+    end
+  rescue ActiveRecord::RecordNotFound
+    redirect_to sync_sessions_path, alert: "Cuenta de email no encontrada o inactiva"
   end
 
   def cancel
-    if @sync_session.active?
-      @sync_session.cancel!
-      redirect_to sync_sessions_path, notice: "Sincronización cancelada"
-    else
-      redirect_to sync_sessions_path, alert: "No se puede cancelar esta sincronización"
+    unless @sync_session.active?
+      return redirect_to sync_sessions_path, alert: "Esta sincronización no está activa"
     end
+
+    @sync_session.cancel!
+
+    respond_to do |format|
+      format.html { redirect_to sync_sessions_path, notice: "Sincronización cancelada exitosamente" }
+      format.json { render json: { status: @sync_session.status }, status: :ok }
+    end
+  rescue => e
+    Rails.logger.error "Error cancelling sync session #{@sync_session.id}: #{e.message}"
+    redirect_to sync_sessions_path, alert: "Error al cancelar la sincronización"
   end
 
   def retry
-    if @sync_session.failed? || @sync_session.cancelled?
-      # Create a new sync session with same accounts
-      new_session = SyncSession.create!
-      new_session.email_accounts << @sync_session.email_accounts
-
-      ProcessEmailsJob.perform_later(
-        nil,
-        since: 1.week.ago,
-        sync_session_id: new_session.id
-      )
-
-      redirect_to sync_sessions_path, notice: "Sincronización reiniciada"
-    else
-      redirect_to sync_sessions_path, alert: "No se puede reintentar esta sincronización"
+    unless @sync_session.failed? || @sync_session.cancelled?
+      return redirect_to sync_sessions_path, alert: "Solo se pueden reintentar sincronizaciones fallidas o canceladas"
     end
+
+    # Check rate limit for retry
+    validator = SyncSessionValidator.new
+    unless validator.can_create_sync?
+      return handle_rate_limit_exceeded
+    end
+
+    # Create a new sync session with same accounts
+    new_session = SyncSession.transaction do
+      session = SyncSession.create!
+      session.email_accounts << @sync_session.email_accounts
+      session
+    end
+
+    # Track retry in the new session
+    new_session.update!(retry_of_id: @sync_session.id) if new_session.respond_to?(:retry_of_id=)
+
+    ProcessEmailsJob.perform_later(
+      nil,
+      since: params[:since]&.to_date || 1.week.ago,
+      sync_session_id: new_session.id
+    )
+
+    respond_to do |format|
+      format.html { redirect_to sync_sessions_path, notice: "Sincronización reiniciada exitosamente" }
+      format.json { render json: { id: new_session.id, status: new_session.status }, status: :created }
+    end
+  rescue => e
+    Rails.logger.error "Error retrying sync session #{@sync_session.id}: #{e.message}"
+    redirect_to sync_sessions_path, alert: "Error al reintentar la sincronización"
   end
 
   def status

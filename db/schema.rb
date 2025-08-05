@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_04_220201) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_04_232625) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -234,7 +234,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_220201) do
     t.text "last_error"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "job_id"
+    t.integer "lock_version", default: 0, null: false
     t.index ["email_account_id"], name: "index_sync_session_accounts_on_email_account_id"
+    t.index ["job_id"], name: "index_sync_session_accounts_on_job_id"
     t.index ["status"], name: "index_sync_session_accounts_on_status"
     t.index ["sync_session_id"], name: "index_sync_session_accounts_on_sync_session_id"
   end
@@ -250,6 +253,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_220201) do
     t.text "error_details"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "job_ids", default: "[]"
+    t.integer "lock_version", default: 0, null: false
     t.index ["created_at"], name: "index_sync_sessions_on_created_at"
     t.index ["status"], name: "index_sync_sessions_on_status"
   end

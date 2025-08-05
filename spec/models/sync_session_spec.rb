@@ -292,38 +292,17 @@ RSpec.describe SyncSession, type: :model do
     let!(:account1) { create(:sync_session_account, sync_session: sync_session, total_emails: 50, processed_emails: 25, detected_expenses: 10) }
     let!(:account2) { create(:sync_session_account, sync_session: sync_session, total_emails: 100, processed_emails: 75, detected_expenses: 20) }
 
-    it 'sums total_emails from all session accounts' do
+    it 'delegates to SyncProgressUpdater service' do
+      updater = instance_double(SyncProgressUpdater)
+      expect(SyncProgressUpdater).to receive(:new).with(sync_session).and_return(updater)
+      expect(updater).to receive(:call).and_return(true)
+
       sync_session.update_progress
-      expect(sync_session.total_emails).to eq(150)
     end
 
-    it 'sums processed_emails from all session accounts' do
-      sync_session.update_progress
-      expect(sync_session.processed_emails).to eq(100)
-    end
-
-    it 'sums detected_expenses from all session accounts' do
-      sync_session.update_progress
-      expect(sync_session.detected_expenses).to eq(30)
-    end
-
-    it 'persists the changes' do
-      sync_session.update_progress
-      reloaded = sync_session.reload
-      expect(reloaded.total_emails).to eq(150)
-      expect(reloaded.processed_emails).to eq(100)
-      expect(reloaded.detected_expenses).to eq(30)
-    end
-
-    context 'with no session accounts' do
-      let!(:empty_sync_session) { create(:sync_session) }
-
-      it 'sets all counts to zero' do
-        empty_sync_session.update_progress
-        expect(empty_sync_session.total_emails).to eq(0)
-        expect(empty_sync_session.processed_emails).to eq(0)
-        expect(empty_sync_session.detected_expenses).to eq(0)
-      end
+    it 'returns the result from the service' do
+      allow_any_instance_of(SyncProgressUpdater).to receive(:call).and_return(true)
+      expect(sync_session.update_progress).to eq(true)
     end
   end
 

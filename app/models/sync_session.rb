@@ -124,23 +124,7 @@ class SyncSession < ApplicationRecord
   end
 
   def update_progress
-    # Use pluck to get the sums without ordering issues
-    sums = sync_session_accounts
-      .pluck(
-        "SUM(total_emails)",
-        "SUM(processed_emails)",
-        "SUM(detected_expenses)"
-      )
-      .first
-
-    self.total_emails = sums[0] || 0
-    self.processed_emails = sums[1] || 0
-    self.detected_expenses = sums[2] || 0
-    save!
-  rescue ActiveRecord::StaleObjectError
-    # Handle optimistic locking conflict
-    reload
-    retry
+    SyncProgressUpdater.new(self).call
   end
 
   def duration

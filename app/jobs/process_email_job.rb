@@ -1,6 +1,8 @@
 class ProcessEmailJob < ApplicationJob
   queue_as :default
 
+  TRUNCATE_SIZE = 10_000  # Store only 10KB for large emails
+
   def perform(email_account_id, email_data)
     email_account = EmailAccount.find_by(id: email_account_id)
 
@@ -31,15 +33,29 @@ class ProcessEmailJob < ApplicationJob
   private
 
   def save_failed_parsing(email_account, email_data, errors)
-    # Create a failed expense record for debugging
+    email_body = email_data[:body].to_s
+    truncated = false
+
+    if email_body.bytesize > TRUNCATE_SIZE
+      email_body = email_body.byteslice(0, TRUNCATE_SIZE) + "\n... [truncated]"
+      truncated = true
+    end
+
     Expense.create!(
       email_account: email_account,
-      amount: 0.01, # Use minimal amount to satisfy validation
+      amount: 0.01,
       transaction_date: Time.current,
-      description: "Failed to parse: #{errors.join(", ")}",
-      raw_email_content: email_data[:body].to_s,
-      parsed_data: email_data.to_json,
-      status: "failed"
+      merchant_name: nil,  # Explicitly set to nil for failed parsing
+      description: "Failed to parse: #{errors.first}",  # Only first error to save space
+      raw_email_content: email_body,
+      parsed_data: {
+        errors: errors,
+        truncated: truncated,
+        original_size: email_data[:body].to_s.bytesize
+      }.to_json,
+      status: "failed",
+      email_body: email_body,
+      bank_name: email_account.bank_name
     )
   rescue StandardError => e
     Rails.logger.error "Failed to save failed parsing record: #{e.message}"

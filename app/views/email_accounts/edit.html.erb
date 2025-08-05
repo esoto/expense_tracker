@@ -1,0 +1,80 @@
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="md:flex md:items-center md:justify-between">
+    <div class="flex-1 min-w-0">
+      <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:text-3xl sm:truncate">Editar Cuenta de Correo</h2>
+    </div>
+  </div>
+
+  <div class="mt-8 bg-white shadow-sm border border-slate-200 sm:rounded-xl">
+    <div class="px-4 py-5 sm:p-6">
+      <%= form_with(model: @email_account, local: true) do |form| %>
+        <% if @email_account.errors.any? %>
+          <div class="rounded-lg bg-rose-50 p-4 mb-6">
+            <div class="flex">
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-rose-800">Hay <%= pluralize(@email_account.errors.count, "error") %> que corregir:</h3>
+                <div class="mt-2 text-sm text-rose-700">
+                  <ul class="list-disc pl-5 space-y-1">
+                    <% @email_account.errors.full_messages.each do |message| %>
+                      <li><%= message %></li>
+                    <% end %>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <div class="space-y-6">
+          <div>
+            <%= form.label :email, "Correo electrónico", class: "block text-sm font-medium text-slate-700" %>
+            <%= form.email_field :email, class: "mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm" %>
+          </div>
+
+          <div>
+            <%= form.label :password, "Contraseña", class: "block text-sm font-medium text-slate-700" %>
+            <%= form.password_field :password, placeholder: "Dejar en blanco para mantener la actual", class: "mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm" %>
+            <p class="mt-2 text-sm text-slate-500">Solo ingresa una nueva contraseña si deseas cambiarla.</p>
+          </div>
+
+          <div>
+            <%= form.label :bank_name, "Banco", class: "block text-sm font-medium text-slate-700" %>
+            <%= form.select :bank_name, options_for_select(bank_options, @email_account.bank_name),
+                { prompt: "Selecciona un banco" },
+                class: "mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm" %>
+          </div>
+
+          <div>
+            <%= form.label :provider, "Proveedor de correo", class: "block text-sm font-medium text-slate-700" %>
+            <%= form.select :provider, options_for_select(email_provider_options, @email_account.provider),
+                { prompt: "Selecciona el proveedor" },
+                class: "mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm" %>
+            <p class="mt-2 text-sm text-slate-500">Gmail y Outlook configurarán automáticamente el servidor IMAP.</p>
+          </div>
+
+          <div>
+            <%= form.label :server, "Servidor IMAP (opcional)", class: "block text-sm font-medium text-slate-700" %>
+            <%= form.text_field :server, value: @email_account.settings.dig("imap", "server"), placeholder: "imap.gmail.com", class: "mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm" %>
+            <p class="mt-2 text-sm text-slate-500">Solo necesario para proveedores personalizados.</p>
+          </div>
+
+          <div>
+            <%= form.label :port, "Puerto (opcional)", class: "block text-sm font-medium text-slate-700" %>
+            <%= form.number_field :port, value: @email_account.settings.dig("imap", "port"), placeholder: "993", class: "mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm" %>
+            <p class="mt-2 text-sm text-slate-500">Por defecto: 993 para conexiones SSL.</p>
+          </div>
+
+          <div class="flex items-center">
+            <%= form.check_box :active, class: "h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded" %>
+            <%= form.label :active, "Cuenta activa", class: "ml-2 block text-sm text-slate-900" %>
+          </div>
+        </div>
+
+        <div class="mt-6 flex items-center justify-end gap-x-4">
+          <%= link_to "Cancelar", email_accounts_path, class: "text-sm font-semibold leading-6 text-slate-700 hover:text-slate-900" %>
+          <%= form.submit "Actualizar cuenta", class: "rounded-lg bg-teal-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

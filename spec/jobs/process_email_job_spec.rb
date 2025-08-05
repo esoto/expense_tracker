@@ -186,9 +186,35 @@ RSpec.describe ProcessEmailJob, type: :job do
       expect(failed_expense.amount).to eq(0.01)
       expect(failed_expense.status).to eq('failed')
       expect(failed_expense.description).to include("Failed to parse")
-      expect(failed_expense.description).to include(errors.join(", "))
+      expect(failed_expense.description).to include(errors.first)
       expect(failed_expense.raw_email_content).to eq(failed_email_data[:body])
-      expect(failed_expense.parsed_data).to eq(failed_email_data.to_json)
+
+      parsed_data = JSON.parse(failed_expense.parsed_data)
+      expect(parsed_data['errors']).to eq(errors)
+      expect(parsed_data['truncated']).to eq(false)
+      expect(parsed_data['original_size']).to eq(failed_email_data[:body].bytesize)
+    end
+
+    context 'with large email body' do
+      let(:large_body) { 'x' * 15_000 } # 15KB
+      let(:large_email_data) { failed_email_data.merge(body: large_body) }
+
+      it 'truncates large email bodies' do
+        job.send(:save_failed_parsing, email_account, large_email_data, errors)
+
+        failed_expense = Expense.last
+        expect(failed_expense.raw_email_content.bytesize).to be <= 10_000 + 50 # 10KB + truncation message
+        expect(failed_expense.raw_email_content).to end_with('... [truncated]')
+      end
+
+      it 'marks as truncated in parsed_data' do
+        job.send(:save_failed_parsing, email_account, large_email_data, errors)
+
+        failed_expense = Expense.last
+        parsed_data = JSON.parse(failed_expense.parsed_data)
+        expect(parsed_data['truncated']).to eq(true)
+        expect(parsed_data['original_size']).to eq(15_000)
+      end
     end
 
     it 'handles save errors gracefully' do

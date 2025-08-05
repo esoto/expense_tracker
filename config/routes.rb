@@ -21,6 +21,7 @@ Rails.application.routes.draw do
     end
   end
 
+
   resources :sync_sessions, only: [ :index, :show, :create ] do
     member do
       post :cancel
@@ -31,6 +32,16 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :email_accounts
+
+  # UX Mockups routes (development only)
+  if Rails.env.development?
+    get "ux_mockups", to: "ux_mockups#index"
+    get "ux_mockups/mobile_expense_cards", to: "ux_mockups#mobile_expense_cards"
+    get "ux_mockups/sync_status_dashboard", to: "ux_mockups#sync_status_dashboard"
+    get "ux_mockups/inline_categorization", to: "ux_mockups#inline_categorization"
+    get "ux_mockups/color_palettes", to: "ux_mockups#color_palettes"
+  end
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
   # Can be used by load balancers and uptime monitors to verify that the app is live.

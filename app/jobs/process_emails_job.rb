@@ -1,5 +1,27 @@
 class ProcessEmailsJob < ApplicationJob
-  queue_as :default
+  queue_as :email_processing
+
+  # Add retry logic
+  retry_on ImapConnectionService::ConnectionError, wait: :exponentially_longer, attempts: 3
+  retry_on Net::ReadTimeout, wait: 5.seconds, attempts: 2
+
+  # Add performance monitoring
+  around_perform do |job, block|
+    start_time = Time.current
+    account_id = job.arguments.first
+
+    Rails.logger.info "[ProcessEmailsJob] Starting for account #{account_id}"
+
+    block.call
+
+    duration = Time.current - start_time
+    Rails.logger.info "[ProcessEmailsJob] Completed in #{duration.round(2)}s"
+
+    # Alert on slow processing
+    if duration > 30.seconds
+      Rails.logger.warn "[ProcessEmailsJob] Slow processing: #{duration.round(2)}s for account #{account_id}"
+    end
+  end
 
   def perform(email_account_id = nil, since: 1.week.ago, sync_session_id: nil)
     @sync_session = sync_session_id ? SyncSession.find_by(id: sync_session_id) : nil
@@ -101,6 +123,17 @@ class ProcessEmailsJob < ApplicationJob
       if @sync_session && job.respond_to?(:provider_job_id)
         @sync_session.add_job_id(job.provider_job_id)
       end
+    end
+  end
+
+  def process_all_accounts_in_batches(since)
+    EmailAccount.active.find_in_batches(batch_size: 5) do |batch|
+      batch.each do |email_account|
+        ProcessEmailsJob.perform_later(email_account.id, since: since)
+      end
+
+      # Prevent IMAP server overload
+      sleep(1) if batch.size == 5
     end
   end
 end

@@ -1,19 +1,35 @@
 class DashboardService
+  CACHE_EXPIRY = 5.minutes
+
   def initialize
   end
 
-  def analytics
-    {
-      totals: calculate_totals,
-      recent_expenses: recent_expenses,
-      category_breakdown: category_breakdown,
-      monthly_trend: monthly_trend,
-      bank_breakdown: bank_breakdown,
-      top_merchants: top_merchants,
-      email_accounts: active_email_accounts,
-      sync_info: sync_info,
-      sync_sessions: sync_session_data
-    }
+  def analyics
+    # Don't cache sync_info as it needs real-time data
+    sync_data = sync_info
+    sync_info = sync_info,
+    sync_sessions = sync_session_data
+
+    # Cache everything else
+    cached_analytics = Rails.cache.fetch("dashboard_analytics", expires_in: CACHE_EXPIRY) do
+      {
+        totals: calculate_totals,
+        recent_expenses: recent_expenses,
+        category_breakdown: category_breakdown,
+        monthly_trend: monthly_trend,
+        bank_breakdown: bank_breakdown,
+        top_merchants: top_merchants,
+        email_accounts: active_email_accounts
+      }
+    end
+
+    # Merge real-time sync info with cached data
+    cached_analytics.merge(sync_info: sync_data, sync_info: sync_info, sync_sessions: sync_session_data)
+  end
+
+  # Add cache clearing
+  def self.clear_cache
+    Rails.cache.delete_matched("dashboard_*")
   end
 
   private
@@ -40,7 +56,7 @@ class DashboardService
   end
 
   def recent_expenses
-    Expense.includes(:category)
+    Expense.includes(:category, :email_account)  # Add :email_account to prevent N+1
            .order(transaction_date: :desc, created_at: :desc)
            .limit(10)
   end
@@ -83,20 +99,20 @@ class DashboardService
   end
 
   def sync_info
-    # Get most recent expense from each email account to estimate last sync
-    last_expenses = Expense.select("email_account_id, MAX(created_at) as last_created")
-                          .group(:email_account_id)
-                          .includes(:email_account)
+    # Single query approach to avoid N+1
+    sync_data = EmailAccount.active
+      .left_joins(:expenses)
+      .group(:id)
+      .select("email_accounts.*, MAX(expenses.created_at) as last_expense_created")
+      .index_by(&:id)
+      .transform_values do |account|
+        {
+          last_sync: account.last_expense_created,
+          account: account
+        }
+      end
 
-    sync_data = {}
-    last_expenses.each do |expense|
-      sync_data[expense.email_account_id] = {
-        last_sync: expense.last_created,
-        account: expense.email_account
-      }
-    end
-
-    # Also check for running sync jobs
+    # Check for running jobs
     running_jobs = SolidQueue::Job.where(
       class_name: "ProcessEmailsJob",
       finished_at: nil

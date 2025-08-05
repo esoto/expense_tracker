@@ -33,13 +33,20 @@ class ApiToken < ApplicationRecord
   def self.authenticate(token_string)
     return nil unless token_string.present?
 
-    # O(1) lookup using token_hash
-    token_hash = Digest::SHA256.hexdigest(token_string)
-    api_token = active.find_by(token_hash: token_hash)
+    # Short-lived cache for successful authentications
+    cache_key = "api_token:#{Digest::SHA256.hexdigest(token_string)[0..16]}"
 
-    # If we found a token with matching hash, it's valid
-    # The SHA256 hash already proves the token is correct
-    api_token&.valid_token? ? api_token : nil
+    Rails.cache.fetch(cache_key, expires_in: 1.minute) do
+      token_hash = Digest::SHA256.hexdigest(token_string)
+      api_token = active.find_by(token_hash: token_hash)
+
+      if api_token&.valid_token?
+        api_token.touch_last_used!
+        api_token
+      else
+        nil
+      end
+    end
   end
 
   def self.generate_secure_token

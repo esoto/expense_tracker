@@ -3,38 +3,18 @@ class ExpensesController < ApplicationController
 
   # GET /expenses
   def index
+    # Base query with includes
     @expenses = Expense.includes(:category, :email_account)
-                      .order(transaction_date: :desc, created_at: :desc)
-                      .limit(25)
 
-    # Filter by category if specified
-    @expenses = @expenses.joins(:category).where(categories: { name: params[:category] }) if params[:category].present?
+    # Apply filters efficiently
+    @expenses = apply_filters(@expenses)
 
-    # Filter by date range if specified
-    if params[:start_date].present? && params[:end_date].present?
-      @expenses = @expenses.where(transaction_date: params[:start_date]..params[:end_date])
-    end
+    # Order and limit
+    @expenses = @expenses.order(transaction_date: :desc, created_at: :desc)
+                        .limit(25)
 
-    # Filter by bank if specified
-    @expenses = @expenses.where(bank_name: params[:bank]) if params[:bank].present?
-
-    # Summary statistics
-    @total_amount = @expenses.sum(:amount)
-    @expense_count = @expenses.count
-
-    # Create categories summary with fresh query to avoid GROUP BY conflicts with ORDER BY
-    categories_query = Expense.joins(:category)
-
-    # Apply same filters as main query
-    categories_query = categories_query.where(categories: { name: params[:category] }) if params[:category].present?
-    if params[:start_date].present? && params[:end_date].present?
-      categories_query = categories_query.where(transaction_date: params[:start_date]..params[:end_date])
-    end
-    categories_query = categories_query.where(bank_name: params[:bank]) if params[:bank].present?
-
-    @categories_summary = categories_query.group("categories.name")
-                                         .sum(:amount)
-                                         .sort_by { |_, amount| -amount }
+    # Calculate summary with separate optimized query
+    calculate_summary_statistics
   end
 
   # GET /expenses/1
@@ -135,5 +115,35 @@ class ExpensesController < ApplicationController
 
   def expense_params
     params.require(:expense).permit(:amount, :currency, :transaction_date, :merchant_name, :description, :category_id, :email_account_id, :notes)
+  end
+
+  def apply_filters(scope)
+    # Use left_joins instead of joins to maintain includes
+    scope = scope.left_joins(:category).where(categories: { name: params[:category] }) if params[:category].present?
+    scope = scope.where(transaction_date: params[:start_date]..params[:end_date]) if date_range_present?
+    scope = scope.where(bank_name: params[:bank]) if params[:bank].present?
+    scope
+  end
+
+  def date_range_present?
+    params[:start_date].present? && params[:end_date].present?
+  end
+
+  def calculate_summary_statistics
+    # Build a separate query for aggregations
+    summary_scope = Expense.all
+    summary_scope = apply_filters(summary_scope)
+
+    # Single query for both sum and count
+    result = summary_scope.pick(Arel.sql("SUM(amount)"), Arel.sql("COUNT(*)"))
+    @total_amount = result[0] || 0
+    @expense_count = result[1] || 0
+
+    # Category summary with single query
+    @categories_summary = summary_scope
+      .joins(:category)
+      .group("categories.name")
+      .sum(:amount)
+      .sort_by { |_, amount| -amount }
   end
 end

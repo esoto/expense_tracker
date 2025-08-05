@@ -66,6 +66,9 @@ class Expense < ApplicationRecord
     status == "failed"
   end
 
+  # Callbacks
+  after_commit :clear_dashboard_cache
+
   # Class methods
   def self.total_amount_for_period(start_date, end_date)
     by_date_range(start_date, end_date).sum(:amount)
@@ -80,5 +83,11 @@ class Expense < ApplicationRecord
 
   def self.monthly_summary
     group_by_month(:transaction_date, last: 12).sum(:amount)
+  end
+
+  private
+
+  def clear_dashboard_cache
+    DashboardService.clear_cache
   end
 end

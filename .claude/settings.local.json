@@ -11,6 +11,12 @@
       "Bash(RAILS_LOG_LEVEL=debug bundle exec rspec spec/requests/sync_sessions_spec.rb:223)",
       "Bash(bundle exec rails console:*)",
       "Bash(diff:*)"
+      "Bash(grep:*)",
+      "Bash(git checkout:*)",
+      "Bash(rails g:*)",
+      "Bash(bin/rails:*)",
+      "Bash(bundle exec brakeman:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }

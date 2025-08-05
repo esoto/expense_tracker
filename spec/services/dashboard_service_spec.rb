@@ -14,7 +14,7 @@ RSpec.describe DashboardService do
 
       expect(result).to include(
         :totals, :recent_expenses, :category_breakdown, :monthly_trend,
-        :bank_breakdown, :top_merchants, :email_accounts, :sync_info
+        :bank_breakdown, :top_merchants, :email_accounts, :sync_info, :sync_sessions
       )
     end
 
@@ -93,6 +93,18 @@ RSpec.describe DashboardService do
       expect(sync_info).to include(:has_running_jobs, :running_job_count)
       expect(sync_info[:has_running_jobs]).to eq(false)
       expect(sync_info[:running_job_count]).to eq(0)
+    end
+
+    it 'includes sync session data' do
+      active_session = create(:sync_session, :running)
+      completed_session = create(:sync_session, :completed)
+
+      result = service.analytics
+      sync_sessions = result[:sync_sessions]
+
+      expect(sync_sessions).to include(:active_session, :last_completed)
+      expect(sync_sessions[:active_session]).to eq(active_session)
+      expect(sync_sessions[:last_completed]).to eq(completed_session)
     end
   end
 

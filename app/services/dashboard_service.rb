@@ -7,6 +7,7 @@ class DashboardService
   def analytics
     # Don't cache sync_info as it needs real-time data
     sync_data = sync_info
+    sync_sessions = sync_session_data
 
     # Cache everything else
     cached_analytics = Rails.cache.fetch("dashboard_analytics", expires_in: CACHE_EXPIRY) do
@@ -22,7 +23,7 @@ class DashboardService
     end
 
     # Merge real-time sync info with cached data
-    cached_analytics.merge(sync_info: sync_data)
+    cached_analytics.merge(sync_info: sync_data, sync_sessions: sync_sessions)
   end
 
   # Add cache clearing
@@ -120,5 +121,12 @@ class DashboardService
     sync_data[:running_job_count] = running_jobs.count
 
     sync_data
+  end
+
+  def sync_session_data
+    {
+      active_session: SyncSession.active.recent.first,
+      last_completed: SyncSession.completed.recent.first
+    }
   end
 end

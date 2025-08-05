@@ -89,6 +89,11 @@ class ExpensesController < ApplicationController
     @top_merchants = dashboard_data[:top_merchants]
     @email_accounts = dashboard_data[:email_accounts]
     @last_sync_info = dashboard_data[:sync_info]
+
+    # Sync session data for widget
+    sync_sessions = dashboard_data[:sync_sessions]
+    @active_sync_session = sync_sessions[:active_session]
+    @last_completed_sync = sync_sessions[:last_completed]
   end
 
   # POST /expenses/sync_emails

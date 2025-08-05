@@ -1,5 +1,8 @@
 <!-- Sync Status Widget -->
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
+     data-controller="sync-widget"
+     data-sync-widget-session-id-value="<%= @active_sync_session&.id || 0 %>"
+     data-sync-widget-active-value="<%= @active_sync_session.present? %>">
   <div class="flex items-center justify-between mb-4">
     <h2 class="text-lg font-semibold text-slate-900">Estado de Sincronización</h2>
     <% if @active_sync_session %>
@@ -25,17 +28,18 @@
 
   <% if @active_sync_session %>
     <!-- Active Sync Progress -->
-    <div class="space-y-4">
+    <div class="space-y-4" data-sync-widget-target="activeSection">
       <!-- Overall Progress -->
       <div>
         <div class="flex items-center justify-between mb-2">
           <span class="text-sm font-medium text-slate-700">Progreso general</span>
-          <span class="text-sm font-semibold text-slate-900">
+          <span class="text-sm font-semibold text-slate-900" data-sync-widget-target="progressPercentage">
             <%= @active_sync_session.progress_percentage %>%
           </span>
         </div>
         <div class="w-full bg-slate-200 rounded-full h-2">
           <div class="bg-teal-700 h-2 rounded-full transition-all duration-300 ease-out"
+               data-sync-widget-target="progressBar"
                style="width: <%= @active_sync_session.progress_percentage %>%"></div>
         </div>
       </div>
@@ -43,19 +47,19 @@
       <!-- Stats Grid -->
       <div class="grid grid-cols-3 gap-4 py-3">
         <div class="text-center">
-          <p class="text-2xl font-bold text-slate-900">
+          <p class="text-2xl font-bold text-slate-900" data-sync-widget-target="processedCount">
             <%= number_with_delimiter(@active_sync_session.processed_emails) %>
           </p>
           <p class="text-xs text-slate-600">Correos procesados</p>
         </div>
         <div class="text-center border-x border-slate-200">
-          <p class="text-2xl font-bold text-teal-700">
+          <p class="text-2xl font-bold text-teal-700" data-sync-widget-target="detectedCount">
             <%= @active_sync_session.detected_expenses %>
           </p>
           <p class="text-xs text-slate-600">Gastos detectados</p>
         </div>
         <div class="text-center">
-          <p class="text-2xl font-bold text-slate-900">
+          <p class="text-2xl font-bold text-slate-900" data-sync-widget-target="activeCount">
             <%= @active_sync_session.email_accounts.count %>
           </p>
           <p class="text-xs text-slate-600">Cuentas activas</p>
@@ -66,17 +70,18 @@
       <% if @active_sync_session.running? && @active_sync_session.estimated_time_remaining %>
         <div class="flex items-center justify-between pt-3 border-t border-slate-200">
           <span class="text-sm text-slate-600">Tiempo estimado restante</span>
-          <span class="text-sm font-medium text-slate-900">
+          <span class="text-sm font-medium text-slate-900" data-sync-widget-target="timeRemaining">
             <%= distance_of_time_in_words(@active_sync_session.estimated_time_remaining) %>
           </span>
         </div>
       <% end %>
 
       <!-- Account Details -->
-      <div class="space-y-2 pt-3 border-t border-slate-200">
+      <div class="space-y-2 pt-3 border-t border-slate-200" data-sync-widget-target="accountsList">
         <% @active_sync_session.sync_session_accounts.includes(:email_account).each do |account| %>
-          <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50">
+          <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50" data-account-id="<%= account.id %>">
             <div class="flex items-center space-x-3">
+              <div data-status-icon>
               <% if account.processing? %>
                 <svg class="animate-spin h-4 w-4 text-teal-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -93,15 +98,16 @@
               <% else %>
                 <div class="h-4 w-4 rounded-full bg-slate-300"></div>
               <% end %>
+              </div>
               <span class="text-sm text-slate-700">
                 <%= account.email_account.display_name %>
               </span>
             </div>
             <div class="text-right">
-              <p class="text-sm font-medium text-slate-900">
+              <p class="text-sm font-medium text-slate-900" data-progress-text>
                 <%= account.progress_percentage %>%
               </p>
-              <p class="text-xs text-slate-600">
+              <p class="text-xs text-slate-600" data-progress-count>
                 <%= account.processed_emails %> / <%= account.total_emails %>
               </p>
             </div>
@@ -111,7 +117,7 @@
     </div>
   <% else %>
     <!-- No Active Sync -->
-    <div class="text-center py-8">
+    <div class="text-center py-8" data-sync-widget-target="inactiveSection">
       <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 mb-4">
         <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>

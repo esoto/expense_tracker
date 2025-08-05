@@ -10,7 +10,7 @@
       "Bash(RAILS_ENV=test rails runner test_debug.rb)",
       "Bash(RAILS_LOG_LEVEL=debug bundle exec rspec spec/requests/sync_sessions_spec.rb:223)",
       "Bash(bundle exec rails console:*)",
-      "Bash(diff:*)"
+      "Bash(diff:*)",
       "Bash(grep:*)",
       "Bash(git checkout:*)",
       "Bash(rails g:*)",

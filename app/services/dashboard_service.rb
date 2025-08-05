@@ -11,7 +11,8 @@ class DashboardService
       bank_breakdown: bank_breakdown,
       top_merchants: top_merchants,
       email_accounts: active_email_accounts,
-      sync_info: sync_info
+      sync_info: sync_info,
+      sync_sessions: sync_session_data
     }
   end
 
@@ -105,5 +106,12 @@ class DashboardService
     sync_data[:running_job_count] = running_jobs.count
 
     sync_data
+  end
+
+  def sync_session_data
+    {
+      active_session: SyncSession.active.recent.first,
+      last_completed: SyncSession.completed.recent.first
+    }
   end
 end

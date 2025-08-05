@@ -1,0 +1,134 @@
+<!-- Sync Status Widget -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg font-semibold text-slate-900">Estado de Sincronización</h2>
+    <% if @active_sync_session %>
+      <div class="flex items-center space-x-2">
+        <%= link_to sync_session_path(@active_sync_session),
+            class: "text-teal-700 hover:text-teal-800 text-sm font-medium" do %>
+          Ver detalles
+          <svg class="w-4 h-4 inline-block ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        <% end %>
+      </div>
+    <% else %>
+      <%= link_to sync_sessions_path,
+          class: "text-teal-700 hover:text-teal-800 text-sm font-medium" do %>
+        Ver historial
+        <svg class="w-4 h-4 inline-block ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      <% end %>
+    <% end %>
+  </div>
+
+  <% if @active_sync_session %>
+    <!-- Active Sync Progress -->
+    <div class="space-y-4">
+      <!-- Overall Progress -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-medium text-slate-700">Progreso general</span>
+          <span class="text-sm font-semibold text-slate-900">
+            <%= @active_sync_session.progress_percentage %>%
+          </span>
+        </div>
+        <div class="w-full bg-slate-200 rounded-full h-2">
+          <div class="bg-teal-700 h-2 rounded-full transition-all duration-300 ease-out"
+               style="width: <%= @active_sync_session.progress_percentage %>%"></div>
+        </div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-3 gap-4 py-3">
+        <div class="text-center">
+          <p class="text-2xl font-bold text-slate-900">
+            <%= number_with_delimiter(@active_sync_session.processed_emails) %>
+          </p>
+          <p class="text-xs text-slate-600">Correos procesados</p>
+        </div>
+        <div class="text-center border-x border-slate-200">
+          <p class="text-2xl font-bold text-teal-700">
+            <%= @active_sync_session.detected_expenses %>
+          </p>
+          <p class="text-xs text-slate-600">Gastos detectados</p>
+        </div>
+        <div class="text-center">
+          <p class="text-2xl font-bold text-slate-900">
+            <%= @active_sync_session.email_accounts.count %>
+          </p>
+          <p class="text-xs text-slate-600">Cuentas activas</p>
+        </div>
+      </div>
+
+      <!-- Time Estimate -->
+      <% if @active_sync_session.running? && @active_sync_session.estimated_time_remaining %>
+        <div class="flex items-center justify-between pt-3 border-t border-slate-200">
+          <span class="text-sm text-slate-600">Tiempo estimado restante</span>
+          <span class="text-sm font-medium text-slate-900">
+            <%= distance_of_time_in_words(@active_sync_session.estimated_time_remaining) %>
+          </span>
+        </div>
+      <% end %>
+
+      <!-- Account Details -->
+      <div class="space-y-2 pt-3 border-t border-slate-200">
+        <% @active_sync_session.sync_session_accounts.includes(:email_account).each do |account| %>
+          <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50">
+            <div class="flex items-center space-x-3">
+              <% if account.processing? %>
+                <svg class="animate-spin h-4 w-4 text-teal-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              <% elsif account.completed? %>
+                <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              <% elsif account.failed? %>
+                <svg class="h-4 w-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              <% else %>
+                <div class="h-4 w-4 rounded-full bg-slate-300"></div>
+              <% end %>
+              <span class="text-sm text-slate-700">
+                <%= account.email_account.display_name %>
+              </span>
+            </div>
+            <div class="text-right">
+              <p class="text-sm font-medium text-slate-900">
+                <%= account.progress_percentage %>%
+              </p>
+              <p class="text-xs text-slate-600">
+                <%= account.processed_emails %> / <%= account.total_emails %>
+              </p>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% else %>
+    <!-- No Active Sync -->
+    <div class="text-center py-8">
+      <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 mb-4">
+        <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+      </div>
+      <p class="text-slate-900 font-medium mb-1">No hay sincronización activa</p>
+      <p class="text-sm text-slate-600 mb-4">
+        <% if @last_completed_sync %>
+          Última sincronización: <%= time_ago_in_words(@last_completed_sync.completed_at) %> atrás
+        <% else %>
+          No se han realizado sincronizaciones
+        <% end %>
+      </p>
+      <%= form_with url: sync_sessions_path, method: :post, local: true, class: "inline-block" do |form| %>
+        <%= form.submit "Iniciar sincronización",
+            class: "inline-flex items-center px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white font-medium rounded-lg transition-colors duration-200 text-sm cursor-pointer" %>
+      <% end %>
+    </div>
+  <% end %>
+</div>

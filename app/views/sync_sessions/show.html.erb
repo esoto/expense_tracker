@@ -1,123 +1,286 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-  <div class="mb-6">
-    <%= link_to "← Back to Sync Sessions", sync_sessions_path, class: "text-teal-600 hover:text-teal-700" %>
+  <!-- Breadcrumbs -->
+  <nav class="flex mb-8" aria-label="Breadcrumb">
+    <ol class="inline-flex items-center space-x-1 md:space-x-3">
+      <li class="inline-flex items-center">
+        <%= link_to sync_sessions_path, class: "inline-flex items-center text-slate-600 hover:text-teal-700" do %>
+          <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+          </svg>
+          Centro de Sincronización
+        <% end %>
+      </li>
+      <li>
+        <div class="flex items-center">
+          <svg class="w-6 h-6 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+          </svg>
+          <span class="ml-1 text-slate-700 font-medium">Sesión #<%= @sync_session.id %></span>
+        </div>
+      </li>
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-900">Detalles de Sincronización</h1>
+      <p class="text-slate-600 mt-2">Revisa el progreso y resultados de esta sesión</p>
+    </div>
+    <div class="flex gap-3">
+      <% if @sync_session.active? %>
+        <%= button_to cancel_sync_session_path(@sync_session), method: :post,
+            class: "inline-flex items-center px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-medium rounded-lg shadow-sm transition-colors" do %>
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+          Cancelar Sincronización
+        <% end %>
+      <% elsif @sync_session.failed? || @sync_session.cancelled? %>
+        <%= button_to retry_sync_session_path(@sync_session), method: :post,
+            class: "inline-flex items-center px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white font-medium rounded-lg shadow-sm transition-colors" do %>
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          Reintentar
+        <% end %>
+      <% end %>
+    </div>
   </div>
 
-  <h1 class="text-3xl font-bold text-slate-900 mb-8">Sync Session Details</h1>
-
-  <!-- Session overview -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
-    <h2 class="text-xl font-semibold text-slate-900 mb-4">Overview</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <p class="text-sm text-slate-600">Status</p>
-        <p class="text-lg font-medium">
-          <span class="px-3 py-1 rounded-full text-sm font-medium
-            <%= @sync_session.completed? ? 'bg-emerald-100 text-emerald-800' :
-                @sync_session.failed? ? 'bg-rose-100 text-rose-800' :
-                @sync_session.running? ? 'bg-teal-100 text-teal-800' :
-                'bg-slate-100 text-slate-800' %>">
-            <%= @sync_session.status.humanize %>
-          </span>
-        </p>
+  <!-- Progress Overview (for active sessions) -->
+  <% if @sync_session.running? %>
+    <div class="bg-gradient-to-r from-teal-50 to-emerald-50 rounded-xl p-6 mb-8 border border-teal-200">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-slate-900">Progreso en Tiempo Real</h2>
+        <div class="flex items-center gap-2">
+          <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-teal-600"></div>
+          <span class="text-sm text-teal-700 font-medium">Sincronizando...</span>
+        </div>
       </div>
-
-      <div>
-        <p class="text-sm text-slate-600">Progress</p>
-        <p class="text-lg font-medium"><%= @sync_session.progress_percentage %>%</p>
+      <div class="mb-4">
+        <div class="flex justify-between text-sm text-slate-600 mb-2">
+          <span>Progreso total</span>
+          <span class="font-medium"><%= @sync_session.progress_percentage %>% completado</span>
+        </div>
+        <div class="w-full bg-white rounded-full h-4 shadow-inner">
+          <div class="bg-gradient-to-r from-teal-500 to-emerald-500 h-4 rounded-full transition-all duration-500 flex items-center justify-end pr-2"
+               style="width: <%= @sync_session.progress_percentage %>%">
+            <% if @sync_session.progress_percentage > 10 %>
+              <span class="text-xs text-white font-medium"><%= @sync_session.progress_percentage %>%</span>
+            <% end %>
+          </div>
+        </div>
       </div>
-
-      <div>
-        <p class="text-sm text-slate-600">Emails Processed</p>
-        <p class="text-lg font-medium"><%= @sync_session.processed_emails %> / <%= @sync_session.total_emails %></p>
-      </div>
-
-      <div>
-        <p class="text-sm text-slate-600">Expenses Detected</p>
-        <p class="text-lg font-medium"><%= @sync_session.detected_expenses %></p>
-      </div>
-
-      <div>
-        <p class="text-sm text-slate-600">Started At</p>
-        <p class="text-lg font-medium">
-          <%= @sync_session.started_at&.strftime("%b %d, %Y %I:%M %p") || "Not started" %>
-        </p>
-      </div>
-
-      <div>
-        <p class="text-sm text-slate-600">Completed At</p>
-        <p class="text-lg font-medium">
-          <%= @sync_session.completed_at&.strftime("%b %d, %Y %I:%M %p") || "Not completed" %>
-        </p>
+      <div class="grid grid-cols-3 gap-4 text-center">
+        <div>
+          <p class="text-2xl font-bold text-slate-900"><%= @sync_session.processed_emails %></p>
+          <p class="text-xs text-slate-600">Emails procesados</p>
+        </div>
+        <div>
+          <p class="text-2xl font-bold text-emerald-600"><%= @sync_session.detected_expenses %></p>
+          <p class="text-xs text-slate-600">Gastos detectados</p>
+        </div>
+        <div>
+          <p class="text-2xl font-bold text-slate-900">
+            <% if @sync_session.started_at %>
+              <%= distance_of_time_in_words(@sync_session.started_at, Time.current, include_seconds: true) %>
+            <% else %>
+              -
+            <% end %>
+          </p>
+          <p class="text-xs text-slate-600">Tiempo transcurrido</p>
+        </div>
       </div>
     </div>
+  <% end %>
 
-    <% if @sync_session.error_details? %>
-      <div class="mt-4 p-4 bg-rose-50 border border-rose-200 rounded-lg">
-        <p class="text-sm font-medium text-rose-800">Error Details:</p>
-        <p class="text-sm text-rose-700 mt-1"><%= @sync_session.error_details %></p>
+  <!-- Main content grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Left column - Session info -->
+    <div class="lg:col-span-1 space-y-6">
+      <!-- Status card -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h3 class="text-lg font-semibold text-slate-900 mb-4">Información de la Sesión</h3>
+        <dl class="space-y-4">
+          <div>
+            <dt class="text-sm text-slate-600">Estado</dt>
+            <dd class="mt-1">
+              <span class="px-3 py-1 rounded-full text-sm font-medium inline-flex items-center
+                <%= @sync_session.completed? ? 'bg-emerald-100 text-emerald-800' :
+                    @sync_session.failed? ? 'bg-rose-100 text-rose-800' :
+                    @sync_session.cancelled? ? 'bg-amber-100 text-amber-800' :
+                    @sync_session.running? ? 'bg-teal-100 text-teal-800' :
+                    'bg-slate-100 text-slate-800' %>">
+                <% if @sync_session.running? %>
+                  <div class="animate-pulse w-2 h-2 bg-teal-600 rounded-full mr-2"></div>
+                <% end %>
+                <%= @sync_session.status == 'running' ? 'Sincronizando' : @sync_session.status.humanize %>
+              </span>
+            </dd>
+          </div>
+          <div>
+            <dt class="text-sm text-slate-600">Iniciada</dt>
+            <dd class="text-sm font-medium text-slate-900">
+              <%= @sync_session.started_at&.strftime("%d/%m/%Y %H:%M") || "No iniciada" %>
+            </dd>
+          </div>
+          <div>
+            <dt class="text-sm text-slate-600">Completada</dt>
+            <dd class="text-sm font-medium text-slate-900">
+              <%= @sync_session.completed_at&.strftime("%d/%m/%Y %H:%M") || "-" %>
+            </dd>
+          </div>
+          <div>
+            <dt class="text-sm text-slate-600">Duración</dt>
+            <dd class="text-sm font-medium text-slate-900">
+              <% if @sync_session.started_at && @sync_session.completed_at %>
+                <%= distance_of_time_in_words(@sync_session.started_at, @sync_session.completed_at, include_seconds: true) %>
+              <% elsif @sync_session.started_at %>
+                <%= distance_of_time_in_words(@sync_session.started_at, Time.current, include_seconds: true) %>
+              <% else %>
+                -
+              <% end %>
+            </dd>
+          </div>
+        </dl>
       </div>
-    <% end %>
-  </div>
 
-  <!-- Account details -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-    <h2 class="text-xl font-semibold text-slate-900 mb-4">Account Details</h2>
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-slate-200">
-        <thead>
-          <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Account</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Bank</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Progress</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Detected</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Error</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-slate-200">
-          <% @session_accounts.each do |account| %>
-            <tr>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                <%= account.email_account.email %>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                <%= account.email_account.bank_name %>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+      <!-- Summary stats -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h3 class="text-lg font-semibold text-slate-900 mb-4">Resumen</h3>
+        <div class="space-y-4">
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-slate-600">Cuentas procesadas</span>
+            <span class="text-lg font-semibold text-slate-900"><%= @session_accounts.count %></span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-slate-600">Total de emails</span>
+            <span class="text-lg font-semibold text-slate-900"><%= @sync_session.total_emails %></span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-slate-600">Emails procesados</span>
+            <span class="text-lg font-semibold text-slate-900"><%= @sync_session.processed_emails %></span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-slate-600">Gastos detectados</span>
+            <span class="text-lg font-semibold text-emerald-600"><%= @sync_session.detected_expenses %></span>
+          </div>
+        </div>
+
+        <% if @sync_session.completed? && @sync_session.started_at && @sync_session.processed_emails > 0 %>
+          <div class="mt-6 pt-6 border-t border-slate-200">
+            <p class="text-xs text-slate-600 uppercase tracking-wider mb-2">Métricas de Rendimiento</p>
+            <div class="space-y-2">
+              <div class="flex justify-between items-center">
+                <span class="text-xs text-slate-600">Velocidad</span>
+                <span class="text-xs font-medium text-slate-900">
+                  <%= (@sync_session.processed_emails.to_f / ((@sync_session.completed_at - @sync_session.started_at) / 60)).round(1) %> emails/min
+                </span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-xs text-slate-600">Tasa de detección</span>
+                <span class="text-xs font-medium text-slate-900">
+                  <%= ((@sync_session.detected_expenses.to_f / @sync_session.processed_emails) * 100).round(1) %>%
+                </span>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+
+      <% if @sync_session.error_details? %>
+        <!-- Error details -->
+        <div class="bg-rose-50 rounded-xl border border-rose-200 p-6">
+          <h3 class="text-lg font-semibold text-rose-900 mb-4">Detalles del Error</h3>
+          <p class="text-sm text-rose-700 whitespace-pre-wrap"><%= @sync_session.error_details %></p>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Right column - Account details -->
+    <div class="lg:col-span-2">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h3 class="text-lg font-semibold text-slate-900 mb-6">Detalles por Cuenta</h3>
+        <div class="space-y-4">
+          <% @session_accounts.includes(:email_account).each do |account| %>
+            <div class="border border-slate-200 rounded-lg overflow-hidden hover:border-slate-300 transition-colors">
+              <!-- Account header -->
+              <div class="bg-slate-50 px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                  <div class="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="font-medium text-slate-900"><%= account.email_account.bank_name %></p>
+                    <p class="text-sm text-slate-600"><%= account.email_account.email %></p>
+                  </div>
+                </div>
+                <span class="px-3 py-1 rounded-full text-xs font-medium
                   <%= account.completed? ? 'bg-emerald-100 text-emerald-800' :
                       account.failed? ? 'bg-rose-100 text-rose-800' :
                       account.processing? ? 'bg-teal-100 text-teal-800' :
                       'bg-slate-100 text-slate-800' %>">
                   <%= account.status.humanize %>
                 </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                <%= account.processed_emails %> / <%= account.total_emails %>
-                (<%= account.progress_percentage %>%)
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                <%= account.detected_expenses %>
-              </td>
-              <td class="px-6 py-4 text-sm text-slate-900">
-                <%= account.last_error.presence || "-" %>
-              </td>
-            </tr>
+              </div>
+
+              <!-- Account details -->
+              <div class="px-6 py-4">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <p class="text-xs text-slate-600">Emails procesados</p>
+                    <p class="text-lg font-semibold text-slate-900">
+                      <%= account.processed_emails %> / <%= account.total_emails %>
+                    </p>
+                    <% if account.total_emails > 0 %>
+                      <div class="mt-1 w-full bg-slate-200 rounded-full h-2">
+                        <div class="bg-teal-600 h-2 rounded-full" style="width: <%= account.progress_percentage %>%"></div>
+                      </div>
+                    <% end %>
+                  </div>
+                  <div>
+                    <p class="text-xs text-slate-600">Gastos detectados</p>
+                    <p class="text-lg font-semibold text-emerald-600"><%= account.detected_expenses %></p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-slate-600">Iniciado</p>
+                    <p class="text-sm font-medium text-slate-900">
+                      <%= account.created_at&.strftime("%H:%M") || "-" %>
+                    </p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-slate-600">Actualizado</p>
+                    <p class="text-sm font-medium text-slate-900">
+                      <%= account.updated_at&.strftime("%H:%M") || "-" %>
+                    </p>
+                  </div>
+                </div>
+                
+                <% if account.last_error.present? %>
+                  <details class="mt-4">
+                    <summary class="cursor-pointer text-sm text-rose-600 hover:text-rose-700 font-medium">Ver error</summary>
+                    <div class="mt-2 p-3 bg-rose-50 rounded-lg">
+                      <p class="text-sm text-rose-700 whitespace-pre-wrap"><%= account.last_error %></p>
+                    </div>
+                  </details>
+                <% end %>
+              </div>
+            </div>
           <% end %>
-        </tbody>
-      </table>
+        </div>
+      </div>
     </div>
   </div>
-
-  <!-- Actions -->
-  <div class="mt-6 flex gap-4">
-    <% if @sync_session.active? %>
-      <%= button_to "Cancel Sync", cancel_sync_session_path(@sync_session), method: :post,
-          class: "bg-rose-600 hover:bg-rose-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm" %>
-    <% elsif @sync_session.failed? || @sync_session.cancelled? %>
-      <%= button_to "Retry Sync", retry_sync_session_path(@sync_session), method: :post,
-          class: "bg-teal-700 hover:bg-teal-800 text-white font-medium py-2 px-4 rounded-lg shadow-sm" %>
-    <% end %>
-  </div>
 </div>
+
+<% if @sync_session.running? %>
+  <script>
+    // Auto-refresh for running sessions
+    setTimeout(function() {
+      Turbo.visit(window.location.href, { action: 'replace' });
+    }, 3000);
+  </script>
+<% end %>

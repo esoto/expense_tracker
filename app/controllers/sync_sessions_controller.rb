@@ -9,6 +9,13 @@ class SyncSessionsController < ApplicationController
     @active_session = SyncSession.active.includes(:sync_session_accounts, :email_accounts).first
     @recent_sessions = SyncSessionPerformanceOptimizer.preload_for_index.limit(10)
     @email_accounts = EmailAccount.active.order(:bank_name, :email)
+    # Additional data for enhanced UI
+    @active_accounts_count = EmailAccount.active.count
+    @today_sync_count = SyncSession.where(created_at: Date.current.beginning_of_day..Date.current.end_of_day).count
+    @monthly_expenses_detected = SyncSession.completed
+                                          .where(completed_at: Date.current.beginning_of_month..Date.current.end_of_month)
+                                          .sum(:detected_expenses)
+    @last_completed_session = SyncSession.completed.recent.first
   end
 
   def show

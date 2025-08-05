@@ -39,6 +39,7 @@
             <%= link_to "Dashboard", dashboard_expenses_path, class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path == dashboard_expenses_path}" %>
             <%= link_to "Gastos", expenses_path, class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path == expenses_path}" %>
             <%= link_to "Cuentas", email_accounts_path, class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path == email_accounts_path}" %>
+            <%= link_to "Sincronización", sync_sessions_path, class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/sync_sessions')}" %>
             <%= link_to "Nuevo Gasto", new_expense_path, class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm" %>
           </div>
         </div>

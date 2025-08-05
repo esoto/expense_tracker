@@ -300,4 +300,3 @@ RSpec.describe "SyncSessions", type: :request do
     end
   end
 end
-

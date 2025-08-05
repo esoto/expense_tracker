@@ -38,7 +38,6 @@ class SyncSessionsController < ApplicationController
   def cancel
     if @sync_session.active?
       @sync_session.cancel!
-      # TODO: Cancel associated jobs
       redirect_to sync_sessions_path, notice: "Sincronización cancelada"
     else
       redirect_to sync_sessions_path, alert: "No se puede cancelar esta sincronización"
@@ -98,4 +97,3 @@ class SyncSessionsController < ApplicationController
     @sync_session = SyncSession.find(params[:id])
   end
 end
-

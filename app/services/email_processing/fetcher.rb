@@ -65,8 +65,17 @@ module EmailProcessing
 
       # Process emails using the email processor with progress tracking
       result = if @sync_session_account
+        last_detected = 0
         email_processor.process_emails(message_ids, imap_service) do |processed_count, detected_expenses|
-          @sync_session_account.update_progress(processed_count, total_emails_found, detected_expenses)
+          begin
+            # Calculate incremental detected expenses
+            incremental_detected = detected_expenses - last_detected
+            @sync_session_account.update_progress(processed_count, total_emails_found, incremental_detected)
+            last_detected = detected_expenses
+          rescue => e
+            Rails.logger.error "[EmailProcessing::Fetcher] Failed to update progress: #{e.message}"
+            # Continue processing even if progress update fails
+          end
         end
       else
         email_processor.process_emails(message_ids, imap_service)

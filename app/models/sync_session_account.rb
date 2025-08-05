@@ -47,11 +47,19 @@ class SyncSessionAccount < ApplicationRecord
   end
 
   def update_progress(processed, total, detected = 0)
-    self.processed_emails = processed
-    self.total_emails = total
-    self.detected_expenses += detected
-    save!
+    # Use update_columns to avoid callbacks and optimistic locking for progress updates
+    update_columns(
+      processed_emails: processed,
+      total_emails: total,
+      detected_expenses: detected_expenses + detected,
+      updated_at: Time.current
+    )
+
+    # Update parent session progress
     sync_session.update_progress
+  rescue ActiveRecord::StaleObjectError
+    # If there's a conflict, reload and retry
+    reload
+    retry
   end
 end
-

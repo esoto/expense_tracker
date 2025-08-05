@@ -4,6 +4,8 @@ class SyncSession < ApplicationRecord
 
   validates :status, presence: true, inclusion: { in: %w[pending running completed failed cancelled] }
 
+  serialize :job_ids, coder: JSON, type: Array
+
   scope :recent, -> { order(created_at: :desc) }
   scope :active, -> { where(status: %w[pending running]) }
   scope :completed, -> { where(status: "completed") }
@@ -66,14 +68,68 @@ class SyncSession < ApplicationRecord
   end
 
   def cancel!
-    update!(status: "cancelled", completed_at: Time.current)
+    transaction do
+      # Cancel all associated jobs
+      cancel_all_jobs
+
+      # Update status
+      update!(status: "cancelled", completed_at: Time.current)
+
+      # Mark all pending/processing accounts as cancelled
+      sync_session_accounts.where(status: [ "pending", "waiting", "processing" ]).update_all(
+        status: "failed",
+        last_error: "Sync cancelled by user"
+      )
+    end
+  end
+
+  def add_job_id(job_id)
+    return unless job_id
+    self.job_ids ||= []
+    self.job_ids << job_id.to_s
+    save!
+  end
+
+  def cancel_all_jobs
+    return if job_ids.blank?
+
+    job_ids.each do |job_id|
+      begin
+        job = SolidQueue::Job.find_by(id: job_id)
+        job&.destroy if job&.scheduled? || job&.ready?
+      rescue => e
+        Rails.logger.error "Failed to cancel job #{job_id}: #{e.message}"
+      end
+    end
+
+    # Also cancel account-specific jobs
+    sync_session_accounts.where.not(job_id: nil).each do |account|
+      begin
+        job = SolidQueue::Job.find_by(id: account.job_id)
+        job&.destroy if job&.scheduled? || job&.ready?
+      rescue => e
+        Rails.logger.error "Failed to cancel job #{account.job_id}: #{e.message}"
+      end
+    end
   end
 
   def update_progress
-    self.total_emails = sync_session_accounts.sum(:total_emails)
-    self.processed_emails = sync_session_accounts.sum(:processed_emails)
-    self.detected_expenses = sync_session_accounts.sum(:detected_expenses)
+    # Use pluck to get the sums without ordering issues
+    sums = sync_session_accounts
+      .pluck(
+        "SUM(total_emails)",
+        "SUM(processed_emails)",
+        "SUM(detected_expenses)"
+      )
+      .first
+
+    self.total_emails = sums[0] || 0
+    self.processed_emails = sums[1] || 0
+    self.detected_expenses = sums[2] || 0
     save!
+  rescue ActiveRecord::StaleObjectError
+    # Handle optimistic locking conflict
+    reload
+    retry
   end
 end
-

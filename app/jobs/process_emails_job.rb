@@ -15,8 +15,8 @@ class ProcessEmailsJob < ApplicationJob
     end
 
     if @sync_session && !email_account_id
-      # Complete the session after all accounts are processed
-      @sync_session.complete! if all_accounts_processed?
+      # Start monitoring job to track completion
+      SyncSessionMonitorJob.set(wait: 5.seconds).perform_later(@sync_session.id)
     end
   rescue => e
     @sync_session&.fail!(e.message)
@@ -25,14 +25,14 @@ class ProcessEmailsJob < ApplicationJob
 
   private
 
-  def all_accounts_processed?
-    return false unless @sync_session
-    @sync_session.sync_session_accounts.all? { |sa| sa.completed? || sa.failed? }
-  end
-
   def process_single_account(email_account_id, since)
     email_account = EmailAccount.find_by(id: email_account_id)
     session_account = find_or_create_session_account(email_account) if @sync_session
+
+    # Store job ID in session account if available
+    if session_account && self.class.respond_to?(:current_job_id)
+      session_account.update(job_id: self.class.current_job_id)
+    end
 
     unless email_account
       Rails.logger.error "EmailAccount not found: #{email_account_id}"
@@ -78,7 +78,12 @@ class ProcessEmailsJob < ApplicationJob
 
     email_accounts.find_each do |email_account|
       # Process each account in a separate job to isolate failures
-      ProcessEmailsJob.perform_later(email_account.id, since: since, sync_session_id: @sync_session&.id)
+      job = ProcessEmailsJob.perform_later(email_account.id, since: since, sync_session_id: @sync_session&.id)
+
+      # Track job ID if we have a sync session
+      if @sync_session && job.respond_to?(:provider_job_id)
+        @sync_session.add_job_id(job.provider_job_id)
+      end
     end
   end
 end

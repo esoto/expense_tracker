@@ -277,10 +277,12 @@ RSpec.describe SyncSessionAccount, type: :model do
         another_instance = SyncSessionAccount.find(session_account.id)
 
         session_account.complete!
-        expect { another_instance.fail! }.not_to raise_error
 
-        # Last update wins
-        expect(session_account.reload).to be_failed
+        # With optimistic locking, the stale instance will raise an error
+        expect { another_instance.fail! }.to raise_error(ActiveRecord::StaleObjectError)
+
+        # The first update wins
+        expect(session_account.reload).to be_completed
       end
     end
 
@@ -341,4 +343,3 @@ RSpec.describe SyncSessionAccount, type: :model do
     end
   end
 end
-

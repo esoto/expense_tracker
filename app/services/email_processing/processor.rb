@@ -7,22 +7,31 @@ module EmailProcessing
       @errors = []
     end
 
-    def process_emails(message_ids, imap_service)
-      return { processed_count: 0, total_count: 0 } if message_ids.empty?
+    def process_emails(message_ids, imap_service, &progress_callback)
+      return { processed_count: 0, total_count: 0, detected_expenses_count: 0 } if message_ids.empty?
 
       processed_count = 0
+      detected_expenses_count = 0
       total_count = message_ids.length
 
-      message_ids.each do |message_id|
-        if process_single_email(message_id, imap_service)
+      message_ids.each_with_index do |message_id, index|
+        result = process_single_email(message_id, imap_service)
+        if result[:processed]
           processed_count += 1
+          detected_expenses_count += 1 if result[:expense_created]
+        end
+
+        # Call progress callback if provided
+        if progress_callback
+          progress_callback.call(index + 1, detected_expenses_count)
         end
       end
 
       Rails.logger.info "Processed #{processed_count} transaction emails out of #{total_count} total emails"
       {
         processed_count: processed_count,
-        total_count: total_count
+        total_count: total_count,
+        detected_expenses_count: detected_expenses_count
       }
     end
 
@@ -30,30 +39,33 @@ module EmailProcessing
 
     def process_single_email(message_id, imap_service)
       envelope = imap_service.fetch_envelope(message_id)
-      return false unless envelope
+      return { processed: false, expense_created: false } unless envelope
 
       subject = envelope.subject || ""
 
       # Check if this is a transaction email based on subject
       unless transaction_email?(subject)
         Rails.logger.debug "Skipping non-transaction email: #{subject}"
-        return false
+        return { processed: false, expense_created: false }
       end
 
       Rails.logger.info "Processing transaction email: #{subject}"
 
       # Extract email content and queue for processing
       email_data = extract_email_data(message_id, envelope, imap_service)
-      return false unless email_data
+      return { processed: false, expense_created: false } unless email_data
 
       # Queue job to parse and create expense
       ProcessEmailJob.perform_later(email_account.id, email_data)
-      true
+
+      # For now, we assume transaction emails will create expenses
+      # In a real implementation, we'd track this through the job
+      { processed: true, expense_created: true }
 
     rescue StandardError => e
       Rails.logger.error "Error processing email #{message_id}: #{e.message}"
       add_error("Error processing email: #{e.message}")
-      false
+      { processed: false, expense_created: false }
     end
 
     def transaction_email?(subject)

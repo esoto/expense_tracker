@@ -28,6 +28,14 @@ class SyncSessionsController < ApplicationController
     if result.success?
       @sync_session = result.sync_session
       respond_to do |format|
+        format.turbo_stream {
+          # For dashboard, redirect to sync_sessions page
+          if request.referer&.include?("dashboard")
+            redirect_to sync_sessions_path, notice: "Sincronización iniciada exitosamente"
+          else
+            redirect_to sync_sessions_path, notice: "Sincronización iniciada exitosamente"
+          end
+        }
         format.html { redirect_to sync_sessions_path, notice: "Sincronización iniciada exitosamente" }
         format.json { render json: { id: @sync_session.id, status: @sync_session.status }, status: :created }
       end

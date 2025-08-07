@@ -1,0 +1,167 @@
+<%# Set default values for local variables if not provided %>
+<% active_sync_session ||= nil %>
+<% email_accounts ||= EmailAccount.active.order(:bank_name, :email) %>
+<% last_sync_info ||= {} %>
+
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
+       data-controller="sync-widget"
+       data-sync-widget-session-id-value="<%= active_sync_session&.id || 0 %>"
+       data-sync-widget-active-value="<%= active_sync_session.present? %>">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-slate-900">Sincronización de Correos</h2>
+      <% if active_sync_session %>
+        <div class="flex items-center text-teal-700">
+          <svg class="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span class="text-sm font-medium">Sincronizando...</span>
+          <span class="text-sm ml-2" data-sync-widget-target="progressPercentage"><%= active_sync_session.progress_percentage %>%</span>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- Real-time Progress Bar -->
+    <% if active_sync_session %>
+      <div class="mb-4" data-sync-widget-target="activeSection">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm text-slate-600">Progreso general</span>
+          <span class="text-sm font-medium text-slate-900">
+            <span data-sync-widget-target="processedCount"><%= active_sync_session.processed_emails %></span> /
+            <%= active_sync_session.total_emails %> correos
+          </span>
+        </div>
+        <div class="w-full bg-slate-200 rounded-full h-2">
+          <div class="bg-teal-700 h-2 rounded-full transition-all duration-300 ease-out"
+               data-sync-widget-target="progressBar"
+               style="width: <%= active_sync_session.progress_percentage %>%"></div>
+        </div>
+        <div class="flex items-center justify-between mt-2">
+          <span class="text-xs text-slate-600">
+            <span data-sync-widget-target="detectedCount"><%= active_sync_session.detected_expenses %></span> gastos detectados
+          </span>
+          <% if active_sync_session.estimated_time_remaining %>
+            <span class="text-xs text-slate-600" data-sync-widget-target="timeRemaining">
+              <%= distance_of_time_in_words(active_sync_session.estimated_time_remaining) %> restante
+            </span>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Sync All Button -->
+      <div class="space-y-4">
+        <%= form_with url: sync_emails_expenses_path, method: :post, class: "space-y-4" do |form| %>
+          <div class="flex flex-col space-y-2">
+            <%= form.submit "Sincronizar Todos los Correos",
+                class: "w-full bg-teal-700 hover:bg-teal-800 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 #{active_sync_session ? 'opacity-50 cursor-not-allowed' : ''}",
+                disabled: active_sync_session.present? %>
+            <p class="text-xs text-slate-600">
+              Busca nuevos gastos en todas las cuentas de correo activas
+            </p>
+          </div>
+        <% end %>
+
+        <% if email_accounts.any? %>
+          <!-- Individual Account Sync -->
+          <div class="border-t pt-4">
+            <h3 class="text-sm font-medium text-slate-700 mb-2">Sincronizar cuenta individual:</h3>
+            <div class="space-y-2">
+              <% email_accounts.each do |account| %>
+                <%= form_with url: sync_emails_expenses_path, method: :post, class: "flex items-center space-x-2" do |form| %>
+                  <%= form.hidden_field :email_account_id, value: account.id %>
+                  <%= form.submit account.display_name.truncate(30),
+                      class: "text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 py-1 px-3 rounded transition-colors duration-200 #{active_sync_session ? 'opacity-50 cursor-not-allowed' : ''}",
+                      disabled: active_sync_session.present? %>
+            <% end %>
+            <% end %>
+          </div>
+        </div>
+        <% else %>
+          <div class="border-t pt-4">
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <svg class="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm text-amber-800">
+                    No hay cuentas de correo configuradas.
+                    <%= link_to "Configurar cuenta", email_accounts_path, class: "font-medium underline" %>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <% end %>
+      </div>
+
+      <!-- Sync Status -->
+      <div class="space-y-4">
+        <h3 class="text-sm font-medium text-slate-700">Estado de sincronización:</h3>
+        <% if email_accounts.any? %>
+          <div class="space-y-3" data-sync-widget-target="accountsList">
+            <% email_accounts.each do |account| %>
+              <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg" data-account-id="<%= account.id %>">
+                <div class="flex items-center space-x-3">
+                  <div class="flex-shrink-0">
+                    <div class="w-8 h-8 <%= account.bank_name == 'BAC' ? 'bg-teal-100' : 'bg-slate-100' %> rounded-full flex items-center justify-center">
+                      <span class="text-xs font-bold <%= account.bank_name == 'BAC' ? 'text-teal-700' : 'text-slate-600' %>">
+                        <%= account.bank_name.first %>
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-slate-900"><%= account.email %></p>
+                    <p class="text-xs text-slate-600"><%= account.bank_name %></p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div data-status-icon>
+                    <% if active_sync_session && active_sync_session.sync_session_accounts.joins(:email_account).where(email_accounts: { id: account.id }).exists? %>
+                      <svg class="animate-spin h-4 w-4 text-teal-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    <% elsif last_sync_info[account.id] %>
+                      <div class="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                    <% else %>
+                      <div class="w-2 h-2 bg-slate-400 rounded-full"></div>
+                    <% end %>
+                  </div>
+                  <p class="text-xs text-slate-600 mt-1" data-progress-text>
+                    <% if last_sync_info && last_sync_info[account.id] && last_sync_info[account.id][:last_sync] %>
+                      Último: <%= last_sync_info[account.id][:last_sync].strftime("%d/%m %H:%M") %>
+                    <% else %>
+                      Sin datos
+                    <% end %>
+                  </p>
+                </div>
+              </div>
+            <% end %>
+        </div>
+        <% else %>
+          <p class="text-sm text-slate-600">No hay cuentas de correo configuradas.</p>
+        <% end %>
+
+        <% if active_sync_session %>
+          <div class="bg-teal-50 border border-teal-200 rounded-lg p-3">
+            <div class="flex items-center">
+              <svg class="animate-spin h-4 w-4 text-teal-700 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span class="text-sm text-teal-800">
+                Sincronización en progreso
+              </span>
+            </div>
+          </div>
+        </div>
+        <% end %>
+      </div>
+    </div>
+  </div>

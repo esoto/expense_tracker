@@ -1,4 +1,7 @@
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+     data-controller="sync-session-detail"
+     data-sync-session-detail-session-id-value="<%= @sync_session.id %>"
+     data-sync-session-detail-active-value="<%= @sync_session.running? %>">
   <!-- Breadcrumbs -->
   <nav class="flex mb-8" aria-label="Breadcrumb">
     <ol class="inline-flex items-center space-x-1 md:space-x-3">
@@ -61,10 +64,11 @@
       <div class="mb-4">
         <div class="flex justify-between text-sm text-slate-600 mb-2">
           <span>Progreso total</span>
-          <span class="font-medium"><%= @sync_session.progress_percentage %>% completado</span>
+          <span class="font-medium" data-sync-session-detail-target="progressPercentage"><%= @sync_session.progress_percentage %>% completado</span>
         </div>
         <div class="w-full bg-white rounded-full h-4 shadow-inner">
           <div class="bg-gradient-to-r from-teal-500 to-emerald-500 h-4 rounded-full transition-all duration-500 flex items-center justify-end pr-2"
+               data-sync-session-detail-target="progressBar"
                style="width: <%= @sync_session.progress_percentage %>%">
             <% if @sync_session.progress_percentage > 10 %>
               <span class="text-xs text-white font-medium"><%= @sync_session.progress_percentage %>%</span>
@@ -74,11 +78,11 @@
       </div>
       <div class="grid grid-cols-3 gap-4 text-center">
         <div>
-          <p class="text-2xl font-bold text-slate-900"><%= @sync_session.processed_emails %></p>
+          <p class="text-2xl font-bold text-slate-900" data-sync-session-detail-target="processedCount"><%= @sync_session.processed_emails %></p>
           <p class="text-xs text-slate-600">Emails procesados</p>
         </div>
         <div>
-          <p class="text-2xl font-bold text-emerald-600"><%= @sync_session.detected_expenses %></p>
+          <p class="text-2xl font-bold text-emerald-600" data-sync-session-detail-target="detectedCount"><%= @sync_session.detected_expenses %></p>
           <p class="text-xs text-slate-600">Gastos detectados</p>
         </div>
         <div>
@@ -204,7 +208,8 @@
         <h3 class="text-lg font-semibold text-slate-900 mb-6">Detalles por Cuenta</h3>
         <div class="space-y-4">
           <% @session_accounts.includes(:email_account).each do |account| %>
-            <div class="border border-slate-200 rounded-lg overflow-hidden hover:border-slate-300 transition-colors">
+            <div class="border border-slate-200 rounded-lg overflow-hidden hover:border-slate-300 transition-colors"
+                 data-account-id="<%= account.email_account.id %>">
               <!-- Account header -->
               <div class="bg-slate-50 px-6 py-4 flex items-center justify-between">
                 <div class="flex items-center gap-4">
@@ -222,7 +227,8 @@
                   <%= account.completed? ? 'bg-emerald-100 text-emerald-800' :
                       account.failed? ? 'bg-rose-100 text-rose-800' :
                       account.processing? ? 'bg-teal-100 text-teal-800' :
-                      'bg-slate-100 text-slate-800' %>">
+                      'bg-slate-100 text-slate-800' %>"
+                      data-account-status>
                   <%= account.status.humanize %>
                 </span>
               </div>
@@ -232,18 +238,24 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
                     <p class="text-xs text-slate-600">Emails procesados</p>
-                    <p class="text-lg font-semibold text-slate-900">
-                      <%= account.processed_emails %> / <%= account.total_emails %>
-                    </p>
+                    <div data-account-processed>
+                      <p class="text-lg font-semibold text-slate-900">
+                        <%= account.processed_emails %> / <%= account.total_emails %>
+                      </p>
+                    </div>
                     <% if account.total_emails > 0 %>
                       <div class="mt-1 w-full bg-slate-200 rounded-full h-2">
-                        <div class="bg-teal-600 h-2 rounded-full" style="width: <%= account.progress_percentage %>%"></div>
+                        <div class="bg-teal-600 h-2 rounded-full"
+                             data-account-progress-bar
+                             style="width: <%= account.progress_percentage %>%"></div>
                       </div>
                     <% end %>
                   </div>
                   <div>
                     <p class="text-xs text-slate-600">Gastos detectados</p>
-                    <p class="text-lg font-semibold text-emerald-600"><%= account.detected_expenses %></p>
+                    <div data-account-detected>
+                      <p class="text-lg font-semibold text-emerald-600"><%= account.detected_expenses %></p>
+                    </div>
                   </div>
                   <div>
                     <p class="text-xs text-slate-600">Iniciado</p>
@@ -276,11 +288,4 @@
   </div>
 </div>
 
-<% if @sync_session.running? %>
-  <script>
-    // Auto-refresh for running sessions
-    setTimeout(function() {
-      Turbo.visit(window.location.href, { action: 'replace' });
-    }, 3000);
-  </script>
-<% end %>
+<!-- Removed auto-refresh script - now using ActionCable for real-time updates -->

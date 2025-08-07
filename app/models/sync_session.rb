@@ -1,4 +1,7 @@
 class SyncSession < ApplicationRecord
+  include ActionView::RecordIdentifier
+  include Turbo::Broadcastable
+
   has_many :sync_session_accounts, dependent: :destroy
   has_many :email_accounts, through: :sync_session_accounts
 
@@ -12,6 +15,9 @@ class SyncSession < ApplicationRecord
   scope :failed, -> { where(status: "failed") }
   scope :finished, -> { where(status: %w[completed failed cancelled]) }
 
+  # Broadcast to dashboard for real-time updates
+  after_update_commit :broadcast_dashboard_update
+
   # Add callbacks for better error tracking
   before_save :track_status_changes
   after_commit :log_status_change, if: :saved_change_to_status?
@@ -22,7 +28,7 @@ class SyncSession < ApplicationRecord
   end
 
   def estimated_time_remaining
-    return nil unless running? && processed_emails > 0
+    return nil unless running? && processed_emails > 0 && started_at.present?
 
     elapsed_time = Time.current - started_at
     processing_rate = processed_emails.to_f / elapsed_time
@@ -63,10 +69,21 @@ class SyncSession < ApplicationRecord
 
   def start!
     update!(status: "running", started_at: Time.current)
+    SyncStatusChannel.broadcast_status(self)
+  rescue StandardError => e
+    Rails.logger.error "Error broadcasting start status: #{e.message}"
   end
 
   def complete!
     update!(status: "completed", completed_at: Time.current)
+    SyncStatusChannel.broadcast_completion(self)
+  rescue => e
+    # Only catch broadcasting errors, not ActiveRecord errors
+    unless e.is_a?(ActiveRecord::ActiveRecordError)
+      Rails.logger.error "Error broadcasting completion: #{e.message}"
+    else
+      raise # Re-raise ActiveRecord errors
+    end
   end
 
   def fail!(error_message = nil)
@@ -75,6 +92,14 @@ class SyncSession < ApplicationRecord
       completed_at: Time.current,
       error_details: error_message
     )
+    SyncStatusChannel.broadcast_failure(self, error_message)
+  rescue => e
+    # Only catch broadcasting errors, not ActiveRecord errors
+    unless e.is_a?(ActiveRecord::ActiveRecordError)
+      Rails.logger.error "Error broadcasting failure: #{e.message}"
+    else
+      raise # Re-raise ActiveRecord errors
+    end
   end
 
   def cancel!
@@ -147,10 +172,49 @@ class SyncSession < ApplicationRecord
   end
 
   def log_status_change
-    Rails.logger.info "SyncSession #{id} status changed from #{status_before_last_save} to #{status}"
-
     if failed?
       Rails.logger.error "SyncSession #{id} failed: #{error_details}"
     end
+  end
+
+  def broadcast_dashboard_update
+    # Broadcast to dashboard using Turbo Streams
+    begin
+      # Get dashboard data for the partial
+      dashboard_data = {
+        active_sync_session: active? ? self : nil,
+        email_accounts: EmailAccount.active.order(:bank_name, :email),
+        last_sync_info: build_sync_info_for_dashboard
+      }
+
+      # Broadcast Turbo Stream update to the dashboard
+      broadcast_replace_to(
+        "dashboard_sync_updates",
+        target: "sync_status_section",
+        partial: "expenses/sync_status_section",
+        locals: dashboard_data
+      )
+    rescue StandardError => e
+      Rails.logger.error "Error broadcasting dashboard update: #{e.message}"
+      Rails.logger.error e.backtrace.join("\n")
+    end
+  end
+
+  def build_sync_info_for_dashboard
+    # Build sync info similar to DashboardService
+    sync_data = {}
+
+    EmailAccount.active.each do |account|
+      last_expense = account.expenses.order(created_at: :desc).first
+      sync_data[account.id] = {
+        last_sync: last_expense&.created_at,
+        account: account
+      }
+    end
+
+    sync_data[:has_running_jobs] = active?
+    sync_data[:running_job_count] = active? ? 1 : 0
+
+    sync_data
   end
 end

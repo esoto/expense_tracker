@@ -1,6 +1,9 @@
 Rails.application.routes.draw do
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
+  # Mount ActionCable for WebSocket connections
+  mount ActionCable.server => "/cable"
+
   # API routes for iPhone Shortcuts and webhooks
   namespace :api do
     resources :webhooks, only: [] do

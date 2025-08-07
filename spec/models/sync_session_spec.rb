@@ -421,18 +421,16 @@ RSpec.describe SyncSession, type: :model do
         }.to change { sync_session.completed_at }.from(nil)
       end
 
-      it 'logs status changes' do
+      it 'does not log info for status changes' do
         allow(Rails.logger).to receive(:info)
         sync_session.update!(status: 'completed')
-        expect(Rails.logger).to have_received(:info).with(/status changed from running to completed/)
+        expect(Rails.logger).not_to have_received(:info).with(/status changed from running to completed/)
       end
 
       it 'logs error details when failing' do
-        allow(Rails.logger).to receive(:info)
         allow(Rails.logger).to receive(:error)
 
         sync_session.update!(status: 'failed', error_details: 'Test error')
-        expect(Rails.logger).to have_received(:info).with(/SyncSession #{sync_session.id} status changed from running to failed/)
         expect(Rails.logger).to have_received(:error).with(/SyncSession #{sync_session.id} failed: Test error/)
       end
     end

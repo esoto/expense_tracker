@@ -184,8 +184,8 @@ RSpec.describe EmailProcessing::Fetcher, type: :service do
         expect(result[:total_emails_found]).to eq(2)
       end
 
-      it 'logs the number of emails found' do
-        expect(Rails.logger).to receive(:info).with("[EmailProcessing::Fetcher] Found 2 emails for #{email_account.email}")
+      it 'does not log the number of emails found' do
+        expect(Rails.logger).not_to receive(:info).with("[EmailProcessing::Fetcher] Found 2 emails for #{email_account.email}")
         fetcher.send(:search_and_process_emails, since_date)
       end
     end

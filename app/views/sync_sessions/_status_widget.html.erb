@@ -79,7 +79,7 @@
       <!-- Account Details -->
       <div class="space-y-2 pt-3 border-t border-slate-200" data-sync-widget-target="accountsList">
         <% @active_sync_session.sync_session_accounts.includes(:email_account).each do |account| %>
-          <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50" data-account-id="<%= account.id %>">
+          <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50" data-account-id="<%= account.email_account.id %>">
             <div class="flex items-center space-x-3">
               <div data-status-icon>
               <% if account.processing? %>
@@ -131,7 +131,7 @@
           No se han realizado sincronizaciones
         <% end %>
       </p>
-      <%= form_with url: sync_sessions_path, method: :post, local: true, class: "inline-block" do |form| %>
+      <%= form_with url: sync_sessions_path, method: :post, class: "inline-block" do |form| %>
         <%= form.submit "Iniciar sincronización",
             class: "inline-flex items-center px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white font-medium rounded-lg transition-colors duration-200 text-sm cursor-pointer" %>
       <% end %>

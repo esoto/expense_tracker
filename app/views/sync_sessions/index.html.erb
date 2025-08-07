@@ -22,7 +22,9 @@
 
   <!-- Active sync session -->
   <% if @active_session %>
-    <div class="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 mb-8">
+    <div class="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 mb-8"
+         data-controller="sync-sessions"
+         data-sync-sessions-session-id-value="<%= @active_session.id %>">
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-3">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
@@ -35,26 +37,31 @@
       <!-- Progress bar -->
       <div class="mb-4">
         <div class="flex justify-between text-sm text-slate-600 mb-2">
-          <span>Progreso: <%= @active_session.progress_percentage %>%</span>
-          <span><%= @active_session.processed_emails %> / <%= @active_session.total_emails %> emails</span>
+          <span data-sync-sessions-target="progressText">Progreso: <%= @active_session.progress_percentage %>%</span>
+          <span data-sync-sessions-target="processedCount"><%= @active_session.processed_emails %> / <%= @active_session.total_emails %> emails</span>
         </div>
         <div class="w-full bg-slate-200 rounded-full h-3">
-          <div class="bg-amber-600 h-3 rounded-full transition-all duration-500" style="width: <%= @active_session.progress_percentage %>%"></div>
+          <div class="bg-amber-600 h-3 rounded-full transition-all duration-500"
+               data-sync-sessions-target="progressBar"
+               style="width: <%= @active_session.progress_percentage %>%"></div>
         </div>
       </div>
 
       <!-- Active accounts grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <% @active_session.sync_session_accounts.includes(:email_account).each do |account| %>
-          <div class="bg-white rounded-lg p-4 border border-slate-200">
+          <div class="bg-white rounded-lg p-4 border border-slate-200"
+               data-sync-sessions-target="accountCard"
+               data-account-id="<%= account.email_account.id %>">
             <div class="flex items-center justify-between mb-2">
               <span class="text-sm font-medium text-slate-900"><%= account.email_account.bank_name %></span>
-              <span class="text-xs px-2 py-1 rounded-full <%= account.processing? ? 'bg-teal-100 text-teal-700' : 'bg-emerald-100 text-emerald-700' %>">
+              <span class="text-xs px-2 py-1 rounded-full <%= account.processing? ? 'bg-teal-100 text-teal-700' : 'bg-emerald-100 text-emerald-700' %>"
+                    data-status-badge>
                 <%= account.status.humanize %>
               </span>
             </div>
             <p class="text-xs text-slate-600 mb-2"><%= account.email_account.email %></p>
-            <div class="flex justify-between text-xs text-slate-500">
+            <div class="flex justify-between text-xs text-slate-500" data-account-counts>
               <span><%= account.processed_emails %> / <%= account.total_emails %></span>
               <span><%= account.detected_expenses %> gastos</span>
             </div>
@@ -120,8 +127,7 @@
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-xl font-semibold text-slate-900">Historial de Sincronizaciones</h2>
       <div class="flex items-center gap-2">
-        <span class="text-sm text-slate-600">Auto-actualizar</span>
-        <input type="checkbox" id="auto-refresh" class="rounded text-teal-600 focus:ring-teal-500" checked>
+        <span class="text-sm text-emerald-600">✓ Actualización en tiempo real activa</span>
       </div>
     </div>
 
@@ -140,7 +146,7 @@
         </thead>
         <tbody class="bg-white divide-y divide-slate-200">
           <% @recent_sessions.each do |session| %>
-            <tr class="hover:bg-slate-50">
+            <tr class="hover:bg-slate-50" data-session-id="<%= session.id %>">
               <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
                 <%= session.created_at.strftime("%d/%m %H:%M") %>
               </td>
@@ -166,9 +172,9 @@
               <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
                 <%= session.sync_session_accounts.count %>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900" data-progress-bar>
                 <div class="flex items-center">
-                  <span><%= session.processed_emails %> / <%= session.total_emails %></span>
+                  <span data-progress-text><%= session.processed_emails %> / <%= session.total_emails %></span>
                   <% if session.active? && session.total_emails > 0 %>
                     <div class="ml-2 w-16 bg-slate-200 rounded-full h-2">
                       <div class="bg-teal-600 h-2 rounded-full" style="width: <%= session.progress_percentage %>%"></div>
@@ -176,7 +182,7 @@
                   <% end %>
                 </div>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900" data-expenses-count>
                 <%= session.detected_expenses %>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
@@ -191,35 +197,4 @@
   </div>
 </div>
 
-<script>
-  // Auto-refresh functionality
-  document.addEventListener('DOMContentLoaded', function() {
-    const autoRefreshCheckbox = document.getElementById('auto-refresh');
-    let refreshInterval;
-
-    function startAutoRefresh() {
-      refreshInterval = setInterval(function() {
-        if (autoRefreshCheckbox.checked) {
-          Turbo.visit(window.location.href, { action: 'replace' });
-        }
-      }, 5000); // Refresh every 5 seconds
-    }
-
-    function stopAutoRefresh() {
-      clearInterval(refreshInterval);
-    }
-
-    autoRefreshCheckbox.addEventListener('change', function() {
-      if (this.checked) {
-        startAutoRefresh();
-      } else {
-        stopAutoRefresh();
-      }
-    });
-
-    // Start auto-refresh if checked by default
-    if (autoRefreshCheckbox.checked) {
-      startAutoRefresh();
-    }
-  });
-</script>
+<!-- Auto-refresh removed - using real-time Action Cable updates instead -->

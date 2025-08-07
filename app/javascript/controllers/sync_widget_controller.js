@@ -20,11 +20,6 @@ export default class extends Controller {
   }
 
   connect() {
-    console.log("SyncWidget controller connected", { 
-      sessionId: this.sessionIdValue,
-      active: this.activeValue 
-    })
-    
     if (this.activeValue && this.sessionIdValue) {
       this.subscribeToChannel()
     }
@@ -35,40 +30,55 @@ export default class extends Controller {
       this.subscription.unsubscribe()
       this.subscription = null
     }
+    if (this.consumer) {
+      this.consumer.disconnect()
+      this.consumer = null
+    }
   }
 
   subscribeToChannel() {
-    // Create cable consumer if not exists
+    // Use global consumer or create one if not available
     if (!this.consumer) {
-      this.consumer = createConsumer()
+      this.consumer = window.consumer || createConsumer()
     }
-
-    // Subscribe to sync status channel
-    this.subscription = this.consumer.subscriptions.create(
-      { 
-        channel: "SyncStatusChannel",
-        session_id: this.sessionIdValue
-      },
-      {
-        connected: () => {
-          console.log("Connected to SyncStatusChannel")
+    
+    try {
+      // Subscribe to sync status channel
+      this.subscription = this.consumer.subscriptions.create(
+        { 
+          channel: "SyncStatusChannel",
+          session_id: this.sessionIdValue
         },
+        {
+          connected: () => {
+            // Connection established
+          },
 
-        disconnected: () => {
-          console.log("Disconnected from SyncStatusChannel")
-        },
+          disconnected: () => {
+            // Connection lost
+          },
 
-        received: (data) => {
-          console.log("Received data:", data)
-          this.handleUpdate(data)
+          received: (data) => {
+            this.handleUpdate(data)
+          },
+          
+          rejected: () => {
+            console.error("❌ Subscription rejected by server")
+          }
         }
-      }
-    )
+      )
+    } catch (error) {
+      console.error("Error creating subscription:", error)
+    }
   }
 
   handleUpdate(data) {
     // Update based on data type
     switch(data.type) {
+      case 'initial_status':
+        // Just update the UI, don't trigger any actions
+        this.updateStatus(data)
+        break
       case 'progress_update':
         this.updateProgress(data)
         break
@@ -119,7 +129,9 @@ export default class extends Controller {
   }
 
   updateAccount(data) {
-    if (!this.hasAccountsListTarget) return
+    if (!this.hasAccountsListTarget) {
+      return
+    }
 
     const accountElement = this.accountsListTarget.querySelector(
       `[data-account-id="${data.account_id}"]`
@@ -153,7 +165,15 @@ export default class extends Controller {
       // Update accounts if provided
       if (data.accounts && Array.isArray(data.accounts)) {
         data.accounts.forEach(account => {
-          this.updateAccount(account)
+          // Map the account data to match what updateAccount expects
+          this.updateAccount({
+            account_id: account.id || account.account_id,
+            status: account.status,
+            progress: account.progress,
+            processed: account.processed,
+            total: account.total,
+            detected: account.detected
+          })
         })
       }
     }
@@ -161,23 +181,31 @@ export default class extends Controller {
 
   logActivity(data) {
     // Could add a small activity indicator or toast notification
-    console.log("Activity:", data.message)
   }
 
   handleCompletion(data) {
-    // Transition to inactive state
-    if (this.hasActiveSectionTarget && this.hasInactiveSectionTarget) {
-      this.activeSectionTarget.classList.add('hidden')
-      this.inactiveSectionTarget.classList.remove('hidden')
+    
+    // Update final progress to 100%
+    if (this.hasProgressBarTarget) {
+      this.progressBarTarget.style.width = '100%'
+    }
+    if (this.hasProgressPercentageTarget) {
+      this.progressPercentageTarget.textContent = '100%'
+    }
+    
+    // Update final counts
+    if (data.processed_emails !== undefined && this.hasProcessedCountTarget) {
+      this.processedCountTarget.textContent = this.formatNumber(data.processed_emails)
+    }
+    if (data.detected_expenses !== undefined && this.hasDetectedCountTarget) {
+      this.detectedCountTarget.textContent = data.detected_expenses
     }
 
     // Show completion message
     this.showNotification("Sincronización completada exitosamente", "success")
     
-    // Refresh page after a delay to show final stats
-    setTimeout(() => {
-      window.location.reload()
-    }, 3000)
+    // Mark as completed but don't reload - let user stay on page
+    // They can manually refresh or navigate away when ready
   }
 
   handleFailure(data) {

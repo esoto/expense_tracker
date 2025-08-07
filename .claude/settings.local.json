@@ -16,7 +16,10 @@
       "Bash(rails g:*)",
       "Bash(bin/rails:*)",
       "Bash(bundle exec brakeman:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:turbo.hotwired.dev)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }

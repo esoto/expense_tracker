@@ -11,6 +11,9 @@ class SyncProgressUpdater
     # Use a single query with calculated fields for better performance
     update_with_aggregated_data
 
+    # Broadcast progress update via ActionCable
+    broadcast_progress_update
+
     true
   rescue ActiveRecord::StaleObjectError
     # Handle optimistic locking conflicts gracefully
@@ -31,6 +34,9 @@ class SyncProgressUpdater
       status: determine_account_status(processed, total)
     )
 
+    # Broadcast account-specific update
+    SyncStatusChannel.broadcast_account_progress(sync_session, account)
+
     # Update session progress after account update
     call
   end
@@ -38,19 +44,19 @@ class SyncProgressUpdater
   private
 
   def update_with_aggregated_data
-    # Use a single query to get all aggregated data
-    aggregated = sync_session.sync_session_accounts
-      .select(
-        "COALESCE(SUM(total_emails), 0) as total",
-        "COALESCE(SUM(processed_emails), 0) as processed",
-        "COALESCE(SUM(detected_expenses), 0) as detected"
+    # Use Arel.sql for safety with raw SQL
+    totals = sync_session.sync_session_accounts
+      .pluck(
+        Arel.sql("COALESCE(SUM(total_emails), 0)"),
+        Arel.sql("COALESCE(SUM(processed_emails), 0)"),
+        Arel.sql("COALESCE(SUM(detected_expenses), 0)")
       )
       .first
 
     sync_session.update!(
-      total_emails: aggregated.total,
-      processed_emails: aggregated.processed,
-      detected_expenses: aggregated.detected
+      total_emails: totals[0] || 0,
+      processed_emails: totals[1] || 0,
+      detected_expenses: totals[2] || 0
     )
   end
 
@@ -68,5 +74,21 @@ class SyncProgressUpdater
     return "completed" if processed >= total && total > 0
     return "processing" if processed > 0
     "pending"
+  end
+
+  def broadcast_progress_update
+    # Broadcast via Action Cable
+    SyncStatusChannel.broadcast_progress(
+      sync_session,
+      sync_session.processed_emails,
+      sync_session.total_emails,
+      sync_session.detected_expenses
+    )
+
+    # Also trigger Turbo Stream broadcast for dashboard
+    sync_session.broadcast_dashboard_update if sync_session.respond_to?(:broadcast_dashboard_update)
+  rescue StandardError => e
+    Rails.logger.error "Error broadcasting progress update: #{e.message}"
+    # Don't fail the whole update if broadcasting fails
   end
 end

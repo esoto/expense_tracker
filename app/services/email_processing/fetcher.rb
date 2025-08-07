@@ -58,19 +58,27 @@ module EmailProcessing
       message_ids = imap_service.search_emails(search_criteria)
       total_emails_found = message_ids.count
 
-      Rails.logger.info "[EmailProcessing::Fetcher] Found #{total_emails_found} emails for #{email_account.email}"
-
       # Update sync session with total emails
       @sync_session_account&.update!(total_emails: total_emails_found)
 
       # Process emails using the email processor with progress tracking
       result = if @sync_session_account
         last_detected = 0
-        email_processor.process_emails(message_ids, imap_service) do |processed_count, detected_expenses|
+        email_processor.process_emails(message_ids, imap_service) do |processed_count, detected_expenses, last_expense|
           begin
             # Calculate incremental detected expenses
             incremental_detected = detected_expenses - last_detected
             @sync_session_account.update_progress(processed_count, total_emails_found, incremental_detected)
+
+            # Broadcast activity if new expense was detected
+            if incremental_detected > 0 && last_expense
+              SyncStatusChannel.broadcast_activity(
+                @sync_session_account.sync_session,
+                "expense_detected",
+                "Gasto detectado: #{format_expense_message(last_expense)}"
+              )
+            end
+
             last_detected = detected_expenses
           rescue => e
             Rails.logger.error "[EmailProcessing::Fetcher] Failed to update progress: #{e.message}"
@@ -97,6 +105,20 @@ module EmailProcessing
     def add_error(message)
       @errors << message
       Rails.logger.error "[EmailProcessing::Fetcher] #{email_account&.email || 'Unknown'}: #{message}"
+    end
+
+    def format_expense_message(expense)
+      return "" unless expense
+
+      amount = ActiveSupport::NumberHelper.number_to_currency(
+        expense.amount,
+        unit: "₡",
+        delimiter: ",",
+        separator: ".",
+        format: "%u%n"
+      )
+
+      "#{amount} en #{expense.merchant || 'Comercio desconocido'}"
     end
   end
 end

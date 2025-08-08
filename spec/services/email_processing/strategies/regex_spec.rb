@@ -120,7 +120,6 @@ RSpec.describe EmailProcessing::Strategies::Regex do
       expect(strategy.send(:extract_amount, '123.45')).to eq(BigDecimal('123.45'))
     end
 
-
     it 'returns nil for invalid amounts' do
       expect(strategy.send(:extract_amount, nil)).to be_nil
       expect(strategy.send(:extract_amount, '')).to be_nil

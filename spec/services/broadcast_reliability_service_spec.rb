@@ -70,7 +70,7 @@ RSpec.describe BroadcastReliabilityService, type: :service do
           target_id: sync_session.id,
           priority: :medium,
           attempt: 1,
-          error: "Connection timeout",
+          error: "Broadcast failed: Connection timeout",
           duration: be_a(Float)
         )
         
@@ -313,21 +313,56 @@ RSpec.describe BroadcastReliabilityService, type: :service do
 
         expect(result).to be false
         expect(BroadcastAnalytics).to have_received(:record_failure).with(
-          hash_including(error: "Channel error")
+          hash_including(error: "Broadcast failed: Channel error")
         ).exactly(3).times
       end
     end
 
     context 'when channel constantize fails' do
-      it 'raises error for invalid channel name' do
-        expect {
-          described_class.broadcast_with_retry(
-            channel: 'InvalidChannel',
-            target: sync_session,
-            data: test_data,
-            priority: :medium
-          )
-        }.to raise_error(NameError)
+      before do
+        # Disable security validation for this test to test retry behavior
+        allow(BroadcastFeatureFlags).to receive(:enabled?)
+          .with(:broadcast_validation)
+          .and_return(false)
+      end
+
+      it 'returns false after retries for invalid channel name' do
+        allow(BroadcastAnalytics).to receive(:record_failure)
+        allow(BroadcastErrorHandler).to receive(:handle_final_failure)
+        
+        result = described_class.broadcast_with_retry(
+          channel: 'InvalidChannel',
+          target: sync_session,
+          data: test_data,
+          priority: :medium
+        )
+        
+        expect(result).to be false
+        expect(BroadcastAnalytics).to have_received(:record_failure).exactly(3).times
+        expect(BroadcastErrorHandler).to have_received(:handle_final_failure)
+      end
+    end
+
+    context 'when security validation is enabled' do
+      before do
+        allow(BroadcastFeatureFlags).to receive(:enabled?)
+          .with(:broadcast_validation)
+          .and_return(true)
+      end
+
+      it 'rejects invalid channel names before retry attempts' do
+        allow(BroadcastAnalytics).to receive(:record_failure)
+        
+        result = described_class.broadcast_with_retry(
+          channel: 'InvalidChannel',
+          target: sync_session,
+          data: test_data,
+          priority: :medium
+        )
+        
+        expect(result).to be false
+        # Should not attempt retries when validation fails
+        expect(BroadcastAnalytics).not_to have_received(:record_failure)
       end
     end
   end

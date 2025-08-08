@@ -30,12 +30,14 @@ class FailedBroadcastStore < ApplicationRecord
 
   # Priority levels
   PRIORITIES = %w[critical high medium low].freeze
-
+  
+  # Callbacks
+  before_validation :ensure_data_present
+  
   # Validations
   validates :channel_name, presence: true
   validates :target_type, presence: true
   validates :target_id, presence: true, numericality: { greater_than: 0 }
-  validates :data, presence: true
   validates :priority, presence: true, inclusion: { in: PRIORITIES }
   validates :error_type, presence: true, inclusion: { in: ERROR_TYPES }
   validates :error_message, presence: true
@@ -72,12 +74,13 @@ class FailedBroadcastStore < ApplicationRecord
     # @param error [StandardError] Error that caused failure
     # @return [FailedBroadcastStore] Created record
     def create_from_job_failure!(job, error)
+      args = job["args"] || []
       create!(
-        channel_name: job["args"][0],
-        target_type: job["args"][2],
-        target_id: job["args"][1],
-        data: job["args"][3] || {},
-        priority: job["args"][4] || "medium",
+        channel_name: args[0],
+        target_type: args[2],
+        target_id: args[1],
+        data: args[3] || {},
+        priority: args[4] || "medium",
         error_type: classify_error(error),
         error_message: error.message,
         failed_at: Time.current,
@@ -248,5 +251,10 @@ class FailedBroadcastStore < ApplicationRecord
   # @return [Boolean] True if recovered
   def recovered?
     recovered_at.present?
+  end
+  
+  # Ensure data is present (at least an empty hash)
+  def ensure_data_present
+    self.data ||= {}
   end
 end

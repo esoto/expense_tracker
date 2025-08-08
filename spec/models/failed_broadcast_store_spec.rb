@@ -3,6 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe FailedBroadcastStore, type: :model do
+  include ActiveSupport::Testing::TimeHelpers
   let(:sync_session) { create(:sync_session) }
   
   describe 'validations' do
@@ -11,7 +12,7 @@ RSpec.describe FailedBroadcastStore, type: :model do
     it { should validate_presence_of(:channel_name) }
     it { should validate_presence_of(:target_type) }
     it { should validate_presence_of(:target_id) }
-    it { should validate_presence_of(:data) }
+    # Data is ensured to be present via before_validation callback
     it { should validate_presence_of(:priority) }
     it { should validate_presence_of(:error_type) }
     it { should validate_presence_of(:error_message) }
@@ -59,9 +60,9 @@ RSpec.describe FailedBroadcastStore, type: :model do
   end
 
   describe 'scopes' do
-    let!(:unrecovered_record) { create(:failed_broadcast_store) }
-    let!(:recovered_record) { create(:failed_broadcast_store, :recovered) }
-    let!(:critical_record) { create(:failed_broadcast_store, :critical_priority) }
+    let!(:unrecovered_record) { create(:failed_broadcast_store, failed_at: 10.minutes.ago) }
+    let!(:recovered_record) { create(:failed_broadcast_store, :recovered, failed_at: 30.minutes.ago) }
+    let!(:critical_record) { create(:failed_broadcast_store, :critical_priority, failed_at: 20.minutes.ago) }
     let!(:old_record) { create(:failed_broadcast_store, failed_at: 2.days.ago) }
 
     describe '.unrecovered' do
@@ -174,16 +175,20 @@ RSpec.describe FailedBroadcastStore, type: :model do
 
     it 'classifies timeout errors' do
       expect(described_class.classify_error(Timeout::Error.new)).to eq('connection_timeout')
-      expect(described_class.classify_error(Net::TimeoutError.new)).to eq('connection_timeout')
+      expect(described_class.classify_error(Net::ReadTimeout.new)).to eq('connection_timeout')
+      expect(described_class.classify_error(Net::OpenTimeout.new)).to eq('connection_timeout')
     end
 
     it 'classifies JSON errors' do
-      expect(described_class.classify_error(JSON::ParserError.new)).to eq('serialization_error')
-      expect(described_class.classify_error(JSON::GeneratorError.new)).to eq('serialization_error')
+      expect(described_class.classify_error(JSON::ParserError.new("parse error"))).to eq('serialization_error')
+      expect(described_class.classify_error(JSON::GeneratorError.new("generate error"))).to eq('serialization_error')
     end
 
     it 'classifies validation errors' do
-      expect(described_class.classify_error(ActiveModel::ValidationError.new(nil))).to eq('validation_error')
+      record = build(:failed_broadcast_store, channel_name: nil)
+      record.valid? # populate errors
+      error = ActiveModel::ValidationError.new(record)
+      expect(described_class.classify_error(error)).to eq('validation_error')
     end
 
     it 'defaults to unknown for other errors' do
@@ -226,8 +231,32 @@ RSpec.describe FailedBroadcastStore, type: :model do
     end
 
     it 'filters by time period correctly' do
-      stats = described_class.recovery_stats(time_period: 1.hour)
-      expect(stats[:total_failures]).to eq(2) # Only recent failures
+      # Clear previous test data and create fresh records
+      described_class.delete_all
+      
+      # Create records within the last hour by explicitly setting failed_at
+      current_time = Time.current
+      record1 = create(:failed_broadcast_store, 
+                      error_type: 'validation_error', 
+                      priority: 'medium', 
+                      failed_at: current_time)
+      
+      record2 = create(:failed_broadcast_store, 
+                      error_type: 'connection_timeout', 
+                      priority: 'high',
+                      failed_at: current_time - 30.minutes)
+      
+      # Create record outside the time window (should be excluded)
+      create(:failed_broadcast_store, 
+             error_type: 'job_error', 
+             priority: 'low',
+             failed_at: current_time - 2.hours)
+      
+      # Query from current time
+      travel_to(current_time) do
+        stats = described_class.recovery_stats(time_period: 1.hour)
+        expect(stats[:total_failures]).to eq(2) # Only records within the last hour
+      end
     end
   end
 
@@ -423,6 +452,10 @@ RSpec.describe FailedBroadcastStore, type: :model do
     context 'when retry count is at maximum' do
       let(:record) { create(:failed_broadcast_store, :max_retries_reached) }
 
+      before do
+        allow(BroadcastReliabilityService).to receive(:broadcast_with_retry)
+      end
+
       it 'returns false without attempting retry' do
         result = record.retry_broadcast!
 
@@ -433,6 +466,10 @@ RSpec.describe FailedBroadcastStore, type: :model do
 
     context 'when already recovered' do
       let(:record) { create(:failed_broadcast_store, :recovered) }
+
+      before do
+        allow(BroadcastReliabilityService).to receive(:broadcast_with_retry)
+      end
 
       it 'returns false without attempting retry' do
         result = record.retry_broadcast!

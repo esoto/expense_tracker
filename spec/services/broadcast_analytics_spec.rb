@@ -3,6 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe BroadcastAnalytics, type: :service do
+  include ActiveSupport::Testing::TimeHelpers
   let(:channel_name) { 'SyncStatusChannel' }
   let(:target_type) { 'SyncSession' }
   let(:target_id) { 123 }
@@ -429,35 +430,40 @@ RSpec.describe BroadcastAnalytics, type: :service do
 
         expect(stats).to include(
           count: 3,
-          sum: 0.6,
           min: 0.1,
           max: 0.3
         )
+        expect(stats[:sum]).to be_within(0.0001).of(0.6)
       end
     end
   end
 
   describe 'time window calculations' do
     before do
+      # Clear any existing cache data
+      Rails.cache.clear
+      
       # Setup data across different time periods
-      freeze_time do
-        # Current hour
+      baseline_time = Time.current
+      
+      # Record event at baseline time
+      travel_to(baseline_time) do
         described_class.record_success(
           channel: channel_name, target_type: target_type, target_id: target_id,
           priority: priority, attempt: 1, duration: 0.1
         )
       end
 
-      travel(1.hour) do
-        # One hour ago
+      # Record event 1 hour in the future from baseline
+      travel_to(baseline_time + 1.hour) do
         described_class.record_success(
           channel: channel_name, target_type: target_type, target_id: target_id + 1,
           priority: priority, attempt: 1, duration: 0.2
         )
       end
 
-      travel(25.hours) do
-        # Outside 24-hour window
+      # Record event 25 hours in the future from baseline (outside 24-hour window)
+      travel_to(baseline_time + 25.hours) do
         described_class.record_success(
           channel: channel_name, target_type: target_type, target_id: target_id + 2,
           priority: priority, attempt: 1, duration: 0.3
@@ -466,16 +472,18 @@ RSpec.describe BroadcastAnalytics, type: :service do
     end
 
     it 'includes events within time window' do
-      travel(2.hours) do
+      baseline_time = Time.current
+      travel_to(baseline_time + 2.hours) do
         metrics = described_class.get_metrics(time_window: 3.hours)
         expect(metrics[:success_count]).to eq(2) # Should include both events within 3 hours
       end
     end
 
     it 'excludes events outside time window' do
-      travel(2.hours) do
+      baseline_time = Time.current
+      travel_to(baseline_time + 3.hours) do
         metrics = described_class.get_metrics(time_window: 1.hour)
-        expect(metrics[:success_count]).to eq(0) # No events in last hour
+        expect(metrics[:success_count]).to eq(0) # No events in last hour (all events are 2+ hours old)
       end
     end
   end

@@ -74,6 +74,11 @@ RSpec.configure do |config|
   config.before(:each, type: :job) do
     ActiveJob::Base.queue_adapter = :test
   end
+  
+  # Clear cache before each test
+  config.before(:each) do
+    Rails.cache.clear
+  end
 
   # Include controller testing support for Rails 8
   config.include Rails::Controller::Testing::TestProcess, type: :controller
@@ -96,6 +101,9 @@ RSpec.configure do |config|
     if defined?(ActiveRecord::Base)
       ActiveRecord::Base.connection.execute("TRUNCATE TABLE #{ActiveRecord::Base.connection.tables.join(', ')} RESTART IDENTITY CASCADE") if ActiveRecord::Base.connection.tables.any?
     end
+    
+    # Use memory store for cache in tests
+    Rails.cache = ActiveSupport::Cache::MemoryStore.new
   end
 
   # Speed up tests by avoiding loading Spring in test environment

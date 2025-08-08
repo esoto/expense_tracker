@@ -28,8 +28,6 @@ require "concurrent"
 #   # Manually trigger batch send
 #   collector.flush_batch
 class ProgressBatchCollector
-  include Concurrent::Async
-
   # Default configuration values
   DEFAULT_CONFIG = {
     batch_interval: 2.seconds,      # Maximum time between batches
@@ -54,9 +52,6 @@ class ProgressBatchCollector
     @mutex = Mutex.new
     @timer_thread = nil
     @shutdown_complete = Concurrent::Promise.new
-
-    # Set up finalizer for cleanup
-    ObjectSpace.define_finalizer(self, self.class.finalizer(@timer_thread, @shutdown_complete))
 
     # Start background batch processing
     start_batch_timer
@@ -85,7 +80,7 @@ class ProgressBatchCollector
 
     # Check if we should flush based on progress thresholds
     if should_flush_for_progress?(processed, total)
-      async.flush_batch_async
+      flush_batch
     end
   end
 
@@ -133,7 +128,7 @@ class ProgressBatchCollector
       broadcast_critical_update(update_data)
     else
       add_to_batch(:critical, update_data)
-      async.flush_batch_async
+      flush_batch
     end
   end
 
@@ -175,11 +170,6 @@ class ProgressBatchCollector
         restore_failed_batch(current_batch)
       end
     end
-  end
-
-  # Flush batch asynchronously
-  def flush_batch_async
-    flush_batch
   end
 
   # Stop the batch collector and flush any remaining updates
@@ -226,25 +216,6 @@ class ProgressBatchCollector
   # @param timer_thread [Thread] Timer thread to cleanup
   # @param shutdown_promise [Concurrent::Promise] Shutdown promise
   # @return [Proc] Finalizer proc
-  def self.finalizer(timer_thread, shutdown_promise)
-    proc do
-      begin
-        # Try to stop timer thread if it's still alive
-        if timer_thread&.alive?
-          timer_thread.terminate
-        end
-
-        # Mark shutdown as complete if not already done
-        unless shutdown_promise.fulfilled?
-          shutdown_promise.set(true)
-        end
-      rescue StandardError => e
-        # Log errors but don't raise in finalizer
-        Rails.logger.error "[BATCH_COLLECTOR] Finalizer error: #{e.message}" if defined?(Rails)
-      end
-    end
-  end
-
   private
 
   # Add an update to the batch with deduplication
@@ -258,13 +229,13 @@ class ProgressBatchCollector
       # Prevent memory bloat by enforcing max batch size
       if @batch_data.size > @config[:max_memory_updates]
         Rails.logger.warn "[BATCH_COLLECTOR] Memory limit reached (#{@batch_data.size} updates), forcing flush"
-        async.flush_batch_async
+        flush_batch
       end
     end
 
     # Check if we should flush based on batch size
     if @batch_data.size >= @config[:batch_size]
-      async.flush_batch_async
+      flush_batch
     end
   end
 
@@ -443,7 +414,7 @@ class ProgressBatchCollector
           sleep(@config[:batch_interval])
 
           if @running.value && time_for_batch_flush?
-            async.flush_batch_async
+            flush_batch
           end
         end
       rescue StandardError => e

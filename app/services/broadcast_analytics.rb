@@ -291,6 +291,9 @@ class BroadcastAnalytics
       cache_key = "#{CACHE_KEYS[event_type]}:events:#{timestamp}"
 
       Rails.cache.write(cache_key, event_data, expires_in: 24.hours)
+    rescue StandardError => e
+      # Log cache errors but don't propagate them
+      Rails.logger.error "[BROADCAST_ANALYTICS] Failed to store event: #{e.message}"
     end
 
     # Increment a counter with timestamp
@@ -302,6 +305,9 @@ class BroadcastAnalytics
 
       current_value = Rails.cache.read(hour_key) || 0
       Rails.cache.write(hour_key, current_value + 1, expires_in: 25.hours)
+    rescue StandardError => e
+      # Log cache errors but don't propagate them
+      Rails.logger.error "[BROADCAST_ANALYTICS] Failed to increment counter: #{e.message}"
     end
 
     # Update duration statistics
@@ -319,6 +325,9 @@ class BroadcastAnalytics
       stats[:max] = [ stats[:max], duration ].max
 
       Rails.cache.write(hour_key, stats, expires_in: 25.hours)
+    rescue StandardError => e
+      # Log cache errors but don't propagate them
+      Rails.logger.error "[BROADCAST_ANALYTICS] Failed to update duration stats: #{e.message}"
     end
 
     # Update hourly statistics
@@ -331,6 +340,9 @@ class BroadcastAnalytics
       stats[event_type] = (stats[event_type] || 0) + 1
 
       Rails.cache.write(hour_key, stats, expires_in: 25.hours)
+    rescue StandardError => e
+      # Log cache errors but don't propagate them
+      Rails.logger.error "[BROADCAST_ANALYTICS] Failed to update hourly stats: #{e.message}"
     end
 
     # Calculate comprehensive metrics for a time window

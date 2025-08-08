@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { createConsumer } from "@rails/actioncable"
+import errorMessages from "../services/error_messages"
 
 export default class extends Controller {
   static targets = [
@@ -33,16 +34,24 @@ export default class extends Controller {
     this.lastUpdateTime = Date.now()
     this.updateQueue = []
     this.updateThrottleTimer = null
+    this.pollingTimer = null
+    this.pollingMode = false
+    this.errorCount = 0
+    this.lastError = null
     
     // Setup event handlers
     this.setupVisibilityHandling()
     this.setupNetworkMonitoring()
+    this.setupToastNotifications()
     
     // Load cached state if available
     this.loadCachedState()
     
-    // Start subscription if active
-    if (this.activeValue && this.sessionIdValue) {
+    // Check WebSocket support
+    if (!this.isWebSocketSupported()) {
+      this.enablePollingMode()
+    } else if (this.activeValue && this.sessionIdValue) {
+      // Start subscription if active
       this.subscribeToChannel()
     }
     
@@ -64,6 +73,12 @@ export default class extends Controller {
     if (this.updateThrottleTimer) {
       clearTimeout(this.updateThrottleTimer)
       this.updateThrottleTimer = null
+    }
+    
+    // Clear polling timer
+    if (this.pollingTimer) {
+      clearInterval(this.pollingTimer)
+      this.pollingTimer = null
     }
     
     // Remove event listeners
@@ -112,6 +127,12 @@ export default class extends Controller {
   }
 
   subscribeToChannel() {
+    // Check if in polling mode
+    if (this.pollingMode) {
+      this.log("info", "In polling mode, skipping WebSocket connection")
+      return
+    }
+    
     // Prevent multiple subscription attempts
     if (this.connectionStateValue === "connecting") {
       this.log("warn", "Already attempting to connect")
@@ -119,7 +140,7 @@ export default class extends Controller {
     }
     
     this.connectionStateValue = "connecting"
-    this.updateConnectionStatus("Conectando...")
+    this.updateConnectionStatus(errorMessages.getStatus("connecting"))
     
     // Use global consumer or create one if not available
     if (!this.consumer) {
@@ -161,19 +182,24 @@ export default class extends Controller {
   handleConnected() {
     this.log("info", "Connected to sync channel")
     
+    // Reset error tracking
+    this.errorCount = 0
+    this.lastError = null
+    
     // Reset retry count on successful connection
+    const wasReconnecting = this.retryCountValue > 0
     this.retryCountValue = 0
     this.connectionStateValue = "connected"
-    this.updateConnectionStatus("Conectado")
+    this.updateConnectionStatus(errorMessages.getStatus("connected"))
     
     // Resume updates if tab is active
     if (!document.hidden && !this.isPaused) {
       this.requestLatestStatus()
     }
     
-    // Show success notification
-    if (this.retryCountValue > 0) {
-      this.showNotification("Reconexión exitosa", "success")
+    // Show success notification for reconnection
+    if (wasReconnecting) {
+      this.showToast(errorMessages.getMessage("recovered", "recovery"), "success")
     }
   }
   
@@ -181,7 +207,10 @@ export default class extends Controller {
     this.log("warn", "Disconnected from sync channel")
     
     this.connectionStateValue = "disconnected"
-    this.updateConnectionStatus("Desconectado")
+    this.updateConnectionStatus(errorMessages.getStatus("disconnected"))
+    
+    // Show disconnection notification
+    this.showToast(errorMessages.getMessage("lost", "connection"), "warning")
     
     // Attempt reconnection if not paused and not at max retries
     if (!this.isPaused && this.activeValue) {
@@ -193,38 +222,81 @@ export default class extends Controller {
     this.log("error", "Subscription rejected by server")
     
     this.connectionStateValue = "rejected"
-    this.updateConnectionStatus("Conexión rechazada")
+    this.updateConnectionStatus(errorMessages.getMessage("refused", "connection"))
     
-    // Show error and retry button
-    this.showNotification("La conexión fue rechazada por el servidor", "error")
+    // Determine specific rejection reason
+    const errorType = this.determineRejectionReason()
+    const message = this.getErrorMessage(errorType)
+    const suggestion = errorMessages.getSuggestion(errorType)
+    
+    // Show error with suggestion
+    this.showToast(
+      `${message}${suggestion ? '. ' + suggestion : ''}`,
+      "error",
+      null,
+      () => window.location.reload(),
+      errorMessages.getAction("reload")
+    )
+    
     this.showManualRetryButton()
   }
   
   handleConnectionError(error) {
     this.log("error", "Connection error", error)
     
+    this.errorCount++
+    this.lastError = error
     this.connectionStateValue = "error"
-    this.updateConnectionStatus("Error de conexión")
     
-    // Schedule reconnect with backoff
-    this.scheduleReconnect()
+    // Analyze error and provide specific feedback
+    const errorInfo = this.analyzeError(error)
+    this.updateConnectionStatus(errorInfo.status)
+    
+    // Show appropriate error message
+    if (this.errorCount === 1) {
+      this.showToast(errorInfo.message, "error")
+    }
+    
+    // Check if we should fallback to polling
+    if (this.shouldFallbackToPolling(error)) {
+      this.enablePollingMode()
+    } else {
+      // Schedule reconnect with backoff
+      this.scheduleReconnect()
+    }
   }
   
   // Reconnection logic with exponential backoff
   scheduleReconnect() {
     if (this.retryCountValue >= this.maxRetriesValue) {
       this.log("warn", "Max retries reached")
+      
+      // Show max retries message and offer alternatives
+      this.showToast(
+        errorMessages.getMessage("max_retries", "recovery"),
+        "error",
+        null,
+        () => this.enablePollingMode(),
+        errorMessages.getMessage("switching_mode", "recovery")
+      )
+      
       this.showManualRetryButton()
       return
     }
     
     const delay = this.calculateBackoffDelay()
+    const seconds = Math.round(delay / 1000)
+    
     this.log("info", `Scheduling reconnect in ${delay}ms`, {
       retryCount: this.retryCountValue,
       maxRetries: this.maxRetriesValue
     })
     
-    this.updateConnectionStatus(`Reconectando en ${Math.round(delay / 1000)}s...`)
+    const statusMessage = errorMessages.format(
+      errorMessages.getMessage("retry_in", "recovery"),
+      { seconds }
+    )
+    this.updateConnectionStatus(statusMessage)
     
     // Clear existing timer if any
     if (this.reconnectTimer) {
@@ -453,8 +525,9 @@ export default class extends Controller {
       this.detectedCountTarget.textContent = data.detected_expenses
     }
 
-    // Show completion message
-    this.showNotification("Sincronización completada exitosamente", "success")
+    // Show completion message with summary
+    const message = `Sincronización completada: ${data.detected_expenses || 0} gastos detectados de ${data.processed_emails || 0} correos`
+    this.showToast(message, "success", 7000)
     
     // Clear cached state after completion
     setTimeout(() => {
@@ -463,13 +536,27 @@ export default class extends Controller {
   }
 
   handleFailure(data) {
-    // Show error state
-    this.showNotification(`Error en sincronización: ${data.error || 'Error desconocido'}`, "error")
+    // Parse error details
+    const error = {
+      code: data.error_code,
+      type: data.error_type,
+      message: data.error,
+      details: data.error_details
+    }
+    
+    // Use enhanced error handling
+    this.handleSyncError(error)
     
     // Update UI to show error state
     if (this.hasProgressBarTarget) {
       this.progressBarTarget.classList.add('bg-rose-600')
       this.progressBarTarget.classList.remove('bg-teal-700')
+    }
+    
+    // Show retry option for recoverable errors
+    const errorInfo = this.analyzeError(error)
+    if (errorInfo.recoverable) {
+      this.showManualRetryButton()
     }
   }
 
@@ -506,32 +593,34 @@ export default class extends Controller {
     }
   }
 
+  // Toast notification system integration
+  setupToastNotifications() {
+    // Initialize toast controller if not already present
+    if (!document.querySelector('[data-controller="toast"]')) {
+      const toastContainer = document.createElement('div')
+      toastContainer.dataset.controller = 'toast'
+      toastContainer.dataset.toastPositionValue = 'top-right'
+      document.body.appendChild(toastContainer)
+    }
+  }
+
+  showToast(message, type = 'info', duration = null, action = null, actionText = null) {
+    // Dispatch custom event for toast controller
+    const event = new CustomEvent('toast:show', {
+      detail: {
+        message,
+        type,
+        duration,
+        action,
+        actionText
+      }
+    })
+    document.dispatchEvent(event)
+  }
+
   showNotification(message, type = 'info') {
-    // Create toast notification
-    const notification = document.createElement('div')
-    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 ${
-      type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-      type === 'error' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
-      'bg-slate-50 text-slate-700 border border-slate-200'
-    }`
-    notification.innerHTML = `
-      <div class="flex items-center">
-        <span>${message}</span>
-        <button class="ml-4 text-current opacity-70 hover:opacity-100" onclick="this.parentElement.parentElement.remove()">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
-      </div>
-    `
-    
-    document.body.appendChild(notification)
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-      notification.style.opacity = '0'
-      setTimeout(() => notification.remove(), 300)
-    }, 5000)
+    // Delegate to toast system
+    this.showToast(message, type)
   }
 
   formatNumber(num) {
@@ -617,23 +706,23 @@ export default class extends Controller {
     this.log("warn", "Network offline")
     
     this.connectionStateValue = "offline"
-    this.updateConnectionStatus("Sin conexión")
+    this.updateConnectionStatus(errorMessages.getMessage("offline", "connection"))
     
     // Pause updates while offline
     this.pauseUpdates()
     
     // Show offline notification
-    this.showNotification("Sin conexión a internet", "warning")
+    this.showToast(errorMessages.getMessage("offline", "connection"), "warning")
   }
   
   handleOnline() {
     this.log("info", "Network online")
     
     this.connectionStateValue = "reconnecting"
-    this.updateConnectionStatus("Reconectando...")
+    this.updateConnectionStatus(errorMessages.getStatus("reconnecting"))
     
     // Show online notification
-    this.showNotification("Conexión restaurada", "info")
+    this.showToast(errorMessages.getMessage("online", "connection"), "info")
     
     // Reset retry count for fresh attempt
     this.retryCountValue = 0
@@ -642,7 +731,7 @@ export default class extends Controller {
     this.resumeUpdates()
     
     // Attempt reconnection if not connected
-    if (!this.subscription || this.connectionStateValue !== "connected") {
+    if (!this.pollingMode && (!this.subscription || this.connectionStateValue !== "connected")) {
       this.scheduleReconnect()
     }
   }
@@ -768,7 +857,10 @@ export default class extends Controller {
       sessionId: this.sessionIdValue,
       timestamp: Date.now(),
       userAgent: navigator.userAgent,
-      url: window.location.href
+      url: window.location.href,
+      errorCount: this.errorCount,
+      pollingMode: this.pollingMode,
+      connectionState: this.connectionStateValue
     }
     
     fetch('/api/client_errors', {
@@ -782,5 +874,265 @@ export default class extends Controller {
       // Silently fail if error reporting fails
       console.error('Failed to report error to server:', error)
     })
+  }
+
+  // WebSocket support detection
+  isWebSocketSupported() {
+    try {
+      // Check for WebSocket support
+      if (!window.WebSocket && !window.MozWebSocket) {
+        this.log("warn", "WebSocket not supported by browser")
+        return false
+      }
+      
+      // Check if WebSocket is blocked (corporate firewall, etc)
+      // This is a heuristic - if we can't create a WebSocket object, it might be blocked
+      const testWs = new WebSocket('wss://echo.websocket.org/')
+      testWs.close()
+      
+      return true
+    } catch (error) {
+      this.log("warn", "WebSocket appears to be blocked", error)
+      return false
+    }
+  }
+
+  // Enable polling mode as fallback
+  enablePollingMode() {
+    if (this.pollingMode) {
+      return // Already in polling mode
+    }
+    
+    this.log("info", "Enabling polling mode")
+    this.pollingMode = true
+    
+    // Show notification about degraded mode
+    this.showToast(
+      errorMessages.getMessage("websocket_unsupported", "connection"),
+      "warning",
+      10000 // Show for 10 seconds
+    )
+    
+    // Update UI to show polling mode
+    this.updateConnectionStatus(errorMessages.getMessage("degraded_mode", "recovery"))
+    this.showPollingIndicator()
+    
+    // Start polling if active
+    if (this.activeValue && this.sessionIdValue) {
+      this.startPolling()
+    }
+  }
+
+  // Start polling for updates
+  startPolling() {
+    if (this.pollingTimer) {
+      return // Already polling
+    }
+    
+    // Poll every 5 seconds when sync is active
+    const pollInterval = this.activeValue ? 5000 : 30000
+    
+    this.log("info", `Starting polling with ${pollInterval}ms interval`)
+    
+    // Initial poll
+    this.pollForUpdates()
+    
+    // Set up recurring poll
+    this.pollingTimer = setInterval(() => {
+      if (!this.isPaused && this.activeValue) {
+        this.pollForUpdates()
+      }
+    }, pollInterval)
+  }
+
+  // Stop polling
+  stopPolling() {
+    if (this.pollingTimer) {
+      clearInterval(this.pollingTimer)
+      this.pollingTimer = null
+      this.log("info", "Stopped polling")
+    }
+  }
+
+  // Poll for updates via HTTP
+  async pollForUpdates() {
+    if (!this.sessionIdValue) return
+    
+    try {
+      const response = await fetch(`/api/sync_sessions/${this.sessionIdValue}/status`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]')?.content
+        }
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        this.handleUpdate(data)
+        
+        // Reset error count on successful poll
+        this.errorCount = 0
+      } else {
+        throw new Error(`HTTP ${response.status}`)
+      }
+    } catch (error) {
+      this.log("error", "Polling error", error)
+      this.errorCount++
+      
+      // Show error after multiple failures
+      if (this.errorCount > 3) {
+        this.showToast(
+          errorMessages.getMessage("unavailable", "server"),
+          "error"
+        )
+        
+        // Stop polling after too many errors
+        if (this.errorCount > 10) {
+          this.stopPolling()
+          this.showManualRetryButton()
+        }
+      }
+    }
+  }
+
+  // Show polling mode indicator
+  showPollingIndicator() {
+    const indicator = document.createElement('div')
+    indicator.id = 'polling-indicator'
+    indicator.className = 'fixed bottom-4 left-4 px-3 py-2 bg-amber-100 text-amber-700 rounded-lg text-sm flex items-center space-x-2 shadow-sm border border-amber-200'
+    indicator.innerHTML = `
+      <svg class="animate-pulse h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+      </svg>
+      <span>Modo de actualización periódica</span>
+    `
+    
+    // Remove existing indicator if present
+    const existing = document.getElementById('polling-indicator')
+    if (existing) existing.remove()
+    
+    document.body.appendChild(indicator)
+  }
+
+  // Analyze error to determine type and appropriate response
+  analyzeError(error) {
+    const errorString = error?.toString() || ''
+    const errorMessage = error?.message || ''
+    
+    // Check for specific error types
+    if (errorString.includes('NetworkError') || errorString.includes('ERR_NETWORK')) {
+      return {
+        type: 'network',
+        message: errorMessages.getMessage('network', 'connection'),
+        status: errorMessages.getMessage('offline', 'connection'),
+        recoverable: true
+      }
+    }
+    
+    if (errorString.includes('SecurityError') || errorString.includes('ERR_CERT')) {
+      return {
+        type: 'ssl',
+        message: errorMessages.getMessage('ssl', 'connection'),
+        status: 'Error SSL',
+        recoverable: false
+      }
+    }
+    
+    if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
+      return {
+        type: 'auth',
+        message: errorMessages.getMessage('expired', 'auth'),
+        status: errorMessages.getMessage('unauthorized', 'auth'),
+        recoverable: false
+      }
+    }
+    
+    if (errorMessage.includes('500') || errorMessage.includes('Internal')) {
+      return {
+        type: 'server',
+        message: errorMessages.getMessage('internal', 'server'),
+        status: errorMessages.getMessage('unavailable', 'server'),
+        recoverable: true
+      }
+    }
+    
+    // Default error
+    return {
+      type: 'unknown',
+      message: errorMessages.getMessage('failed', 'connection'),
+      status: errorMessages.getStatus('failed'),
+      recoverable: true
+    }
+  }
+
+  // Determine if we should fallback to polling based on error
+  shouldFallbackToPolling(error) {
+    // Fallback after multiple WebSocket errors
+    if (this.errorCount > 3) {
+      return true
+    }
+    
+    // Fallback for specific error types
+    const errorInfo = this.analyzeError(error)
+    if (errorInfo.type === 'ssl' || !errorInfo.recoverable) {
+      return true
+    }
+    
+    return false
+  }
+
+  // Determine reason for connection rejection
+  determineRejectionReason() {
+    // Check various conditions to determine why connection was rejected
+    const currentTime = Date.now()
+    const sessionAge = currentTime - (this.element.dataset.sessionCreatedAt || currentTime)
+    
+    // Session too old (> 24 hours)
+    if (sessionAge > 86400000) {
+      return 'auth'
+    }
+    
+    // Check if we have proper authentication
+    if (!document.querySelector('[name="csrf-token"]')?.content) {
+      return 'auth'
+    }
+    
+    // Default to auth issue
+    return 'auth'
+  }
+
+  // Get appropriate error message based on error type
+  getErrorMessage(errorType) {
+    return errorMessages.getMessage(errorType === 'auth' ? 'expired' : 'refused', errorType)
+  }
+
+  // Enhanced UI update for sync-specific errors
+  handleSyncError(error) {
+    const errorCode = error.code || error.type || 'unknown'
+    
+    // Map sync error codes to user messages
+    const syncErrorMap = {
+      'email_connection': errorMessages.getMessage('email_connection', 'sync'),
+      'email_auth': errorMessages.getMessage('email_auth', 'sync'),
+      'rate_limit': errorMessages.getMessage('rate_limit', 'sync'),
+      'parsing_error': errorMessages.getMessage('parsing_error', 'sync'),
+      'duplicate': errorMessages.getMessage('duplicate_detected', 'sync'),
+      'no_emails': errorMessages.getMessage('no_emails', 'sync'),
+      'quota_exceeded': errorMessages.getMessage('quota_exceeded', 'sync')
+    }
+    
+    const message = syncErrorMap[errorCode] || errorMessages.getMessage('processing_error', 'sync')
+    const suggestion = errorMessages.getSuggestion(errorCode.includes('email') ? 'email' : 'server')
+    
+    // Show error with appropriate severity
+    const severity = errorCode === 'rate_limit' || errorCode === 'quota_exceeded' ? 'warning' : 'error'
+    this.showToast(`${message}. ${suggestion}`, severity, 8000)
+    
+    // Log for debugging
+    this.log('error', `Sync error: ${errorCode}`, error)
+    
+    // Send to server for monitoring
+    this.sendErrorToServer(`Sync error: ${errorCode}`, error)
   }
 }

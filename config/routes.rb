@@ -14,6 +14,16 @@ Rails.application.routes.draw do
         get :expense_summary
       end
     end
+    
+    # Sync session status polling endpoint
+    resources :sync_sessions, only: [] do
+      member do
+        get :status
+      end
+    end
+    
+    # Client error reporting endpoint
+    resources :client_errors, only: [:create]
   end
 
   # Web interface routes

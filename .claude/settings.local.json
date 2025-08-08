@@ -19,7 +19,16 @@
       "Bash(git add:*)",
       "Bash(curl:*)",
       "WebFetch(domain:turbo.hotwired.dev)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(bundle install)",
+      "Bash(bundle exec rails runner:*)",
+      "Bash(bundle exec rails:*)",
+      "Bash(mkdir:*)",
+      "Bash(RAILS_ENV=test bin/rails db:migrate)",
+      "Bash(RAILS_ENV=test bin/rails db:reset)",
+      "Bash(cat:*)",
+      "Bash(RAILS_ENV=test bundle exec rails db:migrate)",
+      "Bash(true)"
     ],
     "deny": []
   }

@@ -29,6 +29,9 @@ gem "net-imap"
 # Authentication and API
 gem "jwt"
 
+# Rate limiting and security
+gem "rack-attack"
+
 # Date and text parsing
 gem "chronic"
 

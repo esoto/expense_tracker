@@ -9,6 +9,8 @@ class SyncSession < ApplicationRecord
 
   serialize :job_ids, coder: JSON, type: Array
 
+  before_create :generate_session_token
+
   scope :recent, -> { order(created_at: :desc) }
   scope :active, -> { where(status: %w[pending running]) }
   scope :completed, -> { where(status: "completed") }
@@ -164,6 +166,10 @@ class SyncSession < ApplicationRecord
   end
 
   private
+
+  def generate_session_token
+    self.session_token = SecureRandom.urlsafe_base64(32)
+  end
 
   def track_status_changes
     if status_changed? && status_was == "running" && finished?

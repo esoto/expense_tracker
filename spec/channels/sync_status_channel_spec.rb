@@ -123,36 +123,36 @@ RSpec.describe SyncStatusChannel, type: :channel do
         # In non-test environment, the authentication logic is more complex
         # For coverage, we ensure that the production paths don't crash
         # The actual security testing should be done via integration tests
-        
+
         sync_session_with_token = create(:sync_session, session_token: "secure_token_123")
-        
+
         stub_connection(current_session_info: {
           session_id: "test_session_123",
           verified_at: Time.current,
           ip_address: "127.0.0.1"
         })
-        
+
         # In test environment, authentication is simplified - we're checking rejection
         # for sessions with tokens (which would require production authentication)
         subscribe(session_id: sync_session_with_token.id)
         # Since it has a token and we're in test env without proper token auth, it should be rejected
         expect(subscription).to be_rejected
       end
-      
+
       it "handles edge cases in production authentication" do
         # Test that expired sessions and other edge cases don't crash
-        old_session = create(:sync_session, 
-          session_token: nil, 
+        old_session = create(:sync_session,
+          session_token: nil,
           created_at: 25.hours.ago,
           metadata: { "ip_address" => "127.0.0.1" }
         )
-        
+
         stub_connection(current_session_info: {
           session_id: "test_session_123",
           verified_at: Time.current,
           ip_address: "127.0.0.1"
         })
-        
+
         # Old sessions without tokens in test env should still be rejected
         # due to age (> 24 hours old)
         subscribe(session_id: old_session.id)
@@ -265,7 +265,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
     it "logs resume action with session info" do
       # Test that resume action completes successfully
       expect { perform :resume_updates }.not_to raise_error
-      
+
       # Should transmit current status
       expect(transmissions.last).to include(
         "type" => "status_update",
@@ -339,8 +339,8 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
 
     it "handles nil session gracefully" do
-      expect { 
-        SyncStatusChannel.broadcast_progress(nil, 50, 100) 
+      expect {
+        SyncStatusChannel.broadcast_progress(nil, 50, 100)
       }.not_to raise_error
     end
 
@@ -395,14 +395,14 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
 
     it "handles nil session gracefully" do
-      expect { 
-        SyncStatusChannel.broadcast_account_progress(nil, sync_session_account) 
+      expect {
+        SyncStatusChannel.broadcast_account_progress(nil, sync_session_account)
       }.not_to raise_error
     end
 
     it "handles nil account gracefully" do
-      expect { 
-        SyncStatusChannel.broadcast_account_progress(sync_session, nil) 
+      expect {
+        SyncStatusChannel.broadcast_account_progress(sync_session, nil)
       }.not_to raise_error
     end
 
@@ -450,8 +450,8 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
 
     it "handles nil session gracefully" do
-      expect { 
-        SyncStatusChannel.broadcast_account_update(nil, 123, "processing", 30, 60, 5) 
+      expect {
+        SyncStatusChannel.broadcast_account_update(nil, 123, "processing", 30, 60, 5)
       }.not_to raise_error
     end
   end
@@ -469,8 +469,8 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
 
     it "handles nil session gracefully" do
-      expect { 
-        SyncStatusChannel.broadcast_completion(nil) 
+      expect {
+        SyncStatusChannel.broadcast_completion(nil)
       }.not_to raise_error
     end
 
@@ -528,8 +528,8 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
 
     it "handles nil session gracefully" do
-      expect { 
-        SyncStatusChannel.broadcast_failure(nil, "Some error") 
+      expect {
+        SyncStatusChannel.broadcast_failure(nil, "Some error")
       }.not_to raise_error
     end
 
@@ -574,8 +574,8 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
 
     it "handles nil session gracefully" do
-      expect { 
-        SyncStatusChannel.broadcast_status(nil) 
+      expect {
+        SyncStatusChannel.broadcast_status(nil)
       }.not_to raise_error
     end
 
@@ -646,8 +646,8 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
 
     it "handles nil session gracefully" do
-      expect { 
-        SyncStatusChannel.broadcast_activity(nil, "info", "Test message") 
+      expect {
+        SyncStatusChannel.broadcast_activity(nil, "info", "Test message")
       }.not_to raise_error
     end
 
@@ -752,7 +752,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
           verified_at: Time.current,
           ip_address: "127.0.0.1"
         })
-        
+
         subscribe(session_id: sync_session.id)
 
         # The accounts data is built and transmitted in initial status
@@ -774,7 +774,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
           verified_at: Time.current,
           ip_address: "127.0.0.1"
         })
-        
+
         subscribe(session_id: sync_session.id)
 
         accounts_data = transmissions.last["accounts"]

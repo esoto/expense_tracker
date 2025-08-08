@@ -118,7 +118,7 @@ RSpec.describe ApplicationCable::Connection, type: :channel do
         end
       end
     end
-    
+
     let(:test_instance) { test_class.new }
 
     describe "#extract_session_id" do

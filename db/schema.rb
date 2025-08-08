@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_04_232625) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_08_041611) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -255,7 +255,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_04_232625) do
     t.datetime "updated_at", null: false
     t.text "job_ids", default: "[]"
     t.integer "lock_version", default: 0, null: false
+    t.string "session_token"
+    t.jsonb "metadata", default: {}
     t.index ["created_at"], name: "index_sync_sessions_on_created_at"
+    t.index ["metadata"], name: "index_sync_sessions_on_metadata", using: :gin
+    t.index ["session_token"], name: "index_sync_sessions_on_session_token", unique: true
     t.index ["status"], name: "index_sync_sessions_on_status"
   end
 

@@ -57,6 +57,17 @@ class SyncStatusChannel < ApplicationCable::Channel
     end
   end
 
+  # Action to request current status (used after reconnection)
+  def request_status
+    session_id = connection.current_session_info&.dig(:session_id) || "unknown"
+    Rails.logger.debug "SyncStatusChannel: Status requested by session #{session_id}"
+
+    if params[:session_id].present?
+      session = SyncSession.find_by(id: params[:session_id])
+      transmit_current_status(session) if session && can_access_session?(session)
+    end
+  end
+
   # Class methods for broadcasting with enhanced reliability
   class << self
     def broadcast_progress(session, processed, total, detected = nil)

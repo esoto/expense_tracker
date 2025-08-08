@@ -11,32 +11,116 @@ export default class extends Controller {
     "timeRemaining",
     "accountsList",
     "activeSection",
-    "inactiveSection"
+    "inactiveSection",
+    "connectionStatus",
+    "retryButton"
   ]
   
   static values = {
     sessionId: Number,
-    active: Boolean
+    active: Boolean,
+    connectionState: { type: String, default: "disconnected" },
+    retryCount: { type: Number, default: 0 },
+    maxRetries: { type: Number, default: 5 },
+    debug: { type: Boolean, default: false }
   }
 
   connect() {
+    // Initialize state
+    this.isPaused = false
+    this.isCompleted = false
+    this.reconnectTimer = null
+    this.lastUpdateTime = Date.now()
+    this.updateQueue = []
+    this.updateThrottleTimer = null
+    
+    // Setup event handlers
+    this.setupVisibilityHandling()
+    this.setupNetworkMonitoring()
+    
+    // Load cached state if available
+    this.loadCachedState()
+    
+    // Start subscription if active
     if (this.activeValue && this.sessionIdValue) {
       this.subscribeToChannel()
     }
+    
+    this.log("info", "Sync widget initialized", {
+      sessionId: this.sessionIdValue,
+      active: this.activeValue
+    })
   }
 
   disconnect() {
+    this.log("info", "Disconnecting sync widget")
+    
+    // Clear all timers
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+    
+    if (this.updateThrottleTimer) {
+      clearTimeout(this.updateThrottleTimer)
+      this.updateThrottleTimer = null
+    }
+    
+    // Remove event listeners
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler)
+      this.visibilityHandler = null
+    }
+    
+    if (this.onlineHandler) {
+      window.removeEventListener('online', this.onlineHandler)
+      this.onlineHandler = null
+    }
+    
+    if (this.offlineHandler) {
+      window.removeEventListener('offline', this.offlineHandler)
+      this.offlineHandler = null
+    }
+    
+    // Unsubscribe from channel
     if (this.subscription) {
-      this.subscription.unsubscribe()
+      try {
+        this.subscription.unsubscribe()
+      } catch (error) {
+        this.log("error", "Error unsubscribing", error)
+      }
       this.subscription = null
     }
+    
+    // Disconnect consumer
     if (this.consumer) {
-      this.consumer.disconnect()
+      try {
+        this.consumer.disconnect()
+      } catch (error) {
+        this.log("error", "Error disconnecting consumer", error)
+      }
       this.consumer = null
     }
+    
+    // Clear cached state if session completed
+    if (this.isCompleted) {
+      this.clearCachedState()
+    }
+    
+    // Update connection state
+    this.connectionStateValue = "disconnected"
   }
 
   subscribeToChannel() {
+    // Prevent multiple subscription attempts
+    if (this.connectionStateValue === "connecting") {
+      this.log("warn", "Already attempting to connect")
+      return
+    }
+    
+    this.connectionStateValue = "connecting"
+    this.updateConnectionStatus("Conectando...")
+    
     // Use global consumer or create one if not available
     if (!this.consumer) {
       this.consumer = window.consumer || createConsumer()
@@ -51,11 +135,11 @@ export default class extends Controller {
         },
         {
           connected: () => {
-            // Connection established
+            this.handleConnected()
           },
 
           disconnected: () => {
-            // Connection lost
+            this.handleDisconnected()
           },
 
           received: (data) => {
@@ -63,16 +147,180 @@ export default class extends Controller {
           },
           
           rejected: () => {
-            console.error("❌ Subscription rejected by server")
+            this.handleRejected()
           }
         }
       )
     } catch (error) {
-      console.error("Error creating subscription:", error)
+      this.log("error", "Error creating subscription", error)
+      this.handleConnectionError(error)
+    }
+  }
+  
+  // Connection event handlers
+  handleConnected() {
+    this.log("info", "Connected to sync channel")
+    
+    // Reset retry count on successful connection
+    this.retryCountValue = 0
+    this.connectionStateValue = "connected"
+    this.updateConnectionStatus("Conectado")
+    
+    // Resume updates if tab is active
+    if (!document.hidden && !this.isPaused) {
+      this.requestLatestStatus()
+    }
+    
+    // Show success notification
+    if (this.retryCountValue > 0) {
+      this.showNotification("Reconexión exitosa", "success")
+    }
+  }
+  
+  handleDisconnected() {
+    this.log("warn", "Disconnected from sync channel")
+    
+    this.connectionStateValue = "disconnected"
+    this.updateConnectionStatus("Desconectado")
+    
+    // Attempt reconnection if not paused and not at max retries
+    if (!this.isPaused && this.activeValue) {
+      this.scheduleReconnect()
+    }
+  }
+  
+  handleRejected() {
+    this.log("error", "Subscription rejected by server")
+    
+    this.connectionStateValue = "rejected"
+    this.updateConnectionStatus("Conexión rechazada")
+    
+    // Show error and retry button
+    this.showNotification("La conexión fue rechazada por el servidor", "error")
+    this.showManualRetryButton()
+  }
+  
+  handleConnectionError(error) {
+    this.log("error", "Connection error", error)
+    
+    this.connectionStateValue = "error"
+    this.updateConnectionStatus("Error de conexión")
+    
+    // Schedule reconnect with backoff
+    this.scheduleReconnect()
+  }
+  
+  // Reconnection logic with exponential backoff
+  scheduleReconnect() {
+    if (this.retryCountValue >= this.maxRetriesValue) {
+      this.log("warn", "Max retries reached")
+      this.showManualRetryButton()
+      return
+    }
+    
+    const delay = this.calculateBackoffDelay()
+    this.log("info", `Scheduling reconnect in ${delay}ms`, {
+      retryCount: this.retryCountValue,
+      maxRetries: this.maxRetriesValue
+    })
+    
+    this.updateConnectionStatus(`Reconectando en ${Math.round(delay / 1000)}s...`)
+    
+    // Clear existing timer if any
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+    }
+    
+    this.reconnectTimer = setTimeout(() => {
+      this.retryCountValue++
+      this.subscribeToChannel()
+    }, delay)
+  }
+  
+  calculateBackoffDelay() {
+    // Exponential backoff with jitter to prevent thundering herd
+    const baseDelay = Math.pow(2, this.retryCountValue) * 1000
+    const jitter = Math.random() * 1000
+    const totalDelay = baseDelay + jitter
+    
+    // Cap at 30 seconds
+    return Math.min(totalDelay, 30000)
+  }
+  
+  // Manual retry action
+  manualRetry(event) {
+    if (event) event.preventDefault()
+    
+    this.log("info", "Manual retry initiated")
+    
+    // Reset retry count and attempt connection
+    this.retryCountValue = 0
+    this.hideManualRetryButton()
+    this.subscribeToChannel()
+  }
+  
+  showManualRetryButton() {
+    if (this.hasRetryButtonTarget) {
+      this.retryButtonTarget.classList.remove('hidden')
+    }
+  }
+  
+  hideManualRetryButton() {
+    if (this.hasRetryButtonTarget) {
+      this.retryButtonTarget.classList.add('hidden')
     }
   }
 
   handleUpdate(data) {
+    // Skip updates if paused
+    if (this.isPaused) {
+      this.log("debug", "Update skipped (paused)", data)
+      return
+    }
+    
+    // Track last update time
+    this.lastUpdateTime = Date.now()
+    
+    // Cache the state for recovery
+    this.cacheState(data)
+    
+    // Throttle UI updates to prevent performance issues
+    this.throttledUIUpdate(data)
+  }
+  
+  throttledUIUpdate(data) {
+    // Add to update queue
+    this.updateQueue.push(data)
+    
+    // Process queue if not already scheduled
+    if (!this.updateThrottleTimer) {
+      this.updateThrottleTimer = setTimeout(() => {
+        this.processUpdateQueue()
+        this.updateThrottleTimer = null
+      }, 100) // Process updates every 100ms max
+    }
+  }
+  
+  processUpdateQueue() {
+    if (this.updateQueue.length === 0) return
+    
+    // Process all queued updates
+    const updates = [...this.updateQueue]
+    this.updateQueue = []
+    
+    // Apply the most recent update of each type
+    const latestByType = {}
+    updates.forEach(update => {
+      latestByType[update.type || 'status'] = update
+    })
+    
+    // Apply updates
+    Object.values(latestByType).forEach(data => {
+      this.applyUpdate(data)
+    })
+  }
+  
+  applyUpdate(data) {
     // Update based on data type
     switch(data.type) {
       case 'initial_status':
@@ -184,6 +432,10 @@ export default class extends Controller {
   }
 
   handleCompletion(data) {
+    this.log("info", "Sync completed", data)
+    
+    // Mark as completed
+    this.isCompleted = true
     
     // Update final progress to 100%
     if (this.hasProgressBarTarget) {
@@ -204,8 +456,10 @@ export default class extends Controller {
     // Show completion message
     this.showNotification("Sincronización completada exitosamente", "success")
     
-    // Mark as completed but don't reload - let user stay on page
-    // They can manually refresh or navigate away when ready
+    // Clear cached state after completion
+    setTimeout(() => {
+      this.clearCachedState()
+    }, 2000)
   }
 
   handleFailure(data) {
@@ -291,5 +545,242 @@ export default class extends Controller {
     if (form) {
       form.submit()
     }
+  }
+  
+  // Visibility handling for tab switching
+  setupVisibilityHandling() {
+    this.visibilityHandler = () => {
+      if (document.hidden) {
+        this.pauseUpdates()
+      } else {
+        this.resumeUpdates()
+      }
+    }
+    
+    document.addEventListener('visibilitychange', this.visibilityHandler)
+  }
+  
+  pauseUpdates() {
+    this.log("info", "Pausing updates (tab inactive)")
+    
+    this.isPaused = true
+    
+    // Notify server to pause updates
+    if (this.subscription && this.connectionStateValue === "connected") {
+      try {
+        this.subscription.perform('pause_updates')
+      } catch (error) {
+        this.log("error", "Error pausing updates", error)
+      }
+    }
+  }
+  
+  resumeUpdates() {
+    this.log("info", "Resuming updates (tab active)")
+    
+    this.isPaused = false
+    
+    // Notify server to resume updates and get latest status
+    if (this.subscription && this.connectionStateValue === "connected") {
+      try {
+        this.subscription.perform('resume_updates')
+        this.requestLatestStatus()
+      } catch (error) {
+        this.log("error", "Error resuming updates", error)
+      }
+    } else if (this.connectionStateValue === "disconnected") {
+      // Attempt to reconnect if disconnected
+      this.scheduleReconnect()
+    }
+  }
+  
+  requestLatestStatus() {
+    if (this.subscription && this.connectionStateValue === "connected") {
+      try {
+        this.subscription.perform('request_status')
+      } catch (error) {
+        this.log("error", "Error requesting status", error)
+      }
+    }
+  }
+  
+  // Network monitoring
+  setupNetworkMonitoring() {
+    this.onlineHandler = () => this.handleOnline()
+    this.offlineHandler = () => this.handleOffline()
+    
+    window.addEventListener('online', this.onlineHandler)
+    window.addEventListener('offline', this.offlineHandler)
+  }
+  
+  handleOffline() {
+    this.log("warn", "Network offline")
+    
+    this.connectionStateValue = "offline"
+    this.updateConnectionStatus("Sin conexión")
+    
+    // Pause updates while offline
+    this.pauseUpdates()
+    
+    // Show offline notification
+    this.showNotification("Sin conexión a internet", "warning")
+  }
+  
+  handleOnline() {
+    this.log("info", "Network online")
+    
+    this.connectionStateValue = "reconnecting"
+    this.updateConnectionStatus("Reconectando...")
+    
+    // Show online notification
+    this.showNotification("Conexión restaurada", "info")
+    
+    // Reset retry count for fresh attempt
+    this.retryCountValue = 0
+    
+    // Resume updates
+    this.resumeUpdates()
+    
+    // Attempt reconnection if not connected
+    if (!this.subscription || this.connectionStateValue !== "connected") {
+      this.scheduleReconnect()
+    }
+  }
+  
+  // State caching for recovery
+  cacheState(data) {
+    const cacheKey = `sync_state_${this.sessionIdValue}`
+    const cacheData = {
+      ...data,
+      timestamp: Date.now(),
+      sessionId: this.sessionIdValue
+    }
+    
+    try {
+      sessionStorage.setItem(cacheKey, JSON.stringify(cacheData))
+    } catch (error) {
+      this.log("error", "Error caching state", error)
+    }
+  }
+  
+  loadCachedState() {
+    const cacheKey = `sync_state_${this.sessionIdValue}`
+    
+    try {
+      const cached = sessionStorage.getItem(cacheKey)
+      
+      if (cached) {
+        const data = JSON.parse(cached)
+        const age = Date.now() - data.timestamp
+        
+        // Use cache if less than 5 minutes old
+        if (age < 300000) {
+          this.log("info", "Loading cached state", { age: Math.round(age / 1000) + "s" })
+          
+          // Apply cached state
+          this.applyUpdate(data)
+          
+          // Show cache indicator
+          this.showCacheIndicator()
+        } else {
+          // Clear stale cache
+          this.clearCachedState()
+        }
+      }
+    } catch (error) {
+      this.log("error", "Error loading cached state", error)
+    }
+  }
+  
+  clearCachedState() {
+    const cacheKey = `sync_state_${this.sessionIdValue}`
+    
+    try {
+      sessionStorage.removeItem(cacheKey)
+      this.log("debug", "Cached state cleared")
+    } catch (error) {
+      this.log("error", "Error clearing cache", error)
+    }
+  }
+  
+  showCacheIndicator() {
+    const indicator = document.createElement('div')
+    indicator.className = 'fixed top-4 right-4 z-40 px-3 py-1 text-xs bg-amber-100 text-amber-700 rounded-lg'
+    indicator.textContent = 'Datos desde caché'
+    document.body.appendChild(indicator)
+    
+    setTimeout(() => {
+      indicator.style.opacity = '0'
+      setTimeout(() => indicator.remove(), 300)
+    }, 2000)
+  }
+  
+  // Connection status UI
+  updateConnectionStatus(status) {
+    if (this.hasConnectionStatusTarget) {
+      this.connectionStatusTarget.textContent = status
+      
+      // Update status color based on state
+      const colorClasses = {
+        connected: 'text-emerald-600',
+        connecting: 'text-amber-600',
+        disconnected: 'text-rose-600',
+        offline: 'text-slate-500',
+        error: 'text-rose-600',
+        rejected: 'text-rose-600'
+      }
+      
+      // Remove all color classes
+      Object.values(colorClasses).forEach(cls => {
+        this.connectionStatusTarget.classList.remove(cls)
+      })
+      
+      // Add appropriate color class
+      const colorClass = colorClasses[this.connectionStateValue] || 'text-slate-600'
+      this.connectionStatusTarget.classList.add(colorClass)
+    }
+  }
+  
+  // Debug logging
+  log(level, message, data = {}) {
+    if (this.debugValue || this.element.dataset.debug === 'true') {
+      const timestamp = new Date().toISOString()
+      const prefix = `[${timestamp}] SyncWidget:`
+      
+      if (data && Object.keys(data).length > 0) {
+        console[level](prefix, message, data)
+      } else {
+        console[level](prefix, message)
+      }
+      
+      // Send errors to server in production
+      if (level === 'error' && window.Rails && window.Rails.env === 'production') {
+        this.sendErrorToServer(message, data)
+      }
+    }
+  }
+  
+  sendErrorToServer(message, data) {
+    // Send error to server for monitoring
+    const payload = {
+      message,
+      data,
+      sessionId: this.sessionIdValue,
+      timestamp: Date.now(),
+      userAgent: navigator.userAgent,
+      url: window.location.href
+    }
+    
+    fetch('/api/client_errors', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name="csrf-token"]')?.content
+      },
+      body: JSON.stringify(payload)
+    }).catch(error => {
+      // Silently fail if error reporting fails
+      console.error('Failed to report error to server:', error)
+    })
   }
 }

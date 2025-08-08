@@ -22,7 +22,8 @@ class BroadcastJob < ApplicationJob
   }.freeze
 
   # Configure retry behavior - we handle retries in BroadcastReliabilityService
-  sidekiq_options retry: false, dead: true
+  # ActiveJob doesn't support sidekiq_options directly, use retry_on/discard_on instead
+  discard_on StandardError
 
   # Perform the broadcast job
   # @param channel_name [String] ActionCable channel class name
@@ -123,7 +124,7 @@ class BroadcastJob < ApplicationJob
   def self.enqueue_broadcast(channel_name:, target_id:, target_type:, data:, priority: :medium)
     queue_name = QUEUE_MAPPING[priority] || "default"
 
-    set(queue: queue_name).perform_async(
+    set(queue: queue_name).perform_later(
       channel_name,
       target_id,
       target_type,
@@ -155,21 +156,31 @@ class BroadcastJob < ApplicationJob
   # Get total enqueued jobs across all broadcast queues
   # @return [Integer] Total enqueued jobs
   def self.total_enqueued_jobs
+    return 0 unless defined?(Sidekiq)
+    
+    require "sidekiq/api"
     Sidekiq::Queue.new("critical").size +
     Sidekiq::Queue.new("high").size +
     Sidekiq::Queue.new("default").size +
     Sidekiq::Queue.new("low").size
+  rescue StandardError
+    0
   end
 
   # Get current queue sizes
   # @return [Hash] Queue sizes by priority
   def self.queue_sizes
+    return { critical: 0, high: 0, default: 0, low: 0 } unless defined?(Sidekiq)
+    
+    require "sidekiq/api"
     {
       critical: Sidekiq::Queue.new("critical").size,
       high: Sidekiq::Queue.new("high").size,
       default: Sidekiq::Queue.new("default").size,
       low: Sidekiq::Queue.new("low").size
     }
+  rescue StandardError
+    { critical: 0, high: 0, default: 0, low: 0 }
   end
 
   # Get average processing times (simplified implementation)

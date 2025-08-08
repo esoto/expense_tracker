@@ -67,6 +67,13 @@ end
 RSpec.configure do |config|
   # Include FactoryBot methods
   config.include FactoryBot::Syntax::Methods
+  
+  # Configure ActiveJob test adapter for job tests
+  config.include ActiveJob::TestHelper, type: :job
+  
+  config.before(:each, type: :job) do
+    ActiveJob::Base.queue_adapter = :test
+  end
 
   # Include controller testing support for Rails 8
   config.include Rails::Controller::Testing::TestProcess, type: :controller

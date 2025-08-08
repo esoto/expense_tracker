@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "concurrent"
+
 # ProgressBatchCollector aggregates high-frequency progress updates to reduce
 # ActionCable broadcast overhead. It collects updates and sends batched broadcasts
 # based on configurable triggers (time intervals, update count, or critical messages).

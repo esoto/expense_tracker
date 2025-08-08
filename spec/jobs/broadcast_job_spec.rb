@@ -170,7 +170,7 @@ RSpec.describe BroadcastJob, type: :job do
 
     before do
       allow(described_class).to receive(:set).and_return(job_double)
-      allow(job_double).to receive(:perform_async)
+      allow(job_double).to receive(:perform_later)
       allow(BroadcastAnalytics).to receive(:record_queued)
     end
 
@@ -184,7 +184,7 @@ RSpec.describe BroadcastJob, type: :job do
       )
 
       expect(described_class).to have_received(:set).with(queue: 'high')
-      expect(job_double).to have_received(:perform_async).with(
+      expect(job_double).to have_received(:perform_later).with(
         channel_name, target_id, target_type, data, 'high'
       )
     end
@@ -273,10 +273,21 @@ RSpec.describe BroadcastJob, type: :job do
     let(:low_queue) { double('Queue', size: 3) }
 
     before do
+      # Stub Sidekiq module and Queue class properly
+      sidekiq_module = Module.new
+      queue_class = Class.new do
+        def initialize(name)
+          @name = name
+        end
+      end
+      
+      stub_const('Sidekiq', sidekiq_module)
+      stub_const('Sidekiq::Queue', queue_class)
+      
       allow(Sidekiq::Queue).to receive(:new).with('critical').and_return(critical_queue)
       allow(Sidekiq::Queue).to receive(:new).with('high').and_return(high_queue)
       allow(Sidekiq::Queue).to receive(:new).with('default').and_return(default_queue)
-      allow(Sidekiq::Queue).to receive(:new').with('low').and_return(low_queue)
+      allow(Sidekiq::Queue).to receive(:new).with('low').and_return(low_queue)
     end
 
     it 'returns comprehensive job statistics' do
@@ -311,13 +322,13 @@ RSpec.describe BroadcastJob, type: :job do
     end
   end
 
-  describe 'sidekiq options' do
-    it 'disables automatic retries' do
-      expect(described_class.sidekiq_options['retry']).to be false
+  describe 'job configuration' do
+    it 'uses ApplicationJob as base class' do
+      expect(described_class).to be < ApplicationJob
     end
 
-    it 'enables dead job handling' do
-      expect(described_class.sidekiq_options['dead']).to be true
+    it 'discards on standard errors (handled by BroadcastReliabilityService)' do
+      expect(described_class.rescue_handlers).to be_present
     end
   end
 

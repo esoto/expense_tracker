@@ -93,7 +93,7 @@ class FailedBroadcastStore < ApplicationRecord
       case error
       when ActiveRecord::RecordNotFound
         "record_not_found"
-      when Timeout::Error, Net::TimeoutError
+      when Timeout::Error, Net::ReadTimeout, Net::OpenTimeout
         "connection_timeout"
       when JSON::ParserError, JSON::GeneratorError
         "serialization_error"

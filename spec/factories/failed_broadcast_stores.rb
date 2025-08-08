@@ -9,7 +9,7 @@ FactoryBot.define do
     error_message { "Connection timed out after 5 seconds" }
     failed_at { 1.hour.ago }
     retry_count { 0 }
-    sidekiq_job_id { "abc123def456" }
+    sequence(:sidekiq_job_id) { |n| "job_#{n}_#{SecureRandom.hex(6)}" }
     recovered_at { nil }
     recovery_notes { nil }
 

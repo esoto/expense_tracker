@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "redis"
+require "connection_pool"
 
 # RedisAnalyticsService provides direct Redis access for high-performance analytics
 # and time-series data storage, bypassing Rails cache for better performance

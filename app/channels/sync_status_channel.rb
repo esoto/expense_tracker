@@ -57,7 +57,7 @@ class SyncStatusChannel < ApplicationCable::Channel
     end
   end
 
-  # Class methods for broadcasting
+  # Class methods for broadcasting with enhanced reliability
   class << self
     def broadcast_progress(session, processed, total, detected = nil)
       return unless session
@@ -72,7 +72,7 @@ class SyncStatusChannel < ApplicationCable::Channel
         time_remaining: format_time_remaining(session.estimated_time_remaining)
       }
 
-      broadcast_to(session, data)
+      broadcast_with_reliability(session, data, :medium)
     end
 
     def broadcast_account_progress(session, account)
@@ -89,7 +89,7 @@ class SyncStatusChannel < ApplicationCable::Channel
         detected: account.detected_expenses
       }
 
-      broadcast_to(session, data)
+      broadcast_with_reliability(session, data, :medium)
     end
 
     def broadcast_account_update(session, email_account_id, status, processed, total, detected)
@@ -105,7 +105,7 @@ class SyncStatusChannel < ApplicationCable::Channel
         detected: detected
       }
 
-      broadcast_to(session, data)
+      broadcast_with_reliability(session, data, :medium)
     end
 
     def broadcast_activity(session, activity_type, message)
@@ -118,7 +118,7 @@ class SyncStatusChannel < ApplicationCable::Channel
         timestamp: Time.current.iso8601
       }
 
-      broadcast_to(session, data)
+      broadcast_with_reliability(session, data, :low)
     end
 
     def broadcast_completion(session)
@@ -135,7 +135,7 @@ class SyncStatusChannel < ApplicationCable::Channel
         message: "Sincronización completada exitosamente"
       }
 
-      broadcast_to(session, data)
+      broadcast_with_reliability(session, data, :critical)
     end
 
     def broadcast_failure(session, error_message = nil)
@@ -149,7 +149,7 @@ class SyncStatusChannel < ApplicationCable::Channel
         total_emails: session.total_emails
       }
 
-      broadcast_to(session, data)
+      broadcast_with_reliability(session, data, :critical)
     end
 
     def broadcast_status(session)
@@ -180,7 +180,56 @@ class SyncStatusChannel < ApplicationCable::Channel
         accounts: accounts_data
       }
 
-      broadcast_to(session, data)
+      broadcast_with_reliability(session, data, :high)
+    end
+
+    # Enhanced broadcasting method with reliability layer
+    # @param session [SyncSession] The session to broadcast to
+    # @param data [Hash] The data to broadcast
+    # @param priority [Symbol] Priority level (:critical, :high, :medium, :low)
+    def broadcast_with_reliability(session, data, priority = :medium)
+      # Use the enhanced reliability service for broadcasting
+      BroadcastReliabilityService.broadcast_with_retry(
+        channel: self,
+        target: session,
+        data: data,
+        priority: priority
+      )
+    rescue StandardError => e
+      # Log error but don't fail the calling operation
+      Rails.logger.error "[SYNC_STATUS_CHANNEL] Enhanced broadcast failed: #{e.message}"
+      
+      # Fallback to direct broadcast as last resort
+      begin
+        broadcast_to(session, data)
+      rescue StandardError => fallback_error
+        Rails.logger.error "[SYNC_STATUS_CHANNEL] Fallback broadcast also failed: #{fallback_error.message}"
+      end
+    end
+
+    # Batch broadcasting method for high-frequency updates
+    # @param session [SyncSession] The session to broadcast to
+    # @param batch_data [Array<Hash>] Array of data items to batch
+    # @param priority [Symbol] Priority level for the batch
+    def broadcast_batch(session, batch_data, priority = :medium)
+      return if batch_data.empty?
+      
+      batched_data = {
+        type: "batch_update",
+        batch_size: batch_data.size,
+        updates: batch_data,
+        timestamp: Time.current.iso8601
+      }
+
+      broadcast_with_reliability(session, batched_data, priority)
+    end
+
+    # Backward compatibility method - maintains existing API
+    # @param session [SyncSession] The session to broadcast to
+    # @param data [Hash] The data to broadcast
+    def broadcast_to(session, data)
+      # Call the parent class method for direct broadcasting
+      super(session, data)
     end
 
     private

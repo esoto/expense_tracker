@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_08_041611) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_08_115335) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -86,6 +86,28 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_08_041611) do
     t.index ["status"], name: "index_expenses_on_status"
     t.index ["transaction_date", "amount"], name: "index_expenses_on_transaction_date_and_amount"
     t.index ["transaction_date"], name: "index_expenses_on_transaction_date"
+  end
+
+  create_table "failed_broadcast_stores", force: :cascade do |t|
+    t.string "channel_name", null: false
+    t.string "target_type", null: false
+    t.bigint "target_id", null: false
+    t.json "data", null: false
+    t.string "priority", default: "medium", null: false
+    t.string "error_type", null: false
+    t.text "error_message", null: false
+    t.datetime "failed_at", null: false
+    t.integer "retry_count", default: 0, null: false
+    t.string "sidekiq_job_id"
+    t.datetime "recovered_at"
+    t.text "recovery_notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["channel_name", "priority"], name: "idx_failed_broadcasts_channel_priority"
+    t.index ["error_type"], name: "idx_failed_broadcasts_error_type"
+    t.index ["failed_at", "recovered_at"], name: "idx_failed_broadcasts_status"
+    t.index ["sidekiq_job_id"], name: "idx_failed_broadcasts_job_id", unique: true
+    t.index ["target_type", "target_id"], name: "idx_failed_broadcasts_target"
   end
 
   create_table "parsing_rules", force: :cascade do |t|

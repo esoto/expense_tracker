@@ -50,6 +50,16 @@ gem "solid_cache"
 gem "solid_queue"
 gem "solid_cable"
 
+# Background job processing for broadcast reliability
+gem "sidekiq"
+
+# Concurrent programming support for batch collection
+gem "concurrent-ruby"
+
+# Redis connection pooling for analytics
+gem "connection_pool"
+gem "redis"
+
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
 

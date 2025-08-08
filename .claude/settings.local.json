@@ -24,7 +24,9 @@
       "Bash(bundle install:*)",
       "Bash(COVERAGE=false bundle exec rspec spec/channels/ -f progress)",
       "Bash(RAILS_ENV=test bin/rails db:migrate)",
-      "Bash(RAILS_ENV=test bin/rails db:reset)"
+      "Bash(RAILS_ENV=test bin/rails db:reset)",
+      "Bash(ruby:*)",
+      "Bash(chmod:*)"
     ],
     "deny": []
   }

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_08_115335) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_08_221917) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -39,6 +39,31 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_08_115335) do
     t.datetime "updated_at", null: false
     t.index ["name"], name: "index_categories_on_name"
     t.index ["parent_id"], name: "index_categories_on_parent_id"
+  end
+
+  create_table "conflict_resolutions", force: :cascade do |t|
+    t.bigint "sync_conflict_id", null: false
+    t.string "action", null: false
+    t.jsonb "before_state", default: {}
+    t.jsonb "after_state", default: {}
+    t.jsonb "changes_made", default: {}
+    t.boolean "undoable", default: true
+    t.boolean "undone", default: false
+    t.datetime "undone_at"
+    t.bigint "undone_by_resolution_id"
+    t.string "resolved_by"
+    t.string "resolution_method"
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["action"], name: "index_conflict_resolutions_on_action"
+    t.index ["after_state"], name: "index_conflict_resolutions_on_after_state", using: :gin
+    t.index ["before_state"], name: "index_conflict_resolutions_on_before_state", using: :gin
+    t.index ["created_at"], name: "index_conflict_resolutions_on_created_at"
+    t.index ["sync_conflict_id", "undone"], name: "index_conflict_resolutions_on_sync_conflict_id_and_undone"
+    t.index ["sync_conflict_id"], name: "index_conflict_resolutions_on_sync_conflict_id"
+    t.index ["undone"], name: "index_conflict_resolutions_on_undone"
+    t.index ["undone_by_resolution_id"], name: "index_conflict_resolutions_on_undone_by_resolution_id"
   end
 
   create_table "email_accounts", force: :cascade do |t|
@@ -246,6 +271,38 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_08_115335) do
     t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
   end
 
+  create_table "sync_conflicts", force: :cascade do |t|
+    t.bigint "existing_expense_id", null: false
+    t.bigint "new_expense_id"
+    t.bigint "sync_session_id", null: false
+    t.string "conflict_type", null: false
+    t.decimal "similarity_score", precision: 5, scale: 2
+    t.jsonb "conflict_data", default: {}
+    t.jsonb "differences", default: {}
+    t.string "status", default: "pending", null: false
+    t.string "resolution_action"
+    t.jsonb "resolution_data", default: {}
+    t.datetime "resolved_at"
+    t.string "resolved_by"
+    t.text "notes"
+    t.integer "priority", default: 0
+    t.boolean "bulk_resolvable", default: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["conflict_data"], name: "index_sync_conflicts_on_conflict_data", using: :gin
+    t.index ["conflict_type"], name: "index_sync_conflicts_on_conflict_type"
+    t.index ["differences"], name: "index_sync_conflicts_on_differences", using: :gin
+    t.index ["existing_expense_id"], name: "index_sync_conflicts_on_existing_expense_id"
+    t.index ["new_expense_id"], name: "index_sync_conflicts_on_new_expense_id"
+    t.index ["priority"], name: "index_sync_conflicts_on_priority"
+    t.index ["resolved_at"], name: "index_sync_conflicts_on_resolved_at"
+    t.index ["similarity_score"], name: "index_sync_conflicts_on_similarity_score"
+    t.index ["status", "conflict_type"], name: "index_sync_conflicts_on_status_and_conflict_type"
+    t.index ["status"], name: "index_sync_conflicts_on_status"
+    t.index ["sync_session_id", "status"], name: "index_sync_conflicts_on_sync_session_id_and_status"
+    t.index ["sync_session_id"], name: "index_sync_conflicts_on_sync_session_id"
+  end
+
   create_table "sync_session_accounts", force: :cascade do |t|
     t.bigint "sync_session_id", null: false
     t.bigint "email_account_id", null: false
@@ -286,6 +343,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_08_115335) do
   end
 
   add_foreign_key "categories", "categories", column: "parent_id"
+  add_foreign_key "conflict_resolutions", "conflict_resolutions", column: "undone_by_resolution_id"
+  add_foreign_key "conflict_resolutions", "sync_conflicts"
   add_foreign_key "expenses", "categories"
   add_foreign_key "expenses", "email_accounts"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
@@ -294,6 +353,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_08_115335) do
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "sync_conflicts", "expenses", column: "existing_expense_id"
+  add_foreign_key "sync_conflicts", "expenses", column: "new_expense_id"
+  add_foreign_key "sync_conflicts", "sync_sessions"
   add_foreign_key "sync_session_accounts", "email_accounts"
   add_foreign_key "sync_session_accounts", "sync_sessions"
 end

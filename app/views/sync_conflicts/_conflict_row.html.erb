@@ -1,0 +1,120 @@
+<tr id="conflict_<%= conflict.id %>" class="hover:bg-slate-50">
+  <td class="px-6 py-4">
+    <% if conflict.can_bulk_resolve? %>
+      <input type="checkbox" 
+             data-bulk-actions-target="checkbox"
+             data-conflict-id="<%= conflict.id %>"
+             class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded">
+    <% end %>
+  </td>
+  
+  <td class="px-6 py-4 whitespace-nowrap">
+    <% case conflict.conflict_type %>
+    <% when 'duplicate' %>
+      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-rose-100 text-rose-800">
+        Duplicado
+      </span>
+    <% when 'similar' %>
+      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-amber-100 text-amber-800">
+        Similar
+      </span>
+    <% when 'updated' %>
+      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-teal-100 text-teal-800">
+        Actualizado
+      </span>
+    <% when 'needs_review' %>
+      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-800">
+        Revisar
+      </span>
+    <% end %>
+  </td>
+  
+  <td class="px-6 py-4">
+    <div class="text-sm">
+      <div class="font-medium text-slate-900">
+        <%= conflict.existing_expense.display_description %>
+      </div>
+      <div class="text-slate-500">
+        <%= conflict.existing_expense.formatted_amount %> • 
+        <%= conflict.existing_expense.transaction_date.strftime('%d/%m/%Y') %>
+      </div>
+      <% if conflict.new_expense %>
+        <div class="mt-2 pt-2 border-t border-slate-100">
+          <div class="font-medium text-slate-700">
+            vs. <%= conflict.new_expense.display_description %>
+          </div>
+          <div class="text-slate-500">
+            <%= conflict.new_expense.formatted_amount %> • 
+            <%= conflict.new_expense.transaction_date.strftime('%d/%m/%Y') %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </td>
+  
+  <td class="px-6 py-4 whitespace-nowrap">
+    <% if conflict.similarity_score %>
+      <div class="flex items-center">
+        <div class="flex-1 mr-2">
+          <div class="bg-slate-200 rounded-full h-2">
+            <div class="h-2 rounded-full <%= conflict.similarity_score >= 90 ? 'bg-rose-600' : conflict.similarity_score >= 70 ? 'bg-amber-600' : 'bg-teal-600' %>"
+                 style="width: <%= conflict.similarity_score %>%"></div>
+          </div>
+        </div>
+        <span class="text-sm font-medium text-slate-900">
+          <%= conflict.formatted_similarity_score %>
+        </span>
+      </div>
+    <% else %>
+      <span class="text-sm text-slate-500">N/A</span>
+    <% end %>
+  </td>
+  
+  <td class="px-6 py-4 whitespace-nowrap">
+    <% case conflict.status %>
+    <% when 'pending' %>
+      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-amber-100 text-amber-800">
+        Pendiente
+      </span>
+    <% when 'resolved' %>
+      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">
+        Resuelto
+      </span>
+    <% when 'auto_resolved' %>
+      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-teal-100 text-teal-800">
+        Auto-resuelto
+      </span>
+    <% when 'ignored' %>
+      <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-800">
+        Ignorado
+      </span>
+    <% end %>
+  </td>
+  
+  <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+    <%= conflict.created_at.strftime('%d/%m %H:%M') %>
+  </td>
+  
+  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+    <div class="flex items-center justify-end space-x-2">
+      <% if conflict.status_pending? %>
+        <button data-action="click->conflict-modal#open"
+                data-conflict-id="<%= conflict.id %>"
+                class="text-teal-600 hover:text-teal-900">
+          Resolver
+        </button>
+      <% elsif conflict.status_resolved? %>
+        <%= link_to "Ver", sync_conflict_path(conflict), 
+            class: "text-slate-600 hover:text-slate-900",
+            data: { turbo_frame: "conflict_modal" } %>
+        
+        <% if conflict.conflict_resolutions.undoable.any? %>
+          <%= button_to "Deshacer", undo_sync_conflict_path(conflict),
+              method: :post,
+              class: "text-amber-600 hover:text-amber-900",
+              data: { turbo_method: :post } %>
+        <% end %>
+      <% end %>
+    </div>
+  </td>
+</tr>

@@ -1,0 +1,229 @@
+<div class="fixed inset-0 z-50 overflow-y-auto" data-controller="conflict-resolution">
+  <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+    <!-- Background overlay -->
+    <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+      <div class="absolute inset-0 bg-slate-900 opacity-75"></div>
+    </div>
+
+    <!-- Modal panel -->
+    <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full">
+      <!-- Header -->
+      <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-semibold text-slate-900">
+              Resolver Conflicto de Sincronización
+            </h3>
+            <p class="mt-1 text-sm text-slate-600">
+              Tipo: <span class="font-medium"><%= @sync_conflict.conflict_type.humanize %></span> • 
+              Similitud: <span class="font-medium"><%= @sync_conflict.formatted_similarity_score %></span>
+            </p>
+          </div>
+          
+          <button data-action="click->conflict-resolution#close"
+                  class="text-slate-400 hover:text-slate-600">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Content -->
+      <div class="px-6 py-4">
+        <!-- Side by side comparison -->
+        <div class="grid grid-cols-2 gap-6 mb-6">
+          <!-- Existing Expense -->
+          <div class="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+            <h4 class="font-semibold text-emerald-900 mb-3">Gasto Existente</h4>
+            <dl class="space-y-2">
+              <div class="flex justify-between">
+                <dt class="text-sm text-slate-600">Descripción:</dt>
+                <dd class="text-sm font-medium text-slate-900"><%= @existing_expense.display_description %></dd>
+              </div>
+              <div class="flex justify-between">
+                <dt class="text-sm text-slate-600">Monto:</dt>
+                <dd class="text-sm font-medium text-slate-900"><%= @existing_expense.formatted_amount %></dd>
+              </div>
+              <div class="flex justify-between">
+                <dt class="text-sm text-slate-600">Fecha:</dt>
+                <dd class="text-sm font-medium text-slate-900"><%= @existing_expense.transaction_date.strftime('%d/%m/%Y') %></dd>
+              </div>
+              <div class="flex justify-between">
+                <dt class="text-sm text-slate-600">Comercio:</dt>
+                <dd class="text-sm font-medium text-slate-900"><%= @existing_expense.merchant_name || 'N/A' %></dd>
+              </div>
+              <div class="flex justify-between">
+                <dt class="text-sm text-slate-600">Categoría:</dt>
+                <dd class="text-sm font-medium text-slate-900"><%= @existing_expense.category_name %></dd>
+              </div>
+              <div class="flex justify-between">
+                <dt class="text-sm text-slate-600">Estado:</dt>
+                <dd class="text-sm font-medium text-slate-900"><%= @existing_expense.status %></dd>
+              </div>
+            </dl>
+          </div>
+          
+          <!-- New Expense -->
+          <div class="bg-amber-50 rounded-lg p-4 border border-amber-200">
+            <h4 class="font-semibold text-amber-900 mb-3">Nuevo Gasto Detectado</h4>
+            <% if @new_expense %>
+              <dl class="space-y-2">
+                <div class="flex justify-between">
+                  <dt class="text-sm text-slate-600">Descripción:</dt>
+                  <dd class="text-sm font-medium text-slate-900 <%= 'text-rose-600' if @differences['description'] && !@differences['description'][:match] %>">
+                    <%= @new_expense.display_description %>
+                  </dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-sm text-slate-600">Monto:</dt>
+                  <dd class="text-sm font-medium text-slate-900 <%= 'text-rose-600' if @differences['amount'] && !@differences['amount'][:match] %>">
+                    <%= @new_expense.formatted_amount %>
+                  </dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-sm text-slate-600">Fecha:</dt>
+                  <dd class="text-sm font-medium text-slate-900 <%= 'text-rose-600' if @differences['transaction_date'] && !@differences['transaction_date'][:match] %>">
+                    <%= @new_expense.transaction_date.strftime('%d/%m/%Y') %>
+                  </dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-sm text-slate-600">Comercio:</dt>
+                  <dd class="text-sm font-medium text-slate-900 <%= 'text-rose-600' if @differences['merchant_name'] && !@differences['merchant_name'][:match] %>">
+                    <%= @new_expense.merchant_name || 'N/A' %>
+                  </dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-sm text-slate-600">Categoría:</dt>
+                  <dd class="text-sm font-medium text-slate-900 <%= 'text-rose-600' if @differences['category_id'] && !@differences['category_id'][:match] %>">
+                    <%= @new_expense.category_name %>
+                  </dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-sm text-slate-600">Estado:</dt>
+                  <dd class="text-sm font-medium text-slate-900"><%= @new_expense.status %></dd>
+                </div>
+              </dl>
+            <% else %>
+              <p class="text-sm text-slate-600">No hay datos del nuevo gasto</p>
+            <% end %>
+          </div>
+        </div>
+        
+        <!-- Differences Summary -->
+        <% if @differences.any? { |_, v| !v[:match] } %>
+          <div class="bg-rose-50 rounded-lg p-4 border border-rose-200 mb-6">
+            <h4 class="font-semibold text-rose-900 mb-2">Diferencias Detectadas</h4>
+            <ul class="space-y-1">
+              <% @differences.each do |field, diff| %>
+                <% unless diff[:match] %>
+                  <li class="text-sm text-rose-700">
+                    <span class="font-medium"><%= field.humanize %>:</span>
+                    "<%= diff[:existing] %>" → "<%= diff[:new] %>"
+                  </li>
+                <% end %>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+        
+        <!-- Resolution History -->
+        <% if @resolutions.any? %>
+          <div class="bg-slate-50 rounded-lg p-4 border border-slate-200 mb-6">
+            <h4 class="font-semibold text-slate-900 mb-2">Historial de Resoluciones</h4>
+            <ul class="space-y-2">
+              <% @resolutions.each do |resolution| %>
+                <li class="text-sm">
+                  <span class="text-slate-600"><%= resolution.created_at.strftime('%d/%m %H:%M') %>:</span>
+                  <span class="font-medium"><%= resolution.display_action %></span>
+                  <% if resolution.undone %>
+                    <span class="text-rose-600">(Deshecho)</span>
+                  <% end %>
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+      </div>
+      
+      <!-- Actions -->
+      <div class="bg-slate-50 px-6 py-4 border-t border-slate-200">
+        <div class="flex items-center justify-between">
+          <!-- Quick Actions -->
+          <div class="flex space-x-2">
+            <%= button_to "Mantener Existente", 
+                resolve_sync_conflict_path(@sync_conflict),
+                method: :post,
+                params: { action_type: 'keep_existing' },
+                class: "px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700",
+                data: { turbo_method: :post } %>
+            
+            <%= button_to "Mantener Nuevo", 
+                resolve_sync_conflict_path(@sync_conflict),
+                method: :post,
+                params: { action_type: 'keep_new' },
+                class: "px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700",
+                data: { turbo_method: :post } %>
+            
+            <%= button_to "Mantener Ambos", 
+                resolve_sync_conflict_path(@sync_conflict),
+                method: :post,
+                params: { action_type: 'keep_both' },
+                class: "px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700",
+                data: { turbo_method: :post } %>
+            
+            <button data-action="click->conflict-resolution#showMergeOptions"
+                    class="px-4 py-2 bg-slate-600 text-white rounded-lg text-sm font-medium hover:bg-slate-700">
+              Fusionar Campos
+            </button>
+          </div>
+          
+          <!-- Cancel -->
+          <button data-action="click->conflict-resolution#close"
+                  class="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50">
+            Cancelar
+          </button>
+        </div>
+        
+        <!-- Merge Options (Hidden by default) -->
+        <div data-conflict-resolution-target="mergeOptions" class="hidden mt-4 pt-4 border-t border-slate-200">
+          <h5 class="font-medium text-slate-900 mb-3">Seleccionar campos para fusionar</h5>
+          <%= form_with url: resolve_sync_conflict_path(@sync_conflict), 
+                        method: :post,
+                        data: { controller: "merge-form" } do |form| %>
+            <%= hidden_field_tag :action_type, 'merged' %>
+            
+            <div class="space-y-2 mb-4">
+              <% %w[amount transaction_date merchant_name description category_id].each do |field| %>
+                <% if @differences[field] && !@differences[field][:match] %>
+                  <div class="flex items-center justify-between p-2 bg-white rounded border border-slate-200">
+                    <span class="text-sm font-medium text-slate-700"><%= field.humanize %>:</span>
+                    <div class="flex items-center space-x-4">
+                      <label class="flex items-center">
+                        <%= radio_button_tag "merge_fields[#{field}]", "existing", true, 
+                            class: "text-emerald-600 focus:ring-emerald-500" %>
+                        <span class="ml-2 text-sm text-slate-600">
+                          Existente: <%= @differences[field][:existing] %>
+                        </span>
+                      </label>
+                      <label class="flex items-center">
+                        <%= radio_button_tag "merge_fields[#{field}]", "new", false,
+                            class: "text-amber-600 focus:ring-amber-500" %>
+                        <span class="ml-2 text-sm text-slate-600">
+                          Nuevo: <%= @differences[field][:new] %>
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                <% end %>
+              <% end %>
+            </div>
+            
+            <%= form.submit "Aplicar Fusión", 
+                class: "w-full px-4 py-2 bg-teal-700 text-white rounded-lg text-sm font-medium hover:bg-teal-800" %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

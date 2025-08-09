@@ -45,6 +45,18 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :sync_conflicts do
+    member do
+      post :resolve
+      post :undo
+      post :preview_merge
+      get :row
+    end
+    collection do
+      post :bulk_resolve
+    end
+  end
+
   resources :email_accounts
 
   # UX Mockups routes (development only)

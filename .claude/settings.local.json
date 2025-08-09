@@ -28,7 +28,10 @@
       "Bash(ruby:*)",
       "Bash(chmod:*)",
       "Bash(bundle check:*)",
-      "Bash(RAILS_ENV=test bin/rails db:drop db:create db:schema:load)"
+      "Bash(RAILS_ENV=test bin/rails db:drop db:create db:schema:load)",
+      "Bash(mkdir:*)",
+      "Bash(RAILS_LOG_LEVEL=debug bundle exec rspec spec/services/conflict_detection_service_spec.rb:138 --format documentation)",
+      "Bash(RAILS_ENV=test bin/rails db:drop db:create db:migrate)"
     ],
     "deny": []
   }

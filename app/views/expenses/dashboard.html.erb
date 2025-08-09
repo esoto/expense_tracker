@@ -181,6 +181,31 @@
     <%= render 'sync_sessions/status_widget' %>
   </div>
 
+  <!-- Conflict Alert (if any pending conflicts) -->
+  <% pending_conflicts_count = SyncConflict.unresolved.count %>
+  <% if pending_conflicts_count > 0 %>
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 text-amber-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+          </svg>
+          <div>
+            <p class="text-sm font-medium text-amber-900">
+              <%= pending_conflicts_count %> <%= pending_conflicts_count == 1 ? 'conflicto pendiente' : 'conflictos pendientes' %> de resolución
+            </p>
+            <p class="text-xs text-amber-700 mt-1">
+              Se detectaron transacciones duplicadas o similares que requieren tu atención
+            </p>
+          </div>
+        </div>
+        <%= link_to sync_conflicts_path, class: "px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors" do %>
+          Resolver Conflictos
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
   <!-- Key Metrics -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
     <!-- Total Expenses -->

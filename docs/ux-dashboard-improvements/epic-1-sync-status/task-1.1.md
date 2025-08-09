@@ -1,22 +1,3 @@
-# Epic 1: Tasks and Tickets
-
-## Task Summary
-
-This epic contains 4 main tasks and 4 subtasks focused on implementing real-time sync status updates using ActionCable.
-
-| Task ID | Task Name | Priority | Hours | Status |
-|---------|-----------|----------|-------|--------|
-| EXP-1.1 | Complete ActionCable Real-time Implementation | Critical | 15 | ✅ Completed |
-| EXP-1.1.1 | Setup ActionCable Channel and Authentication | Critical | 4 | ✅ Completed |
-| EXP-1.1.2 | Implement Progress Broadcasting Infrastructure | Critical | 4 | ✅ Completed |
-| EXP-1.1.3 | Client-side Subscription Management | Critical | 4 | ✅ Completed |
-| EXP-1.1.4 | Error Recovery and User Feedback | High | 3 | ✅ Completed |
-| EXP-1.2 | Sync Conflict Resolution UI | High | 8 | ✅ Completed |
-| EXP-1.3 | Performance Monitoring Dashboard | Medium | 6 | Not Started |
-| EXP-1.4 | Background Job Queue Visualization | Medium | 5 | Not Started |
-
-**Total Estimated Hours:** 34 hours
-
 ---
 
 ## Task 1.1: Complete ActionCable Real-time Implementation
@@ -418,26 +399,17 @@ Complete the ActionCable implementation for real-time sync status updates. Curre
 **Type:** Development  
 **Priority:** Critical  
 **Estimated Hours:** 4  
-**Status:** ✅ Completed  
-**Completed Date:** 2025-08-08  
 
 ### Description
 Configure the ActionCable channel with proper authentication and authorization. Ensure only authenticated users can subscribe to their own sync status updates.
 
 ### Acceptance Criteria
-- [x] SyncStatusChannel properly authenticates user sessions
-- [x] Channel rejects unauthorized subscription attempts
-- [x] Stream isolation: users only receive their own sync updates
-- [x] Connection identified by session_id
-- [x] Security: No sensitive data exposed in broadcasts
-- [x] Subscription confirmed in browser console
-
-### Implementation Summary
-- Added comprehensive ActionCable security implementation with channel whitelisting
-- Implemented broadcast reliability service with retry logic and circuit breaker pattern
-- Created failed broadcast store for dead letter queue functionality
-- Added broadcast analytics for monitoring and performance tracking
-- Full test coverage with 100% passing tests
+- [ ] SyncStatusChannel properly authenticates user sessions
+- [ ] Channel rejects unauthorized subscription attempts
+- [ ] Stream isolation: users only receive their own sync updates
+- [ ] Connection identified by session_id
+- [ ] Security: No sensitive data exposed in broadcasts
+- [ ] Subscription confirmed in browser console
 
 ### Technical Notes
 
@@ -552,27 +524,17 @@ Configure the ActionCable channel with proper authentication and authorization. 
 **Type:** Development  
 **Priority:** Critical  
 **Estimated Hours:** 4  
-**Status:** ✅ Completed  
-**Completed Date:** 2025-08-08  
 
 ### Description
 Build the server-side broadcasting infrastructure within the SyncProgressUpdater service to emit real-time updates during email processing.
 
 ### Acceptance Criteria
-- [x] SyncProgressUpdater broadcasts on every 100 emails processed
-- [x] Broadcasts include: progress_percentage, processed_count, total_count, time_remaining
-- [x] Redis-backed progress tracking implemented
-- [x] Atomic increment operations prevent race conditions
-- [x] Time estimation algorithm provides accurate remaining time
-- [x] Broadcasts throttled to maximum 1 per second
-
-### Implementation Summary
-- Created ProgressBatchCollector service for efficient batch processing
-- Implemented milestone-based flushing (10%, 25%, 50%, 75%, 90%, 100%)
-- Added critical message immediate broadcasting capability
-- Integrated with BroadcastReliabilityService for guaranteed delivery
-- Built Redis-backed analytics with RedisAnalyticsService
-- Full test coverage with simplified architecture after refactoring
+- [ ] SyncProgressUpdater broadcasts on every 100 emails processed
+- [ ] Broadcasts include: progress_percentage, processed_count, total_count, time_remaining
+- [ ] Redis-backed progress tracking implemented
+- [ ] Atomic increment operations prevent race conditions
+- [ ] Time estimation algorithm provides accurate remaining time
+- [ ] Broadcasts throttled to maximum 1 per second
 
 ### Technical Notes
 
@@ -760,32 +722,17 @@ Build the server-side broadcasting infrastructure within the SyncProgressUpdater
 **Type:** Development  
 **Priority:** Critical  
 **Estimated Hours:** 4  
-**Status:** ✅ Completed  
-**Completed Date:** 2025-08-08  
 
 ### Description
 Implement robust client-side subscription management in the Stimulus controller to handle connections, reconnections, and updates.
 
 ### Acceptance Criteria
-- [x] Auto-reconnect after connection loss (with exponential backoff)
-- [x] Pause updates when browser tab is inactive
-- [x] Resume updates when tab becomes active
-- [x] Network monitoring detects connection issues
-- [x] Memory leaks prevented (proper cleanup on disconnect)
-- [x] Console logging for debugging (removable in production)
-
-### Implementation Summary
-- Enhanced sync_widget_controller.js with comprehensive connection management
-- Implemented exponential backoff with jitter (max 5 retries, 30s max delay)
-- Added visibility API integration for tab switching
-- Network monitoring with online/offline event handlers
-- State caching in sessionStorage with 5-minute expiry
-- Memory leak prevention with proper cleanup of all resources
-- Update throttling to prevent UI performance issues
-- Debug logging system with production error reporting
-- Added connection status indicator and manual retry button to UI
-- Created comprehensive test suite with over 20 test cases
-- Full documentation in task-1.1.3-implementation.md
+- [ ] Auto-reconnect after connection loss (with exponential backoff)
+- [ ] Pause updates when browser tab is inactive
+- [ ] Resume updates when tab becomes active
+- [ ] Network monitoring detects connection issues
+- [ ] Memory leaks prevented (proper cleanup on disconnect)
+- [ ] Console logging for debugging (removable in production)
 
 ### Technical Notes
 
@@ -1029,125 +976,272 @@ Implement comprehensive error handling and recovery mechanisms with appropriate 
 
 ### Technical Notes
 
-[Technical implementation details continue as in original document...]
+#### Error Handling Implementation:
 
----
+1. **Error Recovery Strategies:**
+   ```ruby
+   # app/services/sync_error_handler.rb
+   class SyncErrorHandler
+     RECOVERABLE_ERRORS = [
+       Net::ReadTimeout,
+       Net::OpenTimeout,
+       Errno::ECONNRESET,
+       Errno::ETIMEDOUT,
+       ActiveRecord::LockWaitTimeout
+     ].freeze
+     
+     def handle_error(error, sync_session, context = {})
+       if recoverable?(error)
+         handle_recoverable_error(error, sync_session, context)
+       else
+         handle_fatal_error(error, sync_session, context)
+       end
+     end
+     
+     private
+     
+     def recoverable?(error)
+       RECOVERABLE_ERRORS.any? { |klass| error.is_a?(klass) }
+     end
+     
+     def handle_recoverable_error(error, session, context)
+       retry_count = context[:retry_count] || 0
+       
+       if retry_count < 3
+         # Schedule retry with backoff
+         delay = (2 ** retry_count).seconds
+         
+         EmailSyncJob.set(wait: delay).perform_later(
+           session.id,
+           context.merge(retry_count: retry_count + 1)
+         )
+         
+         # Notify user of retry
+         SyncStatusChannel.broadcast_activity(
+           session,
+           'retry',
+           "Retrying in #{delay} seconds due to: #{error.message}"
+         )
+       else
+         # Max retries reached
+         handle_fatal_error(error, session, context)
+       end
+     end
+     
+     def handle_fatal_error(error, session, context)
+       session.fail!(error.message)
+       
+       # Send detailed error notification
+       SyncStatusChannel.broadcast_failure(
+         session,
+         build_error_message(error, context)
+       )
+       
+       # Log for debugging
+       Rails.logger.error("Sync failed: #{error.message}")
+       Rails.logger.error(error.backtrace.join("\n"))
+       
+       # Notify admins for critical errors
+       notify_admins(error, session) if critical_error?(error)
+     end
+   end
+   ```
 
-## Task 1.2: Sync Conflict Resolution UI
+2. **User Feedback Components:**
+   ```ruby
+   # app/components/sync_error_component.rb
+   class SyncErrorComponent < ViewComponent::Base
+     def initialize(error_type:, message:, recoverable:)
+       @error_type = error_type
+       @message = message
+       @recoverable = recoverable
+     end
+     
+     def render?
+       @message.present?
+     end
+     
+     def error_class
+       case @error_type
+       when :network then 'bg-amber-50 border-amber-200 text-amber-700'
+       when :authentication then 'bg-rose-50 border-rose-200 text-rose-700'
+       when :server then 'bg-slate-50 border-slate-200 text-slate-700'
+       else 'bg-rose-50 border-rose-200 text-rose-700'
+       end
+     end
+     
+     def icon
+       case @error_type
+       when :network then 'wifi-off'
+       when :authentication then 'lock'
+       when :server then 'server'
+       else 'alert-circle'
+       end
+     end
+   end
+   ```
 
-**Task ID:** EXP-1.2  
-**Parent Epic:** EXP-EPIC-001  
-**Type:** Development  
-**Priority:** High  
-**Estimated Hours:** 8  
+3. **Toast Notification System:**
+   ```javascript
+   // app/javascript/controllers/toast_controller.js
+   export default class extends Controller {
+     static targets = ['container']
+     
+     show(message, type = 'info', duration = 5000) {
+       const toast = this.createToast(message, type)
+       this.containerTarget.appendChild(toast)
+       
+       // Animate in
+       requestAnimationFrame(() => {
+         toast.classList.add('translate-y-0', 'opacity-100')
+         toast.classList.remove('translate-y-2', 'opacity-0')
+       })
+       
+       // Auto dismiss
+       if (duration > 0) {
+         setTimeout(() => this.dismiss(toast), duration)
+       }
+       
+       return toast
+     }
+     
+     createToast(message, type) {
+       const toast = document.createElement('div')
+       toast.className = this.getToastClasses(type)
+       toast.innerHTML = this.getToastHTML(message, type)
+       
+       // Add dismiss handler
+       toast.querySelector('[data-dismiss]')?.addEventListener('click', () => {
+         this.dismiss(toast)
+       })
+       
+       return toast
+     }
+     
+     dismiss(toast) {
+       toast.classList.add('translate-y-2', 'opacity-0')
+       toast.classList.remove('translate-y-0', 'opacity-100')
+       
+       setTimeout(() => toast.remove(), 300)
+     }
+   }
+   ```
 
-### Description
-Create user interface components for handling sync conflicts when duplicate transactions are detected or when transactions need manual review.
+4. **Fallback to Polling:**
+   ```javascript
+   // Fallback polling mechanism
+   class SyncStatusPoller {
+     constructor(sessionId, callback) {
+       this.sessionId = sessionId
+       this.callback = callback
+       this.interval = 2000 // Start with 2 seconds
+       this.maxInterval = 10000 // Max 10 seconds
+     }
+     
+     start() {
+       this.stop() // Clear any existing timer
+       this.poll()
+     }
+     
+     async poll() {
+       try {
+         const response = await fetch(`/sync_sessions/${this.sessionId}/status.json`)
+         const data = await response.json()
+         
+         this.callback(data)
+         
+         // Adjust interval based on activity
+         if (data.status === 'running') {
+           this.interval = 2000 // Poll faster when active
+         } else {
+           this.interval = Math.min(this.interval * 1.5, this.maxInterval)
+         }
+         
+         // Schedule next poll
+         this.timer = setTimeout(() => this.poll(), this.interval)
+       } catch (error) {
+         console.error('Polling failed:', error)
+         
+         // Retry with backoff
+         this.interval = Math.min(this.interval * 2, this.maxInterval)
+         this.timer = setTimeout(() => this.poll(), this.interval)
+       }
+     }
+     
+     stop() {
+       if (this.timer) {
+         clearTimeout(this.timer)
+         this.timer = null
+       }
+     }
+   }
+   ```
 
-### Acceptance Criteria
-- [ ] Modal/drawer displays conflicting transactions side-by-side
-- [ ] User can choose: keep existing, keep new, keep both, or merge
-- [ ] Bulk conflict resolution for multiple similar conflicts
-- [ ] Conflict history log maintained
-- [ ] Undo capability for conflict resolutions
-- [ ] Clear visual indicators for conflicts in main list
+5. **Connection State UI:**
+   ```erb
+   <!-- app/views/shared/_connection_status.html.erb -->
+   <div data-controller="connection-status"
+        data-connection-status-state-value="<%= @connection_state %>"
+        class="fixed bottom-4 right-4 z-50">
+     
+     <!-- Offline indicator -->
+     <div data-connection-status-target="offline"
+          class="hidden bg-slate-900 text-white px-4 py-2 rounded-lg shadow-lg">
+       <div class="flex items-center space-x-2">
+         <%= heroicon "wifi-off", class: "w-5 h-5" %>
+         <span>Sin conexión</span>
+       </div>
+     </div>
+     
+     <!-- Reconnecting indicator -->
+     <div data-connection-status-target="reconnecting"
+          class="hidden bg-amber-600 text-white px-4 py-2 rounded-lg shadow-lg">
+       <div class="flex items-center space-x-2">
+         <%= heroicon "arrow-path", class: "w-5 h-5 animate-spin" %>
+         <span>Reconectando...</span>
+       </div>
+     </div>
+     
+     <!-- Manual retry button -->
+     <div data-connection-status-target="retry"
+          class="hidden bg-rose-600 text-white px-4 py-2 rounded-lg shadow-lg">
+       <div class="flex items-center space-x-2">
+         <span>Conexión perdida</span>
+         <button data-action="click->connection-status#retry"
+                 class="ml-2 px-2 py-1 bg-white text-rose-600 rounded text-sm font-medium">
+           Reintentar
+         </button>
+       </div>
+     </div>
+   </div>
+   ```
 
-### Technical Notes
+6. **Testing:**
+   ```ruby
+   RSpec.describe SyncErrorHandler do
+     it "retries recoverable errors with backoff" do
+       error = Net::ReadTimeout.new
+       session = create(:sync_session)
+       
+       expect(EmailSyncJob).to receive(:set).with(wait: 1.second)
+       
+       handler.handle_error(error, session, retry_count: 0)
+     end
+     
+     it "fails after max retries" do
+       error = Net::ReadTimeout.new
+       session = create(:sync_session)
+       
+       handler.handle_error(error, session, retry_count: 3)
+       
+       expect(session.reload).to be_failed
+     end
+   end
+   ```
 
-[Technical implementation details continue...]
+7. **Monitoring & Alerting:**
+   - Track error rates by type
+   - Monitor retry success rates
+   - Alert on connection failure spikes
+   - Dashboard for WebSocket health metrics
 
----
-
-## Task 1.3: Performance Monitoring Dashboard
-
-**Task ID:** EXP-1.3  
-**Parent Epic:** EXP-EPIC-001  
-**Type:** Development  
-**Priority:** Medium  
-**Estimated Hours:** 6  
-
-### Description
-Create a performance monitoring interface for sync operations, displaying metrics, success rates, and performance trends.
-
-### Acceptance Criteria
-- [ ] Dashboard shows sync performance metrics (speed, success rate)
-- [ ] Historical sync performance graph (last 30 days)
-- [ ] Error rate tracking and categorization
-- [ ] Average sync duration by email account
-- [ ] Peak sync times identification
-- [ ] Export performance data to CSV
-
-### Technical Notes
-
-[Technical implementation details continue...]
-
----
-
-## Task 1.4: Background Job Queue Visualization
-
-**Task ID:** EXP-1.4  
-**Parent Epic:** EXP-EPIC-001  
-**Type:** Development  
-**Priority:** Medium  
-**Estimated Hours:** 5  
-
-### Description
-Implement visual representation of the background job queue for sync operations, showing pending, processing, and completed jobs.
-
-### Acceptance Criteria
-- [ ] Queue depth indicator (number of pending jobs)
-- [ ] Currently processing job details
-- [ ] Job priority visualization
-- [ ] Estimated queue completion time
-- [ ] Ability to pause/resume queue processing
-- [ ] Failed job retry interface
-
-### Technical Notes
-
-[Technical implementation details continue...]
-
----
-
-## Dependencies and Sequencing
-
-### Dependency Graph
-```
-1.1.1 (Channel Auth) → 1.1.2 (Broadcasting) → 1.1.3 (Client) → 1.1.4 (Error)
-                                                      ↓
-                                                    1.2 (Conflicts)
-                                                      ↓
-                                           1.3 (Monitoring) & 1.4 (Queue)
-```
-
-### Critical Path
-1. Complete 1.1.1 first (foundation for all real-time features)
-2. Then 1.1.2 and 1.1.3 in parallel
-3. 1.1.4 depends on 1.1.3 completion
-4. 1.2 can start after 1.1 is functional
-5. 1.3 and 1.4 can be done in parallel after core functionality
-
-## Testing Strategy
-
-### Unit Tests
-- Channel authentication logic
-- Broadcasting throttling
-- Progress calculation algorithms
-- Error recovery mechanisms
-
-### Integration Tests
-- End-to-end sync flow with real-time updates
-- Multi-tab synchronization
-- Connection recovery scenarios
-- Conflict resolution workflow
-
-### Performance Tests
-- Load test with 1000 concurrent connections
-- Broadcast latency under load
-- Memory usage over extended periods
-- Database query performance
-
-### User Acceptance Tests
-- Real-time progress visibility
-- Error message clarity
-- Conflict resolution usability
-- Performance dashboard accuracy

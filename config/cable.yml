@@ -4,6 +4,8 @@
 # to make the web console appear.
 development:
   adapter: async
+  # Allow connections from localhost in development
+  allowed_request_origins: [ "http://localhost:3000", "http://127.0.0.1:3000" ]
 
 test:
   adapter: test
@@ -15,3 +17,8 @@ production:
       writing: cable
   polling_interval: 0.1.seconds
   message_retention: 1.day
+  # Configure allowed origins for production
+  # Update these with your actual production domain(s)
+  allowed_request_origins: [ /https:\/\/.*\.yourdomain\.com/ ]
+  # Disable origin checking if behind a proxy (use with caution)
+  # disable_request_forgery_protection: false

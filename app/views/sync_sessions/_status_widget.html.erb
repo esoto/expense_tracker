@@ -2,11 +2,24 @@
 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
      data-controller="sync-widget"
      data-sync-widget-session-id-value="<%= @active_sync_session&.id || 0 %>"
-     data-sync-widget-active-value="<%= @active_sync_session.present? %>">
+     data-sync-widget-active-value="<%= @active_sync_session.present? %>"
+     data-sync-widget-debug-value="<%= Rails.env.development? %>">
   <div class="flex items-center justify-between mb-4">
     <h2 class="text-lg font-semibold text-slate-900">Estado de Sincronización</h2>
     <% if @active_sync_session %>
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center space-x-4">
+        <!-- Connection Status Indicator -->
+        <div class="flex items-center space-x-2">
+          <div class="relative flex items-center">
+            <span class="flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
+            </span>
+          </div>
+          <span class="text-xs text-slate-600" data-sync-widget-target="connectionStatus">
+            Desconectado
+          </span>
+        </div>
         <%= link_to sync_session_path(@active_sync_session),
             class: "text-teal-700 hover:text-teal-800 text-sm font-medium" do %>
           Ver detalles
@@ -63,6 +76,27 @@
             <%= @active_sync_session.email_accounts.count %>
           </p>
           <p class="text-xs text-slate-600">Cuentas activas</p>
+        </div>
+      </div>
+
+      <!-- Manual Retry Button (hidden by default) -->
+      <div class="hidden" data-sync-widget-target="retryButton">
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              </svg>
+              <div>
+                <p class="text-sm font-medium text-amber-900">Conexión perdida</p>
+                <p class="text-xs text-amber-700">Se alcanzó el máximo de reintentos automáticos</p>
+              </div>
+            </div>
+            <button data-action="click->sync-widget#manualRetry"
+                    class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors duration-200">
+              Reintentar
+            </button>
+          </div>
         </div>
       </div>
 

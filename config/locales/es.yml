@@ -1,0 +1,160 @@
+# Spanish translations for the Expense Tracker application
+
+es:
+  # Application-wide translations
+  hello: "Hola mundo"
+  
+  # Navigation
+  nav:
+    dashboard: "Panel de Control"
+    expenses: "Gastos"
+    sync: "Sincronización"
+    settings: "Configuración"
+    
+  # Sync Status Widget
+  sync:
+    title: "Estado de Sincronización"
+    status:
+      idle: "Inactivo"
+      running: "En Progreso"
+      completed: "Completado"
+      failed: "Error"
+      paused: "Pausado"
+      connecting: "Conectando..."
+      connected: "Conectado"
+      disconnected: "Desconectado"
+      reconnecting: "Reconectando..."
+      
+    messages:
+      starting: "Iniciando sincronización..."
+      processing: "Procesando correos..."
+      completed: "Sincronización completada exitosamente"
+      failed: "Error en la sincronización"
+      no_emails: "No se encontraron correos nuevos"
+      
+    stats:
+      processed: "Correos procesados"
+      detected: "Gastos detectados"
+      remaining: "Tiempo restante"
+      progress: "Progreso"
+      
+    actions:
+      start: "Iniciar Sincronización"
+      stop: "Detener"
+      retry: "Reintentar"
+      view_details: "Ver Detalles"
+      
+  # Error messages
+  errors:
+    connection:
+      failed: "No se pudo conectar al servidor"
+      lost: "Se perdió la conexión con el servidor"
+      timeout: "La conexión tardó demasiado tiempo"
+      refused: "El servidor rechazó la conexión"
+      network: "Error de red. Verifica tu conexión"
+      offline: "Sin conexión a internet"
+      online: "Conexión restaurada"
+      websocket_unsupported: "Tu navegador no soporta conexiones en tiempo real"
+      firewall: "La conexión podría estar bloqueada"
+      ssl: "Error de certificado SSL"
+      
+    auth:
+      expired: "Tu sesión ha expirado"
+      invalid: "Credenciales inválidas"
+      unauthorized: "No autorizado"
+      token_invalid: "Token de seguridad inválido"
+      token_expired: "Token de seguridad expirado"
+      
+    sync:
+      email_connection: "No se pudo conectar con el servidor de correo"
+      email_auth: "Error de autenticación con el correo"
+      rate_limit: "Demasiadas solicitudes"
+      parsing_error: "Error al procesar los correos"
+      duplicate_detected: "Se detectaron transacciones duplicadas"
+      no_emails: "No se encontraron correos nuevos"
+      account_locked: "Cuenta bloqueada temporalmente"
+      quota_exceeded: "Límite de sincronización excedido"
+      processing_error: "Error al procesar las transacciones"
+      invalid_format: "Formato de correo no reconocido"
+      
+    server:
+      internal: "Error interno del servidor"
+      maintenance: "Servicio en mantenimiento"
+      overloaded: "Servidor sobrecargado"
+      unavailable: "Servicio no disponible"
+      timeout: "El servidor no respondió"
+      
+    recovery:
+      retrying: "Reintentando conexión..."
+      retry_in: "Reintentando en %{seconds} segundos"
+      max_retries: "Máximo de intentos alcanzado"
+      manual_retry: "Haz clic para reintentar"
+      recovered: "Conexión recuperada"
+      switching_mode: "Cambiando a modo alternativo"
+      degraded_mode: "Modo limitado activo"
+      
+  # Actions
+  actions:
+    retry: "Reintentar"
+    dismiss: "Cerrar"
+    reload: "Recargar página"
+    check_connection: "Verificar conexión"
+    contact_support: "Contactar soporte"
+    view_details: "Ver detalles"
+    report_issue: "Reportar problema"
+    
+  # Toast notifications
+  toast:
+    close: "Cerrar notificación"
+    
+  # Time formatting
+  time:
+    seconds: "%{count} segundos"
+    minutes:
+      one: "1 minuto"
+      other: "%{count} minutos"
+    hours:
+      one: "1 hora"
+      other: "%{count} horas"
+      
+  # Email accounts
+  email_accounts:
+    bank_names:
+      bac: "BAC San José"
+      bcr: "Banco de Costa Rica"
+      bn: "Banco Nacional"
+      promerica: "Promerica"
+      scotiabank: "Scotiabank"
+      davivienda: "Davivienda"
+      
+  # Expenses
+  expenses:
+    categories:
+      food: "Alimentación"
+      transport: "Transporte"
+      utilities: "Servicios"
+      entertainment: "Entretenimiento"
+      health: "Salud"
+      shopping: "Compras"
+      other: "Otros"
+      
+    status:
+      pending: "Pendiente"
+      confirmed: "Confirmado"
+      rejected: "Rechazado"
+      
+  # Common
+  common:
+    loading: "Cargando..."
+    saving: "Guardando..."
+    saved: "Guardado"
+    cancel: "Cancelar"
+    confirm: "Confirmar"
+    delete: "Eliminar"
+    edit: "Editar"
+    new: "Nuevo"
+    back: "Volver"
+    search: "Buscar"
+    filter: "Filtrar"
+    export: "Exportar"
+    import: "Importar"

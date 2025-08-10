@@ -36,7 +36,6 @@ end
 # directory. Alternatively, in the individual `*_spec.rb` files, manually
 # require only the support files necessary.
 #
-# Load all support files for enhanced testing
 Rails.root.glob('spec/support/**/*.rb').sort_by(&:to_s).each { |f| require f }
 
 # Ensures that the test database schema matches the current schema file.
@@ -69,16 +68,22 @@ RSpec.configure do |config|
   # Include FactoryBot methods
   config.include FactoryBot::Syntax::Methods
 
+  # Configure ActiveJob test adapter for job tests
+  config.include ActiveJob::TestHelper, type: :job
+
+  config.before(:each, type: :job) do
+    ActiveJob::Base.queue_adapter = :test
+  end
+
+  # Clear cache before each test
+  config.before(:each) do
+    Rails.cache.clear
+  end
+
   # Include controller testing support for Rails 8
   config.include Rails::Controller::Testing::TestProcess, type: :controller
   config.include Rails::Controller::Testing::TemplateAssertions, type: :controller
   config.include Rails::Controller::Testing::Integration, type: :controller
-
-  # Enhanced testing includes
-  config.include ActionCable::TestHelper, type: :channel
-  config.include ActiveSupport::Testing::TimeHelpers
-  config.include JsonSpec::Helpers, type: :request
-  config.include ApiHelpers, type: :request
 
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
   config.fixture_paths = [
@@ -92,37 +97,49 @@ RSpec.configure do |config|
 
   # Performance optimizations for testing
   config.before(:suite) do
-    # Ensure test database is clean
-    if defined?(ActiveRecord::Base)
-      ActiveRecord::Base.connection.execute("TRUNCATE TABLE #{ActiveRecord::Base.connection.tables.join(', ')} RESTART IDENTITY CASCADE") if ActiveRecord::Base.connection.tables.any?
-    end
-  end
+    # Use memory store for cache in tests
+    Rails.cache = ActiveSupport::Cache::MemoryStore.new
+    # Note: Removed database truncation since we use transactional fixtures
 
-  # Speed up tests by avoiding loading Spring in test environment
-  config.disable_monkey_patching!
+    # Performance optimization: Configure ActionCable for testing
+    if defined?(ActionCable)
+      ActionCable.server.config.disable_request_forgery_protection = true
+    end
+
+    # Preload factories to avoid runtime overhead
+    FactoryBot.reload if defined?(FactoryBot)
+
+    # Disable logging in tests for performance and cleaner output
+    ActiveRecord::Base.logger.level = Logger::ERROR
+    Rails.logger.level = Logger::ERROR
+
+    # Disable ActionCable logs
+    ActionCable.server.config.logger.level = Logger::ERROR if defined?(ActionCable)
+
+    # Disable Sidekiq logs
+    Sidekiq.logger.level = Logger::ERROR if defined?(Sidekiq)
+  end
 
   # You can uncomment this line to turn off ActiveRecord support entirely.
   # config.use_active_record = false
 
-  # RSpec Rails uses metadata to mix in different behaviours to your tests,
-  # for example enabling you to call `get` and `post` in request specs. e.g.:
+  # RSpec Rails can automatically mix in different behaviours to your tests
+  # based on their file location, for example enabling you to call `get` and
+  # `post` in specs under `spec/controllers`.
   #
-  #     RSpec.describe UsersController, type: :request do
+  # You can disable this behaviour by removing the line below, and instead
+  # explicitly tag your specs with their type, e.g.:
+  #
+  #     RSpec.describe UsersController, type: :controller do
   #       # ...
   #     end
   #
   # The different available types are documented in the features, such as in
-  # https://rspec.info/features/8-0/rspec-rails
-  #
-  # You can also this infer these behaviours automatically by location, e.g.
-  # /spec/models would pull in the same behaviour as `type: :model` but this
-  # behaviour is considered legacy and will be removed in a future version.
-  #
-  # To enable this behaviour uncomment the line below.
-  # config.infer_spec_type_from_file_location!
+  # https://rspec.info/features/7-0/rspec-rails
+  config.infer_spec_type_from_file_location!
 
   # Filter lines from Rails gems in backtraces.
-  config.filter_rails_from_backtrace!
+  config.filter_rails_from_bactraces!
   # arbitrary gems may also be filtered via:
   # config.filter_gems_from_backtrace("gem name")
 end

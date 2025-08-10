@@ -4,10 +4,14 @@ class SyncSession < ApplicationRecord
 
   has_many :sync_session_accounts, dependent: :destroy
   has_many :email_accounts, through: :sync_session_accounts
+  has_many :sync_conflicts, dependent: :destroy
+  has_many :sync_metrics, dependent: :destroy
 
   validates :status, presence: true, inclusion: { in: %w[pending running completed failed cancelled] }
 
   serialize :job_ids, coder: JSON, type: Array
+
+  before_create :generate_session_token
 
   scope :recent, -> { order(created_at: :desc) }
   scope :active, -> { where(status: %w[pending running]) }
@@ -164,6 +168,10 @@ class SyncSession < ApplicationRecord
   end
 
   private
+
+  def generate_session_token
+    self.session_token = SecureRandom.urlsafe_base64(32)
+  end
 
   def track_status_changes
     if status_changed? && status_was == "running" && finished?

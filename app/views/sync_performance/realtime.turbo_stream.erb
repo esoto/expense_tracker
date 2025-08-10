@@ -1,0 +1,49 @@
+<%= turbo_stream.replace "realtime-metrics" do %>
+  <div id="realtime-metrics" class="bg-white rounded-lg shadow p-6">
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div class="text-center">
+        <div class="text-2xl font-bold text-teal-700"><%= @current_metrics[:current_operations] %></div>
+        <div class="text-xs text-slate-600">Operaciones Activas</div>
+      </div>
+
+      <div class="text-center">
+        <div class="text-2xl font-bold <%= @current_metrics[:success_rate] >= 95 ? 'text-emerald-600' : @current_metrics[:success_rate] >= 90 ? 'text-amber-600' : 'text-rose-600' %>">
+          <%= @current_metrics[:success_rate] %>%
+        </div>
+        <div class="text-xs text-slate-600">Tasa de Éxito</div>
+      </div>
+
+      <div class="text-center">
+        <div class="text-2xl font-bold text-teal-700">
+          <%= number_with_precision(@current_metrics[:average_duration], precision: 0) %>ms
+        </div>
+        <div class="text-xs text-slate-600">Duración Promedio</div>
+      </div>
+
+      <div class="text-center">
+        <div class="text-2xl font-bold text-teal-700">
+          <%= @current_metrics[:emails_per_second] %>/s
+        </div>
+        <div class="text-xs text-slate-600">Correos/Segundo</div>
+      </div>
+
+      <div class="text-center">
+        <div class="text-2xl font-bold <%= @current_metrics[:active_jobs] > 10 ? 'text-amber-600' : 'text-teal-700' %>">
+          <%= @current_metrics[:active_jobs] %>
+        </div>
+        <div class="text-xs text-slate-600">Jobs Activos</div>
+      </div>
+
+      <div class="text-center">
+        <div class="text-2xl font-bold <%= @current_metrics[:queue_depth] > 50 ? 'text-rose-600' : @current_metrics[:queue_depth] > 20 ? 'text-amber-600' : 'text-teal-700' %>">
+          <%= @current_metrics[:queue_depth] %>
+        </div>
+        <div class="text-xs text-slate-600">Cola de Espera</div>
+      </div>
+    </div>
+
+    <div class="mt-4 text-xs text-slate-500 text-center">
+      Actualizado: <%= Time.current.strftime("%H:%M:%S") %>
+    </div>
+  </div>
+<% end %>

@@ -14,6 +14,24 @@ class ProcessEmailJob < ApplicationJob
     Rails.logger.info "Processing individual email for: #{email_account.email}"
     Rails.logger.debug "Email data: #{email_data.inspect}"
 
+    # Get current sync session for metrics
+    sync_session = SyncSession.active.last
+    metrics_collector = SyncMetricsCollector.new(sync_session) if sync_session
+
+    # Track expense detection operation
+    if metrics_collector
+      metrics_collector.track_operation(:detect_expense, email_account, { email_subject: email_data[:subject] }) do
+        parse_and_save_expense(email_account, email_data)
+      end
+      metrics_collector.flush_buffer
+    else
+      parse_and_save_expense(email_account, email_data)
+    end
+  end
+
+  private
+
+  def parse_and_save_expense(email_account, email_data)
     parser = EmailProcessing::Parser.new(email_account, email_data)
     expense = parser.parse_expense
 
@@ -28,9 +46,9 @@ class ProcessEmailJob < ApplicationJob
       # Could save failed parsing attempts for debugging
       save_failed_parsing(email_account, email_data, parser.errors)
     end
-  end
 
-  private
+    expense
+  end
 
   def save_failed_parsing(email_account, email_data, errors)
     email_body = email_data[:body].to_s

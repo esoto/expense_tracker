@@ -5,7 +5,7 @@
        data-sync-widget-session-id-value="<%= @active_sync_session&.id || 0 %>"
        data-sync-widget-active-value="<%= @active_sync_session.present? %>"
        data-sync-widget-websocket-url-value="<%= Rails.application.config.action_cable.url %>">
-    
+
     <!-- Header Section -->
     <div class="px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-teal-50 to-white">
       <div class="flex items-center justify-between">
@@ -24,7 +24,7 @@
               </span>
             <% end %>
           </div>
-          
+
           <div>
             <h2 class="text-lg font-semibold text-slate-900">Sincronización de Correos</h2>
             <p class="text-sm text-slate-600" data-sync-widget-target="statusText">
@@ -39,7 +39,7 @@
             </p>
           </div>
         </div>
-        
+
         <!-- Action Buttons -->
         <div class="flex items-center space-x-2">
           <% if @active_sync_session %>
@@ -54,7 +54,7 @@
               </svg>
               Pausar
             </button>
-            
+
             <!-- View Details -->
             <%= link_to sync_session_path(@active_sync_session),
                 class: "inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-teal-700 rounded-lg hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-colors",
@@ -69,7 +69,7 @@
             <%= form_with url: sync_sessions_path, method: :post, data: { turbo: true } do |form| %>
               <%= form.submit "Iniciar Sincronización",
                   class: "inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-teal-700 rounded-lg hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all transform hover:scale-105 cursor-pointer",
-                  data: { 
+                  data: {
                     disable_with: "Iniciando...",
                     action: "click->sync-widget#startSync"
                   } %>
@@ -78,12 +78,12 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Progress Section (Visible when sync is active) -->
     <% if @active_sync_session %>
-      <div class="px-6 py-4 bg-gradient-to-b from-white to-slate-50" 
+      <div class="px-6 py-4 bg-gradient-to-b from-white to-slate-50"
            data-sync-widget-target="progressSection">
-        
+
         <!-- Main Progress Bar -->
         <div class="mb-4">
           <div class="flex items-center justify-between mb-2">
@@ -97,7 +97,7 @@
               </span>
             </div>
           </div>
-          
+
           <!-- Enhanced Progress Bar with Animation -->
           <div class="relative">
             <div class="overflow-hidden h-3 text-xs flex rounded-full bg-slate-200">
@@ -113,7 +113,7 @@
                  style="left: <%= @active_sync_session.progress_percentage %>%; transition: left 0.5s ease-out;">
             </div>
           </div>
-          
+
           <!-- Time and Stats Row -->
           <div class="flex items-center justify-between mt-3">
             <div class="flex items-center space-x-4 text-sm">
@@ -139,14 +139,14 @@
             <% end %>
           </div>
         </div>
-        
+
         <!-- Account-by-Account Progress -->
         <div class="mt-4 space-y-2" data-sync-widget-target="accountsList">
           <% @active_sync_session.sync_session_accounts.includes(:email_account).each do |account| %>
             <div class="group relative rounded-lg border border-slate-200 bg-white p-3 hover:shadow-md transition-all duration-200"
                  data-account-id="<%= account.email_account.id %>"
                  data-sync-widget-target="accountItem">
-              
+
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-3">
                   <!-- Status Icon -->
@@ -176,7 +176,7 @@
                       </div>
                     <% end %>
                   </div>
-                  
+
                   <!-- Account Info -->
                   <div>
                     <p class="font-medium text-slate-900 text-sm">
@@ -187,7 +187,7 @@
                     </p>
                   </div>
                 </div>
-                
+
                 <!-- Progress Info -->
                 <div class="text-right">
                   <p class="text-sm font-semibold text-slate-900" data-sync-widget-target="accountProgress">
@@ -198,7 +198,7 @@
                   </p>
                 </div>
               </div>
-              
+
               <!-- Mini Progress Bar -->
               <div class="mt-2">
                 <div class="h-1 bg-slate-100 rounded-full overflow-hidden">
@@ -207,7 +207,7 @@
                        style="width: <%= account.progress_percentage %>%"></div>
                 </div>
               </div>
-              
+
               <!-- Error Message (if any) -->
               <% if account.last_error.present? %>
                 <div class="mt-2 text-xs text-rose-600 flex items-start">
@@ -237,15 +237,15 @@
             Comienza tu primera sincronización para importar gastos
           <% end %>
         </p>
-        
+
         <!-- Quick Action Buttons -->
         <div class="flex items-center justify-center space-x-3">
           <%= form_with url: sync_sessions_path, method: :post, class: "inline-block" do |form| %>
             <%= form.submit "Sincronizar Todas las Cuentas",
                 class: "inline-flex items-center px-4 py-2 bg-teal-700 text-white text-sm font-medium rounded-lg hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all cursor-pointer" %>
           <% end %>
-          
-          <%= link_to sync_sessions_path, 
+
+          <%= link_to sync_sessions_path,
               class: "inline-flex items-center px-4 py-2 bg-white text-slate-700 text-sm font-medium rounded-lg border border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors" do %>
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -255,7 +255,7 @@
         </div>
       </div>
     <% end %>
-    
+
     <!-- Connection Status Indicator -->
     <div class="hidden px-4 py-2 bg-amber-50 border-t border-amber-200"
          data-sync-widget-target="connectionWarning">

@@ -33,7 +33,7 @@ module Api
       return false unless @sync_session
 
       # Check if session token matches (for new sessions with tokens)
-      if @sync_session.session_token.present?
+      if @sync_session.session_token?
         provided_token = request.headers["X-Sync-Token"] ||
                         request.headers["HTTP_X_SYNC_TOKEN"] ||
                         params[:token]

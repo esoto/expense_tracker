@@ -38,7 +38,7 @@ else
     req.ip if req.path == "/api/queue/status" || req.path == "/api/queue/status.json"
   end
 
-  # Queue control operations rate limiting  
+  # Queue control operations rate limiting
   # Allow 10 control operations per minute per IP
   throttle("queue/control", limit: 10, period: 1.minute) do |req|
     req.ip if req.path.start_with?("/api/queue/") && (req.post? || req.put? || req.patch? || req.delete?)

@@ -10,26 +10,26 @@ RSpec.describe Api::QueueController, type: :controller do
 
     it "returns queue status as JSON" do
       get :status, format: :json
-      
+
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
-      
+
       expect(json["success"]).to be true
       expect(json["data"]).to include("summary", "queues", "jobs", "performance", "workers")
     end
 
     it "includes summary metrics" do
       get :status, format: :json
-      
+
       json = JSON.parse(response.body)
       summary = json["data"]["summary"]
-      
+
       expect(summary).to include("pending", "processing", "completed", "failed", "health")
     end
 
     it "includes timestamp" do
       get :status, format: :json
-      
+
       json = JSON.parse(response.body)
       expect(json["timestamp"]).to be_present
     end
@@ -39,33 +39,33 @@ RSpec.describe Api::QueueController, type: :controller do
     context "without queue_name parameter" do
       it "pauses all queues" do
         expect(QueueMonitor).to receive(:pause_queue).with(nil).and_return(true)
-        allow(QueueMonitor).to receive(:paused_queues).and_return(["default", "urgent"])
+        allow(QueueMonitor).to receive(:paused_queues).and_return([ "default", "urgent" ])
         allow(QueueMonitor).to receive(:pending_jobs_count).and_return(10)
         allow(QueueMonitor).to receive(:processing_jobs_count).and_return(5)
-        
+
         post :pause, format: :json
-        
+
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
-        
+
         expect(json["success"]).to be true
         expect(json["message"]).to include("All queues have been paused")
-        expect(json["paused_queues"]).to eq(["default", "urgent"])
+        expect(json["paused_queues"]).to eq([ "default", "urgent" ])
       end
     end
 
     context "with queue_name parameter" do
       it "pauses specific queue" do
         expect(QueueMonitor).to receive(:pause_queue).with("default").and_return(true)
-        allow(QueueMonitor).to receive(:paused_queues).and_return(["default"])
+        allow(QueueMonitor).to receive(:paused_queues).and_return([ "default" ])
         allow(QueueMonitor).to receive(:pending_jobs_count).and_return(10)
         allow(QueueMonitor).to receive(:processing_jobs_count).and_return(5)
-        
+
         post :pause, params: { queue_name: "default" }, format: :json
-        
+
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
-        
+
         expect(json["success"]).to be true
         expect(json["message"]).to include("Queue 'default' has been paused")
       end
@@ -74,12 +74,12 @@ RSpec.describe Api::QueueController, type: :controller do
     context "when pause fails" do
       it "returns error response" do
         expect(QueueMonitor).to receive(:pause_queue).and_return(false)
-        
+
         post :pause, format: :json
-        
+
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
-        
+
         expect(json["success"]).to be false
         expect(json["error"]).to be_present
       end
@@ -90,12 +90,12 @@ RSpec.describe Api::QueueController, type: :controller do
       allow(QueueMonitor).to receive(:paused_queues).and_return([])
       allow(QueueMonitor).to receive(:pending_jobs_count).and_return(10)
       allow(QueueMonitor).to receive(:processing_jobs_count).and_return(5)
-      
+
       expect(ActionCable.server).to receive(:broadcast).with(
         "queue_updates",
         hash_including(action: "paused")
       )
-      
+
       post :pause, format: :json
     end
   end
@@ -107,12 +107,12 @@ RSpec.describe Api::QueueController, type: :controller do
         allow(QueueMonitor).to receive(:paused_queues).and_return([])
         allow(QueueMonitor).to receive(:pending_jobs_count).and_return(10)
         allow(QueueMonitor).to receive(:processing_jobs_count).and_return(5)
-        
+
         post :resume, format: :json
-        
+
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
-        
+
         expect(json["success"]).to be true
         expect(json["message"]).to include("All queues have been resumed")
       end
@@ -124,12 +124,12 @@ RSpec.describe Api::QueueController, type: :controller do
         allow(QueueMonitor).to receive(:paused_queues).and_return([])
         allow(QueueMonitor).to receive(:pending_jobs_count).and_return(10)
         allow(QueueMonitor).to receive(:processing_jobs_count).and_return(5)
-        
+
         post :resume, params: { queue_name: "default" }, format: :json
-        
+
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
-        
+
         expect(json["success"]).to be true
         expect(json["message"]).to include("Queue 'default' has been resumed")
       end
@@ -140,12 +140,12 @@ RSpec.describe Api::QueueController, type: :controller do
       allow(QueueMonitor).to receive(:paused_queues).and_return([])
       allow(QueueMonitor).to receive(:pending_jobs_count).and_return(10)
       allow(QueueMonitor).to receive(:processing_jobs_count).and_return(5)
-      
+
       expect(ActionCable.server).to receive(:broadcast).with(
         "queue_updates",
         hash_including(action: "resumed")
       )
-      
+
       post :resume, format: :json
     end
   end
@@ -162,12 +162,12 @@ RSpec.describe Api::QueueController, type: :controller do
 
       it "retries the job successfully" do
         expect(QueueMonitor).to receive(:retry_failed_job).with(job_id.to_s).and_return(true)
-        
+
         post :retry_job, params: { id: job_id }, format: :json
-        
+
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
-        
+
         expect(json["success"]).to be true
         expect(json["message"]).to include("Job #{job_id} has been queued for retry")
       end
@@ -175,24 +175,24 @@ RSpec.describe Api::QueueController, type: :controller do
       it "broadcasts job update" do
         allow(QueueMonitor).to receive(:retry_failed_job).and_return(true)
         allow(QueueMonitor).to receive(:failed_jobs_count).and_return(5)
-        
+
         expect(ActionCable.server).to receive(:broadcast).with(
           "queue_updates",
           hash_including(action: "job_retried", job_id: job_id.to_s)
         )
-        
+
         post :retry_job, params: { id: job_id }, format: :json
       end
 
       context "when retry fails" do
         it "returns error response" do
           expect(QueueMonitor).to receive(:retry_failed_job).and_return(false)
-          
+
           post :retry_job, params: { id: job_id }, format: :json
-          
+
           expect(response).to have_http_status(:unprocessable_entity)
           json = JSON.parse(response.body)
-          
+
           expect(json["success"]).to be false
           expect(json["error"]).to be_present
         end
@@ -206,10 +206,10 @@ RSpec.describe Api::QueueController, type: :controller do
 
       it "returns not found error" do
         post :retry_job, params: { id: 999 }, format: :json
-        
+
         expect(response).to have_http_status(:not_found)
         json = JSON.parse(response.body)
-        
+
         expect(json["success"]).to be false
         expect(json["error"]).to eq("Job not found")
       end
@@ -227,12 +227,12 @@ RSpec.describe Api::QueueController, type: :controller do
 
       it "clears the job successfully" do
         expect(QueueMonitor).to receive(:clear_failed_job).with(job_id.to_s).and_return(true)
-        
+
         post :clear_job, params: { id: job_id }, format: :json
-        
+
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
-        
+
         expect(json["success"]).to be true
         expect(json["message"]).to include("Job #{job_id} has been cleared")
       end
@@ -240,12 +240,12 @@ RSpec.describe Api::QueueController, type: :controller do
       it "broadcasts job update" do
         allow(QueueMonitor).to receive(:clear_failed_job).and_return(true)
         allow(QueueMonitor).to receive(:failed_jobs_count).and_return(3)
-        
+
         expect(ActionCable.server).to receive(:broadcast).with(
           "queue_updates",
           hash_including(action: "job_cleared", job_id: job_id.to_s)
         )
-        
+
         post :clear_job, params: { id: job_id }, format: :json
       end
     end
@@ -255,12 +255,12 @@ RSpec.describe Api::QueueController, type: :controller do
     context "when there are failed jobs" do
       it "retries all failed jobs" do
         expect(QueueMonitor).to receive(:retry_all_failed_jobs).and_return(10)
-        
+
         post :retry_all_failed, format: :json
-        
+
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
-        
+
         expect(json["success"]).to be true
         expect(json["message"]).to include("10 failed jobs have been queued for retry")
         expect(json["count"]).to eq(10)
@@ -268,12 +268,12 @@ RSpec.describe Api::QueueController, type: :controller do
 
       it "broadcasts queue update" do
         allow(QueueMonitor).to receive(:retry_all_failed_jobs).and_return(5)
-        
+
         expect(ActionCable.server).to receive(:broadcast).with(
           "queue_updates",
           hash_including(action: "retry_all")
         )
-        
+
         post :retry_all_failed, format: :json
       end
     end
@@ -281,12 +281,12 @@ RSpec.describe Api::QueueController, type: :controller do
     context "when there are no failed jobs" do
       it "returns error response" do
         expect(QueueMonitor).to receive(:retry_all_failed_jobs).and_return(0)
-        
+
         post :retry_all_failed, format: :json
-        
+
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
-        
+
         expect(json["success"]).to be false
         expect(json["error"]).to be_present
       end
@@ -315,10 +315,10 @@ RSpec.describe Api::QueueController, type: :controller do
 
     it "returns detailed metrics" do
       get :metrics, format: :json
-      
+
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
-      
+
       expect(json["success"]).to be true
       expect(json["data"]).to eq(JSON.parse(mock_metrics.to_json))
       expect(json["timestamp"]).to be_present
@@ -339,10 +339,10 @@ RSpec.describe Api::QueueController, type: :controller do
 
       it "returns ok status" do
         get :health, format: :json
-        
+
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
-        
+
         expect(json["status"]).to eq("healthy")
         expect(json["message"]).to include("operating normally")
         expect(json["metrics"]).to include("pending", "processing", "failed", "workers")
@@ -362,10 +362,10 @@ RSpec.describe Api::QueueController, type: :controller do
 
       it "returns ok status with warning message" do
         get :health, format: :json
-        
+
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
-        
+
         expect(json["status"]).to eq("warning")
         expect(json["message"]).to include("Large queue backlog")
       end
@@ -384,10 +384,10 @@ RSpec.describe Api::QueueController, type: :controller do
 
       it "returns service unavailable status" do
         get :health, format: :json
-        
+
         expect(response).to have_http_status(:service_unavailable)
         json = JSON.parse(response.body)
-        
+
         expect(json["status"]).to eq("critical")
         expect(json["message"]).to include("No healthy workers")
       end

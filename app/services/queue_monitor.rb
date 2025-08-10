@@ -63,7 +63,7 @@ class QueueMonitor
     # Returns pending jobs with details
     def pending_jobs
       jobs = []
-      
+
       # Ready executions
       SolidQueue::ReadyExecution.joins(:job)
                                 .includes(:job)
@@ -170,7 +170,7 @@ class QueueMonitor
     # Queue depth grouped by queue name
     def queue_depth_by_name
       depths = {}
-      
+
       SolidQueue::ReadyExecution.joins(:job)
                                 .group("solid_queue_jobs.queue_name")
                                 .count
@@ -215,7 +215,7 @@ class QueueMonitor
     # Get worker/process status
     def worker_status
       processes = SolidQueue::Process.where("last_heartbeat_at > ?", 5.minutes.ago)
-      
+
       {
         total: processes.count,
         workers: processes.where(kind: "Worker").count,
@@ -268,7 +268,7 @@ class QueueMonitor
         queue_names = SolidQueue::Job.distinct.pluck(:queue_name)
         existing_pauses = SolidQueue::Pause.where(queue_name: queue_names).pluck(:queue_name)
         new_queue_names = queue_names - existing_pauses
-        
+
         if new_queue_names.any?
           pause_records = new_queue_names.map { |name| { queue_name: name } }
           SolidQueue::Pause.insert_all(pause_records)
@@ -326,7 +326,7 @@ class QueueMonitor
       # Batch retry to avoid N+1 queries
       failed_executions = SolidQueue::FailedExecution.includes(:job).to_a
       count = 0
-      
+
       SolidQueue::Job.transaction do
         failed_executions.each do |failed_execution|
           begin
@@ -336,7 +336,7 @@ class QueueMonitor
               queue_name: failed_execution.job.queue_name,
               priority: failed_execution.job.priority
             )
-            
+
             # Remove failed execution
             failed_execution.destroy!
             count += 1
@@ -345,7 +345,7 @@ class QueueMonitor
           end
         end
       end
-      
+
       clear_cache
       count
     end
@@ -356,10 +356,10 @@ class QueueMonitor
       return false unless failed_execution
 
       job = failed_execution.job
-      
+
       # Mark job as finished
       job.update!(finished_at: Time.current) if job
-      
+
       # Remove from failed executions
       failed_execution.destroy
 
@@ -435,7 +435,7 @@ class QueueMonitor
 
       busy_workers = processing_jobs_count
       utilization = (busy_workers.to_f / total_workers * 100).round(2)
-      [utilization, 100].min
+      [ utilization, 100 ].min
     end
 
     # Calculate error rate (failed jobs / total jobs)

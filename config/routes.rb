@@ -26,17 +26,17 @@ Rails.application.routes.draw do
     resources :client_errors, only: [ :create ]
 
     # Queue monitoring and management endpoints
-    resource :queue, only: [], controller: 'queue' do
+    resource :queue, only: [], controller: "queue" do
       get :status
       get :metrics
       get :health
       post :pause
       post :resume
       post :retry_all_failed
-      
+
       member do
-        post 'jobs/:id/retry', action: :retry_job, as: :retry_job
-        post 'jobs/:id/clear', action: :clear_job, as: :clear_job
+        post "jobs/:id/retry", action: :retry_job, as: :retry_job
+        post "jobs/:id/clear", action: :clear_job, as: :clear_job
       end
     end
   end

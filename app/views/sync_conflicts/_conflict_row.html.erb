@@ -1,13 +1,13 @@
 <tr id="conflict_<%= conflict.id %>" class="hover:bg-slate-50">
   <td class="px-6 py-4">
     <% if conflict.can_bulk_resolve? %>
-      <input type="checkbox" 
+      <input type="checkbox"
              data-bulk-actions-target="checkbox"
              data-conflict-id="<%= conflict.id %>"
              class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded">
     <% end %>
   </td>
-  
+
   <td class="px-6 py-4 whitespace-nowrap">
     <% case conflict.conflict_type %>
     <% when 'duplicate' %>
@@ -28,14 +28,14 @@
       </span>
     <% end %>
   </td>
-  
+
   <td class="px-6 py-4">
     <div class="text-sm">
       <div class="font-medium text-slate-900">
         <%= conflict.existing_expense.display_description %>
       </div>
       <div class="text-slate-500">
-        <%= conflict.existing_expense.formatted_amount %> • 
+        <%= conflict.existing_expense.formatted_amount %> •
         <%= conflict.existing_expense.transaction_date.strftime('%d/%m/%Y') %>
       </div>
       <% if conflict.new_expense %>
@@ -44,14 +44,14 @@
             vs. <%= conflict.new_expense.display_description %>
           </div>
           <div class="text-slate-500">
-            <%= conflict.new_expense.formatted_amount %> • 
+            <%= conflict.new_expense.formatted_amount %> •
             <%= conflict.new_expense.transaction_date.strftime('%d/%m/%Y') %>
           </div>
         </div>
       <% end %>
     </div>
   </td>
-  
+
   <td class="px-6 py-4 whitespace-nowrap">
     <% if conflict.similarity_score %>
       <div class="flex items-center">
@@ -69,7 +69,7 @@
       <span class="text-sm text-slate-500">N/A</span>
     <% end %>
   </td>
-  
+
   <td class="px-6 py-4 whitespace-nowrap">
     <% case conflict.status %>
     <% when 'pending' %>
@@ -90,11 +90,11 @@
       </span>
     <% end %>
   </td>
-  
+
   <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
     <%= conflict.created_at.strftime('%d/%m %H:%M') %>
   </td>
-  
+
   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
     <div class="flex items-center justify-end space-x-2">
       <% if conflict.status_pending? %>
@@ -104,10 +104,10 @@
           Resolver
         </button>
       <% elsif conflict.status_resolved? %>
-        <%= link_to "Ver", sync_conflict_path(conflict), 
+        <%= link_to "Ver", sync_conflict_path(conflict),
             class: "text-slate-600 hover:text-slate-900",
             data: { turbo_frame: "conflict_modal" } %>
-        
+
         <% if conflict.conflict_resolutions.undoable.any? %>
           <%= button_to "Deshacer", undo_sync_conflict_path(conflict),
               method: :post,

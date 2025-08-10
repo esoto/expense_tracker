@@ -6,7 +6,7 @@ module Api
   class QueueController < ApplicationController
     skip_before_action :verify_authenticity_token
     before_action :authenticate_queue_access!
-    before_action :set_job, only: [:retry_job, :clear_job]
+    before_action :set_job, only: [ :retry_job, :clear_job ]
 
     # GET /api/queue/status.json
     # Returns comprehensive queue status including metrics and health information
@@ -46,14 +46,14 @@ module Api
     # Pauses job processing for specified queue or all queues
     def pause
       queue_name = params[:queue_name]
-      
+
       if QueueMonitor.pause_queue(queue_name)
         broadcast_queue_update("paused", queue_name)
-        
+
         render json: {
           success: true,
-          message: queue_name.present? ? 
-            "Queue '#{queue_name}' has been paused" : 
+          message: queue_name.present? ?
+            "Queue '#{queue_name}' has been paused" :
             "All queues have been paused",
           paused_queues: QueueMonitor.paused_queues
         }
@@ -69,14 +69,14 @@ module Api
     # Resumes job processing for specified queue or all queues
     def resume
       queue_name = params[:queue_name]
-      
+
       if QueueMonitor.resume_queue(queue_name)
         broadcast_queue_update("resumed", queue_name)
-        
+
         render json: {
           success: true,
-          message: queue_name.present? ? 
-            "Queue '#{queue_name}' has been resumed" : 
+          message: queue_name.present? ?
+            "Queue '#{queue_name}' has been resumed" :
             "All queues have been resumed",
           paused_queues: QueueMonitor.paused_queues
         }
@@ -93,7 +93,7 @@ module Api
     def retry_job
       if QueueMonitor.retry_failed_job(params[:id])
         broadcast_job_update("retried", params[:id])
-        
+
         render json: {
           success: true,
           message: "Job #{params[:id]} has been queued for retry",
@@ -112,7 +112,7 @@ module Api
     def clear_job
       if QueueMonitor.clear_failed_job(params[:id])
         broadcast_job_update("cleared", params[:id])
-        
+
         render json: {
           success: true,
           message: "Job #{params[:id]} has been cleared",
@@ -130,10 +130,10 @@ module Api
     # Retries all failed jobs
     def retry_all_failed
       count = QueueMonitor.retry_all_failed_jobs
-      
+
       if count > 0
         broadcast_queue_update("retry_all", nil)
-        
+
         render json: {
           success: true,
           message: "#{count} failed jobs have been queued for retry",
@@ -164,10 +164,10 @@ module Api
     def health
       health_status = QueueMonitor.calculate_health_status
       status_code = case health_status[:status]
-                    when "critical" then :service_unavailable
-                    when "warning" then :ok
-                    else :ok
-                    end
+      when "critical" then :service_unavailable
+      when "warning" then :ok
+      else :ok
+      end
 
       render json: {
         status: health_status[:status],
@@ -186,7 +186,7 @@ module Api
 
     def set_job
       @job = SolidQueue::Job.find_by(id: params[:id])
-      
+
       unless @job
         render json: {
           success: false,
@@ -197,7 +197,7 @@ module Api
 
     def calculate_minutes_remaining(status_data)
       return nil unless status_data[:estimated_completion_time]
-      
+
       minutes = ((status_data[:estimated_completion_time] - Time.current) / 60).ceil
       minutes.positive? ? minutes : nil
     end
@@ -250,11 +250,11 @@ module Api
 
       # Option 2: Admin session authentication (for web interface)
       # Check for admin access via environment variable or session
-      admin_key = Rails.application.credentials.dig(:admin_key) || ENV['ADMIN_KEY']
-      
+      admin_key = Rails.application.credentials.dig(:admin_key) || ENV["ADMIN_KEY"]
+
       if admin_key.present?
         # Allow access if admin key matches
-        provided_key = params[:admin_key] || request.headers['X-Admin-Key']
+        provided_key = params[:admin_key] || request.headers["X-Admin-Key"]
         return true if provided_key == admin_key
       end
 
@@ -263,13 +263,13 @@ module Api
 
       # Log unauthorized access attempt
       Rails.logger.warn "[SECURITY] Unauthorized queue access attempt from IP: #{request.remote_ip}, User-Agent: #{request.headers['User-Agent']}"
-      
+
       # Return error response
       render json: {
         success: false,
         error: "Unauthorized access. Queue management requires admin privileges."
       }, status: :unauthorized
-      
+
       false
     end
   end

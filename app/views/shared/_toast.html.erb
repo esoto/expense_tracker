@@ -1,6 +1,6 @@
 <div class="fixed top-4 right-4 z-50 max-w-sm w-full pointer-events-none">
   <div class="pointer-events-auto">
-    <% 
+    <%
       # Determine colors based on type
       colors = case type
       when 'success'
@@ -13,7 +13,7 @@
         { bg: 'teal-50', border: 'teal-200', text: 'teal-700', icon: 'teal-600' }
       end
     %>
-    
+
     <div class="bg-<%= colors[:bg] %> border border-<%= colors[:border] %> rounded-lg shadow-lg p-4 transform transition-all duration-300"
          data-controller="toast"
          data-toast-remove-delay-value="5000">

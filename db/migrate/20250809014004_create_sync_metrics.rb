@@ -18,18 +18,18 @@ class CreateSyncMetrics < ActiveRecord::Migration[8.0]
 
     # Performance indexes for time-based queries
     add_index :sync_metrics, :metric_type
-    add_index :sync_metrics, [:sync_session_id, :metric_type]
-    add_index :sync_metrics, [:email_account_id, :metric_type]
+    add_index :sync_metrics, [ :sync_session_id, :metric_type ]
+    add_index :sync_metrics, [ :email_account_id, :metric_type ]
     add_index :sync_metrics, :started_at
     add_index :sync_metrics, :completed_at
-    add_index :sync_metrics, [:started_at, :completed_at]
-    add_index :sync_metrics, [:metric_type, :started_at]
-    add_index :sync_metrics, [:success, :metric_type]
+    add_index :sync_metrics, [ :started_at, :completed_at ]
+    add_index :sync_metrics, [ :metric_type, :started_at ]
+    add_index :sync_metrics, [ :success, :metric_type ]
     add_index :sync_metrics, :error_type
     add_index :sync_metrics, :metadata, using: :gin
-    
+
     # Composite index for dashboard queries
-    add_index :sync_metrics, [:metric_type, :success, :started_at], 
+    add_index :sync_metrics, [ :metric_type, :success, :started_at ],
               name: "index_sync_metrics_dashboard"
   end
 end

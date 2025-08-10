@@ -5,6 +5,7 @@ class SyncSession < ApplicationRecord
   has_many :sync_session_accounts, dependent: :destroy
   has_many :email_accounts, through: :sync_session_accounts
   has_many :sync_conflicts, dependent: :destroy
+  has_many :sync_metrics, dependent: :destroy
 
   validates :status, presence: true, inclusion: { in: %w[pending running completed failed cancelled] }
 

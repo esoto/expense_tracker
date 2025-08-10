@@ -6,7 +6,7 @@ RSpec.describe SyncProgressUpdater, type: :service do
   let(:email_account1) { build_stubbed(:email_account, id: 1) }
   let(:email_account2) { build_stubbed(:email_account, id: 2) }
   let(:service) { described_class.new(sync_session) }
-  
+
   # Mock the batch collector to avoid thread creation overhead
   before do
     batch_collector = instance_double(ProgressBatchCollector)
@@ -17,7 +17,7 @@ RSpec.describe SyncProgressUpdater, type: :service do
     allow(batch_collector).to receive(:add_critical_update)
     allow(batch_collector).to receive(:stop)
     allow(batch_collector).to receive(:stats).and_return({})
-    
+
     # Mock sync_session methods
     allow(sync_session).to receive(:broadcast_dashboard_update)
   end
@@ -27,7 +27,7 @@ RSpec.describe SyncProgressUpdater, type: :service do
       before do
         # Mock the pluck query result
         allow(sync_session).to receive(:sync_session_accounts).and_return(
-          double(pluck: [[300, 200, 30]])
+          double(pluck: [ [ 300, 200, 30 ] ])
         )
       end
 
@@ -51,10 +51,10 @@ RSpec.describe SyncProgressUpdater, type: :service do
     context 'with no sync session accounts' do
       before do
         allow(sync_session).to receive(:sync_session_accounts).and_return(
-          double(pluck: [[0, 0, 0]])
+          double(pluck: [ [ 0, 0, 0 ] ])
         )
       end
-      
+
       it 'sets all counts to zero' do
         expect(sync_session).to receive(:update!).with(
           total_emails: 0,
@@ -69,10 +69,10 @@ RSpec.describe SyncProgressUpdater, type: :service do
     context 'with stale object error' do
       before do
         allow(sync_session).to receive(:sync_session_accounts).and_return(
-          double(pluck: [[300, 200, 30]])
+          double(pluck: [ [ 300, 200, 30 ] ])
         )
       end
-      
+
       it 'handles the error and retries' do
         # First call raises error, second succeeds
         call_count = 0
@@ -93,10 +93,10 @@ RSpec.describe SyncProgressUpdater, type: :service do
     context 'with persistent stale object error' do
       before do
         allow(sync_session).to receive(:sync_session_accounts).and_return(
-          double(pluck: [[300, 200, 30]])
+          double(pluck: [ [ 300, 200, 30 ] ])
         )
       end
-      
+
       it 'logs the error and returns false' do
         # Always raise stale object error
         allow(sync_session).to receive(:update!).and_raise(ActiveRecord::StaleObjectError)
@@ -110,7 +110,7 @@ RSpec.describe SyncProgressUpdater, type: :service do
     context 'with unexpected error' do
       before do
         allow(sync_session).to receive(:sync_session_accounts).and_return(
-          double(pluck: [[100, 50, 10]])
+          double(pluck: [ [ 100, 50, 10 ] ])
         )
         allow(sync_session).to receive(:update!).and_raise(StandardError, "Unexpected error")
       end
@@ -132,7 +132,7 @@ RSpec.describe SyncProgressUpdater, type: :service do
 
     before do
       allow(sync_session).to receive(:sync_session_accounts).and_return(
-        double(find_by: session_account, pluck: [[100, 50, 10]])
+        double(find_by: session_account, pluck: [ [ 100, 50, 10 ] ])
       )
     end
 

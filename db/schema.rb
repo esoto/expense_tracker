@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_08_221917) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_09_014004) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -303,6 +303,35 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_08_221917) do
     t.index ["sync_session_id"], name: "index_sync_conflicts_on_sync_session_id"
   end
 
+  create_table "sync_metrics", force: :cascade do |t|
+    t.bigint "sync_session_id", null: false
+    t.bigint "email_account_id"
+    t.string "metric_type", null: false
+    t.decimal "duration", precision: 10, scale: 3
+    t.integer "emails_processed", default: 0
+    t.boolean "success", default: true
+    t.string "error_type"
+    t.text "error_message"
+    t.jsonb "metadata", default: {}
+    t.datetime "started_at", null: false
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["completed_at"], name: "index_sync_metrics_on_completed_at"
+    t.index ["email_account_id", "metric_type"], name: "index_sync_metrics_on_email_account_id_and_metric_type"
+    t.index ["email_account_id"], name: "index_sync_metrics_on_email_account_id"
+    t.index ["error_type"], name: "index_sync_metrics_on_error_type"
+    t.index ["metadata"], name: "index_sync_metrics_on_metadata", using: :gin
+    t.index ["metric_type", "started_at"], name: "index_sync_metrics_on_metric_type_and_started_at"
+    t.index ["metric_type", "success", "started_at"], name: "index_sync_metrics_dashboard"
+    t.index ["metric_type"], name: "index_sync_metrics_on_metric_type"
+    t.index ["started_at", "completed_at"], name: "index_sync_metrics_on_started_at_and_completed_at"
+    t.index ["started_at"], name: "index_sync_metrics_on_started_at"
+    t.index ["success", "metric_type"], name: "index_sync_metrics_on_success_and_metric_type"
+    t.index ["sync_session_id", "metric_type"], name: "index_sync_metrics_on_sync_session_id_and_metric_type"
+    t.index ["sync_session_id"], name: "index_sync_metrics_on_sync_session_id"
+  end
+
   create_table "sync_session_accounts", force: :cascade do |t|
     t.bigint "sync_session_id", null: false
     t.bigint "email_account_id", null: false
@@ -356,6 +385,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_08_221917) do
   add_foreign_key "sync_conflicts", "expenses", column: "existing_expense_id"
   add_foreign_key "sync_conflicts", "expenses", column: "new_expense_id"
   add_foreign_key "sync_conflicts", "sync_sessions"
+  add_foreign_key "sync_metrics", "email_accounts"
+  add_foreign_key "sync_metrics", "sync_sessions"
   add_foreign_key "sync_session_accounts", "email_accounts"
   add_foreign_key "sync_session_accounts", "sync_sessions"
 end

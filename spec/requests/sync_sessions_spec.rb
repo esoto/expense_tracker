@@ -5,7 +5,7 @@ RSpec.describe "SyncSessions", type: :request do
   let!(:email_account1) { create(:email_account, :bac, active: true) }
   let!(:email_account2) { create(:email_account, :gmail, active: true) }
   let!(:inactive_account) { create(:email_account, active: false) }
-  
+
   # Clean up before and after to ensure complete test isolation
   before(:each) do
     # Clean up any existing sync sessions to ensure test isolation
@@ -16,7 +16,7 @@ RSpec.describe "SyncSessions", type: :request do
     # Allow all tests to pass validation by default
     allow_any_instance_of(SyncSessionValidator).to receive(:validate!).and_return(true)
   end
-  
+
   after(:each) do
     # Clean up after each test to prevent pollution
     SyncSession.destroy_all
@@ -78,7 +78,7 @@ RSpec.describe "SyncSessions", type: :request do
         # Age out sessions to avoid rate limit issues for subsequent tests
         SyncSession.update_all(created_at: 10.minutes.ago)
       end
-      
+
       it 'creates a new sync session' do
         # Ensure clean state for this test
         SyncSession.destroy_all
@@ -117,7 +117,7 @@ RSpec.describe "SyncSessions", type: :request do
         # Age out sessions to avoid rate limit issues for subsequent tests
         SyncSession.update_all(created_at: 10.minutes.ago)
       end
-      
+
       it 'creates a new sync session' do
         expect {
           post sync_sessions_path
@@ -153,7 +153,7 @@ RSpec.describe "SyncSessions", type: :request do
         # Age out sessions to avoid rate limit issues for subsequent tests
         SyncSession.update_all(created_at: 10.minutes.ago)
       end
-      
+
       it 'redirects with error message' do
         post sync_sessions_path, params: { email_account_id: 99999 }
         expect(response).to redirect_to(sync_sessions_path)
@@ -167,7 +167,7 @@ RSpec.describe "SyncSessions", type: :request do
           example.run
         end
       end
-      
+
       before do
         # Clean up any existing sessions first
         SyncSession.destroy_all
@@ -194,7 +194,7 @@ RSpec.describe "SyncSessions", type: :request do
           example.run
         end
       end
-      
+
       before do
         # Completely isolate this test
         SyncSession.connection.execute('DELETE FROM sync_sessions')
@@ -222,7 +222,7 @@ RSpec.describe "SyncSessions", type: :request do
         # Age out sessions to avoid rate limit issues for subsequent tests
         SyncSession.update_all(created_at: 10.minutes.ago)
       end
-      
+
       it 'passes the since parameter to the job' do
         post sync_sessions_path, params: { since: '2025-01-01' }
         session = SyncSession.last

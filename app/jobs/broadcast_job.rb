@@ -157,7 +157,7 @@ class BroadcastJob < ApplicationJob
   # @return [Integer] Total enqueued jobs
   def self.total_enqueued_jobs
     return 0 unless defined?(Sidekiq)
-    
+
     require "sidekiq/api"
     Sidekiq::Queue.new("critical").size +
     Sidekiq::Queue.new("high").size +
@@ -171,7 +171,7 @@ class BroadcastJob < ApplicationJob
   # @return [Hash] Queue sizes by priority
   def self.queue_sizes
     return { critical: 0, high: 0, default: 0, low: 0 } unless defined?(Sidekiq)
-    
+
     require "sidekiq/api"
     {
       critical: Sidekiq::Queue.new("critical").size,

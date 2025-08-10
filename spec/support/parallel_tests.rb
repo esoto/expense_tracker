@@ -5,17 +5,17 @@
 
 if ENV['TEST_ENV_NUMBER']
   # Running in parallel
-  
+
   # Configure database for parallel tests
   module ParallelTestsConfiguration
     def self.configure_database
       test_number = ENV['TEST_ENV_NUMBER'].to_i
-      
+
       # Each parallel process gets its own database
       ActiveRecord::Base.configurations.configs_for(env_name: 'test').first.configuration_hash.tap do |config|
         config[:database] = "#{config[:database]}_#{test_number}"
       end
-      
+
       # Establish connection with the parallel database
       ActiveRecord::Base.establish_connection(
         ActiveRecord::Base.configurations.configs_for(env_name: 'test').first.configuration_hash.merge(
@@ -24,27 +24,27 @@ if ENV['TEST_ENV_NUMBER']
         )
       )
     end
-    
+
     def self.configure_redis
       # Each parallel process uses a different Redis database
       test_number = ENV['TEST_ENV_NUMBER'].to_i
       redis_db = test_number
-      
+
       # Configure Redis to use different database numbers
       if defined?(Redis)
         Redis.current = Redis.new(db: redis_db)
       end
     end
-    
+
     def self.configure_cache
       # Each parallel process gets its own cache namespace
       test_number = ENV['TEST_ENV_NUMBER'].to_i
-      
+
       Rails.cache = ActiveSupport::Cache::MemoryStore.new(
         namespace: "test_#{test_number}"
       )
     end
-    
+
     def self.configure_solid_queue
       # Configure Solid Queue for parallel tests
       if defined?(SolidQueue)
@@ -52,7 +52,7 @@ if ENV['TEST_ENV_NUMBER']
       end
     end
   end
-  
+
   # Apply configurations
   RSpec.configure do |config|
     config.before(:suite) do
@@ -74,11 +74,11 @@ module TestPerformanceOptimizations
       services: Dir['spec/services/**/*_spec.rb'],
       jobs: Dir['spec/jobs/**/*_spec.rb'],
       requests: Dir['spec/requests/**/*_spec.rb'],
-      others: Dir['spec/**/*_spec.rb'] - 
+      others: Dir['spec/**/*_spec.rb'] -
               Dir['spec/{models,controllers,services,jobs,requests}/**/*_spec.rb']
     }
   end
-  
+
   # Estimate test duration for load balancing
   def self.estimate_test_duration(file_path)
     case file_path
@@ -96,26 +96,26 @@ module TestPerformanceOptimizations
       0.8 # Default estimate
     end
   end
-  
+
   # Balance test load across parallel processes
   def self.balance_test_load(test_files, num_processes)
     # Sort tests by estimated duration (longest first)
     sorted_tests = test_files.sort_by { |f| -estimate_test_duration(f) }
-    
+
     # Distribute tests across processes using round-robin
     # with heaviest tests distributed first
     buckets = Array.new(num_processes) { [] }
     bucket_times = Array.new(num_processes, 0)
-    
+
     sorted_tests.each do |test_file|
       # Find bucket with least total time
       min_bucket_index = bucket_times.index(bucket_times.min)
-      
+
       # Add test to that bucket
       buckets[min_bucket_index] << test_file
       bucket_times[min_bucket_index] += estimate_test_duration(test_file)
     end
-    
+
     buckets
   end
 end
@@ -125,7 +125,7 @@ if __FILE__ == $0
   puts "Parallel Test Configuration:"
   puts "============================="
   puts "Detected #{Parallel.processor_count} processors"
-  puts "Recommended: bundle exec parallel_rspec spec/ -n #{[Parallel.processor_count - 1, 4].min}"
+  puts "Recommended: bundle exec parallel_rspec spec/ -n #{[ Parallel.processor_count - 1, 4 ].min}"
   puts ""
   puts "Test groups:"
   TestPerformanceOptimizations.group_specs_for_parallel_execution.each do |group, files|

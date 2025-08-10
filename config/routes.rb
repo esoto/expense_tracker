@@ -14,16 +14,16 @@ Rails.application.routes.draw do
         get :expense_summary
       end
     end
-    
+
     # Sync session status polling endpoint
     resources :sync_sessions, only: [] do
       member do
         get :status
       end
     end
-    
+
     # Client error reporting endpoint
-    resources :client_errors, only: [:create]
+    resources :client_errors, only: [ :create ]
   end
 
   # Web interface routes
@@ -56,6 +56,11 @@ Rails.application.routes.draw do
       post :bulk_resolve
     end
   end
+
+  # Performance monitoring dashboard
+  get "sync_performance", to: "sync_performance#index"
+  get "sync_performance/export", to: "sync_performance#export"
+  get "sync_performance/realtime", to: "sync_performance#realtime"
 
   resources :email_accounts
 

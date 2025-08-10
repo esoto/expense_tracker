@@ -1,5 +1,10 @@
 # Rack::Attack configuration for rate limiting and security
-class Rack::Attack
+# Skip in test environment
+if Rails.env.test?
+  # Disable Rack::Attack in test environment
+  Rack::Attack.enabled = false
+else
+  class Rack::Attack
   # Configure cache store (uses Rails.cache by default)
   Rack::Attack.cache.store = Rails.cache
 
@@ -55,7 +60,8 @@ class Rack::Attack
 
     [ 429, headers, [ message.to_json ] ]
   end
-end
+  end
 
-# Enable Rack::Attack middleware
-Rails.application.config.middleware.use Rack::Attack
+  # Enable Rack::Attack middleware
+  Rails.application.config.middleware.use Rack::Attack
+end

@@ -280,10 +280,10 @@ RSpec.describe BroadcastJob, type: :job do
           @name = name
         end
       end
-      
+
       stub_const('Sidekiq', sidekiq_module)
       stub_const('Sidekiq::Queue', queue_class)
-      
+
       allow(Sidekiq::Queue).to receive(:new).with('critical').and_return(critical_queue)
       allow(Sidekiq::Queue).to receive(:new).with('high').and_return(high_queue)
       allow(Sidekiq::Queue).to receive(:new).with('default').and_return(default_queue)

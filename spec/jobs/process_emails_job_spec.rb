@@ -465,20 +465,20 @@ RSpec.describe ProcessEmailsJob, type: :job do
       it 'handles various time formats (Time, DateTime, TimeWithZone)' do
         # Mock the expensive process_single_account to avoid real processing
         allow(job).to receive(:process_single_account).and_return(true)
-        
+
         # Test all three formats efficiently
         time_formats = [
           Time.current - 2.days,
           DateTime.current - 2.days,
           2.days.ago
         ]
-        
+
         time_formats.each do |time_format|
           expect {
             job.perform(email_account.id, since: time_format)
           }.not_to raise_error
         end
-        
+
         # Verify the method was called for each format
         expect(job).to have_received(:process_single_account).exactly(3).times
       end

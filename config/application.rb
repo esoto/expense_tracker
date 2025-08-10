@@ -1,6 +1,7 @@
 require_relative "boot"
 
 require "rails/all"
+require "activerecord-import"
 
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
@@ -26,10 +27,10 @@ module ExpenseTracker
     #
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
-    
+
     # Localization settings
     config.i18n.default_locale = :es
-    config.i18n.available_locales = [:es, :en]
-    config.i18n.fallbacks = [:en]
+    config.i18n.available_locales = [ :es, :en ]
+    config.i18n.fallbacks = [ :en ]
   end
 end

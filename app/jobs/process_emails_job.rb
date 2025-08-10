@@ -39,7 +39,7 @@ class ProcessEmailsJob < ApplicationJob
 
     # Track overall job performance
     if @metrics_collector
-      @metrics_collector.track_operation(:sync_account, nil, { job_type: 'batch' }) do
+      @metrics_collector.track_operation(:sync_account, nil, { job_type: "batch" }) do
         if email_account_id
           process_single_account(email_account_id, since)
         else
@@ -58,7 +58,7 @@ class ProcessEmailsJob < ApplicationJob
       # Record session metrics before monitoring
       @metrics_collector&.record_session_metrics
       @metrics_collector&.flush_buffer
-      
+
       # Start monitoring job to track completion
       SyncSessionMonitorJob.set(wait: 5.seconds).perform_later(@sync_session.id)
     end
@@ -103,7 +103,7 @@ class ProcessEmailsJob < ApplicationJob
     begin
       # Pass metrics collector to fetcher
       fetcher = EmailProcessing::Fetcher.new(
-        email_account, 
+        email_account,
         sync_session_account: session_account,
         metrics_collector: @metrics_collector
       )

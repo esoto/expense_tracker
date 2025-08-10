@@ -209,7 +209,7 @@ class SyncStatusChannel < ApplicationCable::Channel
     rescue StandardError => e
       # Log error but don't fail the calling operation
       Rails.logger.error "[SYNC_STATUS_CHANNEL] Enhanced broadcast failed: #{e.message}"
-      
+
       # Fallback to direct broadcast as last resort
       begin
         broadcast_to(session, data)
@@ -224,7 +224,7 @@ class SyncStatusChannel < ApplicationCable::Channel
     # @param priority [Symbol] Priority level for the batch
     def broadcast_batch(session, batch_data, priority = :medium)
       return if batch_data.empty?
-      
+
       batched_data = {
         type: "batch_update",
         batch_size: batch_data.size,

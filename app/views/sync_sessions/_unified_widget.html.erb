@@ -1,59 +1,9 @@
----
-
-## Task 1.1: Complete ActionCable Real-time Implementation
-
-**Task ID:** EXP-1.1  
-**Parent Epic:** EXP-EPIC-001  
-**Type:** Development  
-**Priority:** Critical Blocker  
-**Estimated Hours:** 15  
-**Assignee:** Senior Developer  
-
-### Description
-Complete the ActionCable implementation for real-time sync status updates. Currently, the sync widget controller exists but ActionCable broadcasting is at 0% implementation. This task will establish the real-time communication infrastructure for live progress updates during email synchronization.
-
-### Current State
-- `sync_widget_controller.js` exists with subscription setup
-- `SyncStatusChannel` defined but not broadcasting
-- Progress bar UI elements in place but not receiving updates
-- WebSocket connection code present but untested
-
-### Acceptance Criteria
-- [ ] ActionCable channel successfully broadcasts sync progress every 100 emails or 5 seconds
-- [ ] Client receives and displays real-time updates without page refresh
-- [ ] Progress bar animates smoothly from 0-100%
-- [ ] Connection automatically recovers from network interruptions
-- [ ] Error states are properly handled and displayed
-- [ ] Updates work across multiple browser tabs/windows
-- [ ] Performance: Updates consume < 50ms client CPU time
-
-### Designs
-
-#### Visual Mockup
-```
-┌─────────────────────────────────────┐
-│ Email Sync Status        [Sync All] │
-├─────────────────────────────────────┤
-│ ▓▓▓▓▓▓▓▓░░░░░░░░ 45% (450/1000)   │
-│ Time remaining: ~2 min              │
-│                                     │
-│ ✓ BAC San José (150/150)           │
-│ ⟳ Scotia Bank (300/650)            │
-│ ○ Promerica (0/200)                │
-└─────────────────────────────────────┘
-```
-
-#### Complete HTML/ERB Implementation
-**File Path:** `app/views/sync_sessions/_unified_widget.html.erb`
-
-```erb
 <!-- Unified Sync Status Widget with Real-time Updates -->
 <%= turbo_frame_tag "sync_status_widget", class: "block" do %>
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
        data-controller="sync-widget"
        data-sync-widget-session-id-value="<%= @active_sync_session&.id || 0 %>"
        data-sync-widget-active-value="<%= @active_sync_session.present? %>"
-       data-sync-widget-url-value="<%= sync_status_path %>"
        data-sync-widget-websocket-url-value="<%= Rails.application.config.action_cable.url %>">
     
     <!-- Header Section -->
@@ -259,12 +209,12 @@ Complete the ActionCable implementation for real-time sync status updates. Curre
               </div>
               
               <!-- Error Message (if any) -->
-              <% if account.error_message.present? %>
+              <% if account.last_error.present? %>
                 <div class="mt-2 text-xs text-rose-600 flex items-start">
                   <svg class="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
                   </svg>
-                  <%= account.error_message %>
+                  <%= account.last_error %>
                 </div>
               <% end %>
             </div>
@@ -318,75 +268,3 @@ Complete the ActionCable implementation for real-time sync status updates. Curre
     </div>
   </div>
 <% end %>
-```
-
-### Technical Notes
-
-#### Implementation Approach:
-
-1. **WebSocket Connection Management:**
-   - Leverage Rails 8's `solid_cable` adapter with PostgreSQL for persistence
-   - Implement connection pooling with max 100 connections per server
-   - Use `identified_by :session_id` in ApplicationCable::Connection
-   - Add reconnection logic with exponential backoff (2^n seconds, max 30s)
-
-2. **Broadcasting Architecture:**
-   ```ruby
-   # In EmailSyncJob or similar
-   sync_session.with_lock do
-     # Process batch of 100 emails
-     batch.each { |email| process_email(email) }
-     
-     # Broadcast every 100 emails or 5 seconds
-     if processed_count % 100 == 0 || Time.current - last_broadcast > 5.seconds
-       SyncProgressUpdater.new(sync_session).call
-       last_broadcast = Time.current
-     end
-   end
-   ```
-
-3. **Client-Side State Management:**
-   - Store WebSocket state in Stimulus values for persistence
-   - Use `data-sync-widget-active-value` to track connection status
-   - Implement visibility API to pause/resume when tab inactive
-   - Cache last known state in sessionStorage for recovery
-
-4. **Performance Optimizations:**
-   - Use Redis SET with TTL for progress tracking: `SETEX sync:#{session_id}:progress 300 #{progress}`
-   - Batch database updates using `update_all` for efficiency
-   - Implement message compression for large payloads (gzip if > 1KB)
-   - Use PostgreSQL NOTIFY/LISTEN for zero-latency updates
-
-5. **Error Handling:**
-   ```javascript
-   // In sync_widget_controller.js
-   handleConnectionError() {
-     this.retryCount = (this.retryCount || 0) + 1
-     const delay = Math.min(Math.pow(2, this.retryCount) * 1000, 30000)
-     setTimeout(() => this.reconnect(), delay)
-   }
-   ```
-
-6. **Testing Strategy:**
-   - Mock ActionCable in RSpec with `action_cable_testing` helpers
-   - Test connection recovery with network simulation
-   - Verify broadcasts with `have_broadcasted_to` matcher
-   - Load test with 1000 concurrent connections
-
-7. **Database/Caching:**
-   - Add index: `add_index :sync_sessions, [:status, :updated_at]`
-   - Cache progress in Redis: `Rails.cache.fetch("sync:#{id}", expires_in: 5.minutes)`
-   - Use database triggers for atomic increment operations
-
-8. **Security Considerations:**
-   - Validate session ownership before streaming
-   - Rate limit subscription attempts (10 per minute)
-   - Sanitize all broadcasted data to prevent XSS
-   - Use signed session IDs to prevent enumeration
-
-9. **Monitoring:**
-   - Track WebSocket connection metrics in Rails logs
-   - Monitor Redis memory usage for cable subscriptions
-   - Alert on broadcast latency > 200ms
-   - Dashboard for active connections and throughput
-

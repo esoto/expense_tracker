@@ -17,11 +17,11 @@ class CreateFailedBroadcastStores < ActiveRecord::Migration[8.0]
       t.timestamps
 
       # Indexes for efficient querying
-      t.index [:channel_name, :priority], name: 'idx_failed_broadcasts_channel_priority'
-      t.index [:target_type, :target_id], name: 'idx_failed_broadcasts_target'
-      t.index [:failed_at, :recovered_at], name: 'idx_failed_broadcasts_status'
-      t.index [:error_type], name: 'idx_failed_broadcasts_error_type'
-      t.index [:sidekiq_job_id], name: 'idx_failed_broadcasts_job_id', unique: true
+      t.index [ :channel_name, :priority ], name: 'idx_failed_broadcasts_channel_priority'
+      t.index [ :target_type, :target_id ], name: 'idx_failed_broadcasts_target'
+      t.index [ :failed_at, :recovered_at ], name: 'idx_failed_broadcasts_status'
+      t.index [ :error_type ], name: 'idx_failed_broadcasts_error_type'
+      t.index [ :sidekiq_job_id ], name: 'idx_failed_broadcasts_job_id', unique: true
     end
   end
 end

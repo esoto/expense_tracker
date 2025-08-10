@@ -173,4 +173,3 @@ class SyncMetric < ApplicationRecord
     ((success_count.to_f / total) * 100).round(2)
   end
 end
-

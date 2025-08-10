@@ -16,7 +16,7 @@ module SyncPerformanceHelper
 
   def success_rate_color(rate)
     return "text-slate-400" if rate.nil?
-    
+
     case rate
     when 95..100
       "text-emerald-600"
@@ -29,7 +29,7 @@ module SyncPerformanceHelper
 
   def success_rate_bg(rate)
     return "bg-slate-100" if rate.nil?
-    
+
     case rate
     when 95..100
       "bg-emerald-100"
@@ -42,7 +42,7 @@ module SyncPerformanceHelper
 
   def success_rate_icon_color(rate)
     return "text-slate-600" if rate.nil?
-    
+
     case rate
     when 95..100
       "text-emerald-700"
@@ -55,7 +55,7 @@ module SyncPerformanceHelper
 
   def success_rate_badge(rate)
     return "bg-slate-100 text-slate-600" if rate.nil?
-    
+
     case rate
     when 95..100
       "bg-emerald-100 text-emerald-700"
@@ -68,7 +68,7 @@ module SyncPerformanceHelper
 
   def format_metric_duration(duration_ms)
     return "-" if duration_ms.nil?
-    
+
     if duration_ms < 1000
       "#{duration_ms.round(0)} ms"
     elsif duration_ms < 60000
@@ -80,7 +80,7 @@ module SyncPerformanceHelper
 
   def format_timestamp(timestamp)
     return "-" if timestamp.nil?
-    
+
     if timestamp > 24.hours.ago
       "#{time_ago_in_words(timestamp)} atrás"
     else
@@ -90,7 +90,7 @@ module SyncPerformanceHelper
 
   def processing_rate_indicator(rate)
     return "text-slate-400" if rate.nil? || rate.zero?
-    
+
     case rate
     when 0...1
       "text-rose-600"
@@ -137,9 +137,9 @@ module SyncPerformanceHelper
 
   def performance_trend_icon(current, previous)
     return "" if current.nil? || previous.nil? || previous.zero?
-    
+
     change = ((current - previous) / previous.to_f * 100).round(2)
-    
+
     if change > 5
       content_tag(:span, class: "inline-flex items-center text-emerald-600") do
         concat(content_tag(:svg, class: "h-4 w-4 mr-1", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24") do

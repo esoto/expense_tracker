@@ -462,31 +462,31 @@ RSpec.describe SyncSession, type: :model do
       it 'initializes job_ids array if empty' do
         expect(sync_session.job_ids).to eq([])
         sync_session.add_job_id('job_123')
-        expect(sync_session.reload.job_ids).to eq(['job_123'])
+        expect(sync_session.reload.job_ids).to eq([ 'job_123' ])
       end
 
       it 'appends to existing job_ids array' do
-        sync_session.update!(job_ids: ['existing_job'])
+        sync_session.update!(job_ids: [ 'existing_job' ])
         sync_session.add_job_id('job_456')
-        expect(sync_session.reload.job_ids).to eq(['existing_job', 'job_456'])
+        expect(sync_session.reload.job_ids).to eq([ 'existing_job', 'job_456' ])
       end
 
       it 'converts job_id to string' do
         sync_session.add_job_id(789)
-        expect(sync_session.reload.job_ids).to eq(['789'])
+        expect(sync_session.reload.job_ids).to eq([ '789' ])
       end
 
       it 'persists the changes to the database' do
         sync_session.add_job_id('persistent_job')
         reloaded_session = SyncSession.find(sync_session.id)
-        expect(reloaded_session.job_ids).to eq(['persistent_job'])
+        expect(reloaded_session.job_ids).to eq([ 'persistent_job' ])
       end
 
       it 'handles multiple job_ids correctly' do
         sync_session.add_job_id('job_1')
         sync_session.add_job_id('job_2')
         sync_session.add_job_id('job_3')
-        expect(sync_session.reload.job_ids).to eq(['job_1', 'job_2', 'job_3'])
+        expect(sync_session.reload.job_ids).to eq([ 'job_1', 'job_2', 'job_3' ])
       end
     end
 
@@ -533,10 +533,10 @@ RSpec.describe SyncSession, type: :model do
       it 'returns early without processing main jobs when empty' do
         # Set job_ids to empty array
         sync_session.update!(job_ids: [])
-        
+
         # Should not process any main jobs
         sync_session.cancel_all_jobs
-        
+
         # Test passed if no exception raised - the method should handle empty arrays gracefully
         expect(true).to be true
       end
@@ -544,13 +544,13 @@ RSpec.describe SyncSession, type: :model do
       it 'returns early when job_ids is blank and does not process account jobs' do
         # Create an account with a job_id
         email_account = create(:email_account)
-        sync_session_account = create(:sync_session_account, 
-                                    sync_session: sync_session, 
+        sync_session_account = create(:sync_session_account,
+                                    sync_session: sync_session,
                                     email_account: email_account)
         sync_session_account.update!(job_id: 'account_job_123')
-        
+
         sync_session.update!(job_ids: [])
-        
+
         # Should NOT call SolidQueue::Job.find_by because it returns early
         expect(SolidQueue::Job).not_to receive(:find_by)
         sync_session.cancel_all_jobs
@@ -561,14 +561,14 @@ RSpec.describe SyncSession, type: :model do
       let(:mock_job) { double('SolidQueue::Job', scheduled?: true, ready?: false, destroy: true) }
 
       before do
-        sync_session.update!(job_ids: ['job_1', 'job_2', 'job_3'])
+        sync_session.update!(job_ids: [ 'job_1', 'job_2', 'job_3' ])
       end
 
       it 'attempts to find and cancel each main job and account jobs' do
         # Create an account with a job_id to test account job processing too
         email_account = create(:email_account)
-        sync_session_account = create(:sync_session_account, 
-                                    sync_session: sync_session, 
+        sync_session_account = create(:sync_session_account,
+                                    sync_session: sync_session,
                                     email_account: email_account)
         sync_session_account.update!(job_id: 'account_job_123')
 
@@ -589,8 +589,8 @@ RSpec.describe SyncSession, type: :model do
 
         # Create an account with a job_id to test account job processing too
         email_account = create(:email_account)
-        sync_session_account = create(:sync_session_account, 
-                                    sync_session: sync_session, 
+        sync_session_account = create(:sync_session_account,
+                                    sync_session: sync_session,
                                     email_account: email_account)
         sync_session_account.update!(job_id: 'account_job_123')
 
@@ -609,26 +609,26 @@ RSpec.describe SyncSession, type: :model do
 
     context 'when cancelling account-specific jobs' do
       let(:mock_account_job) { double('SolidQueue::Job', scheduled?: true, ready?: false, destroy: true) }
-      
+
       before do
         # Set job_ids to non-empty to ensure we don't return early
-        sync_session.update!(job_ids: ['dummy_job'])
+        sync_session.update!(job_ids: [ 'dummy_job' ])
       end
-      
+
       it 'cancels jobs for all sync_session_accounts with job_ids' do
         # Create accounts with job_ids
         email_account1 = create(:email_account)
         email_account2 = create(:email_account)
-        
+
         account1 = create(:sync_session_account, sync_session: sync_session, email_account: email_account1)
         account1.update!(job_id: 'account_job_123')
-        
+
         account2 = create(:sync_session_account, sync_session: sync_session, email_account: email_account2)
         account2.update!(job_id: 'another_job_456')
-        
+
         # Main job_ids call
         expect(SolidQueue::Job).to receive(:find_by).with(id: 'dummy_job').and_return(nil)
-        
+
         # Account job calls
         expect(SolidQueue::Job).to receive(:find_by).with(id: 'account_job_123').and_return(mock_account_job)
         expect(SolidQueue::Job).to receive(:find_by).with(id: 'another_job_456').and_return(nil)
@@ -642,18 +642,18 @@ RSpec.describe SyncSession, type: :model do
         email_account1 = create(:email_account)
         email_account2 = create(:email_account)
         email_account3 = create(:email_account)
-        
+
         account_with_job = create(:sync_session_account, sync_session: sync_session, email_account: email_account1)
         account_with_job.update!(job_id: 'account_job_123')
-        
+
         account_without_job = create(:sync_session_account, sync_session: sync_session, email_account: email_account2, job_id: nil)
-        
+
         another_with_job = create(:sync_session_account, sync_session: sync_session, email_account: email_account3)
         another_with_job.update!(job_id: 'another_job_456')
-        
+
         # Main job_ids call
         expect(SolidQueue::Job).to receive(:find_by).with(id: 'dummy_job').and_return(nil)
-        
+
         # Only accounts with job_ids should be processed
         expect(SolidQueue::Job).to receive(:find_by).with(id: 'account_job_123').and_return(nil)
         expect(SolidQueue::Job).to receive(:find_by).with(id: 'another_job_456').and_return(nil)
@@ -665,7 +665,7 @@ RSpec.describe SyncSession, type: :model do
 
     context 'error handling' do
       before do
-        sync_session.update!(job_ids: ['failing_job'])
+        sync_session.update!(job_ids: [ 'failing_job' ])
         allow(Rails.logger).to receive(:error)
       end
 
@@ -682,7 +682,7 @@ RSpec.describe SyncSession, type: :model do
         email_account = create(:email_account)
         account = create(:sync_session_account, sync_session: sync_session, email_account: email_account)
         account.update!(job_id: 'account_job_123')
-        
+
         # Mock the main job_ids call
         allow(SolidQueue::Job).to receive(:find_by).with(id: 'failing_job').and_return(nil)
         # Mock the account job call to fail
@@ -695,20 +695,20 @@ RSpec.describe SyncSession, type: :model do
 
       it 'continues processing other jobs when one fails' do
         working_job = double('SolidQueue::Job', scheduled?: true, ready?: false, destroy: true)
-        
+
         # Create an account to test that account jobs are still processed
         email_account = create(:email_account)
         account = create(:sync_session_account, sync_session: sync_session, email_account: email_account)
         account.update!(job_id: 'account_job_123')
-        
-        sync_session.update!(job_ids: ['failing_job', 'working_job'])
-        
+
+        sync_session.update!(job_ids: [ 'failing_job', 'working_job' ])
+
         allow(SolidQueue::Job).to receive(:find_by).with(id: 'failing_job').and_raise(StandardError.new('Job failed'))
         allow(SolidQueue::Job).to receive(:find_by).with(id: 'working_job').and_return(working_job)
         allow(SolidQueue::Job).to receive(:find_by).with(id: 'account_job_123').and_return(nil)
 
         expect(working_job).to receive(:destroy)
-        
+
         sync_session.cancel_all_jobs
 
         expect(Rails.logger).to have_received(:error).with('Failed to cancel job failing_job: Job failed')
@@ -723,8 +723,8 @@ RSpec.describe SyncSession, type: :model do
 
       it 'handles sync_session with no accounts' do
         sync_session.sync_session_accounts.destroy_all
-        sync_session.update!(job_ids: ['job_1'])
-        
+        sync_session.update!(job_ids: [ 'job_1' ])
+
         expect(SolidQueue::Job).to receive(:find_by).with(id: 'job_1').and_return(nil)
         expect { sync_session.cancel_all_jobs }.not_to raise_error
       end

@@ -100,15 +100,15 @@ RSpec.configure do |config|
     # Use memory store for cache in tests
     Rails.cache = ActiveSupport::Cache::MemoryStore.new
     # Note: Removed database truncation since we use transactional fixtures
-    
+
     # Performance optimization: Configure ActionCable for testing
     if defined?(ActionCable)
       ActionCable.server.config.disable_request_forgery_protection = true
     end
-    
+
     # Preload factories to avoid runtime overhead
     FactoryBot.reload if defined?(FactoryBot)
-    
+
     # Disable AR query logs in tests for performance
     ActiveRecord::Base.logger.level = Logger::WARN
   end

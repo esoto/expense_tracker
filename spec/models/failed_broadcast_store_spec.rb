@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe FailedBroadcastStore, type: :model do
   include ActiveSupport::Testing::TimeHelpers
   let(:sync_session) { create(:sync_session) }
-  
+
   describe 'validations' do
     subject { build(:failed_broadcast_store) }
 
@@ -28,7 +28,7 @@ RSpec.describe FailedBroadcastStore, type: :model do
     it 'validates uniqueness of sidekiq_job_id when present' do
       create(:failed_broadcast_store, sidekiq_job_id: 'unique_job_id')
       duplicate = build(:failed_broadcast_store, sidekiq_job_id: 'unique_job_id')
-      
+
       expect(duplicate).not_to be_valid
       expect(duplicate.errors[:sidekiq_job_id]).to include('has already been taken')
     end
@@ -129,7 +129,7 @@ RSpec.describe FailedBroadcastStore, type: :model do
   describe '.create_from_job_failure!' do
     let(:job_data) do
       {
-        'args' => ['SyncStatusChannel', sync_session.id, 'SyncSession', { status: 'processing' }, 'high'],
+        'args' => [ 'SyncStatusChannel', sync_session.id, 'SyncSession', { status: 'processing' }, 'high' ],
         'retry_count' => 2,
         'jid' => 'job123'
       }
@@ -155,7 +155,7 @@ RSpec.describe FailedBroadcastStore, type: :model do
 
     it 'handles missing job data gracefully' do
       minimal_job = {
-        'args' => ['SyncStatusChannel', 1, 'SyncSession'],
+        'args' => [ 'SyncStatusChannel', 1, 'SyncSession' ],
         'jid' => 'job456'
       }
 
@@ -202,7 +202,7 @@ RSpec.describe FailedBroadcastStore, type: :model do
         create(:failed_broadcast_store, error_type: 'connection_timeout', priority: 'high')
         create(:failed_broadcast_store, :recovered, error_type: 'job_error', priority: 'medium')
       end
-      
+
       create(:failed_broadcast_store, error_type: 'record_not_found', priority: 'low')
       create(:failed_broadcast_store, :recovered, error_type: 'connection_timeout', priority: 'critical')
     end
@@ -233,25 +233,25 @@ RSpec.describe FailedBroadcastStore, type: :model do
     it 'filters by time period correctly' do
       # Clear previous test data and create fresh records
       described_class.delete_all
-      
+
       # Create records within the last hour by explicitly setting failed_at
       current_time = Time.current
-      record1 = create(:failed_broadcast_store, 
-                      error_type: 'validation_error', 
-                      priority: 'medium', 
+      record1 = create(:failed_broadcast_store,
+                      error_type: 'validation_error',
+                      priority: 'medium',
                       failed_at: current_time)
-      
-      record2 = create(:failed_broadcast_store, 
-                      error_type: 'connection_timeout', 
+
+      record2 = create(:failed_broadcast_store,
+                      error_type: 'connection_timeout',
                       priority: 'high',
                       failed_at: current_time - 30.minutes)
-      
+
       # Create record outside the time window (should be excluded)
-      create(:failed_broadcast_store, 
-             error_type: 'job_error', 
+      create(:failed_broadcast_store,
+             error_type: 'job_error',
              priority: 'low',
              failed_at: current_time - 2.hours)
-      
+
       # Query from current time
       travel_to(current_time) do
         stats = described_class.recovery_stats(time_period: 1.hour)

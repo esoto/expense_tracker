@@ -12,7 +12,7 @@ RSpec.describe BroadcastAnalytics, type: :service do
   before do
     # Clear cache before each test
     Rails.cache.clear
-    
+
     # Stub RedisAnalyticsService to ensure fallback to Rails.cache
     allow(RedisAnalyticsService).to receive(:increment_counter).and_raise(StandardError, "Redis not available")
     allow(RedisAnalyticsService).to receive(:record_timing).and_raise(StandardError, "Redis not available")
@@ -293,7 +293,7 @@ RSpec.describe BroadcastAnalytics, type: :service do
 
     it 'handles zero events gracefully' do
       Rails.cache.clear
-      
+
       metrics = described_class.get_metrics(time_window: 1.hour)
 
       expect(metrics).to include(
@@ -446,10 +446,10 @@ RSpec.describe BroadcastAnalytics, type: :service do
     before do
       # Clear any existing cache data
       Rails.cache.clear
-      
+
       # Setup data across different time periods
       baseline_time = Time.current
-      
+
       # Record event at baseline time
       travel_to(baseline_time) do
         described_class.record_success(
@@ -495,7 +495,7 @@ RSpec.describe BroadcastAnalytics, type: :service do
   describe 'error handling' do
     it 'handles cache errors gracefully' do
       allow(Rails.cache).to receive(:write).and_raise(StandardError, 'Cache error')
-      
+
       expect {
         described_class.record_success(
           channel: channel_name, target_type: target_type, target_id: target_id,
@@ -507,9 +507,9 @@ RSpec.describe BroadcastAnalytics, type: :service do
     it 'handles missing cache data gracefully' do
       # Clear cache to simulate missing data
       Rails.cache.clear
-      
+
       metrics = described_class.get_metrics(time_window: 1.hour)
-      
+
       expect(metrics).to include(
         success_count: 0,
         failure_count: 0,
@@ -521,9 +521,9 @@ RSpec.describe BroadcastAnalytics, type: :service do
   describe '.cleanup_old_data' do
     it 'logs cleanup completion' do
       allow(Rails.logger).to receive(:info)
-      
+
       described_class.cleanup_old_data(older_than: 1.week)
-      
+
       expect(Rails.logger).to have_received(:info).with(
         match(/BROADCAST_ANALYTICS.*Cleanup completed for data older than/)
       )

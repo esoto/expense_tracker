@@ -5,7 +5,7 @@ RSpec.describe SyncConflictsController, type: :controller do
   let(:existing_expense) { create(:expense, amount: 100.00, merchant_name: 'Original Store') }
   let(:new_expense) { create(:expense, amount: 150.00, merchant_name: 'Updated Store') }
   let(:sync_conflict) do
-    create(:sync_conflict, 
+    create(:sync_conflict,
            sync_session: sync_session,
            existing_expense: existing_expense,
            new_expense: new_expense,
@@ -41,7 +41,7 @@ RSpec.describe SyncConflictsController, type: :controller do
 
       it 'orders conflicts by priority' do
         conflicts = assigns(:conflicts)
-        expect(conflicts.to_a).to eq(conflicts.to_a.sort_by { |c| [-c.priority, c.created_at] })
+        expect(conflicts.to_a).to eq(conflicts.to_a.sort_by { |c| [ -c.priority, c.created_at ] })
       end
     end
 
@@ -128,7 +128,6 @@ RSpec.describe SyncConflictsController, type: :controller do
         expect(response.content_type).to include('application/json')
         expect(response.body).to be_present
       end
-
     end
 
     context 'pagination' do
@@ -207,7 +206,7 @@ RSpec.describe SyncConflictsController, type: :controller do
 
   describe 'GET #show' do
     let(:conflict_with_resolutions) do
-      conflict = create(:sync_conflict, :with_new_expense, 
+      conflict = create(:sync_conflict, :with_new_expense,
                        existing_expense: existing_expense,
                        differences: { 'amount' => { from: 100, to: 150 } })
       create_list(:conflict_resolution, 3, sync_conflict: conflict)
@@ -247,7 +246,7 @@ RSpec.describe SyncConflictsController, type: :controller do
       it 'responds to JSON format' do
         get :show, params: { id: conflict_with_resolutions.id }, format: :json
         expect(response.content_type).to include('application/json')
-        
+
         json_response = JSON.parse(response.body)
         expect(json_response).to have_key('conflict')
         expect(json_response).to have_key('existing_expense')
@@ -255,7 +254,6 @@ RSpec.describe SyncConflictsController, type: :controller do
         expect(json_response).to have_key('differences')
         expect(json_response).to have_key('resolutions')
       end
-
     end
   end
 
@@ -274,23 +272,23 @@ RSpec.describe SyncConflictsController, type: :controller do
       end
 
       it 'calls ConflictResolutionService with correct parameters' do
-        post :resolve, params: { 
-          id: sync_conflict.id, 
+        post :resolve, params: {
+          id: sync_conflict.id,
           action_type: 'keep_existing',
           resolved_by: 'test_user'
         }
-        
+
         expect(ConflictResolutionService).to have_received(:new).with(sync_conflict)
         expect(service_double).to have_received(:resolve).with('keep_existing', kind_of(ActionController::Parameters))
       end
 
       context 'HTML format' do
         it 'redirects to sync_conflicts_path with success notice' do
-          post :resolve, params: { 
-            id: sync_conflict.id, 
+          post :resolve, params: {
+            id: sync_conflict.id,
             action_type: 'keep_existing'
           }
-          
+
           expect(response).to redirect_to(sync_conflicts_path)
           expect(flash[:notice]).to eq('Conflicto resuelto exitosamente')
         end
@@ -298,11 +296,11 @@ RSpec.describe SyncConflictsController, type: :controller do
 
       context 'JSON format' do
         it 'returns success response with reloaded conflict' do
-          post :resolve, params: { 
-            id: sync_conflict.id, 
+          post :resolve, params: {
+            id: sync_conflict.id,
             action_type: 'keep_existing'
           }, format: :json
-          
+
           expect(response).to have_http_status(:success)
           json_response = JSON.parse(response.body)
           expect(json_response['success']).to be true
@@ -312,7 +310,7 @@ RSpec.describe SyncConflictsController, type: :controller do
     end
 
     context 'failed resolution' do
-      let(:error_messages) { ['Invalid resolution action', 'Missing required data'] }
+      let(:error_messages) { [ 'Invalid resolution action', 'Missing required data' ] }
 
       before do
         allow(service_double).to receive(:resolve).with('invalid_action', kind_of(ActionController::Parameters)).and_return(false)
@@ -321,11 +319,11 @@ RSpec.describe SyncConflictsController, type: :controller do
 
       context 'HTML format' do
         it 'redirects back with error alert' do
-          post :resolve, params: { 
-            id: sync_conflict.id, 
+          post :resolve, params: {
+            id: sync_conflict.id,
             action_type: 'invalid_action'
           }
-          
+
           expect(response).to redirect_to(sync_conflict_path(sync_conflict))
           expect(flash[:alert]).to include('Error al resolver conflicto')
           expect(flash[:alert]).to include(error_messages.join(', '))
@@ -334,11 +332,11 @@ RSpec.describe SyncConflictsController, type: :controller do
 
       context 'JSON format' do
         it 'returns unprocessable_content with errors' do
-          post :resolve, params: { 
-            id: sync_conflict.id, 
+          post :resolve, params: {
+            id: sync_conflict.id,
             action_type: 'invalid_action'
           }, format: :json
-          
+
           expect(response).to have_http_status(:unprocessable_content)
           json_response = JSON.parse(response.body)
           expect(json_response['success']).to be false
@@ -352,9 +350,9 @@ RSpec.describe SyncConflictsController, type: :controller do
         it "handles #{action} resolution action" do
           allow(service_double).to receive(:resolve).with(action, kind_of(ActionController::Parameters)).and_return(true)
           allow(sync_conflict).to receive(:reload).and_return(sync_conflict)
-          
+
           post :resolve, params: { id: sync_conflict.id, action_type: action }
-          
+
           expect(service_double).to have_received(:resolve).with(action, kind_of(ActionController::Parameters))
         end
       end
@@ -367,13 +365,13 @@ RSpec.describe SyncConflictsController, type: :controller do
       it 'passes merge_fields to service' do
         allow(service_double).to receive(:resolve).with('merged', kind_of(ActionController::Parameters)).and_return(true)
         allow(sync_conflict).to receive(:reload).and_return(sync_conflict)
-        
-        post :resolve, params: { 
-          id: sync_conflict.id, 
+
+        post :resolve, params: {
+          id: sync_conflict.id,
           action_type: 'merged',
           merge_fields: merge_fields
         }
-        
+
         expect(service_double).to have_received(:resolve).with('merged', kind_of(ActionController::Parameters))
       end
     end
@@ -390,13 +388,13 @@ RSpec.describe SyncConflictsController, type: :controller do
       it 'passes custom_data to service' do
         allow(service_double).to receive(:resolve).with('custom', kind_of(ActionController::Parameters)).and_return(true)
         allow(sync_conflict).to receive(:reload).and_return(sync_conflict)
-        
-        post :resolve, params: { 
-          id: sync_conflict.id, 
+
+        post :resolve, params: {
+          id: sync_conflict.id,
           action_type: 'custom',
           custom_data: custom_data
         }
-        
+
         expect(service_double).to have_received(:resolve).with('custom', kind_of(ActionController::Parameters))
       end
     end
@@ -406,7 +404,7 @@ RSpec.describe SyncConflictsController, type: :controller do
     let!(:conflict1) { create(:sync_conflict, sync_session: sync_session, status: 'pending') }
     let!(:conflict2) { create(:sync_conflict, sync_session: sync_session, status: 'pending') }
     let!(:conflict3) { create(:sync_conflict, sync_session: sync_session, status: 'pending') }
-    let(:conflict_ids) { [conflict1.id, conflict2.id, conflict3.id] }
+    let(:conflict_ids) { [ conflict1.id, conflict2.id, conflict3.id ] }
     let(:service_double) { instance_double(ConflictResolutionService) }
 
     before do
@@ -416,7 +414,7 @@ RSpec.describe SyncConflictsController, type: :controller do
     context 'with empty conflict_ids' do
       it 'returns bad_request with error message' do
         post :bulk_resolve, params: { action_type: 'keep_existing' }, format: :json
-        
+
         expect(response).to have_http_status(:bad_request)
         json_response = JSON.parse(response.body)
         expect(json_response['success']).to be false
@@ -424,11 +422,11 @@ RSpec.describe SyncConflictsController, type: :controller do
       end
 
       it 'handles empty array' do
-        post :bulk_resolve, params: { 
-          conflict_ids: [], 
-          action_type: 'keep_existing' 
+        post :bulk_resolve, params: {
+          conflict_ids: [],
+          action_type: 'keep_existing'
         }, format: :json
-        
+
         expect(response).to have_http_status(:bad_request)
       end
     end
@@ -438,7 +436,7 @@ RSpec.describe SyncConflictsController, type: :controller do
         {
           resolved_count: 2,
           failed_count: 1,
-          failed_conflicts: [{ id: conflict3.id, errors: ['Test error'] }]
+          failed_conflicts: [ { id: conflict3.id, errors: [ 'Test error' ] } ]
         }
       end
 
@@ -450,27 +448,26 @@ RSpec.describe SyncConflictsController, type: :controller do
 
       context 'JSON format' do
         it 'returns success with resolution counts' do
-          post :bulk_resolve, params: { 
+          post :bulk_resolve, params: {
             conflict_ids: conflict_ids,
             action_type: 'keep_existing'
           }, format: :json
-          
+
           expect(response).to have_http_status(:success)
           json_response = JSON.parse(response.body)
           expect(json_response['success']).to be true
           expect(json_response['resolved_count']).to eq(2)
           expect(json_response['failed_count']).to eq(1)
-          expect(json_response['failed_conflicts']).to eq([{ 'id' => conflict3.id, 'errors' => ['Test error'] }])
+          expect(json_response['failed_conflicts']).to eq([ { 'id' => conflict3.id, 'errors' => [ 'Test error' ] } ])
         end
       end
-
     end
 
     context 'when first conflict is not found' do
       it 'raises ActiveRecord::RecordNotFound' do
         expect {
-          post :bulk_resolve, params: { 
-            conflict_ids: [99999],
+          post :bulk_resolve, params: {
+            conflict_ids: [ 99999 ],
             action_type: 'keep_existing'
           }, format: :json
         }.to raise_error(ActiveRecord::RecordNotFound)
@@ -485,12 +482,12 @@ RSpec.describe SyncConflictsController, type: :controller do
           .with(conflict_ids.map(&:to_s), 'keep_existing', kind_of(ActionController::Parameters))
           .and_return({ resolved_count: 3, failed_count: 0, failed_conflicts: [] })
 
-        post :bulk_resolve, params: { 
+        post :bulk_resolve, params: {
           conflict_ids: conflict_ids,
           action_type: 'keep_existing',
           resolved_by: 'bulk_user'
         }, format: :json
-        
+
         expect(service_double).to have_received(:bulk_resolve)
           .with(conflict_ids.map(&:to_s), 'keep_existing', kind_of(ActionController::Parameters))
       end
@@ -513,7 +510,7 @@ RSpec.describe SyncConflictsController, type: :controller do
       context 'HTML format' do
         it 'redirects back with success notice' do
           patch :undo, params: { id: resolved_conflict.id }
-          
+
           expect(response).to redirect_to(sync_conflict_path(resolved_conflict))
           expect(flash[:notice]).to eq('Resolución deshecha exitosamente')
         end
@@ -522,7 +519,7 @@ RSpec.describe SyncConflictsController, type: :controller do
       context 'JSON format' do
         it 'returns success response with reloaded conflict' do
           patch :undo, params: { id: resolved_conflict.id }, format: :json
-          
+
           expect(response).to have_http_status(:success)
           json_response = JSON.parse(response.body)
           expect(json_response['success']).to be true
@@ -532,7 +529,7 @@ RSpec.describe SyncConflictsController, type: :controller do
     end
 
     context 'failed undo' do
-      let(:error_messages) { ['Cannot undo this resolution', 'Resolution is not undoable'] }
+      let(:error_messages) { [ 'Cannot undo this resolution', 'Resolution is not undoable' ] }
 
       before do
         allow(service_double).to receive(:undo_resolution).and_return(false)
@@ -542,7 +539,7 @@ RSpec.describe SyncConflictsController, type: :controller do
       context 'HTML format' do
         it 'redirects back with error alert' do
           patch :undo, params: { id: resolved_conflict.id }
-          
+
           expect(response).to redirect_to(sync_conflict_path(resolved_conflict))
           expect(flash[:alert]).to include('Error al deshacer')
           expect(flash[:alert]).to include(error_messages.join(', '))
@@ -552,7 +549,7 @@ RSpec.describe SyncConflictsController, type: :controller do
       context 'JSON format' do
         it 'returns unprocessable_content with errors' do
           patch :undo, params: { id: resolved_conflict.id }, format: :json
-          
+
           expect(response).to have_http_status(:unprocessable_content)
           json_response = JSON.parse(response.body)
           expect(json_response['success']).to be false
@@ -564,9 +561,9 @@ RSpec.describe SyncConflictsController, type: :controller do
     it 'calls ConflictResolutionService#undo_resolution' do
       allow(service_double).to receive(:undo_resolution).and_return(true)
       allow(resolved_conflict).to receive(:reload).and_return(resolved_conflict)
-      
+
       patch :undo, params: { id: resolved_conflict.id }
-      
+
       expect(ConflictResolutionService).to have_received(:new).with(resolved_conflict)
       expect(service_double).to have_received(:undo_resolution)
     end
@@ -590,24 +587,24 @@ RSpec.describe SyncConflictsController, type: :controller do
     end
 
     it 'calls ConflictResolutionService#preview_merge with merge_fields' do
-      get :preview_merge, params: { 
-        id: sync_conflict.id, 
-        merge_fields: merge_fields 
+      get :preview_merge, params: {
+        id: sync_conflict.id,
+        merge_fields: merge_fields
       }
-      
+
       expect(ConflictResolutionService).to have_received(:new).with(sync_conflict)
       expect(service_double).to have_received(:preview_merge).with(kind_of(ActionController::Parameters))
     end
 
     it 'returns JSON with preview and changes' do
-      get :preview_merge, params: { 
-        id: sync_conflict.id, 
-        merge_fields: merge_fields 
+      get :preview_merge, params: {
+        id: sync_conflict.id,
+        merge_fields: merge_fields
       }
-      
+
       expect(response).to have_http_status(:success)
       expect(response.content_type).to include('application/json')
-      
+
       json_response = JSON.parse(response.body)
       expect(json_response['success']).to be true
       expect(json_response['preview']).to eq(preview_data)
@@ -616,20 +613,20 @@ RSpec.describe SyncConflictsController, type: :controller do
 
     it 'handles empty merge_fields' do
       allow(service_double).to receive(:preview_merge).with(kind_of(ActionController::Parameters)).and_return(preview_data)
-      
+
       get :preview_merge, params: { id: sync_conflict.id }
-      
+
       expect(service_double).to have_received(:preview_merge).with(kind_of(ActionController::Parameters))
       expect(response).to have_http_status(:success)
     end
 
     context 'when calculating merge changes' do
       it 'identifies changed fields' do
-        get :preview_merge, params: { 
-          id: sync_conflict.id, 
-          merge_fields: merge_fields 
+        get :preview_merge, params: {
+          id: sync_conflict.id,
+          merge_fields: merge_fields
         }
-        
+
         json_response = JSON.parse(response.body)
         changes = json_response['changes']
         expect(changes['amount']).to eq({
@@ -641,12 +638,12 @@ RSpec.describe SyncConflictsController, type: :controller do
       it 'ignores unchanged fields' do
         same_preview = existing_expense.attributes.dup
         allow(service_double).to receive(:preview_merge).and_return(same_preview)
-        
-        get :preview_merge, params: { 
-          id: sync_conflict.id, 
-          merge_fields: {} 
+
+        get :preview_merge, params: {
+          id: sync_conflict.id,
+          merge_fields: {}
         }
-        
+
         json_response = JSON.parse(response.body)
         expect(json_response['changes']).to be_empty
       end
@@ -655,7 +652,7 @@ RSpec.describe SyncConflictsController, type: :controller do
     context 'when calculation edge cases occur' do
       it 'handles service errors gracefully' do
         allow(service_double).to receive(:preview_merge).and_raise(StandardError.new('Service error'))
-        
+
         expect {
           get :preview_merge, params: { id: sync_conflict.id }
         }.to raise_error(StandardError, 'Service error')
@@ -669,7 +666,7 @@ RSpec.describe SyncConflictsController, type: :controller do
 
       it 'returns empty changes' do
         get :preview_merge, params: { id: sync_conflict.id }
-        
+
         json_response = JSON.parse(response.body)
         expect(json_response['changes']).to eq({})
       end
@@ -693,7 +690,7 @@ RSpec.describe SyncConflictsController, type: :controller do
       it 'permits only authorized parameters' do
         controller.params = ActionController::Parameters.new(params_hash)
         permitted_params = controller.send(:resolve_params)
-        
+
         expect(permitted_params).to include(:resolved_by)
         expect(permitted_params).to include(:merge_fields)
         expect(permitted_params).to include(:custom_data)
@@ -703,14 +700,14 @@ RSpec.describe SyncConflictsController, type: :controller do
       it 'permits nested merge_fields parameters' do
         controller.params = ActionController::Parameters.new(params_hash)
         permitted_params = controller.send(:resolve_params)
-        
+
         expect(permitted_params[:merge_fields].to_h).to eq({ 'amount' => 'new' })
       end
 
       it 'permits nested custom_data parameters' do
         controller.params = ActionController::Parameters.new(params_hash)
         permitted_params = controller.send(:resolve_params)
-        
+
         expect(permitted_params[:custom_data]).to include(:existing_expense, :new_expense)
       end
     end
@@ -726,7 +723,7 @@ RSpec.describe SyncConflictsController, type: :controller do
       it 'calculates changes between existing expense and preview' do
         controller.instance_variable_set(:@sync_conflict, sync_conflict)
         changes = controller.send(:calculate_merge_changes, preview_with_changes)
-        
+
         expect(changes['amount']).to eq({
           from: existing_expense.amount,
           to: 250.00
@@ -741,21 +738,21 @@ RSpec.describe SyncConflictsController, type: :controller do
         controller.instance_variable_set(:@sync_conflict, sync_conflict)
         preview_same = existing_expense.attributes.dup
         changes = controller.send(:calculate_merge_changes, preview_same)
-        
+
         expect(changes).to be_empty
       end
 
       it 'returns empty hash when existing_expense is nil' do
         controller.instance_variable_set(:@sync_conflict, double(existing_expense: nil))
         changes = controller.send(:calculate_merge_changes, preview_with_changes)
-        
+
         expect(changes).to eq({})
       end
 
       it 'returns empty hash when preview is nil' do
         controller.instance_variable_set(:@sync_conflict, sync_conflict)
         changes = controller.send(:calculate_merge_changes, nil)
-        
+
         expect(changes).to eq({})
       end
     end
@@ -778,9 +775,9 @@ RSpec.describe SyncConflictsController, type: :controller do
 
       it 'allows the exception to bubble up' do
         expect {
-          post :resolve, params: { 
-            id: sync_conflict.id, 
-            action_type: 'keep_existing' 
+          post :resolve, params: {
+            id: sync_conflict.id,
+            action_type: 'keep_existing'
           }
         }.to raise_error(StandardError, 'Service error')
       end
@@ -821,7 +818,7 @@ RSpec.describe SyncConflictsController, type: :controller do
         {
           resolved_count: 2,
           failed_count: 1,
-          failed_conflicts: [{ id: conflicts.last.id, errors: ['Validation failed'] }]
+          failed_conflicts: [ { id: conflicts.last.id, errors: [ 'Validation failed' ] } ]
         }
       end
 
@@ -831,7 +828,7 @@ RSpec.describe SyncConflictsController, type: :controller do
       end
 
       it 'handles partial success in bulk operations' do
-        post :bulk_resolve, params: { 
+        post :bulk_resolve, params: {
           conflict_ids: conflicts.map(&:id),
           action_type: 'keep_existing'
         }, format: :json
@@ -870,9 +867,9 @@ RSpec.describe SyncConflictsController, type: :controller do
 
       it 'handles service initialization errors in bulk_resolve action' do
         expect {
-          post :bulk_resolve, params: { 
-            conflict_ids: [sync_conflict.id], 
-            action_type: 'keep_existing' 
+          post :bulk_resolve, params: {
+            conflict_ids: [ sync_conflict.id ],
+            action_type: 'keep_existing'
           }, format: :json
         }.to raise_error(StandardError, 'Service unavailable')
       end
@@ -883,17 +880,17 @@ RSpec.describe SyncConflictsController, type: :controller do
         service_double = instance_double(ConflictResolutionService)
         allow(ConflictResolutionService).to receive(:new).and_return(service_double)
         allow(service_double).to receive(:resolve).and_return(false)
-        allow(service_double).to receive(:errors).and_return(['Invalid action type'])
+        allow(service_double).to receive(:errors).and_return([ 'Invalid action type' ])
 
         post :resolve, params: { id: sync_conflict.id, action_type: 'invalid_action' }
-        
+
         expect(response).to redirect_to(sync_conflict_path(sync_conflict))
         expect(flash[:alert]).to include('Invalid action type')
       end
 
       it 'handles missing action_type in bulk_resolve' do
-        post :bulk_resolve, params: { conflict_ids: [sync_conflict.id] }, format: :json
-        
+        post :bulk_resolve, params: { conflict_ids: [ sync_conflict.id ] }, format: :json
+
         expect(response).to have_http_status(:success) # Controller should handle nil action_type
       end
 
@@ -903,9 +900,9 @@ RSpec.describe SyncConflictsController, type: :controller do
         allow(service_double).to receive(:preview_merge).and_raise(ArgumentError.new('Invalid merge fields'))
 
         expect {
-          get :preview_merge, params: { 
-            id: sync_conflict.id, 
-            merge_fields: 'invalid_format' 
+          get :preview_merge, params: {
+            id: sync_conflict.id,
+            merge_fields: 'invalid_format'
           }
         }.to raise_error(ArgumentError, 'Invalid merge fields')
       end
@@ -916,29 +913,29 @@ RSpec.describe SyncConflictsController, type: :controller do
         service_double = instance_double(ConflictResolutionService)
         allow(ConflictResolutionService).to receive(:new).and_return(service_double)
         allow(service_double).to receive(:resolve).and_return(false)
-        allow(service_double).to receive(:errors).and_return(['Conflict already resolved'])
+        allow(service_double).to receive(:errors).and_return([ 'Conflict already resolved' ])
 
         post :resolve, params: { id: sync_conflict.id, action_type: 'keep_existing' }
-        
+
         expect(response).to redirect_to(sync_conflict_path(sync_conflict))
         expect(flash[:alert]).to include('Conflict already resolved')
       end
 
       it 'handles conflict being deleted during bulk_resolve' do
-        conflict_ids = [sync_conflict.id, 99999] # Non-existent ID
+        conflict_ids = [ sync_conflict.id, 99999 ] # Non-existent ID
         service_double = instance_double(ConflictResolutionService)
         allow(ConflictResolutionService).to receive(:new).and_return(service_double)
         allow(service_double).to receive(:bulk_resolve).and_return({
           resolved_count: 1,
           failed_count: 1,
-          failed_conflicts: [{ id: 99999, errors: ['Conflict not found'] }]
+          failed_conflicts: [ { id: 99999, errors: [ 'Conflict not found' ] } ]
         })
 
-        post :bulk_resolve, params: { 
-          conflict_ids: conflict_ids, 
-          action_type: 'keep_existing' 
+        post :bulk_resolve, params: {
+          conflict_ids: conflict_ids,
+          action_type: 'keep_existing'
         }, format: :json
-        
+
         json_response = JSON.parse(response.body)
         expect(json_response['resolved_count']).to eq(1)
         expect(json_response['failed_count']).to eq(1)
@@ -948,10 +945,10 @@ RSpec.describe SyncConflictsController, type: :controller do
     context 'memory and performance considerations' do
       it 'efficiently loads associations in index action' do
         create_list(:sync_conflict, 5, sync_session: sync_session)
-        
+
         # Test that associations are properly loaded by checking they're not causing N+1 queries
         get :index, params: { sync_session_id: sync_session.id }
-        
+
         expect(response).to have_http_status(:success)
         conflicts = assigns(:conflicts)
         expect(conflicts.first.association(:existing_expense)).to be_loaded
@@ -961,7 +958,7 @@ RSpec.describe SyncConflictsController, type: :controller do
       it 'handles large bulk_resolve operations' do
         conflicts = create_list(:sync_conflict, 50, sync_session: sync_session, status: 'pending')
         conflict_ids = conflicts.map(&:id)
-        
+
         service_double = instance_double(ConflictResolutionService)
         allow(ConflictResolutionService).to receive(:new).and_return(service_double)
         allow(service_double).to receive(:bulk_resolve).and_return({
@@ -971,11 +968,11 @@ RSpec.describe SyncConflictsController, type: :controller do
         })
         allow(SyncConflict).to receive(:find_by).and_return(*conflicts)
 
-        post :bulk_resolve, params: { 
-          conflict_ids: conflict_ids, 
-          action_type: 'keep_existing' 
+        post :bulk_resolve, params: {
+          conflict_ids: conflict_ids,
+          action_type: 'keep_existing'
         }, format: :json
-        
+
         expect(response).to have_http_status(:success)
         json_response = JSON.parse(response.body)
         expect(json_response['resolved_count']).to eq(50)

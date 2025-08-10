@@ -18,7 +18,7 @@ RSpec.describe Api::ClientErrorsController, type: :controller do
 
     it 'accepts error reports and returns success' do
       post :create, params: error_params, format: :json
-      
+
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
       expect(json['status']).to eq('received')
@@ -27,7 +27,7 @@ RSpec.describe Api::ClientErrorsController, type: :controller do
     it 'logs the error to Rails logger' do
       expect(Rails.logger).to receive(:error).with(/CLIENT_ERROR.*WebSocket connection failed/)
       expect(Rails.logger).to receive(:error).with(/CLIENT_ERROR.*Details:/)
-      
+
       post :create, params: error_params, format: :json
     end
 
@@ -38,14 +38,14 @@ RSpec.describe Api::ClientErrorsController, type: :controller do
           expect(message).to include('"ip_address"')
         end
       end.at_least(:once)
-      
+
       post :create, params: error_params, format: :json
     end
 
     context 'with minimal parameters' do
       it 'still accepts the error report' do
         post :create, params: { message: 'Test error' }, format: :json
-        
+
         expect(response).to have_http_status(:ok)
       end
     end
@@ -57,7 +57,7 @@ RSpec.describe Api::ClientErrorsController, type: :controller do
 
       it 'still returns success to client' do
         post :create, params: error_params, format: :json
-        
+
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
         expect(json['status']).to eq('error')
@@ -80,7 +80,7 @@ RSpec.describe Api::ClientErrorsController, type: :controller do
           session_id: '123',
           user_agent: 'Mozilla/5.0'
         ))
-        
+
         post :create, params: error_params, format: :json
       end
     end
@@ -105,7 +105,7 @@ RSpec.describe Api::ClientErrorsController, type: :controller do
         expect(error_tracker).to receive(:track_client_error).with(hash_including(
           message: 'WebSocket connection failed'
         ))
-        
+
         post :create, params: error_params, format: :json
       end
     end

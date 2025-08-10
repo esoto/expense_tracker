@@ -18,7 +18,7 @@ FactoryBot.define do
 
     trait :failed do
       success { false }
-      error_type { ["ConnectionError", "ParseError", "TimeoutError"].sample }
+      error_type { [ "ConnectionError", "ParseError", "TimeoutError" ].sample }
       error_message { "An error occurred during sync operation" }
     end
 

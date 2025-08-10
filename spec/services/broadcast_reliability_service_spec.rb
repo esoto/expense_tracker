@@ -62,7 +62,7 @@ RSpec.describe BroadcastReliabilityService, type: :service do
 
         expect(result).to be true
         expect(SyncStatusChannel).to have_received(:broadcast_to).twice
-        
+
         # Should record failure for first attempt
         expect(BroadcastAnalytics).to have_received(:record_failure).with(
           channel: 'SyncStatusChannel',
@@ -73,7 +73,7 @@ RSpec.describe BroadcastReliabilityService, type: :service do
           error: "Broadcast failed: Connection timeout",
           duration: be_a(Float)
         )
-        
+
         # Should record success for second attempt
         expect(BroadcastAnalytics).to have_received(:record_success).with(
           channel: 'SyncStatusChannel',
@@ -101,13 +101,13 @@ RSpec.describe BroadcastReliabilityService, type: :service do
         )
 
         expect(result).to be false
-        
+
         # Should attempt the maximum number of retries for medium priority (3)
         expect(SyncStatusChannel).to have_received(:broadcast_to).exactly(3).times
-        
+
         # Should record failures for all attempts
         expect(BroadcastAnalytics).to have_received(:record_failure).exactly(3).times
-        
+
         # Should handle final failure
         expect(BroadcastErrorHandler).to have_received(:handle_final_failure).with(
           SyncStatusChannel, sync_session, test_data, :medium, be_a(StandardError)
@@ -278,17 +278,17 @@ RSpec.describe BroadcastReliabilityService, type: :service do
     it 'calculates correct backoff delays' do
       # Access private method for testing
       base = 1.0
-      
+
       delay1 = service.send(:calculate_backoff_delay, base, 1)
       delay2 = service.send(:calculate_backoff_delay, base, 2)
       delay3 = service.send(:calculate_backoff_delay, base, 3)
 
       # First attempt: base * 2^0 = 1.0 + jitter
       expect(delay1).to be_between(1.0, 1.5)
-      
-      # Second attempt: base * 2^1 = 2.0 + jitter  
+
+      # Second attempt: base * 2^1 = 2.0 + jitter
       expect(delay2).to be_between(2.0, 3.0)
-      
+
       # Third attempt: base * 2^2 = 4.0 + jitter
       expect(delay3).to be_between(4.0, 6.0)
     end
@@ -329,14 +329,14 @@ RSpec.describe BroadcastReliabilityService, type: :service do
       it 'returns false after retries for invalid channel name' do
         allow(BroadcastAnalytics).to receive(:record_failure)
         allow(BroadcastErrorHandler).to receive(:handle_final_failure)
-        
+
         result = described_class.broadcast_with_retry(
           channel: 'InvalidChannel',
           target: sync_session,
           data: test_data,
           priority: :medium
         )
-        
+
         expect(result).to be false
         expect(BroadcastAnalytics).to have_received(:record_failure).exactly(3).times
         expect(BroadcastErrorHandler).to have_received(:handle_final_failure)
@@ -352,14 +352,14 @@ RSpec.describe BroadcastReliabilityService, type: :service do
 
       it 'rejects invalid channel names before retry attempts' do
         allow(BroadcastAnalytics).to receive(:record_failure)
-        
+
         result = described_class.broadcast_with_retry(
           channel: 'InvalidChannel',
           target: sync_session,
           data: test_data,
           priority: :medium
         )
-        
+
         expect(result).to be false
         # Should not attempt retries when validation fails
         expect(BroadcastAnalytics).not_to have_received(:record_failure)
@@ -370,7 +370,7 @@ RSpec.describe BroadcastReliabilityService, type: :service do
   describe 'thread safety' do
     it 'handles concurrent broadcasts safely' do
       allow(SyncStatusChannel).to receive(:broadcast_to)
-      
+
       # Create multiple threads that broadcast concurrently
       threads = 10.times.map do |i|
         Thread.new do
@@ -384,7 +384,7 @@ RSpec.describe BroadcastReliabilityService, type: :service do
       end
 
       results = threads.map(&:value)
-      
+
       # All broadcasts should succeed
       expect(results).to all(be true)
       expect(SyncStatusChannel).to have_received(:broadcast_to).exactly(10).times

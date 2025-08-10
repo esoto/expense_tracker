@@ -297,8 +297,6 @@ class RedisAnalyticsService
         url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"),
         timeout: redis_timeout,
         reconnect_attempts: 3,
-        reconnect_delay: 0.1,
-        reconnect_delay_max: 1.0,
         inherit_socket: false
       }
     end

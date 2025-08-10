@@ -37,7 +37,7 @@ module Api
         provided_token = request.headers["X-Sync-Token"] ||
                         request.headers["HTTP_X_SYNC_TOKEN"] ||
                         params[:token]
-        
+
         # If token is present in session, require token auth
         if provided_token.present?
           return @sync_session.session_token == provided_token
@@ -48,18 +48,19 @@ module Api
       end
 
       # Check if sync session is in current user session (legacy)
-      return true if session[:sync_session_id] == @sync_session.id
+      if session[:sync_session_id] == @sync_session.id
+        return true
+      end
 
       # Check IP address for recent sessions (when no token)
       if @sync_session.created_at > 24.hours.ago
         stored_ip = @sync_session.metadata&.dig("ip_address")
         current_ip = request.remote_ip
 
-        # Allow if no IP stored (backward compatibility)
-        return true if stored_ip.nil?
-
-        # Check IP match
-        return stored_ip == current_ip
+        # Allow if no IP stored (backward compatibility) OR if stored IP matches current
+        if stored_ip.nil? || stored_ip == current_ip
+          return true
+        end
       end
 
       false

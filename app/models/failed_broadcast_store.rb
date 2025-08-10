@@ -30,10 +30,10 @@ class FailedBroadcastStore < ApplicationRecord
 
   # Priority levels
   PRIORITIES = %w[critical high medium low].freeze
-  
+
   # Callbacks
   before_validation :ensure_data_present
-  
+
   # Validations
   validates :channel_name, presence: true
   validates :target_type, presence: true
@@ -252,7 +252,7 @@ class FailedBroadcastStore < ApplicationRecord
   def recovered?
     recovered_at.present?
   end
-  
+
   # Ensure data is present (at least an empty hash)
   def ensure_data_present
     self.data ||= {}

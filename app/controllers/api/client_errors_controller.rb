@@ -38,7 +38,11 @@ module Api
       render json: { status: "received" }, status: :ok
     rescue StandardError => e
       # Don't fail the request even if error logging fails
-      Rails.logger.error "[CLIENT_ERROR] Failed to log client error: #{e.message}"
+      begin
+        Rails.logger.error "[CLIENT_ERROR] Failed to log client error: #{e.message}"
+      rescue
+        # Even if logging fails, don't crash
+      end
       render json: { status: "error" }, status: :ok
     end
   end

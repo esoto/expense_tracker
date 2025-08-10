@@ -46,7 +46,7 @@ class ProcessEmailJob < ApplicationJob
       # Could save failed parsing attempts for debugging
       save_failed_parsing(email_account, email_data, parser.errors)
     end
-    
+
     expense
   end
 

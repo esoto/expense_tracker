@@ -159,3 +159,183 @@ puts "  • POST /api/webhooks/process_emails"
 puts "  • POST /api/webhooks/add_expense"
 puts "  • GET /api/webhooks/recent_expenses"
 puts "  • GET /api/webhooks/expense_summary"
+
+# Create sync performance metrics data
+puts ""
+puts "📊 Creating sync performance metrics..."
+
+if SyncSession.any? && EmailAccount.any?
+  # Use existing sessions and accounts for metrics
+  email_accounts = EmailAccount.active.to_a
+
+  # Create metrics for the last 30 days
+  30.times do |days_ago|
+    date = days_ago.days.ago
+
+    # Create 2-5 sync sessions per day
+    rand(2..5).times do |session_num|
+      session_start = date.beginning_of_day + rand(0..23).hours + rand(0..59).minutes
+
+      # Create or find a sync session for this time
+      sync_session = SyncSession.create!(
+        status: 'completed',
+        started_at: session_start,
+        completed_at: session_start + rand(5..30).minutes,
+        total_emails: rand(50..500),
+        processed_emails: rand(45..495),
+        detected_expenses: rand(0..20),
+        errors_count: rand(0..3),
+        sync_type: [ 'manual', 'scheduled' ].sample
+      )
+
+      # Create session-level metric
+      SyncMetric.create!(
+        sync_session: sync_session,
+        metric_type: 'session_overall',
+        success: [ true, true, true, false ].sample, # 75% success rate
+        duration: rand(5000..60000), # 5-60 seconds
+        emails_processed: sync_session.processed_emails,
+        started_at: session_start,
+        completed_at: sync_session.completed_at
+      )
+
+      # Create metrics for each email account
+      email_accounts.sample(rand(1..email_accounts.size)).each do |account|
+        account_start = session_start + rand(0..5).seconds
+
+        # Email fetch metric
+        fetch_duration = rand(1000..5000) # 1-5 seconds
+        SyncMetric.create!(
+          sync_session: sync_session,
+          email_account: account,
+          metric_type: 'email_fetch',
+          success: [ true, true, true, true, false ].sample, # 80% success
+          duration: fetch_duration,
+          emails_processed: rand(10..100),
+          started_at: account_start,
+          completed_at: account_start + fetch_duration.milliseconds,
+          error_type: [ nil, nil, nil, 'ImapConnectionError' ].sample,
+          error_message: [ nil, nil, nil, 'Connection timeout' ].sample
+        )
+
+        # Email parse metrics (multiple per account)
+        rand(5..20).times do |i|
+          parse_start = account_start + (fetch_duration + (i * 100)).milliseconds
+          parse_duration = rand(50..500) # 50-500ms
+
+          SyncMetric.create!(
+            sync_session: sync_session,
+            email_account: account,
+            metric_type: 'email_parse',
+            success: [ true, true, true, true, true, false ].sample, # 83% success
+            duration: parse_duration,
+            emails_processed: 1,
+            started_at: parse_start,
+            completed_at: parse_start + parse_duration.milliseconds
+          )
+        end
+
+        # Expense detection metrics
+        rand(0..5).times do |i|
+          detect_start = account_start + rand(2000..10000).milliseconds
+          detect_duration = rand(100..1000) # 100ms-1s
+
+          SyncMetric.create!(
+            sync_session: sync_session,
+            email_account: account,
+            metric_type: 'expense_detection',
+            success: true,
+            duration: detect_duration,
+            emails_processed: 1,
+            started_at: detect_start,
+            completed_at: detect_start + detect_duration.milliseconds,
+            metadata: {
+              amount: rand(1000..50000),
+              merchant: [ 'Automercado', 'Walmart', 'EPA', 'Mas x Menos' ].sample,
+              category: [ 'Alimentación', 'Compras', 'Hogar' ].sample
+            }
+          )
+        end
+
+        # Conflict detection metrics
+        if rand < 0.3 # 30% chance of conflicts
+          conflict_start = account_start + rand(3000..15000).milliseconds
+          conflict_duration = rand(200..2000) # 200ms-2s
+
+          SyncMetric.create!(
+            sync_session: sync_session,
+            email_account: account,
+            metric_type: 'conflict_detection',
+            success: true,
+            duration: conflict_duration,
+            emails_processed: 0,
+            started_at: conflict_start,
+            completed_at: conflict_start + conflict_duration.milliseconds,
+            metadata: {
+              conflicts_found: rand(1..3),
+              similarity_score: rand(70..95)
+            }
+          )
+        end
+
+        # Database write metrics
+        rand(1..10).times do |i|
+          write_start = account_start + rand(1000..20000).milliseconds
+          write_duration = rand(10..100) # 10-100ms
+
+          SyncMetric.create!(
+            sync_session: sync_session,
+            email_account: account,
+            metric_type: 'database_write',
+            success: [ true, true, true, true, true, true, false ].sample, # 86% success
+            duration: write_duration,
+            emails_processed: 0,
+            started_at: write_start,
+            completed_at: write_start + write_duration.milliseconds
+          )
+        end
+
+        # Broadcast metrics
+        rand(3..8).times do |i|
+          broadcast_start = account_start + rand(1000..25000).milliseconds
+          broadcast_duration = rand(5..50) # 5-50ms
+
+          SyncMetric.create!(
+            sync_session: sync_session,
+            email_account: account,
+            metric_type: 'broadcast',
+            success: [ true, true, true, true, true, true, true, false ].sample, # 87.5% success
+            duration: broadcast_duration,
+            emails_processed: 0,
+            started_at: broadcast_start,
+            completed_at: broadcast_start + broadcast_duration.milliseconds,
+            metadata: {
+              channel: [ 'SyncStatusChannel', 'DashboardChannel' ].sample,
+              event: [ 'progress_update', 'expense_detected', 'conflict_detected' ].sample
+            }
+          )
+        end
+
+        # Account sync summary metric
+        account_sync_duration = rand(10000..60000) # 10-60 seconds
+        SyncMetric.create!(
+          sync_session: sync_session,
+          email_account: account,
+          metric_type: 'account_sync',
+          success: [ true, true, true, false ].sample, # 75% success
+          duration: account_sync_duration,
+          emails_processed: rand(10..100),
+          started_at: account_start,
+          completed_at: account_start + account_sync_duration.milliseconds
+        )
+      end
+    end
+  end
+
+  puts "  ✓ Created #{SyncMetric.count} performance metrics"
+  puts "  ✓ Metrics span the last 30 days"
+  puts "  ✓ Includes all metric types: #{SyncMetric::METRIC_TYPES.values.join(', ')}"
+else
+  puts "  ⚠️  Skipping metrics creation - no sync sessions or email accounts found"
+  puts "  ℹ️  Run sync operations first to generate real metrics"
+end

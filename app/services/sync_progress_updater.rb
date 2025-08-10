@@ -87,7 +87,7 @@ class SyncProgressUpdater
   def broadcast_progress_update
     # Track broadcast operation
     if @metrics_collector
-      @metrics_collector.track_operation(:broadcast_update, nil, { type: 'progress' }) do
+      @metrics_collector.track_operation(:broadcast_update, nil, { type: "progress" }) do
         perform_broadcast
       end
     else

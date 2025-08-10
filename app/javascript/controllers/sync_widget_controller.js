@@ -14,7 +14,19 @@ export default class extends Controller {
     "activeSection",
     "inactiveSection",
     "connectionStatus",
-    "retryButton"
+    "retryButton",
+    "statusText",
+    "pauseButton",
+    "progressSection",
+    "progressIndicator",
+    "errorCount",
+    "accountItem",
+    "accountStatusIcon",
+    "accountProgress",
+    "accountCount",
+    "accountProgressBar",
+    "connectionWarning",
+    "connectionMessage"
   ]
   
   static values = {
@@ -421,15 +433,21 @@ export default class extends Controller {
   }
 
   updateProgress(data) {
+    const percentage = data.progress_percentage || 0
+    
     // Update progress bar
     if (this.hasProgressBarTarget) {
-      const percentage = data.progress_percentage || 0
       this.progressBarTarget.style.width = `${percentage}%`
+    }
+
+    // Update progress indicator line
+    if (this.hasProgressIndicatorTarget) {
+      this.progressIndicatorTarget.style.left = `${percentage}%`
     }
 
     // Update percentage text
     if (this.hasProgressPercentageTarget) {
-      this.progressPercentageTarget.textContent = `${data.progress_percentage || 0}%`
+      this.progressPercentageTarget.textContent = `${percentage}%`
     }
 
     // Update processed count
@@ -440,6 +458,17 @@ export default class extends Controller {
     // Update detected expenses
     if (this.hasDetectedCountTarget && data.detected_expenses !== undefined) {
       this.detectedCountTarget.textContent = data.detected_expenses
+    }
+
+    // Update error count
+    if (this.hasErrorCountTarget && data.error_count !== undefined) {
+      this.errorCountTarget.textContent = data.error_count
+      
+      // Highlight errors if present
+      if (data.error_count > 0) {
+        this.errorCountTarget.classList.add('text-rose-600')
+        this.errorCountTarget.classList.remove('text-slate-600')
+      }
     }
 
     // Update time remaining
@@ -635,6 +664,93 @@ export default class extends Controller {
       form.submit()
     }
   }
+
+  // Action to toggle pause/resume
+  togglePause(event) {
+    event.preventDefault()
+    
+    if (this.isPaused) {
+      this.resumeSync()
+    } else {
+      this.pauseSync()
+    }
+  }
+
+  pauseSync() {
+    this.isPaused = true
+    
+    // Update button UI
+    if (this.hasPauseButtonTarget) {
+      this.pauseButtonTarget.innerHTML = `
+        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        Reanudar
+      `
+      this.pauseButtonTarget.classList.add('bg-amber-50', 'border-amber-300', 'text-amber-700')
+      this.pauseButtonTarget.classList.remove('bg-white', 'border-slate-300', 'text-slate-700')
+    }
+    
+    // Update status text
+    if (this.hasStatusTextTarget) {
+      this.statusTextTarget.innerHTML = `
+        <span class="inline-flex items-center">
+          <span class="w-2 h-2 bg-amber-500 rounded-full mr-2"></span>
+          Sincronización pausada
+        </span>
+      `
+    }
+    
+    // Send pause command to server
+    if (this.subscription && this.connectionStateValue === "connected") {
+      try {
+        this.subscription.perform('pause_sync')
+      } catch (error) {
+        this.log("error", "Error pausing sync", error)
+      }
+    }
+    
+    this.showToast("Sincronización pausada", "info")
+  }
+
+  resumeSync() {
+    this.isPaused = false
+    
+    // Update button UI
+    if (this.hasPauseButtonTarget) {
+      this.pauseButtonTarget.innerHTML = `
+        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        Pausar
+      `
+      this.pauseButtonTarget.classList.remove('bg-amber-50', 'border-amber-300', 'text-amber-700')
+      this.pauseButtonTarget.classList.add('bg-white', 'border-slate-300', 'text-slate-700')
+    }
+    
+    // Update status text
+    if (this.hasStatusTextTarget) {
+      this.statusTextTarget.innerHTML = `
+        <span class="inline-flex items-center">
+          <span class="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></span>
+          Sincronización en progreso
+        </span>
+      `
+    }
+    
+    // Send resume command to server
+    if (this.subscription && this.connectionStateValue === "connected") {
+      try {
+        this.subscription.perform('resume_sync')
+        this.requestLatestStatus()
+      } catch (error) {
+        this.log("error", "Error resuming sync", error)
+      }
+    }
+    
+    this.showToast("Sincronización reanudada", "success")
+  }
   
   // Visibility handling for tab switching
   setupVisibilityHandling() {
@@ -827,6 +943,31 @@ export default class extends Controller {
       // Add appropriate color class
       const colorClass = colorClasses[this.connectionStateValue] || 'text-slate-600'
       this.connectionStatusTarget.classList.add(colorClass)
+    }
+    
+    // Update connection warning section
+    if (this.hasConnectionWarningTarget && this.hasConnectionMessageTarget) {
+      const showWarning = ['disconnected', 'connecting', 'offline', 'error', 'rejected'].includes(this.connectionStateValue)
+      
+      if (showWarning) {
+        this.connectionWarningTarget.classList.remove('hidden')
+        this.connectionMessageTarget.textContent = status
+        
+        // Update warning colors based on severity
+        if (this.connectionStateValue === 'error' || this.connectionStateValue === 'rejected') {
+          this.connectionWarningTarget.classList.remove('bg-amber-50', 'border-amber-200')
+          this.connectionWarningTarget.classList.add('bg-rose-50', 'border-rose-200')
+          this.connectionMessageTarget.classList.remove('text-amber-800')
+          this.connectionMessageTarget.classList.add('text-rose-800')
+        } else {
+          this.connectionWarningTarget.classList.remove('bg-rose-50', 'border-rose-200')
+          this.connectionWarningTarget.classList.add('bg-amber-50', 'border-amber-200')
+          this.connectionMessageTarget.classList.remove('text-rose-800')
+          this.connectionMessageTarget.classList.add('text-amber-800')
+        }
+      } else {
+        this.connectionWarningTarget.classList.add('hidden')
+      }
     }
   }
   

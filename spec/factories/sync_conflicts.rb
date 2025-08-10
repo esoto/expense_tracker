@@ -17,32 +17,32 @@ FactoryBot.define do
     end
     differences { {} }
     bulk_resolvable { true }
-    
+
     trait :resolved do
       status { 'resolved' }
       resolution_action { 'keep_existing' }
       resolved_at { Time.current }
       resolved_by { 'test_user' }
     end
-    
+
     trait :auto_resolved do
       status { 'auto_resolved' }
       resolution_action { 'keep_existing' }
       resolved_at { Time.current }
       resolved_by { 'system' }
     end
-    
+
     trait :similar do
       conflict_type { 'similar' }
       similarity_score { 75.0 }
     end
-    
+
     trait :needs_review do
       conflict_type { 'needs_review' }
       similarity_score { 50.0 }
       priority { 5 }
     end
-    
+
     trait :with_new_expense do
       association :new_expense, factory: :expense
     end

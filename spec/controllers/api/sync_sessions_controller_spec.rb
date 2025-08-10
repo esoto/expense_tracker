@@ -11,9 +11,9 @@ RSpec.describe Api::SyncSessionsController, type: :controller do
         it 'returns sync session status' do
           sync_account # Create the account
           request.headers['X-Sync-Token'] = sync_session.session_token
-          
+
           get :status, params: { id: sync_session.id }, format: :json
-          
+
           expect(response).to have_http_status(:ok)
           json = JSON.parse(response.body)
           expect(json['type']).to eq('status_update')
@@ -29,9 +29,9 @@ RSpec.describe Api::SyncSessionsController, type: :controller do
           # Clear the token to test session-based auth
           sync_session.update_column(:session_token, nil)
           session[:sync_session_id] = sync_session.id
-          
+
           get :status, params: { id: sync_session.id }, format: :json
-          
+
           expect(response).to have_http_status(:ok)
           json = JSON.parse(response.body)
           expect(json['type']).to eq('status_update')
@@ -40,21 +40,21 @@ RSpec.describe Api::SyncSessionsController, type: :controller do
 
       context 'when using IP-based authentication' do
         let(:sync_session_no_token) { create(:sync_session) }
-        
+
         before do
           # Remove token to test IP-based auth - use update_columns to skip callbacks
           sync_session_no_token.update_columns(session_token: nil)
         end
-        
+
         it 'allows access for recent sessions with matching IP' do
           sync_session_no_token.update_columns(
             created_at: 1.hour.ago,
             metadata: { 'ip_address' => '0.0.0.0' }  # Match test environment IP
           )
           create(:sync_session_account, sync_session: sync_session_no_token, email_account: email_account)
-          
+
           get :status, params: { id: sync_session_no_token.id }, format: :json
-          
+
           expect(response).to have_http_status(:ok)
         end
 
@@ -64,9 +64,9 @@ RSpec.describe Api::SyncSessionsController, type: :controller do
             metadata: { 'ip_address' => '192.168.1.1' }
           )
           allow(request).to receive(:remote_ip).and_return('127.0.0.1')
-          
+
           get :status, params: { id: sync_session_no_token.id }, format: :json
-          
+
           expect(response).to have_http_status(:unauthorized)
         end
       end
@@ -75,7 +75,7 @@ RSpec.describe Api::SyncSessionsController, type: :controller do
     context 'with invalid sync session' do
       it 'returns not found for non-existent session' do
         get :status, params: { id: 'invalid-id' }, format: :json
-        
+
         expect(response).to have_http_status(:not_found)
         json = JSON.parse(response.body)
         expect(json['error']).to eq('Sync session not found')
@@ -83,9 +83,9 @@ RSpec.describe Api::SyncSessionsController, type: :controller do
 
       it 'returns unauthorized without proper authentication' do
         request.headers['X-Sync-Token'] = 'wrong-token'
-        
+
         get :status, params: { id: sync_session.id }, format: :json
-        
+
         expect(response).to have_http_status(:unauthorized)
       end
     end
@@ -101,9 +101,9 @@ RSpec.describe Api::SyncSessionsController, type: :controller do
           session_token: nil  # Clear token to test session auth
         )
         session[:sync_session_id] = sync_session.id
-        
+
         get :status, params: { id: sync_session.id }, format: :json
-        
+
         json = JSON.parse(response.body)
         expect(json['status']).to eq('completed')
         expect(json['progress_percentage']).to eq(100)
@@ -119,9 +119,9 @@ RSpec.describe Api::SyncSessionsController, type: :controller do
         # Clear token to test session auth
         sync_session.update_column(:session_token, nil)
         session[:sync_session_id] = sync_session.id
-        
+
         get :status, params: { id: sync_session.id }, format: :json
-        
+
         json = JSON.parse(response.body)
         expect(json['status']).to eq('failed')
         expect(json['error_details']).to eq('Connection timeout')

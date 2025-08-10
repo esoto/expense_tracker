@@ -1,3 +1,5 @@
+---
+
 ## Task 1.4: Background Job Queue Visualization
 
 **Task ID:** EXP-1.4  

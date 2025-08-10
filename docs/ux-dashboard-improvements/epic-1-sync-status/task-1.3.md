@@ -1,3 +1,5 @@
+---
+
 ## Task 1.3: Performance Monitoring Dashboard
 
 **Task ID:** EXP-1.3  

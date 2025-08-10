@@ -12,6 +12,13 @@ module ExpenseTracker
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.0
 
+    # Workaround for Rails 8.0 + Ruby 3.4 FrozenError in CI environments
+    # This prevents the autoloader from trying to modify frozen arrays
+    if Rails.env.test?
+      config.enable_reloading = false
+      config.eager_load = false
+    end
+
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.

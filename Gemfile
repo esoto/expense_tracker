@@ -106,8 +106,33 @@ group :test do
   gem "capybara"
   gem "selenium-webdriver"
 
+  # Modern browser automation with Chrome DevTools Protocol
+  gem "cuprite"
+
+  # External HTTP request mocking for IMAP and API testing
+  gem "webmock"
+  gem "vcr"
+
   # Parallel test execution
   gem "parallel_tests"
+
+  # Performance and benchmarking
+  gem "rspec-benchmark"
+
+  # JSON response testing
+  gem "json_spec"
+
+  # Database cleaning strategies
+  gem "database_cleaner-active_record"
+
+  # ActionCable testing support
+  gem "action-cable-testing"
+
+  # Enhanced collection matchers
+  gem "rspec-collection_matchers"
+
+  # Background job testing utilities
+  gem "rspec-sidekiq" # Will adapt for Solid Queue
 end
 
 gem "rspec-rails", "~> 8.0"

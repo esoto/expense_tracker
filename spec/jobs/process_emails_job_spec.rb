@@ -413,7 +413,6 @@ RSpec.describe ProcessEmailsJob, type: :job do
     end
   end
 
-
   describe 'job queue configuration' do
     it 'uses the email_processing queue' do
       expect(ProcessEmailsJob.new.queue_name).to eq('email_processing')

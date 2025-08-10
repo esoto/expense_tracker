@@ -169,7 +169,6 @@ RSpec.describe EmailProcessing::Parser, type: :service do
     # Note: Validation error scenarios are complex to mock properly and are tested in integration
   end
 
-
   describe '#email_content' do
     it 'returns cleaned email content' do
       content = parser.send(:email_content)

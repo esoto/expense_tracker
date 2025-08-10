@@ -118,7 +118,7 @@ class ProcessEmailsJob < ApplicationJob
         session_account&.complete!
       else
         Rails.logger.error "Failed to process emails for #{email_account.email}: #{result.error_messages}"
-        session_account&.fail!(result.error_messages.join(", "))
+        session_account&.fail!(result.error_messages)
       end
     rescue => e
       Rails.logger.error "Error processing account #{email_account.email}: #{e.message}"

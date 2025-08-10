@@ -32,6 +32,18 @@ else
     req.ip if req.path == "/sync_sessions" && req.post?
   end
 
+  # Queue status monitoring rate limiting
+  # Allow 60 status checks per minute per IP (every second)
+  throttle("queue/status", limit: 60, period: 1.minute) do |req|
+    req.ip if req.path == "/api/queue/status" || req.path == "/api/queue/status.json"
+  end
+
+  # Queue control operations rate limiting  
+  # Allow 10 control operations per minute per IP
+  throttle("queue/control", limit: 10, period: 1.minute) do |req|
+    req.ip if req.path.start_with?("/api/queue/") && (req.post? || req.put? || req.patch? || req.delete?)
+  end
+
   # Exponential backoff for repeated failed requests
   # Block IP for 10 minutes after 5 failed authentication attempts
   Rack::Attack.blocklist("fail2ban:logins") do |req|

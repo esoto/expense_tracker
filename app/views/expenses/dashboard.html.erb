@@ -181,6 +181,11 @@
     <%= render 'sync_sessions/unified_widget' %>
   </div>
 
+  <!-- Queue Visualization Widget -->
+  <div class="mb-6">
+    <%= render 'sync_sessions/queue_visualization' %>
+  </div>
+
   <!-- Conflict Alert (if any pending conflicts) -->
   <% pending_conflicts_count = SyncConflict.unresolved.count %>
   <% if pending_conflicts_count > 0 %>

@@ -1,0 +1,201 @@
+<!-- Queue Visualization Component -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200"
+     data-controller="queue-monitor"
+     data-queue-monitor-refresh-interval-value="5000"
+     data-queue-monitor-api-endpoint-value="/api/queue/status.json">
+  
+  <!-- Header -->
+  <div class="px-6 py-4 border-b border-slate-200">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <h3 class="text-lg font-semibold text-slate-900">Background Job Queue</h3>
+        <!-- Health Status Indicator -->
+        <div data-queue-monitor-target="healthIndicator" class="flex items-center">
+          <div data-queue-monitor-target="healthDot" class="w-2 h-2 rounded-full bg-slate-400 mr-2"></div>
+          <span data-queue-monitor-target="healthText" class="text-sm text-slate-600">Checking...</span>
+        </div>
+      </div>
+      
+      <!-- Control Buttons -->
+      <div class="flex items-center space-x-2">
+        <!-- Refresh Button -->
+        <button data-action="click->queue-monitor#refresh"
+                class="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                title="Refresh now">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+        
+        <!-- Pause/Resume Button -->
+        <button data-queue-monitor-target="pauseButton"
+                data-action="click->queue-monitor#togglePause"
+                class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center space-x-1">
+          <svg data-queue-monitor-target="pauseIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span data-queue-monitor-target="pauseText">Pause All</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Queue Metrics Grid -->
+  <div class="p-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Pending Jobs -->
+    <div class="bg-slate-50 rounded-lg p-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm font-medium text-slate-600">Pending</span>
+        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      </div>
+      <div class="text-2xl font-bold text-slate-900" data-queue-monitor-target="pendingCount">0</div>
+      <div class="text-xs text-slate-500 mt-1">Waiting to process</div>
+    </div>
+
+    <!-- Processing Jobs -->
+    <div class="bg-teal-50 rounded-lg p-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm font-medium text-teal-700">Processing</span>
+        <svg class="w-4 h-4 text-teal-600 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </div>
+      <div class="text-2xl font-bold text-teal-900" data-queue-monitor-target="processingCount">0</div>
+      <div class="text-xs text-teal-600 mt-1">Currently running</div>
+    </div>
+
+    <!-- Completed Jobs -->
+    <div class="bg-emerald-50 rounded-lg p-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm font-medium text-emerald-700">Completed</span>
+        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      </div>
+      <div class="text-2xl font-bold text-emerald-900" data-queue-monitor-target="completedCount">0</div>
+      <div class="text-xs text-emerald-600 mt-1">Last 24 hours</div>
+    </div>
+
+    <!-- Failed Jobs -->
+    <div class="bg-rose-50 rounded-lg p-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm font-medium text-rose-700">Failed</span>
+        <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      </div>
+      <div class="text-2xl font-bold text-rose-900" data-queue-monitor-target="failedCount">0</div>
+      <div class="text-xs text-rose-600 mt-1">
+        <button data-action="click->queue-monitor#retryAllFailed"
+                data-queue-monitor-target="retryAllButton"
+                class="underline hover:no-underline hidden">
+          Retry all
+        </button>
+        <span data-queue-monitor-target="noFailedText">No failures</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Queue Depth Visualization -->
+  <div class="px-6 pb-4">
+    <div class="space-y-2">
+      <div class="flex items-center justify-between text-sm">
+        <span class="text-slate-600">Queue Depth</span>
+        <div class="flex items-center space-x-2">
+          <span class="text-slate-900 font-medium" data-queue-monitor-target="processingRate">0 jobs/min</span>
+          <span class="text-slate-500">•</span>
+          <span class="text-slate-600" data-queue-monitor-target="estimatedTime">--</span>
+        </div>
+      </div>
+      
+      <!-- Progress Bar -->
+      <div class="relative">
+        <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+          <div data-queue-monitor-target="queueDepthBar"
+               class="h-full rounded-full transition-all duration-500 ease-out bg-gradient-to-r from-teal-500 to-teal-700"
+               style="width: 0%"></div>
+        </div>
+        <!-- Queue depth scale markers -->
+        <div class="flex justify-between mt-1 text-xs text-slate-500">
+          <span>0</span>
+          <span data-queue-monitor-target="queueDepthMax">100</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Queue Breakdown by Name -->
+  <div class="px-6 pb-4" data-queue-monitor-target="queueBreakdown" style="display: none;">
+    <h4 class="text-sm font-medium text-slate-700 mb-3">Queue Distribution</h4>
+    <div class="space-y-2" data-queue-monitor-target="queueList">
+      <!-- Dynamically populated queue list -->
+    </div>
+  </div>
+
+  <!-- Active Jobs Section -->
+  <div class="border-t border-slate-200" data-queue-monitor-target="activeJobsSection" style="display: none;">
+    <div class="px-6 py-4">
+      <h4 class="text-sm font-medium text-slate-700 mb-3 flex items-center">
+        <svg class="w-4 h-4 text-teal-600 mr-2 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+        Currently Processing
+      </h4>
+      <div class="space-y-2" data-queue-monitor-target="activeJobsList">
+        <!-- Dynamically populated active jobs -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Failed Jobs Section -->
+  <div class="border-t border-slate-200" data-queue-monitor-target="failedJobsSection" style="display: none;">
+    <div class="px-6 py-4">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="text-sm font-medium text-slate-700 flex items-center">
+          <svg class="w-4 h-4 text-rose-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+          </svg>
+          Failed Jobs
+        </h4>
+        <button data-action="click->queue-monitor#clearAllFailed"
+                class="text-xs text-rose-600 hover:text-rose-700 font-medium">
+          Clear All
+        </button>
+      </div>
+      <div class="space-y-2" data-queue-monitor-target="failedJobsList">
+        <!-- Dynamically populated failed jobs -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Worker Status -->
+  <div class="border-t border-slate-200 px-6 py-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <div class="flex items-center">
+          <svg class="w-4 h-4 text-slate-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+          </svg>
+          <span class="text-sm text-slate-600">Workers:</span>
+          <span class="text-sm font-medium text-slate-900 ml-1" data-queue-monitor-target="workerCount">0</span>
+        </div>
+        <div class="flex items-center">
+          <span class="text-sm text-slate-600">Utilization:</span>
+          <span class="text-sm font-medium text-slate-900 ml-1" data-queue-monitor-target="utilization">0%</span>
+        </div>
+      </div>
+      
+      <!-- Auto-refresh indicator -->
+      <div class="flex items-center text-xs text-slate-500">
+        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+        </svg>
+        <span data-queue-monitor-target="lastUpdate">Never</span>
+      </div>
+    </div>
+  </div>
+</div>

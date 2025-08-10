@@ -32,13 +32,13 @@ class SyncSessionValidator
 
   def check_active_sync_limit!
     if SyncSession.active.count >= MAX_ACTIVE_SYNCS
-      raise SyncLimitExceeded, "Maximum number of active syncs reached"
+      raise SyncLimitExceeded, "Ya hay una sincronización activa. Espera a que termine antes de iniciar otra."
     end
   end
 
   def check_rate_limit!
     if rate_limit_exceeded?
-      raise RateLimitExceeded, "Rate limit exceeded"
+      raise RateLimitExceeded, "Has alcanzado el límite de sincronizaciones. Intenta nuevamente en unos minutos."
     end
   end
 

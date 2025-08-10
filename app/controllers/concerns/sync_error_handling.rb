@@ -24,7 +24,7 @@ module SyncErrorHandling
         redirect_to sync_sessions_path, alert: "Error de validación: #{exception.record.errors.full_messages.join(', ')}"
       end
       format.json do
-        render json: { errors: exception.record.errors.full_messages }, status: :unprocessable_entity
+        render json: { errors: exception.record.errors.full_messages }, status: :unprocessable_content
       end
     end
   end
@@ -45,22 +45,32 @@ module SyncErrorHandling
 
   def handle_sync_limit_exceeded
     respond_to do |format|
+      format.json do
+        render json: { error: "Sync limit exceeded", message: "Active sync already in progress" }, status: :too_many_requests
+      end
       format.html do
         redirect_to sync_sessions_path, alert: "Ya hay una sincronización activa. Espera a que termine antes de iniciar otra."
       end
-      format.json do
-        render json: { error: "Sync limit exceeded", message: "Active sync already in progress" }, status: :too_many_requests
+      format.any do
+        redirect_to sync_sessions_path, alert: "Ya hay una sincronización activa. Espera a que termine antes de iniciar otra."
       end
     end
   end
 
   def handle_rate_limit_exceeded
     respond_to do |format|
+      format.json do
+        render json: {
+          error: "Too many requests",
+          message: "You have exceeded the rate limit. Please try again later.",
+          retry_after: (Time.current.beginning_of_minute + 5.minutes).to_i.to_s
+        }, status: :too_many_requests
+      end
       format.html do
         redirect_to sync_sessions_path, alert: "Has alcanzado el límite de sincronizaciones. Intenta nuevamente en unos minutos."
       end
-      format.json do
-        render json: { error: "Rate limit exceeded", retry_after: 300 }, status: :too_many_requests
+      format.any do
+        redirect_to sync_sessions_path, alert: "Has alcanzado el límite de sincronizaciones. Intenta nuevamente en unos minutos."
       end
     end
   end

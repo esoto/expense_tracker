@@ -1,9 +1,10 @@
 module EmailProcessing
   class Processor
-    attr_reader :email_account, :errors
+    attr_reader :email_account, :errors, :metrics_collector
 
-    def initialize(email_account)
+    def initialize(email_account, metrics_collector: nil)
       @email_account = email_account
+      @metrics_collector = metrics_collector
       @errors = []
     end
 
@@ -38,6 +39,16 @@ module EmailProcessing
     private
 
     def process_single_email(message_id, imap_service)
+      if @metrics_collector
+        @metrics_collector.track_operation(:parse_email, @email_account, { message_id: message_id }) do
+          process_email_with_metrics(message_id, imap_service)
+        end
+      else
+        process_email_with_metrics(message_id, imap_service)
+      end
+    end
+
+    def process_email_with_metrics(message_id, imap_service)
       envelope = imap_service.fetch_envelope(message_id)
       return { processed: false, expense_created: false } unless envelope
 
@@ -55,12 +66,17 @@ module EmailProcessing
       email_data = extract_email_data(message_id, envelope, imap_service)
       return { processed: false, expense_created: false } unless email_data
 
-      # Queue job to parse and create expense
-      ProcessEmailJob.perform_later(email_account.id, email_data)
+      # Check for conflicts before creating expense
+      if detect_and_handle_conflict(email_data)
+        { processed: true, expense_created: false, conflict_detected: true }
+      else
+        # Queue job to parse and create expense
+        ProcessEmailJob.perform_later(email_account.id, email_data)
 
-      # For now, we assume transaction emails will create expenses
-      # In a real implementation, we'd track this through the job
-      { processed: true, expense_created: true }
+        # For now, we assume transaction emails will create expenses
+        # In a real implementation, we'd track this through the job
+        { processed: true, expense_created: true }
+      end
 
     rescue StandardError => e
       Rails.logger.error "Error processing email #{message_id}: #{e.message}"
@@ -212,6 +228,35 @@ module EmailProcessing
 
       from_addr = envelope.from.first
       "#{from_addr.mailbox}@#{from_addr.host}"
+    end
+
+    def detect_and_handle_conflict(email_data)
+      # Parse expense data from email
+      parser = EmailProcessing::Parser.new(email_account)
+      expense_data = parser.parse_transaction(email_data[:body])
+
+      return false unless expense_data
+
+      # Add additional fields
+      expense_data[:email_account_id] = email_account.id
+      expense_data[:raw_email_content] = email_data[:body]
+      expense_data[:transaction_date] ||= email_data[:date]
+
+      # Get current sync session (if any)
+      sync_session = SyncSession.active.last
+
+      if sync_session
+        # Use conflict detection service with metrics tracking
+        detector = ConflictDetectionService.new(sync_session, metrics_collector: @metrics_collector)
+        conflict = detector.detect_conflict_for_expense(expense_data)
+
+        return true if conflict # Conflict detected and handled
+      end
+
+      false # No conflict detected
+    rescue => e
+      Rails.logger.error "[EmailProcessing::Processor] Error detecting conflict: #{e.message}"
+      false # Continue with normal processing on error
     end
 
     def add_error(message)

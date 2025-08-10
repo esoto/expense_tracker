@@ -1,9 +1,10 @@
 class SyncSessionCreator
-  attr_reader :params, :validator
+  attr_reader :params, :validator, :request_info
 
-  def initialize(params = {})
+  def initialize(params = {}, request_info = {})
     @params = params
     @validator = SyncSessionValidator.new
+    @request_info = request_info
   end
 
   def call
@@ -34,7 +35,9 @@ class SyncSessionCreator
 
   def create_sync_session
     SyncSession.transaction do
-      session = SyncSession.create!
+      session = SyncSession.create!(
+        metadata: build_metadata
+      )
 
       if params[:email_account_id].present?
         add_single_account(session)
@@ -44,6 +47,15 @@ class SyncSessionCreator
 
       session
     end
+  end
+
+  def build_metadata
+    {
+      ip_address: request_info[:ip_address],
+      user_agent: request_info[:user_agent],
+      created_from: request_info[:source] || "web",
+      rails_session_id: request_info[:session_id]
+    }.compact
   end
 
   def add_single_account(session)

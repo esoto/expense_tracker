@@ -23,10 +23,13 @@ class SyncSessionsController < ApplicationController
   end
 
   def create
-    result = SyncSessionCreator.new(sync_params).call
+    result = SyncSessionCreator.new(sync_params, request_info).call
 
     if result.success?
       @sync_session = result.sync_session
+      # Store sync session ID in Rails session for authorization
+      session[:sync_session_id] = @sync_session.id
+
       respond_to do |format|
         format.turbo_stream {
           # For dashboard, redirect to sync_sessions page
@@ -101,6 +104,15 @@ class SyncSessionsController < ApplicationController
 
   def sync_params
     params.permit(:email_account_id, :since)
+  end
+
+  def request_info
+    {
+      ip_address: request.remote_ip,
+      user_agent: request.user_agent,
+      session_id: session.id.to_s,
+      source: "web"
+    }
   end
 
   def retry_params

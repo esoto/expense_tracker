@@ -8,6 +8,7 @@ class EmailAccount < ApplicationRecord
   has_many :parsing_rules, primary_key: :bank_name, foreign_key: :bank_name
   has_many :sync_session_accounts, dependent: :destroy
   has_many :sync_sessions, through: :sync_session_accounts
+  has_many :sync_metrics, dependent: :destroy
 
   # Validations
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }

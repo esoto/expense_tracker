@@ -1,8 +1,10 @@
 class SyncProgressUpdater
-  attr_reader :sync_session
+  attr_reader :sync_session, :batch_collector, :metrics_collector
 
-  def initialize(sync_session)
+  def initialize(sync_session, metrics_collector: nil)
     @sync_session = sync_session
+    @batch_collector = ProgressBatchCollector.new(sync_session) if sync_session
+    @metrics_collector = metrics_collector || (SyncMetricsCollector.new(sync_session) if sync_session)
   end
 
   def call
@@ -11,8 +13,8 @@ class SyncProgressUpdater
     # Use a single query with calculated fields for better performance
     update_with_aggregated_data
 
-    # Broadcast progress update via ActionCable
-    broadcast_progress_update
+    # Use batched progress updates for better performance
+    broadcast_progress_update_batched
 
     true
   rescue ActiveRecord::StaleObjectError
@@ -34,8 +36,14 @@ class SyncProgressUpdater
       status: determine_account_status(processed, total)
     )
 
-    # Broadcast account-specific update
-    SyncStatusChannel.broadcast_account_progress(sync_session, account)
+    # Use batched account update for better performance
+    batch_collector&.add_account_update(
+      account_id: account_id,
+      status: account.status,
+      processed: processed,
+      total: total,
+      detected: detected
+    )
 
     # Update session progress after account update
     call
@@ -77,7 +85,21 @@ class SyncProgressUpdater
   end
 
   def broadcast_progress_update
-    # Broadcast via Action Cable
+    # Track broadcast operation
+    if @metrics_collector
+      @metrics_collector.track_operation(:broadcast_update, nil, { type: "progress" }) do
+        perform_broadcast
+      end
+    else
+      perform_broadcast
+    end
+  rescue StandardError => e
+    Rails.logger.error "Error broadcasting progress update: #{e.message}"
+    # Don't fail the whole update if broadcasting fails
+  end
+
+  def perform_broadcast
+    # Broadcast via Action Cable with enhanced reliability
     SyncStatusChannel.broadcast_progress(
       sync_session,
       sync_session.processed_emails,
@@ -87,8 +109,69 @@ class SyncProgressUpdater
 
     # Also trigger Turbo Stream broadcast for dashboard
     sync_session.broadcast_dashboard_update if sync_session.respond_to?(:broadcast_dashboard_update)
+  end
+
+  # New batched broadcasting method for improved performance
+  def broadcast_progress_update_batched
+    return unless batch_collector
+
+    # Add progress update to batch collector
+    batch_collector.add_progress_update(
+      processed: sync_session.processed_emails,
+      total: sync_session.total_emails,
+      detected: sync_session.detected_expenses,
+      metadata: {
+        session_id: sync_session.id,
+        status: sync_session.status,
+        progress_percentage: sync_session.progress_percentage
+      }
+    )
+
+    # Also trigger Turbo Stream broadcast for dashboard (non-batched)
+    sync_session.broadcast_dashboard_update if sync_session.respond_to?(:broadcast_dashboard_update)
   rescue StandardError => e
-    Rails.logger.error "Error broadcasting progress update: #{e.message}"
-    # Don't fail the whole update if broadcasting fails
+    Rails.logger.error "Error broadcasting batched progress update: #{e.message}"
+    # Fallback to direct broadcasting
+    broadcast_progress_update
+  end
+
+  # Add activity updates to batch
+  def add_activity_update(activity_type, message)
+    return unless batch_collector
+
+    batch_collector.add_activity_update(
+      activity_type: activity_type,
+      message: message
+    )
+  rescue StandardError => e
+    Rails.logger.error "Error adding activity update to batch: #{e.message}"
+    # Fallback to direct broadcast
+    SyncStatusChannel.broadcast_activity(sync_session, activity_type, message)
+  end
+
+  # Add critical updates (bypass batching)
+  def add_critical_update(type, message, data = {})
+    return unless batch_collector
+
+    batch_collector.add_critical_update(
+      type: type,
+      message: message,
+      data: data
+    )
+  rescue StandardError => e
+    Rails.logger.error "Error adding critical update: #{e.message}"
+  end
+
+  # Stop batch collector and flush remaining updates
+  def finalize
+    return unless batch_collector
+
+    batch_collector.stop
+    @batch_collector = nil
+  end
+
+  # Get batch collector statistics for monitoring
+  def batch_stats
+    batch_collector&.stats || {}
   end
 end

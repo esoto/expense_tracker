@@ -29,8 +29,14 @@ gem "net-imap"
 # Authentication and API
 gem "jwt"
 
+# Rate limiting and security
+gem "rack-attack"
+
 # Date and text parsing
 gem "chronic"
+
+# CSV support for Ruby 3.4+
+gem "csv"
 
 # Charts and visualization
 gem "chartkick"
@@ -39,6 +45,9 @@ gem "groupdate"
 # Pagination
 gem "kaminari"
 
+# Bulk insert for performance
+gem "activerecord-import"
+
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 
@@ -46,6 +55,16 @@ gem "tzinfo-data", platforms: %i[ windows jruby ]
 gem "solid_cache"
 gem "solid_queue"
 gem "solid_cable"
+
+# Background job processing for broadcast reliability
+gem "sidekiq"
+
+# Concurrent programming support for batch collection
+gem "concurrent-ruby"
+
+# Redis connection pooling for analytics
+gem "connection_pool"
+gem "redis"
 
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
@@ -99,3 +118,5 @@ gem "shoulda-matchers", "~> 6.5", group: :test
 gem "rails-controller-testing", group: :test
 
 gem "rails_best_practices", "~> 1.23", group: :development
+
+gem "fakeredis", "~> 0.9.2", group: :test, github: "guilleiguaran/fakeredis"

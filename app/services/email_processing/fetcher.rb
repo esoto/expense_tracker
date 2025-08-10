@@ -1,12 +1,13 @@
 module EmailProcessing
   class Fetcher
-    attr_reader :email_account, :errors, :imap_service, :email_processor
+    attr_reader :email_account, :errors, :imap_service, :email_processor, :metrics_collector
 
-    def initialize(email_account, imap_service: nil, email_processor: nil, sync_session_account: nil)
+    def initialize(email_account, imap_service: nil, email_processor: nil, sync_session_account: nil, metrics_collector: nil)
       @email_account = email_account
       @imap_service = imap_service || ImapConnectionService.new(email_account)
-      @email_processor = email_processor || EmailProcessing::Processor.new(email_account)
+      @email_processor = email_processor || EmailProcessing::Processor.new(email_account, metrics_collector: metrics_collector)
       @sync_session_account = sync_session_account
+      @metrics_collector = metrics_collector
       @errors = []
     end
 
@@ -55,7 +56,16 @@ module EmailProcessing
     def search_and_process_emails(since)
       # Build search criteria for emails since the specified date
       search_criteria = build_search_criteria(since)
-      message_ids = imap_service.search_emails(search_criteria)
+
+      # Track email fetch operation
+      message_ids = if @metrics_collector
+        @metrics_collector.track_operation(:fetch_emails, @email_account, { since: since }) do
+          imap_service.search_emails(search_criteria)
+        end
+      else
+        imap_service.search_emails(search_criteria)
+      end
+
       total_emails_found = message_ids.count
 
       # Update sync session with total emails

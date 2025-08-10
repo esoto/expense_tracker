@@ -1,9 +1,10 @@
 class SyncProgressUpdater
-  attr_reader :sync_session, :batch_collector
+  attr_reader :sync_session, :batch_collector, :metrics_collector
 
-  def initialize(sync_session)
+  def initialize(sync_session, metrics_collector: nil)
     @sync_session = sync_session
     @batch_collector = ProgressBatchCollector.new(sync_session) if sync_session
+    @metrics_collector = metrics_collector || (SyncMetricsCollector.new(sync_session) if sync_session)
   end
 
   def call
@@ -84,6 +85,20 @@ class SyncProgressUpdater
   end
 
   def broadcast_progress_update
+    # Track broadcast operation
+    if @metrics_collector
+      @metrics_collector.track_operation(:broadcast_update, nil, { type: 'progress' }) do
+        perform_broadcast
+      end
+    else
+      perform_broadcast
+    end
+  rescue StandardError => e
+    Rails.logger.error "Error broadcasting progress update: #{e.message}"
+    # Don't fail the whole update if broadcasting fails
+  end
+
+  def perform_broadcast
     # Broadcast via Action Cable with enhanced reliability
     SyncStatusChannel.broadcast_progress(
       sync_session,
@@ -94,9 +109,6 @@ class SyncProgressUpdater
 
     # Also trigger Turbo Stream broadcast for dashboard
     sync_session.broadcast_dashboard_update if sync_session.respond_to?(:broadcast_dashboard_update)
-  rescue StandardError => e
-    Rails.logger.error "Error broadcasting progress update: #{e.message}"
-    # Don't fail the whole update if broadcasting fails
   end
 
   # New batched broadcasting method for improved performance

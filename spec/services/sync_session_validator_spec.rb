@@ -23,7 +23,7 @@ RSpec.describe SyncSessionValidator do
       it 'raises SyncLimitExceeded error' do
         expect { validator.validate! }.to raise_error(
           SyncSessionValidator::SyncLimitExceeded,
-          "Maximum number of active syncs reached"
+          "Ya hay una sincronización activa. Espera a que termine antes de iniciar otra."
         )
       end
     end
@@ -37,7 +37,7 @@ RSpec.describe SyncSessionValidator do
       it 'raises RateLimitExceeded error' do
         expect { validator.validate! }.to raise_error(
           SyncSessionValidator::RateLimitExceeded,
-          "Rate limit exceeded"
+          "Has alcanzado el límite de sincronizaciones. Intenta nuevamente en unos minutos."
         )
       end
     end

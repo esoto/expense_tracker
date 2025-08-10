@@ -12,6 +12,10 @@ RSpec.describe BroadcastAnalytics, type: :service do
   before do
     # Clear cache before each test
     Rails.cache.clear
+    
+    # Stub RedisAnalyticsService to ensure fallback to Rails.cache
+    allow(RedisAnalyticsService).to receive(:increment_counter).and_raise(StandardError, "Redis not available")
+    allow(RedisAnalyticsService).to receive(:record_timing).and_raise(StandardError, "Redis not available")
   end
 
   describe '.record_success' do

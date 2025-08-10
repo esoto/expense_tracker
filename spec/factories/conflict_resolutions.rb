@@ -1,31 +1,59 @@
 FactoryBot.define do
   factory :conflict_resolution do
     association :sync_conflict
-    resolution_action { 'keep_existing' }
+    action { 'keep_existing' }
     resolved_by { 'test_user' }
-    state_before { {} }
-    state_after { {} }
+    before_state { {} }
+    after_state { {} }
+    changes_made { {} }
     notes { 'Test resolution' }
-    can_undo { true }
+    undoable { true }
     undone { false }
+    resolution_method { 'manual' }
     
     trait :undone do
       undone { true }
       undone_at { Time.current }
-      undone_by { 'test_user' }
     end
     
     trait :keep_new do
-      resolution_action { 'keep_new' }
+      action { 'keep_new' }
     end
     
     trait :keep_both do
-      resolution_action { 'keep_both' }
+      action { 'keep_both' }
     end
     
     trait :merged do
-      resolution_action { 'merged' }
-      merged_fields { { amount: 'new', description: 'existing' } }
+      action { 'merged' }
+      changes_made do
+        {
+          'existing_expense' => {
+            'before' => { 'amount' => 100 },
+            'after' => { 'amount' => 150 }
+          }
+        }
+      end
+    end
+    
+    trait :custom do
+      action { 'custom' }
+    end
+    
+    trait :undo do
+      action { 'undo' }
+    end
+    
+    trait :auto_resolution do
+      resolution_method { 'auto' }
+    end
+    
+    trait :bulk_resolution do
+      resolution_method { 'bulk' }
+    end
+    
+    trait :api_resolution do
+      resolution_method { 'api' }
     end
   end
 end

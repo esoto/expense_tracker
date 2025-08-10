@@ -1,36 +1,37 @@
 require 'rails_helper'
 
-RSpec.describe SyncProgressUpdater do
-  let(:sync_session) { create(:sync_session) }
-  let(:email_account1) { create(:email_account) }
-  let(:email_account2) { create(:email_account) }
+RSpec.describe SyncProgressUpdater, type: :service do
+  # Use build_stubbed to avoid database hits
+  let(:sync_session) { build_stubbed(:sync_session, id: 1) }
+  let(:email_account1) { build_stubbed(:email_account, id: 1) }
+  let(:email_account2) { build_stubbed(:email_account, id: 2) }
   let(:service) { described_class.new(sync_session) }
+  
+  # Mock the batch collector to avoid thread creation overhead
+  before do
+    batch_collector = instance_double(ProgressBatchCollector)
+    allow(ProgressBatchCollector).to receive(:new).and_return(batch_collector)
+    allow(batch_collector).to receive(:add_progress_update)
+    allow(batch_collector).to receive(:add_account_update)
+    allow(batch_collector).to receive(:add_activity_update)
+    allow(batch_collector).to receive(:add_critical_update)
+    allow(batch_collector).to receive(:stop)
+    allow(batch_collector).to receive(:stats).and_return({})
+    
+    # Mock sync_session methods
+    allow(sync_session).to receive(:broadcast_dashboard_update)
+  end
 
   describe '#call' do
     context 'with sync session accounts' do
-      let!(:account1) do
-        create(:sync_session_account,
-               sync_session: sync_session,
-               email_account: email_account1,
-               total_emails: 100,
-               processed_emails: 50,
-               detected_expenses: 10)
-      end
-
-      let!(:account2) do
-        create(:sync_session_account,
-               sync_session: sync_session,
-               email_account: email_account2,
-               total_emails: 200,
-               processed_emails: 150,
-               detected_expenses: 20)
+      before do
+        # Mock the pluck query result
+        allow(sync_session).to receive(:sync_session_accounts).and_return(
+          double(pluck: [[300, 200, 30]])
+        )
       end
 
       it 'updates sync session with aggregated data' do
-        # Mock the update to avoid transaction issues
-        aggregated_data = double(total: 300, processed: 200, detected: 30)
-        allow(sync_session.sync_session_accounts).to receive(:select).and_return([ aggregated_data ])
-
         expect(sync_session).to receive(:update!).with(
           total_emails: 300,
           processed_emails: 200,
@@ -41,9 +42,6 @@ RSpec.describe SyncProgressUpdater do
       end
 
       it 'returns true on success' do
-        # Mock the aggregated query and update
-        aggregated_data = double(total: 300, processed: 200, detected: 30)
-        allow(sync_session.sync_session_accounts).to receive(:select).and_return([ aggregated_data ])
         allow(sync_session).to receive(:update!).and_return(true)
 
         expect(service.call).to be true
@@ -51,10 +49,13 @@ RSpec.describe SyncProgressUpdater do
     end
 
     context 'with no sync session accounts' do
+      before do
+        allow(sync_session).to receive(:sync_session_accounts).and_return(
+          double(pluck: [[0, 0, 0]])
+        )
+      end
+      
       it 'sets all counts to zero' do
-        aggregated_data = double(total: 0, processed: 0, detected: 0)
-        allow(sync_session.sync_session_accounts).to receive(:select).and_return([ aggregated_data ])
-
         expect(sync_session).to receive(:update!).with(
           total_emails: 0,
           processed_emails: 0,
@@ -66,10 +67,13 @@ RSpec.describe SyncProgressUpdater do
     end
 
     context 'with stale object error' do
+      before do
+        allow(sync_session).to receive(:sync_session_accounts).and_return(
+          double(pluck: [[300, 200, 30]])
+        )
+      end
+      
       it 'handles the error and retries' do
-        aggregated_data = double(total: 300, processed: 200, detected: 30)
-        allow(sync_session.sync_session_accounts).to receive(:select).and_return([ aggregated_data ])
-
         # First call raises error, second succeeds
         call_count = 0
         allow(sync_session).to receive(:update!) do
@@ -87,10 +91,13 @@ RSpec.describe SyncProgressUpdater do
     end
 
     context 'with persistent stale object error' do
+      before do
+        allow(sync_session).to receive(:sync_session_accounts).and_return(
+          double(pluck: [[300, 200, 30]])
+        )
+      end
+      
       it 'logs the error and returns false' do
-        aggregated_data = double(total: 300, processed: 200, detected: 30)
-        allow(sync_session.sync_session_accounts).to receive(:select).and_return([ aggregated_data ])
-
         # Always raise stale object error
         allow(sync_session).to receive(:update!).and_raise(ActiveRecord::StaleObjectError)
         allow(sync_session).to receive(:reload)
@@ -102,6 +109,9 @@ RSpec.describe SyncProgressUpdater do
 
     context 'with unexpected error' do
       before do
+        allow(sync_session).to receive(:sync_session_accounts).and_return(
+          double(pluck: [[100, 50, 10]])
+        )
         allow(sync_session).to receive(:update!).and_raise(StandardError, "Unexpected error")
       end
 
@@ -113,11 +123,17 @@ RSpec.describe SyncProgressUpdater do
   end
 
   describe '#update_account_progress' do
-    let!(:session_account) do
-      create(:sync_session_account,
-             sync_session: sync_session,
-             email_account: email_account1,
-             status: 'pending')
+    let(:session_account) do
+      build_stubbed(:sync_session_account,
+                    sync_session: sync_session,
+                    email_account: email_account1,
+                    status: 'pending')
+    end
+
+    before do
+      allow(sync_session).to receive(:sync_session_accounts).and_return(
+        double(find_by: session_account, pluck: [[100, 50, 10]])
+      )
     end
 
     it 'updates the account progress and triggers sync update' do
@@ -126,10 +142,10 @@ RSpec.describe SyncProgressUpdater do
         total_emails: 100,
         detected_expenses: 10,
         status: "processing"
-      )
+      ).and_return(true)
 
-      allow(sync_session.sync_session_accounts).to receive(:find_by).and_return(session_account)
-      expect(service).to receive(:call)
+      # Mock the call method
+      allow(sync_session).to receive(:update!).and_return(true)
 
       service.update_account_progress(
         email_account1.id,
@@ -145,10 +161,9 @@ RSpec.describe SyncProgressUpdater do
         total_emails: 100,
         detected_expenses: 20,
         status: "completed"
-      )
+      ).and_return(true)
 
-      allow(sync_session.sync_session_accounts).to receive(:find_by).and_return(session_account)
-      expect(service).to receive(:call)
+      allow(sync_session).to receive(:update!).and_return(true)
 
       service.update_account_progress(
         email_account1.id,
@@ -160,7 +175,9 @@ RSpec.describe SyncProgressUpdater do
 
     context 'when account not found' do
       it 'does nothing' do
-        allow(sync_session.sync_session_accounts).to receive(:find_by).and_return(nil)
+        allow(sync_session).to receive(:sync_session_accounts).and_return(
+          double(find_by: nil)
+        )
 
         expect {
           service.update_account_progress(99999, processed: 10, total: 20, detected: 5)

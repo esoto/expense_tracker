@@ -316,11 +316,25 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
   end
 
+  # Shared context for broadcast tests that use BroadcastReliabilityService
+  shared_context "broadcast reliability service mocked" do
+    before do
+      # Mock the BroadcastReliabilityService to directly call broadcast_to
+      # This ensures ActionCable broadcast matchers work correctly in tests
+      allow(BroadcastReliabilityService).to receive(:broadcast_with_retry) do |**args|
+        channel_class = args[:channel].is_a?(String) ? args[:channel].constantize : args[:channel]
+        channel_class.broadcast_to(args[:target], args[:data])
+        true
+      end
+    end
+  end
+
   describe ".broadcast_progress" do
+    include_context "broadcast reliability service mocked"
     it "broadcasts progress update to the session" do
       expect {
         SyncStatusChannel.broadcast_progress(sync_session, 50, 100, 10)
-      }.to have_broadcasted_to(sync_session).with(hash_including(
+      }.to have_broadcasted_to(sync_session).from_channel(SyncStatusChannel).with(hash_including(
         type: "progress_update",
         processed_emails: 50,
         total_emails: 100,
@@ -333,7 +347,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
 
       expect {
         SyncStatusChannel.broadcast_progress(sync_session, 50, 100)
-      }.to have_broadcasted_to(sync_session).with(hash_including(
+      }.to have_broadcasted_to(sync_session).from_channel(SyncStatusChannel).with(hash_including(
         time_remaining: "5 minutos"
       ))
     end
@@ -349,7 +363,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
 
       expect {
         SyncStatusChannel.broadcast_progress(sync_session, 50, 100)
-      }.to have_broadcasted_to(sync_session).with(hash_including(
+      }.to have_broadcasted_to(sync_session).from_channel(SyncStatusChannel).with(hash_including(
         detected_expenses: 25
       ))
     end
@@ -358,10 +372,16 @@ RSpec.describe SyncStatusChannel, type: :channel do
       allow(sync_session).to receive(:status).and_return("running")
       allow(sync_session).to receive(:progress_percentage).and_return(75)
       allow(sync_session).to receive(:detected_expenses).and_return(15)
+      
+      # Mock the BroadcastReliabilityService to directly call broadcast_to
+      allow(BroadcastReliabilityService).to receive(:broadcast_with_retry) do |args|
+        args[:channel].broadcast_to(args[:target], args[:data])
+        true
+      end
 
       expect {
         SyncStatusChannel.broadcast_progress(sync_session, 75, 100, 20)
-      }.to have_broadcasted_to(sync_session).with(hash_including(
+      }.to have_broadcasted_to(sync_session).from_channel(SyncStatusChannel).with(hash_including(
         type: "progress_update",
         status: "running",
         progress_percentage: 75,
@@ -373,6 +393,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
   end
 
   describe ".broadcast_account_progress" do
+    include_context "broadcast reliability service mocked"
     let(:email_account) { create(:email_account) }
     let(:sync_session_account) do
       create(:sync_session_account,
@@ -386,7 +407,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
     it "broadcasts account-specific progress" do
       expect {
         SyncStatusChannel.broadcast_account_progress(sync_session, sync_session_account)
-      }.to have_broadcasted_to(sync_session).with(hash_including(
+      }.to have_broadcasted_to(sync_session).from_channel(SyncStatusChannel).with(hash_including(
         type: "account_update",
         account_id: email_account.id,
         processed: 25,
@@ -413,7 +434,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
 
       expect {
         SyncStatusChannel.broadcast_account_progress(sync_session, sync_session_account)
-      }.to have_broadcasted_to(sync_session).with(hash_including(
+      }.to have_broadcasted_to(sync_session).from_channel(SyncStatusChannel).with(hash_including(
         type: "account_update",
         account_id: email_account.id,
         sync_account_id: sync_session_account.id,
@@ -427,10 +448,11 @@ RSpec.describe SyncStatusChannel, type: :channel do
   end
 
   describe ".broadcast_account_update" do
+    include_context "broadcast reliability service mocked"
     it "broadcasts account update with calculated progress" do
       expect {
         SyncStatusChannel.broadcast_account_update(sync_session, 123, "processing", 30, 60, 5)
-      }.to have_broadcasted_to(sync_session).with(hash_including(
+      }.to have_broadcasted_to(sync_session).from_channel(SyncStatusChannel).with(hash_including(
         type: "account_update",
         account_id: 123,
         status: "processing",
@@ -444,7 +466,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
     it "handles zero total emails gracefully" do
       expect {
         SyncStatusChannel.broadcast_account_update(sync_session, 123, "completed", 0, 0, 0)
-      }.to have_broadcasted_to(sync_session).with(hash_including(
+      }.to have_broadcasted_to(sync_session).from_channel(SyncStatusChannel).with(hash_including(
         progress: 0
       ))
     end
@@ -457,10 +479,11 @@ RSpec.describe SyncStatusChannel, type: :channel do
   end
 
   describe ".broadcast_completion" do
+    include_context "broadcast reliability service mocked"
     it "broadcasts completion message" do
       expect {
         SyncStatusChannel.broadcast_completion(sync_session)
-      }.to have_broadcasted_to(sync_session).with(hash_including(
+      }.to have_broadcasted_to(sync_session).from_channel(SyncStatusChannel).with(hash_including(
         type: "completed",
         status: "completed",
         progress_percentage: 100,
@@ -482,7 +505,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
 
       expect {
         SyncStatusChannel.broadcast_completion(sync_session)
-      }.to have_broadcasted_to(sync_session).with(hash_including(
+      }.to have_broadcasted_to(sync_session).from_channel(SyncStatusChannel).with(hash_including(
         type: "completed",
         status: "completed",
         progress_percentage: 100,
@@ -496,12 +519,13 @@ RSpec.describe SyncStatusChannel, type: :channel do
   end
 
   describe ".broadcast_failure" do
+    include_context "broadcast reliability service mocked"
     it "broadcasts failure message with error details" do
       error_message = "Connection timeout"
 
       expect {
         SyncStatusChannel.broadcast_failure(sync_session, error_message)
-      }.to have_broadcasted_to(sync_session).with(hash_including(
+      }.to have_broadcasted_to(sync_session).from_channel(SyncStatusChannel).with(hash_including(
         type: "failed",
         status: "failed",
         error: error_message
@@ -511,7 +535,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
     it "uses default error message when none provided" do
       expect {
         SyncStatusChannel.broadcast_failure(sync_session)
-      }.to have_broadcasted_to(sync_session).with(hash_including(
+      }.to have_broadcasted_to(sync_session).from_channel(SyncStatusChannel).with(hash_including(
         type: "failed",
         error: "Error durante la sincronización"
       ))
@@ -522,7 +546,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
 
       expect {
         SyncStatusChannel.broadcast_failure(sync_session)
-      }.to have_broadcasted_to(sync_session).with(hash_including(
+      }.to have_broadcasted_to(sync_session).from_channel(SyncStatusChannel).with(hash_including(
         error: "Database connection failed"
       ))
     end
@@ -539,7 +563,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
 
       expect {
         SyncStatusChannel.broadcast_failure(sync_session, "Network error")
-      }.to have_broadcasted_to(sync_session).with(hash_including(
+      }.to have_broadcasted_to(sync_session).from_channel(SyncStatusChannel).with(hash_including(
         type: "failed",
         status: "failed",
         error: "Network error",
@@ -550,6 +574,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
   end
 
   describe ".broadcast_status" do
+    include_context "broadcast reliability service mocked"
     let(:email_account) { create(:email_account) }
     let!(:sync_session_account) do
       create(:sync_session_account,
@@ -561,7 +586,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
     it "broadcasts complete status update with accounts" do
       expect {
         SyncStatusChannel.broadcast_status(sync_session)
-      }.to have_broadcasted_to(sync_session).with(hash_including(
+      }.to have_broadcasted_to(sync_session).from_channel(SyncStatusChannel).with(hash_including(
         type: "status_update",
         status: sync_session.status,
         accounts: array_including(
@@ -595,7 +620,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
 
       expect {
         SyncStatusChannel.broadcast_status(sync_session)
-      }.to have_broadcasted_to(sync_session).with(hash_including(
+      }.to have_broadcasted_to(sync_session).from_channel(SyncStatusChannel).with(hash_including(
         type: "status_update",
         status: "running",
         progress_percentage: 60,
@@ -617,7 +642,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
 
       expect {
         SyncStatusChannel.broadcast_status(sync_session)
-      }.to have_broadcasted_to(sync_session).with(hash_including(
+      }.to have_broadcasted_to(sync_session).from_channel(SyncStatusChannel).with(hash_including(
         accounts: array_including(
           hash_including(
             "id" => sync_session_account.id,
@@ -635,10 +660,11 @@ RSpec.describe SyncStatusChannel, type: :channel do
   end
 
   describe ".broadcast_activity" do
+    include_context "broadcast reliability service mocked"
     it "broadcasts activity message with timestamp" do
       expect {
         SyncStatusChannel.broadcast_activity(sync_session, "info", "Processing email batch")
-      }.to have_broadcasted_to(sync_session).with(hash_including(
+      }.to have_broadcasted_to(sync_session).from_channel(SyncStatusChannel).with(hash_including(
         type: "activity",
         activity_type: "info",
         message: "Processing email batch"
@@ -654,7 +680,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
     it "includes ISO8601 timestamp in broadcast" do
       expect {
         SyncStatusChannel.broadcast_activity(sync_session, "warning", "Test warning")
-      }.to have_broadcasted_to(sync_session).with(hash_including(
+      }.to have_broadcasted_to(sync_session).from_channel(SyncStatusChannel).with(hash_including(
         type: "activity",
         activity_type: "warning",
         message: "Test warning"
@@ -665,7 +691,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
       %w[info warning error success].each do |activity_type|
         expect {
           SyncStatusChannel.broadcast_activity(sync_session, activity_type, "Test #{activity_type}")
-        }.to have_broadcasted_to(sync_session).with(hash_including(
+        }.to have_broadcasted_to(sync_session).from_channel(SyncStatusChannel).with(hash_including(
           activity_type: activity_type,
           message: "Test #{activity_type}"
         ))

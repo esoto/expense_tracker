@@ -35,12 +35,18 @@ gem "rack-attack"
 # Date and text parsing
 gem "chronic"
 
+# CSV support for Ruby 3.4+
+gem "csv"
+
 # Charts and visualization
 gem "chartkick"
 gem "groupdate"
 
 # Pagination
 gem "kaminari"
+
+# Bulk insert for performance
+gem "activerecord-import"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
@@ -112,3 +118,5 @@ gem "shoulda-matchers", "~> 6.5", group: :test
 gem "rails-controller-testing", group: :test
 
 gem "rails_best_practices", "~> 1.23", group: :development
+
+gem "fakeredis", "~> 0.9.2", group: :test, github: "guilleiguaran/fakeredis"

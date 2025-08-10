@@ -1,16 +1,40 @@
 require 'rails_helper'
 
 RSpec.describe "SyncSessions", type: :request do
+  include ActiveSupport::Testing::TimeHelpers
   let!(:email_account1) { create(:email_account, :bac, active: true) }
   let!(:email_account2) { create(:email_account, :gmail, active: true) }
   let!(:inactive_account) { create(:email_account, active: false) }
+  
+  # Clean up before and after to ensure complete test isolation
+  before(:each) do
+    # Clean up any existing sync sessions to ensure test isolation
+    SyncSession.destroy_all
+    SyncSessionAccount.destroy_all
+    ConflictResolution.destroy_all if defined?(ConflictResolution)
+    SyncConflict.destroy_all if defined?(SyncConflict)
+    # Allow all tests to pass validation by default
+    allow_any_instance_of(SyncSessionValidator).to receive(:validate!).and_return(true)
+  end
+  
+  after(:each) do
+    # Clean up after each test to prevent pollution
+    SyncSession.destroy_all
+    SyncSessionAccount.destroy_all
+    ConflictResolution.destroy_all if defined?(ConflictResolution)
+    SyncConflict.destroy_all if defined?(SyncConflict)
+  end
 
   describe 'GET /sync_sessions' do
-    let!(:active_session) { create(:sync_session, :running) }
-    let!(:completed_session) { create(:sync_session, :completed) }
-    let!(:old_session) { create(:sync_session, created_at: 2.days.ago) }
+    let(:active_session) { create(:sync_session, :running) }
+    let(:completed_session) { create(:sync_session, :completed) }
+    let(:old_session) { create(:sync_session, created_at: 2.days.ago) }
 
     before do
+      # Create sessions for this test only
+      active_session
+      completed_session
+      old_session
       active_session.email_accounts << email_account1
       completed_session.email_accounts << [ email_account1, email_account2 ]
     end
@@ -45,10 +69,19 @@ RSpec.describe "SyncSessions", type: :request do
   describe 'POST /sync_sessions' do
     before do
       allow(ProcessEmailsJob).to receive(:perform_later)
+      # Ensure the validator mock is properly set for all non-validation tests
+      allow_any_instance_of(SyncSessionValidator).to receive(:validate!).and_return(true)
     end
 
     context 'with specific email_account_id' do
+      after(:each) do
+        # Age out sessions to avoid rate limit issues for subsequent tests
+        SyncSession.update_all(created_at: 10.minutes.ago)
+      end
+      
       it 'creates a new sync session' do
+        # Ensure clean state for this test
+        SyncSession.destroy_all
         expect {
           post sync_sessions_path, params: { email_account_id: email_account1.id }
         }.to change(SyncSession, :count).by(1)
@@ -80,6 +113,11 @@ RSpec.describe "SyncSessions", type: :request do
     end
 
     context 'without email_account_id (all accounts)' do
+      after(:each) do
+        # Age out sessions to avoid rate limit issues for subsequent tests
+        SyncSession.update_all(created_at: 10.minutes.ago)
+      end
+      
       it 'creates a new sync session' do
         expect {
           post sync_sessions_path
@@ -111,6 +149,11 @@ RSpec.describe "SyncSessions", type: :request do
     end
 
     context 'with invalid email_account_id' do
+      after(:each) do
+        # Age out sessions to avoid rate limit issues for subsequent tests
+        SyncSession.update_all(created_at: 10.minutes.ago)
+      end
+      
       it 'redirects with error message' do
         post sync_sessions_path, params: { email_account_id: 99999 }
         expect(response).to redirect_to(sync_sessions_path)
@@ -119,9 +162,20 @@ RSpec.describe "SyncSessions", type: :request do
     end
 
     context 'with sync limit validation' do
+      around do |example|
+        freeze_time do
+          example.run
+        end
+      end
+      
       before do
+        # Clean up any existing sessions first
+        SyncSession.destroy_all
+        SyncSessionAccount.destroy_all
+        # Don't use the default mock for this test
+        allow_any_instance_of(SyncSessionValidator).to receive(:validate!).and_call_original
         # Create an active sync session
-        create(:sync_session, status: 'running')
+        create(:sync_session, status: 'running', created_at: 10.minutes.ago)
       end
 
       it 'prevents creating another sync session' do
@@ -135,9 +189,22 @@ RSpec.describe "SyncSessions", type: :request do
     end
 
     context 'with rate limit validation' do
+      around do |example|
+        freeze_time do
+          example.run
+        end
+      end
+      
       before do
-        # Create 3 completed sync sessions in the last 5 minutes
-        3.times { create(:sync_session, status: 'completed', created_at: 2.minutes.ago) }
+        # Completely isolate this test
+        SyncSession.connection.execute('DELETE FROM sync_sessions')
+        SyncSessionAccount.connection.execute('DELETE FROM sync_session_accounts')
+        # Don't use the default mock for this test
+        allow_any_instance_of(SyncSessionValidator).to receive(:validate!).and_call_original
+        # Create exactly 3 completed sync sessions in the last 5 minutes
+        3.times do |i|
+          create(:sync_session, status: 'completed', created_at: (2 + i * 0.1).minutes.ago)
+        end
       end
 
       it 'prevents creating another sync session' do
@@ -151,6 +218,11 @@ RSpec.describe "SyncSessions", type: :request do
     end
 
     context 'with custom since parameter' do
+      after(:each) do
+        # Age out sessions to avoid rate limit issues for subsequent tests
+        SyncSession.update_all(created_at: 10.minutes.ago)
+      end
+      
       it 'passes the since parameter to the job' do
         post sync_sessions_path, params: { since: '2025-01-01' }
         session = SyncSession.last

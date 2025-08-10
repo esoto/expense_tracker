@@ -26,6 +26,8 @@ RSpec.describe Api::SyncSessionsController, type: :controller do
       context 'when using session authentication' do
         it 'returns sync session status' do
           sync_account # Create the account
+          # Clear the token to test session-based auth
+          sync_session.update_column(:session_token, nil)
           session[:sync_session_id] = sync_session.id
           
           get :status, params: { id: sync_session.id }, format: :json
@@ -40,17 +42,16 @@ RSpec.describe Api::SyncSessionsController, type: :controller do
         let(:sync_session_no_token) { create(:sync_session) }
         
         before do
-          # Remove token to test IP-based auth
-          sync_session_no_token.update_column(:session_token, nil)
+          # Remove token to test IP-based auth - use update_columns to skip callbacks
+          sync_session_no_token.update_columns(session_token: nil)
         end
         
         it 'allows access for recent sessions with matching IP' do
-          sync_session_no_token.update!(
+          sync_session_no_token.update_columns(
             created_at: 1.hour.ago,
-            metadata: { 'ip_address' => '127.0.0.1' }
+            metadata: { 'ip_address' => '0.0.0.0' }  # Match test environment IP
           )
           create(:sync_session_account, sync_session: sync_session_no_token, email_account: email_account)
-          allow(request).to receive(:remote_ip).and_return('127.0.0.1')
           
           get :status, params: { id: sync_session_no_token.id }, format: :json
           
@@ -96,7 +97,8 @@ RSpec.describe Api::SyncSessionsController, type: :controller do
           processed_emails: 50,
           total_emails: 50,
           detected_expenses: 10,
-          completed_at: Time.current
+          completed_at: Time.current,
+          session_token: nil  # Clear token to test session auth
         )
         session[:sync_session_id] = sync_session.id
         
@@ -114,6 +116,8 @@ RSpec.describe Api::SyncSessionsController, type: :controller do
           status: 'failed',
           error_details: 'Connection timeout'
         )
+        # Clear token to test session auth
+        sync_session.update_column(:session_token, nil)
         session[:sync_session_id] = sync_session.id
         
         get :status, params: { id: sync_session.id }, format: :json

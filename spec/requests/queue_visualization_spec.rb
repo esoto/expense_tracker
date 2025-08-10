@@ -200,7 +200,7 @@ RSpec.describe "Queue Visualization", type: :request do
 
         post "/api/queue/retry_all_failed", headers: { "Accept" => "application/json" }
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
 
         expect(json["success"]).to be false

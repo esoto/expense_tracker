@@ -77,7 +77,7 @@ RSpec.describe Api::QueueController, type: :controller do
 
         post :pause, format: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
 
         expect(json["success"]).to be false
@@ -190,7 +190,7 @@ RSpec.describe Api::QueueController, type: :controller do
 
           post :retry_job, params: { id: job_id }, format: :json
 
-          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response).to have_http_status(:unprocessable_content)
           json = JSON.parse(response.body)
 
           expect(json["success"]).to be false
@@ -284,7 +284,7 @@ RSpec.describe Api::QueueController, type: :controller do
 
         post :retry_all_failed, format: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
 
         expect(json["success"]).to be false

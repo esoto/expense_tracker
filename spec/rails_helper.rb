@@ -109,8 +109,15 @@ RSpec.configure do |config|
     # Preload factories to avoid runtime overhead
     FactoryBot.reload if defined?(FactoryBot)
 
-    # Disable AR query logs in tests for performance
-    ActiveRecord::Base.logger.level = Logger::WARN
+    # Disable logging in tests for performance and cleaner output
+    ActiveRecord::Base.logger.level = Logger::ERROR
+    Rails.logger.level = Logger::ERROR
+
+    # Disable ActionCable logs
+    ActionCable.server.config.logger.level = Logger::ERROR if defined?(ActionCable)
+
+    # Disable Sidekiq logs
+    Sidekiq.logger.level = Logger::ERROR if defined?(Sidekiq)
   end
 
   # You can uncomment this line to turn off ActiveRecord support entirely.

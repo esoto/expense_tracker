@@ -24,8 +24,8 @@ module ExpenseTracker
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w[assets tasks])
 
-    # Use Sidekiq as the Active Job queue adapter for broadcast reliability
-    config.active_job.queue_adapter = :sidekiq
+    # Use Solid Queue as the Active Job queue adapter
+    config.active_job.queue_adapter = :solid_queue
 
     # Configuration for the application, engines, and railties goes here.
     #

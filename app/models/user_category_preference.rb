@@ -12,6 +12,9 @@ class UserCategoryPreference < ApplicationRecord
   scope :for_context, ->(type, value) { where(context_type: type, context_value: value) }
   scope :by_weight, -> { order(preference_weight: :desc) }
   
+  # Callbacks
+  after_commit :invalidate_cache
+  
   # Class method to learn from expense categorization
   def self.learn_from_categorization(email_account:, expense:, category:)
     # Learn from merchant
@@ -152,5 +155,16 @@ class UserCategoryPreference < ApplicationRecord
     end
     
     preference
+  end
+  
+  private
+  
+  def invalidate_cache
+    # Invalidate cache for merchant-based preferences
+    if context_type == "merchant"
+      Categorization::PatternCache.instance.invalidate(self) if defined?(Categorization::PatternCache)
+    end
+  rescue => e
+    Rails.logger.error "[UserCategoryPreference] Cache invalidation failed: #{e.message}"
   end
 end

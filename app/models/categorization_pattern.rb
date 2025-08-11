@@ -54,6 +54,7 @@ class CategorizationPattern < ApplicationRecord
 
   # Callbacks
   before_save :calculate_success_rate
+  after_commit :invalidate_cache
 
   # Set default metadata if nil
   after_initialize do
@@ -301,5 +302,11 @@ class CategorizationPattern < ApplicationRecord
     end
   rescue ArgumentError
     nil
+  end
+  
+  def invalidate_cache
+    Categorization::PatternCache.instance.invalidate(self) if defined?(Categorization::PatternCache)
+  rescue => e
+    Rails.logger.error "[CategorizationPattern] Cache invalidation failed: #{e.message}"
   end
 end

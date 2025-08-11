@@ -103,7 +103,7 @@ module Api
         patterns: {
           total: CategorizationPattern.count,
           active: CategorizationPattern.active.count,
-          high_confidence: CategorizationPattern.where("confidence >= ?", 0.8).count,
+          high_confidence: CategorizationPattern.where("confidence_weight >= ?", 3.0).count,
           recently_updated: CategorizationPattern.where(updated_at: 24.hours.ago..).count
         },
         performance: {
@@ -146,7 +146,7 @@ module Api
         expenses_processed: Expense.where(updated_at: window..).count,
         patterns_learned: CategorizationPattern.where(created_at: window..).count,
         patterns_updated: CategorizationPattern.where(updated_at: window..)
-                                               .where.not(created_at: updated_at).count
+                                               .where("updated_at != created_at").count
       }
     end
 

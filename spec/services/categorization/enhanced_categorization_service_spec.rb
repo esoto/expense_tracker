@@ -246,7 +246,7 @@ RSpec.describe Categorization::EnhancedCategorizationService do
       matches = service.find_matching_patterns("starbucks")
 
       expect(matches).not_to be_empty
-      expect(matches.first[:text]).to include("Starbucks")
+      expect(matches.first[:text]).to include("starbucks")
     end
 
     it "returns multiple matches sorted by score" do

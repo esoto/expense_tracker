@@ -46,6 +46,37 @@ RSpec.describe PatternFeedback, type: :model do
   end
 
   describe "scopes" do
+    let(:expense2) do
+      Expense.create!(
+        email_account: email_account,
+        merchant_name: "McDonald's",
+        description: "Fast food",
+        amount: 8.50,
+        transaction_date: DateTime.now,
+        category: category
+      )
+    end
+    let(:expense3) do
+      Expense.create!(
+        email_account: email_account,
+        merchant_name: "Burger King",
+        description: "Lunch",
+        amount: 12.00,
+        transaction_date: DateTime.now,
+        category: category
+      )
+    end
+    let(:expense4) do
+      Expense.create!(
+        email_account: email_account,
+        merchant_name: "Pizza Hut",
+        description: "Dinner",
+        amount: 25.00,
+        transaction_date: DateTime.now,
+        category: category
+      )
+    end
+
     let!(:accepted_feedback) do
       described_class.create!(
         expense: expense,
@@ -58,7 +89,7 @@ RSpec.describe PatternFeedback, type: :model do
 
     let!(:rejected_feedback) do
       described_class.create!(
-        expense: expense,
+        expense: expense2,
         category: category,
         categorization_pattern: pattern,
         feedback_type: "rejected",
@@ -68,7 +99,7 @@ RSpec.describe PatternFeedback, type: :model do
 
     let!(:corrected_feedback) do
       described_class.create!(
-        expense: expense,
+        expense: expense3,
         category: category,
         categorization_pattern: pattern,
         feedback_type: "corrected",
@@ -78,7 +109,7 @@ RSpec.describe PatternFeedback, type: :model do
 
     let!(:correction_feedback) do
       described_class.create!(
-        expense: expense,
+        expense: expense4,
         category: category,
         feedback_type: "correction",
         was_correct: false
@@ -211,7 +242,7 @@ RSpec.describe PatternFeedback, type: :model do
         new_pattern = CategorizationPattern.last
         expect(new_pattern.category).to eq(new_category)
         expect(new_pattern.pattern_type).to eq("merchant")
-        expect(new_pattern.pattern_value).to eq("Starbucks")
+        expect(new_pattern.pattern_value).to eq("starbucks")
         expect(new_pattern.user_created).to be true
         expect(new_pattern.confidence_weight).to eq(1.2)
         expect(new_pattern.metadata["created_from_feedback"]).to be true
@@ -222,7 +253,7 @@ RSpec.describe PatternFeedback, type: :model do
         CategorizationPattern.create!(
           category: new_category,
           pattern_type: "merchant",
-          pattern_value: "Starbucks"
+          pattern_value: "starbucks"
         )
 
         expect {

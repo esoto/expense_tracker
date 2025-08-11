@@ -26,7 +26,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher, type: :service do
 
         result = matcher.match("Restaurant", mixed_candidates)
         expect(result.matches).not_to be_empty
-        expect(result.matches.first[:text]).to eq("Restaurant ABC")
+        expect(result.matches.first[:text]).to eq("restaurant abc")
       end
     end
 

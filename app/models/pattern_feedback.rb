@@ -79,10 +79,18 @@ class PatternFeedback < ApplicationRecord
     return unless suggestion && suggestion[:pattern_type] && suggestion[:pattern_value]
 
     # Check if pattern already exists for this category and value
+    # Normalize the pattern value before searching to match stored patterns
+    normalized_value = case suggestion[:pattern_type]
+    when "merchant", "keyword", "description", "time"
+                        suggestion[:pattern_value].strip.downcase
+    else
+                        suggestion[:pattern_value]
+    end
+
     existing_pattern = CategorizationPattern.find_by(
       category: category,
       pattern_type: suggestion[:pattern_type],
-      pattern_value: suggestion[:pattern_value]
+      pattern_value: normalized_value
     )
 
     return if existing_pattern

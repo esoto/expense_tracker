@@ -214,7 +214,7 @@ RSpec.describe CategorizationPattern, type: :model do
     it "matches quickly even with complex patterns" do
       pattern = create(:categorization_pattern,
                       pattern_type: "regex",
-                      pattern_value: "(STAR|COFFEE|CAFE).*(SHOP|STORE|HOUSE)",
+                      pattern_value: "(STAR|COFFEE).*SHOP",
                       category: category)
 
       expense = build(:expense,

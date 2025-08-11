@@ -220,8 +220,11 @@ RSpec.describe Categorization::Monitoring::DataQualityChecker do
     end
 
     it "finds similar patterns" do
-      similar = checker.results[:duplicates][:similar_patterns]
-      expect(similar).to be_an(Array)
+      similar_count = checker.results[:duplicates][:similar_patterns]
+      expect(similar_count).to be_a(Numeric)
+
+      similar_clusters = checker.results[:duplicates][:similarity_clusters]
+      expect(similar_clusters).to be_an(Array)
     end
   end
 

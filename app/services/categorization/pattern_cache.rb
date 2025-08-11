@@ -454,14 +454,14 @@ module Categorization
 
     # Serialization methods for Redis storage
     def serialize(value)
-      Marshal.dump(value)
+      JSON.dump(value.as_json)
     rescue => e
       Rails.logger.error "[PatternCache] Serialization error: #{e.message}"
       nil
     end
 
     def deserialize(raw_value)
-      Marshal.load(raw_value)
+      JSON.parse(raw_value)
     rescue => e
       Rails.logger.error "[PatternCache] Deserialization error: #{e.message}"
       nil

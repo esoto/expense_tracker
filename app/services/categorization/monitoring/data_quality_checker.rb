@@ -624,7 +624,19 @@ module Categorization
 
       def recommend_performance_improvements
         poor_performers = @results[:performance][:patterns_by_performance][:poor]
+        avg_success = @results[:performance][:avg_success_rate]
 
+        # Check overall average success rate
+        if avg_success < QUALITY_THRESHOLDS[:min_pattern_success_rate]
+          @recommendations << {
+            type: :low_overall_success_rate,
+            severity: :high,
+            message: "Average success rate is #{(avg_success * 100).round(1)}%. Review and improve pattern quality.",
+            action: :review_pattern_quality
+          }
+        end
+
+        # Check for many poor performing individual patterns
         if poor_performers > 10
           @recommendations << {
             type: :many_poor_performers,

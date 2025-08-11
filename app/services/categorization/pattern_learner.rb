@@ -100,7 +100,7 @@ module Categorization
         patterns_affected = Set.new
 
         ActiveRecord::Base.transaction(requires_new: true, joinable: false) do
-          ActiveRecord::Base.connection.execute("SET LOCAL lock_timeout = '#{TRANSACTION_TIMEOUT.to_i * 1000}ms'") if ActiveRecord::Base.connection.adapter_name == "PostgreSQL"
+          ActiveRecord::Base.connection.execute(ActiveRecord::Base.sanitize_sql_array([ "SET LOCAL lock_timeout = ?", "#{TRANSACTION_TIMEOUT.to_i * 1000}ms" ])) if ActiveRecord::Base.connection.adapter_name == "PostgreSQL"
 
           corrections.each_with_index do |correction, index|
             expense = correction[:expense]

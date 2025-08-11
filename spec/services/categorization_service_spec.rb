@@ -47,7 +47,7 @@ RSpec.describe CategorizationService do
         expect(result[:category]).to eq(dining_category)
         expect(result[:confidence]).to be > 0.8
         expect(result[:method]).to eq("pattern_matching")
-        expect(result[:patterns_used]).to include("merchant:Starbucks", "keyword:coffee")
+        expect(result[:patterns_used]).to include("merchant:starbucks", "keyword:coffee")
       end
 
       it "updates expense with categorization" do
@@ -235,7 +235,7 @@ RSpec.describe CategorizationService do
         expense.update!(merchant_name: "Cafe Nero")
 
         result = service.categorize_expense(expense)
-        pattern = CategorizationPattern.find_by(pattern_value: "Cafe Nero")
+        pattern = CategorizationPattern.find_by(pattern_value: "cafe nero")
 
         initial_usage = pattern.usage_count
 
@@ -250,7 +250,7 @@ RSpec.describe CategorizationService do
         expense.update!(merchant_name: "Cafe Nero")
 
         result = service.categorize_expense(expense)
-        pattern = CategorizationPattern.find_by(pattern_value: "Cafe Nero")
+        pattern = CategorizationPattern.find_by(pattern_value: "cafe nero")
 
         service.record_feedback(expense, groceries_category, false)
 

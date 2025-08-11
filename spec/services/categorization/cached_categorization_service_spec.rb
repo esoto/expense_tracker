@@ -79,7 +79,7 @@ RSpec.describe Categorization::CachedCategorizationService do
 
         expect(result[:category]).to eq(dining_category)
         expect(result[:method]).to eq("pattern_matching")
-        expect(result[:patterns_used]).to include("merchant:Starbucks", "keyword:coffee")
+        expect(result[:patterns_used]).to include("merchant:starbucks", "keyword:coffee")
         expect(result[:cache_stats]).to be_present
       end
 
@@ -128,7 +128,7 @@ RSpec.describe Categorization::CachedCategorizationService do
 
         expect(result[:category]).to eq(transport_category)
         # Both the regular pattern and composite will match, but we care that it categorized correctly
-        expect(result[:patterns_used]).to include("merchant:Uber")
+        expect(result[:patterns_used]).to include("merchant:uber")
         # The composite pattern should also be in the matches
         expect(result[:patterns_used].any? { |p| p.include?("Uber") || p.include?("composite") }).to be true
       end
@@ -209,7 +209,7 @@ RSpec.describe Categorization::CachedCategorizationService do
       duration_ms = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000
 
       # Check results
-      starbucks_results = results.select { |r| r[:patterns_used]&.include?("merchant:Starbucks") }
+      starbucks_results = results.select { |r| r[:patterns_used]&.include?("merchant:starbucks") }
       expect(starbucks_results.size).to eq(2) # Two Starbucks expenses
 
       # Performance check - Updated for improved matching capabilities

@@ -113,9 +113,11 @@ RSpec.describe Api::HealthController, type: :controller do
 
   describe "GET #metrics" do
     before do
-      create_list(:expense, 3, category: create(:category))
+      # Create enough test data for health checks
+      category = create(:category)
+      create_list(:expense, 3, category: category)
       create_list(:expense, 2, category: nil)
-      create_list(:categorization_pattern, 5)
+      create_list(:categorization_pattern, 15, category: category)
     end
 
     it "returns metrics data" do

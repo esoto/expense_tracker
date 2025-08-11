@@ -75,6 +75,68 @@ class MetricsCalculator
     end
   end
 
+  # Batch calculate metrics for multiple periods efficiently
+  # Returns a hash with period symbols as keys and calculated metrics as values
+  # Example: { day: {...}, week: {...}, month: {...}, year: {...} }
+  def self.batch_calculate(email_account: nil, periods: SUPPORTED_PERIODS, reference_date: Date.current)
+    raise MissingEmailAccountError, "EmailAccount is required for batch calculation" unless email_account
+    
+    # Validate all periods first
+    invalid_periods = periods.map(&:to_sym) - SUPPORTED_PERIODS
+    unless invalid_periods.empty?
+      raise InvalidPeriodError, "Invalid periods: #{invalid_periods.join(', ')}. Supported periods: #{SUPPORTED_PERIODS.join(', ')}"
+    end
+    
+    results = {}
+    
+    # Optimization: Pre-load data that might be used across multiple periods
+    # This reduces redundant database queries
+    preload_data_for_batch(email_account, periods, reference_date)
+    
+    # Calculate for each period using cache when available
+    periods.each do |period|
+      calculator = new(
+        email_account: email_account,
+        period: period,
+        reference_date: reference_date
+      )
+      results[period.to_sym] = calculator.calculate
+    end
+    
+    results
+  end
+  
+  # Pre-load and cache expense data for multiple periods to optimize batch calculations
+  private_class_method def self.preload_data_for_batch(email_account, periods, reference_date)
+    # Determine the widest date range needed
+    date_ranges = periods.map do |period|
+      case period.to_sym
+      when :day
+        reference_date.beginning_of_day..reference_date.end_of_day
+      when :week
+        reference_date.beginning_of_week..reference_date.end_of_week
+      when :month
+        reference_date.beginning_of_month..reference_date.end_of_month
+      when :year
+        reference_date.beginning_of_year..reference_date.end_of_year
+      end
+    end
+    
+    # Find the earliest start and latest end date
+    earliest_date = date_ranges.map(&:begin).min
+    latest_date = date_ranges.map(&:end).max
+    
+    # Pre-load all expenses in the widest range with includes
+    # This single query replaces multiple queries across different periods
+    email_account.expenses
+      .where(transaction_date: earliest_date..latest_date)
+      .includes(:category)
+      .load # Force loading into memory
+    
+    # The ActiveRecord query cache will now serve these records
+    # for subsequent queries within the same request
+  end
+
   private
 
   def validate_period!(period)

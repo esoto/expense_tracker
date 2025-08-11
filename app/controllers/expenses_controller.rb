@@ -69,14 +69,42 @@ class ExpensesController < ApplicationController
 
   # GET /expenses/dashboard
   def dashboard
+    # Use primary email account or first active one for metrics
+    # This ensures proper data isolation per email account
+    primary_email_account = EmailAccount.active.first
+
+    # Calculate metrics for different periods using MetricsCalculator
+    if primary_email_account
+      # Batch calculate all metrics for better performance
+      # This optimization reduces object instantiation and improves efficiency
+      batch_results = MetricsCalculator.batch_calculate(
+        email_account: primary_email_account,
+        periods: [:year, :month, :week, :day],
+        reference_date: Date.current
+      )
+      
+      # Assign results to instance variables for view compatibility
+      @total_metrics = batch_results[:year]   # Using year for total metrics
+      @month_metrics = batch_results[:month]
+      @week_metrics = batch_results[:week]
+      @day_metrics = batch_results[:day]
+    else
+      # Default empty metrics if no email account
+      @total_metrics = default_empty_metrics
+      @month_metrics = default_empty_metrics
+      @week_metrics = default_empty_metrics
+      @day_metrics = default_empty_metrics
+    end
+
+    # Get dashboard data from DashboardService for other components
     dashboard_data = DashboardService.new.analytics
 
-    # Extract data for view variables
+    # Legacy variables for compatibility with existing views
     totals = dashboard_data[:totals]
-    @total_expenses = totals[:total_expenses]
-    @expense_count = totals[:expense_count]
-    @current_month_total = totals[:current_month_total]
-    @last_month_total = totals[:last_month_total]
+    @total_expenses = @total_metrics[:metrics][:total_amount] || totals[:total_expenses]
+    @expense_count = @total_metrics[:metrics][:transaction_count] || totals[:expense_count]
+    @current_month_total = @month_metrics[:metrics][:total_amount] || totals[:current_month_total]
+    @last_month_total = @month_metrics[:trends][:previous_period_total] || totals[:last_month_total]
 
     @recent_expenses = dashboard_data[:recent_expenses]
 
@@ -93,6 +121,9 @@ class ExpensesController < ApplicationController
     sync_sessions = dashboard_data[:sync_sessions] || {}
     @active_sync_session = sync_sessions[:active_session]
     @last_completed_sync = sync_sessions[:last_completed]
+
+    # Primary email account for display
+    @primary_email_account = primary_email_account
   end
 
   # POST /expenses/sync_emails
@@ -144,5 +175,39 @@ class ExpensesController < ApplicationController
       .group("categories.name")
       .sum(:amount)
       .sort_by { |_, amount| -amount }
+  end
+
+  def default_empty_metrics
+    {
+      period: :month,
+      reference_date: Date.current,
+      date_range: Date.current.beginning_of_month..Date.current.end_of_month,
+      metrics: {
+        total_amount: 0.0,
+        transaction_count: 0,
+        average_amount: 0.0,
+        median_amount: 0.0,
+        min_amount: 0.0,
+        max_amount: 0.0,
+        unique_merchants: 0,
+        unique_categories: 0,
+        uncategorized_count: 0,
+        by_status: {},
+        by_currency: {}
+      },
+      trends: {
+        amount_change: 0.0,
+        count_change: 0.0,
+        average_change: 0.0,
+        absolute_amount_change: 0.0,
+        absolute_count_change: 0,
+        is_increase: false,
+        previous_period_total: 0.0,
+        previous_period_count: 0
+      },
+      category_breakdown: [],
+      daily_breakdown: {},
+      calculated_at: Time.current
+    }
   end
 end

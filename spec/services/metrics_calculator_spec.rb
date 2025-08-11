@@ -449,6 +449,176 @@ RSpec.describe MetricsCalculator, type: :service do
     end
   end
 
+  describe '.batch_calculate' do
+    before do
+      # Create test expenses for calculations
+      create(:expense,
+             email_account: email_account,
+             category: category1,
+             amount: 100.00,
+             transaction_date: current_date,
+             merchant_name: 'Test Merchant')
+      
+      create(:expense,
+             email_account: email_account,
+             category: category2,
+             amount: 50.00,
+             transaction_date: current_date - 3.days,
+             merchant_name: 'Another Merchant')
+    end
+    
+    it 'requires email_account parameter' do
+      expect { described_class.batch_calculate(periods: [:month]) }
+        .to raise_error(MetricsCalculator::MissingEmailAccountError, /EmailAccount is required/)
+    end
+    
+    it 'validates all periods are supported' do
+      expect { 
+        described_class.batch_calculate(
+          email_account: email_account,
+          periods: [:month, :invalid_period]
+        )
+      }.to raise_error(MetricsCalculator::InvalidPeriodError, /Invalid periods: invalid_period/)
+    end
+    
+    it 'returns a hash with period symbols as keys' do
+      result = described_class.batch_calculate(
+        email_account: email_account,
+        periods: [:day, :week, :month],
+        reference_date: current_date
+      )
+      
+      expect(result).to be_a(Hash)
+      expect(result.keys).to match_array([:day, :week, :month])
+    end
+    
+    it 'calculates metrics for each requested period' do
+      Rails.cache.clear
+      
+      result = described_class.batch_calculate(
+        email_account: email_account,
+        periods: [:day, :week, :month],
+        reference_date: current_date
+      )
+      
+      # Day period should only include today's expense
+      expect(result[:day][:metrics][:total_amount]).to eq(100.00)
+      expect(result[:day][:metrics][:transaction_count]).to eq(1)
+      
+      # Week period should include both expenses
+      expect(result[:week][:metrics][:total_amount]).to eq(150.00)
+      expect(result[:week][:metrics][:transaction_count]).to eq(2)
+      
+      # Month period should include both expenses (both in August)
+      expect(result[:month][:metrics][:total_amount]).to eq(150.00)
+      expect(result[:month][:metrics][:transaction_count]).to eq(2)
+    end
+    
+    it 'uses the same reference_date for all calculations' do
+      result = described_class.batch_calculate(
+        email_account: email_account,
+        periods: [:day, :week, :month],
+        reference_date: current_date - 10.days
+      )
+      
+      expect(result[:day][:reference_date]).to eq(current_date - 10.days)
+      expect(result[:week][:reference_date]).to eq(current_date - 10.days)
+      expect(result[:month][:reference_date]).to eq(current_date - 10.days)
+    end
+    
+    it 'handles string period names correctly' do
+      result = described_class.batch_calculate(
+        email_account: email_account,
+        periods: ['day', 'week'],
+        reference_date: current_date
+      )
+      
+      expect(result.keys).to match_array([:day, :week])
+      expect(result[:day]).to include(:metrics, :trends)
+      expect(result[:week]).to include(:metrics, :trends)
+    end
+    
+    it 'uses cache efficiently for each period' do
+      Rails.cache.clear
+      
+      # Prime the cache
+      described_class.batch_calculate(
+        email_account: email_account,
+        periods: [:day, :week],
+        reference_date: current_date
+      )
+      
+      # Second call should use cache
+      expect(Rails.cache).to receive(:fetch).exactly(2).times.and_call_original
+      
+      result = described_class.batch_calculate(
+        email_account: email_account,
+        periods: [:day, :week],
+        reference_date: current_date
+      )
+      
+      expect(result[:day]).to be_present
+      expect(result[:week]).to be_present
+    end
+    
+    it 'calculates all default periods when periods parameter not provided' do
+      result = described_class.batch_calculate(
+        email_account: email_account,
+        reference_date: current_date
+      )
+      
+      expect(result.keys).to match_array([:day, :week, :month, :year])
+    end
+    
+    it 'maintains data isolation per email account' do
+      other_account = create(:email_account, email: 'other@test.com')
+      
+      create(:expense,
+             email_account: other_account,
+             amount: 500.00,
+             transaction_date: current_date)
+      
+      result = described_class.batch_calculate(
+        email_account: email_account,
+        periods: [:day],
+        reference_date: current_date
+      )
+      
+      # Should not include the 500.00 expense from other account
+      expect(result[:day][:metrics][:total_amount]).to eq(100.00)
+    end
+    
+    it 'performs efficiently compared to individual calculations' do
+      Rails.cache.clear
+      
+      # Measure batch calculation time
+      batch_time = Benchmark.realtime do
+        described_class.batch_calculate(
+          email_account: email_account,
+          periods: [:day, :week, :month, :year],
+          reference_date: current_date
+        )
+      end
+      
+      Rails.cache.clear
+      
+      # Measure individual calculations time
+      individual_time = Benchmark.realtime do
+        [:day, :week, :month, :year].each do |period|
+          described_class.new(
+            email_account: email_account,
+            period: period,
+            reference_date: current_date
+          ).calculate
+        end
+      end
+      
+      # Batch should be at least as fast, if not faster
+      # Allow some margin for test variability
+      expect(batch_time).to be <= (individual_time * 1.2)
+    end
+  end
+
   describe 'performance' do
     before do
       # Create 100 expenses to test performance

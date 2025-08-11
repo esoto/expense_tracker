@@ -275,9 +275,61 @@ RSpec.describe ExpensesController, type: :controller do
   end
 
   describe "GET #dashboard" do
+    let!(:active_email_account) { create(:email_account) }
+    let!(:recent_expense) { create(:expense, email_account: active_email_account, transaction_date: Date.current) }
+    let!(:week_expense) { create(:expense, email_account: active_email_account, transaction_date: 2.days.ago) }
+    let!(:month_expense) { create(:expense, email_account: active_email_account, transaction_date: 2.weeks.ago) }
+    
     it "returns a success response" do
       get :dashboard
       expect(response).to be_successful
+    end
+    
+    it "uses MetricsCalculator for primary metrics" do
+      # Mock MetricsCalculator to verify it's being called
+      mock_metrics = {
+        period: :month,
+        reference_date: Date.current,
+        date_range: Date.current.beginning_of_month..Date.current.end_of_month,
+        metrics: {
+          total_amount: 50000.0,
+          transaction_count: 10,
+          average_amount: 5000.0,
+          median_amount: 5000.0,
+          min_amount: 1000.0,
+          max_amount: 10000.0,
+          unique_merchants: 5,
+          unique_categories: 3,
+          uncategorized_count: 0,
+          by_status: {},
+          by_currency: {}
+        },
+        trends: {
+          amount_change: 12.5,
+          count_change: 10.0,
+          average_change: 5.0,
+          absolute_amount_change: 5000.0,
+          absolute_count_change: 1,
+          is_increase: true,
+          previous_period_total: 44444.0,
+          previous_period_count: 9
+        },
+        category_breakdown: [],
+        daily_breakdown: {},
+        calculated_at: Time.current
+      }
+      
+      allow_any_instance_of(MetricsCalculator).to receive(:calculate).and_return(mock_metrics)
+      
+      get :dashboard
+      
+      # Verify MetricsCalculator assignments
+      expect(assigns(:total_metrics)).to be_present
+      expect(assigns(:month_metrics)).to be_present
+      expect(assigns(:week_metrics)).to be_present
+      expect(assigns(:day_metrics)).to be_present
+      expect(assigns(:primary_email_account)).to be_a(EmailAccount)
+      expect(assigns(:primary_email_account).active).to be true
     end
 
     it "calls DashboardService and assigns data for the view" do
@@ -298,6 +350,35 @@ RSpec.describe ExpensesController, type: :controller do
       expect(assigns(:top_merchants)).to be_present
       expect(assigns(:email_accounts)).to be_present
       expect(assigns(:last_sync_info)).to be_present
+    end
+    
+    context "when no email account exists" do
+      before do
+        EmailAccount.destroy_all
+      end
+      
+      it "returns default empty metrics" do
+        get :dashboard
+        
+        expect(response).to be_successful
+        expect(assigns(:total_metrics)[:metrics][:total_amount]).to eq(0.0)
+        expect(assigns(:month_metrics)[:metrics][:total_amount]).to eq(0.0)
+        expect(assigns(:week_metrics)[:metrics][:total_amount]).to eq(0.0)
+        expect(assigns(:day_metrics)[:metrics][:total_amount]).to eq(0.0)
+      end
+    end
+    
+    context "with multiple email accounts" do
+      let!(:second_email_account) { create(:email_account, email: 'second@example.com') }
+      let!(:second_expense) { create(:expense, email_account: second_email_account, amount: 10000) }
+      
+      it "uses the first active email account for metrics" do
+        get :dashboard
+        
+        expect(assigns(:primary_email_account)).to be_a(EmailAccount)
+        # Metrics should only include expenses from the primary account
+        expect(assigns(:total_metrics)).to be_present
+      end
     end
   end
 

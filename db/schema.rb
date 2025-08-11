@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_11_193344) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -73,11 +73,21 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_193344) do
     t.index ["active", "success_rate", "usage_count"], name: "idx_patterns_active_success_usage"
     t.index ["active", "usage_count", "success_rate"], name: "idx_patterns_frequently_used", where: "(usage_count >= 10)"
     t.index ["category_id", "active", "pattern_type"], name: "idx_patterns_category_active_type"
+    t.index ["category_id", "pattern_type", "pattern_value"], name: "idx_patterns_unique_lookup", unique: true
     t.index ["category_id", "success_rate"], name: "index_categorization_patterns_on_category_id_and_success_rate"
     t.index ["category_id"], name: "index_categorization_patterns_on_category_id"
+    t.index ["created_at"], name: "idx_patterns_created_at"
+    t.index ["pattern_type", "active", "confidence_weight"], name: "idx_patterns_type_active_confidence"
     t.index ["pattern_type", "pattern_value"], name: "idx_on_pattern_type_pattern_value_fad6f38255"
     t.index ["pattern_value"], name: "idx_patterns_value"
     t.index ["pattern_value"], name: "index_categorization_patterns_on_pattern_value", opclass: :gin_trgm_ops, using: :gin
+    t.index ["updated_at"], name: "idx_patterns_updated_at"
+    t.index ["user_created", "active"], name: "idx_patterns_user_created_active"
+    t.check_constraint "confidence_weight >= 0.1::double precision AND confidence_weight <= 5.0::double precision", name: "check_confidence_weight_range"
+    t.check_constraint "success_count <= usage_count", name: "check_success_count_validity"
+    t.check_constraint "success_count >= 0", name: "check_success_count_non_negative"
+    t.check_constraint "success_rate >= 0.0::double precision AND success_rate <= 1.0::double precision", name: "check_success_rate_range"
+    t.check_constraint "usage_count >= 0", name: "check_usage_count_non_negative"
   end
 
   create_table "composite_patterns", force: :cascade do |t|
@@ -98,8 +108,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_193344) do
     t.index ["category_id", "active"], name: "index_composite_patterns_on_category_id_and_active"
     t.index ["category_id"], name: "index_composite_patterns_on_category_id"
     t.index ["name"], name: "index_composite_patterns_on_name"
+    t.index ["operator", "active"], name: "idx_composite_operator_active"
     t.index ["operator"], name: "index_composite_patterns_on_operator"
     t.index ["pattern_ids"], name: "index_composite_patterns_on_pattern_ids", using: :gin
+    t.index ["success_rate", "usage_count"], name: "idx_composite_performance", where: "(active = true)"
   end
 
   create_table "conflict_resolutions", force: :cascade do |t|
@@ -244,11 +256,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_193344) do
     t.jsonb "context_data", default: {}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["categorization_pattern_id", "created_at"], name: "idx_feedbacks_pattern_time"
     t.index ["categorization_pattern_id", "was_correct"], name: "idx_feedbacks_pattern_correct"
     t.index ["categorization_pattern_id", "was_correct"], name: "idx_on_categorization_pattern_id_was_correct_e615042861"
     t.index ["categorization_pattern_id"], name: "index_pattern_feedbacks_on_categorization_pattern_id"
     t.index ["category_id"], name: "index_pattern_feedbacks_on_category_id"
     t.index ["created_at"], name: "index_pattern_feedbacks_on_created_at"
+    t.index ["expense_id", "categorization_pattern_id"], name: "idx_feedbacks_expense_pattern", unique: true
     t.index ["expense_id", "created_at"], name: "idx_feedbacks_expense_created"
     t.index ["expense_id"], name: "index_pattern_feedbacks_on_expense_id"
   end
@@ -262,10 +276,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_193344) do
     t.jsonb "context_data", default: {}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["category_id", "created_at"], name: "idx_learning_events_category_time"
     t.index ["category_id"], name: "index_pattern_learning_events_on_category_id"
     t.index ["created_at"], name: "index_pattern_learning_events_on_created_at"
     t.index ["expense_id"], name: "index_pattern_learning_events_on_expense_id"
     t.index ["pattern_used"], name: "index_pattern_learning_events_on_pattern_used"
+    t.index ["was_correct", "created_at"], name: "idx_learning_events_correct_time"
     t.index ["was_correct"], name: "index_pattern_learning_events_on_was_correct"
   end
 

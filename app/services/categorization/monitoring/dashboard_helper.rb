@@ -55,9 +55,9 @@ module Categorization
           total = CategorizationPattern.count
           active = CategorizationPattern.active.count
           high_confidence = CategorizationPattern.where("confidence >= ?", 0.8).count
-          
+
           by_type = CategorizationPattern.group(:pattern_type).count
-          
+
           recent_24h = CategorizationPattern.where(created_at: 24.hours.ago..).count
           updated_24h = CategorizationPattern.where(updated_at: 24.hours.ago..)
                                              .where("updated_at != created_at").count
@@ -80,12 +80,12 @@ module Categorization
         def cache_metrics
           cache = PatternCache.instance
           stats = cache.stats
-          
+
           hit_rate = if stats[:hits] + stats[:misses] > 0
                       (stats[:hits].to_f / (stats[:hits] + stats[:misses]) * 100).round(2)
-                    else
+          else
                       0
-                    end
+          end
 
           {
             entries: stats[:entries],
@@ -125,11 +125,11 @@ module Categorization
         # Get learning activity metrics
         def learning_metrics
           window = 24.hours.ago
-          
+
           patterns_created = CategorizationPattern.where(created_at: window..).count
           patterns_updated = CategorizationPattern.where(updated_at: window..)
                                                   .where("updated_at != created_at").count
-          
+
           confidence_improvements = CategorizationPattern.where(updated_at: window..)
                                                          .where("confidence > confidence_before")
                                                          .count rescue 0
@@ -165,7 +165,7 @@ module Categorization
         def calculate_throughput
           window = 1.hour.ago
           expenses_processed = Expense.where(updated_at: window..).count
-          
+
           {
             expenses_per_hour: expenses_processed,
             expenses_per_minute: (expenses_processed.to_f / 60).round(2)
@@ -174,7 +174,7 @@ module Categorization
 
         def database_metrics
           pool = ActiveRecord::Base.connection_pool
-          
+
           {
             pool_size: pool.size,
             connections: pool.connections.size,

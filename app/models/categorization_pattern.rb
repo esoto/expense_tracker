@@ -7,6 +7,7 @@
 # The pattern tracks its performance through usage_count, success_count, and success_rate
 # to continuously improve categorization accuracy.
 class CategorizationPattern < ApplicationRecord
+  include PatternValidation
   # Constants
   PATTERN_TYPES = %w[merchant keyword description amount_range regex time].freeze
   DEFAULT_CONFIDENCE_WEIGHT = 1.0

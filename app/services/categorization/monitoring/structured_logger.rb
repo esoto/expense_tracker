@@ -82,7 +82,7 @@ module Categorization
       def with_correlation_id(correlation_id = nil)
         old_correlation_id = @correlation_id
         @correlation_id = correlation_id || generate_correlation_id
-        
+
         yield self
       ensure
         @correlation_id = old_correlation_id
@@ -92,7 +92,7 @@ module Categorization
       def with_context(additional_context)
         old_context = @context
         @context = @context.merge(additional_context)
-        
+
         yield self
       ensure
         @context = old_context
@@ -122,7 +122,7 @@ module Categorization
 
       def log_event(level:, event:, data: {}, message: nil)
         log_level = LOG_LEVELS[level] || Logger::INFO
-        
+
         log_entry = build_log_entry(
           event: event,
           message: message,
@@ -237,7 +237,7 @@ module Categorization
       def truncate_string(str, max_length)
         return nil if str.nil?
         return str if str.length <= max_length
-        
+
         "#{str[0...max_length]}..."
       end
 

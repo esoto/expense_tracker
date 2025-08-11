@@ -120,7 +120,7 @@ RSpec.describe Categorization::Monitoring::HealthCheck do
       health_check.check_database
       database_check = health_check.checks[:database]
 
-      expect(database_check[:status]).to be_in([:healthy, :degraded])
+      expect(database_check[:status]).to be_in([ :healthy, :degraded ])
       expect(database_check[:connected]).to be true
       expect(database_check[:response_time_ms]).to be_a(Float)
       expect(database_check[:pattern_count]).to be >= 0
@@ -188,7 +188,7 @@ RSpec.describe Categorization::Monitoring::HealthCheck do
       health_check.check_service_metrics
       metrics = health_check.checks[:service_metrics]
 
-      expect(metrics[:status]).to be_in([:healthy, :degraded, :unknown])
+      expect(metrics[:status]).to be_in([ :healthy, :degraded, :unknown ])
       expect(metrics[:total_patterns]).to be >= 0 if metrics[:total_patterns]
       expect(metrics[:active_patterns]).to be >= 0 if metrics[:active_patterns]
       expect(metrics[:success_rate]).to be_between(0, 1) if metrics[:success_rate]
@@ -220,7 +220,7 @@ RSpec.describe Categorization::Monitoring::HealthCheck do
         database: { status: :healthy },
         pattern_cache: { status: :healthy }
       })
-      health_check.instance_variable_set(:@errors, ["Test error"])
+      health_check.instance_variable_set(:@errors, [ "Test error" ])
 
       expect(health_check.healthy?).to be false
     end

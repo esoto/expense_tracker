@@ -4,7 +4,7 @@ module Api
   # Health check controller for monitoring and Kubernetes probes
   class HealthController < ApplicationController
     skip_before_action :verify_authenticity_token
-    
+
     # Comprehensive health check endpoint
     # GET /api/health
     def index
@@ -60,7 +60,7 @@ module Api
     # GET /api/health/metrics
     def metrics
       metrics = collect_metrics
-      
+
       render json: metrics, status: :ok
     rescue => e
       render json: {
@@ -120,14 +120,14 @@ module Api
     def calculate_success_rate
       total = Expense.count
       return 0 if total.zero?
-      
+
       (Expense.where.not(category_id: nil).count.to_f / total * 100).round(2)
     end
 
     def cache_metrics
       cache = Categorization::PatternCache.instance
       stats = cache.stats
-      
+
       {
         entries: stats[:entries],
         hits: stats[:hits],
@@ -141,7 +141,7 @@ module Api
 
     def recent_activity_metrics
       window = 1.hour.ago
-      
+
       {
         expenses_processed: Expense.where(updated_at: window..).count,
         patterns_learned: CategorizationPattern.where(created_at: window..).count,
@@ -152,7 +152,7 @@ module Api
 
     def database_pool_metrics
       pool = ActiveRecord::Base.connection_pool
-      
+
       {
         size: pool.size,
         connections: pool.connections.size,

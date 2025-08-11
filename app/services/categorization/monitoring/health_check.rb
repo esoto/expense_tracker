@@ -30,6 +30,7 @@ module Categorization
         check_redis
         check_pattern_cache
         check_service_metrics
+        check_data_quality
         check_dependencies
 
         build_result
@@ -38,7 +39,7 @@ module Categorization
       # Check database performance
       def check_database
         start = Time.current
-        
+
         # Test database connectivity and performance
         result = ActiveRecord::Base.connection.execute("SELECT 1").first
         duration_ms = (Time.current - start) * 1000
@@ -53,7 +54,7 @@ module Categorization
         # Check pattern count
         pattern_count = CategorizationPattern.active.count
         @checks[:database][:pattern_count] = pattern_count
-        
+
         if pattern_count < THRESHOLDS[:min_patterns]
           @checks[:database][:status] = :degraded
           @checks[:database][:warning] = "Low pattern count: #{pattern_count}"
@@ -72,7 +73,7 @@ module Categorization
         return unless redis_configured?
 
         start = Time.current
-        
+
         # Test Redis connectivity
         redis_client.ping
         duration_ms = (Time.current - start) * 1000
@@ -133,7 +134,7 @@ module Categorization
         recent_window = 1.hour.ago
         total_attempts = Expense.where(updated_at: recent_window..).count
         successful = Expense.where(updated_at: recent_window..).where.not(category_id: nil).count
-        
+
         success_rate = total_attempts.positive? ? successful.to_f / total_attempts : 0
 
         # Get learning activity
@@ -164,6 +165,31 @@ module Categorization
         @errors << "Service metrics check failed: #{e.message}"
       end
 
+      # Check data quality
+      def check_data_quality
+        quality_checker = DataQualityChecker.new
+        audit_result = quality_checker.audit
+
+        @checks[:data_quality] = {
+          status: determine_data_quality_status(audit_result),
+          quality_score: audit_result[:quality_score][:overall],
+          quality_grade: audit_result[:quality_score][:grade],
+          summary: audit_result[:summary],
+          critical_issues: audit_result[:summary][:critical_issues],
+          recommendations_count: audit_result[:summary][:total_recommendations]
+        }
+
+        if audit_result[:summary][:critical_issues] > 0
+          @checks[:data_quality][:warning] = "#{audit_result[:summary][:critical_issues]} critical data quality issues found"
+        end
+      rescue => e
+        @checks[:data_quality] = {
+          status: :unknown,
+          error: e.message
+        }
+        @errors << "Data quality check failed: #{e.message}"
+      end
+
       # Check system dependencies
       def check_dependencies
         dependencies = {
@@ -173,7 +199,7 @@ module Categorization
         }
 
         all_healthy = dependencies.values.all? { |d| d[:status] == :healthy }
-        
+
         @checks[:dependencies] = {
           status: all_healthy ? :healthy : :degraded,
           services: dependencies
@@ -189,8 +215,8 @@ module Categorization
       # Get overall health status
       def healthy?
         return false if @checks.empty?
-        
-        critical_checks = [:database, :pattern_cache]
+
+        critical_checks = [ :database, :pattern_cache ]
         critical_healthy = critical_checks.all? do |check|
           @checks[check]&.fetch(:status, :unknown) != :unhealthy
         end
@@ -249,7 +275,7 @@ module Categorization
 
         # Get cache statistics from Redis
         keys = redis_client.keys("categorization:*")
-        
+
         @checks[:redis][:cache_keys] = keys.count
         @checks[:redis][:cache_patterns] = keys.count { |k| k.include?("pattern") }
       rescue => e
@@ -259,11 +285,11 @@ module Categorization
       def check_rails_cache
         start = Time.current
         test_key = "health_check_#{SecureRandom.hex(4)}"
-        
+
         Rails.cache.write(test_key, "test", expires_in: 10.seconds)
         value = Rails.cache.read(test_key)
         Rails.cache.delete(test_key)
-        
+
         duration_ms = (Time.current - start) * 1000
 
         {
@@ -339,19 +365,28 @@ module Categorization
 
       def overall_status
         return :unknown if @checks.empty?
-        
+
         # Check for unhealthy critical components
-        critical_checks = [:database, :pattern_cache]
+        critical_checks = [ :database, :pattern_cache ]
         critical_unhealthy = critical_checks.any? do |check|
           @checks[check]&.fetch(:status, :unknown) == :unhealthy
         end
-        
+
         return :unhealthy if critical_unhealthy || @errors.present?
-        
+
         # Check for degraded components
         degraded_checks = @checks.values.count { |check| check[:status] == :degraded }
         return :degraded if degraded_checks > 0
 
+        :healthy
+      end
+
+      def determine_data_quality_status(audit_result)
+        quality_score = audit_result[:quality_score][:overall]
+        critical_issues = audit_result[:summary][:critical_issues]
+
+        return :unhealthy if quality_score < 0.4 || critical_issues > 5
+        return :degraded if quality_score < 0.7 || critical_issues > 0
         :healthy
       end
     end

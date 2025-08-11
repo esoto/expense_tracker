@@ -27,7 +27,7 @@ module Categorization
           )
 
           result = original_categorize(expense, options.merge(correlation_id: correlation_id))
-          
+
           duration_ms = calculate_duration(start_time)
 
           # Track metrics
@@ -49,7 +49,7 @@ module Categorization
         end
       rescue => e
         duration_ms = calculate_duration(start_time) rescue 0
-        
+
         # Log error with context
         structured_logger.log_error(
           error: e,
@@ -72,7 +72,7 @@ module Categorization
       # Enhanced learn_from_correction with monitoring
       def learn_from_correction(expense, correct_category, predicted_category = nil, options = {})
         correlation_id = options[:correlation_id] || generate_correlation_id
-        
+
         structured_logger.with_correlation_id(correlation_id) do |logger|
           # Track learning event
           logger.log_learning(
@@ -161,9 +161,9 @@ module Categorization
       # Track cache operations with monitoring
       def track_cache_operation(operation, cache_type, key, hit)
         start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        
+
         result = yield if block_given?
-        
+
         duration_ms = calculate_duration(start_time)
 
         # Track cache metrics

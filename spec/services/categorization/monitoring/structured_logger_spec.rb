@@ -48,7 +48,7 @@ RSpec.describe Categorization::Monitoring::StructuredLogger do
 
     it "sanitizes sensitive data" do
       expense.update!(description: "Purchase at store@example.com with 4111-1111-1111-1111")
-      
+
       expect(mock_logger).to receive(:add).with(
         Logger::INFO,
         a_string_matching(/\[EMAIL\].*\[CARD\]/)
@@ -119,7 +119,7 @@ RSpec.describe Categorization::Monitoring::StructuredLogger do
   describe "#with_correlation_id" do
     it "uses provided correlation ID for all logs in block" do
       correlation_id = "test_correlation_123"
-      
+
       expect(mock_logger).to receive(:add).exactly(2).times.with(
         anything,
         a_string_matching(/"correlation_id":"#{correlation_id}"/)
@@ -133,7 +133,7 @@ RSpec.describe Categorization::Monitoring::StructuredLogger do
 
     it "restores original correlation ID after block" do
       original_correlation_id = structured_logger.instance_variable_get(:@correlation_id)
-      
+
       structured_logger.with_correlation_id("temp_id") do |logger|
         # Inside block
       end
@@ -156,7 +156,7 @@ RSpec.describe Categorization::Monitoring::StructuredLogger do
 
     it "restores original context after block" do
       original_context = structured_logger.context.dup
-      
+
       structured_logger.with_context(temp_key: "temp_value") do |logger|
         # Inside block
       end
@@ -179,7 +179,7 @@ RSpec.describe Categorization::Monitoring::StructuredLogger do
     it "inherits correlation ID from parent" do
       parent = described_class.new(logger: mock_logger)
       parent_correlation_id = parent.instance_variable_get(:@correlation_id)
-      
+
       child = parent.child
 
       expect(child.instance_variable_get(:@correlation_id)).to eq(parent_correlation_id)

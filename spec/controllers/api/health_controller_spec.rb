@@ -7,10 +7,10 @@ RSpec.describe Api::HealthController, type: :controller do
     # Create sufficient data for health checks to pass
     category = create(:category)
     # Create enough patterns to meet minimum threshold (10)
-    create_list(:categorization_pattern, 15, category: category, active: true, 
+    create_list(:categorization_pattern, 15, category: category, active: true,
                 success_rate: 0.8, usage_count: 5)
     create_list(:expense, 3, category: category)
-    
+
     # Initialize pattern cache with some entries
     cache = Categorization::PatternCache.instance
     allow(cache).to receive(:stats).and_return({
@@ -28,7 +28,7 @@ RSpec.describe Api::HealthController, type: :controller do
       get :index, format: :json
 
       expect(response).to have_http_status(:ok)
-      
+
       json_response = JSON.parse(response.body)
       expect(json_response).to include(
         "status",
@@ -46,14 +46,14 @@ RSpec.describe Api::HealthController, type: :controller do
         healthy: false,
         timestamp: Time.current.iso8601,
         checks: {},
-        errors: ["Database connection failed"]
+        errors: [ "Database connection failed" ]
       })
       allow(health_check).to receive(:healthy?).and_return(false)
 
       get :index, format: :json
 
       expect(response).to have_http_status(:service_unavailable)
-      
+
       json_response = JSON.parse(response.body)
       expect(json_response["healthy"]).to be false
     end
@@ -64,7 +64,7 @@ RSpec.describe Api::HealthController, type: :controller do
       get :ready, format: :json
 
       expect(response).to have_http_status(:ok)
-      
+
       json_response = JSON.parse(response.body)
       expect(json_response["status"]).to eq("ready")
     end
@@ -81,7 +81,7 @@ RSpec.describe Api::HealthController, type: :controller do
       get :ready, format: :json
 
       expect(response).to have_http_status(:service_unavailable)
-      
+
       json_response = JSON.parse(response.body)
       expect(json_response["status"]).to eq("not_ready")
     end
@@ -92,7 +92,7 @@ RSpec.describe Api::HealthController, type: :controller do
       get :live, format: :json
 
       expect(response).to have_http_status(:ok)
-      
+
       json_response = JSON.parse(response.body)
       expect(json_response["status"]).to eq("live")
     end
@@ -105,7 +105,7 @@ RSpec.describe Api::HealthController, type: :controller do
       get :live, format: :json
 
       expect(response).to have_http_status(:service_unavailable)
-      
+
       json_response = JSON.parse(response.body)
       expect(json_response["status"]).to eq("dead")
     end
@@ -122,7 +122,7 @@ RSpec.describe Api::HealthController, type: :controller do
       get :metrics, format: :json
 
       expect(response).to have_http_status(:ok)
-      
+
       json_response = JSON.parse(response.body)
       expect(json_response).to include(
         "timestamp",
@@ -153,7 +153,7 @@ RSpec.describe Api::HealthController, type: :controller do
       get :metrics, format: :json
 
       expect(response).to have_http_status(:internal_server_error)
-      
+
       json_response = JSON.parse(response.body)
       expect(json_response["error"]).to eq("Failed to collect metrics")
       expect(json_response["message"]).to eq("Test error")

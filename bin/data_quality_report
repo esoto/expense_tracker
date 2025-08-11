@@ -1,0 +1,215 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "../config/environment"
+
+# Script to generate a comprehensive data quality report for categorization patterns
+class DataQualityReporter
+  def self.run
+    puts "📊 Categorization Data Quality Report"
+    puts "=" * 60
+    puts "Generated at: #{Time.current}"
+    puts ""
+
+    # Run audit
+    checker = Categorization::Monitoring::DataQualityChecker.new
+    audit_result = checker.audit
+
+    # Display Summary
+    display_summary(audit_result[:summary])
+    
+    # Display Pattern Statistics
+    display_pattern_stats(audit_result[:patterns])
+    
+    # Display Category Coverage
+    display_category_coverage(audit_result[:categories], audit_result[:coverage])
+    
+    # Display Performance Metrics
+    display_performance_metrics(audit_result[:performance])
+    
+    # Display Quality Score
+    display_quality_score(audit_result[:quality_score])
+    
+    # Display Duplicates
+    display_duplicates(audit_result[:duplicates])
+    
+    # Display Recommendations
+    display_recommendations(audit_result[:recommendations])
+    
+    # Display Pattern Details
+    display_pattern_details if ARGV.include?("--detailed")
+  end
+
+  def self.display_summary(summary)
+    puts "📈 EXECUTIVE SUMMARY"
+    puts "-" * 40
+    puts "Total Patterns:        #{summary[:total_patterns]}"
+    puts "Active Patterns:       #{summary[:active_patterns]}"
+    puts "Category Coverage:     #{summary[:category_coverage]}"
+    puts "Average Success Rate:  #{summary[:avg_success_rate]}"
+    puts "Quality Grade:         #{summary[:quality_grade]} (Score: #{summary[:quality_score].round(3)})"
+    puts "Critical Issues:       #{summary[:critical_issues]}"
+    puts "Total Recommendations: #{summary[:total_recommendations]}"
+    puts ""
+  end
+
+  def self.display_pattern_stats(patterns)
+    puts "📋 PATTERN STATISTICS"
+    puts "-" * 40
+    puts "Total:          #{patterns[:total]}"
+    puts "Active:         #{patterns[:active]} (#{percent(patterns[:active], patterns[:total])})"
+    puts "Inactive:       #{patterns[:inactive]} (#{percent(patterns[:inactive], patterns[:total])})"
+    puts "User Created:   #{patterns[:user_created]} (#{percent(patterns[:user_created], patterns[:total])})"
+    puts "System Created: #{patterns[:system_created]} (#{percent(patterns[:system_created], patterns[:total])})"
+    puts ""
+    puts "Performance:"
+    puts "  High Performers:  #{patterns[:high_performers]}"
+    puts "  Low Success:      #{patterns[:low_success]}"
+    puts "  Unused:           #{patterns[:unused]}"
+    puts ""
+    puts "Activity:"
+    puts "  Recently Added:   #{patterns[:recently_added]} (last 7 days)"
+    puts "  Recently Updated: #{patterns[:recently_updated]} (last 24 hours)"
+    puts ""
+    puts "By Type:"
+    patterns[:by_type].each do |type, count|
+      puts "  #{type.capitalize.ljust(15)} #{count}"
+    end
+    puts ""
+  end
+
+  def self.display_category_coverage(categories, coverage)
+    puts "📂 CATEGORY COVERAGE"
+    puts "-" * 40
+    puts "Total Categories:     #{categories[:total]}"
+    puts "With Patterns:        #{categories[:with_patterns]} (#{percent(categories[:with_patterns], categories[:total])})"
+    puts "Without Patterns:     #{categories[:without_patterns]} (#{percent(categories[:without_patterns], categories[:total])})"
+    puts "Coverage Ratio:       #{(coverage[:ratio] * 100).round(1)}%"
+    puts "Avg Patterns/Category: #{categories[:avg_patterns_per_category]}"
+    puts ""
+    
+    if coverage[:gaps][:count] > 0
+      puts "Categories Missing Patterns:"
+      coverage[:gaps][:categories_without_patterns].first(10).each do |cat|
+        puts "  • #{cat}"
+      end
+      puts "  ... and #{coverage[:gaps][:count] - 10} more" if coverage[:gaps][:count] > 10
+    end
+    puts ""
+  end
+
+  def self.display_performance_metrics(performance)
+    puts "⚡ PERFORMANCE METRICS"
+    puts "-" * 40
+    puts "Average Success Rate: #{(performance[:avg_success_rate] * 100).round(1)}%"
+    puts "Median Success Rate:  #{(performance[:median_success_rate] * 100).round(1)}%"
+    puts "Total Usage:          #{performance[:total_usage]}"
+    puts "Total Successes:      #{performance[:total_successes]}"
+    puts ""
+    puts "Pattern Performance Distribution:"
+    performance[:patterns_by_performance].each do |level, count|
+      bar = "█" * [(count / 5.0).ceil, 20].min
+      puts "  #{level.to_s.capitalize.ljust(10)} #{bar} #{count}"
+    end
+    puts ""
+    puts "Learning Velocity:"
+    velocity = performance[:learning_velocity]
+    puts "  New patterns/day:      #{velocity[:new_patterns_per_day]}"
+    puts "  Improved patterns/day: #{velocity[:improved_patterns_per_day]}"
+    puts ""
+  end
+
+  def self.display_quality_score(quality_score)
+    puts "🏆 QUALITY SCORE"
+    puts "-" * 40
+    puts "Overall Score: #{quality_score[:overall].round(3)} (Grade: #{quality_score[:grade]})"
+    puts ""
+    puts "Component Scores:"
+    quality_score[:components].each do |component, score|
+      bar = "▓" * (score * 10).round + "░" * (10 - (score * 10).round)
+      puts "  #{component.to_s.humanize.ljust(15)} [#{bar}] #{(score * 100).round(1)}%"
+    end
+    puts ""
+  end
+
+  def self.display_duplicates(duplicates)
+    puts "🔍 DUPLICATE ANALYSIS"
+    puts "-" * 40
+    puts "Exact Duplicates:  #{duplicates[:exact_duplicates]}"
+    puts "Similar Patterns:  #{duplicates[:similar_patterns]}"
+    
+    if duplicates[:duplicate_details].any?
+      puts ""
+      puts "Top Duplicates:"
+      duplicates[:duplicate_details].first(5).each do |dup|
+        puts "  • '#{dup[:pattern_value]}' (#{dup[:pattern_type]}) - #{dup[:count]} occurrences"
+        puts "    Categories: #{dup[:categories].join(', ')}"
+      end
+    end
+    puts ""
+  end
+
+  def self.display_recommendations(recommendations)
+    puts "💡 RECOMMENDATIONS"
+    puts "-" * 40
+    
+    if recommendations.empty?
+      puts "No recommendations at this time - system is performing well!"
+    else
+      # Group by severity
+      by_severity = recommendations.group_by { |r| r[:severity] }
+      
+      [:high, :medium, :low].each do |severity|
+        next unless by_severity[severity]
+        
+        puts ""
+        puts "#{severity.upcase} Priority:"
+        by_severity[severity].each do |rec|
+          puts "  • #{rec[:message]}"
+          puts "    Action: #{rec[:action].to_s.humanize}" if rec[:action]
+        end
+      end
+    end
+    puts ""
+  end
+
+  def self.display_pattern_details
+    puts "📝 DETAILED PATTERN ANALYSIS"
+    puts "-" * 40
+    
+    # Show top performing patterns
+    puts "Top 10 Performing Patterns:"
+    CategorizationPattern
+      .where("usage_count > ?", 10)
+      .order(success_rate: :desc)
+      .limit(10)
+      .each_with_index do |pattern, i|
+        puts "  #{i + 1}. [#{pattern.pattern_type}] '#{pattern.pattern_value}'"
+        puts "     Category: #{pattern.category.name}"
+        puts "     Success: #{(pattern.success_rate * 100).round(1)}% (#{pattern.success_count}/#{pattern.usage_count})"
+        puts "     Confidence: #{pattern.confidence_weight}"
+      end
+    
+    puts ""
+    puts "Bottom 10 Performing Patterns (with usage > 10):"
+    CategorizationPattern
+      .where("usage_count > ?", 10)
+      .order(success_rate: :asc)
+      .limit(10)
+      .each_with_index do |pattern, i|
+        puts "  #{i + 1}. [#{pattern.pattern_type}] '#{pattern.pattern_value}'"
+        puts "     Category: #{pattern.category.name}"
+        puts "     Success: #{(pattern.success_rate * 100).round(1)}% (#{pattern.success_count}/#{pattern.usage_count})"
+        puts "     Confidence: #{pattern.confidence_weight}"
+      end
+    puts ""
+  end
+
+  def self.percent(value, total)
+    return "0%" if total.zero?
+    "#{(value.to_f / total * 100).round(1)}%"
+  end
+end
+
+# Run the reporter
+DataQualityReporter.run

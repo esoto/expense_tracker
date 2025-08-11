@@ -66,7 +66,7 @@ module Categorization
       benchmark_learning("single_correction") do
         ActiveRecord::Base.transaction do
           result = process_single_correction(expense, correct_category, predicted_category, options)
-          
+
           # Invalidate cache after learning
           @pattern_cache.invalidate_all unless @dry_run
 
@@ -98,22 +98,22 @@ module Categorization
 
         results = []
         patterns_affected = Set.new
-        
+
         ActiveRecord::Base.transaction(requires_new: true, joinable: false) do
-          ActiveRecord::Base.connection.execute("SET LOCAL lock_timeout = '#{TRANSACTION_TIMEOUT.to_i * 1000}ms'") if ActiveRecord::Base.connection.adapter_name == 'PostgreSQL'
-          
+          ActiveRecord::Base.connection.execute("SET LOCAL lock_timeout = '#{TRANSACTION_TIMEOUT.to_i * 1000}ms'") if ActiveRecord::Base.connection.adapter_name == "PostgreSQL"
+
           corrections.each_with_index do |correction, index|
             expense = correction[:expense]
             correct_category = correction[:correct_category]
             predicted_category = correction[:predicted_category]
-            
+
             result = process_single_correction(
-              expense, 
-              correct_category, 
+              expense,
+              correct_category,
               predicted_category,
               batch_index: index
             )
-            
+
             results << result
             patterns_affected.merge(result.patterns_affected) if result.success?
           end
@@ -149,7 +149,7 @@ module Categorization
     # @return [DecayResult] Result of decay operation
     def decay_unused_patterns(options = {})
       threshold_date = options.fetch(:threshold_date, DECAY_THRESHOLD_DAYS.days.ago)
-      
+
       benchmark_learning("pattern_decay") do
         patterns_to_decay = CategorizationPattern
           .active
@@ -164,11 +164,11 @@ module Categorization
         ActiveRecord::Base.transaction do
           patterns_to_decay.find_each do |pattern|
             original_confidence = pattern.confidence_weight
-            
+
             # Apply decay
             new_confidence = (original_confidence * DECAY_FACTOR).round(3)
-            new_confidence = [new_confidence, MIN_CONFIDENCE].max
-            
+            new_confidence = [ new_confidence, MIN_CONFIDENCE ].max
+
             if new_confidence < 0.3
               # Deactivate very low confidence patterns
               pattern.update!(active: false) unless @dry_run
@@ -277,7 +277,7 @@ module Categorization
       return nil if expense.merchant_name.blank?
 
       merchant_name = expense.merchant_name.downcase.strip
-      
+
       pattern = CategorizationPattern.find_or_initialize_by(
         pattern_type: "merchant",
         pattern_value: merchant_name,
@@ -289,7 +289,7 @@ module Categorization
         pattern.user_created = true
         pattern.metadata = build_pattern_metadata(expense, "merchant")
         pattern.save! unless @dry_run
-        
+
         @metrics[:patterns_created] += 1
         logger.info "[PatternLearner] Created merchant pattern: #{merchant_name} -> #{category.name}"
       else
@@ -315,13 +315,13 @@ module Categorization
         if pattern.new_record?
           # Check if this keyword appears frequently enough
           similar_expenses_count = count_similar_expenses(keyword, category)
-          
+
           if similar_expenses_count >= MIN_CORRECTIONS_FOR_PATTERN
             pattern.confidence_weight = PATTERN_CREATION_CONFIDENCE
             pattern.user_created = false
             pattern.metadata = build_pattern_metadata(expense, "keyword")
             pattern.save! unless @dry_run
-            
+
             patterns << pattern
             @metrics[:patterns_created] += 1
             logger.info "[PatternLearner] Created keyword pattern: #{keyword} -> #{category.name}"
@@ -339,26 +339,26 @@ module Categorization
       return if @dry_run
 
       boost = options[:user_correction] ? CONFIDENCE_BOOST_USER_CREATED : CONFIDENCE_BOOST_CORRECT
-      
+
       old_confidence = pattern.confidence_weight
       new_confidence = pattern.confidence_weight + boost
-      new_confidence = [new_confidence, MAX_CONFIDENCE].min
-      
+      new_confidence = [ new_confidence, MAX_CONFIDENCE ].min
+
       pattern.update!(
         confidence_weight: new_confidence
       )
-      
+
       # Record usage separately to avoid double counting
       pattern.record_usage(true)
-      
+
       @metrics[:patterns_strengthened] += 1
-      
+
       logger.debug "[PatternLearner] Strengthened pattern #{pattern.id}: #{old_confidence} -> #{new_confidence}"
     end
 
     def weaken_patterns_for_category(expense, category, patterns_affected)
       patterns = find_matching_patterns(expense, category)
-      
+
       patterns.each do |pattern|
         weaken_pattern(pattern)
         patterns_affected << pattern.id
@@ -367,7 +367,7 @@ module Categorization
 
     def strengthen_patterns_for_category(expense, category, patterns_affected)
       patterns = find_matching_patterns(expense, category)
-      
+
       patterns.each do |pattern|
         strengthen_pattern(pattern)
         patterns_affected << pattern.id
@@ -379,65 +379,65 @@ module Categorization
 
       old_confidence = pattern.confidence_weight
       new_confidence = pattern.confidence_weight + CONFIDENCE_PENALTY_INCORRECT
-      new_confidence = [new_confidence, MIN_CONFIDENCE].max
-      
+      new_confidence = [ new_confidence, MIN_CONFIDENCE ].max
+
       pattern.update!(
         confidence_weight: new_confidence
       )
-      
+
       # Record usage as failure
       pattern.record_usage(false)
-      
+
       @metrics[:patterns_weakened] += 1
-      
+
       # Check if pattern should be deactivated
       pattern.check_and_deactivate_if_poor_performance
-      
+
       logger.debug "[PatternLearner] Weakened pattern #{pattern.id}: #{old_confidence} -> #{new_confidence}"
     end
 
     def find_matching_patterns(expense, category)
       patterns = CategorizationPattern.active.where(category: category)
-      
+
       matching_patterns = patterns.select do |pattern|
         pattern.matches?(expense)
       end
-      
+
       matching_patterns
     end
 
     def merge_similar_patterns(category, patterns_affected)
       merged_patterns = []
-      
+
       # Get all active patterns for the category
       patterns = CategorizationPattern.active
         .where(category: category)
         .order(usage_count: :desc)
-      
+
       # Group by pattern type for more efficient merging
       patterns_by_type = patterns.group_by(&:pattern_type)
-      
+
       patterns_by_type.each do |pattern_type, type_patterns|
         # Find similar patterns within each type
         type_patterns.combination(2).each do |pattern1, pattern2|
           similarity = calculate_pattern_similarity(pattern1, pattern2)
-          
+
           if similarity >= SIMILARITY_THRESHOLD
             # Merge patterns (keep the one with higher usage)
-            primary, secondary = pattern1.usage_count >= pattern2.usage_count ? 
-              [pattern1, pattern2] : [pattern2, pattern1]
-            
+            primary, secondary = pattern1.usage_count >= pattern2.usage_count ?
+              [ pattern1, pattern2 ] : [ pattern2, pattern1 ]
+
             merge_patterns(primary, secondary) unless @dry_run
-            
+
             merged_patterns << secondary
             patterns_affected.delete(secondary.id)
-            
+
             @metrics[:patterns_merged] += 1
             logger.info "[PatternLearner] Merged patterns: #{secondary.id} into #{primary.id}"
           end
         end
       end
-      
+
       merged_patterns
     end
 
@@ -448,17 +448,17 @@ module Categorization
           usage_count: primary.usage_count + secondary.usage_count,
           success_count: primary.success_count + secondary.success_count,
           confidence_weight: [
-            (primary.confidence_weight * primary.usage_count + 
-             secondary.confidence_weight * secondary.usage_count) / 
+            (primary.confidence_weight * primary.usage_count +
+             secondary.confidence_weight * secondary.usage_count) /
             (primary.usage_count + secondary.usage_count),
             MAX_CONFIDENCE
           ].min
         )
-        
+
         # Merge metadata
         primary.metadata = merge_metadata(primary.metadata, secondary.metadata)
         primary.save!
-        
+
         # Deactivate secondary pattern
         secondary.update!(active: false)
       end
@@ -466,7 +466,7 @@ module Categorization
 
     def calculate_pattern_similarity(pattern1, pattern2)
       return 0.0 unless pattern1.pattern_type == pattern2.pattern_type
-      
+
       case pattern1.pattern_type
       when "merchant", "keyword", "description"
         calculate_text_similarity(pattern1.pattern_value, pattern2.pattern_value)
@@ -479,26 +479,26 @@ module Categorization
 
     def calculate_text_similarity(text1, text2)
       return 1.0 if text1 == text2
-      
+
       # Use Levenshtein distance for similarity
       distance = levenshtein_distance(text1.downcase, text2.downcase)
-      max_length = [text1.length, text2.length].max
-      
+      max_length = [ text1.length, text2.length ].max
+
       1.0 - (distance.to_f / max_length)
     end
 
     def levenshtein_distance(str1, str2)
       m = str1.length
       n = str2.length
-      
+
       return n if m == 0
       return m if n == 0
-      
+
       d = Array.new(m + 1) { Array.new(n + 1) }
-      
+
       (0..m).each { |i| d[i][0] = i }
       (0..n).each { |j| d[0][j] = j }
-      
+
       (1..n).each do |j|
         (1..m).each do |i|
           cost = str1[i - 1] == str2[j - 1] ? 0 : 1
@@ -509,7 +509,7 @@ module Categorization
           ].min
         end
       end
-      
+
       d[m][n]
     end
 
@@ -517,32 +517,32 @@ module Categorization
       # Parse ranges
       min1, max1 = range1.split("-").map(&:to_f)
       min2, max2 = range2.split("-").map(&:to_f)
-      
+
       # Calculate overlap
-      overlap_start = [min1, min2].max
-      overlap_end = [max1, max2].min
-      
+      overlap_start = [ min1, min2 ].max
+      overlap_end = [ max1, max2 ].min
+
       return 0.0 if overlap_start > overlap_end
-      
+
       overlap = overlap_end - overlap_start
-      total_range = [max1, max2].max - [min1, min2].min
-      
+      total_range = [ max1, max2 ].max - [ min1, min2 ].min
+
       overlap / total_range
     end
 
     def extract_keywords(text)
       return [] if text.blank?
-      
+
       # Simple keyword extraction - can be enhanced with NLP
       words = text.downcase.split(/\W+/)
-      
+
       # Filter out common words and short words
       stop_words = %w[the a an and or but in on at to for of with from by]
-      
+
       keywords = words.reject do |word|
         word.length < 3 || stop_words.include?(word) || word.match?(/^\d+$/)
       end
-      
+
       keywords.uniq.first(5) # Limit to 5 keywords
     end
 
@@ -557,17 +557,17 @@ module Categorization
 
     def record_feedback(expense, correct_category, predicted_category)
       return { created: false } if @dry_run
-      
+
       was_correct = predicted_category == correct_category
       feedback_type = was_correct ? "accepted" : "correction"
-      
+
       feedback = PatternFeedback.create!(
         expense: expense,
         category: correct_category,
         was_correct: was_correct,
         feedback_type: feedback_type
       )
-      
+
       { created: true, feedback_id: feedback.id, was_correct: was_correct }
     rescue => e
       logger.error "[PatternLearner] Failed to record feedback: #{e.message}"
@@ -576,15 +576,15 @@ module Categorization
 
     def record_learning_event(expense, category, pattern)
       return if @dry_run
-      
+
       # Ensure confidence score is within valid range
       confidence = if pattern
         score = pattern.effective_confidence
-        [[score, 0.0].max, 1.0].min  # Clamp between 0 and 1
+        [ [ score, 0.0 ].max, 1.0 ].min  # Clamp between 0 and 1
       else
         1.0
       end
-      
+
       PatternLearningEvent.create!(
         expense: expense,
         category: category,
@@ -609,18 +609,18 @@ module Categorization
 
     def merge_metadata(metadata1, metadata2)
       merged = (metadata1 || {}).deep_merge(metadata2 || {})
-      
+
       # Combine amount statistics if present
       if metadata1&.dig("amount_stats") && metadata2&.dig("amount_stats")
         # Safely extract amounts arrays
         amounts1 = metadata1.dig("amount_stats", "amounts")
         amounts1 = Array(amounts1 || metadata1.dig("amount_stats", "initial_amount"))
-        
+
         amounts2 = metadata2.dig("amount_stats", "amounts")
         amounts2 = Array(amounts2 || metadata2.dig("amount_stats", "initial_amount"))
-        
+
         amounts = (amounts1 + amounts2).flatten.compact
-        
+
         if amounts.any?
           merged["amount_stats"] = {
             mean: amounts.map(&:to_f).sum / amounts.size,
@@ -630,13 +630,13 @@ module Categorization
           }
         end
       end
-      
+
       merged
     end
 
     def calculate_std_dev(values)
       return 0.0 if values.size <= 1
-      
+
       mean = values.map(&:to_f).sum / values.size.to_f
       variance = values.map(&:to_f).sum { |v| (v.to_f - mean) ** 2 } / values.size.to_f
       Math.sqrt(variance)
@@ -648,16 +648,16 @@ module Categorization
 
     def optimize_patterns(pattern_ids)
       return if pattern_ids.empty?
-      
+
       patterns = CategorizationPattern.where(id: pattern_ids.to_a)
-      
+
       patterns.find_each do |pattern|
         # Recalculate success rate
         pattern.send(:calculate_success_rate)
-        
+
         # Check for poor performance
         pattern.check_and_deactivate_if_poor_performance
-        
+
         pattern.save! if pattern.changed?
       end
     end
@@ -675,11 +675,11 @@ module Categorization
 
     def calculate_effectiveness
       return {} if @metrics[:corrections_processed] == 0
-      
+
       {
         patterns_per_correction: (@metrics[:patterns_created].to_f / @metrics[:corrections_processed]).round(2),
-        strengthen_weaken_ratio: @metrics[:patterns_weakened] > 0 ? 
-          (@metrics[:patterns_strengthened].to_f / @metrics[:patterns_weakened]).round(2) : 
+        strengthen_weaken_ratio: @metrics[:patterns_weakened] > 0 ?
+          (@metrics[:patterns_strengthened].to_f / @metrics[:patterns_weakened]).round(2) :
           @metrics[:patterns_strengthened].to_f,
         avg_processing_time_ms: (@metrics[:total_processing_time_ms] / @metrics[:corrections_processed]).round(2)
       }
@@ -687,17 +687,17 @@ module Categorization
 
     def benchmark_learning(operation, &block)
       start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      
+
       result = yield
-      
+
       duration_ms = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000
       @metrics[:total_processing_time_ms] += duration_ms
       @performance_tracker.record_operation(operation, duration_ms)
-      
+
       if duration_ms > (operation == "batch_corrections" ? 1000 : 10)
         logger.warn "[PatternLearner] Slow #{operation}: #{duration_ms.round(2)}ms"
       end
-      
+
       result
     end
 
@@ -719,7 +719,7 @@ module Categorization
         @mutex.synchronize do
           @operations.transform_values do |durations|
             next { count: 0 } if durations.empty?
-            
+
             {
               count: durations.size,
               avg_ms: (durations.sum / durations.size).round(3),
@@ -745,10 +745,10 @@ module Categorization
 
   # Result classes for learning operations
   class LearningResult
-    attr_reader :success, :patterns_created, :patterns_affected, :actions_taken, 
+    attr_reader :success, :patterns_created, :patterns_affected, :actions_taken,
                 :expense_id, :category_id, :error
 
-    def initialize(success:, patterns_created: [], patterns_affected: [], 
+    def initialize(success:, patterns_created: [], patterns_affected: [],
                    actions_taken: [], expense_id: nil, category_id: nil, error: nil)
       @success = success
       @patterns_created = patterns_created
@@ -785,10 +785,10 @@ module Categorization
   end
 
   class BatchLearningResult
-    attr_reader :total, :successful, :failed, :patterns_created, 
+    attr_reader :total, :successful, :failed, :patterns_created,
                 :patterns_updated, :results, :metrics, :error
 
-    def initialize(total:, successful:, failed:, patterns_created:, 
+    def initialize(total:, successful:, failed:, patterns_created:,
                    patterns_updated:, results: [], metrics: {}, error: nil)
       @total = total
       @successful = successful
@@ -805,7 +805,7 @@ module Categorization
     end
 
     def self.error(message)
-      new(total: 0, successful: 0, failed: 0, patterns_created: 0, 
+      new(total: 0, successful: 0, failed: 0, patterns_created: 0,
           patterns_updated: 0, error: message)
     end
 
@@ -846,7 +846,7 @@ module Categorization
         patterns_examined: @patterns_examined,
         patterns_decayed: @patterns_decayed,
         patterns_deactivated: @patterns_deactivated,
-        decay_rate: @patterns_examined > 0 ? 
+        decay_rate: @patterns_examined > 0 ?
           (@patterns_decayed.to_f / @patterns_examined * 100).round(2) : 0.0
       }
     end

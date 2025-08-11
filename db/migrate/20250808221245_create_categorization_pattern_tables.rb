@@ -5,7 +5,8 @@ class CreateCategorizationPatternTables < ActiveRecord::Migration[8.0]
     enable_extension 'unaccent' unless extension_enabled?('unaccent')
 
     # Main categorization patterns table
-    create_table :categorization_patterns do |t|
+    unless table_exists?(:categorization_patterns)
+      create_table :categorization_patterns do |t|
       t.references :category, null: false, foreign_key: true
       t.string :pattern_type, null: false # merchant, keyword, description, amount_range, regex, time
       t.string :pattern_value, null: false
@@ -51,10 +52,12 @@ class CreateCategorizationPatternTables < ActiveRecord::Migration[8.0]
       t.index :raw_name
       t.index :normalized_name, using: :gin, opclass: :gin_trgm_ops
       t.index [ :canonical_merchant_id, :confidence ]
+      end
     end
 
     # Track pattern learning from user corrections
-    create_table :pattern_feedbacks do |t|
+    unless table_exists?(:pattern_feedbacks)
+      create_table :pattern_feedbacks do |t|
       t.references :categorization_pattern, foreign_key: true
       t.references :expense, foreign_key: true
       t.references :category, foreign_key: true # The correct category
@@ -66,10 +69,12 @@ class CreateCategorizationPatternTables < ActiveRecord::Migration[8.0]
 
       t.index [ :categorization_pattern_id, :was_correct ]
       t.index :created_at
+      end
     end
 
     # User-specific categorization preferences
-    create_table :user_category_preferences do |t|
+    unless table_exists?(:user_category_preferences)
+      create_table :user_category_preferences do |t|
       t.references :email_account, foreign_key: true # Using email_account instead of user
       t.references :category, foreign_key: true
       t.string :context_type # 'merchant', 'time_of_day', 'day_of_week', 'amount_range'
@@ -79,10 +84,12 @@ class CreateCategorizationPatternTables < ActiveRecord::Migration[8.0]
       t.timestamps
 
       t.index [ :email_account_id, :context_type, :context_value ]
+      end
     end
 
     # Composite patterns for complex categorization rules
-    create_table :composite_patterns do |t|
+    unless table_exists?(:composite_patterns)
+      create_table :composite_patterns do |t|
       t.references :category, null: false, foreign_key: true
       t.string :name, null: false
       t.string :operator, null: false # 'AND', 'OR', 'NOT'
@@ -100,10 +107,12 @@ class CreateCategorizationPatternTables < ActiveRecord::Migration[8.0]
       t.index [ :category_id, :active ]
       t.index :operator
       t.index :pattern_ids, using: :gin
+      end
     end
 
     # Pattern learning events for tracking system performance
-    create_table :pattern_learning_events do |t|
+    unless table_exists?(:pattern_learning_events)
+      create_table :pattern_learning_events do |t|
       t.references :expense, foreign_key: true
       t.references :category, foreign_key: true
       t.string :pattern_used
@@ -115,6 +124,7 @@ class CreateCategorizationPatternTables < ActiveRecord::Migration[8.0]
       t.index :pattern_used
       t.index :was_correct
       t.index :created_at
+      end
     end
 
     # Add new columns to expenses table for tracking
@@ -126,18 +136,18 @@ class CreateCategorizationPatternTables < ActiveRecord::Migration[8.0]
     add_index :expenses, :merchant_normalized unless index_exists?(:expenses, :merchant_normalized)
     add_index :expenses, [ :auto_categorized, :categorization_confidence ] unless index_exists?(:expenses, [ :auto_categorized, :categorization_confidence ])
   end
-  
+
   def down
     # Remove indexes on expenses columns
     remove_index :expenses, [ :auto_categorized, :categorization_confidence ] if index_exists?(:expenses, [ :auto_categorized, :categorization_confidence ])
     remove_index :expenses, :merchant_normalized if index_exists?(:expenses, :merchant_normalized)
-    
+
     # Remove columns from expenses table
     remove_column :expenses, :categorization_method if column_exists?(:expenses, :categorization_method)
     remove_column :expenses, :categorization_confidence if column_exists?(:expenses, :categorization_confidence)
     remove_column :expenses, :auto_categorized if column_exists?(:expenses, :auto_categorized)
     remove_column :expenses, :merchant_normalized if column_exists?(:expenses, :merchant_normalized)
-    
+
     # Drop all tables in reverse order of creation (check existence first)
     drop_table :pattern_learning_events if ActiveRecord::Base.connection.table_exists?(:pattern_learning_events)
     drop_table :composite_patterns if ActiveRecord::Base.connection.table_exists?(:composite_patterns)

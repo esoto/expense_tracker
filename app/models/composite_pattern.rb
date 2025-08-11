@@ -331,7 +331,7 @@ class CompositePattern < ApplicationRecord
   def pattern_matches_expense?(pattern, expense)
     pattern.matches?(expense)
   end
-  
+
   def invalidate_cache
     Categorization::PatternCache.instance.invalidate(self) if defined?(Categorization::PatternCache)
   rescue => e

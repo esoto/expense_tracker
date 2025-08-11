@@ -7,15 +7,15 @@ FactoryBot.define do
     category_hint { nil }
     metadata { {} }
     usage_count { 0 }
-    
+
     trait :popular do
       usage_count { 100 }
     end
-    
+
     trait :with_category_hint do
       category_hint { "Food & Dining" }
     end
-    
+
     trait :with_metadata do
       metadata do
         {

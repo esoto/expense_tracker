@@ -32,7 +32,7 @@ RSpec.describe PatternFeedback, type: :model do
 
   describe "validations" do
     subject { described_class.new(expense: expense, category: category, feedback_type: "accepted") }
-    
+
     # feedback_type has a before_validation callback that sets default value
     # so we can't use standard presence validation test
     it "validates presence of feedback_type" do
@@ -41,7 +41,7 @@ RSpec.describe PatternFeedback, type: :model do
       expect(feedback).not_to be_valid
       expect(feedback.errors[:feedback_type]).to include("can't be blank")
     end
-    
+
     it { should validate_inclusion_of(:feedback_type).in_array(%w[accepted rejected corrected correction]) }
   end
 
@@ -55,7 +55,7 @@ RSpec.describe PatternFeedback, type: :model do
         was_correct: true
       )
     end
-    
+
     let!(:rejected_feedback) do
       described_class.create!(
         expense: expense,
@@ -65,7 +65,7 @@ RSpec.describe PatternFeedback, type: :model do
         was_correct: false
       )
     end
-    
+
     let!(:corrected_feedback) do
       described_class.create!(
         expense: expense,
@@ -75,7 +75,7 @@ RSpec.describe PatternFeedback, type: :model do
         was_correct: false
       )
     end
-    
+
     let!(:correction_feedback) do
       described_class.create!(
         expense: expense,
@@ -112,7 +112,7 @@ RSpec.describe PatternFeedback, type: :model do
         feedback_type: "accepted",
         created_at: 1.day.ago
       )
-      
+
       expect(described_class.recent.first).to eq(correction_feedback)
       expect(described_class.recent.last).to eq(older_feedback)
     end
@@ -155,7 +155,7 @@ RSpec.describe PatternFeedback, type: :model do
     describe "update_pattern_performance" do
       it "records successful usage for accepted feedback" do
         expect(pattern).to receive(:record_usage).with(true)
-        
+
         described_class.create!(
           expense: expense,
           category: category,
@@ -166,7 +166,7 @@ RSpec.describe PatternFeedback, type: :model do
 
       it "records unsuccessful usage for rejected feedback" do
         expect(pattern).to receive(:record_usage).with(false)
-        
+
         described_class.create!(
           expense: expense,
           category: category,
@@ -177,7 +177,7 @@ RSpec.describe PatternFeedback, type: :model do
 
       it "records unsuccessful usage for corrected feedback" do
         expect(pattern).to receive(:record_usage).with(false)
-        
+
         described_class.create!(
           expense: expense,
           category: category,
@@ -198,7 +198,7 @@ RSpec.describe PatternFeedback, type: :model do
 
     describe "create_pattern_from_correction" do
       let(:new_category) { Category.create!(name: "Transportation") }
-      
+
       it "creates a new pattern from correction feedback" do
         expect {
           described_class.create!(
@@ -207,7 +207,7 @@ RSpec.describe PatternFeedback, type: :model do
             feedback_type: "correction"
           )
         }.to change { CategorizationPattern.count }.by(1)
-        
+
         new_pattern = CategorizationPattern.last
         expect(new_pattern.category).to eq(new_category)
         expect(new_pattern.pattern_type).to eq("merchant")
@@ -224,7 +224,7 @@ RSpec.describe PatternFeedback, type: :model do
           pattern_type: "merchant",
           pattern_value: "Starbucks"
         )
-        
+
         expect {
           described_class.create!(
             expense: expense,
@@ -256,7 +256,7 @@ RSpec.describe PatternFeedback, type: :model do
         confidence: 0.85,
         type: "accepted"
       )
-      
+
       expect(feedback).to be_persisted
       expect(feedback.expense).to eq(expense)
       expect(feedback.category).to eq(category)
@@ -274,7 +274,7 @@ RSpec.describe PatternFeedback, type: :model do
         was_correct: true,
         type: "invalid"
       )
-      
+
       expect(feedback.feedback_type).to eq("accepted")
     end
   end
@@ -308,10 +308,10 @@ RSpec.describe PatternFeedback, type: :model do
 
     context "with correction feedback" do
       let(:feedback_type) { "correction" }
-      
+
       it "suggests creating a new pattern" do
         suggestion = feedback.improvement_suggestion
-        
+
         expect(suggestion[:suggested_action]).to eq("create_new_pattern")
         expect(suggestion[:category_id]).to eq(category.id)
         expect(suggestion[:pattern_type]).to eq("merchant")
@@ -322,10 +322,10 @@ RSpec.describe PatternFeedback, type: :model do
 
     context "with rejected feedback" do
       let(:feedback_type) { "rejected" }
-      
+
       it "suggests adjusting existing pattern" do
         suggestion = feedback.improvement_suggestion
-        
+
         expect(suggestion[:suggested_action]).to eq("adjust_pattern")
         expect(suggestion[:confidence_adjustment]).to eq(-0.1)
       end
@@ -333,7 +333,7 @@ RSpec.describe PatternFeedback, type: :model do
 
     context "with accepted feedback" do
       let(:feedback_type) { "accepted" }
-      
+
       it "returns nil" do
         expect(feedback.improvement_suggestion).to be_nil
       end
@@ -341,14 +341,14 @@ RSpec.describe PatternFeedback, type: :model do
 
     context "with expense without merchant name" do
       let(:feedback_type) { "correction" }
-      
+
       before do
         expense.update!(merchant_name: nil)
       end
-      
+
       it "uses description as pattern value" do
         suggestion = feedback.improvement_suggestion
-        
+
         expect(suggestion[:pattern_type]).to eq("description")
         expect(suggestion[:pattern_value]).to eq("Coffee purchase")
       end
@@ -356,14 +356,14 @@ RSpec.describe PatternFeedback, type: :model do
 
     context "with expense without merchant or description" do
       let(:feedback_type) { "correction" }
-      
+
       before do
         expense.update!(merchant_name: nil, description: nil)
       end
-      
+
       it "suggests keyword pattern type" do
         suggestion = feedback.improvement_suggestion
-        
+
         expect(suggestion[:pattern_type]).to eq("keyword")
         expect(suggestion[:pattern_value]).to be_nil
       end
@@ -372,7 +372,7 @@ RSpec.describe PatternFeedback, type: :model do
     it "includes context information" do
       feedback.feedback_type = "correction"
       suggestion = feedback.improvement_suggestion
-      
+
       expect(suggestion[:context]).to include(
         expense_merchant: "Starbucks",
         expense_amount: 5.50,

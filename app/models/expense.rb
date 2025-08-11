@@ -42,15 +42,9 @@ class Expense < ApplicationRecord
   end
 
   def merchant_name
-    # Extract merchant name from description or use normalized merchant
-    return merchant_normalized if merchant_normalized.present?
-    
-    # Try to extract merchant from description (simple heuristic)
-    return nil if description.blank?
-    
-    # Common patterns: "MERCHANT NAME *", "MERCHANT NAME -", etc.
-    match = description.match(/^([A-Z][A-Z0-9\s&.-]+?)(?:\s*[*\-#]|\s+\d|$)/i)
-    match ? match[1].strip : description.split(/\s+/).first(3).join(" ")
+    # Simple attribute access without computed logic to avoid circular dependencies
+    # Returns merchant_name if present, otherwise merchant_normalized
+    self[:merchant_name] || self[:merchant_normalized]
   end
 
   def parsed_email_data

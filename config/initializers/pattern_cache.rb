@@ -17,7 +17,7 @@ if Rails.env.production? || Rails.env.staging?
       begin
         Rails.logger.info "[PatternCache] Scheduling cache warming..."
         sleep 5 # Wait for application to fully initialize
-        
+
         ActiveRecord::Base.connection_pool.with_connection do
           Categorization::PatternCache.instance.warm_cache
         end
@@ -38,7 +38,7 @@ unless Rails.env.test?
         redis_ttl: Rails.application.config.pattern_cache_redis_ttl,
         redis_available: Categorization::PatternCache.instance.instance_variable_get(:@redis_available)
       }
-      
+
       Rails.logger.info "[PatternCache] Configuration: #{cache_config.inspect}"
     end
   end

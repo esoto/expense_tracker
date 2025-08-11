@@ -42,6 +42,10 @@ Rails.application.configure do
   # Print deprecation notices to the stderr.
   config.active_support.deprecation = :stderr
 
+  # Silence database logs in tests to reduce noise
+  config.log_level = :warn
+  config.active_record.logger = nil
+
   # Raises error for missing translations.
   # config.i18n.raise_on_missing_translations = true
 

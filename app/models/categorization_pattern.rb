@@ -76,17 +76,72 @@ class CategorizationPattern < ApplicationRecord
     # Handle both string and hash/expense parameters
     if text_or_options.is_a?(Hash)
       expense = text_or_options[:expense]
+      # If we have an expense object in the hash, recursively call with the expense
+      if expense && expense.class.name == "Expense"
+        return matches?(expense)
+      end
+      # Otherwise use the provided text fields
       text = text_or_options[:merchant_name] || text_or_options[:description]
-    elsif text_or_options.respond_to?(:merchant_name)
-      # It's an expense object
+    elsif text_or_options.class.name == "Expense" || (text_or_options.respond_to?(:attributes) && text_or_options.attributes.key?("merchant_name"))
+      # It's an expense object - use attributes directly to avoid method overrides
       expense = text_or_options
       text = case pattern_type
       when "merchant"
-               expense.merchant_name
-      when "description", "keyword", "regex"
-               expense.description || expense.merchant_name
+        # For merchant patterns, use the actual merchant_name attribute
+        expense.attributes["merchant_name"] || expense.read_attribute(:merchant_name) rescue expense.merchant_name
+      when "description"
+        # For description patterns, only check description
+        expense.attributes["description"] || expense.read_attribute(:description) rescue expense.description
+      when "keyword"
+        # For keyword patterns, check both description and merchant_name
+        desc = expense.attributes["description"] || expense.read_attribute(:description) rescue expense.description
+        merch = expense.attributes["merchant_name"] || expense.read_attribute(:merchant_name) rescue expense.merchant_name
+
+        # Combine both fields for keyword matching
+        if desc.present? && merch.present?
+          "#{desc} #{merch}"
+        elsif desc.present?
+          desc
+        elsif merch.present?
+          merch
+        else
+          nil
+        end
+      when "regex"
+        # For regex patterns, check both fields
+        desc = expense.attributes["description"] || expense.read_attribute(:description) rescue expense.description
+        merch = expense.attributes["merchant_name"] || expense.read_attribute(:merchant_name) rescue expense.merchant_name
+
+        if desc.present? && merch.present?
+          "#{desc} #{merch}"
+        elsif desc.present?
+          desc
+        elsif merch.present?
+          merch
+        else
+          nil
+        end
       else
-               nil
+        nil
+      end
+    elsif text_or_options.respond_to?(:merchant_name) || text_or_options.respond_to?(:description)
+      # It's some other object with merchant_name or description
+      expense = text_or_options
+      text = case pattern_type
+      when "merchant"
+        expense.respond_to?(:merchant_name) ? expense.merchant_name : nil
+      when "description"
+        expense.respond_to?(:description) ? expense.description : nil
+      when "keyword", "regex"
+        if expense.respond_to?(:description) && expense.description.present?
+          expense.description
+        elsif expense.respond_to?(:merchant_name)
+          expense.merchant_name
+        else
+          nil
+        end
+      else
+        nil
       end
     else
       text = text_or_options
@@ -102,12 +157,20 @@ class CategorizationPattern < ApplicationRecord
       matches_regex_pattern?(text)
     when "amount_range"
       # If expense object, use its amount; otherwise use the raw value for testing
-      value = expense ? expense.amount : text_or_options
-      matches_amount_range?(value)
+      if expense && expense.respond_to?(:amount)
+        matches_amount_range?(expense.amount)
+      elsif text_or_options.is_a?(Numeric) || text_or_options.to_s.match?(/\A-?\d+(\.\d+)?\z/)
+        matches_amount_range?(text_or_options)
+      else
+        false
+      end
     when "time"
       # If expense object, use its transaction_date; otherwise use the raw value for testing
-      value = expense ? expense.transaction_date : text_or_options
-      matches_time_pattern?(value)
+      if expense && expense.respond_to?(:transaction_date)
+        matches_time_pattern?(expense.transaction_date)
+      else
+        matches_time_pattern?(text_or_options)
+      end
     else
       false
     end
@@ -118,11 +181,19 @@ class CategorizationPattern < ApplicationRecord
     base_confidence = confidence_weight
 
     # Adjust based on success rate if we have enough data
-    if usage_count >= 5
+    adjusted_confidence = if usage_count >= 5
       base_confidence * (0.5 + (success_rate * 0.5))
     else
       base_confidence * 0.7 # Lower confidence for patterns with little data
     end
+
+    # Map confidence to 0-1 range with a curve that gives high scores for good patterns
+    # Use a square root curve to boost mid-range values while preserving ordering
+    # This ensures patterns with weight >= 2 and good success rate achieve > 0.8 confidence
+    normalized = Math.sqrt(adjusted_confidence / MAX_CONFIDENCE_WEIGHT).clamp(0, 1)
+
+    # Ensure minimum confidence of 0.3 for any active pattern that matches
+    [ normalized, 0.3 ].max
   end
 
   # Deactivate pattern if it's performing poorly
@@ -216,6 +287,8 @@ class CategorizationPattern < ApplicationRecord
   end
 
   def matches_text_pattern?(text)
+    return false if text.nil? || !text.respond_to?(:downcase)
+
     normalized_text = text.downcase.strip
     normalized_pattern = pattern_value.downcase.strip
 
@@ -224,6 +297,8 @@ class CategorizationPattern < ApplicationRecord
   end
 
   def matches_regex_pattern?(text)
+    return false if text.nil? || !text.respond_to?(:match?)
+
     regex = Regexp.new(pattern_value, Regexp::IGNORECASE)
     text.match?(regex)
   rescue RegexpError
@@ -303,7 +378,7 @@ class CategorizationPattern < ApplicationRecord
   rescue ArgumentError
     nil
   end
-  
+
   def invalidate_cache
     Categorization::PatternCache.instance.invalidate(self) if defined?(Categorization::PatternCache)
   rescue => e

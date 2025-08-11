@@ -3,26 +3,26 @@
 class PatternLearningEvent < ApplicationRecord
   belongs_to :expense
   belongs_to :category
-  
+
   validates :pattern_used, presence: true
-  validates :was_correct, inclusion: { in: [true, false] }
+  validates :was_correct, inclusion: { in: [ true, false ] }
   validates :confidence_score, numericality: { greater_than_or_equal_to: 0.0, less_than_or_equal_to: 1.0 }, allow_nil: true
-  
+
   scope :successful, -> { where(was_correct: true) }
   scope :unsuccessful, -> { where(was_correct: false) }
   scope :recent, -> { order(created_at: :desc) }
-  
+
   # Class method to record learning events
   def self.record_event(expense:, category:, pattern:, was_correct:, confidence: nil)
     pattern_name = case pattern
-                   when CategorizationPattern
+    when CategorizationPattern
                      "#{pattern.pattern_type}:#{pattern.pattern_value}"
-                   when CompositePattern
+    when CompositePattern
                      "composite:#{pattern.name}"
-                   else
+    else
                      pattern.to_s
-                   end
-    
+    end
+
     create!(
       expense: expense,
       category: category,
@@ -35,7 +35,7 @@ class PatternLearningEvent < ApplicationRecord
       }
     )
   end
-  
+
   # Check if this event indicates success
   def successful?
     was_correct == true

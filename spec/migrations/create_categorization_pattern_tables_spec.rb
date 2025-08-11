@@ -18,7 +18,7 @@ RSpec.describe "CreateCategorizationPatternTables Migration", type: :migration d
     end
 
     it "creates all required tables" do
-      expect { migration.up }.not_to raise_error
+      expect { migration.change }.not_to raise_error
 
       # Check all tables exist
       expect(ActiveRecord::Base.connection.table_exists?(:categorization_patterns)).to be true
@@ -31,18 +31,18 @@ RSpec.describe "CreateCategorizationPatternTables Migration", type: :migration d
     end
 
     it "enables required PostgreSQL extensions" do
-      migration.up
-      
+      migration.change
+
       expect(ActiveRecord::Base.connection.extension_enabled?("pg_trgm")).to be true
       expect(ActiveRecord::Base.connection.extension_enabled?("unaccent")).to be true
     end
 
     it "creates categorization_patterns table with correct columns" do
-      migration.up
-      
+      migration.change
+
       columns = ActiveRecord::Base.connection.columns(:categorization_patterns)
       column_names = columns.map(&:name)
-      
+
       expect(column_names).to include(
         "id", "category_id", "pattern_type", "pattern_value",
         "confidence_weight", "usage_count", "success_count",
@@ -52,17 +52,17 @@ RSpec.describe "CreateCategorizationPatternTables Migration", type: :migration d
     end
 
     it "creates proper indexes on categorization_patterns" do
-      migration.up
-      
+      migration.change
+
       indexes = ActiveRecord::Base.connection.indexes(:categorization_patterns)
       index_names = indexes.map(&:name)
-      
+
       expect(index_names).to include(
         "index_categorization_patterns_on_category_id",
         "index_categorization_patterns_on_active_and_pattern_type",
         "index_categorization_patterns_on_category_id_and_success_rate"
       )
-      
+
       # Check for trigram index
       trigram_index = indexes.find { |i| i.name == "index_categorization_patterns_on_pattern_value" }
       expect(trigram_index).not_to be_nil
@@ -70,11 +70,11 @@ RSpec.describe "CreateCategorizationPatternTables Migration", type: :migration d
     end
 
     it "creates composite_patterns table with correct columns" do
-      migration.up
-      
+      migration.change
+
       columns = ActiveRecord::Base.connection.columns(:composite_patterns)
       column_names = columns.map(&:name)
-      
+
       expect(column_names).to include(
         "id", "category_id", "name", "operator", "pattern_ids",
         "conditions", "confidence_weight", "usage_count",
@@ -84,11 +84,11 @@ RSpec.describe "CreateCategorizationPatternTables Migration", type: :migration d
     end
 
     it "adds columns to expenses table" do
-      migration.up
-      
+      migration.change
+
       columns = ActiveRecord::Base.connection.columns(:expenses)
       column_names = columns.map(&:name)
-      
+
       expect(column_names).to include(
         "merchant_normalized",
         "auto_categorized",
@@ -98,11 +98,11 @@ RSpec.describe "CreateCategorizationPatternTables Migration", type: :migration d
     end
 
     it "creates foreign keys" do
-      migration.up
-      
+      migration.change
+
       foreign_keys = ActiveRecord::Base.connection.foreign_keys(:categorization_patterns)
       expect(foreign_keys.any? { |fk| fk.to_table == "categories" }).to be true
-      
+
       foreign_keys = ActiveRecord::Base.connection.foreign_keys(:pattern_feedbacks)
       expect(foreign_keys.any? { |fk| fk.to_table == "categorization_patterns" }).to be true
       expect(foreign_keys.any? { |fk| fk.to_table == "expenses" }).to be true
@@ -110,20 +110,20 @@ RSpec.describe "CreateCategorizationPatternTables Migration", type: :migration d
     end
 
     it "sets correct default values" do
-      migration.up
-      
+      migration.change
+
       # Test default values by creating a record
       category = Category.create!(name: "Test Category")
-      
+
       ActiveRecord::Base.connection.execute(
-        "INSERT INTO categorization_patterns (category_id, pattern_type, pattern_value, created_at, updated_at) 
+        "INSERT INTO categorization_patterns (category_id, pattern_type, pattern_value, created_at, updated_at)
          VALUES (#{category.id}, 'merchant', 'test', NOW(), NOW())"
       )
-      
+
       pattern = ActiveRecord::Base.connection.execute(
         "SELECT * FROM categorization_patterns LIMIT 1"
       ).first
-      
+
       expect(pattern["confidence_weight"]).to eq(1.0)
       expect(pattern["usage_count"]).to eq(0)
       expect(pattern["success_count"]).to eq(0)
@@ -137,12 +137,12 @@ RSpec.describe "CreateCategorizationPatternTables Migration", type: :migration d
     before do
       # Ensure tables exist before testing down migration
       migration.down rescue nil  # Clean slate
-      migration.up  # Create tables
+      migration.change  # Create tables
     end
 
     it "removes all created tables" do
       migration.down
-      
+
       expect(ActiveRecord::Base.connection.table_exists?(:categorization_patterns)).to be false
       expect(ActiveRecord::Base.connection.table_exists?(:canonical_merchants)).to be false
       expect(ActiveRecord::Base.connection.table_exists?(:merchant_aliases)).to be false
@@ -154,10 +154,10 @@ RSpec.describe "CreateCategorizationPatternTables Migration", type: :migration d
 
     it "removes added columns from expenses table" do
       migration.down
-      
+
       columns = ActiveRecord::Base.connection.columns(:expenses)
       column_names = columns.map(&:name)
-      
+
       expect(column_names).not_to include(
         "merchant_normalized",
         "auto_categorized",
@@ -168,7 +168,7 @@ RSpec.describe "CreateCategorizationPatternTables Migration", type: :migration d
 
     it "is idempotent" do
       migration.down
-      
+
       # Running down again should not raise error
       expect { migration.down }.not_to raise_error
     end
@@ -177,17 +177,17 @@ RSpec.describe "CreateCategorizationPatternTables Migration", type: :migration d
   describe "rollback safety" do
     it "can be rolled back and re-run multiple times" do
       # Run up
-      migration.up
+      migration.change
       expect(ActiveRecord::Base.connection.table_exists?(:categorization_patterns)).to be true
-      
+
       # Roll back
       migration.down
       expect(ActiveRecord::Base.connection.table_exists?(:categorization_patterns)).to be false
-      
+
       # Run up again
-      migration.up
+      migration.change
       expect(ActiveRecord::Base.connection.table_exists?(:categorization_patterns)).to be true
-      
+
       # Roll back again
       migration.down
       expect(ActiveRecord::Base.connection.table_exists?(:categorization_patterns)).to be false

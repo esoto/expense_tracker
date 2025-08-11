@@ -85,6 +85,9 @@ RSpec.configure do |config|
 
   # Performance optimizations for testing
   config.before(:suite) do
+    # Suppress migration messages for cleaner test output
+    ActiveRecord::Migration.verbose = false
+
     # Ensure test database is clean
     if defined?(ActiveRecord::Base)
       ActiveRecord::Base.connection.execute("TRUNCATE TABLE #{ActiveRecord::Base.connection.tables.join(', ')} RESTART IDENTITY CASCADE") if ActiveRecord::Base.connection.tables.any?

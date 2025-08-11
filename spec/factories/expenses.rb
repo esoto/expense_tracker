@@ -3,7 +3,7 @@ FactoryBot.define do
     amount { 100.50 }
     description { "Test expense" }
     transaction_date { Time.current }
-    merchant_name { "Test Merchant" }
+    merchant_normalized { "Test Merchant" }
     status { "pending" }
     currency { "crc" }
     raw_email_content { nil }

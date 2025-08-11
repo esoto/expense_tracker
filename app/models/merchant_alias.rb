@@ -34,20 +34,20 @@ class MerchantAlias < ApplicationRecord
   after_create :update_canonical_usage
 
   # Class Methods
-  
+
   # Find the best matching alias for a raw merchant name
   def self.find_best_match(raw_name)
     return nil if raw_name.blank?
-    
+
     # First try exact match
     exact_match = find_by(raw_name: raw_name)
     return exact_match if exact_match
-    
+
     # Try normalized match
     normalized = CanonicalMerchant.normalize_merchant_name(raw_name)
     normalized_match = find_by(normalized_name: normalized)
     return normalized_match if normalized_match
-    
+
     # Try fuzzy matching if trigram extension is available
     fuzzy_match(raw_name)
   end
@@ -55,13 +55,13 @@ class MerchantAlias < ApplicationRecord
   # Fuzzy match using trigram similarity
   def self.fuzzy_match(name)
     return nil if name.blank?
-    
+
     if ActiveRecord::Base.connection.extension_enabled?("pg_trgm")
       normalized = CanonicalMerchant.normalize_merchant_name(name)
-      
+
       result = connection.execute(
         sanitize_sql_array([
-          "SELECT id, normalized_name, confidence, 
+          "SELECT id, normalized_name, confidence,
                   similarity(normalized_name, ?) AS sim
            FROM merchant_aliases
            WHERE similarity(normalized_name, ?) > 0.5
@@ -70,7 +70,7 @@ class MerchantAlias < ApplicationRecord
           normalized, normalized
         ])
       ).first
-      
+
       result ? find(result["id"]) : nil
     else
       nil
@@ -80,14 +80,14 @@ class MerchantAlias < ApplicationRecord
   # Create or update an alias
   def self.record_alias(raw_name, canonical_merchant, confidence: 0.8)
     return nil if raw_name.blank? || canonical_merchant.nil?
-    
+
     normalized = CanonicalMerchant.normalize_merchant_name(raw_name)
-    
+
     alias_record = find_or_initialize_by(
       raw_name: raw_name,
       canonical_merchant: canonical_merchant
     )
-    
+
     if alias_record.new_record?
       alias_record.normalized_name = normalized
       alias_record.confidence = confidence
@@ -97,22 +97,22 @@ class MerchantAlias < ApplicationRecord
     else
       alias_record.record_match
     end
-    
+
     alias_record
   end
 
   # Instance Methods
-  
+
   # Record that this alias was matched
   def record_match
     self.match_count += 1
     self.last_seen_at = Time.current
-    
+
     # Increase confidence based on successful matches
     if match_count > 10 && confidence < 0.95
-      self.confidence = [confidence * 1.05, 0.95].min
+      self.confidence = [ confidence * 1.05, 0.95 ].min
     end
-    
+
     save!
   end
 
@@ -124,7 +124,7 @@ class MerchantAlias < ApplicationRecord
   # Get similarity to another name
   def similarity_to(other_name)
     return 0.0 if other_name.blank?
-    
+
     CanonicalMerchant.calculate_similarity_confidence(normalized_name, other_name)
   end
 
@@ -137,21 +137,21 @@ class MerchantAlias < ApplicationRecord
   def merge_with(other_alias)
     return if other_alias == self
     return unless other_alias.canonical_merchant_id == canonical_merchant_id
-    
+
     transaction do
       # Combine match counts
       self.match_count += other_alias.match_count
-      
+
       # Take the higher confidence
-      self.confidence = [confidence, other_alias.confidence].max
-      
+      self.confidence = [ confidence, other_alias.confidence ].max
+
       # Update last seen to the more recent
       if other_alias.last_seen_at && (!last_seen_at || other_alias.last_seen_at > last_seen_at)
         self.last_seen_at = other_alias.last_seen_at
       end
-      
+
       save!
-      
+
       # Remove the other alias
       other_alias.destroy!
     end

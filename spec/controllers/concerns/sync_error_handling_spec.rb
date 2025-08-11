@@ -65,7 +65,7 @@ RSpec.describe SyncErrorHandling, type: :controller do
 
     it 'returns validation errors for JSON' do
       get :validation_error, format: :json
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       errors = JSON.parse(response.body)["errors"]
       expect(errors).to include("Amount can't be blank")
       expect(errors).to include("Category must exist")

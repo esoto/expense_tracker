@@ -40,7 +40,7 @@ RSpec.describe Categorization::ConfidenceCalculator do
       let(:match_result) do
         Categorization::Matchers::MatchResult.new(
           success: true,
-          matches: [{ score: 0.85, text: "amazon" }]
+          matches: [ { score: 0.85, text: "amazon" } ]
         )
       end
 
@@ -69,7 +69,7 @@ RSpec.describe Categorization::ConfidenceCalculator do
 
         # Sigmoid should push moderate scores toward extremes
         expect(result.score).not_to eq(result.raw_score)
-        
+
         # For high raw scores, normalized should be higher
         if result.raw_score > 0.5
           expect(result.score).to be > result.raw_score
@@ -97,7 +97,7 @@ RSpec.describe Categorization::ConfidenceCalculator do
       it "returns valid score when match_result is nil" do
         # Mock pattern.matches? to return true
         allow(pattern).to receive(:matches?).with(expense).and_return(true)
-        
+
         result = calculator.calculate(expense, pattern, nil)
 
         # Should still work with fallback text_match of 0.7
@@ -124,7 +124,7 @@ RSpec.describe Categorization::ConfidenceCalculator do
       it "handles MatchResult object" do
         match_result = Categorization::Matchers::MatchResult.new(
           success: true,
-          matches: [{ score: 0.9 }]
+          matches: [ { score: 0.9 } ]
         )
 
         result = calculator.calculate(expense, pattern, match_result)
@@ -191,7 +191,7 @@ RSpec.describe Categorization::ConfidenceCalculator do
       it "applies boost for highly used patterns" do
         pattern.update!(usage_count: 200, success_count: 160, success_rate: 0.8)
         result = calculator.calculate(expense, pattern, 0.8)
-        
+
         # Should be slightly higher than base success rate
         expect(result.factors[:historical_success]).to be > 0.8
         expect(result.factors[:historical_success]).to be <= 1.0
@@ -220,9 +220,9 @@ RSpec.describe Categorization::ConfidenceCalculator do
                                 category: category,
                                 usage_count: test_case[:usage],
                                 success_count: (test_case[:usage] * 0.9).to_i)
-          
+
           result = calculator.calculate(expense, test_pattern, 0.8)
-          
+
           actual_value = result.factors[:usage_frequency]
           expect(actual_value).to be_between(
             test_case[:min_expected],
@@ -264,7 +264,7 @@ RSpec.describe Categorization::ConfidenceCalculator do
         pattern.update!(metadata: {
           "amount_stats" => { "count" => 10, "mean" => 100.0, "std_dev" => 0.0 }
         })
-        
+
         result = calculator.calculate(expense, pattern, 0.8)
         expect(result.factors[:amount_similarity]).to eq(1.0)
 
@@ -285,7 +285,7 @@ RSpec.describe Categorization::ConfidenceCalculator do
         test_amounts.each do |test|
           expense.update!(amount: test[:amount])
           result = calculator.calculate(expense, pattern, 0.8)
-          
+
           expect(result.factors[:amount_similarity]).to be >= test[:min_score]
         end
       end
@@ -319,7 +319,7 @@ RSpec.describe Categorization::ConfidenceCalculator do
           # Transaction at 3pm (hour 15), which has highest frequency in stats
           expense.update!(transaction_date: Time.current.change(hour: 15))
           result = calculator.calculate(expense, pattern, 0.8)
-          
+
           # Should get high score for matching peak hour (nil if not time pattern)
           expect(result.factors[:temporal_pattern]).to be_nil  # merchant pattern, not time pattern
         end
@@ -337,22 +337,22 @@ RSpec.describe Categorization::ConfidenceCalculator do
     it "recalculates weights when factors are missing" do
       # Remove amount stats to eliminate amount_similarity factor
       pattern.update!(metadata: {})
-      
+
       result = calculator.calculate(expense, pattern, 0.8)
-      
+
       # Check that weights sum to 1.0
       weights = result.metadata[:weights_applied]
       expect(weights.values.sum).to be_within(0.001).of(1.0)
-      
+
       # Text match weight should be higher when other factors are missing
       expect(weights[:text_match]).to be > 0.35
     end
 
     it "handles case with only required factor" do
       pattern.update!(usage_count: 0, success_count: 0, metadata: {})
-      
+
       result = calculator.calculate(expense, pattern, 0.8)
-      
+
       # Only text_match should have weight
       weights = result.metadata[:weights_applied]
       expect(weights[:text_match]).to eq(1.0)
@@ -394,9 +394,9 @@ RSpec.describe Categorization::ConfidenceCalculator do
 
     it "handles missing match results" do
       partial_results = { patterns[0].id => { score: 0.9 } }
-      
+
       results = calculator.calculate_batch(expense, patterns, partial_results)
-      
+
       expect(results.size).to eq(3)
       # First pattern should have highest score due to match result
       expect(results.first.pattern).to eq(patterns[0])
@@ -419,7 +419,7 @@ RSpec.describe Categorization::ConfidenceCalculator do
 
       # Second call should use cache
       result2 = calculator.calculate(expense, pattern, match_result)
-      
+
       expect(result2.score).to eq(result1.score)
       expect(result2.factors).to eq(result1.factors)
       expect(calculator.metrics[:cache_hits]).to eq(1)
@@ -437,11 +437,11 @@ RSpec.describe Categorization::ConfidenceCalculator do
     it "can clear cache" do
       calculator.calculate(expense, pattern, match_result)
       calculator.clear_cache
-      
+
       # After clearing, should recalculate
       initial_calculations = calculator.metrics[:calculations]
       calculator.calculate(expense, pattern, match_result)
-      
+
       expect(calculator.metrics[:calculations]).to eq(initial_calculations + 1)
     end
 
@@ -462,7 +462,7 @@ RSpec.describe Categorization::ConfidenceCalculator do
     it "completes calculation within reasonable threshold" do
       # Warm up to avoid first-run overhead
       calculator.calculate(expense, pattern, 0.85)
-      
+
       start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       calculator.calculate(expense, pattern, 0.86)  # Different score to avoid cache
       duration_ms = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000
@@ -473,10 +473,10 @@ RSpec.describe Categorization::ConfidenceCalculator do
 
     it "handles batch calculations efficiently" do
       patterns = create_list(:categorization_pattern, 10, category: category)
-      
+
       # Warm up to avoid first-run overhead
       calculator.calculate_batch(expense, patterns.first(2))
-      
+
       start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       calculator.calculate_batch(expense, patterns)
       duration_ms = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000
@@ -616,7 +616,7 @@ RSpec.describe Categorization::ConfidenceCalculator do
           expense: expense,
           metadata: score.metadata.merge(normalization_applied: true)
         )
-        
+
         explanation = normalized_score.explanation
         expect(explanation).to include("Score adjusted from 75.0%")
       end
@@ -646,7 +646,7 @@ RSpec.describe Categorization::ConfidenceCalculator do
         ]
 
         sorted = scores.sort
-        expect(sorted.map(&:score)).to eq([0.5, 0.7, 0.9])
+        expect(sorted.map(&:score)).to eq([ 0.5, 0.7, 0.9 ])
       end
     end
 

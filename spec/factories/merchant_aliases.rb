@@ -8,17 +8,17 @@ FactoryBot.define do
     confidence { 0.85 }
     match_count { 1 }
     last_seen_at { Time.current }
-    
+
     trait :high_confidence do
       confidence { 0.95 }
       match_count { 10 }
     end
-    
+
     trait :low_confidence do
       confidence { 0.60 }
       match_count { 1 }
     end
-    
+
     trait :frequently_matched do
       match_count { 50 }
       confidence { 0.98 }

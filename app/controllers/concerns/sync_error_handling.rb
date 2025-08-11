@@ -24,7 +24,7 @@ module SyncErrorHandling
         redirect_to sync_sessions_path, alert: "Error de validación: #{exception.record.errors.full_messages.join(', ')}"
       end
       format.json do
-        render json: { errors: exception.record.errors.full_messages }, status: :unprocessable_entity
+        render json: { errors: exception.record.errors.full_messages }, status: :unprocessable_content
       end
     end
   end

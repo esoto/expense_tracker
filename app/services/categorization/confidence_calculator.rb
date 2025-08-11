@@ -88,7 +88,7 @@ module Categorization
 
         # Apply sigmoid normalization
         normalized_score = apply_sigmoid_normalization(weighted_score)
-        
+
         # Track if normalization was significant
         normalization_applied = (weighted_score - normalized_score).abs > 0.01
 
@@ -195,7 +195,7 @@ module Categorization
       end
 
       # Ensure score is within valid range
-      [[score, 0.0].max, 1.0].min
+      [ [ score, 0.0 ].max, 1.0 ].min
     end
 
     def calculate_historical_success_factor(pattern)
@@ -207,7 +207,7 @@ module Categorization
 
       if pattern.usage_count > 100
         usage_boost = Math.log10(pattern.usage_count / 100.0) * 0.05
-        [[base_score + usage_boost, 1.0].min, 0.0].max
+        [ [ base_score + usage_boost, 1.0 ].min, 0.0 ].max
       else
         base_score
       end
@@ -219,7 +219,7 @@ module Categorization
       # Logarithmic scaling for usage frequency
       # Patterns used 1000+ times get maximum score
       max_usage = FACTOR_CONFIG[:usage_frequency][:max]
-      
+
       if pattern.usage_count >= max_usage
         1.0
       else
@@ -255,7 +255,7 @@ module Categorization
       elsif z_score <= 3.0
         0.50 - (z_score - 2.0) * 0.30
       else
-        [0.2 / z_score, 0.2].min  # Asymptotic approach to 0
+        [ 0.2 / z_score, 0.2 ].min  # Asymptotic approach to 0
       end
     end
 
@@ -313,7 +313,7 @@ module Categorization
       # Check for required factors
       FACTOR_CONFIG.each do |factor_name, config|
         next unless config[:required]
-        
+
         if factors[factor_name].nil?
           return ConfidenceScore.invalid("Missing required factor: #{factor_name}")
         end
@@ -325,10 +325,10 @@ module Categorization
     def calculate_weighted_score(factors)
       # Filter out nil factors and adjust weights
       active_factors = factors.reject { |_, value| value.nil? }
-      
+
       # Get weights for active factors
       active_weights = FACTOR_WEIGHTS.select { |factor, _| active_factors.key?(factor) }
-      
+
       # Recalculate weights to sum to 1.0
       total_weight = active_weights.values.sum
       return 0.0 if total_weight == 0
@@ -349,7 +349,7 @@ module Categorization
       # Sigmoid function: 1 / (1 + e^(-k*(x-m)))
       # where k = steepness, m = midpoint
       # This pushes scores toward 0 or 1
-      
+
       exponent = -SIGMOID_STEEPNESS * (score - SIGMOID_MIDPOINT)
       normalized = 1.0 / (1.0 + Math.exp(exponent))
 
@@ -370,7 +370,7 @@ module Categorization
     def calculate_applied_weights(factors)
       active_factors = factors.reject { |_, value| value.nil? }
       active_weights = FACTOR_WEIGHTS.select { |factor, _| active_factors.key?(factor) }
-      
+
       total_weight = active_weights.values.sum
       return {} if total_weight == 0
 
@@ -420,9 +420,9 @@ module Categorization
 
     def benchmark_calculation(&block)
       start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      
+
       result = yield
-      
+
       duration_ms = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000
       @metrics[:total_time_ms] += duration_ms
       @performance_tracker.record_calculation(duration_ms)
@@ -442,7 +442,7 @@ module Categorization
       else
         {
           size: @cache.instance_variable_get(:@data)&.size || 0,
-          hit_rate: @metrics[:calculations] > 0 ? 
+          hit_rate: @metrics[:calculations] > 0 ?
             (@metrics[:cache_hits].to_f / @metrics[:calculations] * 100).round(2) : 0
         }
       end
@@ -505,7 +505,7 @@ module Categorization
 
       def percentile(values, pct)
         return 0 if values.empty?
-        
+
         sorted = values.sort
         index = (pct * sorted.size).ceil - 1
         sorted[index] || sorted.last
@@ -529,7 +529,7 @@ module Categorization
     end
 
     # Factory methods
-    
+
     def self.invalid(reason)
       new(score: 0.0, error: reason, metadata: { valid: false })
     end
@@ -619,12 +619,12 @@ module Categorization
 
     def explanation
       parts = []
-      
+
       parts << "Confidence: #{(score * 100).round(1)}% (#{confidence_level})"
-      
+
       if valid?
         parts << "Based on #{@metadata[:factor_count]} factors:"
-        
+
         factor_breakdown.each do |factor, details|
           factor_name = factor.to_s.humanize
           parts << "  - #{factor_name}: #{(details[:value] * 100).round(1)}% (#{details[:percentage].round(1)}% of score)"
@@ -668,7 +668,7 @@ module Categorization
 
     def ==(other)
       return false unless other.is_a?(ConfidenceScore)
-      
+
       @score == other.score &&
         @factors == other.factors &&
         @pattern == other.pattern &&

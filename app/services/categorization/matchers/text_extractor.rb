@@ -73,11 +73,11 @@ module Categorization
 
         # Use merchant_name method if available (which already safely reads the attribute)
         # This matches what the test expects - using expense.merchant_name
-        if expense.respond_to?(:merchant_name) && expense.merchant_name.present?
+        if expense.respond_to?(:merchant_name) && expense.merchant_name?
           expense.merchant_name
-        elsif expense.respond_to?(:merchant_normalized) && expense.merchant_normalized.present?
+        elsif expense.respond_to?(:merchant_normalized) && expense.merchant_normalized?
           expense.merchant_normalized
-        elsif expense.respond_to?(:description) && expense.description.present?
+        elsif expense.respond_to?(:description) && expense.description?
           expense.description
         elsif expense.respond_to?(:read_attribute)
           # Safely read the actual database attribute

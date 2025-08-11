@@ -18,7 +18,7 @@ class UserCategoryPreference < ApplicationRecord
   # Class method to learn from expense categorization
   def self.learn_from_categorization(email_account:, expense:, category:)
     # Learn from merchant
-    if expense.merchant_name.present?
+    if expense.merchant_name?
       learn_preference(
         email_account: email_account,
         category: category,
@@ -28,7 +28,7 @@ class UserCategoryPreference < ApplicationRecord
     end
 
     # Learn from time of day
-    if expense.transaction_date.present?
+    if expense.transaction_date?
       hour = expense.transaction_date.hour
       time_context = case hour
       when 6..11 then "morning"
@@ -46,7 +46,7 @@ class UserCategoryPreference < ApplicationRecord
     end
 
     # Learn from day of week
-    if expense.transaction_date.present?
+    if expense.transaction_date?
       day_name = expense.transaction_date.strftime("%A").downcase
       learn_preference(
         email_account: email_account,
@@ -79,7 +79,7 @@ class UserCategoryPreference < ApplicationRecord
     preferences = []
 
     # Match merchant preferences
-    if expense.merchant_name.present?
+    if expense.merchant_name?
       preferences += where(
         email_account: email_account,
         context_type: "merchant",
@@ -88,7 +88,7 @@ class UserCategoryPreference < ApplicationRecord
     end
 
     # Match time of day preferences
-    if expense.transaction_date.present?
+    if expense.transaction_date?
       hour = expense.transaction_date.hour
       time_context = case hour
       when 6..11 then "morning"
@@ -105,7 +105,7 @@ class UserCategoryPreference < ApplicationRecord
     end
 
     # Match day of week preferences
-    if expense.transaction_date.present?
+    if expense.transaction_date?
       day_name = expense.transaction_date.strftime("%A").downcase
       preferences += where(
         email_account: email_account,

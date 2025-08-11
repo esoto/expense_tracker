@@ -86,7 +86,7 @@ module Categorization
       suggestions = []
 
       # Get merchant-based suggestions
-      if expense.merchant_name.present?
+      if expense.merchant_name?
         merchant_matches = find_merchant_matches(expense.merchant_name)
 
         merchant_matches.each do |match|
@@ -132,7 +132,7 @@ module Categorization
       end
 
       # Create or update user preference if correct
-      if was_correct && expense.merchant_name.present? && expense.email_account
+      if was_correct && expense.merchant_name? && expense.email_account
         create_user_preference(expense, category)
       end
 
@@ -175,14 +175,14 @@ module Categorization
     private
 
     def find_user_preference_category(expense)
-      return nil unless expense.merchant_name.present?
+      return nil unless expense.merchant_name?
 
       preference = @pattern_cache.get_user_preference(expense.merchant_name)
       preference&.category
     end
 
     def find_merchant_category(expense)
-      return nil unless expense.merchant_name.present?
+      return nil unless expense.merchant_name?
 
       # Find canonical merchant
       canonical = CanonicalMerchant.find_or_create_from_raw(expense.merchant_name)
@@ -217,7 +217,7 @@ module Categorization
       best_score = 0.0
 
       # Check merchant patterns with fuzzy matching
-      if expense.merchant_name.present? && patterns_by_type["merchant"]
+      if expense.merchant_name? && patterns_by_type["merchant"]
         result = @fuzzy_matcher.match_pattern(
           expense.merchant_name,
           patterns_by_type["merchant"]
@@ -230,7 +230,7 @@ module Categorization
       end
 
       # Check description patterns with fuzzy matching
-      if expense.description.present? && patterns_by_type["description"]
+      if expense.description? && patterns_by_type["description"]
         result = @fuzzy_matcher.match_pattern(
           expense.description,
           patterns_by_type["description"]
@@ -311,14 +311,14 @@ module Categorization
       matches = []
 
       # Match merchant patterns
-      if expense.merchant_name.present?
+      if expense.merchant_name?
         merchant_patterns = all_patterns.select { |p| p.pattern_type == "merchant" }
         result = @fuzzy_matcher.match_pattern(expense.merchant_name, merchant_patterns)
         matches.concat(result.matches) if result.success?
       end
 
       # Match description patterns
-      if expense.description.present?
+      if expense.description?
         desc_patterns = all_patterns.select { |p| p.pattern_type.in?(%w[description keyword]) }
         result = @fuzzy_matcher.match_pattern(expense.description, desc_patterns)
         matches.concat(result.matches) if result.success?

@@ -395,7 +395,7 @@ module Categorization
       @total_categorizations.increment
 
       # Step 1: Check user preferences (highest priority)
-      if expense.merchant_name.present? && opts[:check_user_preferences]
+      if expense.merchant_name? && opts[:check_user_preferences]
         user_result = check_user_preference_safely(expense, opts[:correlation_id])
         if user_result
           @successful_categorizations.increment
@@ -481,7 +481,7 @@ module Categorization
 
       pattern_batches.each do |patterns|
         # Process merchant patterns
-        if expense.merchant_name.present?
+        if expense.merchant_name?
           merchant_patterns = patterns.select { |p| p.pattern_type == "merchant" }
           if merchant_patterns.any?
             merchant_matches = @fuzzy_matcher.match_pattern(
@@ -494,7 +494,7 @@ module Categorization
         end
 
         # Process description patterns
-        if expense.description.present?
+        if expense.description?
           description_patterns = patterns.select { |p| p.pattern_type.in?(%w[keyword description]) }
           if description_patterns.any?
             description_matches = @fuzzy_matcher.match_pattern(
@@ -711,7 +711,7 @@ module Categorization
     def validate_expense!(expense)
       raise ValidationError, "Expense cannot be nil" unless expense
       raise ValidationError, "Expense must be persisted" unless expense.persisted?
-      raise ValidationError, "Expense must have merchant or description" if expense.merchant_name.blank? && expense.description.blank?
+      raise ValidationError, "Expense must have merchant or description" unless expense.merchant_name? || expense.description?
     end
 
     def validate_learning_params!(expense, category)

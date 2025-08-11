@@ -59,10 +59,8 @@ puts "-" * 80
 
 test_cases.each do |name, test|
   times = []
-  
   # Warm up
   3.times { matcher.match(test[:text], test[:candidates]) }
-  
   # Actual measurements
   10.times do
     time = Benchmark.realtime do
@@ -70,17 +68,17 @@ test_cases.each do |name, test|
     end
     times << time * 1000 # Convert to ms
   end
-  
+
   avg_time = times.sum / times.size
   max_time = times.max
   min_time = times.min
-  
+
   results[name] = {
     avg: avg_time,
     max: max_time,
     min: min_time
   }
-  
+
   status = avg_time < 10 ? "✓ PASS" : "✗ FAIL"
   puts "#{name.ljust(25)} | Avg: #{avg_time.round(2)}ms | Max: #{max_time.round(2)}ms | #{status}"
 end
@@ -142,11 +140,11 @@ all_pass = true
 results.each do |name, times|
   pass = times[:avg] < 10
   all_pass = false unless pass
-  
+
   status = pass ? "✓" : "✗"
   color = pass ? "\e[32m" : "\e[31m"
   reset = "\e[0m"
-  
+
   puts "#{color}#{status} #{name.ljust(25)}#{reset} | Avg: #{times[:avg].round(2)}ms | Max: #{times[:max].round(2)}ms"
 end
 

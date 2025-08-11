@@ -82,6 +82,7 @@ GEM
     bcrypt (3.1.20)
     bcrypt_pbkdf (1.1.1)
     benchmark (0.4.1)
+    benchmark-ips (2.14.0)
     bigdecimal (3.2.2)
     bindex (0.8.1)
     bootsnap (1.18.6)
@@ -187,6 +188,7 @@ GEM
       net-smtp
     marcel (1.0.4)
     matrix (0.4.3)
+    memory_profiler (1.1.0)
     mini_mime (1.1.5)
     minitest (5.25.5)
     msgpack (1.8.0)
@@ -457,6 +459,7 @@ PLATFORMS
 
 DEPENDENCIES
   bcrypt (~> 3.1.7)
+  benchmark-ips
   bootsnap
   brakeman
   capybara
@@ -475,6 +478,7 @@ DEPENDENCIES
   kamal
   kaminari
   mail
+  memory_profiler
   net-imap
   parallel_tests
   pg (~> 1.1)

@@ -75,6 +75,10 @@ group :development, :test do
   # Spring preloader for faster test startup
   gem "spring"
   gem "spring-commands-rspec"
+
+  # Performance testing and profiling
+  gem "memory_profiler"
+  gem "benchmark-ips"
 end
 
 group :development do

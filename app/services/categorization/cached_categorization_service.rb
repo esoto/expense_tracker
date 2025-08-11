@@ -15,7 +15,7 @@ module Categorization
 
       begin
         # Check cached user preferences first (most specific)
-        if expense.merchant_name.present?
+        if expense.merchant_name?
           user_pref = @cache.get_user_preference(expense.merchant_name)
           if user_pref
             # Convert preference_weight to confidence (normalize to 0-1 range)

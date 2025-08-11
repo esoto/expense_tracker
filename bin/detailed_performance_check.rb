@@ -74,7 +74,6 @@ test_texts = ["Café María", "Niño España", "Señor López"]
 test_texts.each do |text|
   query_log.clear
   normalized = new_matcher.instance_eval { @normalizer.normalize(text) }
-  
   if query_log.any?
     puts "✗ Queries detected for '#{text}':"
     query_log.each { |q| puts "  - #{q[:sql][0..80]}... (#{q[:duration].round(2)}ms)" }
@@ -109,19 +108,17 @@ operations = {
 
 operations.each do |name, operation|
   times = []
-  
   # Warmup
   3.times { operation.call }
-  
   # Measure
   20.times do
     time = Benchmark.realtime { operation.call } * 1000
     times << time
   end
-  
+
   avg = times.sum / times.size
   status = avg < 10 ? "✓" : "✗"
-  
+
   puts "#{status} #{name.ljust(30)} | Avg: #{avg.round(3)}ms | Max: #{times.max.round(3)}ms"
 end
 
@@ -275,14 +272,14 @@ puts "-" * 80
 all_valid = true
 claims.each do |test_case, data|
   actual_str = data[:actual] ? "#{data[:actual].round(2)}ms" : "N/A"
-  
+
   if data[:actual]
     status = data[:actual] < 10 ? "✓ PASS" : "✗ FAIL"
     all_valid = false if data[:actual] >= 10
   else
     status = "?"
   end
-  
+
   puts "#{test_case.ljust(30)} | #{data[:claimed]}ms".ljust(10) + " | #{actual_str.ljust(8)} | #{status}"
 end
 

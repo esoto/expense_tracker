@@ -274,7 +274,7 @@ module Categorization
     end
 
     def find_or_create_merchant_pattern(expense, category)
-      return nil if expense.merchant_name.blank?
+      return nil unless expense.merchant_name?
 
       merchant_name = expense.merchant_name.downcase.strip
 
@@ -300,7 +300,7 @@ module Categorization
     end
 
     def find_or_create_keyword_patterns(expense, category)
-      return [] if expense.description.blank?
+      return [] unless expense.description?
 
       keywords = extract_keywords(expense.description)
       patterns = []

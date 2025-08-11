@@ -134,7 +134,7 @@ class CategorizationPattern < ApplicationRecord
       when "description"
         expense.respond_to?(:description) ? expense.description : nil
       when "keyword", "regex"
-        if expense.respond_to?(:description) && expense.description.present?
+        if expense.respond_to?(:description) && expense.description?
           expense.description
         elsif expense.respond_to?(:merchant_name)
           expense.merchant_name

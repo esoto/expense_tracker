@@ -58,7 +58,7 @@ module Categorization
       # Load patterns with proper scoping and eager loading
       ActiveRecord::Base.connection_pool.with_connection do
         # Merchant patterns
-        if expense.merchant_name.present?
+        if expense.merchant_name?
           merchant_patterns = CategorizationPattern
             .active
             .where(pattern_type: "merchant")
@@ -70,7 +70,7 @@ module Categorization
         end
 
         # Keyword patterns
-        if expense.description.present?
+        if expense.description?
           keyword_patterns = CategorizationPattern
             .active
             .where(pattern_type: [ "keyword", "description" ])
@@ -104,10 +104,10 @@ module Categorization
       base_score = pattern.success_rate * pattern.confidence_weight
 
       # Apply text similarity if applicable
-      if pattern.pattern_type == "merchant" && expense.merchant_name.present?
+      if pattern.pattern_type == "merchant" && expense.merchant_name?
         similarity = text_similarity(pattern.pattern_value, expense.merchant_name)
         base_score *= similarity
-      elsif pattern.pattern_type.in?([ "keyword", "description" ]) && expense.description.present?
+      elsif pattern.pattern_type.in?([ "keyword", "description" ]) && expense.description?
         similarity = text_similarity(pattern.pattern_value, expense.description)
         base_score *= similarity
       end

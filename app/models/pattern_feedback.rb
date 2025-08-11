@@ -40,9 +40,9 @@ class PatternFeedback < ApplicationRecord
     return nil unless feedback_type.in?(%w[rejected corrected correction])
 
     # Determine suggested pattern type based on expense data
-    suggested_pattern_type = if expense&.merchant_name.present?
+    suggested_pattern_type = if expense&.merchant_name?
                                "merchant"
-    elsif expense&.description.present?
+    elsif expense&.description?
                                "description"
     else
                                "keyword"

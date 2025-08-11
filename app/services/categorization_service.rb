@@ -6,7 +6,7 @@ class CategorizationService
 
     begin
       # Check user preferences first if expense has an email_account
-      if expense.email_account.present? && expense.merchant_name.present?
+      if expense.email_account.present? && expense.merchant_name?
         user_pref = UserCategoryPreference.find_by(
           email_account: expense.email_account,
           context_type: "merchant",

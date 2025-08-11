@@ -95,4 +95,59 @@ RSpec.describe BudgetsHelper, type: :helper do
       expect(helper.period_from_label('')).to eq('monthly')
     end
   end
+
+  describe '#budget_period_options' do
+    it 'returns array of period options for select dropdown' do
+      options = helper.budget_period_options
+      expect(options).to be_an(Array)
+      expect(options).to include([ "Diario", "daily" ])
+      expect(options).to include([ "Semanal", "weekly" ])
+      expect(options).to include([ "Mensual", "monthly" ])
+      expect(options).to include([ "Anual", "yearly" ])
+      expect(options.length).to eq(4)
+    end
+  end
+
+  describe '#budget_currency_options' do
+    it 'returns array of currency options for select dropdown' do
+      options = helper.budget_currency_options
+      expect(options).to be_an(Array)
+      expect(options).to include([ "Colones (₡)", "CRC" ])
+      expect(options).to include([ "Dólares ($)", "USD" ])
+      expect(options).to include([ "Euros (€)", "EUR" ])
+      expect(options.length).to eq(3)
+    end
+  end
+
+  describe '#budget_category_options' do
+    let(:categories) do
+      [
+        double('Category', name: 'Alimentación', id: 1),
+        double('Category', name: 'Transporte', id: 2)
+      ]
+    end
+
+    it 'returns category options with general option by default' do
+      options = helper.budget_category_options(categories)
+      expect(options).to be_an(Array)
+      expect(options).to include([ "General (todas las categorías)", nil ])
+      expect(options).to include([ "Alimentación", 1 ])
+      expect(options).to include([ "Transporte", 2 ])
+      expect(options.length).to eq(3)
+    end
+
+    it 'returns category options without general option when specified' do
+      options = helper.budget_category_options(categories, include_general: false)
+      expect(options).to be_an(Array)
+      expect(options).not_to include([ "General (todas las categorías)", nil ])
+      expect(options).to include([ "Alimentación", 1 ])
+      expect(options).to include([ "Transporte", 2 ])
+      expect(options.length).to eq(2)
+    end
+
+    it 'handles empty categories array' do
+      options = helper.budget_category_options([])
+      expect(options).to eq([ [ "General (todas las categorías)", nil ] ])
+    end
+  end
 end

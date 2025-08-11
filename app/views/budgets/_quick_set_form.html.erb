@@ -27,7 +27,7 @@
               <div class="px-3 py-2 text-center text-sm font-medium border-2 rounded-lg cursor-pointer transition-all
                           border-slate-200 hover:border-teal-300
                           peer-checked:border-teal-700 peer-checked:bg-teal-50 peer-checked:text-teal-700">
-                <%= t("budgets.periods.#{period}") %>
+                <%= period.humanize %>
               </div>
             </label>
           <% end %>
@@ -122,16 +122,3 @@
   <% end %>
 </div>
 
-<%# Translations (typically in config/locales/es.yml) %>
-<%
-  # Temporary inline translations
-  def t(key)
-    translations = {
-      "budgets.periods.daily" => "Diario",
-      "budgets.periods.weekly" => "Semanal",
-      "budgets.periods.monthly" => "Mensual",
-      "budgets.periods.yearly" => "Anual"
-    }
-    translations[key] || key
-  end
-%>

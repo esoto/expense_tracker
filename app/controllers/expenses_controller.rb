@@ -79,10 +79,9 @@ class ExpensesController < ApplicationController
       # This optimization reduces object instantiation and improves efficiency
       batch_results = MetricsCalculator.batch_calculate(
         email_account: primary_email_account,
-        periods: [:year, :month, :week, :day],
+        periods: [ :year, :month, :week, :day ],
         reference_date: Date.current
       )
-      
       # Assign results to instance variables for view compatibility
       @total_metrics = batch_results[:year]   # Using year for total metrics
       @month_metrics = batch_results[:month]
@@ -207,6 +206,15 @@ class ExpensesController < ApplicationController
       },
       category_breakdown: [],
       daily_breakdown: {},
+      trend_data: {
+        daily_amounts: [],
+        min: 0.0,
+        max: 0.0,
+        average: 0.0,
+        total: 0.0,
+        start_date: Date.current - 6.days,
+        end_date: Date.current
+      },
       calculated_at: Time.current
     }
   end

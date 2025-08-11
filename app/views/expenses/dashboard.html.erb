@@ -213,14 +213,17 @@
 
   <!-- Enhanced Key Metrics with Visual Hierarchy -->
   <div class="space-y-6">
-    <!-- Primary Metric Card - 1.5x Larger -->
-    <div class="bg-gradient-to-br from-teal-700 to-teal-800 rounded-2xl shadow-xl p-8 text-white transition-all duration-300 hover:shadow-2xl"
-         data-controller="animated-metric"
+    <!-- Primary Metric Card - 1.5x Larger with Tooltip -->
+    <div class="bg-gradient-to-br from-teal-700 to-teal-800 rounded-2xl shadow-xl p-8 text-white transition-all duration-300 hover:shadow-2xl cursor-pointer"
+         data-controller="animated-metric tooltip"
          data-animated-metric-container-target="container"
          data-animated-metric-to-value="<%= @total_metrics[:metrics][:total_amount] %>"
          data-animated-metric-prefix-value="₡"
          data-animated-metric-trend-value-value="<%= @month_metrics[:trends][:amount_change] %>"
-         data-animated-metric-is-increase-value="<%= @month_metrics[:trends][:is_increase] %>">
+         data-animated-metric-is-increase-value="<%= @month_metrics[:trends][:is_increase] %>"
+         data-tooltip-trend-data-value='<%= @total_metrics[:trend_data].to_json %>'
+         data-tooltip-metric-label-value="Total de Gastos (Año)"
+         data-tooltip-position-value="bottom">
       
       <div class="flex items-start justify-between mb-4">
         <div>
@@ -277,12 +280,15 @@
     
     <!-- Secondary Metrics Cards - Regular Size -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <!-- Este Mes Card -->
-      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-1"
-           data-controller="animated-metric"
+      <!-- Este Mes Card with Tooltip -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-1 cursor-pointer"
+           data-controller="animated-metric tooltip"
            data-animated-metric-container-target="container"
            data-animated-metric-to-value="<%= @month_metrics[:metrics][:total_amount] %>"
-           data-animated-metric-prefix-value="₡">
+           data-animated-metric-prefix-value="₡"
+           data-tooltip-trend-data-value='<%= @month_metrics[:trend_data].to_json %>'
+           data-tooltip-metric-label-value="Gastos del Mes"
+           data-tooltip-position-value="top">
         <div class="flex items-center justify-between mb-3">
           <div class="p-2 rounded-lg bg-amber-100">
             <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -306,12 +312,15 @@
         </div>
       </div>
       
-      <!-- Esta Semana Card -->
-      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-1"
-           data-controller="animated-metric"
+      <!-- Esta Semana Card with Tooltip -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-1 cursor-pointer"
+           data-controller="animated-metric tooltip"
            data-animated-metric-container-target="container"
            data-animated-metric-to-value="<%= @week_metrics[:metrics][:total_amount] %>"
-           data-animated-metric-prefix-value="₡">
+           data-animated-metric-prefix-value="₡"
+           data-tooltip-trend-data-value='<%= @week_metrics[:trend_data].to_json %>'
+           data-tooltip-metric-label-value="Gastos de la Semana"
+           data-tooltip-position-value="top">
         <div class="flex items-center justify-between mb-3">
           <div class="p-2 rounded-lg bg-teal-100">
             <svg class="w-6 h-6 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -335,12 +344,15 @@
         </div>
       </div>
       
-      <!-- Hoy Card -->
-      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-1"
-           data-controller="animated-metric"
+      <!-- Hoy Card with Tooltip -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-1 cursor-pointer"
+           data-controller="animated-metric tooltip"
            data-animated-metric-container-target="container"
            data-animated-metric-to-value="<%= @day_metrics[:metrics][:total_amount] %>"
-           data-animated-metric-prefix-value="₡">
+           data-animated-metric-prefix-value="₡"
+           data-tooltip-trend-data-value='<%= @day_metrics[:trend_data].to_json %>'
+           data-tooltip-metric-label-value="Gastos de Hoy"
+           data-tooltip-position-value="top">
         <div class="flex items-center justify-between mb-3">
           <div class="p-2 rounded-lg bg-emerald-100">
             <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

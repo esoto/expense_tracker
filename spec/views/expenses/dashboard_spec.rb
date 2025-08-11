@@ -76,8 +76,11 @@ RSpec.describe "expenses/dashboard.html.erb", type: :view do
     # Check for the "TOTAL DE GASTOS" heading
     expect(rendered).to have_content('TOTAL DE GASTOS')
     
-    # Check for animated metric controller
-    expect(rendered).to have_css('[data-controller="animated-metric"]')
+    # Check for animated metric controller (can be combined with other controllers)
+    expect(rendered).to have_css('[data-controller*="animated-metric"]')
+    
+    # Check for tooltip controller on the same element
+    expect(rendered).to have_css('[data-controller*="tooltip"]')
     
     # Check for the value target
     expect(rendered).to have_css('[data-animated-metric-target="value"]')

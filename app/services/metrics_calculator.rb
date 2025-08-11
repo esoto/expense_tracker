@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'benchmark'
+require "benchmark"
 
 # Service for calculating expense metrics with caching and trend analysis
 # Supports multiple time periods and category breakdowns
@@ -9,7 +9,7 @@ require 'benchmark'
 class MetricsCalculator
   CACHE_EXPIRY = 1.hour
   SUPPORTED_PERIODS = %i[day week month year].freeze
-  
+
   class InvalidPeriodError < StandardError; end
   class CalculationError < StandardError; end
   class MissingEmailAccountError < StandardError; end
@@ -18,7 +18,7 @@ class MetricsCalculator
 
   def initialize(email_account: nil, period: :month, reference_date: Date.current)
     raise MissingEmailAccountError, "EmailAccount is required for metrics calculation" unless email_account
-    
+
     validate_period!(period)
     @email_account = email_account
     @period = period.to_sym
@@ -38,6 +38,7 @@ class MetricsCalculator
           trends: calculate_trends,
           category_breakdown: calculate_category_breakdown,
           daily_breakdown: calculate_daily_breakdown,
+          trend_data: calculate_trend_data,
           calculated_at: Time.current
         }
       end
@@ -69,7 +70,7 @@ class MetricsCalculator
   # Pre-calculate metrics for common periods for a specific email account
   def self.pre_calculate_all(email_account: nil, reference_date: Date.current)
     raise MissingEmailAccountError, "EmailAccount is required for pre-calculation" unless email_account
-    
+
     SUPPORTED_PERIODS.each do |period|
       new(email_account: email_account, period: period, reference_date: reference_date).calculate
     end
@@ -80,19 +81,19 @@ class MetricsCalculator
   # Example: { day: {...}, week: {...}, month: {...}, year: {...} }
   def self.batch_calculate(email_account: nil, periods: SUPPORTED_PERIODS, reference_date: Date.current)
     raise MissingEmailAccountError, "EmailAccount is required for batch calculation" unless email_account
-    
+
     # Validate all periods first
     invalid_periods = periods.map(&:to_sym) - SUPPORTED_PERIODS
     unless invalid_periods.empty?
       raise InvalidPeriodError, "Invalid periods: #{invalid_periods.join(', ')}. Supported periods: #{SUPPORTED_PERIODS.join(', ')}"
     end
-    
+
     results = {}
-    
+
     # Optimization: Pre-load data that might be used across multiple periods
     # This reduces redundant database queries
     preload_data_for_batch(email_account, periods, reference_date)
-    
+
     # Calculate for each period using cache when available
     periods.each do |period|
       calculator = new(
@@ -102,10 +103,10 @@ class MetricsCalculator
       )
       results[period.to_sym] = calculator.calculate
     end
-    
+
     results
   end
-  
+
   # Pre-load and cache expense data for multiple periods to optimize batch calculations
   private_class_method def self.preload_data_for_batch(email_account, periods, reference_date)
     # Determine the widest date range needed
@@ -121,18 +122,18 @@ class MetricsCalculator
         reference_date.beginning_of_year..reference_date.end_of_year
       end
     end
-    
+
     # Find the earliest start and latest end date
     earliest_date = date_ranges.map(&:begin).min
     latest_date = date_ranges.map(&:end).max
-    
+
     # Pre-load all expenses in the widest range with includes
     # This single query replaces multiple queries across different periods
     email_account.expenses
       .where(transaction_date: earliest_date..latest_date)
       .includes(:category)
       .load # Force loading into memory
-    
+
     # The ActiveRecord query cache will now serve these records
     # for subsequent queries within the same request
   end
@@ -154,19 +155,19 @@ class MetricsCalculator
     elapsed = Benchmark.realtime do
       result = yield
     end
-    
+
     # Log if calculation exceeds target
     if elapsed > 0.1
       Rails.logger.warn "MetricsCalculator exceeded 100ms target: #{(elapsed * 1000).round(2)}ms for #{period} period"
     end
-    
+
     result
   end
 
   def handle_calculation_error(error)
     Rails.logger.error "MetricsCalculator error: #{error.message}"
     Rails.logger.error error.backtrace.join("\n") if error.backtrace
-    
+
     # Return minimal valid response on error
     {
       period: period,
@@ -177,6 +178,7 @@ class MetricsCalculator
       trends: default_trends,
       category_breakdown: {},
       daily_breakdown: {},
+      trend_data: default_trend_data,
       calculated_at: Time.current
     }
   end
@@ -217,7 +219,7 @@ class MetricsCalculator
 
   def calculate_metrics
     expenses = expenses_in_period
-    
+
     {
       total_amount: expenses.sum(:amount).to_f,
       transaction_count: expenses.count,
@@ -236,11 +238,11 @@ class MetricsCalculator
   def calculate_trends
     current_metrics = calculate_metrics
     previous_expenses = expenses_in_previous_period
-    
+
     previous_total = previous_expenses.sum(:amount).to_f
     previous_count = previous_expenses.count
     previous_average = calculate_average(previous_expenses)
-    
+
     {
       amount_change: calculate_percentage_change(current_metrics[:total_amount], previous_total),
       count_change: calculate_percentage_change(current_metrics[:transaction_count], previous_count),
@@ -280,12 +282,62 @@ class MetricsCalculator
   end
 
   def calculate_daily_breakdown
-    return {} unless [:week, :month].include?(period)
-    
+    return {} unless [ :week, :month ].include?(period)
+
     expenses_in_period
       .group_by_day(:transaction_date, range: date_range)
       .sum(:amount)
       .transform_values(&:to_f)
+  end
+
+  def calculate_trend_data
+    # Calculate 7-day trend data for sparkline visualization
+    # Returns daily totals for the last 7 days
+    end_date = reference_date.to_date
+    start_date = (end_date - 6.days).to_date
+
+    # Get daily totals for the past 7 days
+    # Group by date (not datetime) to ensure proper matching
+    daily_totals = email_account.expenses
+      .where(transaction_date: start_date.beginning_of_day..end_date.end_of_day)
+      .group("DATE(transaction_date)")
+      .sum(:amount)
+
+    # Convert keys to Date objects and amounts to floats
+    normalized_totals = {}
+    daily_totals.each do |date_key, amount|
+      # Handle different date formats from the database
+      date = case date_key
+      when String then Date.parse(date_key)
+      when Date then date_key
+      when DateTime, Time then date_key.to_date
+      else date_key
+      end
+      normalized_totals[date] = amount.to_f
+    end
+
+    # Ensure we have all 7 days with zeros for missing days
+    trend_data = []
+    (0..6).each do |days_from_start|
+      date = start_date + days_from_start.days
+      amount = normalized_totals[date] || 0.0
+      trend_data << {
+        date: date,
+        amount: amount
+      }
+    end
+
+    # Calculate statistics for the trend
+    amounts = trend_data.map { |d| d[:amount] }
+    {
+      daily_amounts: trend_data,
+      min: amounts.min || 0.0,
+      max: amounts.max || 0.0,
+      average: amounts.empty? ? 0.0 : (amounts.sum.to_f / amounts.size).round(2),
+      total: amounts.sum,
+      start_date: start_date,
+      end_date: end_date
+    }
   end
 
   def calculate_status_breakdown(expenses)
@@ -299,14 +351,14 @@ class MetricsCalculator
   def calculate_average(expenses_relation)
     count = expenses_relation.count
     return 0.0 if count.zero?
-    
+
     (expenses_relation.sum(:amount).to_f / count).round(2)
   end
 
   def calculate_median(expenses_relation)
     amounts = expenses_relation.pluck(:amount).map(&:to_f).sort
     return 0.0 if amounts.empty?
-    
+
     mid = amounts.length / 2
     if amounts.length.odd?
       amounts[mid]
@@ -317,14 +369,14 @@ class MetricsCalculator
 
   def calculate_percentage_change(current, previous)
     return 0.0 if previous.zero?
-    
+
     (((current - previous) / previous) * 100).round(2)
   end
 
   def calculate_percentage_of_total(amount)
     total = expenses_in_period.sum(:amount).to_f
     return 0.0 if total.zero?
-    
+
     ((amount / total) * 100).round(2)
   end
 
@@ -366,6 +418,19 @@ class MetricsCalculator
       is_increase: false,
       previous_period_total: 0.0,
       previous_period_count: 0
+    }
+  end
+
+  def default_trend_data
+    # Default empty trend data for error cases
+    {
+      daily_amounts: [],
+      min: 0.0,
+      max: 0.0,
+      average: 0.0,
+      total: 0.0,
+      start_date: reference_date - 6.days,
+      end_date: reference_date
     }
   end
 end

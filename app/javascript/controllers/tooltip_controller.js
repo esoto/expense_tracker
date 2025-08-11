@@ -77,15 +77,16 @@ export default class extends Controller {
     // Generate unique ID for tooltip
     this.tooltipId = `tooltip-${Math.random().toString(36).substr(2, 9)}`
     
-    // Create tooltip container
+    // Create tooltip container with fixed positioning and higher z-index
     this.tooltipElement = document.createElement('div')
     this.tooltipElement.id = this.tooltipId
-    this.tooltipElement.className = 'tooltip-container absolute z-50 pointer-events-none opacity-0 transition-opacity duration-200'
+    this.tooltipElement.className = 'tooltip-container fixed pointer-events-none opacity-0 transition-opacity duration-200'
+    this.tooltipElement.style.zIndex = '9999' // Ensure tooltip is above all other elements
     this.tooltipElement.setAttribute('role', 'tooltip')
     
-    // Create tooltip content wrapper
+    // Create tooltip content wrapper with better shadow for depth
     const wrapper = document.createElement('div')
-    wrapper.className = 'bg-white rounded-lg shadow-xl border border-slate-200 p-4 max-w-sm'
+    wrapper.className = 'bg-white rounded-lg shadow-2xl border border-slate-200 p-4 max-w-sm'
     
     // Build tooltip content
     wrapper.innerHTML = this.buildTooltipContent()
@@ -213,6 +214,12 @@ export default class extends Controller {
     // Position tooltip
     this.positionTooltip()
     
+    // Add scroll and resize listeners to reposition tooltip
+    this.scrollHandler = this.handleScroll.bind(this)
+    this.resizeHandler = this.handleResize.bind(this)
+    window.addEventListener('scroll', this.scrollHandler, { passive: true })
+    window.addEventListener('resize', this.resizeHandler, { passive: true })
+    
     // Show with animation
     this.tooltipElement.style.pointerEvents = 'auto'
     requestAnimationFrame(() => {
@@ -236,6 +243,16 @@ export default class extends Controller {
     
     this.isVisible = false
     
+    // Remove scroll and resize handlers
+    if (this.scrollHandler) {
+      window.removeEventListener('scroll', this.scrollHandler)
+      this.scrollHandler = null
+    }
+    if (this.resizeHandler) {
+      window.removeEventListener('resize', this.resizeHandler)
+      this.resizeHandler = null
+    }
+    
     // Remove document click and touch handlers
     if (this.documentClickHandler) {
       document.removeEventListener('click', this.documentClickHandler)
@@ -247,6 +264,20 @@ export default class extends Controller {
     this.dispatch('hidden')
   }
   
+  handleScroll() {
+    // Reposition tooltip when page scrolls
+    if (this.isVisible) {
+      this.positionTooltip()
+    }
+  }
+  
+  handleResize() {
+    // Reposition tooltip when window resizes
+    if (this.isVisible) {
+      this.positionTooltip()
+    }
+  }
+  
   positionTooltip() {
     const triggerRect = this.element.getBoundingClientRect()
     const tooltipRect = this.tooltipElement.getBoundingClientRect()
@@ -256,34 +287,53 @@ export default class extends Controller {
     
     let top, left
     let position = this.positionValue
+    let adjustedPosition = false
     
-    // Auto-adjust position if it would go off-screen
-    if (position === 'top' && triggerRect.top - tooltipRect.height - offset < 0) {
-      position = 'bottom'
-    } else if (position === 'bottom' && triggerRect.bottom + tooltipRect.height + offset > viewportHeight) {
-      position = 'top'
-    } else if (position === 'left' && triggerRect.left - tooltipRect.width - offset < 0) {
-      position = 'right'
-    } else if (position === 'right' && triggerRect.right + tooltipRect.width + offset > viewportWidth) {
-      position = 'left'
+    // Calculate tooltip dimensions - use offsetHeight/offsetWidth for more accurate measurements
+    const tooltipHeight = this.tooltipElement.offsetHeight || tooltipRect.height
+    const tooltipWidth = this.tooltipElement.offsetWidth || tooltipRect.width
+    
+    // Auto-adjust position if it would go off-screen (using viewport coordinates)
+    // Only adjust if there's not enough space AND there's more space on the opposite side
+    if (position === 'top' && triggerRect.top - tooltipHeight - offset < 0) {
+      if (viewportHeight - triggerRect.bottom - offset > tooltipHeight) {
+        position = 'bottom'
+        adjustedPosition = true
+      }
+    } else if (position === 'bottom' && triggerRect.bottom + tooltipHeight + offset > viewportHeight) {
+      if (triggerRect.top - offset > tooltipHeight) {
+        position = 'top'
+        adjustedPosition = true
+      }
+    } else if (position === 'left' && triggerRect.left - tooltipWidth - offset < 0) {
+      if (viewportWidth - triggerRect.right - offset > tooltipWidth) {
+        position = 'right'
+        adjustedPosition = true
+      }
+    } else if (position === 'right' && triggerRect.right + tooltipWidth + offset > viewportWidth) {
+      if (triggerRect.left - offset > tooltipWidth) {
+        position = 'left'
+        adjustedPosition = true
+      }
     }
     
-    // Calculate position based on final position
+    // Calculate position based on final position (in viewport coordinates)
+    // Since we're using fixed positioning, coordinates are relative to viewport
     switch (position) {
       case 'top':
-        top = triggerRect.top - tooltipRect.height - offset
-        left = triggerRect.left + (triggerRect.width - tooltipRect.width) / 2
+        top = triggerRect.top - tooltipHeight - offset
+        left = triggerRect.left + (triggerRect.width - tooltipWidth) / 2
         break
       case 'bottom':
         top = triggerRect.bottom + offset
-        left = triggerRect.left + (triggerRect.width - tooltipRect.width) / 2
+        left = triggerRect.left + (triggerRect.width - tooltipWidth) / 2
         break
       case 'left':
-        top = triggerRect.top + (triggerRect.height - tooltipRect.height) / 2
-        left = triggerRect.left - tooltipRect.width - offset
+        top = triggerRect.top + (triggerRect.height - tooltipHeight) / 2
+        left = triggerRect.left - tooltipWidth - offset
         break
       case 'right':
-        top = triggerRect.top + (triggerRect.height - tooltipRect.height) / 2
+        top = triggerRect.top + (triggerRect.height - tooltipHeight) / 2
         left = triggerRect.right + offset
         break
     }
@@ -291,18 +341,21 @@ export default class extends Controller {
     // Ensure tooltip stays within viewport horizontally
     if (left < offset) {
       left = offset
-    } else if (left + tooltipRect.width > viewportWidth - offset) {
-      left = viewportWidth - tooltipRect.width - offset
+    } else if (left + tooltipWidth > viewportWidth - offset) {
+      left = viewportWidth - tooltipWidth - offset
     }
     
     // Ensure tooltip stays within viewport vertically
-    if (top < offset) {
-      top = offset
-    } else if (top + tooltipRect.height > viewportHeight - offset) {
-      top = viewportHeight - tooltipRect.height - offset
+    // Only constrain if we didn't already adjust the position
+    if (!adjustedPosition) {
+      if (top < offset) {
+        top = offset
+      } else if (top + tooltipHeight > viewportHeight - offset) {
+        top = viewportHeight - tooltipHeight - offset
+      }
     }
     
-    // Apply position
+    // Apply position (fixed positioning relative to viewport)
     this.tooltipElement.style.top = `${top}px`
     this.tooltipElement.style.left = `${left}px`
   }

@@ -156,12 +156,23 @@ class QueueMonitor
     def safe_parse_arguments(arguments_json)
       return {} if arguments_json.blank?
 
-      parsed = JSON.parse(arguments_json)
-      # Extract job arguments if present
-      if parsed.is_a?(Hash) && parsed["arguments"]
-        parsed["arguments"]
+      # Handle case where arguments is already a Hash (Rails 8.0 behavior)
+      if arguments_json.is_a?(Hash)
+        return arguments_json
+      end
+
+      # Handle case where arguments is a JSON string
+      if arguments_json.is_a?(String)
+        parsed = JSON.parse(arguments_json)
+        # Extract job arguments if present
+        if parsed.is_a?(Hash) && parsed["arguments"]
+          parsed["arguments"]
+        else
+          parsed
+        end
       else
-        parsed
+        # Return as-is if it's neither Hash nor String
+        arguments_json
       end
     rescue JSON::ParserError
       { raw: arguments_json }

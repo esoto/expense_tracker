@@ -28,7 +28,7 @@ RSpec.describe MetricsCalculator, '#calculate_trend_data' do
       it 'returns daily amounts for the last 7 days' do
         result = calculator.calculate
         trend_data = result[:trend_data]
-        
+
         expect(trend_data[:daily_amounts]).to be_an(Array)
         expect(trend_data[:daily_amounts].size).to eq(7)
       end
@@ -37,14 +37,14 @@ RSpec.describe MetricsCalculator, '#calculate_trend_data' do
         result = calculator.calculate
         trend_data = result[:trend_data]
         dates = trend_data[:daily_amounts].map { |d| d[:date] }
-        
+
         expect(dates).to eq(dates.sort)
       end
 
       it 'calculates correct min and max values' do
         result = calculator.calculate
         trend_data = result[:trend_data]
-        
+
         expect(trend_data[:min]).to eq(1000.0)
         expect(trend_data[:max]).to eq(7000.0)
       end
@@ -52,7 +52,7 @@ RSpec.describe MetricsCalculator, '#calculate_trend_data' do
       it 'calculates correct average' do
         result = calculator.calculate
         trend_data = result[:trend_data]
-        
+
         # Average of 1000, 2000, 3000, 4000, 5000, 6000, 7000 = 4000
         expect(trend_data[:average]).to eq(4000.0)
       end
@@ -60,7 +60,7 @@ RSpec.describe MetricsCalculator, '#calculate_trend_data' do
       it 'calculates correct total' do
         result = calculator.calculate
         trend_data = result[:trend_data]
-        
+
         # Sum of 1000 + 2000 + 3000 + 4000 + 5000 + 6000 + 7000 = 28000
         expect(trend_data[:total]).to eq(28000.0)
       end
@@ -68,7 +68,7 @@ RSpec.describe MetricsCalculator, '#calculate_trend_data' do
       it 'includes correct date range' do
         result = calculator.calculate
         trend_data = result[:trend_data]
-        
+
         expect(trend_data[:start_date]).to eq(reference_date - 6.days)
         expect(trend_data[:end_date]).to eq(reference_date)
       end
@@ -90,9 +90,9 @@ RSpec.describe MetricsCalculator, '#calculate_trend_data' do
       it 'fills missing days with zero amounts' do
         result = calculator.calculate
         trend_data = result[:trend_data]
-        
+
         expect(trend_data[:daily_amounts].size).to eq(7)
-        
+
         # Check that missing days have zero amounts
         amounts = trend_data[:daily_amounts].map { |d| d[:amount] }
         expect(amounts.count(0.0)).to eq(5) # 5 days with no expenses
@@ -102,7 +102,7 @@ RSpec.describe MetricsCalculator, '#calculate_trend_data' do
       it 'calculates statistics correctly with zeros' do
         result = calculator.calculate
         trend_data = result[:trend_data]
-        
+
         expect(trend_data[:min]).to eq(0.0)
         expect(trend_data[:max]).to eq(1500.0)
         expect(trend_data[:average]).to be_within(0.01).of(2000.0 / 7) # Total 2000 / 7 days (with rounding)
@@ -124,7 +124,7 @@ RSpec.describe MetricsCalculator, '#calculate_trend_data' do
       it 'sums expenses for the same day' do
         result = calculator.calculate
         trend_data = result[:trend_data]
-        
+
         today_amount = trend_data[:daily_amounts].find { |d| d[:date] == reference_date }[:amount]
         expect(today_amount).to eq(300.0)
       end
@@ -134,7 +134,7 @@ RSpec.describe MetricsCalculator, '#calculate_trend_data' do
       it 'returns empty trend data with zeros' do
         result = calculator.calculate
         trend_data = result[:trend_data]
-        
+
         expect(trend_data[:daily_amounts].size).to eq(7)
         expect(trend_data[:daily_amounts].all? { |d| d[:amount] == 0.0 }).to be true
         expect(trend_data[:min]).to eq(0.0)
@@ -152,7 +152,7 @@ RSpec.describe MetricsCalculator, '#calculate_trend_data' do
                          transaction_date: reference_date,
                          amount: 1000)
         expense1.crc! # Set to CRC currency
-        
+
         expense2 = create(:expense,
                          email_account: email_account,
                          transaction_date: reference_date,
@@ -163,7 +163,7 @@ RSpec.describe MetricsCalculator, '#calculate_trend_data' do
       it 'includes all currencies in the sum' do
         result = calculator.calculate
         trend_data = result[:trend_data]
-        
+
         today_amount = trend_data[:daily_amounts].find { |d| d[:date] == reference_date }[:amount]
         expect(today_amount).to eq(1010.0) # Treats all as same currency for simplicity
       end
@@ -172,7 +172,7 @@ RSpec.describe MetricsCalculator, '#calculate_trend_data' do
     context 'error handling' do
       it 'includes default trend data on error' do
         allow(calculator).to receive(:calculate_trend_data).and_raise(StandardError, 'Test error')
-        
+
         result = calculator.calculate
         expect(result).to have_key(:trend_data)
         expect(result[:trend_data][:daily_amounts]).to eq([])
@@ -192,10 +192,10 @@ RSpec.describe MetricsCalculator, '#calculate_trend_data' do
       it 'includes trend data for all periods in batch calculation' do
         results = described_class.batch_calculate(
           email_account: email_account,
-          periods: [:day, :week, :month],
+          periods: [ :day, :week, :month ],
           reference_date: reference_date
         )
-        
+
         expect(results[:day]).to have_key(:trend_data)
         expect(results[:week]).to have_key(:trend_data)
         expect(results[:month]).to have_key(:trend_data)
@@ -204,16 +204,16 @@ RSpec.describe MetricsCalculator, '#calculate_trend_data' do
       it 'uses same 7-day window regardless of period' do
         results = described_class.batch_calculate(
           email_account: email_account,
-          periods: [:day, :week, :month, :year],
+          periods: [ :day, :week, :month, :year ],
           reference_date: reference_date
         )
-        
+
         # All periods should have the same trend data (last 7 days)
         day_trend = results[:day][:trend_data]
         week_trend = results[:week][:trend_data]
         month_trend = results[:month][:trend_data]
         year_trend = results[:year][:trend_data]
-        
+
         expect(day_trend[:start_date]).to eq(week_trend[:start_date])
         expect(day_trend[:start_date]).to eq(month_trend[:start_date])
         expect(day_trend[:start_date]).to eq(year_trend[:start_date])
@@ -238,7 +238,7 @@ RSpec.describe MetricsCalculator, '#calculate_trend_data' do
         start_time = Time.current
         calculator.calculate
         elapsed = Time.current - start_time
-        
+
         expect(elapsed).to be < 0.1 # 100ms target
       end
     end

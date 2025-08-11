@@ -7,6 +7,7 @@ class ExtendedCacheMetricsCalculator < MetricsCalculator
 
   def initialize(email_account:, period: :month, reference_date: Date.current, cache_hours: 4)
     @cache_hours = cache_hours
+    # Only pass parameters that the parent class accepts
     super(email_account: email_account, period: period, reference_date: reference_date)
   end
 

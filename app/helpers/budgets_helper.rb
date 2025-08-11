@@ -6,13 +6,13 @@ module BudgetsHelper
   def progress_bar_color_class(status)
     case status
     when :exceeded
-      'bg-rose-600'
+      "bg-rose-600"
     when :critical
-      'bg-rose-500'
+      "bg-rose-500"
     when :warning
-      'bg-amber-600'
+      "bg-amber-600"
     else
-      'bg-emerald-600'
+      "bg-emerald-600"
     end
   end
 
@@ -20,11 +20,11 @@ module BudgetsHelper
   def remaining_amount_color_class(status)
     case status
     when :exceeded, :critical
-      'text-rose-600'
+      "text-rose-600"
     when :warning
-      'text-amber-600'
+      "text-amber-600"
     else
-      'text-emerald-600'
+      "text-emerald-600"
     end
   end
 
@@ -32,11 +32,11 @@ module BudgetsHelper
   def status_text_color_class(status)
     case status
     when :exceeded, :critical
-      'text-rose-700'
+      "text-rose-700"
     when :warning
-      'text-amber-700'
+      "text-amber-700"
     else
-      'text-emerald-700'
+      "text-emerald-700"
     end
   end
 
@@ -71,15 +71,15 @@ module BudgetsHelper
   def period_from_label(label)
     case label
     when /Mes/i
-      'monthly'
+      "monthly"
     when /Semana/i
-      'weekly'
+      "weekly"
     when /Hoy|Día/i
-      'daily'
+      "daily"
     when /Año/i
-      'yearly'
+      "yearly"
     else
-      'monthly'
+      "monthly"
     end
   end
 end

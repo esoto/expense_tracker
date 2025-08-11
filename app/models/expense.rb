@@ -68,7 +68,7 @@ class Expense < ApplicationRecord
 
   # Callbacks
   after_commit :clear_dashboard_cache
-  after_commit :trigger_metrics_refresh, on: [:create, :update]
+  after_commit :trigger_metrics_refresh, on: [ :create, :update ]
   after_destroy :trigger_metrics_refresh_for_deletion
 
   # Class methods
@@ -92,24 +92,24 @@ class Expense < ApplicationRecord
   def clear_dashboard_cache
     DashboardService.clear_cache
   end
-  
+
   def trigger_metrics_refresh
     # Smart refresh - only trigger if significant fields changed
-    if saved_change_to_amount? || saved_change_to_transaction_date? || 
+    if saved_change_to_amount? || saved_change_to_transaction_date? ||
        saved_change_to_category_id? || saved_change_to_status?
-      
+
       # Use debounced enqueue to prevent job flooding
-      affected_date = saved_change_to_transaction_date? ? 
-                      transaction_date_before_last_save : 
+      affected_date = saved_change_to_transaction_date? ?
+                      transaction_date_before_last_save :
                       transaction_date
-      
+
       # Schedule metrics refresh with debouncing
       MetricsRefreshJob.enqueue_debounced(
-        email_account_id, 
+        email_account_id,
         affected_date: affected_date,
         delay: 3.seconds # Small delay to batch multiple changes
       )
-      
+
       # If transaction date changed, also refresh the new date's metrics
       if saved_change_to_transaction_date?
         MetricsRefreshJob.enqueue_debounced(
@@ -123,7 +123,7 @@ class Expense < ApplicationRecord
     # Don't let background job issues affect the main transaction
     Rails.logger.error "Failed to trigger metrics refresh: #{e.message}"
   end
-  
+
   def trigger_metrics_refresh_for_deletion
     # Trigger metrics refresh for the deleted expense's date
     MetricsRefreshJob.enqueue_debounced(

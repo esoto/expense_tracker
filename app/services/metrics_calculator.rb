@@ -446,7 +446,7 @@ class MetricsCalculator
       month: :monthly,
       year: :yearly
     }
-    
+
     budget_period = budget_period_mapping[period]
     return default_budget_data unless budget_period
 
@@ -458,10 +458,10 @@ class MetricsCalculator
 
     # Get general budget (no category) for the period
     general_budget = budgets.general.where(period: budget_period).first
-    
+
     # Get category-specific budgets
     category_budgets = budgets.where.not(category_id: nil).where(period: budget_period)
-    
+
     # Calculate budget data
     budget_info = {
       has_budget: general_budget.present? || category_budgets.any?,
@@ -471,7 +471,7 @@ class MetricsCalculator
       overall_usage: calculate_overall_budget_usage(general_budget, category_budgets),
       historical_adherence: calculate_historical_budget_adherence
     }
-    
+
     budget_info
   rescue StandardError => e
     Rails.logger.error "Budget calculation error: #{e.message}"
@@ -480,10 +480,10 @@ class MetricsCalculator
 
   def format_budget_data(budget)
     return nil unless budget
-    
+
     # Ensure current spend is up to date
     budget.calculate_current_spend!
-    
+
     {
       id: budget.id,
       name: budget.name,
@@ -520,7 +520,7 @@ class MetricsCalculator
       # Calculate weighted average of category budgets
       total_budget = category_budgets.sum(&:amount).to_f
       return 0.0 if total_budget.zero?
-      
+
       total_spend = category_budgets.sum(&:current_spend).to_f
       ((total_spend / total_budget) * 100).round(1)
     else

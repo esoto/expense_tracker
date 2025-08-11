@@ -197,10 +197,10 @@ class ExpensesController < ApplicationController
   def setup_navigation_context
     # Detect if navigation is from dashboard
     @from_dashboard = params[:filter_type] == "dashboard_metric"
-    
+
     # Store period for display
     @active_period = params[:period] if params[:period].present?
-    
+
     # Store date range for display
     if params[:date_from].present? && params[:date_to].present?
       begin
@@ -209,7 +209,7 @@ class ExpensesController < ApplicationController
         Rails.logger.warn "Invalid date_from parameter: #{params[:date_from]} - #{e.message}"
         @date_from = nil
       end
-      
+
       begin
         @date_to = Date.parse(params[:date_to])
       rescue ArgumentError => e
@@ -227,7 +227,7 @@ class ExpensesController < ApplicationController
 
   def build_filter_description
     descriptions = []
-    
+
     # Add period description
     if @active_period
       period_descriptions = {
@@ -246,13 +246,13 @@ class ExpensesController < ApplicationController
     elsif params[:start_date].present? && params[:end_date].present?
       descriptions << "Gastos del #{params[:start_date]} al #{params[:end_date]}"
     end
-    
+
     # Add category filter
     descriptions << "Categoría: #{params[:category]}" if params[:category].present?
-    
+
     # Add bank filter
     descriptions << "Banco: #{params[:bank]}" if params[:bank].present?
-    
+
     descriptions.empty? ? nil : descriptions.join(" • ")
   end
 

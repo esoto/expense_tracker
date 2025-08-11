@@ -39,10 +39,10 @@ RSpec.describe BroadcastJob, type: :job do
           match(/BROADCAST_JOB.*Completed.*SyncStatusChannel.*SyncSession##{target_id}.*Priority: medium/)
         )
       end
-      
+
       it 'records success in analytics' do
         described_class.new.perform(channel_name, target_id, target_type, data, priority)
-        
+
         expect(BroadcastAnalytics).to have_received(:record_success).with(
           hash_including(
             channel: channel_name,
@@ -71,10 +71,10 @@ RSpec.describe BroadcastJob, type: :job do
           match(/BROADCAST_JOB.*Failed after retries.*SyncStatusChannel.*SyncSession##{target_id}/)
         )
       end
-      
+
       it 'records failure in analytics' do
         described_class.new.perform(channel_name, target_id, target_type, data, priority)
-        
+
         expect(BroadcastAnalytics).to have_received(:record_failure).with(
           hash_including(
             channel: channel_name,
@@ -82,10 +82,10 @@ RSpec.describe BroadcastJob, type: :job do
           )
         )
       end
-      
+
       it 'creates failed broadcast store record' do
         described_class.new.perform(channel_name, target_id, target_type, data, priority)
-        
+
         expect(FailedBroadcastStore).to have_received(:create!).with(
           hash_including(
             error_type: "broadcast_failed",

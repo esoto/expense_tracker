@@ -12,7 +12,7 @@ RSpec.configure do |config|
 
   config.before(:each, type: :system, js: true) do
     # Use headless Chrome for JavaScript tests
-    driven_by :selenium_chrome_headless, screen_size: [1400, 900]
+    driven_by :selenium_chrome_headless, screen_size: [ 1400, 900 ]
   end
 end
 
@@ -20,16 +20,16 @@ end
 Capybara.configure do |config|
   # Wait up to 5 seconds for elements to appear
   config.default_max_wait_time = 5
-  
+
   # Ignore hidden elements by default
   config.ignore_hidden_elements = true
-  
+
   # Default selector
   config.default_selector = :css
-  
+
   # Server settings
   config.server = :puma, { Silent: true }
-  
+
   # Asset compilation for tests
   config.automatic_label_click = true
 end
@@ -44,10 +44,10 @@ Capybara.register_driver :selenium_chrome_headless do |app|
   options.add_argument('--window-size=1400,900')
   options.add_argument('--disable-web-security') # Allow cross-origin requests for CDN assets
   options.add_argument('--allow-insecure-localhost')
-  
+
   # Enable JavaScript console logging for debugging
   options.add_preference(:loggingPrefs, { browser: 'ALL' })
-  
+
   Capybara::Selenium::Driver.new(
     app,
     browser: :chrome,
@@ -61,24 +61,24 @@ RSpec.configure do |config|
     # Ensure test environment compiles assets
     Rails.application.config.assets.compile = true if defined?(Rails)
     Rails.application.config.assets.debug = false if defined?(Rails)
-    
+
     # Precompile assets for tests if needed
     if defined?(Propshaft)
       Rails.application.config.assets.prefix = '/test-assets'
     end
   end
-  
+
   config.before(:each, type: :system) do
     # Clear any cached JavaScript
     Capybara.reset_sessions!
     Capybara.use_default_driver
   end
-  
+
   config.before(:each, type: :system, js: true) do
     # Use JavaScript driver for JS tests
     Capybara.current_driver = :selenium_chrome_headless
   end
-  
+
   config.after(:each, type: :system, js: true) do |example|
     # Take screenshot on failure for debugging
     if example.exception

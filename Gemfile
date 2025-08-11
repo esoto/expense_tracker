@@ -99,3 +99,12 @@ gem "shoulda-matchers", "~> 6.5", group: :test
 gem "rails-controller-testing", group: :test
 
 gem "rails_best_practices", "~> 1.23", group: :development
+
+# Categorization improvement dependencies
+group :categorization do
+  gem "fuzzy-string-match", "~> 1.0"
+  gem "redis", "~> 5.0"
+  gem "redis-namespace", "~> 1.10"
+  gem "connection_pool", "~> 2.4"
+  gem "hiredis", "~> 0.6"
+end

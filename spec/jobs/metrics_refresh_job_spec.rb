@@ -210,7 +210,7 @@ RSpec.describe MetricsRefreshJob, type: :job do
       # Test that the retry behavior works by checking the class configuration
       # The job should have retry_on defined in its source code
       expect(described_class.instance_methods).to include(:perform)
-      
+
       # Check that the class has retry configuration by inspecting the source
       source_lines = File.readlines(Rails.root.join('app/jobs/metrics_refresh_job.rb'))
       retry_line = source_lines.find { |line| line.include?('retry_on StandardError') }

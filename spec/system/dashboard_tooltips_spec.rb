@@ -71,7 +71,7 @@ RSpec.describe 'Dashboard tooltips', type: :system, js: true, skip: "JavaScript 
         # Check immediately (before delay) - allow for small JS execution time
         # In test environment, timing can be different, so use a small delay
         sleep 0.05
-        
+
         # In some test environments, the delay might not work as expected
         # So we'll just check that the tooltip functionality works
         using_wait_time(0.5) do
@@ -97,7 +97,7 @@ RSpec.describe 'Dashboard tooltips', type: :system, js: true, skip: "JavaScript 
         # The positioning logic auto-adjusts based on available space
         is_below = tooltip_rect['top'] >= card_rect['bottom']
         is_above = tooltip_rect['bottom'] <= card_rect['top']
-        
+
         expect(is_below || is_above).to be true
       end
 
@@ -232,7 +232,7 @@ RSpec.describe 'Dashboard tooltips', type: :system, js: true, skip: "JavaScript 
         # Focus and show tooltip using JavaScript
         page.execute_script('arguments[0].focus()', primary_card)
         sleep 0.2
-        
+
         using_wait_time(3) do
           expect(page).to have_css('.tooltip-container.opacity-100')
         end
@@ -254,12 +254,12 @@ RSpec.describe 'Dashboard tooltips', type: :system, js: true, skip: "JavaScript 
 
         # Test that tooltip renders (performance timing can be flaky in test environment)
         primary_card.hover
-        
+
         # Give tooltip time to appear and verify it shows up
         using_wait_time(5) do
           expect(page).to have_css('.tooltip-container.opacity-100')
         end
-        
+
         # Verify tooltip is functional and has content
         tooltip = find('.tooltip-container.opacity-100')
         expect(tooltip).to be_visible
@@ -274,15 +274,15 @@ RSpec.describe 'Dashboard tooltips', type: :system, js: true, skip: "JavaScript 
           # Make sure previous tooltips are hidden
           page.execute_script('document.querySelectorAll(".tooltip-container").forEach(t => t.classList.add("opacity-0"))')
           sleep 0.1
-          
+
           card.hover
           sleep 0.3
-          
+
           # Should have at least 1 visible tooltip (may have more due to timing)
           expect(page).to have_css('.tooltip-container.opacity-100', minimum: 1)
-          
+
           # Move away to hide tooltip
-          find('body').hover 
+          find('body').hover
           sleep 0.2
         end
       end
@@ -355,20 +355,20 @@ RSpec.describe 'Dashboard tooltips', type: :system, js: true, skip: "JavaScript 
         '[data-tooltip-metric-label-value="Total de Gastos (Año)"]',
         '[data-tooltip-metric-label-value="Gastos del Mes"]'
       ]
-      
+
       cards_with_labels.each_with_index do |selector, index|
         # Move away from any existing tooltips
         find('body').hover
         sleep 0.2
-        
+
         # Find and hover over the specific card
         card = find(selector)
         card.hover
         sleep 0.4
-        
+
         # Verify a tooltip appears (content may vary)
         expect(page).to have_css('.tooltip-container.opacity-100', minimum: 1)
-        
+
         # Verify it has some meaningful content
         tooltip = find('.tooltip-container.opacity-100', match: :first)
         expect(tooltip.text).not_to be_empty

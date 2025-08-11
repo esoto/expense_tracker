@@ -41,6 +41,18 @@ class Expense < ApplicationRecord
     description.presence || merchant_name.presence || "Unknown Transaction"
   end
 
+  def merchant_name
+    # Extract merchant name from description or use normalized merchant
+    return merchant_normalized if merchant_normalized.present?
+    
+    # Try to extract merchant from description (simple heuristic)
+    return nil if description.blank?
+    
+    # Common patterns: "MERCHANT NAME *", "MERCHANT NAME -", etc.
+    match = description.match(/^([A-Z][A-Z0-9\s&.-]+?)(?:\s*[*\-#]|\s+\d|$)/i)
+    match ? match[1].strip : description.split(/\s+/).first(3).join(" ")
+  end
+
   def parsed_email_data
     return {} unless parsed_data.present?
     JSON.parse(parsed_data)

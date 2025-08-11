@@ -233,7 +233,7 @@ module Categorization
 
       # Get historical amount statistics from pattern metadata
       amount_stats = pattern.metadata["amount_stats"]
-      return nil unless amount_stats && amount_stats["count"] >= MIN_SAMPLES_FOR_STATS
+      return nil unless amount_stats && amount_stats["count"] && amount_stats["count"] >= MIN_SAMPLES_FOR_STATS
 
       mean = amount_stats["mean"].to_f
       std_dev = amount_stats["std_dev"].to_f
@@ -382,6 +382,9 @@ module Categorization
         "confidence",
         expense.id,
         pattern.id,
+        pattern.confidence_weight,
+        pattern.usage_count,
+        pattern.success_rate,
         expense.amount,
         expense.transaction_date&.to_i
       ]

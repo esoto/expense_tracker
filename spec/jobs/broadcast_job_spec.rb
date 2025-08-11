@@ -14,6 +14,7 @@ RSpec.describe BroadcastJob, type: :job do
     context 'when broadcast succeeds' do
       before do
         allow(BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(true)
+        allow(BroadcastAnalytics).to receive(:record_success)
       end
 
       it 'performs broadcast successfully' do
@@ -38,11 +39,27 @@ RSpec.describe BroadcastJob, type: :job do
           match(/BROADCAST_JOB.*Completed.*SyncStatusChannel.*SyncSession##{target_id}.*Priority: medium/)
         )
       end
+      
+      it 'records success in analytics' do
+        described_class.new.perform(channel_name, target_id, target_type, data, priority)
+        
+        expect(BroadcastAnalytics).to have_received(:record_success).with(
+          hash_including(
+            channel: channel_name,
+            target_type: target_type,
+            target_id: target_id,
+            priority: priority,
+            attempt: 1
+          )
+        )
+      end
     end
 
     context 'when broadcast fails' do
       before do
         allow(BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(false)
+        allow(BroadcastAnalytics).to receive(:record_failure)
+        allow(FailedBroadcastStore).to receive(:create!)
       end
 
       it 'logs failure warning' do
@@ -52,6 +69,28 @@ RSpec.describe BroadcastJob, type: :job do
 
         expect(Rails.logger).to have_received(:warn).with(
           match(/BROADCAST_JOB.*Failed after retries.*SyncStatusChannel.*SyncSession##{target_id}/)
+        )
+      end
+      
+      it 'records failure in analytics' do
+        described_class.new.perform(channel_name, target_id, target_type, data, priority)
+        
+        expect(BroadcastAnalytics).to have_received(:record_failure).with(
+          hash_including(
+            channel: channel_name,
+            error: "Broadcast failed after service-level retries"
+          )
+        )
+      end
+      
+      it 'creates failed broadcast store record' do
+        described_class.new.perform(channel_name, target_id, target_type, data, priority)
+        
+        expect(FailedBroadcastStore).to have_received(:create!).with(
+          hash_including(
+            error_type: "broadcast_failed",
+            error_message: "Failed after service retries"
+          )
         )
       end
     end
@@ -88,15 +127,18 @@ RSpec.describe BroadcastJob, type: :job do
         described_class.new.perform(channel_name, invalid_target_id, target_type, data, priority)
 
         expect(FailedBroadcastStore).to have_received(:create!).with(
-          channel_name: channel_name,
-          target_type: target_type,
-          target_id: invalid_target_id,
-          data: data,
-          priority: priority,
-          error_type: 'record_not_found',
-          error_message: match(/Couldn't find/),
-          failed_at: be_within(1.second).of(Time.current),
-          retry_count: 0
+          hash_including(
+            channel_name: channel_name,
+            target_type: target_type,
+            target_id: invalid_target_id,
+            data: data,
+            priority: priority,
+            error_type: 'record_not_found',
+            error_message: match(/Couldn't find/),
+            failed_at: be_within(1.second).of(Time.current),
+            retry_count: 0,
+            sidekiq_job_id: be_a(String)
+          )
         )
       end
 
@@ -155,6 +197,7 @@ RSpec.describe BroadcastJob, type: :job do
     context 'with default priority' do
       it 'uses medium priority when not specified' do
         allow(BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(true)
+        allow(BroadcastAnalytics).to receive(:record_success)
 
         described_class.new.perform(channel_name, target_id, target_type, data)
 
@@ -327,7 +370,7 @@ RSpec.describe BroadcastJob, type: :job do
       expect(described_class).to be < ApplicationJob
     end
 
-    it 'discards on standard errors (handled by BroadcastReliabilityService)' do
+    it 'has retry handlers configured for error recovery' do
       expect(described_class.rescue_handlers).to be_present
     end
   end

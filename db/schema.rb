@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_09_014004) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_10_154255) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -98,11 +98,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_09_014004) do
     t.text "email_body"
     t.index ["amount"], name: "index_expenses_on_amount"
     t.index ["bank_name", "transaction_date"], name: "index_expenses_on_bank_name_and_transaction_date"
+    t.index ["category_id", "transaction_date", "amount"], name: "index_expenses_uncategorized", where: "(category_id IS NULL)"
     t.index ["category_id", "transaction_date"], name: "index_expenses_on_category_id_and_transaction_date"
     t.index ["category_id"], name: "index_expenses_on_category_id"
+    t.index ["created_at", "transaction_date"], name: "index_expenses_on_created_and_transaction_date"
     t.index ["currency"], name: "index_expenses_on_currency"
     t.index ["email_account_id", "amount", "transaction_date"], name: "index_expenses_on_account_amount_date_for_duplicates"
+    t.index ["email_account_id", "category_id", "transaction_date"], name: "idx_expenses_account_uncategorized", where: "(category_id IS NULL)"
     t.index ["email_account_id", "created_at"], name: "index_expenses_on_email_account_id_and_created_at"
+    t.index ["email_account_id", "status", "transaction_date", "amount"], name: "idx_expenses_account_status_date_amount"
+    t.index ["email_account_id", "transaction_date", "category_id", "amount"], name: "idx_expenses_account_date_category_amount"
+    t.index ["email_account_id", "transaction_date", "currency"], name: "idx_expenses_account_date_currency"
+    t.index ["email_account_id", "transaction_date", "merchant_name"], name: "idx_expenses_account_date_merchant"
+    t.index ["email_account_id", "transaction_date", "status"], name: "idx_expenses_account_date_status"
     t.index ["email_account_id", "transaction_date"], name: "index_expenses_on_email_account_id_and_transaction_date"
     t.index ["email_account_id"], name: "index_expenses_on_email_account_id"
     t.index ["merchant_name", "amount"], name: "index_expenses_on_merchant_name_and_amount"
@@ -110,6 +118,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_09_014004) do
     t.index ["status", "transaction_date"], name: "index_expenses_on_status_and_transaction_date"
     t.index ["status"], name: "index_expenses_on_status"
     t.index ["transaction_date", "amount"], name: "index_expenses_on_transaction_date_and_amount"
+    t.index ["transaction_date", "category_id", "amount"], name: "index_expenses_on_date_category_amount"
+    t.index ["transaction_date", "currency", "amount"], name: "index_expenses_on_date_currency_amount"
+    t.index ["transaction_date", "merchant_name", "amount"], name: "index_expenses_on_date_merchant_amount"
+    t.index ["transaction_date", "status", "amount"], name: "index_expenses_on_date_status_amount"
     t.index ["transaction_date"], name: "index_expenses_on_transaction_date"
   end
 

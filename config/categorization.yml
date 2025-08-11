@@ -1,0 +1,152 @@
+# Categorization Engine Configuration
+# Environment-specific settings for the categorization system
+
+default: &default
+  # Cache configuration
+  cache:
+    enabled: true
+    ttl_seconds: 3600
+    max_entries: 10000
+    redis_enabled: false
+    redis_url: redis://localhost:6379/1
+    
+  # Pattern matching configuration
+  matching:
+    fuzzy_enabled: true
+    fuzzy_threshold: 0.85
+    min_confidence: 0.3
+    boost_exact_match: 1.5
+    boost_pattern_match: 1.3
+    boost_fuzzy_match: 1.1
+    
+  # Confidence thresholds
+  confidence:
+    very_high: 0.9
+    high: 0.7
+    medium: 0.5
+    low: 0.3
+    auto_categorize_threshold: 0.8
+    
+  # Learning configuration
+  learning:
+    enabled: true
+    min_occurrences: 3
+    confidence_increment: 0.05
+    confidence_decrement: 0.02
+    max_confidence: 0.95
+    min_confidence: 0.1
+    pattern_ttl_days: 90
+    
+  # Performance settings
+  performance:
+    batch_size: 100
+    parallel_workers: 4
+    timeout_seconds: 5
+    circuit_breaker_threshold: 5
+    circuit_breaker_timeout: 60
+    
+  # Monitoring configuration
+  monitoring:
+    enabled: false
+    prefix: categorization
+    statsd_host: localhost
+    statsd_port: 8125
+    log_level: info
+    structured_logging: false
+    
+  # Alert thresholds
+  alerts:
+    error_rate_threshold: 0.1
+    success_rate_threshold: 0.7
+    response_time_p95_ms: 500
+    cache_hit_rate_threshold: 0.5
+    pattern_count_minimum: 10
+
+development:
+  <<: *default
+  cache:
+    enabled: true
+    ttl_seconds: 1800
+    max_entries: 5000
+    redis_enabled: false
+  learning:
+    enabled: true
+    min_occurrences: 2
+  monitoring:
+    enabled: false
+    log_level: debug
+    structured_logging: false
+  performance:
+    batch_size: 50
+    parallel_workers: 2
+
+test:
+  <<: *default
+  cache:
+    enabled: false
+    ttl_seconds: 60
+    max_entries: 100
+  learning:
+    enabled: false
+  monitoring:
+    enabled: false
+    log_level: error
+  performance:
+    batch_size: 10
+    parallel_workers: 1
+    timeout_seconds: 1
+
+production:
+  <<: *default
+  cache:
+    enabled: true
+    ttl_seconds: 7200
+    max_entries: 50000
+    redis_enabled: true
+    redis_url: <%= ENV.fetch('REDIS_URL', 'redis://localhost:6379/1') %>
+    
+  matching:
+    fuzzy_enabled: true
+    fuzzy_threshold: 0.88
+    min_confidence: 0.4
+    boost_exact_match: 1.6
+    boost_pattern_match: 1.4
+    boost_fuzzy_match: 1.2
+    
+  confidence:
+    very_high: 0.92
+    high: 0.75
+    medium: 0.55
+    low: 0.35
+    auto_categorize_threshold: 0.85
+    
+  learning:
+    enabled: true
+    min_occurrences: 5
+    confidence_increment: 0.03
+    confidence_decrement: 0.01
+    max_confidence: 0.98
+    min_confidence: 0.15
+    pattern_ttl_days: 180
+    
+  performance:
+    batch_size: 200
+    parallel_workers: <%= ENV.fetch('CATEGORIZATION_WORKERS', 8) %>
+    timeout_seconds: 10
+    circuit_breaker_threshold: 10
+    circuit_breaker_timeout: 120
+    
+  monitoring:
+    enabled: true
+    prefix: <%= ENV.fetch('CATEGORIZATION_METRICS_PREFIX', 'prod.categorization') %>
+    statsd_host: <%= ENV.fetch('STATSD_HOST', 'localhost') %>
+    statsd_port: <%= ENV.fetch('STATSD_PORT', 8125) %>
+    log_level: <%= ENV.fetch('CATEGORIZATION_LOG_LEVEL', 'info') %>
+    structured_logging: true
+    
+  alerts:
+    error_rate_threshold: 0.05
+    success_rate_threshold: 0.8
+    response_time_p95_ms: 300
+    cache_hit_rate_threshold: 0.6
+    pattern_count_minimum: 50

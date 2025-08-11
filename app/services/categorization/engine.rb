@@ -85,6 +85,14 @@ module Categorization
   # Performance target: <10ms per categorization with bounded resource usage
   class Engine
     include ActiveSupport::Benchmarkable
+    
+    # Include monitoring capabilities if available
+    begin
+      require_relative "monitoring/engine_integration"
+      include Monitoring::EngineIntegration
+    rescue LoadError
+      # Monitoring integration not available, continue without it
+    end
 
     # Performance configuration
     PERFORMANCE_TARGET_MS = 10.0

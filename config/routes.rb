@@ -14,6 +14,12 @@ Rails.application.routes.draw do
         get :expense_summary
       end
     end
+
+    # Health check endpoints for monitoring and Kubernetes probes
+    get "health", to: "health#index"
+    get "health/ready", to: "health#ready"
+    get "health/live", to: "health#live"
+    get "health/metrics", to: "health#metrics"
   end
 
   # Web interface routes

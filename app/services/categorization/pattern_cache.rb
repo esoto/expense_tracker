@@ -239,6 +239,19 @@ module Categorization
       @metrics_collector.hit_rate
     end
 
+    # Get cache statistics (alias for metrics for compatibility)
+    def stats
+      metrics_data = metrics
+      {
+        entries: metrics_data[:memory_cache_entries] || 0,
+        memory_bytes: (metrics_data[:memory_cache_entries] || 0) * 1024, # Rough estimate
+        hits: metrics_data.dig(:hits, :total) || 0,
+        misses: metrics_data[:misses] || 0,
+        evictions: metrics_data[:evictions] || 0,
+        hit_rate: (hit_rate / 100.0) # Convert percentage to decimal
+      }
+    end
+
     # Preload patterns for a collection of expenses
     def preload_for_expenses(expenses)
       return if expenses.blank?

@@ -82,4 +82,30 @@ module BudgetsHelper
       "monthly"
     end
   end
+
+  # Returns period options for select dropdowns
+  def budget_period_options
+    [
+      [ "Diario", "daily" ],
+      [ "Semanal", "weekly" ],
+      [ "Mensual", "monthly" ],
+      [ "Anual", "yearly" ]
+    ]
+  end
+
+  # Returns currency options for select dropdowns
+  def budget_currency_options
+    [
+      [ "Colones (₡)", "CRC" ],
+      [ "Dólares ($)", "USD" ],
+      [ "Euros (€)", "EUR" ]
+    ]
+  end
+
+  # Returns category options for select dropdowns including general option
+  def budget_category_options(categories, include_general: true)
+    options = []
+    options << [ "General (todas las categorías)", nil ] if include_general
+    options + categories.map { |c| [ c.name, c.id ] }
+  end
 end

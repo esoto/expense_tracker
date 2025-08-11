@@ -231,7 +231,7 @@
          data-dashboard-card-navigation-date-from-value="<%= @total_metrics[:date_range].first %>"
          data-dashboard-card-navigation-date-to-value="<%= @total_metrics[:date_range].last %>"
          data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
-      
+
       <div class="flex items-start justify-between mb-4">
         <div>
           <h3 class="text-lg font-medium text-teal-100 mb-2">TOTAL DE GASTOS</h3>
@@ -246,7 +246,7 @@
           </svg>
         </div>
       </div>
-      
+
       <!-- Trend Indicator with Animation -->
       <div class="flex items-center justify-between mt-6">
         <div data-animated-metric-target="trend" class="flex items-center">
@@ -263,11 +263,11 @@
           <% end %>
           <span class="text-teal-200 text-sm ml-2">vs mes anterior</span>
         </div>
-        
+
         <!-- Mini Sparkline -->
         <div data-animated-metric-target="sparkline" class="opacity-60"></div>
       </div>
-      
+
       <!-- Budget Progress for Year -->
       <% if @total_metrics[:budgets] && @total_metrics[:budgets][:has_budget] && @total_metrics[:budgets][:general_budget] %>
         <% budget = @total_metrics[:budgets][:general_budget] %>
@@ -293,7 +293,7 @@
           </div>
         </div>
       <% end %>
-      
+
       <!-- Additional Stats -->
       <div class="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-white/20">
         <div>
@@ -310,7 +310,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Secondary Metrics Cards - Regular Size -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <!-- Este Mes Card with Tooltip, Budget and Navigation -->
@@ -349,15 +349,15 @@
           <p class="text-xs text-slate-500 mt-2">
             <%= @month_metrics[:metrics][:transaction_count] %> transacciones
           </p>
-          
+
           <!-- Budget Progress -->
-          <%= render 'shared/budget_progress', 
+          <%= render 'shared/budget_progress',
               budget_data: @month_metrics[:budgets],
               metric_amount: @month_metrics[:metrics][:total_amount],
               period_label: 'Este Mes' %>
         </div>
       </div>
-      
+
       <!-- Esta Semana Card with Tooltip, Budget and Navigation -->
       <div id="week-metric-card" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative"
            role="button"
@@ -394,15 +394,15 @@
           <p class="text-xs text-slate-500 mt-2">
             <%= @week_metrics[:metrics][:transaction_count] %> transacciones
           </p>
-          
+
           <!-- Budget Progress -->
-          <%= render 'shared/budget_progress', 
+          <%= render 'shared/budget_progress',
               budget_data: @week_metrics[:budgets],
               metric_amount: @week_metrics[:metrics][:total_amount],
               period_label: 'Esta Semana' %>
         </div>
       </div>
-      
+
       <!-- Hoy Card with Tooltip, Budget and Navigation -->
       <div id="day-metric-card" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative"
            role="button"
@@ -439,9 +439,9 @@
           <p class="text-xs text-slate-500 mt-2">
             <%= @day_metrics[:metrics][:transaction_count] %> transacciones
           </p>
-          
+
           <!-- Budget Progress -->
-          <%= render 'shared/budget_progress', 
+          <%= render 'shared/budget_progress',
               budget_data: @day_metrics[:budgets],
               metric_amount: @day_metrics[:metrics][:total_amount],
               period_label: 'Hoy' %>

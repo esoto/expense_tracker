@@ -3,6 +3,11 @@ class Category < ApplicationRecord
   belongs_to :parent, class_name: "Category", optional: true
   has_many :children, class_name: "Category", foreign_key: "parent_id", dependent: :nullify
   has_many :expenses, dependent: :nullify
+  has_many :categorization_patterns, dependent: :destroy
+  has_many :composite_patterns, dependent: :destroy
+  has_many :pattern_feedbacks, dependent: :destroy
+  has_many :pattern_learning_events, dependent: :destroy
+  has_many :user_category_preferences, dependent: :destroy
 
   # Validations
   validates :name, presence: true, length: { maximum: 255 }
@@ -25,6 +30,11 @@ class Category < ApplicationRecord
   def full_name
     return name if root?
     "#{parent.name} > #{name}"
+  end
+
+  # Check if this is a user-specific category (placeholder for future implementation)
+  def user_specific?
+    false # Will be implemented when user-specific categories are added
   end
 
   private

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_09_014004) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_08_221245) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -73,6 +73,27 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_09_014004) do
     t.index ["category_id"], name: "index_categorization_patterns_on_category_id"
     t.index ["pattern_type", "pattern_value"], name: "idx_on_pattern_type_pattern_value_fad6f38255"
     t.index ["pattern_value"], name: "index_categorization_patterns_on_pattern_value", opclass: :gin_trgm_ops, using: :gin
+  end
+
+  create_table "composite_patterns", force: :cascade do |t|
+    t.bigint "category_id", null: false
+    t.string "name", null: false
+    t.string "operator", null: false
+    t.jsonb "pattern_ids", default: []
+    t.jsonb "conditions", default: {}
+    t.float "confidence_weight", default: 1.5
+    t.integer "usage_count", default: 0
+    t.integer "success_count", default: 0
+    t.float "success_rate", default: 0.0
+    t.boolean "active", default: true
+    t.boolean "user_created", default: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["category_id", "active"], name: "index_composite_patterns_on_category_id_and_active"
+    t.index ["category_id"], name: "index_composite_patterns_on_category_id"
+    t.index ["name"], name: "index_composite_patterns_on_name"
+    t.index ["operator"], name: "index_composite_patterns_on_operator"
+    t.index ["pattern_ids"], name: "index_composite_patterns_on_pattern_ids", using: :gin
   end
 
   create_table "conflict_resolutions", force: :cascade do |t|
@@ -475,6 +496,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_09_014004) do
 
   add_foreign_key "categories", "categories", column: "parent_id"
   add_foreign_key "categorization_patterns", "categories"
+  add_foreign_key "composite_patterns", "categories"
   add_foreign_key "conflict_resolutions", "conflict_resolutions", column: "undone_by_resolution_id"
   add_foreign_key "conflict_resolutions", "sync_conflicts"
   add_foreign_key "expenses", "categories"

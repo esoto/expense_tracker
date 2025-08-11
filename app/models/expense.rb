@@ -2,6 +2,8 @@ class Expense < ApplicationRecord
   # Associations
   belongs_to :email_account
   belongs_to :category, optional: true
+  has_many :pattern_feedbacks, dependent: :destroy
+  has_many :pattern_learning_events, dependent: :destroy
 
   # Enums
   enum :currency, { crc: 0, usd: 1, eur: 2 }

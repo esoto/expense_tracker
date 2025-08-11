@@ -53,7 +53,7 @@ class CompositePattern < ApplicationRecord
   # Get the component patterns
   def component_patterns
     return [] if pattern_ids.blank?
-    
+
     CategorizationPattern.where(id: pattern_ids)
   end
 
@@ -92,13 +92,13 @@ class CompositePattern < ApplicationRecord
 
     # Composite patterns should have higher confidence if all components are high confidence
     component_confidences = component_patterns.map(&:effective_confidence)
-    
+
     if component_confidences.any?
       avg_component_confidence = component_confidences.sum / component_confidences.size
-      
+
       # Weight composite confidence by component confidence average
       adjusted_confidence = base_confidence * (0.7 + (avg_component_confidence * 0.3))
-      
+
       # Further adjust based on success rate if we have enough data
       if usage_count >= 5
         adjusted_confidence * (0.5 + (success_rate * 0.5))
@@ -121,18 +121,18 @@ class CompositePattern < ApplicationRecord
   # Add a pattern to this composite
   def add_pattern(pattern_or_id)
     pattern_id = pattern_or_id.is_a?(CategorizationPattern) ? pattern_or_id.id : pattern_or_id
-    
+
     unless pattern_ids.include?(pattern_id)
-      update!(pattern_ids: pattern_ids + [pattern_id])
+      update!(pattern_ids: pattern_ids + [ pattern_id ])
     end
   end
 
   # Remove a pattern from this composite
   def remove_pattern(pattern_or_id)
     pattern_id = pattern_or_id.is_a?(CategorizationPattern) ? pattern_or_id.id : pattern_or_id
-    
+
     if pattern_ids.include?(pattern_id)
-      update!(pattern_ids: pattern_ids - [pattern_id])
+      update!(pattern_ids: pattern_ids - [ pattern_id ])
     end
   end
 
@@ -159,19 +159,28 @@ class CompositePattern < ApplicationRecord
   def calculate_success_rate
     self.success_rate = if usage_count.positive?
                           success_count.to_f / usage_count
-                        else
+    else
                           0.0
-                        end
+    end
   end
 
   def pattern_ids_exist
     return if pattern_ids.blank?
 
-    existing_ids = CategorizationPattern.where(id: pattern_ids).pluck(:id)
+    patterns = CategorizationPattern.where(id: pattern_ids)
+    existing_ids = patterns.pluck(:id)
     missing_ids = pattern_ids - existing_ids
 
     if missing_ids.any?
       errors.add(:pattern_ids, "contains non-existent pattern IDs: #{missing_ids.join(', ')}")
+    end
+
+    # Ensure all patterns belong to the same category
+    if patterns.any? && category_id
+      different_category_ids = patterns.where.not(category_id: category_id).pluck(:id)
+      if different_category_ids.any?
+        errors.add(:pattern_ids, "contains patterns from different categories: #{different_category_ids.join(', ')}")
+      end
     end
   end
 
@@ -210,7 +219,7 @@ class CompositePattern < ApplicationRecord
     if conditions["min_amount"] && conditions["max_amount"]
       min_val = conditions["min_amount"].to_f
       max_val = conditions["max_amount"].to_f
-      
+
       if min_val >= max_val
         errors.add(:conditions, "min_amount must be less than max_amount")
       end
@@ -225,14 +234,14 @@ class CompositePattern < ApplicationRecord
     valid_days = %w[monday tuesday wednesday thursday friday saturday sunday]
     days = conditions["days_of_week"]
 
-    unless days.is_a?(Array) && days.all? { |day| valid_days.include?(day.downcase) }
+    unless days.is_a?(Array) && days.all? { |day| day.is_a?(String) && valid_days.include?(day.downcase) }
       errors.add(:conditions, "days_of_week must be an array of valid day names")
     end
   end
 
   def validate_time_ranges
     ranges = conditions["time_ranges"]
-    
+
     unless ranges.is_a?(Array)
       errors.add(:conditions, "time_ranges must be an array")
       return
@@ -275,11 +284,11 @@ class CompositePattern < ApplicationRecord
     # Check time range conditions
     if conditions["time_ranges"] && expense.transaction_date
       time_str = expense.transaction_date.strftime("%H:%M")
-      
+
       in_range = conditions["time_ranges"].any? do |range|
         time_in_range?(time_str, range["start"], range["end"])
       end
-      
+
       return false unless in_range
     end
 

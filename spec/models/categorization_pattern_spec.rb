@@ -27,7 +27,7 @@ RSpec.describe CategorizationPattern, type: :model do
       it "validates amount_range format" do
         pattern = described_class.new(category: category, pattern_type: "amount_range", pattern_value: "invalid")
         expect(pattern).not_to be_valid
-        expect(pattern.errors[:pattern_value]).to include("must be in format 'min-max' (e.g., '10.00-50.00')")
+        expect(pattern.errors[:pattern_value]).to include("must be in format 'min-max' (e.g., '10.00-50.00' or '-100--50')")
         
         pattern.pattern_value = "10.00-50.00"
         expect(pattern).to be_valid
@@ -74,6 +74,57 @@ RSpec.describe CategorizationPattern, type: :model do
       expect(pattern).not_to be_valid
       expect(pattern.errors[:success_count]).to include("cannot be greater than usage count")
     end
+    
+    it "validates pattern uniqueness within category and type" do
+      described_class.create!(
+        category: category,
+        pattern_type: "merchant",
+        pattern_value: "unique_test"
+      )
+      
+      duplicate = described_class.new(
+        category: category,
+        pattern_type: "merchant",
+        pattern_value: "unique_test"
+      )
+      
+      expect(duplicate).not_to be_valid
+      expect(duplicate.errors[:pattern_value]).to include("already exists for this category and pattern type")
+    end
+    
+    it "allows same pattern value for different categories" do
+      other_category = Category.create!(name: "Entertainment")
+      
+      described_class.create!(
+        category: category,
+        pattern_type: "merchant",
+        pattern_value: "same_value"
+      )
+      
+      different_category_pattern = described_class.new(
+        category: other_category,
+        pattern_type: "merchant",
+        pattern_value: "same_value"
+      )
+      
+      expect(different_category_pattern).to be_valid
+    end
+    
+    it "allows same pattern value for different types" do
+      described_class.create!(
+        category: category,
+        pattern_type: "merchant",
+        pattern_value: "same_value"
+      )
+      
+      different_type_pattern = described_class.new(
+        category: category,
+        pattern_type: "keyword",
+        pattern_value: "same_value"
+      )
+      
+      expect(different_type_pattern).to be_valid
+    end
   end
 
   describe "scopes" do
@@ -118,6 +169,17 @@ RSpec.describe CategorizationPattern, type: :model do
 
   describe "#matches?" do
     let(:pattern) { described_class.new(category: category) }
+    let(:email_account) { EmailAccount.create!(email: "test@example.com", provider: "gmail", bank_name: "Test Bank") }
+    let(:expense) do
+      Expense.new(
+        email_account: email_account,
+        merchant_name: "Test Merchant",
+        description: "Test Description",
+        amount: 25.00,
+        transaction_date: DateTime.now,
+        category: category
+      )
+    end
     
     context "with merchant/keyword/description pattern" do
       before do
@@ -137,6 +199,23 @@ RSpec.describe CategorizationPattern, type: :model do
       it "returns false for blank text" do
         expect(pattern.matches?("")).to be false
         expect(pattern.matches?(nil)).to be false
+      end
+      
+      it "matches expense object with merchant name" do
+        expense.merchant_name = "Starbucks Coffee"
+        expect(pattern.matches?(expense)).to be true
+      end
+      
+      it "matches hash with merchant_name key" do
+        expect(pattern.matches?(merchant_name: "Starbucks")).to be true
+        expect(pattern.matches?(merchant_name: "McDonald's")).to be false
+      end
+      
+      it "uses description when pattern type is description" do
+        pattern.pattern_type = "description"
+        pattern.pattern_value = "coffee"
+        expense.description = "Morning coffee"
+        expect(pattern.matches?(expense)).to be true
       end
     end
     
@@ -283,6 +362,117 @@ RSpec.describe CategorizationPattern, type: :model do
       pattern.check_and_deactivate_if_poor_performance
       
       expect(pattern.reload.active).to be true
+    end
+    
+    it "does not deactivate user-created patterns" do
+      pattern.update!(usage_count: 25, success_rate: 0.2, user_created: true)
+      pattern.check_and_deactivate_if_poor_performance
+      
+      expect(pattern.reload.active).to be true
+    end
+  end
+  
+  describe "metadata handling" do
+    it "initializes metadata as empty hash if nil" do
+      pattern = described_class.new(
+        category: category,
+        pattern_type: "merchant",
+        pattern_value: "test"
+      )
+      expect(pattern.metadata).to eq({})
+    end
+    
+    it "preserves existing metadata" do
+      pattern = described_class.create!(
+        category: category,
+        pattern_type: "merchant",
+        pattern_value: "test",
+        metadata: { custom: "data" }
+      )
+      expect(pattern.metadata).to eq({ "custom" => "data" })
+    end
+  end
+  
+  describe "additional scopes" do
+    before do
+      # Create patterns with various characteristics
+      described_class.create!(
+        category: category,
+        pattern_type: "merchant",
+        pattern_value: "high_conf",
+        confidence_weight: 3.0
+      )
+      
+      described_class.create!(
+        category: category,
+        pattern_type: "keyword",
+        pattern_value: "low_conf",
+        confidence_weight: 0.5
+      )
+      
+      frequently_used = described_class.create!(
+        category: category,
+        pattern_type: "regex",
+        pattern_value: "frequent"
+      )
+      frequently_used.update_columns(usage_count: 15)
+    end
+    
+    it "filters high confidence patterns" do
+      high_conf_patterns = described_class.high_confidence
+      expect(high_conf_patterns.count).to eq(1)
+      expect(high_conf_patterns.first.pattern_value).to eq("high_conf")
+    end
+    
+    it "filters frequently used patterns" do
+      frequent_patterns = described_class.frequently_used
+      expect(frequent_patterns.count).to eq(1)
+      expect(frequent_patterns.first.pattern_value).to eq("frequent")
+    end
+    
+    it "filters by pattern type" do
+      merchant_patterns = described_class.by_type("merchant")
+      expect(merchant_patterns.map(&:pattern_value)).to include("high_conf")
+      expect(merchant_patterns.map(&:pattern_value)).not_to include("low_conf", "frequent")
+    end
+    
+    it "orders by success rate and usage count" do
+      p1 = described_class.create!(
+        category: category,
+        pattern_type: "merchant",
+        pattern_value: "order1"
+      )
+      p1.update_columns(success_rate: 0.9, usage_count: 10)
+      
+      p2 = described_class.create!(
+        category: category,
+        pattern_type: "merchant",
+        pattern_value: "order2"
+      )
+      p2.update_columns(success_rate: 0.9, usage_count: 20)
+      
+      p3 = described_class.create!(
+        category: category,
+        pattern_type: "merchant",
+        pattern_value: "order3"
+      )
+      p3.update_columns(success_rate: 0.95, usage_count: 5)
+      
+      ordered = described_class.ordered_by_success
+      expect(ordered.first).to eq(p3) # Highest success rate
+      expect(ordered.second).to eq(p2) # Same success rate as p1 but more usage
+    end
+  end
+  
+  describe "constants" do
+    it "defines pattern types" do
+      expect(described_class::PATTERN_TYPES).to eq(%w[merchant keyword description amount_range regex time])
+    end
+    
+    it "defines confidence weight constants" do
+      expect(described_class::DEFAULT_CONFIDENCE_WEIGHT).to eq(1.0)
+      expect(described_class::MIN_CONFIDENCE_WEIGHT).to eq(0.1)
+      expect(described_class::MAX_CONFIDENCE_WEIGHT).to eq(5.0)
     end
   end
 end

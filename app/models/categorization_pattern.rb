@@ -21,19 +21,23 @@ class CategorizationPattern < ApplicationRecord
   # Validations
   validates :pattern_type, presence: true, inclusion: { in: PATTERN_TYPES }
   validates :pattern_value, presence: true
-  validates :confidence_weight, 
-            numericality: { 
+  validates :pattern_value, uniqueness: {
+    scope: [ :category_id, :pattern_type ],
+    message: "already exists for this category and pattern type"
+  }
+  validates :confidence_weight,
+            numericality: {
               greater_than_or_equal_to: MIN_CONFIDENCE_WEIGHT,
-              less_than_or_equal_to: MAX_CONFIDENCE_WEIGHT 
+              less_than_or_equal_to: MAX_CONFIDENCE_WEIGHT
             }
   validates :usage_count, numericality: { greater_than_or_equal_to: 0 }
   validates :success_count, numericality: { greater_than_or_equal_to: 0 }
-  validates :success_rate, 
-            numericality: { 
-              greater_than_or_equal_to: 0.0, 
-              less_than_or_equal_to: 1.0 
+  validates :success_rate,
+            numericality: {
+              greater_than_or_equal_to: 0.0,
+              less_than_or_equal_to: 1.0
             }
-  
+
   validate :validate_pattern_value_format
   validate :success_count_not_greater_than_usage_count
 
@@ -51,8 +55,13 @@ class CategorizationPattern < ApplicationRecord
   # Callbacks
   before_save :calculate_success_rate
 
+  # Set default metadata if nil
+  after_initialize do
+    self.metadata ||= {} if has_attribute?(:metadata)
+  end
+
   # Public Methods
-  
+
   # Record usage of this pattern and whether it was successful
   def record_usage(was_successful)
     self.usage_count += 1
@@ -71,18 +80,18 @@ class CategorizationPattern < ApplicationRecord
       # It's an expense object
       expense = text_or_options
       text = case pattern_type
-             when "merchant"
+      when "merchant"
                expense.merchant_name
-             when "description", "keyword", "regex"
+      when "description", "keyword", "regex"
                expense.description || expense.merchant_name
-             else
+      else
                nil
-             end
+      end
     else
       text = text_or_options
       expense = nil
     end
-    
+
     case pattern_type
     when "merchant", "keyword", "description"
       return false if text.blank?
@@ -106,7 +115,7 @@ class CategorizationPattern < ApplicationRecord
   # Get the effective confidence for this pattern
   def effective_confidence
     base_confidence = confidence_weight
-    
+
     # Adjust based on success rate if we have enough data
     if usage_count >= 5
       base_confidence * (0.5 + (success_rate * 0.5))
@@ -120,7 +129,7 @@ class CategorizationPattern < ApplicationRecord
     return unless usage_count >= 20
     return unless success_rate < 0.3
     return if user_created # Don't deactivate user-created patterns
-    
+
     update!(active: false)
   end
 
@@ -129,9 +138,9 @@ class CategorizationPattern < ApplicationRecord
   def calculate_success_rate
     self.success_rate = if usage_count.positive?
                           success_count.to_f / usage_count
-                        else
+    else
                           0.0
-                        end
+    end
   end
 
   def validate_pattern_value_format
@@ -147,22 +156,41 @@ class CategorizationPattern < ApplicationRecord
 
   def validate_amount_range_format
     return if pattern_value.blank?
-    
-    unless pattern_value.match?(/\A\d+(\.\d{1,2})?-\d+(\.\d{1,2})?\z/)
-      errors.add(:pattern_value, "must be in format 'min-max' (e.g., '10.00-50.00')")
+
+    # Updated regex to support negative amounts
+    unless pattern_value.match?(/\A-?\d+(\.\d{1,2})?--?\d+(\.\d{1,2})?\z/)
+      errors.add(:pattern_value, "must be in format 'min-max' (e.g., '10.00-50.00' or '-100--50')")
     end
-    
+
     if pattern_value.include?("-")
-      min_val, max_val = pattern_value.split("-").map(&:to_f)
-      if min_val >= max_val
-        errors.add(:pattern_value, "minimum must be less than maximum")
+      # Handle negative numbers by splitting carefully
+      parts = pattern_value.split(/(?<=\d)-(?=-?\d)/)
+      if parts.size == 2
+        min_val, max_val = parts.map(&:to_f)
+        if min_val >= max_val
+          errors.add(:pattern_value, "minimum must be less than maximum")
+        end
       end
     end
   end
 
   def validate_regex_format
     return if pattern_value.blank?
-    
+
+    # Check for potential ReDoS patterns - be more specific about what's dangerous
+    # Flag patterns with nested quantifiers that can cause exponential backtracking
+    dangerous_patterns = [
+      /\([^)]*[+*]\)[+*]/,     # (a+)+ or (a*)*
+      /\[[^\]]*[+*]\][+*]/,    # [a+]+ or [a*]*
+      /(\w+[+*])+[+*]/,        # a++ or a**
+      /\(.+[+*].+\)[+*]/       # Complex nested quantifiers
+    ]
+
+    if dangerous_patterns.any? { |pattern| pattern_value.match?(pattern) }
+      errors.add(:pattern_value, "contains potentially dangerous regex pattern (ReDoS vulnerability)")
+      return
+    end
+
     Regexp.new(pattern_value)
   rescue RegexpError
     errors.add(:pattern_value, "must be a valid regular expression")
@@ -170,11 +198,11 @@ class CategorizationPattern < ApplicationRecord
 
   def validate_time_format
     return if pattern_value.blank?
-    
+
     # Accept formats like "morning", "evening", "weekend", "weekday", or specific hours "09:00-17:00"
     valid_formats = %w[morning afternoon evening night weekend weekday]
     time_range_format = /\A\d{1,2}:\d{2}-\d{1,2}:\d{2}\z/
-    
+
     unless valid_formats.include?(pattern_value) || pattern_value.match?(time_range_format)
       errors.add(:pattern_value, "must be a valid time pattern")
     end
@@ -182,14 +210,14 @@ class CategorizationPattern < ApplicationRecord
 
   def success_count_not_greater_than_usage_count
     return if success_count <= usage_count
-    
+
     errors.add(:success_count, "cannot be greater than usage count")
   end
 
   def matches_text_pattern?(text)
     normalized_text = text.downcase.strip
     normalized_pattern = pattern_value.downcase.strip
-    
+
     # Simple substring matching for now
     normalized_text.include?(normalized_pattern)
   end
@@ -202,20 +230,23 @@ class CategorizationPattern < ApplicationRecord
   end
 
   def matches_amount_range?(value)
-    return false unless value.is_a?(Numeric) || value.to_s.match?(/\A\d+(\.\d+)?\z/)
-    
+    return false unless value.is_a?(Numeric) || value.to_s.match?(/\A-?\d+(\.\d+)?\z/)
+
     amount = value.to_f
-    min_val, max_val = pattern_value.split("-").map(&:to_f)
-    
+    # Handle negative numbers by splitting carefully
+    parts = pattern_value.split(/(?<=\d)-(?=-?\d)/)
+    return false unless parts.size == 2
+
+    min_val, max_val = parts.map(&:to_f)
     amount >= min_val && amount <= max_val
   end
 
   def matches_time_pattern?(datetime_or_string)
     return false if datetime_or_string.blank?
-    
+
     datetime = parse_datetime(datetime_or_string)
     return false unless datetime
-    
+
     case pattern_value
     when "morning"
       datetime.hour.between?(6, 11)
@@ -236,10 +267,24 @@ class CategorizationPattern < ApplicationRecord
 
   def matches_time_range?(datetime)
     return false unless pattern_value.include?("-")
-    
-    start_time, end_time = pattern_value.split("-").map { |t| Time.parse(t).hour }
-    datetime.hour.between?(start_time, end_time)
-  rescue ArgumentError
+
+    start_time_str, end_time_str = pattern_value.split("-")
+    start_hour, start_min = start_time_str.split(":").map(&:to_i)
+    end_hour, end_min = end_time_str.split(":").map(&:to_i)
+
+    current_minutes = datetime.hour * 60 + datetime.min
+    start_minutes = start_hour * 60 + start_min
+    end_minutes = end_hour * 60 + end_min
+
+    # Handle crossing midnight
+    if end_minutes < start_minutes
+      # Time range crosses midnight
+      current_minutes >= start_minutes || current_minutes <= end_minutes
+    else
+      # Normal time range
+      current_minutes.between?(start_minutes, end_minutes)
+    end
+  rescue ArgumentError, NoMethodError
     false
   end
 

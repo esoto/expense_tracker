@@ -113,7 +113,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
     t.index ["pattern_ids"], name: "index_composite_patterns_on_pattern_ids", using: :gin
     t.index ["success_rate", "usage_count"], name: "idx_composite_performance", where: "(active = true)"
   end
-
   create_table "conflict_resolutions", force: :cascade do |t|
     t.bigint "sync_conflict_id", null: false
     t.string "action", null: false
@@ -230,7 +229,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
     t.index ["normalized_name"], name: "index_merchant_aliases_on_normalized_name", opclass: :gin_trgm_ops, using: :gin
     t.index ["raw_name"], name: "index_merchant_aliases_on_raw_name"
   end
-
   create_table "parsing_rules", force: :cascade do |t|
     t.string "bank_name", null: false
     t.text "email_pattern"

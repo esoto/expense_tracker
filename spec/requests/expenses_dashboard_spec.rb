@@ -17,7 +17,7 @@ RSpec.describe "Expenses Dashboard", type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.body).to include("Dashboard de Gastos")
-      expect(response.body).to include("Estado de Sincronización")
+      expect(response.body).to include("Sincronización de Correos")
       expect(response.body).to include("No hay sincronización activa")
     end
 
@@ -42,9 +42,9 @@ RSpec.describe "Expenses Dashboard", type: :request do
       get dashboard_expenses_path
 
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("Progreso general")
+      expect(response.body).to include("Progreso General")
       expect(response.body).to include("45%")
-      expect(response.body).to include("Correos procesados")
+      expect(response.body).to include("gastos detectados")
     end
   end
 end

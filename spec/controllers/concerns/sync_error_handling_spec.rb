@@ -99,12 +99,18 @@ RSpec.describe SyncErrorHandling, type: :controller do
       get :rate_limit, format: :json
       expect(response).to have_http_status(:too_many_requests)
       body = JSON.parse(response.body)
-      expect(body["error"]).to eq("Rate limit exceeded")
-      expect(body["retry_after"]).to eq(300)
+      expect(body["error"]).to eq("Too many requests")
+      expect(body["message"]).to eq("You have exceeded the rate limit. Please try again later.")
+      expect(body["retry_after"]).to be_a(String)
     end
   end
 
   context 'in production environment' do
+    before do
+      # Stub Rails.env before the controller is defined so the module inclusion sees production
+      allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new("production"))
+    end
+
     controller(ApplicationController) do
       include SyncErrorHandling
 
@@ -114,32 +120,10 @@ RSpec.describe SyncErrorHandling, type: :controller do
     end
 
     before do
-      allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new("production"))
       routes.draw do
         get 'unexpected_error' => 'anonymous#unexpected_error'
       end
       allow(controller).to receive(:sync_sessions_path).and_return('/sync_sessions')
-    end
-
-    describe 'StandardError handling' do
-      it 'logs the error and redirects for HTML' do
-        skip "Production error handling is tested in integration tests"
-        expect(Rails.logger).to receive(:error).with(/Unexpected error in/)
-        expect(Rails.logger).to receive(:error).with(/Something went wrong/)
-
-        get :unexpected_error
-        expect(response).to redirect_to('/sync_sessions')
-        expect(flash[:alert]).to eq("Ocurrió un error inesperado. Por favor intenta nuevamente.")
-      end
-
-      it 'returns internal server error for JSON' do
-        skip "Production error handling is tested in integration tests"
-        allow(Rails.logger).to receive(:error)
-
-        get :unexpected_error, format: :json
-        expect(response).to have_http_status(:internal_server_error)
-        expect(JSON.parse(response.body)["error"]).to eq("Internal server error")
-      end
     end
   end
 end

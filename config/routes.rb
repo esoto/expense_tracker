@@ -1,5 +1,22 @@
+require "sidekiq/web"
+
 Rails.application.routes.draw do
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
+
+  # Mount Sidekiq Web UI with authentication
+  # In production, you should implement proper authentication
+  if Rails.env.development?
+    mount Sidekiq::Web => "/sidekiq"
+  else
+    # Basic HTTP authentication for production
+    # You should replace this with your actual authentication system
+    Sidekiq::Web.use Rack::Auth::Basic do |username, password|
+      # Use ActiveSupport::SecurityUtils.secure_compare to prevent timing attacks
+      ActiveSupport::SecurityUtils.secure_compare(username, ENV.fetch("SIDEKIQ_WEB_USERNAME", "admin")) &&
+        ActiveSupport::SecurityUtils.secure_compare(password, ENV.fetch("SIDEKIQ_WEB_PASSWORD", "change_me_in_production"))
+    end
+    mount Sidekiq::Web => "/sidekiq"
+  end
 
   # Mount ActionCable for WebSocket connections
   mount ActionCable.server => "/cable"
@@ -20,6 +37,31 @@ Rails.application.routes.draw do
     get "health/ready", to: "health#ready"
     get "health/live", to: "health#live"
     get "health/metrics", to: "health#metrics"
+
+    # Sync session status polling endpoint
+    resources :sync_sessions, only: [] do
+      member do
+        get :status
+      end
+    end
+
+    # Client error reporting endpoint
+    resources :client_errors, only: [ :create ]
+
+    # Queue monitoring and management endpoints
+    resource :queue, only: [], controller: "queue" do
+      get :status
+      get :metrics
+      get :health
+      post :pause
+      post :resume
+      post :retry_all_failed
+
+      member do
+        post "jobs/:id/retry", action: :retry_job, as: :retry_job
+        post "jobs/:id/clear", action: :clear_job, as: :clear_job
+      end
+    end
   end
 
   # Web interface routes
@@ -40,6 +82,23 @@ Rails.application.routes.draw do
       get :status
     end
   end
+
+  resources :sync_conflicts do
+    member do
+      post :resolve
+      post :undo
+      post :preview_merge
+      get :row
+    end
+    collection do
+      post :bulk_resolve
+    end
+  end
+
+  # Performance monitoring dashboard
+  get "sync_performance", to: "sync_performance#index"
+  get "sync_performance/export", to: "sync_performance#export"
+  get "sync_performance/realtime", to: "sync_performance#realtime"
 
   resources :email_accounts
 

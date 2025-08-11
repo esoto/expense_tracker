@@ -1,7 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe ProcessEmailJob, type: :job do
-  let(:parsing_rule) { create(:parsing_rule, :bac) }
+  # Keep using create for tests that need real database records
+  let!(:parsing_rule) { create(:parsing_rule, :bac) }
   let(:email_account) { create(:email_account, :bac) }
   let(:email_data) do
     {
@@ -29,7 +30,7 @@ RSpec.describe ProcessEmailJob, type: :job do
   end
 
   before do
-    parsing_rule # Ensure parsing rule exists
+    # No need for mocking since we're using real records
   end
 
   describe '#perform' do

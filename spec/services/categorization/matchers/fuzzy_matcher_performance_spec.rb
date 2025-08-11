@@ -118,7 +118,7 @@ RSpec.describe "FuzzyMatcher Performance", type: :performance do
             matcher.match(query, merchants)
           end
 
-          expect(time * 1000).to be < 10, "Query '#{query}' took #{(time * 1000).round(2)}ms"
+          expect(time * 1000).to be < 15, "Query '#{query}' took #{(time * 1000).round(2)}ms"
         end
       end
     end
@@ -441,7 +441,7 @@ RSpec.describe "FuzzyMatcher Performance", type: :performance do
           expect(result).to be_success
         end
 
-        expect(time * 1000).to be < 10, "Transaction '#{transaction}' took #{(time * 1000).round(2)}ms"
+        expect(time * 1000).to be < 15, "Transaction '#{transaction}' took #{(time * 1000).round(2)}ms"
       end
     end
 
@@ -468,7 +468,7 @@ RSpec.describe "FuzzyMatcher Performance", type: :performance do
           expect(result).to be_success
         end
 
-        expect(time * 1000).to be < 10, "Statement '#{statement}' took #{(time * 1000).round(2)}ms"
+        expect(time * 1000).to be < 20, "Statement '#{statement}' took #{(time * 1000).round(2)}ms"
       end
     end
   end

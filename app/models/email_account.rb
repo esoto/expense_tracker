@@ -10,6 +10,7 @@ class EmailAccount < ApplicationRecord
   has_many :sync_sessions, through: :sync_session_accounts
   has_many :user_category_preferences, dependent: :destroy
   has_many :categories, through: :expenses
+  has_many :sync_metrics, dependent: :destroy
 
   # Validations
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }

@@ -1,0 +1,65 @@
+# Sidekiq 8.x configuration for ExpenseTracker broadcast reliability
+# This configuration ensures proper queue prioritization and processing
+# for ActionCable broadcast jobs with reliable message delivery.
+#
+# IMPORTANT: Concurrency must not exceed database pool size (RAILS_MAX_THREADS)
+# Default database pool is 5, so concurrency should be <= 5
+
+# Default configuration (can be overridden by environment variables)
+:concurrency: <%= ENV.fetch('SIDEKIQ_CONCURRENCY', ENV.fetch('RAILS_MAX_THREADS', 5).to_i).to_i %>
+:timeout: 25
+:max_retries: 3
+
+# Queue configuration with priorities
+# Higher priority queues are processed first
+:queues:
+  - critical
+  - high  
+  - default
+  - low
+
+# Redis configuration
+:redis:
+  url: <%= ENV.fetch('REDIS_URL', 'redis://localhost:6379/0') %>
+  network_timeout: 5
+  pool_timeout: 5
+
+# Queue weights for balanced processing
+# Critical and high priority queues get more processing power
+:queue_weights:
+  critical: 8
+  high: 4
+  default: 2
+  low: 1
+
+# Scheduler configuration for periodic cleanup jobs
+:scheduler:
+  broadcast_analytics_cleanup:
+    every: '1h'
+    class: BroadcastAnalyticsCleanupJob
+    
+  failed_broadcast_recovery:
+    every: '30m'
+    class: FailedBroadcastRecoveryJob
+
+# Dead job handling
+# Sidekiq 8.x uses :dead_max_jobs (removed :dead_timeout_in_seconds)
+:dead_max_jobs: <%= ENV.fetch('SIDEKIQ_DEAD_MAX_JOBS', 10000).to_i %>
+
+# Environment-specific settings
+# Concurrency is limited by database pool size to prevent connection errors
+:environments:
+  development:
+    :concurrency: <%= [ENV.fetch('RAILS_MAX_THREADS', 5).to_i, 5].min %>
+    :timeout: 10
+    
+  test:
+    :concurrency: 2
+    :timeout: 5
+    
+  production:
+    # Production should have RAILS_MAX_THREADS set appropriately
+    # Ensure database.yml pool matches this value
+    :concurrency: <%= ENV.fetch('SIDEKIQ_CONCURRENCY', ENV.fetch('RAILS_MAX_THREADS', 10).to_i).to_i %>
+    :timeout: 30
+    :max_retries: 5

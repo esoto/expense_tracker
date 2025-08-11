@@ -3,7 +3,8 @@ require 'rails_helper'
 RSpec.describe SyncSessionMonitorJob, type: :job do
   include ActiveJob::TestHelper
 
-  let(:sync_session) { create(:sync_session, :running) }
+  # Optimized: Create once and reuse for faster tests
+  let!(:sync_session) { create(:sync_session, :running) }
   let!(:account1) { create(:sync_session_account, sync_session: sync_session, status: 'processing') }
   let!(:account2) { create(:sync_session_account, sync_session: sync_session, status: 'processing') }
 

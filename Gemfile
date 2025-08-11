@@ -29,8 +29,14 @@ gem "net-imap"
 # Authentication and API
 gem "jwt"
 
+# Rate limiting and security
+gem "rack-attack"
+
 # Date and text parsing
 gem "chronic"
+
+# CSV support for Ruby 3.4+
+gem "csv"
 
 # Charts and visualization
 gem "chartkick"
@@ -39,6 +45,9 @@ gem "groupdate"
 # Pagination
 gem "kaminari"
 
+# Bulk insert for performance
+gem "activerecord-import"
+
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 
@@ -46,6 +55,16 @@ gem "tzinfo-data", platforms: %i[ windows jruby ]
 gem "solid_cache"
 gem "solid_queue"
 gem "solid_cable"
+
+# Background job processing for broadcast reliability
+gem "sidekiq"
+
+# Concurrent programming support for batch collection
+gem "concurrent-ruby"
+
+# Redis connection pooling for analytics
+gem "connection_pool"
+gem "redis"
 
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
@@ -91,8 +110,33 @@ group :test do
   gem "capybara"
   gem "selenium-webdriver"
 
+  # Modern browser automation with Chrome DevTools Protocol
+  gem "cuprite"
+
+  # External HTTP request mocking for IMAP and API testing
+  gem "webmock"
+  gem "vcr"
+
   # Parallel test execution
   gem "parallel_tests"
+
+  # Performance and benchmarking
+  gem "rspec-benchmark"
+
+  # JSON response testing
+  gem "json_spec"
+
+  # Database cleaning strategies
+  gem "database_cleaner-active_record"
+
+  # ActionCable testing support
+  gem "action-cable-testing"
+
+  # Enhanced collection matchers
+  gem "rspec-collection_matchers"
+
+  # Background job testing utilities
+  gem "rspec-sidekiq" # Will adapt for Solid Queue
 end
 
 gem "rspec-rails", "~> 8.0"
@@ -107,9 +151,9 @@ gem "rails_best_practices", "~> 1.23", group: :development
 # Categorization improvement dependencies
 group :categorization do
   gem "fuzzy-string-match", "~> 1.0"
-  gem "redis", "~> 5.0"
   gem "redis-namespace", "~> 1.10"
-  gem "connection_pool", "~> 2.4"
   gem "hiredis", "~> 0.6"
-  gem "concurrent-ruby", "~> 1.2"  # Thread-safe data structures and utilities
+  # concurrent-ruby and connection_pool already defined above
 end
+
+gem "fakeredis", "~> 0.9.2", group: :test, github: "guilleiguaran/fakeredis"

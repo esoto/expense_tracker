@@ -1,6 +1,7 @@
 require_relative "boot"
 
 require "rails/all"
+require "activerecord-import"
 
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
@@ -11,10 +12,20 @@ module ExpenseTracker
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.0
 
+    # Workaround for Rails 8.0 + Ruby 3.4 FrozenError in CI environments
+    # This prevents the autoloader from trying to modify frozen arrays
+    if Rails.env.test?
+      config.enable_reloading = false
+      config.eager_load = false
+    end
+
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w[assets tasks])
+
+    # Use Solid Queue as the Active Job queue adapter
+    config.active_job.queue_adapter = :solid_queue
 
     # Configuration for the application, engines, and railties goes here.
     #
@@ -23,5 +34,10 @@ module ExpenseTracker
     #
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
+
+    # Localization settings
+    config.i18n.default_locale = :es
+    config.i18n.available_locales = [ :es, :en ]
+    config.i18n.fallbacks = [ :en ]
   end
 end

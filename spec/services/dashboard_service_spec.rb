@@ -171,6 +171,7 @@ RSpec.describe DashboardService do
       before do
         Expense.destroy_all
         EmailAccount.destroy_all
+        DashboardService.clear_cache  # Clear cache after destroying data
       end
 
       it 'returns zero values when no expenses exist' do

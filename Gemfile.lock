@@ -8,6 +8,9 @@ GIT
 GEM
   remote: https://rubygems.org/
   specs:
+    RubyInline (3.14.2)
+      ZenTest (~> 4.3)
+    ZenTest (4.12.2)
     action-cable-testing (0.6.1)
       actioncable (>= 5.0)
     actioncable (8.0.2)
@@ -90,6 +93,7 @@ GEM
     bcrypt (3.1.20)
     bcrypt_pbkdf (1.1.1)
     benchmark (0.4.1)
+    benchmark-ips (2.14.0)
     benchmark-malloc (0.2.0)
     benchmark-perf (0.6.0)
     benchmark-trend (0.4.0)
@@ -155,11 +159,14 @@ GEM
     fugit (1.11.1)
       et-orbi (~> 1, >= 1.2.11)
       raabro (~> 1.4)
+    fuzzy-string-match (1.0.1)
+      RubyInline (>= 3.8.6)
     globalid (1.2.1)
       activesupport (>= 6.1)
     groupdate (6.7.0)
       activesupport (>= 7.1)
     hashdiff (1.2.0)
+    hiredis (0.6.3)
     i18n (1.14.7)
       concurrent-ruby (~> 1.0)
     importmap-rails (2.2.2)
@@ -216,6 +223,7 @@ GEM
       net-smtp
     marcel (1.0.4)
     matrix (0.4.3)
+    memory_profiler (1.1.0)
     mini_mime (1.1.5)
     minitest (5.25.5)
     msgpack (1.8.0)
@@ -335,8 +343,10 @@ GEM
       erb
       psych (>= 4.0.0)
     redis (4.8.1)
-    redis-client (0.25.1)
+    redis-client (0.25.2)
       connection_pool
+    redis-namespace (1.11.0)
+      redis (>= 4)
     regexp_parser (2.10.0)
     reline (0.6.2)
       io-console (~> 0.5)
@@ -415,7 +425,7 @@ GEM
     sexp_processor (4.17.3)
     shoulda-matchers (6.5.0)
       activesupport (>= 5.2.0)
-    sidekiq (8.0.6)
+    sidekiq (8.0.7)
       connection_pool (>= 2.5.0)
       json (>= 2.9.0)
       logger (>= 1.6.2)
@@ -517,6 +527,7 @@ DEPENDENCIES
   action-cable-testing
   activerecord-import
   bcrypt (~> 3.1.7)
+  benchmark-ips
   bootsnap
   brakeman
   capybara
@@ -530,7 +541,9 @@ DEPENDENCIES
   debug
   factory_bot_rails
   fakeredis (~> 0.9.2)!
+  fuzzy-string-match (~> 1.0)
   groupdate
+  hiredis (~> 0.6)
   importmap-rails
   jbuilder
   json_spec
@@ -538,6 +551,7 @@ DEPENDENCIES
   kamal
   kaminari
   mail
+  memory_profiler
   net-imap
   parallel_tests
   pg (~> 1.1)
@@ -548,6 +562,7 @@ DEPENDENCIES
   rails-controller-testing
   rails_best_practices (~> 1.23)
   redis
+  redis-namespace (~> 1.10)
   rspec-benchmark
   rspec-collection_matchers
   rspec-rails (~> 8.0)

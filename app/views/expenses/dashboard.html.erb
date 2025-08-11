@@ -315,7 +315,7 @@
               <div class="flex-shrink-0 w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
                 <span class="text-sm font-bold text-teal-700"><%= index + 1 %></span>
               </div>
-              <span class="font-medium text-slate-900"><%= merchant.truncate(30) %></span>
+              <span class="font-medium text-slate-900"><%= merchant&.truncate(30) || "Unknown Merchant" %></span>
             </div>
             <span class="font-bold text-slate-900">₡<%= number_with_delimiter(amount.to_i) %></span>
           </div>

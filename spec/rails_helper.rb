@@ -97,9 +97,17 @@ RSpec.configure do |config|
 
   # Performance optimizations for testing
   config.before(:suite) do
+    # Suppress migration messages for cleaner test output
+    ActiveRecord::Migration.verbose = false
+
     # Use memory store for cache in tests
     Rails.cache = ActiveSupport::Cache::MemoryStore.new
-    # Note: Removed database truncation since we use transactional fixtures
+
+    # Note: Database truncation is commented out since we use transactional fixtures
+    # Ensure test database is clean (only if needed for specific test scenarios)
+    # if defined?(ActiveRecord::Base)
+    #   ActiveRecord::Base.connection.execute("TRUNCATE TABLE #{ActiveRecord::Base.connection.tables.join(', ')} RESTART IDENTITY CASCADE") if ActiveRecord::Base.connection.tables.any?
+    # end
 
     # Performance optimization: Configure ActionCable for testing
     if defined?(ActionCable)
@@ -110,14 +118,14 @@ RSpec.configure do |config|
     FactoryBot.reload if defined?(FactoryBot)
 
     # Disable logging in tests for performance and cleaner output
-    ActiveRecord::Base.logger.level = Logger::ERROR
-    Rails.logger.level = Logger::ERROR
+    ActiveRecord::Base.logger&.level = Logger::ERROR
+    Rails.logger&.level = Logger::ERROR
 
     # Disable ActionCable logs
-    ActionCable.server.config.logger.level = Logger::ERROR if defined?(ActionCable)
+    ActionCable.server.config.logger&.level = Logger::ERROR if defined?(ActionCable)
 
     # Disable Sidekiq logs
-    Sidekiq.logger.level = Logger::ERROR if defined?(Sidekiq)
+    Sidekiq.logger&.level = Logger::ERROR if defined?(Sidekiq)
   end
 
   # You can uncomment this line to turn off ActiveRecord support entirely.

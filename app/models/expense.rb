@@ -2,6 +2,8 @@ class Expense < ApplicationRecord
   # Associations
   belongs_to :email_account
   belongs_to :category, optional: true
+  has_many :pattern_feedbacks, dependent: :destroy
+  has_many :pattern_learning_events, dependent: :destroy
 
   # Enums
   enum :currency, { crc: 0, usd: 1, eur: 2 }
@@ -37,6 +39,12 @@ class Expense < ApplicationRecord
 
   def display_description
     description.presence || merchant_name.presence || "Unknown Transaction"
+  end
+
+  def merchant_name
+    # Simple attribute access without computed logic to avoid circular dependencies
+    # Returns merchant_name if present, otherwise merchant_normalized
+    self[:merchant_name] || self[:merchant_normalized]
   end
 
   def parsed_email_data

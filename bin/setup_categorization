@@ -1,0 +1,226 @@
+#!/usr/bin/env ruby
+
+require 'fileutils'
+require 'bundler'
+
+# This script sets up the dependencies needed for the categorization improvement feature
+
+def system!(*args)
+  system(*args) || abort("\n== Command #{args} failed ==")
+end
+
+def check_command(command)
+  system("which #{command} > /dev/null 2>&1")
+end
+
+def check_postgres_extension(db_name, extension)
+  result = `psql -d #{db_name} -tAc "SELECT 1 FROM pg_extension WHERE extname='#{extension}'" 2>/dev/null`.strip
+  result == "1"
+end
+
+def install_postgres_extension(db_name, extension)
+  puts "  Installing #{extension} extension in #{db_name}..."
+  system!("psql -d #{db_name} -c 'CREATE EXTENSION IF NOT EXISTS #{extension};'")
+end
+
+puts "\n=========================================="
+puts "  Categorization Feature Setup Script"
+puts "=========================================="
+puts "\nThis script will install the required dependencies for the"
+puts "Quick Intelligence categorization improvement (Option 1)."
+puts
+
+# Check for PostgreSQL
+puts "== Checking PostgreSQL =="
+unless check_command("psql")
+  puts "  ❌ PostgreSQL is not installed or psql is not in PATH"
+  puts "  Please install PostgreSQL first:"
+  puts "    macOS: brew install postgresql"
+  puts "    Ubuntu: sudo apt-get install postgresql"
+  abort
+end
+puts "  ✅ PostgreSQL found"
+
+# Check for Redis
+puts "\n== Checking Redis =="
+unless check_command("redis-cli")
+  puts "  ⚠️  Redis is not installed or not in PATH"
+  puts "  Installing Redis is recommended for caching performance."
+  puts "  To install:"
+  puts "    macOS: brew install redis && brew services start redis"
+  puts "    Ubuntu: sudo apt-get install redis-server && sudo systemctl start redis"
+  print "\n  Continue without Redis? (y/n): "
+  response = gets.chomp.downcase
+  abort("Setup cancelled") unless response == 'y'
+else
+  # Check if Redis is running
+  if system("redis-cli ping > /dev/null 2>&1")
+    puts "  ✅ Redis is installed and running"
+  else
+    puts "  ⚠️  Redis is installed but not running"
+    puts "  Start Redis with:"
+    puts "    macOS: brew services start redis"
+    puts "    Ubuntu: sudo systemctl start redis"
+  end
+end
+
+# Database configuration
+puts "\n== Setting up PostgreSQL Extensions =="
+databases = {
+  'development' => 'expense_tracker_integration_development',
+  'test' => 'expense_tracker_integration_test'
+}
+
+extensions = ['pg_trgm', 'unaccent']
+
+databases.each do |env, db_name|
+  puts "\n  Checking #{env} database (#{db_name})..."
+  
+  # Check if database exists
+  db_exists = system("psql -lqt | cut -d \\| -f 1 | grep -qw #{db_name}")
+  
+  if !db_exists
+    puts "    Database #{db_name} does not exist."
+    print "    Create it now? (y/n): "
+    response = gets.chomp.downcase
+    if response == 'y'
+      system!("createdb #{db_name}")
+      puts "    ✅ Database created"
+    else
+      puts "    ⚠️  Skipping #{env} database setup"
+      next
+    end
+  end
+  
+  # Install extensions
+  extensions.each do |ext|
+    if check_postgres_extension(db_name, ext)
+      puts "    ✅ #{ext} extension already installed"
+    else
+      install_postgres_extension(db_name, ext)
+      if check_postgres_extension(db_name, ext)
+        puts "    ✅ #{ext} extension installed successfully"
+      else
+        puts "    ❌ Failed to install #{ext} extension"
+        puts "       You may need to run this as a PostgreSQL superuser:"
+        puts "       sudo -u postgres psql -d #{db_name} -c 'CREATE EXTENSION #{ext};'"
+      end
+    end
+  end
+end
+
+# Add gems to Gemfile
+puts "\n== Updating Gemfile =="
+
+gemfile_path = File.join(File.dirname(__FILE__), '..', 'Gemfile')
+gemfile_content = File.read(gemfile_path)
+
+gems_to_add = {
+  'fuzzy-string-match' => '~> 1.0',
+  'redis' => '~> 5.0',
+  'redis-namespace' => '~> 1.10',
+  'connection_pool' => '~> 2.4',
+  'hiredis' => '~> 0.6'
+}
+
+gems_added = []
+
+gems_to_add.each do |gem_name, version|
+  unless gemfile_content.include?("gem '#{gem_name}'") || gemfile_content.include?("gem \"#{gem_name}\"")
+    gems_added << "gem '#{gem_name}', '#{version}'"
+  else
+    puts "  ✅ #{gem_name} already in Gemfile"
+  end
+end
+
+if gems_added.any?
+  puts "  Adding the following gems to Gemfile:"
+  gems_added.each { |gem| puts "    - #{gem}" }
+  
+  # Add gems to Gemfile in a categorization group
+  categorization_group = <<~RUBY
+    
+    # Categorization improvement dependencies
+    group :categorization do
+      #{gems_added.join("\n  ")}
+    end
+  RUBY
+  
+  File.open(gemfile_path, 'a') do |f|
+    f.puts categorization_group
+  end
+  
+  puts "  ✅ Gems added to Gemfile"
+  
+  # Run bundle install
+  puts "\n== Installing gems =="
+  system!("bundle install")
+else
+  puts "  ✅ All required gems already in Gemfile"
+end
+
+# Create Redis configuration
+puts "\n== Creating Redis Configuration =="
+
+redis_config_path = File.join(File.dirname(__FILE__), '..', 'config', 'initializers', 'redis.rb')
+
+unless File.exist?(redis_config_path)
+  redis_config = <<~RUBY
+    # Redis configuration for categorization pattern caching
+    require 'redis'
+    require 'connection_pool'
+    
+    redis_config = {
+      host: ENV.fetch('REDIS_HOST', 'localhost'),
+      port: ENV.fetch('REDIS_PORT', 6379),
+      db: ENV.fetch('REDIS_DB', 0),
+      password: ENV.fetch('REDIS_PASSWORD', nil),
+      timeout: 1
+    }
+    
+    # Use connection pool for thread safety
+    Redis.current = ConnectionPool::Wrapper.new(size: 5, timeout: 3) do
+      Redis.new(redis_config)
+    end
+    
+    # Test connection on startup (with graceful fallback)
+    begin
+      Redis.current.ping
+      Rails.logger.info "✅ Redis connected successfully" if defined?(Rails.logger)
+    rescue => e
+      if defined?(Rails.logger)
+        Rails.logger.warn "⚠️  Redis connection failed: \#{e.message}"
+        Rails.logger.warn "   Categorization caching will use memory-only cache"
+      end
+    end
+  RUBY
+  
+  File.write(redis_config_path, redis_config)
+  puts "  ✅ Created config/initializers/redis.rb"
+else
+  puts "  ✅ Redis configuration already exists"
+end
+
+# Verify setup
+puts "\n=========================================="
+puts "  Setup Complete!"
+puts "=========================================="
+
+puts "\n✅ PostgreSQL extensions configured"
+puts "✅ Required gems added to Gemfile"
+puts "✅ Redis configuration created"
+
+puts "\n📝 Next Steps:"
+puts "1. Run the database migration:"
+puts "   rails db:migrate"
+puts "\n2. Seed initial categorization patterns:"
+puts "   rails db:seed:categorization"
+puts "\n3. Run the test suite to verify:"
+puts "   bundle exec rspec"
+
+puts "\n⚠️  Important Notes:"
+puts "- If PostgreSQL extension installation failed, you may need superuser privileges"
+puts "- Redis is optional but highly recommended for production performance"
+puts "- The migration will fail if pg_trgm and unaccent extensions are not installed"
+
+puts "\n🚀 You're ready to implement the categorization improvement feature!"

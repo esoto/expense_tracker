@@ -160,6 +160,13 @@ puts "  • POST /api/webhooks/add_expense"
 puts "  • GET /api/webhooks/recent_expenses"
 puts "  • GET /api/webhooks/expense_summary"
 
+# Load categorization patterns if the file exists
+categorization_patterns_file = Rails.root.join("db/seeds/categorization_patterns.rb")
+if File.exist?(categorization_patterns_file)
+  puts ""
+  load categorization_patterns_file
+end
+
 # Create sync performance metrics data
 puts ""
 puts "📊 Creating sync performance metrics..."

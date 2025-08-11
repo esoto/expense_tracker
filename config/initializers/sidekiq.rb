@@ -21,7 +21,7 @@ require "sidekiq/web"
 redis_config = {
   url: ENV.fetch("REDIS_URL", "redis://localhost:6379/0"),
   network_timeout: 5,
-  pool_timeout: 5,
+  pool_timeout: 5
   # Server uses RAILS_MAX_THREADS or 5 by default
   # Client uses 5 connections by default
 }
@@ -41,17 +41,17 @@ Sidekiq.configure_server do |config|
   # MUST be less than or equal to database pool size to avoid connection pool errors
   # Database pool is set by RAILS_MAX_THREADS (default: 5)
   max_threads = ENV.fetch("RAILS_MAX_THREADS", 5).to_i
-  default_concurrency = [max_threads, 5].min  # Use smaller of pool size or 5
+  default_concurrency = [ max_threads, 5 ].min  # Use smaller of pool size or 5
   config[:concurrency] = ENV.fetch("SIDEKIQ_CONCURRENCY", default_concurrency).to_i
 
   # Queue configuration with priorities for broadcast reliability
   # Higher weight means higher priority (processed more frequently)
   # Sidekiq 8.x supports both array and hash formats
   config[:queues] = [
-    ["critical", 6],  # Most important broadcasts
-    ["high", 4],      # High priority broadcasts
-    ["default", 2],   # Standard priority
-    ["low", 1]        # Background tasks
+    [ "critical", 6 ],  # Most important broadcasts
+    [ "high", 4 ],      # High priority broadcasts
+    [ "default", 2 ],   # Standard priority
+    [ "low", 1 ]        # Background tasks
   ]
 
   # Sidekiq 8.x strict argument checking for production
@@ -62,13 +62,13 @@ Sidekiq.configure_server do |config|
   config.error_handlers << ->(error, context) do
     # Extract job details from context hash
     job_info = context[:job] || {}
-    
+
     Rails.logger.error "[SIDEKIQ_ERROR] #{error.class}: #{error.message}"
     Rails.logger.error "[SIDEKIQ_ERROR] Job: #{job_info['class']} (JID: #{job_info['jid']})"
     Rails.logger.error "[SIDEKIQ_ERROR] Queue: #{job_info['queue']}, Retry: #{job_info['retry_count']}/#{job_info['retry']}"
     Rails.logger.error "[SIDEKIQ_ERROR] Args: #{job_info['args']&.inspect}"
     Rails.logger.error "[SIDEKIQ_ERROR] Backtrace:\n#{error.backtrace&.first(10)&.join("\n")}"
-    
+
     # Optional: Send to error tracking service
     # Sentry.capture_exception(error, extra: context) if defined?(Sentry)
   end
@@ -130,7 +130,7 @@ Sidekiq.configure_server do |config|
     Rails.logger.info "[SIDEKIQ_LIFECYCLE] Queues: #{config[:queues].map { |q, w| "#{q}(weight:#{w})" }.join(', ')}"
     Rails.logger.info "[SIDEKIQ_LIFECYCLE] Dead jobs max: #{config[:dead_max_jobs]}"
     Rails.logger.info "[SIDEKIQ_LIFECYCLE] Redis: #{redis_config[:url]}"
-    
+
     # Verify required models exist
     if defined?(BroadcastAnalytics) && defined?(FailedBroadcastStore)
       Rails.logger.info "[SIDEKIQ_LIFECYCLE] Broadcast reliability services configured"
@@ -144,7 +144,7 @@ Sidekiq.configure_server do |config|
 
   config.on(:shutdown) do
     Rails.logger.info "[SIDEKIQ_LIFECYCLE] Server shutting down gracefully"
-    
+
     # Optional: Perform cleanup tasks
     # ActiveRecord::Base.connection_pool.disconnect! if defined?(ActiveRecord)
   end
@@ -159,7 +159,7 @@ Sidekiq.configure_server do |config|
   config.server_middleware do |chain|
     # Add custom middleware if needed
     # chain.add MyCustomMiddleware
-    
+
     # Remove a default middleware if needed
     # chain.remove Sidekiq::Middleware::Server::RetryJobs
   end
@@ -172,12 +172,12 @@ Sidekiq.configure_server do |config|
   # Sidekiq 8.x capsule configuration for isolation (optional)
   # Capsules allow running multiple isolated Sidekiq instances with different configurations
   # Useful for separating broadcast jobs from other background jobs
-  # 
+  #
   # Example: Create a dedicated capsule for critical broadcasts
   # config.capsule("broadcast") do |cap|
   #   cap.concurrency = 5
   #   cap.queues = %w[critical high]
-  #   
+  #
   #   # Capsule-specific error handler
   #   cap.error_handlers << ->(error, context) do
   #     Rails.logger.error "[BROADCAST_CAPSULE] Error: #{error.message}"
@@ -190,7 +190,7 @@ Sidekiq.configure_client do |config|
   config.redis = redis_config.merge(
     size: 5  # Client needs fewer connections than server
   )
-  
+
   # Client middleware for job enqueuing
   config.client_middleware do |chain|
     # Add middleware to track job enqueuing if needed
@@ -223,7 +223,7 @@ if defined?(Rack::Attack)
   Rack::Attack.throttle("sidekiq-web/ip", limit: 20, period: 1.minute) do |req|
     req.ip if req.path.start_with?("/sidekiq")
   end
-  
+
   # Stricter limit for non-GET requests to Sidekiq Web
   Rack::Attack.throttle("sidekiq-web-write/ip", limit: 5, period: 1.minute) do |req|
     req.ip if req.path.start_with?("/sidekiq") && !req.get?

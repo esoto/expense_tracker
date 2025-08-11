@@ -113,6 +113,11 @@ RSpec.describe SyncSessionPerformanceOptimizer do
     end
 
     it 'returns false when no active session exists' do
+      # Clear any existing active sessions from other tests
+      SyncSession.active.update_all(status: 'completed')
+      # Clear the cache to ensure fresh query
+      described_class.clear_active_session_cache
+
       create(:sync_session, status: 'completed')
       expect(described_class.active_session_exists?).to be false
     end

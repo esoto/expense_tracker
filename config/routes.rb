@@ -32,6 +32,12 @@ Rails.application.routes.draw do
       end
     end
 
+    # Health check endpoints for monitoring and Kubernetes probes
+    get "health", to: "health#index"
+    get "health/ready", to: "health#ready"
+    get "health/live", to: "health#live"
+    get "health/metrics", to: "health#metrics"
+
     # Sync session status polling endpoint
     resources :sync_sessions, only: [] do
       member do

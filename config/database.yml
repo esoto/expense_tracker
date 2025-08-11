@@ -25,7 +25,7 @@ default: &default
 
 development:
   <<: *default
-  database: expense_tracker_categorization_development
+  database: expense_tracker_development
 
 # The test environment is used exclusively to run your application's
 # test suite. You never need to work with it otherwise. Remember that
@@ -33,7 +33,7 @@ development:
 # and recreated between test runs. Don't rely on the data there!
 test:
   <<: *default
-  database: expense_tracker_categorization_test<%= ENV['TEST_ENV_NUMBER'] %>
+  database: expense_tracker_test<%= ENV['TEST_ENV_NUMBER'] %>
   # Optimize for testing performance
   min_messages: WARNING
   # Use template0 to avoid encoding issues
@@ -43,24 +43,24 @@ test:
 production:
   primary:
     <<: *default
-    database: expense_tracker_categorization_production
+    database: expense_tracker_production
     username: <%= ENV.fetch("POSTGRES_USER") { "expense_tracker" } %>
     password: <%= ENV["POSTGRES_PASSWORD"] %>
   cache:
     <<: *default
-    database: expense_tracker_categorization_production_cache
+    database: expense_tracker_production_cache
     username: <%= ENV.fetch("POSTGRES_USER") { "expense_tracker" } %>
     password: <%= ENV["POSTGRES_PASSWORD"] %>
     migrations_paths: db/cache_migrate
   queue:
     <<: *default
-    database: expense_tracker_categorization_production_queue
+    database: expense_tracker_production_queue
     username: <%= ENV.fetch("POSTGRES_USER") { "expense_tracker" } %>
     password: <%= ENV["POSTGRES_PASSWORD"] %>
     migrations_paths: db/queue_migrate
   cable:
     <<: *default
-    database: expense_tracker_categorization_production_cable
+    database: expense_tracker_production_cable
     username: <%= ENV.fetch("POSTGRES_USER") { "expense_tracker" } %>
     password: <%= ENV["POSTGRES_PASSWORD"] %>
     migrations_paths: db/cable_migrate

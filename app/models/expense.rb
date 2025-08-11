@@ -98,20 +98,21 @@ class Expense < ApplicationRecord
     if saved_change_to_amount? || saved_change_to_transaction_date? ||
        saved_change_to_category_id? || saved_change_to_status?
 
-      # Use debounced enqueue to prevent job flooding
-      affected_date = saved_change_to_transaction_date? ?
-                      transaction_date_before_last_save :
-                      transaction_date
-
       # Schedule metrics refresh with debouncing
-      MetricsRefreshJob.enqueue_debounced(
-        email_account_id,
-        affected_date: affected_date,
-        delay: 3.seconds # Small delay to batch multiple changes
-      )
-
-      # If transaction date changed, also refresh the new date's metrics
-      if saved_change_to_transaction_date?
+      if saved_change_to_transaction_date? && transaction_date_before_last_save.present?
+        # Transaction date actually changed (not creation) - refresh both old and new dates
+        MetricsRefreshJob.enqueue_debounced(
+          email_account_id,
+          affected_date: transaction_date_before_last_save,
+          delay: 3.seconds
+        )
+        MetricsRefreshJob.enqueue_debounced(
+          email_account_id,
+          affected_date: transaction_date,
+          delay: 3.seconds
+        )
+      else
+        # Creation or other field changes - refresh current transaction date
         MetricsRefreshJob.enqueue_debounced(
           email_account_id,
           affected_date: transaction_date,

@@ -137,8 +137,8 @@ RSpec.describe "expenses/dashboard.html.erb", type: :view do
   it "applies hover effects to metric cards" do
     render
 
-    # Check for hover classes
-    expect(rendered).to have_css('.hover\\:shadow-md')
+    # Check for hover classes that are actually used in the template
+    expect(rendered).to have_css('.hover\\:shadow-lg')
     expect(rendered).to have_css('.hover\\:-translate-y-1')
   end
 

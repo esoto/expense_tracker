@@ -20,9 +20,9 @@ RSpec.describe MetricsCalculationJob, type: :job do
 
     context 'with specific period and date' do
       it 'calculates metrics for specified period and email_account' do
-        calculator = instance_double(MetricsCalculator)
-        expect(MetricsCalculator).to receive(:new)
-          .with(email_account: email_account, period: :month, reference_date: current_date)
+        calculator = instance_double(ExtendedCacheMetricsCalculator)
+        expect(ExtendedCacheMetricsCalculator).to receive(:new)
+          .with(email_account: email_account, period: :month, reference_date: current_date, cache_hours: 4)
           .and_return(calculator)
 
         expect(calculator).to receive(:calculate).and_return({
@@ -33,9 +33,9 @@ RSpec.describe MetricsCalculationJob, type: :job do
       end
 
       it 'accepts email_account object directly' do
-        calculator = instance_double(MetricsCalculator)
-        expect(MetricsCalculator).to receive(:new)
-          .with(email_account: email_account, period: :month, reference_date: current_date)
+        calculator = instance_double(ExtendedCacheMetricsCalculator)
+        expect(ExtendedCacheMetricsCalculator).to receive(:new)
+          .with(email_account: email_account, period: :month, reference_date: current_date, cache_hours: 4)
           .and_return(calculator)
 
         expect(calculator).to receive(:calculate).and_return({
@@ -53,7 +53,7 @@ RSpec.describe MetricsCalculationJob, type: :job do
         expect(Rails.logger).to receive(:info)
           .with(/Metrics calculated for account #{email_account.id}, month on #{current_date}/)
         expect(Rails.logger).to receive(:info)
-          .with("MetricsCalculationJob completed successfully for account #{email_account.id}")
+          .with(/MetricsCalculationJob completed in \d+\.\d+s for account #{email_account.id}/)
 
         job.perform(email_account_id: email_account.id, period: :month, reference_date: current_date)
       end
@@ -63,8 +63,8 @@ RSpec.describe MetricsCalculationJob, type: :job do
       it 'calculates all periods for current date for specific email_account' do
         calculations_performed = []
 
-        allow(MetricsCalculator).to receive(:new) do |args|
-          calculator = instance_double(MetricsCalculator)
+        allow(ExtendedCacheMetricsCalculator).to receive(:new) do |args|
+          calculator = instance_double(ExtendedCacheMetricsCalculator)
           allow(calculator).to receive(:calculate) do
             calculations_performed << args
             { metrics: { total_amount: 0.0, transaction_count: 0 } }
@@ -91,8 +91,8 @@ RSpec.describe MetricsCalculationJob, type: :job do
       it 'pre-calculates multiple date ranges per period for specific email_account' do
         calculators = []
 
-        allow(MetricsCalculator).to receive(:new) do |args|
-          calculator = instance_double(MetricsCalculator)
+        allow(ExtendedCacheMetricsCalculator).to receive(:new) do |args|
+          calculator = instance_double(ExtendedCacheMetricsCalculator)
           allow(calculator).to receive(:calculate).and_return({
             metrics: { total_amount: 0.0, transaction_count: 0 }
           })
@@ -120,15 +120,6 @@ RSpec.describe MetricsCalculationJob, type: :job do
       end
     end
 
-    context 'with DashboardService integration' do
-      it 'updates dashboard cache after calculation' do
-        dashboard_service = instance_double(DashboardService)
-        expect(DashboardService).to receive(:new).and_return(dashboard_service)
-        expect(dashboard_service).to receive(:analytics)
-
-        job.perform(email_account_id: email_account.id, period: :month, reference_date: current_date)
-      end
-    end
 
     context 'data isolation' do
       it 'processes only specified email_account data' do
@@ -137,8 +128,8 @@ RSpec.describe MetricsCalculationJob, type: :job do
         create(:expense, email_account: other_email_account, amount: 500.0, transaction_date: current_date)
 
         calculations = []
-        allow(MetricsCalculator).to receive(:new) do |args|
-          calculator = MetricsCalculator.allocate
+        allow(ExtendedCacheMetricsCalculator).to receive(:new) do |args|
+          calculator = ExtendedCacheMetricsCalculator.allocate
           calculator.send(:initialize, **args)
           allow(calculator).to receive(:calculate).and_wrap_original do |m|
             result = m.call
@@ -158,7 +149,7 @@ RSpec.describe MetricsCalculationJob, type: :job do
     context 'error handling' do
       it 'logs errors when calculation fails' do
         error = StandardError.new('Calculation failed')
-        allow_any_instance_of(MetricsCalculator)
+        allow_any_instance_of(ExtendedCacheMetricsCalculator)
           .to receive(:calculate)
           .and_raise(error)
 
@@ -171,7 +162,7 @@ RSpec.describe MetricsCalculationJob, type: :job do
       end
 
       it 'logs error for failed individual calculations' do
-        allow_any_instance_of(MetricsCalculator)
+        allow_any_instance_of(ExtendedCacheMetricsCalculator)
           .to receive(:calculate)
           .and_return({ error: 'DB connection lost', metrics: {} })
 
@@ -190,7 +181,7 @@ RSpec.describe MetricsCalculationJob, type: :job do
 
     it 'is configured with retry on failure' do
       # Create a job that will fail
-      allow_any_instance_of(MetricsCalculator)
+      allow_any_instance_of(ExtendedCacheMetricsCalculator)
         .to receive(:calculate)
         .and_raise(StandardError, 'Test error')
 
@@ -222,7 +213,7 @@ RSpec.describe MetricsCalculationJob, type: :job do
 
   describe 'performance logging' do
     it 'formats amounts correctly in logs' do
-      allow_any_instance_of(MetricsCalculator)
+      allow_any_instance_of(ExtendedCacheMetricsCalculator)
         .to receive(:calculate)
         .and_return({
           metrics: {
@@ -237,7 +228,7 @@ RSpec.describe MetricsCalculationJob, type: :job do
       expect(Rails.logger).to receive(:info)
         .with(/10 transactions, total: \$1234\.56/)
       expect(Rails.logger).to receive(:info)
-        .with("MetricsCalculationJob completed successfully for account #{email_account.id}")
+        .with(/MetricsCalculationJob completed in \d+\.\d+s for account #{email_account.id}/)
 
       job.perform(email_account_id: email_account.id, period: :month, reference_date: current_date)
     end

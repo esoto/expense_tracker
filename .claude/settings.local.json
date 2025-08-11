@@ -60,7 +60,11 @@
       "Bash(RAILS_ENV=test bundle exec rspec spec/services/metrics_calculator_spec.rb --format documentation)",
       "Bash(RAILS_ENV=test bundle exec rspec spec/jobs/metrics_calculation_job_spec.rb --format documentation)",
       "Bash(RAILS_ENV=test bundle exec rspec --format progress)",
-      "Bash(bundle exec sidekiq:*)"
+      "Bash(bundle exec sidekiq:*)",
+      "Bash(RAILS_LOG_LEVEL=debug bundle exec rspec spec/jobs/metrics_calculation_job_spec.rb:22 --format documentation)",
+      "Bash(RAILS_ENV=test bundle exec rails runner test_class_loading.rb)",
+      "Bash(bundle exec spring:*)",
+      "Bash(RAILS_ENV=test bundle exec rails runner \"puts MetricsRefreshJob.methods.grep(/retry/)\")"
     ],
     "deny": []
   }

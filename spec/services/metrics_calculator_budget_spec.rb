@@ -99,7 +99,14 @@ RSpec.describe MetricsCalculator, 'budget calculations' do
       end
 
       context 'with exceeded budget' do
-        let!(:exceeded_budget) { create(:budget, :exceeded, email_account: email_account, period: 'monthly') }
+        let!(:exceeded_budget) do
+          good_budget.update!(active: false) # Deactivate conflicting budget
+          budget = create(:budget, email_account: email_account, period: 'monthly', amount: 100000)
+          # Create expenses that exceed the budget
+          create(:expense, email_account: email_account, amount: 120000, transaction_date: Date.current, currency: 'crc')
+          budget.reload
+          budget
+        end
 
         it 'returns exceeded status' do
           result = calculator.calculate

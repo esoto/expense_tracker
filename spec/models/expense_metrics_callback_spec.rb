@@ -136,8 +136,8 @@ RSpec.describe "Expense metrics callbacks", type: :model do
 
   describe 'bulk operations' do
     it 'uses debouncing to prevent job flooding on bulk creates' do
-      # First expense triggers job
-      expect(MetricsRefreshJob).to receive(:enqueue_debounced).once
+      # Each expense creation triggers job once (not twice due to proper callback logic)
+      expect(MetricsRefreshJob).to receive(:enqueue_debounced).exactly(5).times
 
       # Create multiple expenses rapidly
       5.times do

@@ -129,6 +129,7 @@ RSpec.describe "Budgets", type: :request do
     let(:original_budget) { create(:budget, email_account: email_account, period: 'monthly', active: false) }
 
     it "creates a duplicate budget for the next period" do
+      original_budget # Force creation of the original budget
       expect {
         post duplicate_budget_path(original_budget)
       }.to change(Budget, :count).by(1)

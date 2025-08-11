@@ -45,10 +45,10 @@ RSpec.describe MetricsJobMonitor do
     end
 
     it 'determines correct job status based on metrics' do
-      # Simulate high failure rate
+      # Simulate moderate failure rate that should trigger warning
       metrics_key = "job_metrics:metrics_calculation:#{email_account.id}"
       Rails.cache.write(metrics_key, {
-        success_count: 5,
+        success_count: 18,
         failure_count: 2,
         total_time: 100.0,
         executions: []
@@ -56,8 +56,8 @@ RSpec.describe MetricsJobMonitor do
 
       status = described_class.calculation_job_status
 
-      # 5 success out of 7 total = 71.4% success rate
-      # With WARNING_FAILURE_RATE = 5%, this should trigger warning
+      # 18 success out of 20 total = 90% success rate
+      # This should trigger warning (10% failure rate, between 5% and 10% thresholds)
       expect(status[:status]).to eq(:warning)
     end
   end
@@ -110,12 +110,20 @@ RSpec.describe MetricsJobMonitor do
   describe '.health_check' do
     context 'with healthy metrics' do
       it 'returns healthy status' do
-        # Set up healthy metrics
-        metrics_key = "job_metrics:metrics_calculation:#{email_account.id}"
-        Rails.cache.write(metrics_key, {
+        # Set up healthy metrics for both calculation and refresh jobs
+        calc_metrics_key = "job_metrics:metrics_calculation:#{email_account.id}"
+        Rails.cache.write(calc_metrics_key, {
           success_count: 100,
           failure_count: 2,
           total_time: 1500.0,
+          executions: []
+        })
+
+        refresh_metrics_key = "job_metrics:metrics_refresh:#{email_account.id}"
+        Rails.cache.write(refresh_metrics_key, {
+          success_count: 50,
+          failure_count: 1,
+          total_time: 600.0,
           executions: []
         })
 
@@ -146,12 +154,21 @@ RSpec.describe MetricsJobMonitor do
 
     context 'with slow performance' do
       it 'returns warning status' do
-        # Set up metrics with slow average time
-        metrics_key = "job_metrics:metrics_calculation:#{email_account.id}"
-        Rails.cache.write(metrics_key, {
+        # Set up metrics with slow average time but healthy refresh metrics
+        calc_metrics_key = "job_metrics:metrics_calculation:#{email_account.id}"
+        Rails.cache.write(calc_metrics_key, {
           success_count: 10,
           failure_count: 0,
           total_time: 350.0, # Average 35s per job
+          executions: []
+        })
+
+        # Add healthy refresh metrics so only calculation triggers warning
+        refresh_metrics_key = "job_metrics:metrics_refresh:#{email_account.id}"
+        Rails.cache.write(refresh_metrics_key, {
+          success_count: 20,
+          failure_count: 0,
+          total_time: 200.0, # Average 10s per job (healthy)
           executions: []
         })
 

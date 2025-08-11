@@ -6,6 +6,7 @@ class ExtendedCacheMetricsCalculator < MetricsCalculator
   attr_reader :cache_hours
 
   def initialize(email_account:, period: :month, reference_date: Date.current, cache_hours: 4)
+    Rails.logger.debug "ExtendedCacheMetricsCalculator.initialize called with cache_hours: #{cache_hours}"
     @cache_hours = cache_hours
     # Only pass parameters that the parent class accepts
     super(email_account: email_account, period: period, reference_date: reference_date)

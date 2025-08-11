@@ -1,5 +1,22 @@
 <% content_for :title, "Gastos - Expense Tracker" %>
 
+<% # Navigation bar for dashboard navigation %>
+<% if @from_dashboard %>
+  <div class="bg-teal-50 border-b border-teal-200 px-6 py-3 mb-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <%= link_to dashboard_expenses_path, class: "text-teal-700 hover:text-teal-800 font-medium" do %>
+          ← Volver al Dashboard
+        <% end %>
+        <% if @filter_description %>
+          <span class="text-slate-600">|</span>
+          <span class="text-slate-700"><%= @filter_description %></span>
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>
+
 <div class="space-y-6">
   <!-- Header with Summary -->
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
@@ -62,9 +79,24 @@
   <% end %>
 
   <!-- Expenses Table -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+  <div id="expense_list" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
     <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
-      <h2 class="text-lg font-semibold text-slate-900">Lista de Gastos</h2>
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-slate-900">Lista de Gastos</h2>
+        <% if @active_period %>
+          <span class="text-sm text-slate-600">
+            Período: <%= { "day" => "Hoy", "week" => "Esta Semana", "month" => "Este Mes", "year" => "Este Año" }[@active_period] || @active_period.capitalize %>
+          </span>
+        <% elsif @date_from && @date_to %>
+          <span class="text-sm text-slate-600">
+            <% if @date_from == @date_to %>
+              <%= @date_from.strftime("%d/%m/%Y") %>
+            <% else %>
+              <%= @date_from.strftime("%d/%m/%Y") %> - <%= @date_to.strftime("%d/%m/%Y") %>
+            <% end %>
+          </span>
+        <% end %>
+      </div>
     </div>
 
     <div class="overflow-x-auto">
@@ -153,3 +185,15 @@
     </div>
   </div>
 </div>
+
+<% # Add smooth scroll if requested %>
+<% if @scroll_to == "expense_list" %>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const element = document.getElementById('expense_list');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+</script>
+<% end %>

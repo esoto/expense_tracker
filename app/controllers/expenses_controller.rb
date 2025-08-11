@@ -3,6 +3,9 @@ class ExpensesController < ApplicationController
 
   # GET /expenses
   def index
+    # Handle dashboard navigation context
+    setup_navigation_context
+
     # Base query with includes
     @expenses = Expense.includes(:category, :email_account)
 
@@ -15,6 +18,12 @@ class ExpensesController < ApplicationController
 
     # Calculate summary with separate optimized query
     calculate_summary_statistics
+
+    # Set up scroll target if specified
+    @scroll_to = params[:scroll_to] if params[:scroll_to].present?
+
+    # Add filter description for UI
+    @filter_description = build_filter_description
   end
 
   # GET /expenses/1
@@ -147,15 +156,104 @@ class ExpensesController < ApplicationController
   end
 
   def apply_filters(scope)
+    # Handle period-based filtering from dashboard cards
+    if params[:period].present?
+      date_range = calculate_period_range(params[:period])
+      scope = scope.where(transaction_date: date_range) if date_range
+    elsif params[:date_from].present? && params[:date_to].present?
+      # Handle explicit date range from dashboard
+      scope = scope.where(transaction_date: params[:date_from]..params[:date_to])
+    elsif date_range_present?
+      # Handle traditional date range filters
+      scope = scope.where(transaction_date: params[:start_date]..params[:end_date])
+    end
+
     # Use left_joins instead of joins to maintain includes
     scope = scope.left_joins(:category).where(categories: { name: params[:category] }) if params[:category].present?
-    scope = scope.where(transaction_date: params[:start_date]..params[:end_date]) if date_range_present?
     scope = scope.where(bank_name: params[:bank]) if params[:bank].present?
     scope
   end
 
   def date_range_present?
     params[:start_date].present? && params[:end_date].present?
+  end
+
+  def calculate_period_range(period)
+    today = Date.current
+    case period
+    when "day"
+      today..today
+    when "week"
+      today.beginning_of_week..today.end_of_week
+    when "month"
+      today.beginning_of_month..today.end_of_month
+    when "year"
+      today.beginning_of_year..today.end_of_year
+    else
+      nil
+    end
+  end
+
+  def setup_navigation_context
+    # Detect if navigation is from dashboard
+    @from_dashboard = params[:filter_type] == "dashboard_metric"
+    
+    # Store period for display
+    @active_period = params[:period] if params[:period].present?
+    
+    # Store date range for display
+    if params[:date_from].present? && params[:date_to].present?
+      begin
+        @date_from = Date.parse(params[:date_from])
+      rescue ArgumentError => e
+        Rails.logger.warn "Invalid date_from parameter: #{params[:date_from]} - #{e.message}"
+        @date_from = nil
+      end
+      
+      begin
+        @date_to = Date.parse(params[:date_to])
+      rescue ArgumentError => e
+        Rails.logger.warn "Invalid date_to parameter: #{params[:date_to]} - #{e.message}"
+        @date_to = nil
+      end
+    elsif params[:period].present?
+      date_range = calculate_period_range(params[:period])
+      if date_range
+        @date_from = date_range.first
+        @date_to = date_range.last
+      end
+    end
+  end
+
+  def build_filter_description
+    descriptions = []
+    
+    # Add period description
+    if @active_period
+      period_descriptions = {
+        "day" => "Gastos de hoy",
+        "week" => "Gastos de esta semana",
+        "month" => "Gastos de este mes",
+        "year" => "Gastos del año"
+      }
+      descriptions << period_descriptions[@active_period]
+    elsif @date_from && @date_to
+      if @date_from == @date_to
+        descriptions << "Gastos del #{@date_from.strftime('%d/%m/%Y')}"
+      else
+        descriptions << "Gastos del #{@date_from.strftime('%d/%m/%Y')} al #{@date_to.strftime('%d/%m/%Y')}"
+      end
+    elsif params[:start_date].present? && params[:end_date].present?
+      descriptions << "Gastos del #{params[:start_date]} al #{params[:end_date]}"
+    end
+    
+    # Add category filter
+    descriptions << "Categoría: #{params[:category]}" if params[:category].present?
+    
+    # Add bank filter
+    descriptions << "Banco: #{params[:bank]}" if params[:bank].present?
+    
+    descriptions.empty? ? nil : descriptions.join(" • ")
   end
 
   def calculate_summary_statistics

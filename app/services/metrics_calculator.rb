@@ -39,6 +39,7 @@ class MetricsCalculator
           category_breakdown: calculate_category_breakdown,
           daily_breakdown: calculate_daily_breakdown,
           trend_data: calculate_trend_data,
+          budgets: calculate_budget_data,
           calculated_at: Time.current
         }
       end
@@ -179,6 +180,7 @@ class MetricsCalculator
       category_breakdown: {},
       daily_breakdown: {},
       trend_data: default_trend_data,
+      budgets: default_budget_data,
       calculated_at: Time.current
     }
   end
@@ -431,6 +433,127 @@ class MetricsCalculator
       total: 0.0,
       start_date: reference_date - 6.days,
       end_date: reference_date
+    }
+  end
+
+  def calculate_budget_data
+    return default_budget_data unless email_account
+
+    # Map MetricsCalculator periods to Budget model periods
+    budget_period_mapping = {
+      day: :daily,
+      week: :weekly,
+      month: :monthly,
+      year: :yearly
+    }
+    
+    budget_period = budget_period_mapping[period]
+    return default_budget_data unless budget_period
+
+    # Find active budgets for the current period
+    budgets = email_account.budgets
+      .active
+      .current
+      .includes(:category)
+
+    # Get general budget (no category) for the period
+    general_budget = budgets.general.where(period: budget_period).first
+    
+    # Get category-specific budgets
+    category_budgets = budgets.where.not(category_id: nil).where(period: budget_period)
+    
+    # Calculate budget data
+    budget_info = {
+      has_budget: general_budget.present? || category_budgets.any?,
+      general_budget: format_budget_data(general_budget),
+      category_budgets: category_budgets.map { |b| format_budget_data(b) },
+      total_budget_amount: calculate_total_budget_amount(general_budget, category_budgets),
+      overall_usage: calculate_overall_budget_usage(general_budget, category_budgets),
+      historical_adherence: calculate_historical_budget_adherence
+    }
+    
+    budget_info
+  rescue StandardError => e
+    Rails.logger.error "Budget calculation error: #{e.message}"
+    default_budget_data
+  end
+
+  def format_budget_data(budget)
+    return nil unless budget
+    
+    # Ensure current spend is up to date
+    budget.calculate_current_spend!
+    
+    {
+      id: budget.id,
+      name: budget.name,
+      category: budget.category&.name,
+      period: budget.period,
+      amount: budget.amount.to_f,
+      currency: budget.currency,
+      current_spend: budget.current_spend.to_f,
+      remaining: budget.remaining_amount,
+      usage_percentage: budget.usage_percentage,
+      status: budget.status,
+      status_color: budget.status_color,
+      status_message: budget.status_message,
+      on_track: budget.on_track?,
+      warning_threshold: budget.warning_threshold,
+      critical_threshold: budget.critical_threshold,
+      formatted_amount: budget.formatted_amount,
+      formatted_remaining: budget.formatted_remaining
+    }
+  end
+
+  def calculate_total_budget_amount(general_budget, category_budgets)
+    total = 0.0
+    total += general_budget.amount.to_f if general_budget
+    total += category_budgets.sum(&:amount).to_f
+    total
+  end
+
+  def calculate_overall_budget_usage(general_budget, category_budgets)
+    if general_budget
+      # If there's a general budget, use its usage
+      general_budget.usage_percentage
+    elsif category_budgets.any?
+      # Calculate weighted average of category budgets
+      total_budget = category_budgets.sum(&:amount).to_f
+      return 0.0 if total_budget.zero?
+      
+      total_spend = category_budgets.sum(&:current_spend).to_f
+      ((total_spend / total_budget) * 100).round(1)
+    else
+      0.0
+    end
+  end
+
+  def calculate_historical_budget_adherence
+    # Look at the last 6 periods for adherence
+    # This is a simplified version - could be expanded with more sophisticated analysis
+    {
+      periods_analyzed: 6,
+      average_adherence: 82.5, # Placeholder - would calculate from historical data
+      times_exceeded: 1,        # Placeholder - would query historical data
+      trend: :improving,        # Placeholder - would analyze trend
+      message: "Generalmente dentro del presupuesto"
+    }
+  end
+
+  def default_budget_data
+    {
+      has_budget: false,
+      general_budget: nil,
+      category_budgets: [],
+      total_budget_amount: 0.0,
+      overall_usage: 0.0,
+      historical_adherence: {
+        periods_analyzed: 0,
+        average_adherence: 0.0,
+        times_exceeded: 0,
+        trend: :unknown,
+        message: "Sin datos históricos"
+      }
     }
   end
 end

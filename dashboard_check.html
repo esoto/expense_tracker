@@ -1,0 +1,1115 @@
+<!-- BEGIN app/views/layouts/application.html.erb --><!DOCTYPE html>
+<html>
+  <head>
+    <title>Dashboard - Expense Tracker</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="csrf-param" content="authenticity_token" />
+<meta name="csrf-token" content="1ewJeDuNqB63cxlFE6hqW9uTnZXVUcPXvWpzbY6zfzRCbmTJlY0HDwzBqObVIhebri3lyTj9da-rrhpO_QFnnA" />
+    
+
+    
+
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <link rel="stylesheet" href="/assets/application-8b441ae0.css" data-turbo-track="reload" />
+<link rel="stylesheet" href="/assets/tailwind-dbdfe208.css" data-turbo-track="reload" />
+    <script type="importmap" data-turbo-track="reload">{
+  "imports": {
+    "application": "/assets/application-910df434.js",
+    "@hotwired/turbo-rails": "/assets/turbo.min-3a2e143f.js",
+    "@hotwired/stimulus": "/assets/stimulus.min-4b1e420e.js",
+    "@hotwired/stimulus-loading": "/assets/stimulus-loading-1fc53fe7.js",
+    "@rails/actioncable": "/assets/actioncable.esm-e0ec9819.js",
+    "progress_throttler": "/assets/progress_throttler-aeec50e1.js",
+    "chart.js": "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js",
+    "chartjs-adapter-date-fns": "https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js",
+    "chartkick": "https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js",
+    "controllers/animated_metric_controller": "/assets/controllers/animated_metric_controller-659c79df.js",
+    "controllers/application": "/assets/controllers/application-3affb389.js",
+    "controllers/budget_progress_controller": "/assets/controllers/budget_progress_controller-fd6e0199.js",
+    "controllers/bulk_actions_controller": "/assets/controllers/bulk_actions_controller-a27e3108.js",
+    "controllers/chart_controller": "/assets/controllers/chart_controller-0271b9a3.js",
+    "controllers/conflict_modal_controller": "/assets/controllers/conflict_modal_controller-8c27494a.js",
+    "controllers/conflict_resolution_controller": "/assets/controllers/conflict_resolution_controller-cca88074.js",
+    "controllers/dashboard_card_navigation_controller": "/assets/controllers/dashboard_card_navigation_controller-8c4c087c.js",
+    "controllers/dropdown_controller": "/assets/controllers/dropdown_controller-4e4eb200.js",
+    "controllers/hello_controller": "/assets/controllers/hello_controller-708796bd.js",
+    "controllers": "/assets/controllers/index-ee64e1f1.js",
+    "controllers/queue_monitor_controller": "/assets/controllers/queue_monitor_controller-31f83d99.js",
+    "controllers/sparkline_controller": "/assets/controllers/sparkline_controller-2daaec94.js",
+    "controllers/sync_session_detail_controller": "/assets/controllers/sync_session_detail_controller-c411b6be.js",
+    "controllers/sync_sessions_controller": "/assets/controllers/sync_sessions_controller-8bdd2b18.js",
+    "controllers/sync_widget_controller": "/assets/controllers/sync_widget_controller-d3dd6862.js",
+    "controllers/toast_controller": "/assets/controllers/toast_controller-f6dc4170.js",
+    "controllers/tooltip_controller": "/assets/controllers/tooltip_controller-f064bec1.js"
+  }
+}</script>
+<link rel="modulepreload" href="/assets/application-910df434.js">
+<link rel="modulepreload" href="/assets/turbo.min-3a2e143f.js">
+<link rel="modulepreload" href="/assets/stimulus.min-4b1e420e.js">
+<link rel="modulepreload" href="/assets/stimulus-loading-1fc53fe7.js">
+<link rel="modulepreload" href="/assets/actioncable.esm-e0ec9819.js">
+<link rel="modulepreload" href="/assets/progress_throttler-aeec50e1.js">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js">
+<link rel="modulepreload" href="/assets/controllers/animated_metric_controller-659c79df.js">
+<link rel="modulepreload" href="/assets/controllers/application-3affb389.js">
+<link rel="modulepreload" href="/assets/controllers/budget_progress_controller-fd6e0199.js">
+<link rel="modulepreload" href="/assets/controllers/bulk_actions_controller-a27e3108.js">
+<link rel="modulepreload" href="/assets/controllers/chart_controller-0271b9a3.js">
+<link rel="modulepreload" href="/assets/controllers/conflict_modal_controller-8c27494a.js">
+<link rel="modulepreload" href="/assets/controllers/conflict_resolution_controller-cca88074.js">
+<link rel="modulepreload" href="/assets/controllers/dashboard_card_navigation_controller-8c4c087c.js">
+<link rel="modulepreload" href="/assets/controllers/dropdown_controller-4e4eb200.js">
+<link rel="modulepreload" href="/assets/controllers/hello_controller-708796bd.js">
+<link rel="modulepreload" href="/assets/controllers/index-ee64e1f1.js">
+<link rel="modulepreload" href="/assets/controllers/queue_monitor_controller-31f83d99.js">
+<link rel="modulepreload" href="/assets/controllers/sparkline_controller-2daaec94.js">
+<link rel="modulepreload" href="/assets/controllers/sync_session_detail_controller-c411b6be.js">
+<link rel="modulepreload" href="/assets/controllers/sync_sessions_controller-8bdd2b18.js">
+<link rel="modulepreload" href="/assets/controllers/sync_widget_controller-d3dd6862.js">
+<link rel="modulepreload" href="/assets/controllers/toast_controller-f6dc4170.js">
+<link rel="modulepreload" href="/assets/controllers/tooltip_controller-f064bec1.js">
+<script type="module">import "application"</script>
+  </head>
+
+  <body class="bg-slate-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="flex justify-between items-center py-4">
+          <div class="flex items-center space-x-2">
+            <div class="bg-teal-700 text-white p-2 rounded-lg shadow-sm">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+              </svg>
+            </div>
+            <a class="text-xl font-bold text-slate-900" href="/expenses">Expense Tracker</a>
+          </div>
+          <div class="flex items-center space-x-4">
+            <a class="text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium " href="/expenses/dashboard">Dashboard</a>
+            <a class="text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium " href="/expenses">Gastos</a>
+            <a class="text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium " href="/email_accounts">Cuentas</a>
+            <a class="text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium " href="/sync_sessions">Sincronización</a>
+            <a class="bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm" href="/expenses/new">Nuevo Gasto</a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Flash Messages -->
+
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+      <!-- BEGIN app/views/expenses/dashboard.html.erb -->
+<!-- Subscribe to Turbo Stream broadcasts for real-time updates -->
+<turbo-cable-stream-source channel="Turbo::StreamsChannel" signed-stream-name="ImRhc2hib2FyZF9zeW5jX3VwZGF0ZXMi--289f0f76fbaa6d2c2882fa30a88ac186d1e58ae34017930afc0c23cc0ce92d41"></turbo-cable-stream-source>
+
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="text-center">
+    <h1 class="text-3xl font-bold text-slate-900">Dashboard de Gastos</h1>
+    <p class="text-slate-600 mt-2">Resumen completo de tus finanzas</p>
+  </div>
+
+  <!-- Email Sync Section -->
+  <turbo-frame id="sync_status_section">
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
+       data-controller="sync-widget"
+       data-sync-widget-session-id-value="0"
+       data-sync-widget-active-value="false">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-slate-900">Sincronización de Correos</h2>
+    </div>
+
+    <!-- Real-time Progress Bar -->
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Sync All Button -->
+      <div class="space-y-4">
+        <form class="space-y-4" action="/expenses/sync_emails" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="5XJylMwytewNhbDgBSW9kWKStz4Mno2iCPmWZOKMtj-2oEYNNOC_3Rviqp0efwOfQ_KtXfwSaXRpbkiWnFawJw" autocomplete="off" />
+          <div class="flex flex-col space-y-2">
+            <input type="submit" name="commit" value="Sincronizar Todos los Correos" class="w-full bg-teal-700 hover:bg-teal-800 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 " data-disable-with="Sincronizar Todos los Correos" />
+            <p class="text-xs text-slate-600">
+              Busca nuevos gastos en todas las cuentas de correo activas
+            </p>
+          </div>
+</form>
+          <!-- Individual Account Sync -->
+          <div class="border-t pt-4">
+            <h3 class="text-sm font-medium text-slate-700 mb-2">Sincronizar cuenta individual:</h3>
+            <div class="space-y-2">
+                <form class="flex items-center space-x-2" action="/expenses/sync_emails" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="oHXaddompWVqZE4wzO9JtJPnOoZiynT2UhK2dIBm0qfzp-7sIvSvVHwDVE3Xtfe6socg5ZJGkCAzhWiG_rzUvw" autocomplete="off" />
+                  <input value="3" autocomplete="off" type="hidden" name="email_account_id" id="email_account_id" />
+                  <input type="submit" name="commit" value="ecsoto07@gmail.com (BAC)" class="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 py-1 px-3 rounded transition-colors duration-200 " data-disable-with="ecsoto07@gmail.com (BAC)" />
+</form>          </div>
+        </div>
+      </div>
+
+      <!-- Sync Status -->
+      <div class="space-y-4">
+        <h3 class="text-sm font-medium text-slate-700">Estado de sincronización:</h3>
+          <div class="space-y-3" data-sync-widget-target="accountsList">
+              <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg" data-account-id="3">
+                <div class="flex items-center space-x-3">
+                  <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
+                      <span class="text-xs font-bold text-teal-700">
+                        B
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-slate-900">ecsoto07@gmail.com</p>
+                    <p class="text-xs text-slate-600">BAC</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div data-status-icon>
+                      <div class="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                  </div>
+                  <p class="text-xs text-slate-600 mt-1" data-progress-text>
+                      Último: August 11, 2025 at 05:42 PM
+                  </p>
+                </div>
+              </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</turbo-frame>
+  <!-- Sync Status Widget -->
+  <div class="mb-6">
+    <!-- BEGIN app/views/sync_sessions/_unified_widget.html.erb --><!-- Unified Sync Status Widget with Real-time Updates -->
+<turbo-frame class="block" id="sync_status_widget">
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
+       data-controller="sync-widget"
+       data-sync-widget-session-id-value="0"
+       data-sync-widget-active-value="false"
+       data-sync-widget-websocket-url-value="ws://localhost:3000/cable">
+
+    <!-- Header Section -->
+    <div class="px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-teal-50 to-white">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="relative">
+            <div class="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+            </div>
+            <!-- Animated pulse for active sync -->
+          </div>
+
+          <div>
+            <h2 class="text-lg font-semibold text-slate-900">Sincronización de Correos</h2>
+            <p class="text-sm text-slate-600" data-sync-widget-target="statusText">
+                <span class="text-slate-500">Sin actividad</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center space-x-2">
+            <!-- Start Sync Button -->
+            <form data-turbo="true" action="/sync_sessions" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="WAeHfoHMa5AU7UkOO2hIKKqXldPaKPCE2fo01WmtONZnZklHBf23mujEpPMO5iG_ZHdsfZrFAOijZdhrHp3iUg" autocomplete="off" />
+              <input type="submit" name="commit" value="Iniciar Sincronización" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-teal-700 rounded-lg hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all transform hover:scale-105 cursor-pointer" data-disable-with="Iniciando..." data-action="click-&gt;sync-widget#startSync" />
+</form>        </div>
+      </div>
+    </div>
+
+    <!-- Progress Section (Visible when sync is active) -->
+      <!-- Inactive State -->
+      <div class="px-6 py-8 text-center" data-sync-widget-target="inactiveSection">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
+          <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+        </div>
+        <h3 class="text-lg font-medium text-slate-900 mb-1">No hay sincronización activa</h3>
+        <p class="text-sm text-slate-600 mb-6">
+            Última sincronización completada hace about 18 hours
+        </p>
+
+        <!-- Quick Action Buttons -->
+        <div class="flex items-center justify-center space-x-3">
+          <form class="inline-block" action="/sync_sessions" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="PSV4OQtaUMqoI1Hvbqk68lMbrhgrWq50OiDczQFfBPsCRLYAj2uMwFQKvBJbJ1NlnftXtmu3XhhAvzBzdm_efw" autocomplete="off" />
+            <input type="submit" name="commit" value="Sincronizar Todas las Cuentas" class="inline-flex items-center px-4 py-2 bg-teal-700 text-white text-sm font-medium rounded-lg hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all cursor-pointer" data-disable-with="Sincronizar Todas las Cuentas" />
+</form>
+          <a class="inline-flex items-center px-4 py-2 bg-white text-slate-700 text-sm font-medium rounded-lg border border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors" href="/sync_sessions">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Ver Historial
+</a>        </div>
+      </div>
+
+    <!-- Connection Status Indicator -->
+    <div class="hidden px-4 py-2 bg-amber-50 border-t border-amber-200"
+         data-sync-widget-target="connectionWarning">
+      <div class="flex items-center text-sm text-amber-800">
+        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+        </svg>
+        <span data-sync-widget-target="connectionMessage">Reconectando...</span>
+      </div>
+    </div>
+  </div>
+</turbo-frame><!-- END app/views/sync_sessions/_unified_widget.html.erb -->
+  </div>
+
+  <!-- Queue Visualization Widget -->
+  <div class="mb-6">
+    <!-- BEGIN app/views/sync_sessions/_queue_visualization.html.erb --><!-- Queue Visualization Component -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200"
+     data-controller="queue-monitor"
+     data-queue-monitor-refresh-interval-value="5000"
+     data-queue-monitor-api-endpoint-value="/api/queue/status.json">
+
+  <!-- Header -->
+  <div class="px-6 py-4 border-b border-slate-200">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <h3 class="text-lg font-semibold text-slate-900">Background Job Queue</h3>
+        <!-- Health Status Indicator -->
+        <div data-queue-monitor-target="healthIndicator" class="flex items-center">
+          <div data-queue-monitor-target="healthDot" class="w-2 h-2 rounded-full bg-slate-400 mr-2"></div>
+          <span data-queue-monitor-target="healthText" class="text-sm text-slate-600">Checking...</span>
+        </div>
+      </div>
+
+      <!-- Control Buttons -->
+      <div class="flex items-center space-x-2">
+        <!-- Refresh Button -->
+        <button data-action="click->queue-monitor#refresh"
+                class="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                title="Refresh now">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+
+        <!-- Pause/Resume Button -->
+        <button data-queue-monitor-target="pauseButton"
+                data-action="click->queue-monitor#togglePause"
+                class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center space-x-1">
+          <svg data-queue-monitor-target="pauseIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span data-queue-monitor-target="pauseText">Pause All</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Queue Metrics Grid -->
+  <div class="p-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Pending Jobs -->
+    <div class="bg-slate-50 rounded-lg p-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm font-medium text-slate-600">Pending</span>
+        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      </div>
+      <div class="text-2xl font-bold text-slate-900" data-queue-monitor-target="pendingCount">0</div>
+      <div class="text-xs text-slate-500 mt-1">Waiting to process</div>
+    </div>
+
+    <!-- Processing Jobs -->
+    <div class="bg-teal-50 rounded-lg p-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm font-medium text-teal-700">Processing</span>
+        <svg class="w-4 h-4 text-teal-600 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </div>
+      <div class="text-2xl font-bold text-teal-900" data-queue-monitor-target="processingCount">0</div>
+      <div class="text-xs text-teal-600 mt-1">Currently running</div>
+    </div>
+
+    <!-- Completed Jobs -->
+    <div class="bg-emerald-50 rounded-lg p-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm font-medium text-emerald-700">Completed</span>
+        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      </div>
+      <div class="text-2xl font-bold text-emerald-900" data-queue-monitor-target="completedCount">0</div>
+      <div class="text-xs text-emerald-600 mt-1">Last 24 hours</div>
+    </div>
+
+    <!-- Failed Jobs -->
+    <div class="bg-rose-50 rounded-lg p-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm font-medium text-rose-700">Failed</span>
+        <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      </div>
+      <div class="text-2xl font-bold text-rose-900" data-queue-monitor-target="failedCount">0</div>
+      <div class="text-xs text-rose-600 mt-1">
+        <button data-action="click->queue-monitor#retryAllFailed"
+                data-queue-monitor-target="retryAllButton"
+                class="underline hover:no-underline hidden">
+          Retry all
+        </button>
+        <span data-queue-monitor-target="noFailedText">No failures</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Queue Depth Visualization -->
+  <div class="px-6 pb-4">
+    <div class="space-y-2">
+      <div class="flex items-center justify-between text-sm">
+        <span class="text-slate-600">Queue Depth</span>
+        <div class="flex items-center space-x-2">
+          <span class="text-slate-900 font-medium" data-queue-monitor-target="processingRate">0 jobs/min</span>
+          <span class="text-slate-500">•</span>
+          <span class="text-slate-600" data-queue-monitor-target="estimatedTime">--</span>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="relative">
+        <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+          <div data-queue-monitor-target="queueDepthBar"
+               class="h-full rounded-full transition-all duration-500 ease-out bg-gradient-to-r from-teal-500 to-teal-700"
+               style="width: 0%"></div>
+        </div>
+        <!-- Queue depth scale markers -->
+        <div class="flex justify-between mt-1 text-xs text-slate-500">
+          <span>0</span>
+          <span data-queue-monitor-target="queueDepthMax">100</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Queue Breakdown by Name -->
+  <div class="px-6 pb-4" data-queue-monitor-target="queueBreakdown" style="display: none;">
+    <h4 class="text-sm font-medium text-slate-700 mb-3">Queue Distribution</h4>
+    <div class="space-y-2" data-queue-monitor-target="queueList">
+      <!-- Dynamically populated queue list -->
+    </div>
+  </div>
+
+  <!-- Active Jobs Section -->
+  <div class="border-t border-slate-200" data-queue-monitor-target="activeJobsSection" style="display: none;">
+    <div class="px-6 py-4">
+      <h4 class="text-sm font-medium text-slate-700 mb-3 flex items-center">
+        <svg class="w-4 h-4 text-teal-600 mr-2 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+        Currently Processing
+      </h4>
+      <div class="space-y-2" data-queue-monitor-target="activeJobsList">
+        <!-- Dynamically populated active jobs -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Failed Jobs Section -->
+  <div class="border-t border-slate-200" data-queue-monitor-target="failedJobsSection" style="display: none;">
+    <div class="px-6 py-4">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="text-sm font-medium text-slate-700 flex items-center">
+          <svg class="w-4 h-4 text-rose-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+          </svg>
+          Failed Jobs
+        </h4>
+        <button data-action="click->queue-monitor#clearAllFailed"
+                class="text-xs text-rose-600 hover:text-rose-700 font-medium">
+          Clear All
+        </button>
+      </div>
+      <div class="space-y-2" data-queue-monitor-target="failedJobsList">
+        <!-- Dynamically populated failed jobs -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Worker Status -->
+  <div class="border-t border-slate-200 px-6 py-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <div class="flex items-center">
+          <svg class="w-4 h-4 text-slate-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+          </svg>
+          <span class="text-sm text-slate-600">Workers:</span>
+          <span class="text-sm font-medium text-slate-900 ml-1" data-queue-monitor-target="workerCount">0</span>
+        </div>
+        <div class="flex items-center">
+          <span class="text-sm text-slate-600">Utilization:</span>
+          <span class="text-sm font-medium text-slate-900 ml-1" data-queue-monitor-target="utilization">0%</span>
+        </div>
+      </div>
+
+      <!-- Auto-refresh indicator -->
+      <div class="flex items-center text-xs text-slate-500">
+        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+        </svg>
+        <span data-queue-monitor-target="lastUpdate">Never</span>
+      </div>
+    </div>
+  </div>
+</div><!-- END app/views/sync_sessions/_queue_visualization.html.erb -->
+  </div>
+
+  <!-- Conflict Alert (if any pending conflicts) -->
+
+  <!-- Enhanced Key Metrics with Visual Hierarchy -->
+  <div class="space-y-6">
+    <!-- Primary Metric Card - 1.5x Larger with Tooltip and Navigation -->
+    <div id="primary-metric-card" class="bg-gradient-to-br from-teal-700 to-teal-800 rounded-2xl shadow-xl p-8 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] cursor-pointer relative"
+         role="button"
+         tabindex="0"
+         aria-label="Ver gastos del año completo"
+         data-controller="animated-metric tooltip dashboard-card-navigation"
+         data-animated-metric-container-target="container"
+         data-animated-metric-to-value="73515.28"
+         data-animated-metric-prefix-value="₡"
+         data-animated-metric-trend-value-value="29.53"
+         data-animated-metric-is-increase-value="true"
+         data-tooltip-trend-data-value='{&quot;daily_amounts&quot;:[{&quot;date&quot;:&quot;2025-08-05&quot;,&quot;amount&quot;:160.0},{&quot;date&quot;:&quot;2025-08-06&quot;,&quot;amount&quot;:150.0},{&quot;date&quot;:&quot;2025-08-07&quot;,&quot;amount&quot;:746.68},{&quot;date&quot;:&quot;2025-08-08&quot;,&quot;amount&quot;:667.89},{&quot;date&quot;:&quot;2025-08-09&quot;,&quot;amount&quot;:400.15},{&quot;date&quot;:&quot;2025-08-10&quot;,&quot;amount&quot;:220.0},{&quot;date&quot;:&quot;2025-08-11&quot;,&quot;amount&quot;:22789.17}],&quot;min&quot;:150.0,&quot;max&quot;:22789.17,&quot;average&quot;:3590.56,&quot;total&quot;:25133.89,&quot;start_date&quot;:&quot;2025-08-05&quot;,&quot;end_date&quot;:&quot;2025-08-11&quot;}'
+         data-tooltip-metric-label-value="Total de Gastos (Año)"
+         data-tooltip-position-value="bottom"
+         data-dashboard-card-navigation-period-value="year"
+         data-dashboard-card-navigation-date-from-value="2025-01-01"
+         data-dashboard-card-navigation-date-to-value="2025-12-31"
+         data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
+      
+      <div class="flex items-start justify-between mb-4">
+        <div>
+          <h3 class="text-lg font-medium text-teal-100 mb-2">TOTAL DE GASTOS</h3>
+          <div class="flex items-baseline">
+            <span class="text-5xl font-bold tracking-tight"
+                  data-animated-metric-target="value">₡73,515</span>
+          </div>
+        </div>
+        <div class="p-4 bg-white/10 rounded-xl backdrop-blur-sm">
+          <svg class="w-10 h-10 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+          </svg>
+        </div>
+      </div>
+      
+      <!-- Trend Indicator with Animation -->
+      <div class="flex items-center justify-between mt-6">
+        <div data-animated-metric-target="trend" class="flex items-center">
+            <svg class="w-5 h-5 text-rose-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
+            </svg>
+            <span class="text-rose-300 font-semibold">↑ +29.5%</span>
+          <span class="text-teal-200 text-sm ml-2">vs mes anterior</span>
+        </div>
+        
+        <!-- Mini Sparkline -->
+        <div data-animated-metric-target="sparkline" class="opacity-60"></div>
+      </div>
+      
+      <!-- Budget Progress for Year -->
+        <div class="mt-4 pt-4 border-t border-white/20">
+          <div class="flex items-center justify-between text-sm mb-2">
+            <span class="text-teal-200">Presupuesto Anual</span>
+            <span class="font-semibold text-white">
+              0.3% usado
+            </span>
+          </div>
+          <div class="w-full bg-white/20 rounded-full h-2 overflow-hidden">
+            <div class="h-2 rounded-full transition-all duration-500 ease-out bg-emerald-400"
+                 style="width: 0.3%">
+            </div>
+          </div>
+          <div class="flex items-center justify-between mt-2">
+            <span class="text-xs text-teal-200">
+              ₡6.000.000 total
+            </span>
+            <span class="text-xs font-medium text-white">
+              Disponible: ₡5.980.100
+            </span>
+          </div>
+        </div>
+      
+      <!-- Additional Stats -->
+      <div class="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-white/20">
+        <div>
+          <p class="text-teal-200 text-xs uppercase tracking-wide">Transacciones</p>
+          <p class="text-2xl font-bold mt-1">119</p>
+        </div>
+        <div>
+          <p class="text-teal-200 text-xs uppercase tracking-wide">Promedio</p>
+          <p class="text-2xl font-bold mt-1">₡617</p>
+        </div>
+        <div>
+          <p class="text-teal-200 text-xs uppercase tracking-wide">Categorías</p>
+          <p class="text-2xl font-bold mt-1">0</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Secondary Metrics Cards - Regular Size -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- Este Mes Card with Tooltip, Budget and Navigation -->
+      <div id="month-metric-card" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative"
+           role="button"
+           tabindex="0"
+           aria-label="Ver gastos de este mes"
+           data-controller="animated-metric tooltip dashboard-card-navigation"
+           data-animated-metric-container-target="container"
+           data-animated-metric-to-value="27404.43"
+           data-animated-metric-prefix-value="₡"
+           data-tooltip-trend-data-value='{&quot;daily_amounts&quot;:[{&quot;date&quot;:&quot;2025-08-05&quot;,&quot;amount&quot;:160.0},{&quot;date&quot;:&quot;2025-08-06&quot;,&quot;amount&quot;:150.0},{&quot;date&quot;:&quot;2025-08-07&quot;,&quot;amount&quot;:746.68},{&quot;date&quot;:&quot;2025-08-08&quot;,&quot;amount&quot;:667.89},{&quot;date&quot;:&quot;2025-08-09&quot;,&quot;amount&quot;:400.15},{&quot;date&quot;:&quot;2025-08-10&quot;,&quot;amount&quot;:220.0},{&quot;date&quot;:&quot;2025-08-11&quot;,&quot;amount&quot;:22789.17}],&quot;min&quot;:150.0,&quot;max&quot;:22789.17,&quot;average&quot;:3590.56,&quot;total&quot;:25133.89,&quot;start_date&quot;:&quot;2025-08-05&quot;,&quot;end_date&quot;:&quot;2025-08-11&quot;}'
+           data-tooltip-metric-label-value="Gastos del Mes"
+           data-tooltip-position-value="top"
+           data-dashboard-card-navigation-period-value="month"
+           data-dashboard-card-navigation-date-from-value="2025-08-01"
+           data-dashboard-card-navigation-date-to-value="2025-08-31"
+           data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
+        <div class="flex items-center justify-between mb-3">
+          <div class="p-2 rounded-lg bg-amber-100">
+            <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+            <span class="text-xs font-medium text-emerald-600">
+              -100%
+            </span>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-slate-600 mb-1">Este Mes</p>
+          <p class="text-2xl font-bold text-slate-900" data-animated-metric-target="value">
+            ₡27,404
+          </p>
+          <p class="text-xs text-slate-500 mt-2">
+            30 transacciones
+          </p>
+          
+          <!-- Budget Progress -->
+          <!-- BEGIN app/views/shared/_budget_progress.html.erb -->
+  
+  <div class="mt-3 space-y-2" data-controller="budget-progress">
+    <!-- Progress Bar -->
+    <div class="relative">
+      <div class="flex items-center justify-between text-xs mb-1">
+        <span class="text-slate-600">Presupuesto</span>
+        <span class="font-medium text-emerald-600">
+          19.9% usado
+        </span>
+      </div>
+      
+      <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden" 
+           role="progressbar" 
+           aria-label="Progreso del presupuesto"
+           aria-valuenow="19.9"
+           aria-valuemin="0"
+           aria-valuemax="100">
+        <div class="h-2 rounded-full transition-all duration-500 ease-out bg-emerald-600"
+             style="width: 19.9%"
+             data-budget-progress-target="bar">
+        </div>
+      </div>
+      
+      <!-- Budget amount and remaining -->
+      <div class="flex items-center justify-between mt-1">
+        <span class="text-xs text-slate-500">
+          de ₡100.000
+        </span>
+        <span class="text-xs font-medium text-emerald-600">
+          Queda: 
+          ₡80.100
+        </span>
+      </div>
+    </div>
+    
+    <!-- Status indicator -->
+    <div class="flex items-center justify-between">
+      <div class="flex items-center">
+        <svg class="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+        <span class="text-xs text-emerald-700 ml-1">
+          Dentro del presupuesto
+        </span>
+      </div>
+      
+        <span class="text-xs text-emerald-600 flex items-center">
+          <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+          </svg>
+          En camino
+        </span>
+    </div>
+    
+    <!-- Historical adherence (if available) -->
+      <div class="pt-2 border-t border-slate-200">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-500">Historial:</span>
+          <span class="text-slate-600">
+            Generalmente dentro del presupuesto
+          </span>
+        </div>
+      </div>
+  </div>
+  
+
+<!-- END app/views/shared/_budget_progress.html.erb -->
+        </div>
+      </div>
+      
+      <!-- Esta Semana Card with Tooltip, Budget and Navigation -->
+      <div id="week-metric-card" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative"
+           role="button"
+           tabindex="0"
+           aria-label="Ver gastos de esta semana"
+           data-controller="animated-metric tooltip dashboard-card-navigation"
+           data-animated-metric-container-target="container"
+           data-animated-metric-to-value="22789.17"
+           data-animated-metric-prefix-value="₡"
+           data-tooltip-trend-data-value='{&quot;daily_amounts&quot;:[{&quot;date&quot;:&quot;2025-08-05&quot;,&quot;amount&quot;:160.0},{&quot;date&quot;:&quot;2025-08-06&quot;,&quot;amount&quot;:150.0},{&quot;date&quot;:&quot;2025-08-07&quot;,&quot;amount&quot;:746.68},{&quot;date&quot;:&quot;2025-08-08&quot;,&quot;amount&quot;:667.89},{&quot;date&quot;:&quot;2025-08-09&quot;,&quot;amount&quot;:400.15},{&quot;date&quot;:&quot;2025-08-10&quot;,&quot;amount&quot;:220.0},{&quot;date&quot;:&quot;2025-08-11&quot;,&quot;amount&quot;:22789.17}],&quot;min&quot;:150.0,&quot;max&quot;:22789.17,&quot;average&quot;:3590.56,&quot;total&quot;:25133.89,&quot;start_date&quot;:&quot;2025-08-05&quot;,&quot;end_date&quot;:&quot;2025-08-11&quot;}'
+           data-tooltip-metric-label-value="Gastos de la Semana"
+           data-tooltip-position-value="top"
+           data-dashboard-card-navigation-period-value="week"
+           data-dashboard-card-navigation-date-from-value="2025-08-11"
+           data-dashboard-card-navigation-date-to-value="2025-08-17"
+           data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
+        <div class="flex items-center justify-between mb-3">
+          <div class="p-2 rounded-lg bg-teal-100">
+            <svg class="w-6 h-6 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+          </div>
+            <span class="text-xs font-medium text-rose-600">
+              +698%
+            </span>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-slate-600 mb-1">Esta Semana</p>
+          <p class="text-2xl font-bold text-slate-900" data-animated-metric-target="value">
+            ₡22,789
+          </p>
+          <p class="text-xs text-slate-500 mt-2">
+            11 transacciones
+          </p>
+          
+          <!-- Budget Progress -->
+          <!-- BEGIN app/views/shared/_budget_progress.html.erb -->
+  
+  <div class="mt-3 space-y-2" data-controller="budget-progress">
+    <!-- Progress Bar -->
+    <div class="relative">
+      <div class="flex items-center justify-between text-xs mb-1">
+        <span class="text-slate-600">Presupuesto</span>
+        <span class="font-medium text-emerald-600">
+          15.9% usado
+        </span>
+      </div>
+      
+      <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden" 
+           role="progressbar" 
+           aria-label="Progreso del presupuesto"
+           aria-valuenow="15.9"
+           aria-valuemin="0"
+           aria-valuemax="100">
+        <div class="h-2 rounded-full transition-all duration-500 ease-out bg-emerald-600"
+             style="width: 15.9%"
+             data-budget-progress-target="bar">
+        </div>
+      </div>
+      
+      <!-- Budget amount and remaining -->
+      <div class="flex items-center justify-between mt-1">
+        <span class="text-xs text-slate-500">
+          de ₡125.000
+        </span>
+        <span class="text-xs font-medium text-emerald-600">
+          Queda: 
+          ₡105.100
+        </span>
+      </div>
+    </div>
+    
+    <!-- Status indicator -->
+    <div class="flex items-center justify-between">
+      <div class="flex items-center">
+        <svg class="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+        <span class="text-xs text-emerald-700 ml-1">
+          Dentro del presupuesto
+        </span>
+      </div>
+      
+        <span class="text-xs text-emerald-600 flex items-center">
+          <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+          </svg>
+          En camino
+        </span>
+    </div>
+    
+    <!-- Historical adherence (if available) -->
+      <div class="pt-2 border-t border-slate-200">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-500">Historial:</span>
+          <span class="text-slate-600">
+            Generalmente dentro del presupuesto
+          </span>
+        </div>
+      </div>
+  </div>
+  
+
+<!-- END app/views/shared/_budget_progress.html.erb -->
+        </div>
+      </div>
+      
+      <!-- Hoy Card with Tooltip, Budget and Navigation -->
+      <div id="day-metric-card" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative"
+           role="button"
+           tabindex="0"
+           aria-label="Ver gastos de hoy"
+           data-controller="animated-metric tooltip dashboard-card-navigation"
+           data-animated-metric-container-target="container"
+           data-animated-metric-to-value="22789.17"
+           data-animated-metric-prefix-value="₡"
+           data-tooltip-trend-data-value='{&quot;daily_amounts&quot;:[{&quot;date&quot;:&quot;2025-08-05&quot;,&quot;amount&quot;:160.0},{&quot;date&quot;:&quot;2025-08-06&quot;,&quot;amount&quot;:150.0},{&quot;date&quot;:&quot;2025-08-07&quot;,&quot;amount&quot;:746.68},{&quot;date&quot;:&quot;2025-08-08&quot;,&quot;amount&quot;:667.89},{&quot;date&quot;:&quot;2025-08-09&quot;,&quot;amount&quot;:400.15},{&quot;date&quot;:&quot;2025-08-10&quot;,&quot;amount&quot;:220.0},{&quot;date&quot;:&quot;2025-08-11&quot;,&quot;amount&quot;:22789.17}],&quot;min&quot;:150.0,&quot;max&quot;:22789.17,&quot;average&quot;:3590.56,&quot;total&quot;:25133.89,&quot;start_date&quot;:&quot;2025-08-05&quot;,&quot;end_date&quot;:&quot;2025-08-11&quot;}'
+           data-tooltip-metric-label-value="Gastos de Hoy"
+           data-tooltip-position-value="top"
+           data-dashboard-card-navigation-period-value="day"
+           data-dashboard-card-navigation-date-from-value="2025-08-11 00:00:00 UTC"
+           data-dashboard-card-navigation-date-to-value="2025-08-11 23:59:59 UTC"
+           data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
+        <div class="flex items-center justify-between mb-3">
+          <div class="p-2 rounded-lg bg-emerald-100">
+            <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+            <span class="text-xs font-medium text-rose-600">
+              +10259%
+            </span>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-slate-600 mb-1">Hoy</p>
+          <p class="text-2xl font-bold text-slate-900" data-animated-metric-target="value">
+            ₡22,789
+          </p>
+          <p class="text-xs text-slate-500 mt-2">
+            11 transacciones
+          </p>
+          
+          <!-- Budget Progress -->
+          <!-- BEGIN app/views/shared/_budget_progress.html.erb -->
+  
+  <div class="mt-3 space-y-2" data-controller="budget-progress">
+    <!-- Progress Bar -->
+    <div class="relative">
+      <div class="flex items-center justify-between text-xs mb-1">
+        <span class="text-slate-600">Presupuesto</span>
+        <span class="font-medium text-rose-600">
+          110.6% usado
+        </span>
+      </div>
+      
+      <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden" 
+           role="progressbar" 
+           aria-label="Progreso del presupuesto"
+           aria-valuenow="110.6"
+           aria-valuemin="0"
+           aria-valuemax="100">
+        <div class="h-2 rounded-full transition-all duration-500 ease-out bg-rose-600"
+             style="width: 100%"
+             data-budget-progress-target="bar">
+        </div>
+      </div>
+      
+      <!-- Budget amount and remaining -->
+      <div class="flex items-center justify-between mt-1">
+        <span class="text-xs text-slate-500">
+          de ₡18.000
+        </span>
+        <span class="text-xs font-medium text-rose-600">
+          Excedido: 
+          ₡1.900
+        </span>
+      </div>
+    </div>
+    
+    <!-- Status indicator -->
+    <div class="flex items-center justify-between">
+      <div class="flex items-center">
+        <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span class="text-xs text-rose-700 ml-1">
+          Presupuesto excedido
+        </span>
+      </div>
+      
+    </div>
+    
+    <!-- Historical adherence (if available) -->
+      <div class="pt-2 border-t border-slate-200">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-500">Historial:</span>
+          <span class="text-slate-600">
+            Generalmente dentro del presupuesto
+          </span>
+        </div>
+      </div>
+  </div>
+  
+
+<!-- END app/views/shared/_budget_progress.html.erb -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Monthly Trend -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-lg font-semibold text-slate-900 mb-4">Tendencia Mensual</h2>
+      <div id="chart-1" style="height: 300px; width: 100%; text-align: center; color: #999; line-height: 300px; font-size: 14px; font-family: 'Lucida Grande', 'Lucida Sans Unicode', Verdana, Arial, Helvetica, sans-serif;">Loading...</div>
+<script>
+  (function() {
+    if (document.documentElement.hasAttribute("data-turbolinks-preview")) return;
+    if (document.documentElement.hasAttribute("data-turbo-preview")) return;
+
+    var createChart = function() { new Chartkick["LineChart"]("chart-1", [["2025-05-01",8375.38],["2025-06-01",16579.29],["2025-07-01",21156.18],["2025-08-01",27404.43]], {"prefix":"₡","thousands":",","colors":["#0F766E"]}); };
+    if ("Chartkick" in window) {
+      createChart();
+    } else {
+      window.addEventListener("chartkick:load", createChart, true);
+    }
+  })();
+</script>
+
+    </div>
+
+    <!-- Category Breakdown -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-lg font-semibold text-slate-900 mb-4">Gastos por Categoría</h2>
+      <div id="chart-2" style="height: 300px; width: 100%; text-align: center; color: #999; line-height: 300px; font-size: 14px; font-family: 'Lucida Grande', 'Lucida Sans Unicode', Verdana, Arial, Helvetica, sans-serif;">Loading...</div>
+<script>
+  (function() {
+    if (document.documentElement.hasAttribute("data-turbolinks-preview")) return;
+    if (document.documentElement.hasAttribute("data-turbo-preview")) return;
+
+    var createChart = function() { new Chartkick["PieChart"]("chart-2", [], {"prefix":"₡","thousands":","}); };
+    if ("Chartkick" in window) {
+      createChart();
+    } else {
+      window.addEventListener("chartkick:load", createChart, true);
+    }
+  })();
+</script>
+
+    </div>
+  </div>
+
+  <!-- Detailed Tables -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Top Merchants -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-lg font-semibold text-slate-900 mb-4">Comercios con Más Gastos</h2>
+      <div class="space-y-3">
+          <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <div class="flex items-center space-x-3">
+              <div class="flex-shrink-0 w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
+                <span class="text-sm font-bold text-teal-700">1</span>
+              </div>
+              <span class="font-medium text-slate-900">Unknown Merchant</span>
+            </div>
+            <span class="font-bold text-slate-900">₡53,015</span>
+          </div>
+        </div>
+          <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <div class="flex items-center space-x-3">
+              <div class="flex-shrink-0 w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
+                <span class="text-sm font-bold text-teal-700">2</span>
+              </div>
+              <span class="font-medium text-slate-900">Test Exceeded Level Expense</span>
+            </div>
+            <span class="font-bold text-slate-900">₡19,900</span>
+          </div>
+        </div>
+          <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <div class="flex items-center space-x-3">
+              <div class="flex-shrink-0 w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
+                <span class="text-sm font-bold text-teal-700">3</span>
+              </div>
+              <span class="font-medium text-slate-900">Test Merchant</span>
+            </div>
+            <span class="font-bold text-slate-900">₡600</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bank Breakdown -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-lg font-semibold text-slate-900 mb-4">Gastos por Banco</h2>
+      <div class="space-y-3">
+          <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <div class="flex items-center space-x-3">
+              <div class="flex-shrink-0 w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
+                <span class="text-sm font-bold text-slate-600">
+                  M
+                </span>
+              </div>
+              <span class="font-medium text-slate-900"></span>
+            </div>
+            <span class="font-bold text-slate-900">₡53,615</span>
+          </div>
+        </div>
+          <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <div class="flex items-center space-x-3">
+              <div class="flex-shrink-0 w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
+                <span class="text-sm font-bold text-slate-600">
+                  M
+                </span>
+              </div>
+              <span class="font-medium text-slate-900">Test Bank</span>
+            </div>
+            <span class="font-bold text-slate-900">₡19,900</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Expenses -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+    <div class="px-6 py-4 border-b border-slate-200">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-slate-900">Gastos Recientes</h2>
+        <a class="text-teal-700 hover:text-teal-800 text-sm font-medium" href="/expenses">Ver todos</a>
+      </div>
+    </div>
+    <div class="p-6">
+      <div class="space-y-4">
+          <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+            <div class="flex items-center space-x-4">
+              <div class="flex-shrink-0">
+                  <div class="w-10 h-10 rounded-full bg-slate-400 flex items-center justify-center text-white font-bold">
+                    ?
+                  </div>
+              </div>
+              <div>
+                <p class="font-medium text-slate-900"></p>
+                <p class="text-sm text-slate-600">
+                  11/08/2025 •
+                  Sin categoría •
+                  BAC
+                </p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="font-bold text-slate-900">$200</p>
+              <p class="text-xs text-slate-500">August 11, 2025 at 05:42 PM</p>
+            </div>
+          </div>
+          <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+            <div class="flex items-center space-x-4">
+              <div class="flex-shrink-0">
+                  <div class="w-10 h-10 rounded-full bg-slate-400 flex items-center justify-center text-white font-bold">
+                    ?
+                  </div>
+              </div>
+              <div>
+                <p class="font-medium text-slate-900"></p>
+                <p class="text-sm text-slate-600">
+                  11/08/2025 •
+                  Sin categoría •
+                  BAC
+                </p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="font-bold text-slate-900">$200</p>
+              <p class="text-xs text-slate-500">August 11, 2025 at 05:41 PM</p>
+            </div>
+          </div>
+          <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+            <div class="flex items-center space-x-4">
+              <div class="flex-shrink-0">
+                  <div class="w-10 h-10 rounded-full bg-slate-400 flex items-center justify-center text-white font-bold">
+                    ?
+                  </div>
+              </div>
+              <div>
+                <p class="font-medium text-slate-900"></p>
+                <p class="text-sm text-slate-600">
+                  11/08/2025 •
+                  Sin categoría •
+                  BAC
+                </p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="font-bold text-slate-900">$100</p>
+              <p class="text-xs text-slate-500">August 11, 2025 at 05:41 PM</p>
+            </div>
+          </div>
+          <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+            <div class="flex items-center space-x-4">
+              <div class="flex-shrink-0">
+                  <div class="w-10 h-10 rounded-full bg-slate-400 flex items-center justify-center text-white font-bold">
+                    ?
+                  </div>
+              </div>
+              <div>
+                <p class="font-medium text-slate-900"></p>
+                <p class="text-sm text-slate-600">
+                  11/08/2025 •
+                  Sin categoría •
+                  BAC
+                </p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="font-bold text-slate-900">$714</p>
+              <p class="text-xs text-slate-500">August 11, 2025 at 05:36 PM</p>
+            </div>
+          </div>
+          <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+            <div class="flex items-center space-x-4">
+              <div class="flex-shrink-0">
+                  <div class="w-10 h-10 rounded-full bg-slate-400 flex items-center justify-center text-white font-bold">
+                    ?
+                  </div>
+              </div>
+              <div>
+                <p class="font-medium text-slate-900"></p>
+                <p class="text-sm text-slate-600">
+                  11/08/2025 •
+                  Sin categoría •
+                  BAC
+                </p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="font-bold text-slate-900">$93</p>
+              <p class="text-xs text-slate-500">August 11, 2025 at 05:36 PM</p>
+            </div>
+          </div>
+      </div>
+    </div>
+  </div>
+</div><!-- END app/views/expenses/dashboard.html.erb -->
+    </main>
+  </body>
+</html>
+<!-- END app/views/layouts/application.html.erb -->

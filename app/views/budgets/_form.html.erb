@@ -1,0 +1,111 @@
+<%# Budget form partial %>
+<%= form_with(model: budget, local: true, class: "space-y-6") do |form| %>
+  <% if budget.errors.any? %>
+    <div class="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg">
+      <h3 class="font-semibold mb-2">Por favor corrige los siguientes errores:</h3>
+      <ul class="list-disc list-inside">
+        <% budget.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <div class="grid md:grid-cols-2 gap-4">
+      <div>
+        <%= form.label :name, "Nombre", class: "block text-sm font-medium text-slate-700 mb-1" %>
+        <%= form.text_field :name, 
+            class: "w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
+            placeholder: "Ej: Presupuesto Mensual" %>
+      </div>
+      
+      <div>
+        <%= form.label :period, "Período", class: "block text-sm font-medium text-slate-700 mb-1" %>
+        <%= form.select :period, 
+            options_for_select([
+              ['Diario', 'daily'],
+              ['Semanal', 'weekly'],
+              ['Mensual', 'monthly'],
+              ['Anual', 'yearly']
+            ], budget.period),
+            {},
+            class: "w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500" %>
+      </div>
+      
+      <div>
+        <%= form.label :amount, "Monto", class: "block text-sm font-medium text-slate-700 mb-1" %>
+        <%= form.number_field :amount, 
+            class: "w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
+            placeholder: "100000",
+            step: 1000 %>
+      </div>
+      
+      <div>
+        <%= form.label :currency, "Moneda", class: "block text-sm font-medium text-slate-700 mb-1" %>
+        <%= form.select :currency, 
+            options_for_select([
+              ['Colones (₡)', 'CRC'],
+              ['Dólares ($)', 'USD'],
+              ['Euros (€)', 'EUR']
+            ], budget.currency),
+            {},
+            class: "w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500" %>
+      </div>
+      
+      <div>
+        <%= form.label :category_id, "Categoría", class: "block text-sm font-medium text-slate-700 mb-1" %>
+        <%= form.select :category_id, 
+            options_for_select(
+              [['General (todas las categorías)', nil]] + 
+              @categories.map { |c| [c.name, c.id] },
+              budget.category_id
+            ),
+            {},
+            class: "w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500" %>
+      </div>
+      
+      <div>
+        <%= form.label :start_date, "Fecha de inicio", class: "block text-sm font-medium text-slate-700 mb-1" %>
+        <%= form.date_field :start_date, 
+            class: "w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500" %>
+      </div>
+      
+      <div>
+        <%= form.label :warning_threshold, "Umbral de advertencia (%)", class: "block text-sm font-medium text-slate-700 mb-1" %>
+        <%= form.number_field :warning_threshold, 
+            class: "w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
+            min: 1,
+            max: 100 %>
+      </div>
+      
+      <div>
+        <%= form.label :critical_threshold, "Umbral crítico (%)", class: "block text-sm font-medium text-slate-700 mb-1" %>
+        <%= form.number_field :critical_threshold, 
+            class: "w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
+            min: 1,
+            max: 100 %>
+      </div>
+    </div>
+    
+    <div class="mt-4">
+      <%= form.label :description, "Descripción", class: "block text-sm font-medium text-slate-700 mb-1" %>
+      <%= form.text_area :description, 
+          rows: 3,
+          class: "w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
+          placeholder: "Descripción opcional del presupuesto..." %>
+    </div>
+    
+    <div class="mt-4 flex items-center">
+      <%= form.check_box :active, class: "mr-2" %>
+      <%= form.label :active, "Presupuesto activo", class: "text-sm text-slate-700" %>
+    </div>
+  </div>
+  
+  <div class="flex justify-end gap-2">
+    <%= link_to "Cancelar", budgets_path, 
+        class: "bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium px-4 py-2 rounded-lg transition-colors" %>
+    <%= form.submit budget.new_record? ? "Crear Presupuesto" : "Actualizar Presupuesto", 
+        class: "bg-teal-700 hover:bg-teal-800 text-white font-medium px-4 py-2 rounded-lg shadow-sm transition-colors cursor-pointer" %>
+  </div>
+<% end %>

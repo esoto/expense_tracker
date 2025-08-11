@@ -49,6 +49,16 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :budgets do
+    member do
+      post :duplicate
+      post :deactivate
+    end
+    collection do
+      get :quick_set
+    end
+  end
+
 
   resources :sync_sessions, only: [ :index, :show, :create ] do
     member do

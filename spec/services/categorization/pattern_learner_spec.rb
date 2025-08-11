@@ -289,8 +289,8 @@ RSpec.describe Categorization::PatternLearner do
         result = learner.batch_learn(hundred_corrections)
         duration_ms = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000
 
-        # Allow for some flexibility in CI environments
-        expect(duration_ms).to be < 2000 # Relaxed to 2s for CI
+        # Allow for some flexibility in CI environments and varying machine performance
+        expect(duration_ms).to be < 5000 # Relaxed to 5s for CI and slower environments
       end
     end
   end

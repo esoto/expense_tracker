@@ -107,4 +107,5 @@ group :categorization do
   gem "redis-namespace", "~> 1.10"
   gem "connection_pool", "~> 2.4"
   gem "hiredis", "~> 0.6"
+  gem "concurrent-ruby", "~> 1.2"  # Thread-safe data structures and utilities
 end

@@ -64,5 +64,11 @@ FactoryBot.define do
     trait :user_created do
       user_created { true }
     end
+
+    trait :with_high_usage do
+      usage_count { 100 }
+      success_count { 90 }
+      success_rate { 0.9 }
+    end
   end
 end

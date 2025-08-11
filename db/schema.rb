@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_08_221245) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_11_193344) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -68,10 +68,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_08_221245) do
     t.boolean "user_created", default: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["active", "pattern_type", "usage_count"], name: "idx_patterns_active_type_usage"
     t.index ["active", "pattern_type"], name: "index_categorization_patterns_on_active_and_pattern_type"
+    t.index ["active", "success_rate", "usage_count"], name: "idx_patterns_active_success_usage"
+    t.index ["active", "usage_count", "success_rate"], name: "idx_patterns_frequently_used", where: "(usage_count >= 10)"
+    t.index ["category_id", "active", "pattern_type"], name: "idx_patterns_category_active_type"
     t.index ["category_id", "success_rate"], name: "index_categorization_patterns_on_category_id_and_success_rate"
     t.index ["category_id"], name: "index_categorization_patterns_on_category_id"
     t.index ["pattern_type", "pattern_value"], name: "idx_on_pattern_type_pattern_value_fad6f38255"
+    t.index ["pattern_value"], name: "idx_patterns_value"
     t.index ["pattern_value"], name: "index_categorization_patterns_on_pattern_value", opclass: :gin_trgm_ops, using: :gin
   end
 
@@ -89,6 +94,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_08_221245) do
     t.boolean "user_created", default: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["active", "usage_count"], name: "idx_composite_active_usage"
     t.index ["category_id", "active"], name: "index_composite_patterns_on_category_id_and_active"
     t.index ["category_id"], name: "index_composite_patterns_on_category_id"
     t.index ["name"], name: "index_composite_patterns_on_name"
@@ -166,11 +172,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_08_221245) do
     t.index ["email_account_id", "transaction_date"], name: "index_expenses_on_email_account_id_and_transaction_date"
     t.index ["email_account_id"], name: "index_expenses_on_email_account_id"
     t.index ["merchant_name", "amount"], name: "index_expenses_on_merchant_name_and_amount"
+    t.index ["merchant_name", "category_id"], name: "idx_expenses_merchant_category"
     t.index ["merchant_name"], name: "index_expenses_on_merchant_name"
     t.index ["merchant_normalized"], name: "index_expenses_on_merchant_normalized"
     t.index ["status", "transaction_date"], name: "index_expenses_on_status_and_transaction_date"
     t.index ["status"], name: "index_expenses_on_status"
     t.index ["transaction_date", "amount"], name: "index_expenses_on_transaction_date_and_amount"
+    t.index ["transaction_date", "category_id"], name: "idx_expenses_date_category"
     t.index ["transaction_date"], name: "index_expenses_on_transaction_date"
   end
 
@@ -236,10 +244,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_08_221245) do
     t.jsonb "context_data", default: {}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["categorization_pattern_id", "was_correct"], name: "idx_feedbacks_pattern_correct"
     t.index ["categorization_pattern_id", "was_correct"], name: "idx_on_categorization_pattern_id_was_correct_e615042861"
     t.index ["categorization_pattern_id"], name: "index_pattern_feedbacks_on_categorization_pattern_id"
     t.index ["category_id"], name: "index_pattern_feedbacks_on_category_id"
     t.index ["created_at"], name: "index_pattern_feedbacks_on_created_at"
+    t.index ["expense_id", "created_at"], name: "idx_feedbacks_expense_created"
     t.index ["expense_id"], name: "index_pattern_feedbacks_on_expense_id"
   end
 
@@ -490,6 +500,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_08_221245) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["category_id"], name: "index_user_category_preferences_on_category_id"
+    t.index ["context_type", "context_value", "preference_weight"], name: "idx_user_prefs_context_weight"
+    t.index ["context_type", "context_value"], name: "idx_user_prefs_context"
     t.index ["email_account_id", "context_type", "context_value"], name: "idx_on_email_account_id_context_type_context_value_b40292993e"
     t.index ["email_account_id"], name: "index_user_category_preferences_on_email_account_id"
   end

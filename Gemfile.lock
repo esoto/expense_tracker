@@ -462,6 +462,7 @@ DEPENDENCIES
   capybara
   chartkick
   chronic
+  concurrent-ruby (~> 1.2)
   connection_pool (~> 2.4)
   debug
   factory_bot_rails

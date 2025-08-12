@@ -36,9 +36,10 @@ RSpec.describe ApplicationJob, type: :job do
       expect(job.queue_name).to eq('default')
     end
 
-    it 'does not have retry_on configured by default' do
-      # The retry_on and discard_on are commented out in the base class
-      expect(ApplicationJob.rescue_handlers).to be_empty
+    it 'has retry_on handlers configured' do
+      # ApplicationJob has retry_on and discard_on configured for reliability
+      expect(ApplicationJob.rescue_handlers).not_to be_empty
+      expect(ApplicationJob.rescue_handlers.map(&:first)).to include('StandardError', 'ActiveRecord::Deadlocked')
     end
   end
 end

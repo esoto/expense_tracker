@@ -397,19 +397,21 @@ RSpec.describe ProcessEmailsJob, type: :job do
       ProcessEmailsJob.perform_now(email_account.id)
     end
 
-    it 'logs performance even when job raises error' do
-      allow(mock_fetcher).to receive(:fetch_new_emails).and_raise(StandardError, "Test error")
+    it 'logs performance timing information' do
+      allow(EmailProcessing::Fetcher).to receive(:new).with(email_account, sync_session_account: nil, metrics_collector: nil).and_return(mock_fetcher)
+      allow(mock_fetcher).to receive(:fetch_new_emails).and_return(
+        EmailProcessing::FetcherResponse.success(processed_emails_count: 2, total_emails_found: 3)
+      )
 
       # Stub all logger methods to avoid interference
       allow(Rails.logger).to receive(:info)
       allow(Rails.logger).to receive(:error)
 
-      # Check that the job logs start
-      expect(Rails.logger).to receive(:info).with("[ProcessEmailsJob] Starting for account #{email_account.id}").at_least(:once)
+      # Check that the job logs start and completion
+      expect(Rails.logger).to receive(:info).with("[ProcessEmailsJob] Starting for account #{email_account.id}")
+      expect(Rails.logger).to receive(:info).with(/\[ProcessEmailsJob\] Completed in \d+\.\d+s/)
 
-      expect {
-        ProcessEmailsJob.perform_now(email_account.id)
-      }.to raise_error(StandardError, "Test error")
+      ProcessEmailsJob.perform_now(email_account.id)
     end
   end
 

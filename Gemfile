@@ -94,6 +94,10 @@ group :development, :test do
   # Spring preloader for faster test startup
   gem "spring"
   gem "spring-commands-rspec"
+
+  # Performance testing and profiling
+  gem "memory_profiler"
+  gem "benchmark-ips"
 end
 
 group :development do
@@ -143,5 +147,13 @@ gem "shoulda-matchers", "~> 6.5", group: :test
 gem "rails-controller-testing", group: :test
 
 gem "rails_best_practices", "~> 1.23", group: :development
+
+# Categorization improvement dependencies
+group :categorization do
+  gem "fuzzy-string-match", "~> 1.0"
+  gem "redis-namespace", "~> 1.10"
+  gem "hiredis", "~> 0.6"
+  # concurrent-ruby and connection_pool already defined above
+end
 
 gem "fakeredis", "~> 0.9.2", group: :test, github: "guilleiguaran/fakeredis"

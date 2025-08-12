@@ -9,6 +9,8 @@ class EmailAccount < ApplicationRecord
   has_many :parsing_rules, primary_key: :bank_name, foreign_key: :bank_name
   has_many :sync_session_accounts, dependent: :destroy
   has_many :sync_sessions, through: :sync_session_accounts
+  has_many :user_category_preferences, dependent: :destroy
+  has_many :categories, through: :expenses
   has_many :sync_metrics, dependent: :destroy
 
   # Validations

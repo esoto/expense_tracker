@@ -15,4 +15,20 @@ test:
   <<: *default
 
 production:
-  <<: *default
+  dispatchers:
+    # Optimize dispatcher for production load
+    - polling_interval: 0.5  # Faster polling in production
+      batch_size: 1000       # Larger batch size for better throughput
+  workers:
+    # High priority queue for critical jobs (email processing, sync monitoring)
+    - queues: [ email_processing, default ]
+      threads: <%= ENV.fetch("HIGH_PRIORITY_THREADS", 5) %>
+      processes: <%= ENV.fetch("HIGH_PRIORITY_PROCESSES", 2) %>
+      polling_interval: 0.1
+      priority: 10
+    # Standard queue for background jobs (metrics, cleanup)
+    - queues: [ metrics, background, maintenance ]
+      threads: <%= ENV.fetch("STANDARD_THREADS", 3) %>
+      processes: <%= ENV.fetch("STANDARD_PROCESSES", 1) %>
+      polling_interval: 0.5
+      priority: 5

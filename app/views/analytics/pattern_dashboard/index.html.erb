@@ -1,0 +1,242 @@
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- Header with filters -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900">Pattern Analytics Dashboard</h1>
+        <p class="text-slate-600 mt-1">Monitor and optimize categorization pattern performance</p>
+      </div>
+      
+      <!-- Filters -->
+      <div class="flex flex-wrap gap-3" data-controller="pattern-analytics-filters">
+        <!-- Time Period Filter -->
+        <select data-action="change->pattern-analytics-filters#updateTimeRange"
+                data-pattern-analytics-filters-target="timePeriod"
+                class="rounded-lg border-slate-200 text-sm focus:border-teal-500 focus:ring-teal-500">
+          <option value="week" <%= 'selected' if params[:time_period] == 'week' %>>Last 7 Days</option>
+          <option value="month" <%= 'selected' if params[:time_period] == 'month' || params[:time_period].blank? %>>Last 30 Days</option>
+          <option value="quarter" <%= 'selected' if params[:time_period] == 'quarter' %>>Last 3 Months</option>
+          <option value="year" <%= 'selected' if params[:time_period] == 'year' %>>Last Year</option>
+          <option value="today" <%= 'selected' if params[:time_period] == 'today' %>>Today</option>
+        </select>
+        
+        <!-- Category Filter -->
+        <select data-action="change->pattern-analytics-filters#updateCategory"
+                data-pattern-analytics-filters-target="category"
+                class="rounded-lg border-slate-200 text-sm focus:border-teal-500 focus:ring-teal-500">
+          <option value="">All Categories</option>
+          <% Category.order(:name).each do |category| %>
+            <option value="<%= category.id %>" 
+                    <%= 'selected' if params[:category_id] == category.id.to_s %>>
+              <%= category.name %>
+            </option>
+          <% end %>
+        </select>
+        
+        <!-- Pattern Type Filter -->
+        <select data-action="change->pattern-analytics-filters#updatePatternType"
+                data-pattern-analytics-filters-target="patternType"
+                class="rounded-lg border-slate-200 text-sm focus:border-teal-500 focus:ring-teal-500">
+          <option value="">All Types</option>
+          <% CategorizationPattern::PATTERN_TYPES.each do |type| %>
+            <option value="<%= type %>" 
+                    <%= 'selected' if params[:pattern_type] == type %>>
+              <%= type.humanize %>
+            </option>
+          <% end %>
+        </select>
+        
+        <!-- Export Button -->
+        <div class="relative" data-controller="dropdown">
+          <button data-action="click->dropdown#toggle"
+                  class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-medium transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Export
+          </button>
+          <div data-dropdown-target="menu"
+               class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 z-10">
+            <%= link_to "Export as CSV", 
+                        export_analytics_pattern_dashboard_index_path(format_type: :csv, **request.query_parameters),
+                        class: "block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50",
+                        data: { turbo_method: :get } %>
+            <%= link_to "Export as JSON", 
+                        export_analytics_pattern_dashboard_index_path(format_type: :json, **request.query_parameters),
+                        class: "block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50",
+                        data: { turbo_method: :get } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overall Metrics -->
+  <div id="overall_metrics">
+    <%= render "overall_metrics", overall_metrics: @overall_metrics %>
+  </div>
+
+  <!-- Main Grid Layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Category Performance Chart -->
+    <div id="category_performance" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <%= render "category_performance", category_performance: @category_performance %>
+    </div>
+
+    <!-- Pattern Type Analysis -->
+    <div id="pattern_type_analysis" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <%= render "pattern_type_analysis", pattern_type_analysis: @pattern_type_analysis %>
+    </div>
+  </div>
+
+  <!-- Trend Chart -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-slate-900">Performance Trends</h2>
+      <div class="flex gap-2" data-controller="trend-interval">
+        <button data-action="click->trend-interval#setInterval"
+                data-interval="daily"
+                class="px-3 py-1 text-sm rounded-lg bg-teal-700 text-white">
+          Daily
+        </button>
+        <button data-action="click->trend-interval#setInterval"
+                data-interval="weekly"
+                class="px-3 py-1 text-sm rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300">
+          Weekly
+        </button>
+        <button data-action="click->trend-interval#setInterval"
+                data-interval="monthly"
+                class="px-3 py-1 text-sm rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300">
+          Monthly
+        </button>
+      </div>
+    </div>
+    <div id="trend_chart" 
+         data-controller="pattern-trend-chart"
+         data-pattern-trend-chart-url-value="<%= trends_analytics_pattern_dashboard_index_path %>"
+         class="h-80">
+      <!-- Chart will be rendered here by Stimulus -->
+    </div>
+  </div>
+
+  <!-- Pattern Rankings -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Top Performing Patterns -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-lg font-semibold text-slate-900 mb-4">Top Performing Patterns</h2>
+      <div class="space-y-3">
+        <% @top_patterns.each do |pattern| %>
+          <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs px-2 py-1 bg-teal-100 text-teal-700 rounded-full font-medium">
+                  <%= pattern[:pattern_type].humanize %>
+                </span>
+                <span class="text-xs px-2 py-1 rounded-full"
+                      style="background-color: <%= pattern[:category_color] %>20; color: <%= pattern[:category_color] %>">
+                  <%= pattern[:category_name] %>
+                </span>
+              </div>
+              <p class="text-sm text-slate-900 font-medium"><%= pattern[:pattern_value] %></p>
+              <div class="flex items-center gap-4 mt-1 text-xs text-slate-600">
+                <span>Usage: <%= pattern[:usage_count] %></span>
+                <span>Success: <%= pattern[:success_rate] %>%</span>
+                <span>Confidence: <%= pattern[:confidence_weight] %></span>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-2xl font-bold text-emerald-600">
+                <%= pattern[:success_rate] %>%
+              </div>
+              <div class="text-xs text-slate-500">accuracy</div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Patterns Needing Improvement -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-lg font-semibold text-slate-900 mb-4">Patterns Needing Improvement</h2>
+      <div class="space-y-3">
+        <% @bottom_patterns.each do |pattern| %>
+          <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full font-medium">
+                  <%= pattern[:pattern_type].humanize %>
+                </span>
+                <span class="text-xs px-2 py-1 rounded-full"
+                      style="background-color: <%= pattern[:category_color] %>20; color: <%= pattern[:category_color] %>">
+                  <%= pattern[:category_name] %>
+                </span>
+              </div>
+              <p class="text-sm text-slate-900 font-medium"><%= pattern[:pattern_value] %></p>
+              <div class="flex items-center gap-4 mt-1 text-xs text-slate-600">
+                <span>Usage: <%= pattern[:usage_count] %></span>
+                <span>Success: <%= pattern[:success_rate] %>%</span>
+                <span>Potential: +<%= pattern[:improvement_potential] %>%</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-2xl font-bold text-rose-600">
+                <%= pattern[:success_rate] %>%
+              </div>
+              <div class="text-xs text-slate-500">accuracy</div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Usage Heatmap -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+    <h2 class="text-lg font-semibold text-slate-900 mb-4">Pattern Usage Heatmap</h2>
+    <div id="usage_heatmap" 
+         data-controller="pattern-heatmap"
+         data-pattern-heatmap-url-value="<%= heatmap_analytics_pattern_dashboard_index_path %>"
+         class="h-64">
+      <!-- Heatmap will be rendered here by Stimulus -->
+    </div>
+  </div>
+
+  <!-- Learning Metrics & Recent Activity -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Learning Metrics -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-lg font-semibold text-slate-900 mb-4">Learning Progress</h2>
+      <div class="space-y-4">
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-slate-600">Total Learning Events</span>
+          <span class="text-lg font-semibold text-slate-900"><%= @learning_metrics[:total_learning_events] %></span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-slate-600">Patterns Created</span>
+          <span class="text-lg font-semibold text-emerald-600"><%= @learning_metrics[:patterns_created] %></span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-slate-600">Patterns Improved</span>
+          <span class="text-lg font-semibold text-teal-600"><%= @learning_metrics[:patterns_improved] %></span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-slate-600">Patterns Deactivated</span>
+          <span class="text-lg font-semibold text-amber-600"><%= @learning_metrics[:patterns_deactivated] %></span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-slate-600">Avg Confidence Gain</span>
+          <span class="text-lg font-semibold text-slate-900">+<%= @learning_metrics[:average_confidence_gain] %></span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-slate-600">Categories Improved</span>
+          <span class="text-lg font-semibold text-slate-900"><%= @learning_metrics[:categories_improved] %></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div id="recent_activity" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <%= render "recent_activity", recent_activity: @recent_activity %>
+    </div>
+  </div>
+</div>

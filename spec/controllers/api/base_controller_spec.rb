@@ -14,7 +14,9 @@ RSpec.describe Api::BaseController, type: :controller do
     end
 
     def create
-      raise ActiveRecord::RecordInvalid.new(build(:expense))
+      expense = Expense.new
+      expense.errors.add(:base, "Name can't be blank")
+      raise ActiveRecord::RecordInvalid.new(expense)
     end
 
     def update
@@ -72,9 +74,11 @@ RSpec.describe Api::BaseController, type: :controller do
     end
 
     context "with expired token" do
-      let(:expired_token) { create(:api_token, expires_at: 1.day.ago) }
+      let(:expired_token) { create(:api_token, expires_at: 1.day.from_now) }
 
       before do
+        # Manually expire the token after creation to bypass validation
+        expired_token.update_column(:expires_at, 1.day.ago)
         request.headers["Authorization"] = "Bearer #{expired_token.token}"
       end
 
@@ -125,13 +129,14 @@ RSpec.describe Api::BaseController, type: :controller do
 
     context "StandardError" do
       it "returns 500 internal server error" do
+        allow_any_instance_of(ActionDispatch::Request).to receive(:request_id).and_return("test-error-id")
         delete :destroy, params: { id: 1 }
 
         expect(response).to have_http_status(:internal_server_error)
         json = JSON.parse(response.body)
         expect(json["error"]).to eq("Internal server error")
         expect(json["status"]).to eq(500)
-        expect(json["request_id"]).to be_present
+        expect(json["request_id"]).to eq("test-error-id")
       end
 
       it "logs the error" do
@@ -154,8 +159,10 @@ RSpec.describe Api::BaseController, type: :controller do
     end
 
     it "sets request ID header" do
+      request.headers["X-Request-ID"] = "test-request-id-123"
+      allow_any_instance_of(ActionDispatch::Request).to receive(:request_id).and_return("test-request-id-123")
       get :index
-      expect(response.headers["X-Request-ID"]).to be_present
+      expect(response.headers["X-Request-ID"]).to eq("test-request-id-123")
     end
 
     it "skips CSRF protection" do
@@ -170,9 +177,7 @@ RSpec.describe Api::BaseController, type: :controller do
     end
 
     it "logs API requests" do
-      expect(Rails.logger).to receive(:info).with(/API Request: GET/)
-      expect(Rails.logger).to receive(:info).with(/Token: #{api_token.name}/)
-      expect(Rails.logger).to receive(:info).with(/Request ID:/)
+      expect(Rails.logger).to receive(:info).with(/API Request: GET.*Token: #{api_token.name}.*Request ID:/)
 
       get :index
     end
@@ -227,6 +232,7 @@ RSpec.describe Api::BaseController, type: :controller do
     end
 
     it "renders error response with default status" do
+      allow_any_instance_of(ActionDispatch::Request).to receive(:request_id).and_return("test-render-error-id")
       get :index
 
       expect(response).to have_http_status(:unprocessable_content)
@@ -234,7 +240,7 @@ RSpec.describe Api::BaseController, type: :controller do
       expect(json["status"]).to eq("error")
       expect(json["message"]).to eq("Something went wrong")
       expect(json["errors"]).to eq([ "Error 1", "Error 2" ])
-      expect(json["request_id"]).to be_present
+      expect(json["request_id"]).to eq("test-render-error-id")
     end
 
     it "renders error response with custom status" do

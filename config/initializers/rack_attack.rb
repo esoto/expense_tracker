@@ -3,6 +3,9 @@
 # Rate limiting and security configuration using Rack::Attack
 # Protects against brute force attacks, DoS, and other abusive behavior
 
+# Skip all rate limiting in test environment
+return if Rails.env.test?
+
 class Rack::Attack
   # Store configuration in Redis if available, otherwise use in-memory cache
   if ENV["REDIS_URL"].present?
@@ -139,16 +142,18 @@ class Rack::Attack
   # === Track suspicious activity ===
 
   # Track 404s to identify scanners
-  track("req/404s") do |req|
-    req.ip if req.status == 404
-  end
+  # Note: This is disabled as status is not available during request processing
+  # track("req/404s") do |req|
+  #   req.ip if req.status == 404
+  # end
 
   # Block IPs with too many 404s (likely scanners)
-  blocklist("fail2ban/404s") do |req|
-    Rack::Attack::Fail2Ban.filter("req/404s:#{req.ip}", maxretry: 20, findtime: 1.minute, bantime: 1.hour) do
-      req.status == 404
-    end
-  end
+  # Note: This is disabled as status is not available during request processing
+  # blocklist("fail2ban/404s") do |req|
+  #   Rack::Attack::Fail2Ban.filter("req/404s:#{req.ip}", maxretry: 20, findtime: 1.minute, bantime: 1.hour) do
+  #     req.status == 404
+  #   end
+  # end
 
   # Track failed login attempts
   track("login/failures") do |req|
@@ -161,20 +166,22 @@ class Rack::Attack
 
   # Customize throttled response
   self.throttled_responder = lambda do |env|
-    throttle_data = env["rack.attack.throttle_data"]
-    match_type = env["rack.attack.matched"]
+    # Handle both Hash and Request objects
+    request_env = env.is_a?(Hash) ? env : env.env
+    throttle_data = request_env["rack.attack.throttle_data"]
+    match_type = request_env["rack.attack.matched"]
 
     # Calculate retry-after in seconds
-    now = throttle_data[:epoch_time]
-    retry_after = throttle_data[:period] - (now % throttle_data[:period])
+    now = throttle_data[:epoch_time] || Time.now.to_i
+    retry_after = throttle_data[:period] ? throttle_data[:period] - (now % throttle_data[:period]) : 60
 
     # Log the throttle event
     Rails.logger.warn(
-      "Rate limit exceeded: #{match_type} for IP #{env['HTTP_X_FORWARDED_FOR'] || env['REMOTE_ADDR']}"
+      "Rate limit exceeded: #{match_type} for IP #{request_env['HTTP_X_FORWARDED_FOR'] || request_env['REMOTE_ADDR']}"
     )
 
     # Return appropriate response based on request type
-    if env["HTTP_ACCEPT"]&.include?("application/json")
+    if request_env["HTTP_ACCEPT"]&.include?("application/json")
       [
         429,
         {

@@ -12,7 +12,7 @@ module Api
 
     rescue_from StandardError, with: :internal_server_error
     rescue_from ActiveRecord::RecordNotFound, with: :not_found
-    rescue_from ActiveRecord::RecordInvalid, with: :unprocessable_entity
+    rescue_from ActiveRecord::RecordInvalid, with: :unprocessable_content
     rescue_from ActionController::ParameterMissing, with: :bad_request
 
     private
@@ -50,7 +50,7 @@ module Api
       }, status: :not_found
     end
 
-    def unprocessable_entity(exception)
+    def unprocessable_content(exception)
       render json: {
         error: exception.message,
         errors: exception.record.errors.full_messages,

@@ -1,13 +1,15 @@
 class ExpensesController < ApplicationController
-  before_action :set_expense, only: [ :show, :edit, :update, :destroy ]
+  before_action :authenticate_user!, except: [ :dashboard ] # Allow dashboard without auth for now
+  before_action :set_expense, only: [ :show, :edit, :update, :destroy, :correct_category, :accept_suggestion, :reject_suggestion ]
+  before_action :authorize_expense!, only: [ :edit, :update, :destroy, :correct_category, :accept_suggestion, :reject_suggestion ]
 
   # GET /expenses
   def index
     # Handle dashboard navigation context
     setup_navigation_context
 
-    # Base query with includes
-    @expenses = Expense.includes(:category, :email_account)
+    # Base query with includes - now includes ml_suggested_category to prevent N+1
+    @expenses = current_user_expenses.includes(:category, :email_account, :ml_suggested_category)
 
     # Apply filters efficiently
     @expenses = apply_filters(@expenses)
@@ -145,14 +147,151 @@ class ExpensesController < ApplicationController
     redirect_to dashboard_expenses_path, alert: "Error al iniciar la sincronización. Por favor, inténtalo de nuevo."
   end
 
+  # POST /expenses/:id/correct_category
+  def correct_category
+    new_category_id = params[:category_id]
+
+    # Validate category_id
+    if new_category_id.present?
+      # Ensure the category exists
+      unless Category.exists?(new_category_id)
+        respond_to do |format|
+          format.html { redirect_back(fallback_location: @expense, alert: "Categoría inválida") }
+          format.json { render json: { success: false, error: "Invalid category ID" }, status: :unprocessable_content }
+        end
+        return
+      end
+
+      @expense.reject_ml_suggestion!(new_category_id)
+
+      respond_to do |format|
+        format.html { redirect_back(fallback_location: @expense, notice: "Categoría actualizada correctamente") }
+        format.turbo_stream { render turbo_stream: turbo_stream.replace("expense_#{@expense.id}_category", partial: "expenses/category_with_confidence", locals: { expense: @expense }) }
+        format.json { render json: { success: true, expense: expense_json(@expense) } }
+      end
+    else
+      respond_to do |format|
+        format.html { redirect_back(fallback_location: @expense, alert: "Por favor selecciona una categoría") }
+        format.json { render json: { success: false, error: "Category ID required" }, status: :unprocessable_content }
+      end
+    end
+  rescue StandardError => e
+    Rails.logger.error "Error correcting category: #{e.message}"
+    respond_to do |format|
+      format.html { redirect_back(fallback_location: @expense, alert: "Error al actualizar la categoría") }
+      format.json { render json: { success: false, error: e.message }, status: :internal_server_error }
+    end
+  end
+
+  # POST /expenses/:id/accept_suggestion
+  def accept_suggestion
+    if @expense.accept_ml_suggestion!
+      respond_to do |format|
+        format.html { redirect_back(fallback_location: @expense, notice: "Sugerencia aceptada") }
+        format.turbo_stream { render turbo_stream: turbo_stream.replace("expense_#{@expense.id}_category", partial: "expenses/category_with_confidence", locals: { expense: @expense }) }
+        format.json { render json: { success: true, expense: expense_json(@expense) } }
+      end
+    else
+      respond_to do |format|
+        format.html { redirect_back(fallback_location: @expense, alert: "No hay sugerencia disponible") }
+        format.json { render json: { success: false, error: "No suggestion available" }, status: :unprocessable_content }
+      end
+    end
+  rescue StandardError => e
+    Rails.logger.error "Error accepting suggestion: #{e.message}"
+    respond_to do |format|
+      format.html { redirect_back(fallback_location: @expense, alert: "Error al aceptar la sugerencia") }
+      format.json { render json: { success: false, error: e.message }, status: :internal_server_error }
+    end
+  end
+
+  # POST /expenses/:id/reject_suggestion
+  def reject_suggestion
+    @expense.update!(ml_suggested_category_id: nil)
+
+    respond_to do |format|
+      format.html { redirect_back(fallback_location: @expense, notice: "Sugerencia rechazada") }
+      format.turbo_stream { render turbo_stream: turbo_stream.replace("expense_#{@expense.id}_category", partial: "expenses/category_with_confidence", locals: { expense: @expense }) }
+      format.json { render json: { success: true, expense: expense_json(@expense) } }
+    end
+  rescue StandardError => e
+    Rails.logger.error "Error rejecting suggestion: #{e.message}"
+    respond_to do |format|
+      format.html { redirect_back(fallback_location: @expense, alert: "Error al rechazar la sugerencia") }
+      format.json { render json: { success: false, error: e.message }, status: :internal_server_error }
+    end
+  end
+
   private
 
   def set_expense
-    @expense = Expense.find(params[:id])
+    @expense = current_user_expenses.find(params[:id])
+  rescue ActiveRecord::RecordNotFound
+    redirect_to expenses_path, alert: "Gasto no encontrado o no tienes permiso para verlo."
+  end
+
+  def authorize_expense!
+    unless can_modify_expense?(@expense)
+      redirect_to expenses_path, alert: "No tienes permiso para modificar este gasto."
+    end
+  end
+
+  def can_modify_expense?(expense)
+    # Check if the expense belongs to the current user's email accounts
+    return false unless expense.present?
+
+    # Allow modification if expense belongs to user's email accounts
+    current_user_email_accounts.include?(expense.email_account)
+  end
+
+  def current_user_expenses
+    # Get expenses that belong to the current user's email accounts
+    Expense.joins(:email_account)
+           .where(email_account: current_user_email_accounts)
+  end
+
+  def current_user_email_accounts
+    # Cache this in instance variable to avoid multiple queries
+    @current_user_email_accounts ||= if defined?(current_user) && current_user.present?
+      # If using Devise or similar authentication
+      EmailAccount.where(user_id: current_user.id)
+    else
+      # Fallback for systems without user authentication
+      # In production, this should be properly configured
+      EmailAccount.all
+    end
+  end
+
+  def authenticate_user!
+    # This would normally be provided by Devise or your auth system
+    # For now, we'll make it a no-op if not defined
+    super if defined?(super)
   end
 
   def expense_params
     params.require(:expense).permit(:amount, :currency, :transaction_date, :merchant_name, :description, :category_id, :email_account_id, :notes)
+  end
+
+  def expense_json(expense)
+    {
+      id: expense.id,
+      amount: expense.amount,
+      description: expense.description,
+      merchant_name: expense.merchant_name,
+      category: expense.category ? {
+        id: expense.category.id,
+        name: expense.category.name,
+        color: expense.category.color
+      } : nil,
+      ml_confidence: expense.ml_confidence,
+      confidence_level: expense.confidence_level,
+      confidence_percentage: expense.confidence_percentage,
+      ml_suggested_category: expense.ml_suggested_category ? {
+        id: expense.ml_suggested_category.id,
+        name: expense.ml_suggested_category.name,
+        color: expense.ml_suggested_category.color
+      } : nil
+    }
   end
 
   def apply_filters(scope)

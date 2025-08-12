@@ -336,7 +336,7 @@ RSpec.describe CategorizationPattern, type: :model do
 
     it "updates success rate" do
       pattern.record_usage(true)
-      expect(pattern.success_rate).to eq(4.0 / 6.0)
+      expect(pattern.success_rate).to be_within(0.001).of(4.0 / 6.0)
     end
   end
 

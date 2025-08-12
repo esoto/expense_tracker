@@ -87,6 +87,10 @@ module Patterns
       }
     end
 
+    def calculate_accuracy_trend
+      calculate_daily_accuracy(7)
+    end
+
     def patterns_by_type_performance
       base_scope
         .group(:pattern_type)

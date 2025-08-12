@@ -141,8 +141,8 @@ RSpec.describe "Api::V1::Patterns Security", type: :request do
 
       expect(response.status).to eq(201)
       json = JSON.parse(response.body)
-      # API should store the value as-is, no HTML escaping needed for JSON APIs
-      expect(json["pattern"]["pattern_value"]).to eq("<script>alert('XSS')</script>")
+      # Pattern values are normalized to lowercase for consistent matching
+      expect(json["pattern"]["pattern_value"]).to eq("<script>alert('xss')</script>")
     end
   end
 

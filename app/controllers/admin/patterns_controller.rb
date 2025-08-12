@@ -81,7 +81,7 @@ module Admin
                     notice: "Pattern was successfully created.",
                     status: :see_other
       else
-        render :new, status: :unprocessable_entity
+        render :new, status: :unprocessable_content
       end
     end
 
@@ -93,7 +93,7 @@ module Admin
                     notice: "Pattern was successfully updated.",
                     status: :see_other
       else
-        render :edit, status: :unprocessable_entity
+        render :edit, status: :unprocessable_content
       end
     end
 
@@ -138,7 +138,7 @@ module Admin
       else
         respond_to do |format|
           format.turbo_stream { render_test_error(tester.errors.full_messages) }
-          format.json { render json: { errors: tester.errors }, status: :unprocessable_entity }
+          format.json { render json: { errors: tester.errors }, status: :unprocessable_content }
         end
       end
     end
@@ -157,7 +157,7 @@ module Admin
       else
         respond_to do |format|
           format.turbo_stream { render_test_error([ "Test text is required" ]) }
-          format.json { render json: { error: "Test text is required" }, status: :unprocessable_entity }
+          format.json { render json: { error: "Test text is required" }, status: :unprocessable_content }
         end
       end
     end
@@ -657,7 +657,7 @@ module Admin
     end
 
     def import_error_message(importer)
-      "Import failed: #{importer.errors.join('; ')}"
+      "Import failed: #{importer.import_errors.join('; ')}"
     end
 
     def statistics_filters

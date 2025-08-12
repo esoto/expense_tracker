@@ -68,6 +68,9 @@ RSpec.configure do |config|
   # Include FactoryBot methods
   config.include FactoryBot::Syntax::Methods
 
+  # Include categorization test helpers
+  config.include CategorizationTestHelper
+
   # Configure ActiveJob test adapter for job tests
   config.include ActiveJob::TestHelper, type: :job
 
@@ -150,4 +153,5 @@ RSpec.configure do |config|
   config.filter_rails_from_backtrace!
   # arbitrary gems may also be filtered via:
   # config.filter_gems_from_backtrace("gem name")
+
 end

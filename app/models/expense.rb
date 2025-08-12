@@ -2,6 +2,7 @@ class Expense < ApplicationRecord
   # Associations
   belongs_to :email_account
   belongs_to :category, optional: true
+  belongs_to :ml_suggested_category, class_name: "Category", foreign_key: "ml_suggested_category_id", optional: true
   has_many :pattern_feedbacks, dependent: :destroy
   has_many :pattern_learning_events, dependent: :destroy
 
@@ -135,6 +136,75 @@ class Expense < ApplicationRecord
     if category.nil?
       self.category = guess_category
       save if changed?
+    end
+  end
+
+  # ML Confidence methods
+  def confidence_level
+    return :none if ml_confidence.nil?
+    return :high if ml_confidence >= 0.85
+    return :medium if ml_confidence >= 0.70
+    return :low if ml_confidence >= 0.50
+    :very_low
+  end
+
+  def confidence_percentage
+    return 0 if ml_confidence.nil?
+    (ml_confidence * 100).round
+  end
+
+  def needs_review?
+    confidence_level == :low || confidence_level == :very_low
+  end
+
+  def accept_ml_suggestion!
+    return false unless ml_suggested_category_id.present?
+
+    transaction do
+      # Track the correction
+      self.ml_correction_count = (ml_correction_count || 0) + 1
+      self.ml_last_corrected_at = Time.current
+
+      # Apply the suggestion
+      self.category_id = ml_suggested_category_id
+      self.ml_suggested_category_id = nil
+
+      # Update confidence
+      self.ml_confidence = 1.0
+      self.ml_confidence_explanation = "Manually confirmed by user"
+
+      save!
+    end
+  end
+
+  def reject_ml_suggestion!(new_category_id)
+    transaction do
+      # Track the correction
+      self.ml_correction_count = (ml_correction_count || 0) + 1
+      self.ml_last_corrected_at = Time.current
+
+      # Apply the new category
+      self.category_id = new_category_id
+      self.ml_suggested_category_id = nil
+
+      # Update confidence
+      self.ml_confidence = 1.0
+      self.ml_confidence_explanation = "Manually corrected by user"
+
+      # Create learning event for pattern improvement
+      pattern_learning_events.create!(
+        category_id: new_category_id,
+        pattern_used: "manual_correction",
+        was_correct: true,
+        confidence_score: 1.0,
+        context_data: {
+          previous_category_id: category_id_was,
+          merchant: merchant_name,
+          description: description
+        }
+      )
+
+      save!
     end
   end
 

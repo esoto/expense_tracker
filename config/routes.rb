@@ -25,6 +25,9 @@ Rails.application.routes.draw do
   namespace :api do
     # API v1 routes
     namespace :v1 do
+      # Categories endpoint
+      resources :categories, only: [ :index ]
+
       # Categorization patterns management
       resources :patterns do
         collection do
@@ -119,6 +122,11 @@ Rails.application.routes.draw do
       get :dashboard
       post :sync_emails
     end
+    member do
+      post :correct_category
+      post :accept_suggestion
+      post :reject_suggestion
+    end
   end
 
   resources :budgets do
@@ -172,6 +180,18 @@ Rails.application.routes.draw do
     end
     member do
       post :undo
+    end
+  end
+
+  # Analytics routes
+  namespace :analytics do
+    resources :pattern_dashboard, only: [ :index ], controller: "pattern_dashboard" do
+      collection do
+        get :trends
+        get :heatmap
+        get :export
+        post :refresh
+      end
     end
   end
 

@@ -48,7 +48,7 @@ module Admin
         redirect_to admin_composite_pattern_path(@composite_pattern),
                     notice: "Composite pattern was successfully created."
       else
-        render :new, status: :unprocessable_entity
+        render :new, status: :unprocessable_content
       end
     end
 
@@ -58,7 +58,7 @@ module Admin
         redirect_to admin_composite_pattern_path(@composite_pattern),
                     notice: "Composite pattern was successfully updated."
       else
-        render :edit, status: :unprocessable_entity
+        render :edit, status: :unprocessable_content
       end
     end
 

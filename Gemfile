@@ -155,5 +155,3 @@ group :categorization do
   gem "hiredis", "~> 0.6"
   # concurrent-ruby and connection_pool already defined above
 end
-
-gem "fakeredis", "~> 0.9.2", group: :test, github: "guilleiguaran/fakeredis"

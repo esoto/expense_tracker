@@ -76,7 +76,7 @@ class BulkCategorizationsController < ApplicationController
         respond_to do |format|
           format.html { redirect_to bulk_categorizations_path, alert: result.message }
           format.turbo_stream { render_error_stream(result.message) }
-          format.json { render json: { error: result.message }, status: :unprocessable_entity }
+          format.json { render json: { error: result.message }, status: :unprocessable_content }
         end
       end
     end
@@ -130,7 +130,7 @@ class BulkCategorizationsController < ApplicationController
     else
       respond_to do |format|
         format.html { redirect_to bulk_categorizations_path, alert: result.message }
-        format.json { render json: { error: result.message }, status: :unprocessable_entity }
+        format.json { render json: { error: result.message }, status: :unprocessable_content }
       end
     end
   end

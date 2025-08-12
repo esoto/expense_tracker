@@ -3,6 +3,7 @@
 require "concurrent"
 require "ostruct"
 require_relative "lru_cache"
+require_relative "ml_confidence_integration"
 
 module Categorization
   # Simple circuit breaker implementation for fault tolerance
@@ -85,6 +86,7 @@ module Categorization
   # Performance target: <10ms per categorization with bounded resource usage
   class Engine
     include ActiveSupport::Benchmarkable
+    include MlConfidenceIntegration
 
     # Include monitoring capabilities if available
     begin
@@ -120,11 +122,21 @@ module Categorization
     class << self
       # Thread-safe singleton instance using concurrent-ruby
       def instance
-        return @instance if defined?(@instance)
+        return @instance if defined?(@instance) && @instance
 
         @instance_mutex ||= Mutex.new
         @instance_mutex.synchronize do
           @instance ||= new
+        end
+      end
+
+      # Safe singleton reset for testing
+      def reset_singleton!
+        return unless defined?(@instance_mutex) && @instance_mutex
+
+        @instance_mutex.synchronize do
+          @instance&.reset!
+          @instance = nil
         end
       end
 
@@ -232,7 +244,6 @@ module Categorization
       begin
         # Validate and limit batch size
         if expenses.size > BATCH_SIZE_LIMIT
-          $stderr.puts "Batch size #{expenses.size} exceeds limit of #{BATCH_SIZE_LIMIT}, processing first #{BATCH_SIZE_LIMIT}"
           @logger.warn "[Engine] Batch size #{expenses.size} exceeds limit of #{BATCH_SIZE_LIMIT}, processing first #{BATCH_SIZE_LIMIT}"
           expenses = expenses.first(BATCH_SIZE_LIMIT)
         end
@@ -308,6 +319,17 @@ module Categorization
     # Reset the engine safely
     def reset!
       @reset_mutex.synchronize do
+        # In test environment, shut down thread pool to prevent race conditions
+        if Rails.env.test? && @thread_pool
+          begin
+            @thread_pool.shutdown
+            # Wait up to 5 seconds for pending tasks to complete
+            @thread_pool.wait_for_termination(5)
+          rescue => e
+            @logger.warn "[Engine] Error shutting down thread pool during reset: #{e.message}"
+          end
+        end
+
         # Clear all caches - notify all components
         @pattern_cache_service.invalidate_all if @pattern_cache_service.respond_to?(:invalidate_all)
         @fuzzy_matcher.clear_cache if @fuzzy_matcher.respond_to?(:clear_cache)
@@ -315,7 +337,7 @@ module Categorization
 
         # Clear internal caches
         @pattern_cache.clear
-        @lru_cache.clear
+        @lru_cache.clear if @lru_cache.respond_to?(:clear)
 
         # Reset metrics
         @total_categorizations.value = 0
@@ -328,7 +350,18 @@ module Categorization
         # Reset performance tracker
         @performance_tracker.reset! if @performance_tracker
 
-        @logger.info "[Engine] Engine reset completed"
+        # In test environment, reinitialize thread pool after shutdown
+        if Rails.env.test?
+          initialize_thread_pool
+        end
+
+        # Verify engine health after reset
+        unless healthy?
+          @logger.error "[Engine] Engine unhealthy after reset"
+          raise CircuitOpenError, "Engine unhealthy after reset"
+        end
+
+        @logger.info "[Engine] Engine reset completed successfully"
       end
     end
 
@@ -360,6 +393,10 @@ module Categorization
       @performance_tracker = options.fetch(:performance_tracker) { PerformanceTracker.new }
 
       # Thread pool for async operations
+      initialize_thread_pool
+    end
+
+    def initialize_thread_pool
       @thread_pool = Concurrent::ThreadPoolExecutor.new(
         min_threads: 2,
         max_threads: MAX_CONCURRENT_OPERATIONS,
@@ -612,12 +649,8 @@ module Categorization
 
     def update_expense_sync(expense, result, correlation_id)
       begin
-        expense.update!(
-          category: result.category,
-          auto_categorized: true,
-          categorization_confidence: result.confidence,
-          categorization_method: result.method
-        )
+        # Use ML confidence integration to properly update all fields
+        update_expense_with_ml_confidence(expense, result)
       rescue => e
         log_error(correlation_id, "Failed to update expense #{expense.id}", e)
       end
@@ -627,12 +660,8 @@ module Categorization
       @thread_pool.post do
         begin
           with_circuit_breaker(:database) do
-            expense.update!(
-              category: result.category,
-              auto_categorized: true,
-              categorization_confidence: result.confidence,
-              categorization_method: result.method
-            )
+            # Use ML confidence integration to properly update all fields
+            update_expense_with_ml_confidence(expense, result)
           end
         rescue => e
           log_error(correlation_id, "Failed to update expense #{expense.id}", e)

@@ -1,0 +1,27 @@
+<h2 class="text-lg font-semibold text-slate-900 mb-4">Category Performance</h2>
+<div class="space-y-3">
+  <% category_performance.first(8).each do |category| %>
+    <div class="flex items-center gap-3">
+      <div class="w-32 flex-shrink-0">
+        <span class="text-sm text-slate-700 font-medium truncate block"><%= category[:name] %></span>
+      </div>
+      <div class="flex-1">
+        <div class="h-6 bg-slate-100 rounded-full overflow-hidden relative">
+          <div class="h-full rounded-full flex items-center justify-end pr-2"
+               style="width: <%= category[:accuracy] %>%; background-color: <%= category[:color] || '#0F766E' %>">
+            <span class="text-xs text-white font-medium"><%= category[:accuracy] %>%</span>
+          </div>
+        </div>
+      </div>
+      <div class="text-xs text-slate-500 w-20 text-right">
+        <%= category[:pattern_count] %> patterns
+      </div>
+    </div>
+  <% end %>
+  
+  <% if category_performance.size > 8 %>
+    <div class="text-xs text-slate-500 text-center pt-2">
+      And <%= category_performance.size - 8 %> more categories...
+    </div>
+  <% end %>
+</div>

@@ -14,11 +14,11 @@ module Patterns
     OPTIONAL_HEADERS = %w[confidence_weight active metadata].freeze
 
     attr_accessor :file, :user, :dry_run
-    attr_reader :imported_count, :errors, :skipped_count, :patterns
+    attr_reader :imported_count, :import_errors, :skipped_count, :patterns
 
     validates :file, presence: true
-    validate :validate_file_security
-    validate :validate_file_format
+    validate :validate_file_security, if: -> { file.present? }
+    validate :validate_file_format, if: -> { file.present? && errors.empty? }
 
     def initialize(file:, user: nil, dry_run: false)
       @file = file
@@ -26,7 +26,7 @@ module Patterns
       @dry_run = dry_run
       @imported_count = 0
       @skipped_count = 0
-      @errors = []
+      @import_errors = []
       @patterns = []
     end
 
@@ -35,26 +35,26 @@ module Patterns
 
       process_csv_file
 
-      @errors.empty?
+      @import_errors.empty?
     rescue CSV::MalformedCSVError => e
-      @errors << "Invalid CSV format: #{e.message}"
+      @import_errors << "Invalid CSV format: #{e.message}"
       false
     rescue StandardError => e
       Rails.logger.error "CSV Import failed: #{e.message}\n#{e.backtrace.join("\n")}"
-      @errors << "Import failed: #{e.message}"
+      @import_errors << "Import failed: #{e.message}"
       false
     end
 
     def success?
-      @errors.empty? && @imported_count > 0
+      @import_errors.empty? && @imported_count > 0
     end
 
     def summary
       {
         imported: @imported_count,
         skipped: @skipped_count,
-        errors: @errors.size,
-        total_rows: @imported_count + @skipped_count + @errors.size
+        errors: @import_errors.size,
+        total_rows: @imported_count + @skipped_count + @import_errors.size
       }
     end
 
@@ -118,7 +118,7 @@ module Patterns
 
           # Check row limit
           if row_count > MAX_ROWS
-            @errors << "Exceeded maximum row limit of #{MAX_ROWS}"
+            @import_errors << "Exceeded maximum row limit of #{MAX_ROWS}"
             raise ActiveRecord::Rollback
           end
 
@@ -136,7 +136,7 @@ module Patterns
 
       # Validate category exists
       unless Category.exists?(sanitized_data[:category_id])
-        @errors << "Row #{row_number}: Category ID #{sanitized_data[:category_id]} does not exist"
+        @import_errors << "Row #{row_number}: Category ID #{sanitized_data[:category_id]} does not exist"
         @skipped_count += 1
         return
       end
@@ -158,10 +158,10 @@ module Patterns
         @patterns << pattern
         @imported_count += 1
       else
-        @errors << "Row #{row_number}: #{pattern.errors.full_messages.join(', ')}"
+        @import_errors << "Row #{row_number}: #{pattern.errors.full_messages.join(', ')}"
       end
     rescue StandardError => e
-      @errors << "Row #{row_number}: #{e.message}"
+      @import_errors << "Row #{row_number}: #{e.message}"
     end
 
     def sanitize_row_data(row)

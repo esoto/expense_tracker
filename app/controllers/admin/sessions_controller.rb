@@ -62,7 +62,7 @@ module Admin
 
       flash.now[:alert] = login_error_message
       @admin_user = AdminUser.new(email: session_params[:email])
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
 
     def login_error_message

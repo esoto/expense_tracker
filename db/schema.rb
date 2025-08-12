@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_12_122540) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_12_165604) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -172,6 +172,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_12_122540) do
     t.index ["active", "success_rate", "usage_count"], name: "idx_patterns_active_success_usage"
     t.index ["active", "usage_count", "success_rate"], name: "idx_patterns_frequently_used", where: "(usage_count >= 10)"
     t.index ["category_id", "active", "pattern_type"], name: "idx_patterns_category_active_type"
+    t.index ["category_id", "active", "success_rate", "usage_count"], name: "idx_patterns_category_performance"
     t.index ["category_id", "pattern_type", "pattern_value"], name: "idx_patterns_unique_lookup", unique: true
     t.index ["category_id", "success_rate"], name: "index_categorization_patterns_on_category_id_and_success_rate"
     t.index ["category_id"], name: "index_categorization_patterns_on_category_id"
@@ -278,6 +279,12 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_12_122540) do
     t.string "categorization_method"
     t.datetime "categorized_at"
     t.string "categorized_by"
+    t.float "ml_confidence"
+    t.text "ml_confidence_explanation"
+    t.integer "ml_suggested_category_id"
+    t.datetime "ml_last_corrected_at", precision: nil
+    t.integer "ml_correction_count", default: 0
+    t.index "EXTRACT(hour FROM transaction_date), EXTRACT(dow FROM transaction_date)", name: "idx_expenses_hour_dow"
     t.index ["amount"], name: "index_expenses_on_amount"
     t.index ["auto_categorized", "categorization_confidence"], name: "idx_on_auto_categorized_categorization_confidence_98abf3d147"
     t.index ["bank_name", "transaction_date"], name: "index_expenses_on_bank_name_and_transaction_date"
@@ -316,6 +323,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_12_122540) do
     t.index ["transaction_date", "currency", "amount"], name: "index_expenses_on_date_currency_amount"
     t.index ["transaction_date", "merchant_name", "amount"], name: "index_expenses_on_date_merchant_amount"
     t.index ["transaction_date", "status", "amount"], name: "index_expenses_on_date_status_amount"
+    t.index ["transaction_date"], name: "idx_expenses_transaction_date"
     t.index ["transaction_date"], name: "index_expenses_on_transaction_date"
   end
 
@@ -385,11 +393,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_12_122540) do
     t.index ["categorization_pattern_id", "was_correct"], name: "idx_feedbacks_pattern_correct"
     t.index ["categorization_pattern_id", "was_correct"], name: "idx_on_categorization_pattern_id_was_correct_e615042861"
     t.index ["categorization_pattern_id"], name: "index_pattern_feedbacks_on_categorization_pattern_id"
+    t.index ["category_id", "created_at", "feedback_type"], name: "idx_feedbacks_category_created_type"
     t.index ["category_id", "was_correct", "created_at"], name: "idx_feedbacks_category_correct_created"
     t.index ["category_id"], name: "index_pattern_feedbacks_on_category_id"
+    t.index ["created_at", "feedback_type"], name: "idx_feedbacks_created_type"
     t.index ["created_at"], name: "index_pattern_feedbacks_on_created_at"
     t.index ["expense_id", "categorization_pattern_id"], name: "idx_feedbacks_expense_pattern", unique: true
     t.index ["expense_id", "created_at"], name: "idx_feedbacks_expense_created"
+    t.index ["expense_id", "feedback_type", "created_at"], name: "idx_feedbacks_expense_type_created"
     t.index ["expense_id"], name: "index_pattern_feedbacks_on_expense_id"
   end
 
@@ -402,10 +413,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_12_122540) do
     t.jsonb "context_data", default: {}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "event_type"
+    t.jsonb "metadata", default: {}
     t.index ["category_id", "created_at"], name: "idx_learning_events_category_time"
     t.index ["category_id", "pattern_used", "created_at"], name: "idx_learning_category_pattern_created"
     t.index ["category_id"], name: "index_pattern_learning_events_on_category_id"
+    t.index ["created_at", "category_id", "event_type"], name: "idx_learning_created_category_type"
+    t.index ["created_at", "was_correct", "category_id"], name: "idx_learning_created_correct_category"
     t.index ["created_at"], name: "index_pattern_learning_events_on_created_at"
+    t.index ["event_type", "created_at"], name: "index_pattern_learning_events_on_event_type_and_created_at"
+    t.index ["event_type"], name: "index_pattern_learning_events_on_event_type"
     t.index ["expense_id"], name: "index_pattern_learning_events_on_expense_id"
     t.index ["pattern_used"], name: "index_pattern_learning_events_on_pattern_used"
     t.index ["was_correct", "created_at"], name: "idx_learning_correct_created"

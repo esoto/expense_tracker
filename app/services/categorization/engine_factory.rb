@@ -100,9 +100,9 @@ module Categorization
 
     def initialize_components(options)
       # Initialize cache
-      @cache = LRUCache.new(
+      @cache = LruCache.new(
         max_size: options[:cache_size] || 1000,
-        ttl: options[:cache_ttl] || 300
+        ttl_seconds: options[:cache_ttl] || 300
       )
 
       # Initialize services (no longer using singleton)

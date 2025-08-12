@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 
-# Configure Redis for testing with fakeredis
-require 'fakeredis' if Gem.loaded_specs.key?('fakeredis')
-require 'fakeredis/rspec' if defined?(FakeRedis)
-
+# Configure Redis for testing
 module RedisTestConfig
   def self.configure(config)
     config.before(:each) do
-      # Clear Redis data between tests when using FakeRedis
-      # Using Redis.new instead of deprecated Redis.current
-      if defined?(Redis) && defined?(FakeRedis)
-        Redis.new.flushdb rescue nil
+      # Clear Redis data between tests
+      if defined?(Redis)
+        begin
+          Redis.new.flushdb
+        rescue Redis::CannotConnectError
+          # Skip Redis cleanup if Redis is not available in test environment
+        end
       end
     end
   end

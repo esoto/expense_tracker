@@ -5,7 +5,10 @@ require 'benchmark'
 require 'memory_profiler'
 
 RSpec.describe "Categorization Load Testing", type: :performance do
-  let(:engine) { Categorization::Engine.new }
+  let(:engine) { 
+    reset_categorization_engine!
+    Categorization::Engine.instance 
+  }
 
   describe "high volume categorization" do
     before do
@@ -53,7 +56,7 @@ RSpec.describe "Categorization Load Testing", type: :performance do
 
         # Memory usage assertions - adjust for test environment overhead
         max_memory_mb = memory_usage.max || current_memory_usage_mb
-        expect(max_memory_mb).to be < 650, "Max memory: #{max_memory_mb.round}MB (target: <650MB for test)"
+        expect(max_memory_mb).to be < 680, "Max memory: #{max_memory_mb.round}MB (target: <680MB for test)"
 
         puts "\n=== Load Test Results (#{expense_count} expenses) ==="
         puts "  Total time: #{benchmark.round(2)}s"

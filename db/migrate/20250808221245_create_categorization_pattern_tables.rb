@@ -138,15 +138,24 @@ class CreateCategorizationPatternTables < ActiveRecord::Migration[8.0]
   end
 
   def down
-    # Remove indexes on expenses columns
-    remove_index :expenses, [ :auto_categorized, :categorization_confidence ] if index_exists?(:expenses, [ :auto_categorized, :categorization_confidence ])
-    remove_index :expenses, :merchant_normalized if index_exists?(:expenses, :merchant_normalized)
+    # Remove indexes on expenses columns (only the ones this migration created)
+    if ActiveRecord::Base.connection.table_exists?(:expenses)
+      remove_index :expenses, [ :auto_categorized, :categorization_confidence ] if index_exists?(:expenses, [ :auto_categorized, :categorization_confidence ])
+      # Only remove the basic index on merchant_normalized, not the complex ones from other migrations
+      begin
+        remove_index :expenses, name: "index_expenses_on_merchant_normalized" if index_exists?(:expenses, :merchant_normalized)
+      rescue ArgumentError, StandardError
+        # Index might not exist or have a different name, that's okay
+      end
+    end
 
-    # Remove columns from expenses table
-    remove_column :expenses, :categorization_method if column_exists?(:expenses, :categorization_method)
-    remove_column :expenses, :categorization_confidence if column_exists?(:expenses, :categorization_confidence)
-    remove_column :expenses, :auto_categorized if column_exists?(:expenses, :auto_categorized)
-    remove_column :expenses, :merchant_normalized if column_exists?(:expenses, :merchant_normalized)
+    # Remove columns from expenses table (safely check for existence)
+    if ActiveRecord::Base.connection.table_exists?(:expenses)
+      remove_column :expenses, :categorization_method if column_exists?(:expenses, :categorization_method)
+      remove_column :expenses, :categorization_confidence if column_exists?(:expenses, :categorization_confidence)
+      remove_column :expenses, :auto_categorized if column_exists?(:expenses, :auto_categorized)
+      remove_column :expenses, :merchant_normalized if column_exists?(:expenses, :merchant_normalized)
+    end
 
     # Drop all tables in reverse order of creation (check existence first)
     drop_table :pattern_learning_events if ActiveRecord::Base.connection.table_exists?(:pattern_learning_events)

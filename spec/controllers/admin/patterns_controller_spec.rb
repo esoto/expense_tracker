@@ -113,7 +113,7 @@ RSpec.describe Admin::PatternsController, type: :controller do
     context "with valid params" do
       let(:new_attributes) do
         {
-          pattern_value: 'Updated Value',
+          pattern_value: 'updated value',
           confidence_weight: 2.5
         }
       end
@@ -122,7 +122,7 @@ RSpec.describe Admin::PatternsController, type: :controller do
         pattern = CategorizationPattern.create!(valid_attributes)
         put :update, params: { id: pattern.to_param, categorization_pattern: new_attributes }
         pattern.reload
-        expect(pattern.pattern_value).to eq('Updated Value')
+        expect(pattern.pattern_value).to eq('updated value')
         expect(pattern.confidence_weight).to eq(2.5)
       end
 

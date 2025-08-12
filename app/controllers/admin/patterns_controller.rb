@@ -245,7 +245,7 @@ module Admin
 
       @average_success_rate = if stats && stats[1].to_i > 0
                                 ((stats[0].to_f / stats[1].to_i) * 100).round(2)
-                              else
+      else
                                 0
       end
 

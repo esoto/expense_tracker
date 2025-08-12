@@ -1,15 +1,37 @@
-# examples:
-#   periodic_cleanup:
-#     class: CleanSoftDeletedRecordsJob
-#     queue: background
-#     args: [ 1000, { batch_size: 500 } ]
-#     schedule: every hour
-#   periodic_cleanup_with_command:
-#     command: "SoftDeletedRecord.due.delete_all"
-#     priority: 2
-#     schedule: at 5am every day
+# Recurring jobs configuration for Solid Queue
+# These jobs run automatically on the specified schedules
 
-production:
+default: &default
+  # Calculate metrics for all email accounts every hour
+  # This pre-warms the cache with fresh metrics data
+  calculate_metrics_hourly:
+    class: MetricsCalculationJob
+    command: "MetricsCalculationJob.enqueue_for_all_accounts"
+    queue: default
+    priority: 5
+    schedule: every hour at minute 5
+    description: "Pre-calculate expense metrics for all active email accounts"
+
+  # Clean up old finished jobs periodically  
   clear_solid_queue_finished_jobs:
     command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
-    schedule: every hour at minute 12
+    schedule: every 6 hours at minute 30
+    description: "Clean up completed Solid Queue jobs to prevent database bloat"
+
+development:
+  <<: *default
+  # In development, run metrics calculation more frequently for testing
+  calculate_metrics_hourly:
+    class: MetricsCalculationJob
+    command: "MetricsCalculationJob.enqueue_for_all_accounts"
+    queue: default
+    priority: 5
+    schedule: every 30 minutes
+    description: "Pre-calculate expense metrics for all active email accounts (dev mode)"
+
+test:
+  # No recurring jobs in test environment
+
+production:
+  <<: *default
+  # Production uses default settings with hourly metric calculation

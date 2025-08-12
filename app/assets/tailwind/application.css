@@ -1,1 +1,33 @@
 @import "tailwindcss";
+
+/* Custom animations for dashboard metrics */
+@keyframes pulse-once {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+.animate-pulse-once {
+  animation: pulse-once 0.6s ease-in-out;
+}
+
+/* Smooth transitions for metric cards */
+.metric-card-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced gradient backgrounds */
+.gradient-teal {
+  background: linear-gradient(135deg, #0F766E 0%, #134E4A 100%);
+}
+
+/* Glassmorphism effect for overlays */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}

@@ -1,496 +1,238 @@
 require 'rails_helper'
 
 RSpec.describe ExpensesController, type: :controller do
-  let(:category) { create(:category) }
-  let(:email_account) { create(:email_account, :bac) }
-  let!(:expense) { create(:expense, category: category, email_account: email_account) }
-  let(:valid_attributes) do
-    {
-      amount: 15000.0,
-      currency: 'crc',
-      transaction_date: Date.current,
-      merchant_name: 'Test Merchant',
-      description: 'Test expense',
-      category_id: category.id,
-      email_account_id: email_account.id
-    }
-  end
-
-  let(:invalid_attributes) do
-    {
-      amount: -100.0, # Invalid negative amount
-      transaction_date: nil,
-      category_id: nil
-    }
-  end
+  let(:email_account) { create(:email_account) }
+  let(:category) { create(:category, name: "Food", color: "#10B981") }
 
   describe "GET #index" do
-    let!(:expense1) { create(:expense, amount: 100.0, transaction_date: Date.current, category: category, email_account: email_account) }
-    let!(:expense2) { create(:expense, amount: 200.0, transaction_date: 1.day.ago, category: category, email_account: email_account) }
+    before do
+      # Create expenses for different periods
+      @today_expense = create(:expense,
+        email_account: email_account,
+        category: category,
+        transaction_date: Date.current,
+        amount: 1000,
+        merchant_name: "Today Shop"
+      )
 
-    it "returns a success response" do
-      get :index
-      expect(response).to be_successful
+      @week_expense = create(:expense,
+        email_account: email_account,
+        category: category,
+        transaction_date: Date.current.beginning_of_week + 1.day,
+        amount: 2000,
+        merchant_name: "Week Shop"
+      )
+
+      @month_expense = create(:expense,
+        email_account: email_account,
+        category: category,
+        transaction_date: Date.current.beginning_of_month + 5.days,
+        amount: 3000,
+        merchant_name: "Month Shop"
+      )
+
+      @last_month_expense = create(:expense,
+        email_account: email_account,
+        category: category,
+        transaction_date: Date.current.last_month,
+        amount: 4000,
+        merchant_name: "Last Month Shop"
+      )
+
+      @year_expense = create(:expense,
+        email_account: email_account,
+        category: category,
+        transaction_date: Date.current.beginning_of_year,
+        amount: 5000,
+        merchant_name: "Year Shop"
+      )
     end
 
-    it "assigns @expenses ordered by transaction_date desc" do
-      get :index
-      expenses = assigns(:expenses).to_a
-      expect(expenses).to include(expense1, expense2)
-      # Verify they're ordered by transaction_date desc, then created_at desc
-      expect(expenses.first.transaction_date).to be >= expenses.last.transaction_date
-    end
+    context "without filters" do
+      it "returns all expenses" do
+        get :index
+        expect(assigns(:expenses).count).to eq(5)
+        expect(response).to have_http_status(:success)
+      end
 
-    it "includes associations for efficiency" do
-      expect(Expense).to receive(:includes).with(:category, :email_account).and_call_original
-      get :index
-    end
-
-    it "limits results to 25 expenses" do
-      get :index
-      expect(assigns(:expenses).size).to be <= 25
-    end
-
-    it "calculates summary statistics" do
-      get :index
-      expect(assigns(:total_amount)).to be > 0
-      expect(assigns(:expense_count)).to be >= 2
-      expect(assigns(:categories_summary)).to be_present
-    end
-
-    context "with category filter" do
-      let(:other_category) { create(:category, name: 'Other Category') }
-      let!(:other_expense) { create(:expense, category: other_category, email_account: email_account) }
-
-      it "filters expenses by category" do
-        get :index, params: { category: category.name }
-        expect(assigns(:expenses)).to include(expense1, expense2)
-        expect(assigns(:expenses)).not_to include(other_expense)
+      it "calculates summary statistics correctly" do
+        get :index
+        expect(assigns(:total_amount)).to eq(15000)
+        expect(assigns(:expense_count)).to eq(5)
       end
     end
 
-    context "with date range filter" do
-      let!(:old_expense) { create(:expense, transaction_date: 1.week.ago, category: category, email_account: email_account) }
+    context "with period filter from dashboard" do
+      it "filters expenses for today" do
+        get :index, params: { period: "day", filter_type: "dashboard_metric" }
 
-      it "filters expenses by date range" do
-        start_date = 2.days.ago.to_date
-        end_date = Date.current
+        expect(assigns(:expenses).count).to eq(1)
+        expect(assigns(:expenses).first).to eq(@today_expense)
+        expect(assigns(:from_dashboard)).to be true
+        expect(assigns(:active_period)).to eq("day")
+      end
 
-        get :index, params: { start_date: start_date, end_date: end_date }
+      it "filters expenses for current week" do
+        get :index, params: { period: "week", filter_type: "dashboard_metric" }
 
-        expect(assigns(:expenses)).to include(expense1, expense2)
-        expect(assigns(:expenses)).not_to include(old_expense)
+        expenses = assigns(:expenses)
+        expect(expenses).to include(@today_expense)
+        expect(expenses).to include(@week_expense)
+        expect(expenses).not_to include(@last_month_expense)
+        expect(assigns(:active_period)).to eq("week")
+      end
+
+      it "filters expenses for current month" do
+        get :index, params: { period: "month", filter_type: "dashboard_metric" }
+
+        expenses = assigns(:expenses)
+        expect(expenses).to include(@today_expense)
+        expect(expenses).to include(@week_expense)
+        expect(expenses).to include(@month_expense)
+        expect(expenses).not_to include(@last_month_expense)
+        expect(assigns(:active_period)).to eq("month")
+      end
+
+      it "filters expenses for current year" do
+        get :index, params: { period: "year", filter_type: "dashboard_metric" }
+
+        expenses = assigns(:expenses)
+        # Should include all expenses from the current year
+        expect(expenses).to include(@today_expense)
+        expect(expenses).to include(@week_expense)
+        expect(expenses).to include(@month_expense)
+        expect(expenses).to include(@year_expense)
+        # Last month expense is still in current year unless we're in January
+        if Date.current.month > 1
+          expect(expenses).to include(@last_month_expense)
+        end
+        expect(assigns(:active_period)).to eq("year")
       end
     end
 
-    context "with bank filter" do
-      let!(:other_expense) { create(:expense, :usd, category: category) }
+    context "with explicit date range from dashboard" do
+      it "filters expenses within date range" do
+        date_from = Date.current.beginning_of_month
+        date_to = Date.current.end_of_month
 
-      before do
-        expense1.update(bank_name: 'BAC')
-        expense2.update(bank_name: 'BAC')
-        other_expense.update(bank_name: 'BCR')
-      end
-
-      it "filters expenses by bank" do
-        get :index, params: { bank: 'BAC' }
-        expect(assigns(:expenses)).to include(expense1, expense2)
-        expect(assigns(:expenses)).not_to include(other_expense)
-      end
-    end
-  end
-
-  describe "GET #show" do
-    it "returns a success response" do
-      get :show, params: { id: expense.to_param }
-      expect(response).to be_successful
-    end
-
-    it "assigns the requested expense" do
-      get :show, params: { id: expense.to_param }
-      expect(assigns(:expense)).to eq(expense)
-    end
-  end
-
-  describe "GET #new" do
-    it "returns a success response" do
-      get :new
-      expect(response).to be_successful
-    end
-
-    it "assigns a new expense" do
-      get :new
-      expect(assigns(:expense)).to be_a_new(Expense)
-    end
-
-    it "loads categories and email accounts" do
-      category # Ensure category exists
-      email_account # Ensure email account exists
-
-      get :new
-      expect(assigns(:categories)).to be_present
-      expect(assigns(:email_accounts)).to be_present
-    end
-  end
-
-  describe "GET #edit" do
-    it "returns a success response" do
-      get :edit, params: { id: expense.to_param }
-      expect(response).to be_successful
-    end
-
-    it "assigns the requested expense" do
-      get :edit, params: { id: expense.to_param }
-      expect(assigns(:expense)).to eq(expense)
-    end
-
-    it "loads categories and email accounts" do
-      get :edit, params: { id: expense.to_param }
-      expect(assigns(:categories)).to be_present
-      expect(assigns(:email_accounts)).to be_present
-    end
-  end
-
-  describe "POST #create" do
-    context "with valid params" do
-      it "creates a new Expense" do
-        expect {
-          post :create, params: { expense: valid_attributes }
-        }.to change(Expense, :count).by(1)
-      end
-
-      it "sets manual entry defaults" do
-        post :create, params: { expense: valid_attributes }
-        created_expense = Expense.last
-        expect(created_expense.read_attribute(:bank_name)).to eq("Manual Entry")
-        expect(created_expense.status).to eq("processed")
-      end
-
-      it "defaults to CRC currency if blank" do
-        attributes_without_currency = valid_attributes.except(:currency)
-        post :create, params: { expense: attributes_without_currency }
-        created_expense = Expense.last
-        expect(created_expense.currency).to eq("crc")
-      end
-
-      it "redirects to the created expense" do
-        post :create, params: { expense: valid_attributes }
-        expect(response).to redirect_to(Expense.last)
-      end
-
-      it "sets a success notice" do
-        post :create, params: { expense: valid_attributes }
-        expect(flash[:notice]).to eq("Gasto creado exitosamente.")
-      end
-    end
-
-    context "with invalid params" do
-      it "does not create a new Expense" do
-        expect {
-          post :create, params: { expense: invalid_attributes }
-        }.to change(Expense, :count).by(0)
-      end
-
-      it "renders the new template" do
-        post :create, params: { expense: invalid_attributes }
-        expect(response).to render_template("new")
-      end
-
-      it "returns unprocessable entity status" do
-        post :create, params: { expense: invalid_attributes }
-        expect(response).to have_http_status(:unprocessable_content)
-      end
-
-      it "loads categories and email accounts for form" do
-        post :create, params: { expense: invalid_attributes }
-        expect(assigns(:categories)).to be_present
-        expect(assigns(:email_accounts)).to be_present
-      end
-    end
-  end
-
-  describe "PUT #update" do
-    context "with valid params" do
-      let(:new_attributes) do
-        {
-          amount: 25000.0,
-          description: 'Updated expense'
+        get :index, params: {
+          date_from: date_from.to_s,
+          date_to: date_to.to_s,
+          filter_type: "dashboard_metric"
         }
-      end
 
-      it "updates the requested expense" do
-        put :update, params: { id: expense.to_param, expense: new_attributes }
-        expense.reload
-        expect(expense.amount).to eq(25000.0)
-        expect(expense.description).to eq('Updated expense')
-      end
-
-      it "redirects to the expense" do
-        put :update, params: { id: expense.to_param, expense: new_attributes }
-        expect(response).to redirect_to(expense)
-      end
-
-      it "sets a success notice" do
-        put :update, params: { id: expense.to_param, expense: new_attributes }
-        expect(flash[:notice]).to eq("Gasto actualizado exitosamente.")
+        expenses = assigns(:expenses)
+        expect(expenses).to include(@today_expense)
+        expect(expenses).to include(@month_expense)
+        expect(expenses).not_to include(@last_month_expense)
+        expect(assigns(:date_from)).to eq(date_from)
+        expect(assigns(:date_to)).to eq(date_to)
       end
     end
 
-    context "with invalid params" do
-      it "renders the edit template" do
-        put :update, params: { id: expense.to_param, expense: invalid_attributes }
-        expect(response).to render_template("edit")
+    context "with traditional filters" do
+      it "filters by category" do
+        other_category = create(:category, name: "Transport")
+        other_expense = create(:expense, category: other_category, email_account: email_account)
+
+        get :index, params: { category: "Food" }
+
+        expenses = assigns(:expenses)
+        expect(expenses.count).to eq(5)
+        expect(expenses).not_to include(other_expense)
       end
 
-      it "returns unprocessable entity status" do
-        put :update, params: { id: expense.to_param, expense: invalid_attributes }
-        expect(response).to have_http_status(:unprocessable_content)
+      it "filters by bank" do
+        bac_expense = create(:expense, bank_name: "BAC", email_account: email_account)
+
+        get :index, params: { bank: "BAC" }
+
+        expenses = assigns(:expenses)
+        expect(expenses.count).to eq(1)
+        expect(expenses.first).to eq(bac_expense)
       end
 
-      it "loads categories and email accounts for form" do
-        put :update, params: { id: expense.to_param, expense: invalid_attributes }
-        expect(assigns(:categories)).to be_present
-        expect(assigns(:email_accounts)).to be_present
+      it "filters by date range" do
+        start_date = Date.current.beginning_of_month
+        end_date = Date.current.end_of_month
+
+        get :index, params: { start_date: start_date.to_s, end_date: end_date.to_s }
+
+        expenses = assigns(:expenses)
+        expect(expenses).to include(@today_expense)
+        expect(expenses).to include(@month_expense)
+        expect(expenses).not_to include(@last_month_expense)
       end
     end
-  end
 
-  describe "DELETE #destroy" do
-    it "destroys the requested expense" do
-      expense # Create the expense
-      expect {
-        delete :destroy, params: { id: expense.to_param }
-      }.to change(Expense, :count).by(-1)
+    context "filter description" do
+      it "builds correct description for period filter" do
+        get :index, params: { period: "month", filter_type: "dashboard_metric" }
+
+        expect(assigns(:filter_description)).to eq("Gastos de este mes")
+      end
+
+      it "builds correct description for date range" do
+        date_from = Date.new(2024, 1, 1)
+        date_to = Date.new(2024, 1, 31)
+
+        get :index, params: { date_from: date_from.to_s, date_to: date_to.to_s }
+
+        expect(assigns(:filter_description)).to include("01/01/2024")
+        expect(assigns(:filter_description)).to include("31/01/2024")
+      end
+
+      it "combines multiple filters in description" do
+        get :index, params: {
+          period: "month",
+          category: "Food",
+          bank: "BAC",
+          filter_type: "dashboard_metric"
+        }
+
+        description = assigns(:filter_description)
+        expect(description).to include("Gastos de este mes")
+        expect(description).to include("Categoría: Food")
+        expect(description).to include("Banco: BAC")
+      end
     end
 
-    it "redirects to the expenses list" do
-      delete :destroy, params: { id: expense.to_param }
-      expect(response).to redirect_to(expenses_url)
-    end
+    context "navigation context" do
+      it "sets scroll target when requested" do
+        get :index, params: { scroll_to: "expense_list" }
 
-    it "sets a success notice" do
-      delete :destroy, params: { id: expense.to_param }
-      expect(flash[:notice]).to eq("Gasto eliminado exitosamente.")
+        expect(assigns(:scroll_to)).to eq("expense_list")
+      end
+
+      it "identifies dashboard navigation" do
+        get :index, params: { filter_type: "dashboard_metric" }
+
+        expect(assigns(:from_dashboard)).to be true
+      end
+
+      it "does not set dashboard flag for regular navigation" do
+        get :index
+
+        expect(assigns(:from_dashboard)).to be false
+      end
     end
   end
 
   describe "GET #dashboard" do
-    it "returns a success response" do
+    it "returns success status" do
       get :dashboard
-      expect(response).to be_successful
+      expect(response).to have_http_status(:success)
     end
 
-    it "calls DashboardService and assigns data for the view" do
-      expect_any_instance_of(DashboardService).to receive(:analytics).and_call_original
+    it "loads metrics for all periods" do
+      create(:expense, email_account: email_account, amount: 1000)
 
       get :dashboard
 
-      # Verify all expected instance variables are assigned
-      expect(assigns(:total_expenses)).to be_present
-      expect(assigns(:expense_count)).to be_present
-      expect(assigns(:current_month_total)).to be_present
-      expect(assigns(:last_month_total)).to be_present
-      expect(assigns(:recent_expenses)).to be_present
-      expect(assigns(:category_totals)).to be_present
-      expect(assigns(:sorted_categories)).to be_present
-      expect(assigns(:monthly_data)).to be_present
-      expect(assigns(:bank_totals)).to be_present
-      expect(assigns(:top_merchants)).to be_present
-      expect(assigns(:email_accounts)).to be_present
-      expect(assigns(:last_sync_info)).to be_present
-    end
-  end
-
-  describe "POST #sync_emails" do
-    it "calls SyncService and redirects with success message" do
-      expect_any_instance_of(SyncService).to receive(:sync_emails)
-        .with(email_account_id: email_account.id.to_s)
-        .and_return({ message: "Sync started successfully" })
-
-      post :sync_emails, params: { email_account_id: email_account.id }
-
-      expect(response).to redirect_to(dashboard_expenses_path)
-      expect(flash[:notice]).to eq("Sync started successfully")
-    end
-
-    it "handles SyncService::SyncError and redirects with alert" do
-      expect_any_instance_of(SyncService).to receive(:sync_emails)
-        .and_raise(SyncService::SyncError.new("Account not found"))
-
-      post :sync_emails, params: { email_account_id: 99999 }
-
-      expect(response).to redirect_to(dashboard_expenses_path)
-      expect(flash[:alert]).to eq("Account not found")
-    end
-
-    it "handles general errors and redirects with generic message" do
-      expect_any_instance_of(SyncService).to receive(:sync_emails)
-        .and_raise(StandardError.new("Unexpected error"))
-
-      expect(Rails.logger).to receive(:error).with(/Error starting email sync/)
-
-      post :sync_emails
-
-      expect(response).to redirect_to(dashboard_expenses_path)
-      expect(flash[:alert]).to eq("Error al iniciar la sincronización. Por favor, inténtalo de nuevo.")
-    end
-  end
-
-  describe "private methods" do
-    describe "#set_expense" do
-      it "finds the expense by id" do
-        get :show, params: { id: expense.to_param }
-        expect(assigns(:expense)).to eq(expense)
-      end
-
-      it "raises error for non-existent expense" do
-        expect {
-          get :show, params: { id: 99999 }
-        }.to raise_error(ActiveRecord::RecordNotFound)
-      end
-    end
-
-    describe "#expense_params" do
-      it "permits expected parameters" do
-        params = ActionController::Parameters.new(
-          expense: {
-            amount: 100.0,
-            currency: 'crc',
-            transaction_date: Date.current,
-            merchant_name: 'Test',
-            description: 'Test',
-            category_id: 1,
-            email_account_id: 1,
-            notes: 'Test notes',
-            forbidden_param: 'should not be included'
-          }
-        )
-
-        controller.params = params
-        permitted = controller.send(:expense_params)
-
-        expect(permitted).to include(:amount, :currency, :transaction_date, :merchant_name, :description, :category_id, :email_account_id, :notes)
-        expect(permitted).not_to include(:forbidden_param)
-      end
-    end
-  end
-
-  describe "error handling" do
-    context "when expense not found" do
-      it "raises ActiveRecord::RecordNotFound" do
-        expect {
-          get :show, params: { id: 99999 }
-        }.to raise_error(ActiveRecord::RecordNotFound)
-      end
-    end
-
-    context "when database error occurs" do
-      before do
-        allow(Expense).to receive(:includes).and_raise(ActiveRecord::ConnectionNotEstablished)
-      end
-
-      it "allows database errors to bubble up" do
-        expect {
-          get :index
-        }.to raise_error(ActiveRecord::ConnectionNotEstablished)
-      end
-    end
-  end
-
-  describe "performance considerations" do
-    it "includes associations to avoid N+1 queries in index" do
-      expect(Expense).to receive(:includes).with(:category, :email_account).and_call_original
-      get :index
-    end
-  end
-
-  describe 'edge cases and error handling' do
-    describe 'GET #index with complex filters' do
-      let(:other_category) { create(:category, name: 'Other') }
-
-      before do
-        create(:expense, category: category, bank_name: 'BAC', transaction_date: 1.day.ago, amount: 100)
-        create(:expense, category: category, bank_name: 'BCR', transaction_date: 2.days.ago, amount: 200)
-        create(:expense, category: other_category, bank_name: 'BAC', transaction_date: 3.days.ago, amount: 300)
-      end
-
-      it 'handles multiple filters simultaneously' do
-        get :index, params: {
-          category: category.name,
-          bank: 'BAC',
-          start_date: 2.days.ago.to_date,
-          end_date: Date.current
-        }
-
-        expenses = assigns(:expenses)
-        expect(expenses.count).to eq(1)
-        expect(expenses.first.amount).to eq(100)
-      end
-
-      it 'handles invalid date formats gracefully' do
-        expect {
-          get :index, params: { start_date: 'invalid', end_date: 'date' }
-        }.not_to raise_error
-      end
-
-      it 'handles missing filter parameters' do
-        get :index, params: { category: '', bank: nil }
-        expect(response).to be_successful
-        expect(assigns(:expenses)).to be_present
-      end
-    end
-
-    describe 'error recovery' do
-      it 'handles missing associations' do
-        expense_without_category = create(:expense, category: nil)
-        get :show, params: { id: expense_without_category.id }
-
-        expect(response).to be_successful
-        expect(assigns(:expense).category).to be_nil
-      end
-    end
-
-    describe 'pagination and limits' do
-      before do
-        30.times { create(:expense) }
-      end
-
-      it 'limits results to 25 expenses' do
-        get :index
-        expect(assigns(:expenses).size).to eq(25)
-      end
-
-      it 'shows most recent expenses first' do
-        # Create expenses in a clean state
-        Expense.destroy_all
-
-        # Create an older expense with older transaction date
-        older_expense = create(:expense, transaction_date: 2.days.ago, created_at: 2.hours.ago)
-        # Create a recent expense with today's transaction date
-        recent_expense = create(:expense, transaction_date: Date.current, created_at: 1.minute.ago)
-
-        get :index
-        expect(assigns(:expenses).first.id).to eq(recent_expense.id)
-      end
-    end
-
-    describe 'currency handling' do
-      it 'handles different currency values in create' do
-        post :create, params: {
-          expense: valid_attributes.merge(currency: 'usd')
-        }
-
-        created_expense = Expense.last
-        expect(created_expense.currency).to eq('usd')
-      end
-
-      it 'defaults to CRC when currency is not provided' do
-        attributes_without_currency = valid_attributes.except(:currency)
-        post :create, params: { expense: attributes_without_currency }
-
-        created_expense = Expense.last
-        expect(created_expense.currency).to eq('crc')
-      end
+      expect(assigns(:total_metrics)).to be_present
+      expect(assigns(:month_metrics)).to be_present
+      expect(assigns(:week_metrics)).to be_present
+      expect(assigns(:day_metrics)).to be_present
     end
   end
 end

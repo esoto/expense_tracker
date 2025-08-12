@@ -32,6 +32,42 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
     t.index ["token_hash"], name: "index_api_tokens_on_token_hash", unique: true
   end
 
+  create_table "budgets", force: :cascade do |t|
+    t.bigint "email_account_id", null: false
+    t.bigint "category_id"
+    t.string "name", null: false
+    t.text "description"
+    t.integer "period", default: 2, null: false
+    t.decimal "amount", precision: 12, scale: 2, null: false
+    t.string "currency", default: "CRC", null: false
+    t.boolean "active", default: true, null: false
+    t.date "start_date", null: false
+    t.date "end_date"
+    t.integer "warning_threshold", default: 70
+    t.integer "critical_threshold", default: 90
+    t.boolean "notify_on_warning", default: true
+    t.boolean "notify_on_critical", default: true
+    t.boolean "notify_on_exceeded", default: true
+    t.boolean "rollover_enabled", default: false
+    t.decimal "rollover_amount", precision: 12, scale: 2, default: "0.0"
+    t.decimal "current_spend", precision: 12, scale: 2, default: "0.0"
+    t.datetime "current_spend_updated_at"
+    t.integer "times_exceeded", default: 0
+    t.datetime "last_exceeded_at"
+    t.jsonb "metadata", default: {}
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["active", "start_date"], name: "index_budgets_on_active_and_start_date"
+    t.index ["category_id"], name: "index_budgets_on_category_id"
+    t.index ["email_account_id", "active"], name: "index_budgets_on_email_account_id_and_active"
+    t.index ["email_account_id", "category_id", "active"], name: "index_budgets_on_email_account_id_and_category_id_and_active"
+    t.index ["email_account_id", "category_id", "period", "active"], name: "index_budgets_unique_active", unique: true, where: "(active = true)"
+    t.index ["email_account_id", "period", "active"], name: "index_budgets_on_email_account_id_and_period_and_active"
+    t.index ["email_account_id"], name: "index_budgets_on_email_account_id"
+    t.index ["metadata"], name: "index_budgets_on_metadata", using: :gin
+    t.index ["start_date", "end_date"], name: "index_budgets_on_start_date_and_end_date"
+  end
+  
   create_table "canonical_merchants", force: :cascade do |t|
     t.string "name", null: false
     t.string "display_name"
@@ -175,11 +211,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
     t.index ["amount"], name: "index_expenses_on_amount"
     t.index ["auto_categorized", "categorization_confidence"], name: "idx_on_auto_categorized_categorization_confidence_98abf3d147"
     t.index ["bank_name", "transaction_date"], name: "index_expenses_on_bank_name_and_transaction_date"
+    t.index ["category_id", "transaction_date", "amount"], name: "index_expenses_uncategorized", where: "(category_id IS NULL)"
     t.index ["category_id", "transaction_date"], name: "index_expenses_on_category_id_and_transaction_date"
     t.index ["category_id"], name: "index_expenses_on_category_id"
+    t.index ["created_at", "transaction_date"], name: "index_expenses_on_created_and_transaction_date"
     t.index ["currency"], name: "index_expenses_on_currency"
     t.index ["email_account_id", "amount", "transaction_date"], name: "index_expenses_on_account_amount_date_for_duplicates"
+    t.index ["email_account_id", "category_id", "transaction_date"], name: "idx_expenses_account_uncategorized", where: "(category_id IS NULL)"
     t.index ["email_account_id", "created_at"], name: "index_expenses_on_email_account_id_and_created_at"
+    t.index ["email_account_id", "status", "transaction_date", "amount"], name: "idx_expenses_account_status_date_amount"
+    t.index ["email_account_id", "transaction_date", "category_id", "amount"], name: "idx_expenses_account_date_category_amount"
+    t.index ["email_account_id", "transaction_date", "currency"], name: "idx_expenses_account_date_currency"
+    t.index ["email_account_id", "transaction_date", "merchant_name"], name: "idx_expenses_account_date_merchant"
+    t.index ["email_account_id", "transaction_date", "status"], name: "idx_expenses_account_date_status"
     t.index ["email_account_id", "transaction_date"], name: "index_expenses_on_email_account_id_and_transaction_date"
     t.index ["email_account_id"], name: "index_expenses_on_email_account_id"
     t.index ["merchant_name", "amount"], name: "index_expenses_on_merchant_name_and_amount"
@@ -189,6 +233,10 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
     t.index ["status", "transaction_date"], name: "index_expenses_on_status_and_transaction_date"
     t.index ["status"], name: "index_expenses_on_status"
     t.index ["transaction_date", "amount"], name: "index_expenses_on_transaction_date_and_amount"
+    t.index ["transaction_date", "category_id", "amount"], name: "index_expenses_on_date_category_amount"
+    t.index ["transaction_date", "currency", "amount"], name: "index_expenses_on_date_currency_amount"
+    t.index ["transaction_date", "merchant_name", "amount"], name: "index_expenses_on_date_merchant_amount"
+    t.index ["transaction_date", "status", "amount"], name: "index_expenses_on_date_status_amount"
     t.index ["transaction_date", "category_id"], name: "idx_expenses_date_category"
     t.index ["transaction_date"], name: "index_expenses_on_transaction_date"
   end
@@ -520,6 +568,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
     t.index ["email_account_id"], name: "index_user_category_preferences_on_email_account_id"
   end
 
+  add_foreign_key "budgets", "categories"
+  add_foreign_key "budgets", "email_accounts"
   add_foreign_key "categories", "categories", column: "parent_id"
   add_foreign_key "categorization_patterns", "categories"
   add_foreign_key "composite_patterns", "categories"

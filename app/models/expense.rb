@@ -76,6 +76,8 @@ class Expense < ApplicationRecord
 
   # Callbacks
   after_commit :clear_dashboard_cache
+  after_commit :trigger_metrics_refresh, on: [ :create, :update ]
+  after_destroy :trigger_metrics_refresh_for_deletion
 
   # Class methods
   def self.total_amount_for_period(start_date, end_date)
@@ -97,5 +99,48 @@ class Expense < ApplicationRecord
 
   def clear_dashboard_cache
     DashboardService.clear_cache
+  end
+
+  def trigger_metrics_refresh
+    # Smart refresh - only trigger if significant fields changed
+    if saved_change_to_amount? || saved_change_to_transaction_date? ||
+       saved_change_to_category_id? || saved_change_to_status?
+
+      # Schedule metrics refresh with debouncing
+      if saved_change_to_transaction_date? && transaction_date_before_last_save.present?
+        # Transaction date actually changed (not creation) - refresh both old and new dates
+        MetricsRefreshJob.enqueue_debounced(
+          email_account_id,
+          affected_date: transaction_date_before_last_save,
+          delay: 3.seconds
+        )
+        MetricsRefreshJob.enqueue_debounced(
+          email_account_id,
+          affected_date: transaction_date,
+          delay: 3.seconds
+        )
+      else
+        # Creation or other field changes - refresh current transaction date
+        MetricsRefreshJob.enqueue_debounced(
+          email_account_id,
+          affected_date: transaction_date,
+          delay: 3.seconds
+        )
+      end
+    end
+  rescue StandardError => e
+    # Don't let background job issues affect the main transaction
+    Rails.logger.error "Failed to trigger metrics refresh: #{e.message}"
+  end
+
+  def trigger_metrics_refresh_for_deletion
+    # Trigger metrics refresh for the deleted expense's date
+    MetricsRefreshJob.enqueue_debounced(
+      email_account_id,
+      affected_date: transaction_date,
+      delay: 3.seconds
+    )
+  rescue StandardError => e
+    Rails.logger.error "Failed to trigger metrics refresh after deletion: #{e.message}"
   end
 end

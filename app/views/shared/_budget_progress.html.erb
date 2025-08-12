@@ -1,0 +1,97 @@
+<%# Budget Progress Bar Component %>
+<%#
+  Local variables:
+  - budget_data: Hash with budget information from MetricsCalculator
+  - metric_amount: Current spending amount to compare against budget
+  - period_label: Label for the period (e.g., "Este Mes", "Esta Semana")
+%>
+
+<% if budget_data && budget_data[:has_budget] && budget_data[:general_budget] %>
+  <% budget = budget_data[:general_budget] %>
+
+  <div class="mt-3 space-y-2" data-controller="budget-progress">
+    <!-- Progress Bar -->
+    <div class="relative">
+      <div class="flex items-center justify-between text-xs mb-1">
+        <span class="text-slate-600">Presupuesto</span>
+        <span class="font-medium text-<%= budget[:status_color] %>">
+          <%= budget[:usage_percentage] %>% usado
+        </span>
+      </div>
+
+      <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden"
+           role="progressbar"
+           aria-label="Progreso del presupuesto"
+           aria-valuenow="<%= budget[:usage_percentage] %>"
+           aria-valuemin="0"
+           aria-valuemax="100">
+        <div class="h-2 rounded-full transition-all duration-500 ease-out <%= progress_bar_color_class(budget[:status]) %>"
+             style="width: <%= [budget[:usage_percentage], 100].min %>%"
+             data-budget-progress-target="bar">
+        </div>
+      </div>
+
+      <!-- Budget amount and remaining -->
+      <div class="flex items-center justify-between mt-1">
+        <span class="text-xs text-slate-500">
+          de <%= budget[:formatted_amount] %>
+        </span>
+        <span class="text-xs font-medium <%= remaining_amount_color_class(budget[:status]) %>">
+          <%= budget[:remaining] >= 0 ? 'Queda' : 'Excedido' %>:
+          <%= budget[:formatted_remaining] %>
+        </span>
+      </div>
+    </div>
+
+    <!-- Status indicator -->
+    <div class="flex items-center justify-between">
+      <div class="flex items-center">
+        <%= status_icon(budget[:status]) %>
+        <span class="text-xs <%= status_text_color_class(budget[:status]) %> ml-1">
+          <%= budget[:status_message] %>
+        </span>
+      </div>
+
+      <% if budget[:on_track] %>
+        <span class="text-xs text-emerald-600 flex items-center">
+          <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+          </svg>
+          En camino
+        </span>
+      <% end %>
+    </div>
+
+    <!-- Historical adherence (if available) -->
+    <% if budget_data[:historical_adherence] && budget_data[:historical_adherence][:periods_analyzed] > 0 %>
+      <div class="pt-2 border-t border-slate-200">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-500">Historial:</span>
+          <span class="text-slate-600">
+            <%= budget_data[:historical_adherence][:message] %>
+          </span>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+<% elsif budget_data && !budget_data[:has_budget] %>
+  <!-- No budget set - show call to action -->
+  <div class="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center">
+        <svg class="w-4 h-4 text-amber-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span class="text-xs text-slate-600">Sin presupuesto definido</span>
+      </div>
+      <button type="button"
+              class="text-xs font-medium text-teal-700 hover:text-teal-800 transition-colors"
+              data-action="click->budget-progress#openQuickSet"
+              data-period="<%= period_from_label(period_label) %>">
+        Establecer
+      </button>
+    </div>
+  </div>
+<% end %>
+

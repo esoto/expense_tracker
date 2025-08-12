@@ -21,9 +21,60 @@ class BroadcastJob < ApplicationJob
     low: "low"
   }.freeze
 
-  # Configure retry behavior - we handle retries in BroadcastReliabilityService
-  # ActiveJob doesn't support sidekiq_options directly, use retry_on/discard_on instead
-  discard_on StandardError
+  # Sidekiq 8.x compatible retry configuration
+  # We manually handle ActiveRecord::RecordNotFound for immediate failure recording
+  # Other errors get automatic retries via ActiveJob
+
+  # Retry connection and Redis errors automatically
+  retry_on ActiveRecord::ConnectionNotEstablished, wait: 5.seconds, attempts: 3
+  retry_on Redis::BaseError, wait: 5.seconds, attempts: 3
+
+  # Retry general errors with exponential backoff
+  retry_on StandardError, wait: :exponentially_longer, attempts: 5 do |job, error|
+    # This block is called after all retry attempts have been exhausted
+    Rails.logger.error "[BROADCAST_JOB] Final failure after all retries: #{error.message}"
+
+    # Extract job arguments for failure tracking
+    args = job.arguments
+    channel_name = args[0]
+    target_id = args[1]
+    target_type = args[2]
+    data = args[3] || {}
+    priority = args[4] || "medium"
+
+    # Record final failure
+    begin
+      BroadcastAnalytics.record_failure(
+        channel: channel_name,
+        target_type: target_type,
+        target_id: target_id,
+        priority: priority,
+        attempt: 5,
+        error: "Exhausted all retries: #{error.message}",
+        duration: 0.0
+      )
+
+      FailedBroadcastStore.create!(
+        channel_name: channel_name,
+        target_type: target_type,
+        target_id: target_id,
+        data: data,
+        priority: priority,
+        error_type: "retry_exhausted",
+        error_message: error.message,
+        failed_at: Time.current,
+        retry_count: 5,
+        sidekiq_job_id: job.job_id
+      )
+    rescue StandardError => e
+      Rails.logger.error "[BROADCAST_JOB] Failed to record exhausted retry: #{e.message}"
+    end
+  end
+
+  # Permanently discard jobs with deserialization errors
+  discard_on ActiveJob::DeserializationError do |job, error|
+    Rails.logger.error "[BROADCAST_JOB] Discarding job due to deserialization error: #{error.message}"
+  end
 
   # Perform the broadcast job
   # @param channel_name [String] ActionCable channel class name
@@ -50,11 +101,50 @@ class BroadcastJob < ApplicationJob
       duration = Time.current - start_time
       if success
         Rails.logger.info "[BROADCAST_JOB] Completed: #{channel_name} -> #{target_type}##{target_id}, Priority: #{priority}, Duration: #{duration.round(3)}s"
+
+        # Track successful broadcast
+        BroadcastAnalytics.record_success(
+          channel: channel_name,
+          target_type: target_type,
+          target_id: target_id,
+          priority: priority,
+          attempt: 1,  # First attempt since retries are handled by BroadcastReliabilityService
+          duration: duration
+        )
       else
+        # BroadcastReliabilityService already handled its own retries
+        # This indicates a failure after service-level retries
         Rails.logger.warn "[BROADCAST_JOB] Failed after retries: #{channel_name} -> #{target_type}##{target_id}, Priority: #{priority}"
+
+        # Record the failure but don't raise - the service already did retries
+        BroadcastAnalytics.record_failure(
+          channel: channel_name,
+          target_type: target_type,
+          target_id: target_id,
+          priority: priority,
+          attempt: 1,
+          error: "Broadcast failed after service-level retries",
+          duration: duration
+        )
+
+        # Store failure for potential manual retry
+        FailedBroadcastStore.create!(
+          channel_name: channel_name,
+          target_type: target_type,
+          target_id: target_id,
+          data: data,
+          priority: priority,
+          error_type: "broadcast_failed",
+          error_message: "Failed after service retries",
+          failed_at: Time.current,
+          retry_count: 0,
+          sidekiq_job_id: job_id
+        )
       end
 
     rescue ActiveRecord::RecordNotFound => e
+      # Handle RecordNotFound specially - no retry needed for missing records
+      duration = Time.current - start_time
       Rails.logger.error "[BROADCAST_JOB] Target not found: #{target_type}##{target_id}"
 
       # Record failure in analytics
@@ -65,7 +155,7 @@ class BroadcastJob < ApplicationJob
         priority: priority,
         attempt: 1,
         error: "Target not found: #{e.message}",
-        duration: (Time.current - start_time).to_f
+        duration: duration
       )
 
       # Store in dead letter queue for manual review
@@ -78,15 +168,20 @@ class BroadcastJob < ApplicationJob
         error_type: "record_not_found",
         error_message: e.message,
         failed_at: Time.current,
-        retry_count: 0
+        retry_count: 0,
+        sidekiq_job_id: job_id
       )
 
+      # Don't re-raise - this is a permanent failure
+      # The record won't magically appear, so no point in retrying
+
     rescue StandardError => e
+      # Handle unexpected errors - record them and re-raise for retry
+      duration = Time.current - start_time
       Rails.logger.error "[BROADCAST_JOB] Unexpected error: #{e.message}"
-      Rails.logger.error e.backtrace.join("\n")
+      Rails.logger.error e.backtrace.join("\n") if e.backtrace
 
       # Record failure in analytics
-      duration = Time.current - start_time
       BroadcastAnalytics.record_failure(
         channel: channel_name,
         target_type: target_type,
@@ -107,10 +202,11 @@ class BroadcastJob < ApplicationJob
         error_type: "job_error",
         error_message: e.message,
         failed_at: Time.current,
-        retry_count: 0
+        retry_count: 0,
+        sidekiq_job_id: job_id
       )
 
-      # Re-raise to trigger Sidekiq's dead job handling
+      # Re-raise to trigger ActiveJob's retry mechanism
       raise
     end
   end

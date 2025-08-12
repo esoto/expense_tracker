@@ -3,6 +3,9 @@ class ExpensesController < ApplicationController
 
   # GET /expenses
   def index
+    # Handle dashboard navigation context
+    setup_navigation_context
+
     # Base query with includes
     @expenses = Expense.includes(:category, :email_account)
 
@@ -15,6 +18,12 @@ class ExpensesController < ApplicationController
 
     # Calculate summary with separate optimized query
     calculate_summary_statistics
+
+    # Set up scroll target if specified
+    @scroll_to = params[:scroll_to] if params[:scroll_to].present?
+
+    # Add filter description for UI
+    @filter_description = build_filter_description
   end
 
   # GET /expenses/1
@@ -69,14 +78,41 @@ class ExpensesController < ApplicationController
 
   # GET /expenses/dashboard
   def dashboard
+    # Use primary email account or first active one for metrics
+    # This ensures proper data isolation per email account
+    primary_email_account = EmailAccount.active.first
+
+    # Calculate metrics for different periods using MetricsCalculator
+    if primary_email_account
+      # Batch calculate all metrics for better performance
+      # This optimization reduces object instantiation and improves efficiency
+      batch_results = MetricsCalculator.batch_calculate(
+        email_account: primary_email_account,
+        periods: [ :year, :month, :week, :day ],
+        reference_date: Date.current
+      )
+      # Assign results to instance variables for view compatibility
+      @total_metrics = batch_results[:year]   # Using year for total metrics
+      @month_metrics = batch_results[:month]
+      @week_metrics = batch_results[:week]
+      @day_metrics = batch_results[:day]
+    else
+      # Default empty metrics if no email account
+      @total_metrics = default_empty_metrics
+      @month_metrics = default_empty_metrics
+      @week_metrics = default_empty_metrics
+      @day_metrics = default_empty_metrics
+    end
+
+    # Get dashboard data from DashboardService for other components
     dashboard_data = DashboardService.new.analytics
 
-    # Extract data for view variables
+    # Legacy variables for compatibility with existing views
     totals = dashboard_data[:totals]
-    @total_expenses = totals[:total_expenses]
-    @expense_count = totals[:expense_count]
-    @current_month_total = totals[:current_month_total]
-    @last_month_total = totals[:last_month_total]
+    @total_expenses = @total_metrics[:metrics][:total_amount] || totals[:total_expenses]
+    @expense_count = @total_metrics[:metrics][:transaction_count] || totals[:expense_count]
+    @current_month_total = @month_metrics[:metrics][:total_amount] || totals[:current_month_total]
+    @last_month_total = @month_metrics[:trends][:previous_period_total] || totals[:last_month_total]
 
     @recent_expenses = dashboard_data[:recent_expenses]
 
@@ -93,6 +129,9 @@ class ExpensesController < ApplicationController
     sync_sessions = dashboard_data[:sync_sessions] || {}
     @active_sync_session = sync_sessions[:active_session]
     @last_completed_sync = sync_sessions[:last_completed]
+
+    # Primary email account for display
+    @primary_email_account = primary_email_account
   end
 
   # POST /expenses/sync_emails
@@ -117,15 +156,104 @@ class ExpensesController < ApplicationController
   end
 
   def apply_filters(scope)
+    # Handle period-based filtering from dashboard cards
+    if params[:period].present?
+      date_range = calculate_period_range(params[:period])
+      scope = scope.where(transaction_date: date_range) if date_range
+    elsif params[:date_from].present? && params[:date_to].present?
+      # Handle explicit date range from dashboard
+      scope = scope.where(transaction_date: params[:date_from]..params[:date_to])
+    elsif date_range_present?
+      # Handle traditional date range filters
+      scope = scope.where(transaction_date: params[:start_date]..params[:end_date])
+    end
+
     # Use left_joins instead of joins to maintain includes
     scope = scope.left_joins(:category).where(categories: { name: params[:category] }) if params[:category].present?
-    scope = scope.where(transaction_date: params[:start_date]..params[:end_date]) if date_range_present?
     scope = scope.where(bank_name: params[:bank]) if params[:bank].present?
     scope
   end
 
   def date_range_present?
     params[:start_date].present? && params[:end_date].present?
+  end
+
+  def calculate_period_range(period)
+    today = Date.current
+    case period
+    when "day"
+      today..today
+    when "week"
+      today.beginning_of_week..today.end_of_week
+    when "month"
+      today.beginning_of_month..today.end_of_month
+    when "year"
+      today.beginning_of_year..today.end_of_year
+    else
+      nil
+    end
+  end
+
+  def setup_navigation_context
+    # Detect if navigation is from dashboard
+    @from_dashboard = params[:filter_type] == "dashboard_metric"
+
+    # Store period for display
+    @active_period = params[:period] if params[:period].present?
+
+    # Store date range for display
+    if params[:date_from].present? && params[:date_to].present?
+      begin
+        @date_from = Date.parse(params[:date_from])
+      rescue ArgumentError => e
+        Rails.logger.warn "Invalid date_from parameter: #{params[:date_from]} - #{e.message}"
+        @date_from = nil
+      end
+
+      begin
+        @date_to = Date.parse(params[:date_to])
+      rescue ArgumentError => e
+        Rails.logger.warn "Invalid date_to parameter: #{params[:date_to]} - #{e.message}"
+        @date_to = nil
+      end
+    elsif params[:period].present?
+      date_range = calculate_period_range(params[:period])
+      if date_range
+        @date_from = date_range.first
+        @date_to = date_range.last
+      end
+    end
+  end
+
+  def build_filter_description
+    descriptions = []
+
+    # Add period description
+    if @active_period
+      period_descriptions = {
+        "day" => "Gastos de hoy",
+        "week" => "Gastos de esta semana",
+        "month" => "Gastos de este mes",
+        "year" => "Gastos del año"
+      }
+      descriptions << period_descriptions[@active_period]
+    elsif @date_from && @date_to
+      if @date_from == @date_to
+        descriptions << "Gastos del #{@date_from.strftime('%d/%m/%Y')}"
+      else
+        descriptions << "Gastos del #{@date_from.strftime('%d/%m/%Y')} al #{@date_to.strftime('%d/%m/%Y')}"
+      end
+    elsif params[:start_date].present? && params[:end_date].present?
+      descriptions << "Gastos del #{params[:start_date]} al #{params[:end_date]}"
+    end
+
+    # Add category filter
+    descriptions << "Categoría: #{params[:category]}" if params[:category].present?
+
+    # Add bank filter
+    descriptions << "Banco: #{params[:bank]}" if params[:bank].present?
+
+    descriptions.empty? ? nil : descriptions.join(" • ")
   end
 
   def calculate_summary_statistics
@@ -144,5 +272,48 @@ class ExpensesController < ApplicationController
       .group("categories.name")
       .sum(:amount)
       .sort_by { |_, amount| -amount }
+  end
+
+  def default_empty_metrics
+    {
+      period: :month,
+      reference_date: Date.current,
+      date_range: Date.current.beginning_of_month..Date.current.end_of_month,
+      metrics: {
+        total_amount: 0.0,
+        transaction_count: 0,
+        average_amount: 0.0,
+        median_amount: 0.0,
+        min_amount: 0.0,
+        max_amount: 0.0,
+        unique_merchants: 0,
+        unique_categories: 0,
+        uncategorized_count: 0,
+        by_status: {},
+        by_currency: {}
+      },
+      trends: {
+        amount_change: 0.0,
+        count_change: 0.0,
+        average_change: 0.0,
+        absolute_amount_change: 0.0,
+        absolute_count_change: 0,
+        is_increase: false,
+        previous_period_total: 0.0,
+        previous_period_count: 0
+      },
+      category_breakdown: [],
+      daily_breakdown: {},
+      trend_data: {
+        daily_amounts: [],
+        min: 0.0,
+        max: 0.0,
+        average: 0.0,
+        total: 0.0,
+        start_date: Date.current - 6.days,
+        end_date: Date.current
+      },
+      calculated_at: Time.current
+    }
   end
 end

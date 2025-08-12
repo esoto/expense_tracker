@@ -1,0 +1,100 @@
+<%# Budget detail page %>
+<div class="container mx-auto px-4 py-8">
+  <div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-3xl font-bold text-slate-900"><%= @budget.name %></h1>
+      <div class="flex gap-2">
+        <%= link_to "Editar", edit_budget_path(@budget),
+            class: "bg-teal-700 hover:bg-teal-800 text-white font-medium px-4 py-2 rounded-lg shadow-sm transition-colors" %>
+        <%= link_to "Volver", budgets_path,
+            class: "bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium px-4 py-2 rounded-lg transition-colors" %>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+      <h2 class="text-xl font-semibold text-slate-900 mb-4">Detalles del Presupuesto</h2>
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <p class="text-sm text-slate-500">Período</p>
+          <p class="font-medium text-slate-900"><%= @budget.period.humanize %></p>
+        </div>
+
+        <div>
+          <p class="text-sm text-slate-500">Categoría</p>
+          <p class="font-medium text-slate-900"><%= @budget.category&.name || "General" %></p>
+        </div>
+
+        <div>
+          <p class="text-sm text-slate-500">Monto</p>
+          <p class="font-medium text-slate-900"><%= @budget.formatted_amount %></p>
+        </div>
+
+        <div>
+          <p class="text-sm text-slate-500">Moneda</p>
+          <p class="font-medium text-slate-900"><%= @budget.currency %></p>
+        </div>
+
+        <div>
+          <p class="text-sm text-slate-500">Fecha de inicio</p>
+          <p class="font-medium text-slate-900"><%= l(@budget.start_date, format: :long) %></p>
+        </div>
+
+        <div>
+          <p class="text-sm text-slate-500">Estado</p>
+          <p class="font-medium <%= @budget.active? ? 'text-emerald-600' : 'text-slate-400' %>">
+            <%= @budget.active? ? 'Activo' : 'Inactivo' %>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <% if @budget_stats %>
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h2 class="text-xl font-semibold text-slate-900 mb-4">Estadísticas</h2>
+
+        <div class="grid md:grid-cols-3 gap-4">
+          <div>
+            <p class="text-sm text-slate-500">Gasto actual</p>
+            <p class="font-medium text-slate-900">
+              <%= number_to_currency(@budget_stats[:current_spend], unit: @budget.currency_symbol, precision: 0) %>
+            </p>
+          </div>
+
+          <div>
+            <p class="text-sm text-slate-500">Porcentaje usado</p>
+            <p class="font-medium <%= @budget.status_color %>">
+              <%= @budget_stats[:usage_percentage] %>%
+            </p>
+          </div>
+
+          <div>
+            <p class="text-sm text-slate-500">Monto restante</p>
+            <p class="font-medium text-slate-900">
+              <%= number_to_currency(@budget_stats[:remaining], unit: @budget.currency_symbol, precision: 0) %>
+            </p>
+          </div>
+
+          <div>
+            <p class="text-sm text-slate-500">Días restantes</p>
+            <p class="font-medium text-slate-900"><%= @budget_stats[:days_remaining] %> días</p>
+          </div>
+
+          <div>
+            <p class="text-sm text-slate-500">Promedio diario necesario</p>
+            <p class="font-medium text-slate-900">
+              <%= number_to_currency(@budget_stats[:daily_average_needed], unit: @budget.currency_symbol, precision: 0) %>
+            </p>
+          </div>
+
+          <div>
+            <p class="text-sm text-slate-500">Estado</p>
+            <p class="font-medium <%= @budget.status_color %>">
+              <%= @budget.status_message %>
+            </p>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

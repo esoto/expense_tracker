@@ -1,0 +1,48 @@
+<%= form_with(model: @admin_user, url: admin_login_path, local: true, class: "space-y-6") do |form| %>
+  <div>
+    <%= form.label :email, class: "block text-sm font-medium text-slate-700 mb-1" %>
+    <%= form.email_field :email, 
+          class: "form-input appearance-none rounded-lg relative block w-full px-3 py-2 border border-slate-300 placeholder-slate-500 text-slate-900 focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm",
+          placeholder: "admin@company.com",
+          required: true,
+          autocomplete: "email" %>
+  </div>
+
+  <div>
+    <%= form.label :password, class: "block text-sm font-medium text-slate-700 mb-1" %>
+    <%= form.password_field :password,
+          class: "form-input appearance-none rounded-lg relative block w-full px-3 py-2 border border-slate-300 placeholder-slate-500 text-slate-900 focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm",
+          placeholder: "••••••••••••",
+          required: true,
+          autocomplete: "current-password" %>
+  </div>
+
+  <div class="flex items-center justify-between">
+    <div class="flex items-center">
+      <%= form.check_box :remember_me, 
+            class: "h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded" %>
+      <%= form.label :remember_me, "Remember me", 
+            class: "ml-2 block text-sm text-slate-700" %>
+    </div>
+    
+    <div class="text-sm">
+      <!-- Future: Add forgot password link -->
+      <span class="text-slate-500">Need help? Contact IT</span>
+    </div>
+  </div>
+
+  <div>
+    <%= form.submit "Sign In",
+          class: "group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-teal-700 hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-colors duration-200" %>
+  </div>
+<% end %>
+
+<!-- Security notice -->
+<div class="mt-6 text-center">
+  <p class="text-xs text-slate-500">
+    <svg class="inline w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+      <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+    </svg>
+    This admin area is secured and monitored. Unauthorized access is prohibited.
+  </p>
+</div>

@@ -23,6 +23,24 @@ Rails.application.routes.draw do
 
   # API routes for iPhone Shortcuts and webhooks
   namespace :api do
+    # API v1 routes
+    namespace :v1 do
+      # Categorization patterns management
+      resources :patterns do
+        collection do
+          get :statistics
+        end
+      end
+
+      # Categorization suggestions and feedback
+      namespace :categorization do
+        post :suggest
+        post :feedback
+        post :batch_suggest
+        get :statistics
+      end
+    end
+
     resources :webhooks, only: [] do
       collection do
         post :process_emails
@@ -62,6 +80,37 @@ Rails.application.routes.draw do
         post "jobs/:id/clear", action: :clear_job, as: :clear_job
       end
     end
+  end
+
+  # Admin routes
+  namespace :admin do
+    # Authentication routes
+    get "login", to: "sessions#new"
+    post "login", to: "sessions#create"
+    delete "logout", to: "sessions#destroy"
+    get "logout", to: "sessions#destroy"  # Allow GET for logout links
+
+    resources :patterns do
+      collection do
+        get :test
+        post :test_pattern
+        post :import
+        get :export
+        get :statistics
+        get :performance
+      end
+      member do
+        post :toggle_active
+        get :test_single
+      end
+    end
+    resources :composite_patterns do
+      member do
+        post :toggle_active
+        get :test
+      end
+    end
+    root "patterns#index"
   end
 
   # Web interface routes
@@ -111,6 +160,20 @@ Rails.application.routes.draw do
   get "sync_performance/realtime", to: "sync_performance#realtime"
 
   resources :email_accounts
+
+  # Bulk categorization routes
+  resources :bulk_categorizations, only: [ :index, :show ] do
+    collection do
+      post :categorize
+      post :suggest
+      post :preview
+      post :auto_categorize
+      get :export
+    end
+    member do
+      post :undo
+    end
+  end
 
   # UX Mockups routes (development only)
   if Rails.env.development?

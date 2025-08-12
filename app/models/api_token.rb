@@ -1,6 +1,10 @@
 require "digest"
 
 class ApiToken < ApplicationRecord
+  # Configuration constants
+  TOKEN_LENGTH = 32
+  CACHE_KEY_LENGTH = 16
+  CACHE_EXPIRY = 1.minute
   attr_accessor :token
 
   # Validations
@@ -34,13 +38,15 @@ class ApiToken < ApplicationRecord
     return nil unless token_string.present?
 
     # Short-lived cache for successful authentications
-    cache_key = "api_token:#{Digest::SHA256.hexdigest(token_string)[0..16]}"
+    cache_key = "api_token:#{Digest::SHA256.hexdigest(token_string)[0..CACHE_KEY_LENGTH]}"
 
-    Rails.cache.fetch(cache_key, expires_in: 1.minute) do
+    Rails.cache.fetch(cache_key, expires_in: CACHE_EXPIRY) do
+      # Use token_hash for quick lookup, then verify with BCrypt
       token_hash = Digest::SHA256.hexdigest(token_string)
-      api_token = active.find_by(token_hash: token_hash)
+      api_token = valid.find_by(token_hash: token_hash)
 
-      if api_token&.valid_token?
+      # Verify the token using BCrypt comparison
+      if api_token && BCrypt::Password.new(api_token.token_digest) == token_string
         api_token.touch_last_used!
         api_token
       else
@@ -50,7 +56,7 @@ class ApiToken < ApplicationRecord
   end
 
   def self.generate_secure_token
-    SecureRandom.urlsafe_base64(32)
+    SecureRandom.urlsafe_base64(TOKEN_LENGTH)
   end
 
   private
@@ -60,6 +66,7 @@ class ApiToken < ApplicationRecord
 
     self.token = self.class.generate_secure_token
     self.token_digest = BCrypt::Password.create(token)
+    # token_hash is used for quick lookups, not authentication
     self.token_hash = Digest::SHA256.hexdigest(token)
   end
 

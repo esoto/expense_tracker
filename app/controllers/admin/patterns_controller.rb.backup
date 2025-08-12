@@ -1,0 +1,546 @@
+# frozen_string_literal: true
+
+require 'csv'
+require 'ostruct'
+
+module Admin
+  # Controller for managing categorization patterns through admin UI
+  class PatternsController < BaseController
+    before_action :set_pattern, only: [:show, :edit, :update, :destroy, :toggle_active, :test_single]
+    before_action :load_categories, only: [:new, :edit, :create, :update, :test]
+
+    # GET /admin/patterns
+    def index
+      @patterns = CategorizationPattern.includes(:category)
+      
+      # Apply filters
+      filter_patterns
+      
+      # Apply search
+      search_patterns if params[:search].present?
+      
+      # Apply sorting
+      sort_patterns
+      
+      # Paginate
+      @patterns = @patterns.page(params[:page]).per(20)
+      
+      # Load statistics for dashboard
+      load_statistics
+      
+      respond_to do |format|
+        format.html
+        format.turbo_stream
+      end
+    end
+
+    # GET /admin/patterns/:id
+    def show
+      @pattern_feedbacks = @pattern.pattern_feedbacks
+                                   .includes(:expense)
+                                   .order(created_at: :desc)
+                                   .limit(10)
+      
+      # Calculate performance metrics
+      @performance_metrics = calculate_performance_metrics(@pattern)
+    end
+
+    # GET /admin/patterns/new
+    def new
+      @pattern = CategorizationPattern.new(
+        confidence_weight: CategorizationPattern::DEFAULT_CONFIDENCE_WEIGHT,
+        active: true,
+        user_created: true
+      )
+    end
+
+    # GET /admin/patterns/:id/edit
+    def edit
+    end
+
+    # POST /admin/patterns
+    def create
+      @pattern = CategorizationPattern.new(pattern_params)
+      @pattern.user_created = true
+      @pattern.usage_count = 0
+      @pattern.success_count = 0
+      @pattern.success_rate = 0.0
+
+      if @pattern.save
+        redirect_to admin_pattern_path(@pattern), 
+                    notice: 'Pattern was successfully created.'
+      else
+        render :new, status: :unprocessable_entity
+      end
+    end
+
+    # PATCH/PUT /admin/patterns/:id
+    def update
+      if @pattern.update(pattern_params)
+        redirect_to admin_pattern_path(@pattern), 
+                    notice: 'Pattern was successfully updated.'
+      else
+        render :edit, status: :unprocessable_entity
+      end
+    end
+
+    # DELETE /admin/patterns/:id
+    def destroy
+      @pattern.destroy
+      redirect_to admin_patterns_path, 
+                  notice: 'Pattern was successfully deleted.'
+    end
+
+    # POST /admin/patterns/:id/toggle_active
+    def toggle_active
+      @pattern.update!(active: !@pattern.active)
+      
+      respond_to do |format|
+        format.html { redirect_to admin_patterns_path }
+        format.turbo_stream do
+          render turbo_stream: [
+            turbo_stream.replace(
+              dom_id(@pattern, :row),
+              partial: 'admin/patterns/pattern_row',
+              locals: { pattern: @pattern }
+            ),
+            turbo_stream.replace(
+              'flash',
+              partial: 'shared/flash',
+              locals: { 
+                notice: @pattern.active? ? 'Pattern activated' : 'Pattern deactivated' 
+              }
+            )
+          ]
+        end
+      end
+    end
+
+    # GET /admin/patterns/test
+    def test
+      @test_expense = OpenStruct.new(
+        description: params[:description],
+        merchant_name: params[:merchant_name],
+        amount: params[:amount]&.to_f,
+        transaction_date: params[:transaction_date]&.to_datetime || DateTime.current
+      )
+      
+      @patterns = CategorizationPattern.active.includes(:category)
+    end
+
+    # POST /admin/patterns/test_pattern
+    def test_pattern
+      @test_expense = OpenStruct.new(
+        description: params[:description],
+        merchant_name: params[:merchant_name],
+        amount: params[:amount]&.to_f,
+        transaction_date: params[:transaction_date]&.to_datetime || DateTime.current
+      )
+      
+      # Find matching patterns
+      @matching_patterns = []
+      
+      CategorizationPattern.active.includes(:category).find_each do |pattern|
+        if pattern.matches?(@test_expense)
+          @matching_patterns << {
+            pattern: pattern,
+            confidence: pattern.effective_confidence,
+            category: pattern.category
+          }
+        end
+      end
+      
+      # Sort by confidence
+      @matching_patterns.sort_by! { |m| -m[:confidence] }
+      
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.replace(
+            'test_results',
+            partial: 'admin/patterns/test_results',
+            locals: { 
+              matching_patterns: @matching_patterns,
+              test_expense: @test_expense
+            }
+          )
+        end
+      end
+    end
+
+    # GET /admin/patterns/:id/test_single
+    def test_single
+      @test_text = params[:test_text]
+      @matches = @pattern.matches?(@test_text)
+      
+      respond_to do |format|
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.replace(
+            'single_test_result',
+            partial: 'admin/patterns/single_test_result',
+            locals: { pattern: @pattern, matches: @matches, test_text: @test_text }
+          )
+        end
+      end
+    end
+
+    # POST /admin/patterns/import
+    def import
+      if params[:file].blank?
+        redirect_to admin_patterns_path, alert: 'Please select a file to import'
+        return
+      end
+
+      imported_count = 0
+      errors = []
+
+      begin
+        CSV.foreach(params[:file].path, headers: true) do |row|
+          pattern = CategorizationPattern.new(
+            pattern_type: row['pattern_type'],
+            pattern_value: row['pattern_value'],
+            category_id: row['category_id'],
+            confidence_weight: row['confidence_weight'] || 1.0,
+            active: row['active'] != 'false',
+            user_created: true
+          )
+          
+          if pattern.save
+            imported_count += 1
+          else
+            errors << "Row #{CSV.lineno}: #{pattern.errors.full_messages.join(', ')}"
+          end
+        end
+
+        if errors.empty?
+          redirect_to admin_patterns_path, 
+                      notice: "Successfully imported #{imported_count} patterns"
+        else
+          redirect_to admin_patterns_path, 
+                      alert: "Imported #{imported_count} patterns with errors: #{errors.join('; ')}"
+        end
+      rescue CSV::MalformedCSVError => e
+        redirect_to admin_patterns_path, alert: "Invalid CSV file: #{e.message}"
+      end
+    end
+
+    # GET /admin/patterns/export
+    def export
+      patterns = filter_export_patterns
+      
+      respond_to do |format|
+        format.csv do
+          send_data generate_csv(patterns), 
+                    filename: "patterns-#{Date.current}.csv",
+                    type: 'text/csv'
+        end
+      end
+    end
+
+    # GET /admin/patterns/statistics
+    def statistics
+      @statistics = {
+        total_patterns: CategorizationPattern.count,
+        active_patterns: CategorizationPattern.active.count,
+        user_created: CategorizationPattern.user_created.count,
+        system_created: CategorizationPattern.system_created.count,
+        patterns_by_type: CategorizationPattern.group(:pattern_type).count,
+        patterns_by_category: Category.joins(:categorization_patterns)
+                                      .group('categories.name')
+                                      .count,
+        success_rate_distribution: calculate_success_distribution,
+        usage_distribution: calculate_usage_distribution,
+        recent_activity: recent_pattern_activity
+      }
+      
+      respond_to do |format|
+        format.json { render json: @statistics }
+        format.html
+      end
+    end
+
+    # GET /admin/patterns/performance
+    def performance
+      @performance_data = {
+        overall_accuracy: calculate_overall_accuracy,
+        patterns_by_effectiveness: patterns_by_effectiveness,
+        category_accuracy: category_accuracy_rates,
+        time_series_performance: time_series_performance_data,
+        low_performers: CategorizationPattern.active
+                                             .where('usage_count > 10 AND success_rate < 0.5')
+                                             .includes(:category)
+                                             .limit(10),
+        high_performers: CategorizationPattern.active
+                                              .successful
+                                              .frequently_used
+                                              .includes(:category)
+                                              .limit(10)
+      }
+      
+      respond_to do |format|
+        format.json { render json: @performance_data }
+        format.turbo_stream
+      end
+    end
+
+    private
+
+    def set_pattern
+      @pattern = CategorizationPattern.find(params[:id])
+    end
+
+    def load_categories
+      @categories = Category.order(:name)
+    end
+
+    def load_statistics
+      @total_patterns = @patterns.except(:limit, :offset).count
+      @active_patterns = @patterns.except(:limit, :offset).active.count
+      @average_success_rate = @patterns.except(:limit, :offset)
+                                       .where('usage_count > 0')
+                                       .average(:success_rate)&.round(2) || 0
+      @total_usage = @patterns.except(:limit, :offset).sum(:usage_count)
+    end
+
+    def pattern_params
+      params.require(:categorization_pattern).permit(
+        :pattern_type,
+        :pattern_value,
+        :category_id,
+        :confidence_weight,
+        :active,
+        metadata: {}
+      )
+    end
+
+    def filter_patterns
+      if params[:filter_type].present?
+        @patterns = @patterns.by_type(params[:filter_type])
+      end
+      
+      if params[:filter_category].present?
+        @patterns = @patterns.where(category_id: params[:filter_category])
+      end
+      
+      if params[:filter_status].present?
+        @patterns = case params[:filter_status]
+                   when 'active' then @patterns.active
+                   when 'inactive' then @patterns.inactive
+                   when 'user_created' then @patterns.user_created
+                   when 'system_created' then @patterns.system_created
+                   when 'high_confidence' then @patterns.high_confidence
+                   when 'successful' then @patterns.successful
+                   when 'frequently_used' then @patterns.frequently_used
+                   else @patterns
+                   end
+      end
+    end
+
+    def search_patterns
+      search_term = "%#{params[:search]}%"
+      @patterns = @patterns.joins(:category)
+                          .where(
+                            'pattern_value ILIKE ? OR categories.name ILIKE ?',
+                            search_term, search_term
+                          )
+    end
+
+    def sort_patterns
+      @patterns = case params[:sort]
+                 when 'type' then @patterns.order(:pattern_type)
+                 when 'value' then @patterns.order(:pattern_value)
+                 when 'category' then @patterns.joins(:category).order('categories.name')
+                 when 'usage' then @patterns.order(usage_count: :desc)
+                 when 'success' then @patterns.order(success_rate: :desc)
+                 when 'confidence' then @patterns.order(confidence_weight: :desc)
+                 when 'created' then @patterns.order(created_at: :desc)
+                 else @patterns.ordered_by_success
+                 end
+    end
+
+    def filter_export_patterns
+      patterns = CategorizationPattern.includes(:category)
+      
+      if params[:export_active_only] == 'true'
+        patterns = patterns.active
+      end
+      
+      if params[:export_category_id].present?
+        patterns = patterns.where(category_id: params[:export_category_id])
+      end
+      
+      patterns
+    end
+
+    def generate_csv(patterns)
+      CSV.generate(headers: true) do |csv|
+        csv << ['pattern_type', 'pattern_value', 'category_id', 'category_name', 
+                'confidence_weight', 'active', 'usage_count', 'success_count', 
+                'success_rate', 'created_at']
+        
+        patterns.find_each do |pattern|
+          csv << [
+            pattern.pattern_type,
+            pattern.pattern_value,
+            pattern.category_id,
+            pattern.category.name,
+            pattern.confidence_weight,
+            pattern.active,
+            pattern.usage_count,
+            pattern.success_count,
+            pattern.success_rate,
+            pattern.created_at
+          ]
+        end
+      end
+    end
+
+    def calculate_performance_metrics(pattern)
+      {
+        total_uses: pattern.usage_count,
+        successful_uses: pattern.success_count,
+        success_rate: pattern.success_rate,
+        confidence: pattern.effective_confidence,
+        last_used: pattern.pattern_feedbacks.maximum(:created_at),
+        average_daily_uses: calculate_average_daily_uses(pattern),
+        trend: calculate_trend(pattern)
+      }
+    end
+
+    def calculate_average_daily_uses(pattern)
+      return 0 if pattern.created_at > 30.days.ago
+      
+      days_active = (Date.current - pattern.created_at.to_date).to_i
+      (pattern.usage_count.to_f / days_active).round(2)
+    end
+
+    def calculate_trend(pattern)
+      recent_feedbacks = pattern.pattern_feedbacks
+                               .where(created_at: 7.days.ago..)
+                               .group_by_day(:created_at)
+                               .count
+      
+      return 'stable' if recent_feedbacks.empty?
+      
+      values = recent_feedbacks.values
+      if values.size > 1 && values.last > values.first
+        'increasing'
+      elsif values.size > 1 && values.last < values.first
+        'decreasing'
+      else
+        'stable'
+      end
+    end
+
+    def calculate_success_distribution
+      CategorizationPattern.group(
+        Arel.sql("CASE 
+          WHEN success_rate >= 0.9 THEN '90-100%'
+          WHEN success_rate >= 0.7 THEN '70-90%'
+          WHEN success_rate >= 0.5 THEN '50-70%'
+          WHEN success_rate >= 0.3 THEN '30-50%'
+          ELSE '0-30%'
+        END")
+      ).count
+    end
+
+    def calculate_usage_distribution
+      CategorizationPattern.group(
+        Arel.sql("CASE 
+          WHEN usage_count >= 100 THEN '100+'
+          WHEN usage_count >= 50 THEN '50-99'
+          WHEN usage_count >= 20 THEN '20-49'
+          WHEN usage_count >= 10 THEN '10-19'
+          WHEN usage_count >= 1 THEN '1-9'
+          ELSE '0'
+        END")
+      ).count
+    end
+
+    def recent_pattern_activity
+      PatternFeedback.joins(:categorization_pattern)
+                     .where(created_at: 24.hours.ago..)
+                     .group('categorization_patterns.id')
+                     .count
+                     .sort_by { |_, count| -count }
+                     .first(10)
+                     .map do |pattern_id, count|
+        pattern = CategorizationPattern.find(pattern_id)
+        {
+          pattern: pattern.pattern_value,
+          type: pattern.pattern_type,
+          category: pattern.category.name,
+          uses: count
+        }
+      end
+    end
+
+    def calculate_overall_accuracy
+      total_uses = CategorizationPattern.sum(:usage_count)
+      total_successes = CategorizationPattern.sum(:success_count)
+      
+      return 0 if total_uses.zero?
+      
+      ((total_successes.to_f / total_uses) * 100).round(2)
+    end
+
+    def patterns_by_effectiveness
+      CategorizationPattern.select(
+        :pattern_type,
+        'AVG(success_rate) as avg_success_rate',
+        'SUM(usage_count) as total_usage'
+      ).group(:pattern_type)
+       .order('avg_success_rate DESC')
+       .map do |result|
+        {
+          type: result.pattern_type,
+          average_success_rate: (result.avg_success_rate * 100).round(2),
+          total_usage: result.total_usage
+        }
+      end
+    end
+
+    def category_accuracy_rates
+      Category.joins(:categorization_patterns)
+              .select(
+                'categories.name',
+                'AVG(categorization_patterns.success_rate) as avg_success_rate',
+                'SUM(categorization_patterns.usage_count) as total_usage'
+              )
+              .group('categories.id, categories.name')
+              .order('avg_success_rate DESC')
+              .map do |category|
+        {
+          name: category.name,
+          accuracy: (category.avg_success_rate * 100).round(2),
+          total_usage: category.total_usage
+        }
+      end
+    end
+
+    def time_series_performance_data
+      PatternFeedback.joins(:categorization_pattern)
+                     .where(created_at: 30.days.ago..)
+                     .group_by_day(:created_at)
+                     .group(:was_correct)
+                     .count
+                     .each_with_object({}) do |((date, was_correct), count), result|
+        result[date] ||= { correct: 0, incorrect: 0 }
+        if was_correct
+          result[date][:correct] = count
+        else
+          result[date][:incorrect] = count
+        end
+      end.map do |date, counts|
+        total = counts[:correct] + counts[:incorrect]
+        accuracy = total > 0 ? (counts[:correct].to_f / total * 100).round(2) : 0
+        
+        {
+          date: date,
+          correct: counts[:correct],
+          incorrect: counts[:incorrect],
+          accuracy: accuracy
+        }
+      end
+    end
+  end
+end

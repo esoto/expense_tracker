@@ -136,9 +136,9 @@ class ExpensesController < ApplicationController
 
   # POST /expenses/sync_emails
   def sync_emails
-    sync_result = SyncService.new.sync_emails(email_account_id: params[:email_account_id])
+    sync_result = Services::Email::SyncService.new.sync_emails(email_account_id: params[:email_account_id])
     redirect_to dashboard_expenses_path, notice: sync_result[:message]
-  rescue SyncService::SyncError => e
+  rescue Services::Email::SyncService::SyncError => e
     redirect_to dashboard_expenses_path, alert: e.message
   rescue StandardError => e
     Rails.logger.error "Error starting email sync: #{e.message}"

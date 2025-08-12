@@ -346,3 +346,24 @@ else
   puts "  ⚠️  Skipping metrics creation - no sync sessions or email accounts found"
   puts "  ℹ️  Run sync operations first to generate real metrics"
 end
+
+# Create admin user for development
+puts ""
+puts "👤 Creating admin user..."
+
+admin_email = "admin@expense-tracker.com"
+admin_password = "AdminPassword123!"
+
+admin_user = AdminUser.find_or_create_by!(email: admin_email) do |user|
+  user.name = "System Administrator"
+  user.password = admin_password
+  user.role = "super_admin"
+end
+
+if admin_user.persisted?
+  puts "  ✓ Admin user created: #{admin_email}"
+  puts "  🔑 Password: #{admin_password}"
+  puts "  ⚠️  Change this password in production!"
+else
+  puts "  ✓ Admin user already exists: #{admin_email}"
+end

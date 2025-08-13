@@ -88,10 +88,10 @@ parsing_rules = [
   {
     bank_name: "BAC",
     email_pattern: "(?:transacci[oó]n|notificaci[oó]n).*(?:BAC|PTA)",
-    amount_pattern: "(?:Monto)[: ]*(?:USD|CRC)[: ]*([\\d,]+\\.\\d{2})",
-    date_pattern: "Fecha:\\s*(.+?)(?=\\n|$)",
-    merchant_pattern: "(?:Comercio)[: ]*([A-Z0-9 .]+?)(?: *Ciudad| *Fecha| *VISA| *MASTER)",
-    description_pattern: "(?:Tipo de Transacci[oó]n)[:\\s]*([A-Z]+)"
+    amount_pattern: "(?:CRC|USD)\\s+([\\d,]+\\.\\d{2})",
+    date_pattern: "(\\w+\\s+\\d{1,2},\\s+\\d{4},\\s+\\d{1,2}:\\d{2})",
+    merchant_pattern: "Comercio:.*?</td>.*?<p.*?>\\s*([^<]+?)\\s*</p>",
+    description_pattern: "Tipo de Transacci[oó]n:.*?</td>.*?<p.*?>\\s*([A-Z]+)\\s*</p>"
   },
   {
     bank_name: "BCR",

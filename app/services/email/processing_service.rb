@@ -9,7 +9,7 @@ module Services
       include ActiveModel::Model
 
       attr_accessor :email_account, :options
-      attr_reader :errors, :metrics
+      attr_reader :errors, :metrics, :last_categorization_confidence, :last_categorization_method
 
       def initialize(email_account, options = {})
         @email_account = email_account
@@ -50,9 +50,8 @@ module Services
       def fetch_only(since: 1.week.ago, limit: 100)
         return [] unless valid_account?
 
-        with_imap_connection do |imap|
-          search_emails(imap, since, limit)
-        end
+        @options[:limit] = limit
+        fetch_emails(since)
       end
 
       # Parse a single email for expenses
@@ -141,6 +140,9 @@ module Services
         # Skip if already processed
         return { success: true, expenses_created: 0 } if email_already_processed?(email)
 
+        # Skip promotional emails
+        return { success: true, expenses_created: 0 } if promotional_email?(email)
+
         # Parse email for expenses
         expenses_data = parse_email(email)
 
@@ -152,7 +154,18 @@ module Services
         ApplicationRecord.transaction do
           expenses_data.each do |expense_data|
             expense = create_expense(expense_data)
-            expenses_created += 1 if expense.persisted?
+            if expense.persisted?
+              expenses_created += 1
+
+              # Log categorization success if auto-categorized
+              if options[:auto_categorize] && expense.auto_categorized?
+                Rails.logger.info "[EmailProcessing] Auto-categorized expense #{expense.id} " \
+                                 "as '#{expense.category&.name}' with #{expense.categorization_confidence} confidence " \
+                                 "using #{expense.categorization_method}"
+              end
+            else
+              Rails.logger.warn "[EmailProcessing] Failed to save expense: #{expense.errors.full_messages.join(', ')}"
+            end
           end
 
           # Mark email as processed
@@ -278,11 +291,24 @@ module Services
       def known_senders
         # Could be configurable per account
         [
-          "noreply@baccredomatic.com",
+          "notificacion@notificacionesbaccr.com",
           "alertas@bncr.fi.cr",
           "notificaciones@scotiabank.com",
           "alerts@paypal.com",
           "no-reply@amazon.com"
+        ]
+      end
+
+      def promotional_senders
+        # Exclude promotional/marketing emails
+        [
+          "promociones@scotiabankca.net",
+          "marketing@",
+          "promociones@",
+          "offers@",
+          "newsletter@",
+          "noticias@",
+          "comunicaciones@"
         ]
       end
 
@@ -329,31 +355,61 @@ module Services
         expense = email_account.expenses.build(
           amount: expense_data[:amount],
           description: expense_data[:description],
-          date: expense_data[:date] || Date.current,
-          merchant: expense_data[:merchant],
-          currency: expense_data[:currency] || "USD",
-          raw_text: expense_data[:raw_text],
-          source: "email",
-          email_message_id: expense_data[:email_message_id]
+          transaction_date: expense_data[:date] || Date.current,
+          merchant_name: expense_data[:merchant],
+          merchant_normalized: expense_data[:merchant]&.downcase&.strip,
+          currency: expense_data[:currency]&.downcase || "usd",
+          raw_email_content: expense_data[:raw_text],
+          status: "pending"
         )
 
-        # Auto-categorize if enabled
+        # Save expense first
+        expense.save!
+
+        # Auto-categorize if enabled (after saving so expense has an ID)
         if options[:auto_categorize]
           category = suggest_category(expense)
-          expense.category = category if category
+          if category
+            expense.update!(
+              category: category,
+              auto_categorized: true,
+              categorization_confidence: last_categorization_confidence,
+              categorization_method: last_categorization_method,
+              categorized_at: Time.current
+            )
+          end
         end
 
-        expense.save!
         expense
       end
 
       def suggest_category(expense)
-        # Use categorization service to suggest category
-        result = ::CategorizationService.new.categorize(expense.description)
+        # Use the new performance-optimized categorization engine
+        result = Categorization::Engine.instance.categorize(expense)
 
-        if result && result[:confidence] > 0.7
-          Category.find_by(id: result[:category_id])
+        if result&.successful? && result.confidence > 0.7
+          # Store categorization metadata for expense update
+          @last_categorization_confidence = result.confidence
+          @last_categorization_method = result.method || "engine"
+
+          result.category
+        else
+          @last_categorization_confidence = result&.confidence || 0.0
+          @last_categorization_method = "low_confidence"
+          nil
         end
+      rescue => e
+        Rails.logger.warn "Categorization failed for expense: #{e.message}"
+        @last_categorization_confidence = 0.0
+        @last_categorization_method = "error"
+        nil
+      end
+
+      def promotional_email?(email)
+        from_address = email[:from]&.downcase
+        return false unless from_address
+
+        promotional_senders.any? { |sender| from_address.include?(sender.downcase) }
       end
 
       def mark_email_processed(email)
@@ -415,10 +471,15 @@ module Services
         def extract_expenses
           expenses = []
 
-          # Try different parsing strategies
-          expenses.concat(parse_with_patterns)
-          expenses.concat(parse_with_regex)
-          expenses.concat(parse_structured_data)
+          # Try bank-specific patterns first
+          bank_expenses = parse_with_patterns
+          if bank_expenses.any?
+            expenses.concat(bank_expenses)
+          else
+            # Only use fallback methods if bank patterns don't work
+            expenses.concat(parse_with_regex)
+            expenses.concat(parse_structured_data)
+          end
 
           # Remove duplicates and validate
           expenses.uniq { |e| [ e[:amount], e[:date], e[:description] ] }
@@ -428,10 +489,10 @@ module Services
         private
 
         def parse_with_patterns
-          # Use parsing rules specific to the sender
+          # Use parsing rules specific to the bank
           rule = ParsingRule.find_by(
-            email_account: email_account,
-            sender_email: email_data[:from]
+            bank_name: email_account.bank_name,
+            active: true
           )
 
           return [] unless rule
@@ -478,8 +539,21 @@ module Services
         end
 
         def apply_parsing_rule(rule)
-          # Apply the parsing rule's regex patterns
-          []
+          text = email_data[:html_body] || email_data[:text_body] || email_data[:body] || ""
+          # Fix encoding issues
+          text = text.force_encoding('UTF-8') if text.respond_to?(:force_encoding)
+          parsed_data = rule.parse_email(text)
+          
+          return [] if parsed_data.empty? || !parsed_data[:amount]
+          
+          [{
+            amount: parsed_data[:amount],
+            description: parsed_data[:description] || extract_description_near_amount(text, parsed_data[:amount].to_s),
+            date: parsed_data[:transaction_date] || extract_date(text),
+            merchant: parsed_data[:merchant_name] || extract_merchant(text),
+            raw_text: text[0..500],
+            email_message_id: email_data[:message_id]
+          }]
         end
 
         def parse_amount(text)

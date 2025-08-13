@@ -63,8 +63,6 @@ class EmailAccount < ApplicationRecord
     base_settings.merge(settings.fetch("imap", {}))
   end
 
-  private
-
   def imap_server
     case provider
     when "gmail"
@@ -88,4 +86,16 @@ class EmailAccount < ApplicationRecord
       settings.dig("imap", "port") || 993
     end
   end
+
+  def password
+    encrypted_password
+  end
+
+  def oauth_configured?
+    # Check if OAuth tokens are available
+    settings.dig("oauth", "access_token").present? ||
+    settings.dig("oauth", "refresh_token").present?
+  end
+
+  private
 end

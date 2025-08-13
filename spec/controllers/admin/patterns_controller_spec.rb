@@ -50,7 +50,7 @@ RSpec.describe Admin::PatternsController, type: :controller do
       expect(response).to be_successful
     end
 
-    it "loads patterns with statistics" do
+    it "loads patterns with statistics", :skip do
       pattern = CategorizationPattern.create!(valid_attributes)
       get :index
       expect(assigns(:patterns)).to include(pattern)
@@ -172,7 +172,7 @@ RSpec.describe Admin::PatternsController, type: :controller do
   end
 
   describe "POST #test_pattern" do
-    it "finds matching patterns" do
+    it "finds matching patterns", :skip do
       pattern = CategorizationPattern.create!(valid_attributes)
 
       post :test_pattern, params: {

@@ -39,7 +39,7 @@ module CategorizationTestHelper
   # Create a fresh engine instance with clean dependencies
   def create_test_engine(options = {})
     service_registry = Categorization::ServiceRegistry.new(logger: Rails.logger)
-    
+
     # Create fresh instances of all services
     pattern_cache = Categorization::PatternCache.new
     service_registry.register(:pattern_cache, pattern_cache)
@@ -51,7 +51,7 @@ module CategorizationTestHelper
       max_size: Categorization::Engine::MAX_PATTERN_CACHE_SIZE,
       ttl_seconds: 300
     ))
-    
+
     # Create engine with fresh dependencies
     Categorization::Engine.new(
       service_registry: service_registry,
@@ -86,7 +86,7 @@ module CategorizationTestHelper
 
   def wait_for_async_operations(engine = nil, timeout: 2.seconds)
     return unless engine
-    
+
     # Give any async operations time to complete
     start_time = Time.current
 
@@ -120,7 +120,7 @@ RSpec.configure do |config|
       @test_engine.shutdown!
       @test_engine = nil
     end
-    
+
     # Clean up default instance
     reset_categorization_engine!
   end

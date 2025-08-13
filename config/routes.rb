@@ -93,20 +93,18 @@ Rails.application.routes.draw do
     delete "logout", to: "sessions#destroy"
     get "logout", to: "sessions#destroy"  # Allow GET for logout links
 
-    resources :patterns do
-      collection do
-        get :test
-        post :test_pattern
-        post :import
-        get :export
-        get :statistics
-        get :performance
-      end
-      member do
-        post :toggle_active
-        get :test_single
-      end
-    end
+    resources :patterns
+
+    # Pattern testing and management operations
+    get "patterns/test", to: "pattern_testing#test"
+    post "patterns/test_pattern", to: "pattern_testing#test_pattern"
+    get "patterns/:id/test_single", to: "pattern_testing#test_single", as: :test_single_pattern
+
+    post "patterns/import", to: "pattern_management#import"
+    get "patterns/export", to: "pattern_management#export"
+    get "patterns/statistics", to: "pattern_management#statistics"
+    get "patterns/performance", to: "pattern_management#performance"
+    post "patterns/:id/toggle_active", to: "pattern_management#toggle_active", as: :toggle_active_pattern
     resources :composite_patterns do
       member do
         post :toggle_active
@@ -170,18 +168,15 @@ Rails.application.routes.draw do
   resources :email_accounts
 
   # Bulk categorization routes
-  resources :bulk_categorizations, only: [ :index, :show ] do
-    collection do
-      post :categorize
-      post :suggest
-      post :preview
-      post :auto_categorize
-      get :export
-    end
-    member do
-      post :undo
-    end
-  end
+  resources :bulk_categorizations, only: [ :index, :show ]
+
+  # Bulk categorization actions
+  post "bulk_categorizations/categorize", to: "bulk_categorization_actions#categorize"
+  post "bulk_categorizations/suggest", to: "bulk_categorization_actions#suggest"
+  post "bulk_categorizations/preview", to: "bulk_categorization_actions#preview"
+  post "bulk_categorizations/auto_categorize", to: "bulk_categorization_actions#auto_categorize"
+  get "bulk_categorizations/export", to: "bulk_categorization_actions#export"
+  post "bulk_categorizations/:id/undo", to: "bulk_categorization_actions#undo", as: :undo_bulk_categorization
 
   # Analytics routes
   namespace :analytics do

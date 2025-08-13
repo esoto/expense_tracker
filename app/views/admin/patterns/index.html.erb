@@ -109,15 +109,7 @@
         <!-- Type Filter -->
         <div>
           <%= f.select :filter_type,
-              options_for_select([
-                ['All Types', ''],
-                ['Merchant', 'merchant'],
-                ['Keyword', 'keyword'],
-                ['Description', 'description'],
-                ['Amount Range', 'amount_range'],
-                ['Regex', 'regex'],
-                ['Time', 'time']
-              ], params[:filter_type]),
+              options_for_select(pattern_type_filter_options, params[:filter_type]),
               {},
               class: "w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
               data: { action: "change->pattern-management#filterChanged" } %>
@@ -138,16 +130,7 @@
         <!-- Status Filter -->
         <div>
           <%= f.select :filter_status,
-              options_for_select([
-                ['All Status', ''],
-                ['Active', 'active'],
-                ['Inactive', 'inactive'],
-                ['User Created', 'user_created'],
-                ['System Created', 'system_created'],
-                ['High Confidence', 'high_confidence'],
-                ['Successful', 'successful'],
-                ['Frequently Used', 'frequently_used']
-              ], params[:filter_status]),
+              options_for_select(pattern_status_filter_options, params[:filter_status]),
               {},
               class: "w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
               data: { action: "change->pattern-management#filterChanged" } %>

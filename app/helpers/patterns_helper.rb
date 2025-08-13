@@ -90,4 +90,40 @@ module PatternsHelper
     content_tag :span, operator,
                 class: "px-2 py-1 text-xs rounded-full bg-#{color}-100 text-#{color}-700"
   end
+
+  def pattern_type_options
+    [
+      [ "Merchant Name", "merchant" ],
+      [ "Keyword", "keyword" ],
+      [ "Description", "description" ],
+      [ "Amount Range", "amount_range" ],
+      [ "Regular Expression", "regex" ],
+      [ "Time Pattern", "time" ]
+    ]
+  end
+
+  def pattern_type_filter_options
+    [
+      [ "All Types", "" ],
+      [ "Merchant", "merchant" ],
+      [ "Keyword", "keyword" ],
+      [ "Description", "description" ],
+      [ "Amount Range", "amount_range" ],
+      [ "Regex", "regex" ],
+      [ "Time", "time" ]
+    ]
+  end
+
+  def pattern_status_filter_options
+    [
+      [ "All Status", "" ],
+      [ "Active", "active" ],
+      [ "Inactive", "inactive" ],
+      [ "User Created", "user_created" ],
+      [ "System Created", "system_created" ],
+      [ "High Confidence", "high_confidence" ],
+      [ "Successful", "successful" ],
+      [ "Frequently Used", "frequently_used" ]
+    ]
+  end
 end

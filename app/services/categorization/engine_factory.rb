@@ -70,5 +70,4 @@ module Categorization
       end
     end
   end
-
 end

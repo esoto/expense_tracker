@@ -24,21 +24,21 @@ RSpec.describe Categorization::Engine, type: :service do
     it "creates independent instances" do
       engine1 = described_class.create
       engine2 = described_class.create
-      
+
       expect(engine1).not_to eq(engine2)
       expect(engine1.object_id).not_to eq(engine2.object_id)
-      
+
       # Clean up
       engine1.shutdown!
       engine2.shutdown!
     end
-    
+
     it "allows custom service registry" do
       registry = Categorization::ServiceRegistry.new
       custom_engine = described_class.create(service_registry: registry)
-      
+
       expect(custom_engine.service_registry).to eq(registry)
-      
+
       custom_engine.shutdown!
 >>>>>>> e077f8f (♻️ refactor(categorization): complete dependency injection implementation replacing singleton pattern)
     end
@@ -200,7 +200,7 @@ RSpec.describe Categorization::Engine, type: :service do
         expect(expense.category).to be_nil # Verify initial state
 
         result = engine.categorize(expense, auto_update: true)
-        
+
         if result.high_confidence?
           wait_for_async_operations(engine)
           expect(expense.reload.category).to eq(category)
@@ -262,12 +262,12 @@ RSpec.describe Categorization::Engine, type: :service do
         expect(result).not_to be_successful
         expect(result.error).to include("Connection lost")
       end
-      
+
       it "handles shutdown state" do
         engine.shutdown!
-        
+
         result = engine.categorize(expense)
-        
+
         expect(result).not_to be_successful
         # CircuitOpenError gets translated to "Service temporarily unavailable"
         expect(result.error).to eq("Service temporarily unavailable")
@@ -353,7 +353,7 @@ RSpec.describe Categorization::Engine, type: :service do
       results.each do |result|
         expect(result).to be_a(Categorization::CategorizationResult)
       end
-      
+
       # Wait for any async operations to complete
       wait_for_async_operations(engine)
     end
@@ -385,12 +385,12 @@ RSpec.describe Categorization::Engine, type: :service do
       expect(result).to include(:patterns)
       expect(result[:patterns]).to be >= 0
     end
-    
+
     it "handles shutdown state" do
       engine.shutdown!
-      
+
       result = engine.warm_up
-      
+
       expect(result).to eq({ status: :shutdown })
     end
   end
@@ -414,7 +414,7 @@ RSpec.describe Categorization::Engine, type: :service do
     it "reports healthy state for new engine" do
       expect(engine).to be_healthy
     end
-    
+
     it "reports unhealthy when shutdown" do
       engine.shutdown!
       expect(engine).not_to be_healthy
@@ -434,25 +434,25 @@ RSpec.describe Categorization::Engine, type: :service do
       expect(new_metrics[:engine][:successful_categorizations]).to eq(0)
     end
   end
-  
+
   describe "#shutdown!" do
     it "cleanly shuts down the engine" do
       expect(engine.shutdown?).to be false
-      
+
       engine.shutdown!
-      
+
       expect(engine.shutdown?).to be true
     end
-    
+
     it "prevents operations after shutdown" do
       engine.shutdown!
-      
+
       result = engine.categorize(expense)
-      
+
       expect(result).not_to be_successful
       expect(result.error).to eq("Service temporarily unavailable")
     end
-    
+
     it "is idempotent" do
       expect { engine.shutdown! }.not_to raise_error
       expect { engine.shutdown! }.not_to raise_error
@@ -480,13 +480,13 @@ RSpec.describe Categorization::Engine, type: :service do
     it "does not share state with other engine instances" do
       engine1 = create_test_engine
       engine2 = create_test_engine
-      
+
       # Activity in engine1
       engine1.categorize(expense)
-      
+
       # Should not affect engine2
       expect(engine2.metrics[:engine][:total_categorizations]).to eq(0)
-      
+
       # Clean up
       engine1.shutdown!
       engine2.shutdown!

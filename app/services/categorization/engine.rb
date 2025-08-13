@@ -130,15 +130,15 @@ module Categorization
     def initialize(options = {})
       @options = Concurrent::Hash.new.merge(options)
       @logger = options.fetch(:logger, Rails.logger)
-      
+
       # Initialize critical state first to ensure shutdown! can be called safely
       @shutdown = false
       @shutdown_mutex = Mutex.new
-      
+
       begin
         # Initialize service registry for dependency injection
         @service_registry = options[:service_registry] || ServiceRegistry.new(logger: @logger)
-        
+
         # Build default services if not provided
         @service_registry.build_defaults(options) unless options[:skip_defaults]
 
@@ -158,7 +158,7 @@ module Categorization
       rescue => e
         @logger.error "[Engine] Failed to initialize: #{e.message}"
         @logger.error e.backtrace.join("\n")
-        
+
         # Mark as shutdown to prevent further operations
         @shutdown = true
         raise
@@ -168,27 +168,27 @@ module Categorization
     # Shutdown the engine cleanly
     def shutdown!
       return if @shutdown
-      
+
       # Safety check: if mutex is not initialized, engine initialization failed
       return unless @shutdown_mutex
-      
+
       @shutdown_mutex.synchronize do
         return if @shutdown
-        
+
         @logger.info "[Engine] Shutting down categorization engine..."
-        
+
         # Shutdown thread pool
         if @thread_pool
           @thread_pool.shutdown
           @thread_pool.wait_for_termination(5)
         end
-        
+
         # Clear caches
         clear_all_caches
-        
+
         # Mark as shutdown
         @shutdown = true
-        
+
         @logger.info "[Engine] Categorization engine shutdown complete"
       end
     end
@@ -208,7 +208,7 @@ module Categorization
       if shutdown?
         return CategorizationResult.error("Service temporarily unavailable")
       end
-      
+
       correlation_id = generate_correlation_id
 
       begin
@@ -245,7 +245,7 @@ module Categorization
     # Learn from user correction with error recovery
     def learn_from_correction(expense, correct_category, predicted_category = nil, options = {})
       return if options[:skip_learning]
-      
+
       # Check shutdown state and return error result instead of raising
       if shutdown?
         return LearningResult.error("Service temporarily unavailable")
@@ -282,7 +282,7 @@ module Categorization
     # Batch categorize with concurrent processing
     def batch_categorize(expenses, options = {})
       return [] if expenses.blank?
-      
+
       # Check shutdown state and return error results instead of raising
       if shutdown?
         return expenses.map { CategorizationResult.error("Service temporarily unavailable") }
@@ -318,7 +318,7 @@ module Categorization
     # Warm up with controlled resource usage
     def warm_up
       return { status: :shutdown } if shutdown?
-      
+
       correlation_id = generate_correlation_id
 
       with_performance_tracking("warm_up", correlation_id) do
@@ -409,7 +409,7 @@ module Categorization
 
       # Thread-safe collections
       @pattern_cache = Concurrent::Map.new
-      
+
       # Mutexes for critical sections
       @reset_mutex = Mutex.new
       @batch_mutex = Mutex.new
@@ -1004,7 +1004,7 @@ module Categorization
 
     def thread_pool_status
       return {} unless @thread_pool
-      
+
       {
         active_count: @thread_pool.active_count,
         completed_tasks: @thread_pool.completed_task_count,

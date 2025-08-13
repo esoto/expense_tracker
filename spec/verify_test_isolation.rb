@@ -13,9 +13,9 @@ def run_test(test_file, test_line = nil)
   else
     "bundle exec rspec #{test_file} --format json"
   end
-  
+
   stdout, stderr, status = Open3.capture3(cmd)
-  
+
   begin
     result = JSON.parse(stdout)
     {
@@ -59,7 +59,7 @@ individual_results = []
 critical_tests.each do |test|
   print "Testing line #{test[:line]} (#{test[:description]})... "
   result = run_test(test_file, test[:line])
-  
+
   if result[:success] && result[:failures] == 0
     puts "✓ PASSED"
     individual_results << { test: test, passed: true }
@@ -87,7 +87,7 @@ puts "-" * 40
 3.times do |i|
   print "Run #{i + 1}... "
   result = run_test(test_file)
-  
+
   if result[:success] && result[:failures] == 0
     puts "✓ PASSED"
   else
@@ -107,17 +107,17 @@ if all_individual_passed && full_result[:success]
   exit 0
 else
   puts "✗ FAILURE: Some tests are still failing."
-  
+
   if !all_individual_passed
     puts "\nFailed individual tests:"
     individual_results.select { |r| !r[:passed] }.each do |r|
       puts "  - Line #{r[:test][:line]}: #{r[:test][:description]}"
     end
   end
-  
+
   if !full_result[:success]
     puts "\nFull suite had #{full_result[:failures]} failures"
   end
-  
+
   exit 1
 end

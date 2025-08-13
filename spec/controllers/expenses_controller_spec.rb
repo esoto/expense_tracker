@@ -18,7 +18,7 @@ RSpec.describe ExpensesController, type: :controller do
       @week_expense = create(:expense,
         email_account: email_account,
         category: category,
-        transaction_date: Date.current.beginning_of_week + 2.days,
+        transaction_date: Date.current - 1.day,
         amount: 2000,
         merchant_name: "Week Shop"
       )

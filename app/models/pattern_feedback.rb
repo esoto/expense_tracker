@@ -17,6 +17,7 @@ class PatternFeedback < ApplicationRecord
 
   after_create :update_pattern_performance
   after_create :create_pattern_from_correction, if: :correction_feedback?
+  after_commit :invalidate_analytics_cache
 
   # Class method to create feedback records
   def self.record_feedback(expense:, correct_category:, pattern: nil, was_correct:, confidence: nil, type: "confirmation")
@@ -119,5 +120,12 @@ class PatternFeedback < ApplicationRecord
     when "rejected", "corrected", "correction"
       categorization_pattern.record_usage(false)
     end
+  end
+
+  def invalidate_analytics_cache
+    # Clear analytics caches when feedback is recorded
+    Rails.cache.delete_matched("pattern_analytics/*") if Rails.cache.respond_to?(:delete_matched)
+  rescue => e
+    Rails.logger.error "[PatternFeedback] Analytics cache invalidation failed: #{e.message}"
   end
 end

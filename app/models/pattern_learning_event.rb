@@ -12,6 +12,8 @@ class PatternLearningEvent < ApplicationRecord
   scope :unsuccessful, -> { where(was_correct: false) }
   scope :recent, -> { order(created_at: :desc) }
 
+  after_commit :invalidate_analytics_cache
+
   # Class method to record learning events
   def self.record_event(expense:, category:, pattern:, was_correct:, confidence: nil)
     pattern_name = case pattern
@@ -39,5 +41,14 @@ class PatternLearningEvent < ApplicationRecord
   # Check if this event indicates success
   def successful?
     was_correct == true
+  end
+
+  private
+
+  def invalidate_analytics_cache
+    # Clear analytics caches when learning events are recorded
+    Rails.cache.delete_matched("pattern_analytics/*") if Rails.cache.respond_to?(:delete_matched)
+  rescue => e
+    Rails.logger.error "[PatternLearningEvent] Analytics cache invalidation failed: #{e.message}"
   end
 end

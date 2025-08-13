@@ -29,13 +29,13 @@ class ParsingRule < ApplicationRecord
     end
 
     # Extract merchant
-    if merchant_pattern.present? && merchant_match = email_content.match(Regexp.new(merchant_pattern, Regexp::IGNORECASE))
-      parsed_data[:merchant_name] = merchant_match[1] || merchant_match[0]
+    if merchant_pattern.present? && merchant_match = email_content.match(Regexp.new(merchant_pattern, Regexp::IGNORECASE | Regexp::MULTILINE))
+      parsed_data[:merchant_name] = (merchant_match[1] || merchant_match[0]).strip
     end
 
     # Extract description
-    if description_pattern.present? && desc_match = email_content.match(Regexp.new(description_pattern, Regexp::IGNORECASE))
-      parsed_data[:description] = desc_match[1] || desc_match[0]
+    if description_pattern.present? && desc_match = email_content.match(Regexp.new(description_pattern, Regexp::IGNORECASE | Regexp::MULTILINE))
+      parsed_data[:description] = (desc_match[1] || desc_match[0]).strip
     end
 
     parsed_data

@@ -83,7 +83,7 @@ module ApiHelpers
   end
 
   def expect_validation_error_response
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(json_response).to have_key(:errors)
   end
 

@@ -1,0 +1,236 @@
+<div class="container mx-auto px-4" data-controller="pattern-management">
+  <!-- Header with Title and Actions -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-900">Categorization Patterns</h1>
+      <p class="text-slate-600 mt-1">Manage automatic expense categorization rules</p>
+    </div>
+    <div class="flex flex-wrap gap-2 mt-4 sm:mt-0">
+      <%= link_to new_admin_pattern_path, class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm inline-flex items-center" do %>
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        New Pattern
+      <% end %>
+      <%= link_to test_admin_patterns_path, class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center" do %>
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        Test Patterns
+      <% end %>
+      <button data-action="click->pattern-management#showImportModal" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+        </svg>
+        Import
+      </button>
+      <%= link_to export_admin_patterns_path(format: :csv), class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center" do %>
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+        </svg>
+        Export
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+      <div class="flex items-center">
+        <div class="bg-teal-100 text-teal-700 p-3 rounded-lg">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm text-slate-600">Total Patterns</p>
+          <p class="text-2xl font-bold text-slate-900"><%= @total_patterns %></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+      <div class="flex items-center">
+        <div class="bg-emerald-100 text-emerald-700 p-3 rounded-lg">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm text-slate-600">Active Patterns</p>
+          <p class="text-2xl font-bold text-slate-900"><%= @active_patterns %></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+      <div class="flex items-center">
+        <div class="bg-amber-100 text-amber-700 p-3 rounded-lg">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm text-slate-600">Avg Success Rate</p>
+          <p class="text-2xl font-bold text-slate-900"><%= @average_success_rate %>%</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+      <div class="flex items-center">
+        <div class="bg-rose-100 text-rose-700 p-3 rounded-lg">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm text-slate-600">Total Usage</p>
+          <p class="text-2xl font-bold text-slate-900"><%= number_with_delimiter(@total_usage) %></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters and Search -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
+    <%= form_with url: admin_patterns_path, method: :get, data: { turbo_frame: "patterns_table" } do |f| %>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <!-- Search Field -->
+        <div class="lg:col-span-2">
+          <%= f.text_field :search,
+              value: params[:search],
+              placeholder: "Search patterns or categories...",
+              class: "w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
+              data: { action: "input->pattern-management#debounceSearch" } %>
+        </div>
+
+        <!-- Type Filter -->
+        <div>
+          <%= f.select :filter_type,
+              options_for_select(pattern_type_filter_options, params[:filter_type]),
+              {},
+              class: "w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
+              data: { action: "change->pattern-management#filterChanged" } %>
+        </div>
+
+        <!-- Category Filter -->
+        <div>
+          <%= f.select :filter_category,
+              options_for_select(
+                [['All Categories', '']] + Category.order(:name).pluck(:name, :id),
+                params[:filter_category]
+              ),
+              {},
+              class: "w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
+              data: { action: "change->pattern-management#filterChanged" } %>
+        </div>
+
+        <!-- Status Filter -->
+        <div>
+          <%= f.select :filter_status,
+              options_for_select(pattern_status_filter_options, params[:filter_status]),
+              {},
+              class: "w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
+              data: { action: "change->pattern-management#filterChanged" } %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Patterns Table -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <%= turbo_frame_tag "patterns_table" do %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <%= link_to "Type", admin_patterns_path(params.permit(:search, :filter_type, :filter_category, :filter_status).merge(sort: 'type')),
+                    class: "hover:text-teal-700" %>
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <%= link_to "Pattern", admin_patterns_path(params.permit(:search, :filter_type, :filter_category, :filter_status).merge(sort: 'value')),
+                    class: "hover:text-teal-700" %>
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <%= link_to "Category", admin_patterns_path(params.permit(:search, :filter_type, :filter_category, :filter_status).merge(sort: 'category')),
+                    class: "hover:text-teal-700" %>
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <%= link_to "Usage", admin_patterns_path(params.permit(:search, :filter_type, :filter_category, :filter_status).merge(sort: 'usage')),
+                    class: "hover:text-teal-700" %>
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <%= link_to "Success Rate", admin_patterns_path(params.permit(:search, :filter_type, :filter_category, :filter_status).merge(sort: 'success')),
+                    class: "hover:text-teal-700" %>
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <%= link_to "Confidence", admin_patterns_path(params.permit(:search, :filter_type, :filter_category, :filter_status).merge(sort: 'confidence')),
+                    class: "hover:text-teal-700" %>
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-slate-200">
+            <% @patterns.each do |pattern| %>
+              <%= render 'pattern_row', pattern: pattern %>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-200">
+        <%= paginate @patterns %>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Performance Chart -->
+  <div class="mt-6 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <h2 class="text-lg font-semibold text-slate-900 mb-4">Pattern Performance Over Time</h2>
+    <div data-controller="pattern-chart"
+         data-pattern-chart-url-value="<%= performance_admin_patterns_path(format: :json) %>"
+         class="h-64">
+      <canvas data-pattern-chart-target="canvas"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div data-pattern-management-target="importModal" class="hidden fixed inset-0 bg-slate-900 bg-opacity-50 z-50 flex items-center justify-center">
+  <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
+    <div class="p-6">
+      <h3 class="text-lg font-semibold text-slate-900 mb-4">Import Patterns from CSV</h3>
+
+      <%= form_with url: import_admin_patterns_path, local: true, multipart: true do |f| %>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-slate-700 mb-2">Select CSV File</label>
+          <%= f.file_field :file,
+              accept: ".csv",
+              class: "w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
+              required: true %>
+          <p class="mt-1 text-sm text-slate-500">
+            CSV should contain: pattern_type, pattern_value, category_id, confidence_weight, active
+          </p>
+        </div>
+
+        <div class="flex justify-end space-x-3">
+          <button type="button"
+                  data-action="click->pattern-management#hideImportModal"
+                  class="px-4 py-2 text-slate-700 bg-slate-200 hover:bg-slate-300 rounded-lg text-sm font-medium">
+            Cancel
+          </button>
+          <%= f.submit "Import", class: "px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-sm font-medium" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

@@ -47,7 +47,7 @@ module Categorization
       @logger = options.fetch(:logger, Rails.logger)
       @dry_run = options.fetch(:dry_run, false)
       @confidence_calculator = options.fetch(:confidence_calculator) { ConfidenceCalculator.new }
-      @pattern_cache = PatternCache.instance
+      @pattern_cache = options.fetch(:pattern_cache) { PatternCache.create }
       @metrics = initialize_metrics
       @performance_tracker = PerformanceTracker.new
     end

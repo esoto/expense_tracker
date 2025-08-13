@@ -93,13 +93,8 @@
       <div class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-slate-700 mb-1">Categoría</label>
-          <div class="flex items-center">
-            <% if @expense.category %>
-            <div class="w-4 h-4 rounded mr-2" style="background-color: <%= @expense.category.color %>;"></div>
-            <span class="text-slate-900"><%= @expense.category.name %></span>
-            <% else %>
-            <span class="text-slate-500">Sin categoría asignada</span>
-            <% end %>
+          <div class="mt-2">
+            <%= render "category_with_confidence", expense: @expense %>
           </div>
         </div>
 

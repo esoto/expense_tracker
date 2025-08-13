@@ -48,14 +48,33 @@ This is a fresh Rails 8 application with the following stack:
 - `app/controllers/` - Rails controllers (currently only ApplicationController base class)
 - `app/views/` - ERB templates
 - `app/javascript/` - Stimulus controllers and JavaScript
+- `app/services/` - Domain-organized service objects:
+  - `email/` - Email processing and synchronization services
+  - `categorization/` - Expense categorization engines and utilities
+  - `infrastructure/` - Cross-cutting concerns (monitoring, broadcasting)
 - `config/` - Application configuration
 - `db/` - Database schema and migrations
-- `spec/` - RSpec tests
+- `spec/` - RSpec tests (mirroring service organization)
+
+**Service Architecture:**
+The application follows Domain-Driven Design principles with services organized by business domain:
+
+- **Email Domain** (`Services::Email::*`)
+  - `ProcessingService` - Email fetching, parsing, and expense extraction
+  - `SyncService` - Synchronization orchestration and conflict management
+
+- **Categorization Domain** (`Services::Categorization::*`)
+  - `BulkCategorizationService` - Bulk operations for expense categorization
+  - Multiple sub-modules for pattern matching, caching, and ML-based categorization
+
+- **Infrastructure Domain** (`Services::Infrastructure::*`)
+  - `BroadcastService` - WebSocket broadcasting with reliability features
+  - `MonitoringService` - System health, metrics, and error tracking
 
 **Current State:**
 - Fully functional expense tracking Rails application with comprehensive models and services
 - Core models: Category, EmailAccount, Expense, ParsingRule, ApiToken (all with full validation and associations)
-- Service layer: EmailFetcher (IMAP integration), EmailParser (transaction parsing)
+- Domain-organized service layer with clear separation of concerns
 - API endpoints for iPhone Shortcuts integration via webhooks controller
 - Database seeded with Costa Rican bank data and expense categories
 - Background job processing with Solid Queue

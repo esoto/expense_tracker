@@ -31,7 +31,10 @@ RSpec.describe EmailAccountsController, type: :controller do
     it "assigns all email accounts as @email_accounts" do
       email_account # create it
       get :index
-      expect(assigns(:email_accounts)).to eq([ email_account ])
+
+      # Should include our email account (may have others from different tests)
+      expect(assigns(:email_accounts)).to include(email_account)
+      expect(assigns(:email_accounts).map(&:id)).to include(email_account.id)
     end
   end
 

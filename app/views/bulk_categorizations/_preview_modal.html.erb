@@ -1,0 +1,99 @@
+<div class="fixed inset-0 bg-slate-900 bg-opacity-50 z-50 flex items-center justify-center" data-controller="modal">
+  <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+    <!-- Modal Header -->
+    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-slate-900">Categorization Preview</h3>
+        <button data-action="click->modal#close" class="text-slate-400 hover:text-slate-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="px-6 py-4 overflow-y-auto max-h-[calc(80vh-8rem)]">
+      <% if preview %>
+        <!-- Category Information -->
+        <div class="mb-6 p-4 bg-teal-50 rounded-lg">
+          <div class="flex items-center space-x-3">
+            <div class="flex-shrink-0 p-2 bg-teal-100 rounded-lg">
+              <svg class="w-6 h-6 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="text-sm text-teal-700 font-medium">Will be categorized as:</p>
+              <p class="text-lg font-semibold text-teal-900">
+                <%= preview[:category]&.parent ? "#{preview[:category].parent.name} → " : "" %><%= preview[:category]&.name %>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary Statistics -->
+        <div class="mb-6 grid grid-cols-3 gap-4">
+          <div class="text-center">
+            <p class="text-2xl font-bold text-slate-900"><%= preview[:expense_count] %></p>
+            <p class="text-sm text-slate-600">Expenses</p>
+          </div>
+          <div class="text-center">
+            <p class="text-2xl font-bold text-slate-900">₡<%= number_with_delimiter(preview[:total_amount].to_i) %></p>
+            <p class="text-sm text-slate-600">Total Amount</p>
+          </div>
+          <div class="text-center">
+            <p class="text-2xl font-bold text-slate-900"><%= (preview[:average_confidence] * 100).round %>%</p>
+            <p class="text-sm text-slate-600">Avg Confidence</p>
+          </div>
+        </div>
+
+        <!-- Expense List -->
+        <div class="space-y-2">
+          <h4 class="text-sm font-medium text-slate-700 mb-2">Expenses to be categorized:</h4>
+          <% preview[:expenses].each do |expense| %>
+            <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+              <div>
+                <p class="text-sm font-medium text-slate-900"><%= expense.display_description %></p>
+                <p class="text-xs text-slate-600">
+                  <%= expense.transaction_date.strftime("%b %d, %Y") %> • <%= expense.bank_name %>
+                </p>
+              </div>
+              <span class="text-sm font-semibold text-slate-900">
+                ₡<%= number_with_delimiter(expense.amount.to_i) %>
+              </span>
+            </div>
+          <% end %>
+        </div>
+
+        <!-- Impact Analysis -->
+        <% if preview[:impact] %>
+          <div class="mt-6 p-4 bg-amber-50 rounded-lg">
+            <h4 class="text-sm font-medium text-amber-900 mb-2">Impact Analysis</h4>
+            <ul class="space-y-1 text-sm text-amber-700">
+              <li>• This will affect <%= preview[:impact][:budget_impact] %> budget(s)</li>
+              <li>• Pattern confidence will increase by <%= preview[:impact][:pattern_confidence_increase] %>%</li>
+              <li>• <%= preview[:impact][:new_patterns] %> new pattern(s) will be created</li>
+            </ul>
+          </div>
+        <% end %>
+      <% else %>
+        <p class="text-slate-600">Loading preview...</p>
+      <% end %>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="px-6 py-4 border-t border-slate-200 bg-slate-50">
+      <div class="flex justify-end space-x-3">
+        <button data-action="click->modal#close"
+                class="px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
+          Cancel
+        </button>
+        <button data-action="click->bulk-categorization#confirmCategorization"
+                class="px-4 py-2 bg-teal-700 text-white rounded-lg hover:bg-teal-800 transition-colors">
+          Confirm Categorization
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

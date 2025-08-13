@@ -3,6 +3,8 @@
 require "concurrent"
 require "ostruct"
 require_relative "lru_cache"
+require_relative "ml_confidence_integration"
+require_relative "service_registry"
 
 module Categorization
   # Simple circuit breaker implementation for fault tolerance
@@ -70,11 +72,11 @@ module Categorization
   end
 
   # Production-ready orchestrator service for expense categorization
-  # Implements thread-safe operations, memory-bounded caching, efficient database queries,
-  # robust error handling, and scalable architecture patterns.
+  # Uses dependency injection for better testability and flexibility
   #
-  # Key improvements:
-  # - Thread-safe singleton with concurrent-ruby primitives
+  # Key features:
+  # - Dependency injection for all services
+  # - Thread-safe operations with concurrent-ruby primitives
   # - Memory-bounded caching with LRU eviction and TTL
   # - Efficient database queries with batching and proper indexes
   # - Specific error handling with recovery mechanisms
@@ -85,6 +87,7 @@ module Categorization
   # Performance target: <10ms per categorization with bounded resource usage
   class Engine
     include ActiveSupport::Benchmarkable
+    include MlConfidenceIntegration
 
     # Include monitoring capabilities if available
     begin
@@ -117,39 +120,82 @@ module Categorization
     class ValidationError < CategorizationError; end
     class CircuitOpenError < CategorizationError; end
 
-    class << self
-      # Thread-safe singleton instance using concurrent-ruby
-      def instance
-        return @instance if defined?(@instance)
-
-        @instance_mutex ||= Mutex.new
-        @instance_mutex.synchronize do
-          @instance ||= new
-        end
-      end
-
-      # Delegate main methods to instance
-      delegate :categorize, :learn_from_correction, :batch_categorize,
-               :warm_up, :metrics, :reset!, :healthy?, to: :instance
+    # Factory method for creating engine instances with dependencies
+    def self.create(options = {})
+      new(options)
     end
+
+    attr_reader :service_registry, :logger
 
     def initialize(options = {})
       @options = Concurrent::Hash.new.merge(options)
       @logger = options.fetch(:logger, Rails.logger)
 
-      # Initialize thread-safe state
-      initialize_thread_safe_state
+      # Initialize critical state first to ensure shutdown! can be called safely
+      @shutdown = false
+      @shutdown_mutex = Mutex.new
 
-      # Initialize services with dependency injection
-      initialize_services(options)
+      begin
+        # Initialize service registry for dependency injection
+        @service_registry = options[:service_registry] || ServiceRegistry.new(logger: @logger)
 
-      # Initialize circuit breakers
-      initialize_circuit_breakers
+        # Build default services if not provided
+        @service_registry.build_defaults(options) unless options[:skip_defaults]
 
-      # Track initialization metrics
-      @initialized_at = Time.current
+        # Initialize thread-safe state
+        initialize_thread_safe_state
 
-      log_initialization
+        # Initialize services from registry
+        initialize_services_from_registry
+
+        # Initialize circuit breakers
+        initialize_circuit_breakers
+
+        # Track initialization metrics
+        @initialized_at = Time.current
+
+        log_initialization
+      rescue => e
+        @logger.error "[Engine] Failed to initialize: #{e.message}"
+        @logger.error e.backtrace.join("\n")
+
+        # Mark as shutdown to prevent further operations
+        @shutdown = true
+        raise
+      end
+    end
+
+    # Shutdown the engine cleanly
+    def shutdown!
+      return if @shutdown
+
+      # Safety check: if mutex is not initialized, engine initialization failed
+      return unless @shutdown_mutex
+
+      @shutdown_mutex.synchronize do
+        return if @shutdown
+
+        @logger.info "[Engine] Shutting down categorization engine..."
+
+        # Shutdown thread pool
+        if @thread_pool
+          @thread_pool.shutdown
+          @thread_pool.wait_for_termination(5)
+        end
+
+        # Clear caches
+        clear_all_caches
+
+        # Mark as shutdown
+        @shutdown = true
+
+        @logger.info "[Engine] Categorization engine shutdown complete"
+      end
+    end
+
+    # Check if engine is shutdown
+    def shutdown?
+      @shutdown
     end
 
     # Main categorization method with comprehensive error handling
@@ -158,6 +204,11 @@ module Categorization
     # @param options [Hash] Options for categorization
     # @return [CategorizationResult] The categorization result
     def categorize(expense, options = {})
+      # Check shutdown state and return error result instead of raising
+      if shutdown?
+        return CategorizationResult.error("Service temporarily unavailable")
+      end
+
       correlation_id = generate_correlation_id
 
       begin
@@ -195,6 +246,11 @@ module Categorization
     def learn_from_correction(expense, correct_category, predicted_category = nil, options = {})
       return if options[:skip_learning]
 
+      # Check shutdown state and return error result instead of raising
+      if shutdown?
+        return LearningResult.error("Service temporarily unavailable")
+      end
+
       correlation_id = generate_correlation_id
 
       begin
@@ -227,12 +283,16 @@ module Categorization
     def batch_categorize(expenses, options = {})
       return [] if expenses.blank?
 
+      # Check shutdown state and return error results instead of raising
+      if shutdown?
+        return expenses.map { CategorizationResult.error("Service temporarily unavailable") }
+      end
+
       correlation_id = generate_correlation_id
 
       begin
         # Validate and limit batch size
         if expenses.size > BATCH_SIZE_LIMIT
-          $stderr.puts "Batch size #{expenses.size} exceeds limit of #{BATCH_SIZE_LIMIT}, processing first #{BATCH_SIZE_LIMIT}"
           @logger.warn "[Engine] Batch size #{expenses.size} exceeds limit of #{BATCH_SIZE_LIMIT}, processing first #{BATCH_SIZE_LIMIT}"
           expenses = expenses.first(BATCH_SIZE_LIMIT)
         end
@@ -257,6 +317,8 @@ module Categorization
 
     # Warm up with controlled resource usage
     def warm_up
+      return { status: :shutdown } if shutdown?
+
       correlation_id = generate_correlation_id
 
       with_performance_tracking("warm_up", correlation_id) do
@@ -297,7 +359,8 @@ module Categorization
 
     # Check if engine is healthy
     def healthy?
-      all_circuits_closed? &&
+      !shutdown? &&
+        all_circuits_closed? &&
         cache_healthy? &&
         performance_within_target? &&
         memory_usage_acceptable?
@@ -307,15 +370,13 @@ module Categorization
 
     # Reset the engine safely
     def reset!
-      @reset_mutex.synchronize do
-        # Clear all caches - notify all components
-        @pattern_cache_service.invalidate_all if @pattern_cache_service.respond_to?(:invalidate_all)
-        @fuzzy_matcher.clear_cache if @fuzzy_matcher.respond_to?(:clear_cache)
-        @confidence_calculator.clear_cache if @confidence_calculator.respond_to?(:clear_cache)
+      # Guard against nil mutex during initialization
+      return unless @reset_mutex
+      return if shutdown?
 
-        # Clear internal caches
-        @pattern_cache.clear
-        @lru_cache.clear
+      @reset_mutex.synchronize do
+        # Clear all caches
+        clear_all_caches
 
         # Reset metrics
         @total_categorizations.value = 0
@@ -328,7 +389,13 @@ module Categorization
         # Reset performance tracker
         @performance_tracker.reset! if @performance_tracker
 
-        @logger.info "[Engine] Engine reset completed"
+        # Verify engine health after reset
+        unless healthy?
+          @logger.error "[Engine] Engine unhealthy after reset"
+          raise CircuitOpenError, "Engine unhealthy after reset"
+        end
+
+        @logger.info "[Engine] Engine reset completed successfully"
       end
     end
 
@@ -342,24 +409,26 @@ module Categorization
 
       # Thread-safe collections
       @pattern_cache = Concurrent::Map.new
-      @lru_cache = LruCache.new(
-        max_size: MAX_PATTERN_CACHE_SIZE,
-        ttl_seconds: 300 # 5 minute TTL
-      )
 
       # Mutexes for critical sections
       @reset_mutex = Mutex.new
       @batch_mutex = Mutex.new
+      @shutdown_mutex = Mutex.new
     end
 
-    def initialize_services(options)
-      @pattern_cache_service = options.fetch(:pattern_cache) { PatternCache.instance }
-      @fuzzy_matcher = options.fetch(:fuzzy_matcher) { Matchers::FuzzyMatcher.instance }
-      @confidence_calculator = options.fetch(:confidence_calculator) { ConfidenceCalculator.new }
-      @pattern_learner = options.fetch(:pattern_learner) { PatternLearner.new }
-      @performance_tracker = options.fetch(:performance_tracker) { PerformanceTracker.new }
+    def initialize_services_from_registry
+      @pattern_cache_service = @service_registry.get(:pattern_cache)
+      @fuzzy_matcher = @service_registry.get(:fuzzy_matcher)
+      @confidence_calculator = @service_registry.get(:confidence_calculator)
+      @pattern_learner = @service_registry.get(:pattern_learner)
+      @performance_tracker = @service_registry.get(:performance_tracker)
+      @lru_cache = @service_registry.get(:lru_cache)
 
       # Thread pool for async operations
+      initialize_thread_pool
+    end
+
+    def initialize_thread_pool
       @thread_pool = Concurrent::ThreadPoolExecutor.new(
         min_threads: 2,
         max_threads: MAX_CONCURRENT_OPERATIONS,
@@ -385,6 +454,17 @@ module Categorization
         timeout: CIRCUIT_BREAKER_TIMEOUT,
         logger: @logger
       )
+    end
+
+    def clear_all_caches
+      # Clear all caches - notify all components
+      @pattern_cache_service.invalidate_all if @pattern_cache_service.respond_to?(:invalidate_all)
+      @fuzzy_matcher.clear_cache if @fuzzy_matcher.respond_to?(:clear_cache)
+      @confidence_calculator.clear_cache if @confidence_calculator.respond_to?(:clear_cache)
+
+      # Clear internal caches
+      @pattern_cache.clear
+      @lru_cache.clear if @lru_cache.respond_to?(:clear)
     end
 
     def perform_categorization(expense, options)
@@ -612,12 +692,8 @@ module Categorization
 
     def update_expense_sync(expense, result, correlation_id)
       begin
-        expense.update!(
-          category: result.category,
-          auto_categorized: true,
-          categorization_confidence: result.confidence,
-          categorization_method: result.method
-        )
+        # Use ML confidence integration to properly update all fields
+        update_expense_with_ml_confidence(expense, result)
       rescue => e
         log_error(correlation_id, "Failed to update expense #{expense.id}", e)
       end
@@ -627,12 +703,8 @@ module Categorization
       @thread_pool.post do
         begin
           with_circuit_breaker(:database) do
-            expense.update!(
-              category: result.category,
-              auto_categorized: true,
-              categorization_confidence: result.confidence,
-              categorization_method: result.method
-            )
+            # Use ML confidence integration to properly update all fields
+            update_expense_with_ml_confidence(expense, result)
           end
         rescue => e
           log_error(correlation_id, "Failed to update expense #{expense.id}", e)
@@ -794,7 +866,7 @@ module Categorization
     end
 
     def log_initialization
-      @logger.info "[Engine] Categorization Engine initialized (thread-safe, production-ready)"
+      @logger.info "[Engine] Categorization Engine initialized (dependency injection, production-ready)"
       @logger.info "[Engine] Configuration: max_patterns=#{MAX_PATTERN_CACHE_SIZE}, " \
                    "batch_limit=#{BATCH_SIZE_LIMIT}, max_threads=#{MAX_CONCURRENT_OPERATIONS}"
     end
@@ -864,7 +936,8 @@ module Categorization
         total_categorizations: @total_categorizations.value,
         successful_categorizations: @successful_categorizations.value,
         success_rate: calculate_success_rate,
-        thread_pool_status: thread_pool_status
+        thread_pool_status: thread_pool_status,
+        shutdown: shutdown?
       }
     end
 
@@ -930,6 +1003,8 @@ module Categorization
     end
 
     def thread_pool_status
+      return {} unless @thread_pool
+
       {
         active_count: @thread_pool.active_count,
         completed_tasks: @thread_pool.completed_task_count,

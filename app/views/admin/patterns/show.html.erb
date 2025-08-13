@@ -1,0 +1,257 @@
+<div class="container mx-auto px-4">
+  <!-- Header -->
+  <div class="flex justify-between items-start mb-6">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-900">Pattern Details</h1>
+      <p class="text-slate-600 mt-1">View pattern performance and details</p>
+    </div>
+    <div class="flex space-x-2">
+      <%= link_to edit_admin_pattern_path(@pattern),
+          class: "bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center" do %>
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+        </svg>
+        Edit
+      <% end %>
+      <%= link_to admin_patterns_path,
+          class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium" do %>
+        Back to Patterns
+      <% end %>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Pattern Information -->
+    <div class="lg:col-span-2">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+        <h2 class="text-xl font-semibold text-slate-900 mb-4">Pattern Information</h2>
+
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <dt class="text-sm font-medium text-slate-500">Type</dt>
+            <dd class="mt-1 text-sm text-slate-900">
+              <span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-700">
+                <%= @pattern.pattern_type.humanize %>
+              </span>
+            </dd>
+          </div>
+
+          <div>
+            <dt class="text-sm font-medium text-slate-500">Category</dt>
+            <dd class="mt-1 text-sm text-slate-900">
+              <span class="px-2 py-1 text-xs rounded-full bg-teal-100 text-teal-700">
+                <%= @pattern.category.name %>
+              </span>
+            </dd>
+          </div>
+
+          <div class="sm:col-span-2">
+            <dt class="text-sm font-medium text-slate-500">Pattern Value</dt>
+            <dd class="mt-1 text-sm text-slate-900 font-mono bg-slate-50 p-2 rounded">
+              <%= @pattern.pattern_value %>
+            </dd>
+          </div>
+
+          <div>
+            <dt class="text-sm font-medium text-slate-500">Confidence Weight</dt>
+            <dd class="mt-1 text-sm text-slate-900">
+              <div class="flex items-center">
+                <div class="w-24 bg-slate-200 rounded-full h-2 mr-2">
+                  <div class="bg-teal-500 h-2 rounded-full"
+                       style="width: <%= (@pattern.confidence_weight / CategorizationPattern::MAX_CONFIDENCE_WEIGHT * 100).round %>%"></div>
+                </div>
+                <span class="font-semibold"><%= @pattern.confidence_weight.round(1) %></span>
+              </div>
+            </dd>
+          </div>
+
+          <div>
+            <dt class="text-sm font-medium text-slate-500">Status</dt>
+            <dd class="mt-1">
+              <% if @pattern.active? %>
+                <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700">
+                  Active
+                </span>
+              <% else %>
+                <span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-500">
+                  Inactive
+                </span>
+              <% end %>
+            </dd>
+          </div>
+
+          <div>
+            <dt class="text-sm font-medium text-slate-500">Created</dt>
+            <dd class="mt-1 text-sm text-slate-900">
+              <%= @pattern.created_at.strftime("%B %d, %Y") %>
+            </dd>
+          </div>
+
+          <div>
+            <dt class="text-sm font-medium text-slate-500">Source</dt>
+            <dd class="mt-1">
+              <% if @pattern.user_created? %>
+                <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700">
+                  User Created
+                </span>
+              <% else %>
+                <span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-700">
+                  System Created
+                </span>
+              <% end %>
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h2 class="text-xl font-semibold text-slate-900 mb-4">Recent Activity</h2>
+
+        <% if @pattern_feedbacks.any? %>
+          <div class="space-y-3">
+            <% @pattern_feedbacks.each do |feedback| %>
+              <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                <div class="flex-1">
+                  <p class="text-sm text-slate-900 font-medium">
+                    <%= feedback.expense.description || feedback.expense.merchant_name %>
+                  </p>
+                  <p class="text-xs text-slate-500 mt-1">
+                    <%= feedback.created_at.strftime("%b %d, %Y at %I:%M %p") %>
+                  </p>
+                </div>
+                <div>
+                  <% if feedback.was_correct %>
+                    <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700">
+                      Correct
+                    </span>
+                  <% else %>
+                    <span class="px-2 py-1 text-xs rounded-full bg-rose-100 text-rose-700">
+                      Incorrect
+                    </span>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="text-sm text-slate-500">No recent activity</p>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Performance Metrics -->
+    <div class="lg:col-span-1">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+        <h2 class="text-xl font-semibold text-slate-900 mb-4">Performance Metrics</h2>
+
+        <div class="space-y-4">
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-sm text-slate-600">Success Rate</span>
+              <span class="text-sm font-semibold text-slate-900">
+                <%= (@performance_metrics[:success_rate] * 100).round %>%
+              </span>
+            </div>
+            <div class="w-full bg-slate-200 rounded-full h-2">
+              <div class="bg-<%= @performance_metrics[:success_rate] >= 0.7 ? 'emerald' : @performance_metrics[:success_rate] >= 0.4 ? 'amber' : 'rose' %>-500 h-2 rounded-full"
+                   style="width: <%= (@performance_metrics[:success_rate] * 100).round %>%"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-slate-600">Total Uses</span>
+              <span class="text-lg font-semibold text-slate-900">
+                <%= number_with_delimiter(@performance_metrics[:total_uses]) %>
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-slate-600">Successful Uses</span>
+              <span class="text-lg font-semibold text-emerald-600">
+                <%= number_with_delimiter(@performance_metrics[:successful_uses]) %>
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-slate-600">Effective Confidence</span>
+              <span class="text-lg font-semibold text-slate-900">
+                <%= (@performance_metrics[:confidence] * 100).round %>%
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-slate-600">Avg Daily Uses</span>
+              <span class="text-lg font-semibold text-slate-900">
+                <%= @performance_metrics[:average_daily_uses] %>
+              </span>
+            </div>
+          </div>
+
+          <% if @performance_metrics[:last_used] %>
+            <div>
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-slate-600">Last Used</span>
+                <span class="text-sm text-slate-900">
+                  <%= time_ago_in_words(@performance_metrics[:last_used]) %> ago
+                </span>
+              </div>
+            </div>
+          <% end %>
+
+          <div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-slate-600">Trend</span>
+              <span class="flex items-center">
+                <% case @performance_metrics[:trend] %>
+                <% when 'increasing' %>
+                  <svg class="w-5 h-5 text-emerald-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                  </svg>
+                  <span class="text-sm text-emerald-600">Increasing</span>
+                <% when 'decreasing' %>
+                  <svg class="w-5 h-5 text-rose-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
+                  </svg>
+                  <span class="text-sm text-rose-600">Decreasing</span>
+                <% else %>
+                  <svg class="w-5 h-5 text-slate-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12h10"></path>
+                  </svg>
+                  <span class="text-sm text-slate-600">Stable</span>
+                <% end %>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Test -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h2 class="text-xl font-semibold text-slate-900 mb-4">Quick Test</h2>
+
+        <%= form_with url: test_single_admin_pattern_path(@pattern),
+                      method: :get,
+                      data: { turbo_frame: "single_test_result" } do |f| %>
+          <div class="mb-3">
+            <%= f.text_field :test_text,
+                placeholder: "Enter text to test...",
+                class: "w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500" %>
+          </div>
+          <%= f.submit "Test",
+              class: "w-full px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-sm font-medium" %>
+        <% end %>
+
+        <%= turbo_frame_tag "single_test_result" do %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

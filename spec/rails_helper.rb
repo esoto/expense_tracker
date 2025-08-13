@@ -68,6 +68,9 @@ RSpec.configure do |config|
   # Include FactoryBot methods
   config.include FactoryBot::Syntax::Methods
 
+  # Include categorization test helpers
+  config.include CategorizationTestHelper
+
   # Configure ActiveJob test adapter for job tests
   config.include ActiveJob::TestHelper, type: :job
 

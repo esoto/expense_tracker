@@ -23,6 +23,27 @@ Rails.application.routes.draw do
 
   # API routes for iPhone Shortcuts and webhooks
   namespace :api do
+    # API v1 routes
+    namespace :v1 do
+      # Categories endpoint
+      resources :categories, only: [ :index ]
+
+      # Categorization patterns management
+      resources :patterns do
+        collection do
+          get :statistics
+        end
+      end
+
+      # Categorization suggestions and feedback
+      namespace :categorization do
+        post :suggest
+        post :feedback
+        post :batch_suggest
+        get :statistics
+      end
+    end
+
     resources :webhooks, only: [] do
       collection do
         post :process_emails
@@ -64,11 +85,45 @@ Rails.application.routes.draw do
     end
   end
 
+  # Admin routes
+  namespace :admin do
+    # Authentication routes
+    get "login", to: "sessions#new"
+    post "login", to: "sessions#create"
+    delete "logout", to: "sessions#destroy"
+    get "logout", to: "sessions#destroy"  # Allow GET for logout links
+
+    resources :patterns
+
+    # Pattern testing and management operations
+    get "patterns/test", to: "pattern_testing#test"
+    post "patterns/test_pattern", to: "pattern_testing#test_pattern"
+    get "patterns/:id/test_single", to: "pattern_testing#test_single", as: :test_single_pattern
+
+    post "patterns/import", to: "pattern_management#import"
+    get "patterns/export", to: "pattern_management#export"
+    get "patterns/statistics", to: "pattern_management#statistics"
+    get "patterns/performance", to: "pattern_management#performance"
+    post "patterns/:id/toggle_active", to: "pattern_management#toggle_active", as: :toggle_active_pattern
+    resources :composite_patterns do
+      member do
+        post :toggle_active
+        get :test
+      end
+    end
+    root "patterns#index"
+  end
+
   # Web interface routes
   resources :expenses do
     collection do
       get :dashboard
       post :sync_emails
+    end
+    member do
+      post :correct_category
+      post :accept_suggestion
+      post :reject_suggestion
     end
   end
 
@@ -111,6 +166,29 @@ Rails.application.routes.draw do
   get "sync_performance/realtime", to: "sync_performance#realtime"
 
   resources :email_accounts
+
+  # Bulk categorization routes
+  resources :bulk_categorizations, only: [ :index, :show ]
+
+  # Bulk categorization actions
+  post "bulk_categorizations/categorize", to: "bulk_categorization_actions#categorize"
+  post "bulk_categorizations/suggest", to: "bulk_categorization_actions#suggest"
+  post "bulk_categorizations/preview", to: "bulk_categorization_actions#preview"
+  post "bulk_categorizations/auto_categorize", to: "bulk_categorization_actions#auto_categorize"
+  get "bulk_categorizations/export", to: "bulk_categorization_actions#export"
+  post "bulk_categorizations/:id/undo", to: "bulk_categorization_actions#undo", as: :undo_bulk_categorization
+
+  # Analytics routes
+  namespace :analytics do
+    resources :pattern_dashboard, only: [ :index ], controller: "pattern_dashboard" do
+      collection do
+        get :trends
+        get :heatmap
+        get :export
+        post :refresh
+      end
+    end
+  end
 
   # UX Mockups routes (development only)
   if Rails.env.development?

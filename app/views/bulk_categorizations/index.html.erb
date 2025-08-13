@@ -1,0 +1,74 @@
+<div class="min-h-screen bg-slate-50">
+  <!-- Header Section -->
+  <div class="bg-white border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="flex justify-between items-center">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Bulk Categorization</h1>
+          <p class="mt-1 text-sm text-slate-600">Review and categorize multiple similar expenses at once</p>
+        </div>
+        <div class="flex gap-3">
+          <%= link_to export_bulk_categorizations_path(format: :csv),
+                      class: "inline-flex items-center px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors" do %>
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            Export Report
+          <% end %>
+
+          <button data-action="click->bulk-categorization#autoCategorizehighConfidence"
+                  class="inline-flex items-center px-4 py-2 bg-teal-700 text-white rounded-lg text-sm font-medium hover:bg-teal-800 transition-colors">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+            Auto-Categorize High Confidence
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Bar -->
+  <div id="statistics" class="bg-white border-b border-slate-200">
+    <%= render "statistics", statistics: @statistics %>
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <!-- Notifications -->
+    <div id="notifications"></div>
+
+    <!-- Progress Indicator -->
+    <div id="categorization_progress" class="hidden mb-6">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-medium text-slate-700">Processing...</span>
+          <span class="text-sm text-slate-500">
+            <span data-progress-target="completed">0</span> / <span data-progress-target="total">0</span> completed
+          </span>
+        </div>
+        <div class="w-full bg-slate-200 rounded-full h-2">
+          <div data-progress-target="bar" class="bg-teal-700 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expense Groups -->
+    <div id="uncategorized_expenses" data-controller="bulk-categorization">
+      <% if @grouped_expenses.empty? %>
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
+          <svg class="w-16 h-16 mx-auto text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <h3 class="text-lg font-semibold text-slate-900 mb-2">All Caught Up!</h3>
+          <p class="text-slate-600">No uncategorized expenses to review.</p>
+        </div>
+      <% else %>
+        <%= render "expense_groups", grouped_expenses: @grouped_expenses %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Preview Modal -->
+  <div id="preview_modal"></div>
+</div>

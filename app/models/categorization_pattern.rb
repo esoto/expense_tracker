@@ -53,6 +53,11 @@ class CategorizationPattern < ApplicationRecord
   scope :frequently_used, -> { where("usage_count >= ?", 10) }
   scope :ordered_by_success, -> { order(success_rate: :desc, usage_count: :desc) }
 
+  # Performance optimized scopes
+  scope :with_category, -> { includes(:category) }
+  scope :with_statistics, -> { select(:id, :pattern_type, :pattern_value, :category_id, :usage_count, :success_count, :success_rate, :confidence_weight, :active) }
+  scope :for_matching, -> { active.with_statistics.ordered_by_success }
+
   # Callbacks
   before_save :calculate_success_rate
   after_commit :invalidate_cache
@@ -66,8 +71,14 @@ class CategorizationPattern < ApplicationRecord
 
   # Record usage of this pattern and whether it was successful
   def record_usage(was_successful)
-    self.usage_count += 1
-    self.success_count += 1 if was_successful
+    # Use update_counters for atomic database operations
+    increments = { usage_count: 1 }
+    increments[:success_count] = 1 if was_successful
+
+    self.class.update_counters(id, increments)
+
+    # Reload to get updated values and recalculate success rate
+    reload
     calculate_success_rate
     save!
   end
@@ -210,7 +221,7 @@ class CategorizationPattern < ApplicationRecord
 
   def calculate_success_rate
     self.success_rate = if usage_count.positive?
-                          success_count.to_f / usage_count
+                          (success_count.to_f / usage_count).round(3)
     else
                           0.0
     end
@@ -381,7 +392,11 @@ class CategorizationPattern < ApplicationRecord
   end
 
   def invalidate_cache
+    # Invalidate pattern cache
     Categorization::PatternCache.instance.invalidate(self) if defined?(Categorization::PatternCache)
+
+    # Invalidate analytics caches
+    Rails.cache.delete_matched("pattern_analytics/*") if Rails.cache.respond_to?(:delete_matched)
   rescue => e
     Rails.logger.error "[CategorizationPattern] Cache invalidation failed: #{e.message}"
   end

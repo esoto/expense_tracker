@@ -10,11 +10,29 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_13_044736) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
   enable_extension "unaccent"
+
+  create_table "admin_users", force: :cascade do |t|
+    t.string "email"
+    t.string "password_digest"
+    t.string "name"
+    t.integer "role"
+    t.datetime "last_login_at"
+    t.integer "failed_login_attempts"
+    t.datetime "locked_at"
+    t.string "session_token"
+    t.datetime "session_expires_at"
+    t.boolean "two_factor_enabled"
+    t.string "two_factor_secret"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email"], name: "index_admin_users_on_email", unique: true
+    t.index ["session_token"], name: "index_admin_users_on_session_token", unique: true
+  end
 
   create_table "api_tokens", force: :cascade do |t|
     t.string "name", null: false
@@ -25,9 +43,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "token_hash"
+    t.index ["active", "expires_at"], name: "idx_tokens_active_expires"
     t.index ["active", "expires_at"], name: "index_api_tokens_on_active_and_expires_at"
     t.index ["active"], name: "index_api_tokens_on_active"
     t.index ["expires_at"], name: "index_api_tokens_on_expires_at"
+    t.index ["last_used_at"], name: "idx_tokens_last_used"
     t.index ["token_digest"], name: "index_api_tokens_on_token_digest", unique: true
     t.index ["token_hash"], name: "index_api_tokens_on_token_hash", unique: true
   end
@@ -68,6 +88,49 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
     t.index ["start_date", "end_date"], name: "index_budgets_on_start_date_and_end_date"
   end
 
+  create_table "bulk_operation_items", force: :cascade do |t|
+    t.bigint "bulk_operation_id", null: false
+    t.bigint "expense_id", null: false
+    t.bigint "previous_category_id"
+    t.bigint "new_category_id"
+    t.integer "status", default: 0, null: false
+    t.float "previous_confidence"
+    t.datetime "processed_at"
+    t.text "error_message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["bulk_operation_id", "expense_id"], name: "index_bulk_operation_items_on_bulk_operation_id_and_expense_id", unique: true
+    t.index ["bulk_operation_id", "status"], name: "index_bulk_operation_items_on_bulk_operation_id_and_status"
+    t.index ["bulk_operation_id"], name: "index_bulk_operation_items_on_bulk_operation_id"
+    t.index ["expense_id"], name: "index_bulk_operation_items_on_expense_id"
+    t.index ["new_category_id"], name: "index_bulk_operation_items_on_new_category_id"
+    t.index ["previous_category_id"], name: "index_bulk_operation_items_on_previous_category_id"
+    t.index ["status"], name: "index_bulk_operation_items_on_status"
+  end
+
+  create_table "bulk_operations", force: :cascade do |t|
+    t.integer "operation_type", default: 0, null: false
+    t.string "user_id"
+    t.bigint "target_category_id"
+    t.integer "expense_count", default: 0, null: false
+    t.decimal "total_amount", precision: 15, scale: 2, default: "0.0", null: false
+    t.integer "status", default: 0, null: false
+    t.datetime "completed_at"
+    t.datetime "undone_at"
+    t.jsonb "metadata", default: {}
+    t.text "error_message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_bulk_operations_on_created_at"
+    t.index ["metadata"], name: "index_bulk_operations_on_metadata", using: :gin
+    t.index ["operation_type"], name: "index_bulk_operations_on_operation_type"
+    t.index ["status", "created_at"], name: "index_bulk_operations_on_status_and_created_at"
+    t.index ["status"], name: "index_bulk_operations_on_status"
+    t.index ["target_category_id"], name: "index_bulk_operations_on_target_category_id"
+    t.index ["user_id", "created_at"], name: "index_bulk_operations_on_user_id_and_created_at"
+    t.index ["user_id"], name: "index_bulk_operations_on_user_id"
+  end
+
   create_table "canonical_merchants", force: :cascade do |t|
     t.string "name", null: false
     t.string "display_name"
@@ -76,6 +139,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
     t.integer "usage_count", default: 0
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["name", "usage_count"], name: "idx_canonical_merchant_lookup"
     t.index ["name"], name: "index_canonical_merchants_on_name", unique: true
     t.index ["usage_count"], name: "index_canonical_merchants_on_usage_count"
   end
@@ -104,20 +168,30 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
     t.boolean "user_created", default: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index "lower((pattern_value)::text)", name: "idx_patterns_value_lower"
+    t.index ["active", "confidence_weight"], name: "idx_patterns_high_confidence", where: "((active = true) AND (confidence_weight >= (2.0)::double precision))"
     t.index ["active", "pattern_type", "usage_count"], name: "idx_patterns_active_type_usage"
     t.index ["active", "pattern_type"], name: "index_categorization_patterns_on_active_and_pattern_type"
     t.index ["active", "success_rate", "usage_count"], name: "idx_patterns_active_success_usage"
+    t.index ["active", "updated_at"], name: "idx_patterns_recently_used", where: "(active = true)"
     t.index ["active", "usage_count", "success_rate"], name: "idx_patterns_frequently_used", where: "(usage_count >= 10)"
+    t.index ["active", "usage_count", "success_rate"], name: "idx_patterns_performance", where: "(active = true)"
     t.index ["category_id", "active", "pattern_type"], name: "idx_patterns_category_active_type"
+    t.index ["category_id", "active", "success_rate", "usage_count"], name: "idx_patterns_category_performance"
     t.index ["category_id", "pattern_type", "pattern_value"], name: "idx_patterns_unique_lookup", unique: true
     t.index ["category_id", "success_rate"], name: "index_categorization_patterns_on_category_id_and_success_rate"
     t.index ["category_id"], name: "index_categorization_patterns_on_category_id"
     t.index ["created_at"], name: "idx_patterns_created_at"
     t.index ["pattern_type", "active", "confidence_weight"], name: "idx_patterns_type_active_confidence"
+    t.index ["pattern_type", "active", "success_rate"], name: "idx_patterns_lookup"
+    t.index ["pattern_type", "active", "success_rate"], name: "idx_patterns_type_active_success"
     t.index ["pattern_type", "pattern_value"], name: "idx_on_pattern_type_pattern_value_fad6f38255"
     t.index ["pattern_value"], name: "idx_patterns_value"
+    t.index ["pattern_value"], name: "idx_patterns_value_trgm", opclass: :gin_trgm_ops, using: :gin
     t.index ["pattern_value"], name: "index_categorization_patterns_on_pattern_value", opclass: :gin_trgm_ops, using: :gin
     t.index ["updated_at"], name: "idx_patterns_updated_at"
+    t.index ["usage_count", "success_rate"], name: "idx_patterns_usage_success", where: "(active = true)"
+    t.index ["user_created", "active", "created_at"], name: "idx_patterns_user_active_created"
     t.index ["user_created", "active"], name: "idx_patterns_user_created_active"
     t.check_constraint "confidence_weight >= 0.1::double precision AND confidence_weight <= 5.0::double precision", name: "check_confidence_weight_range"
     t.check_constraint "success_count <= usage_count", name: "check_success_count_validity"
@@ -140,12 +214,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
     t.boolean "user_created", default: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["active", "category_id", "success_rate"], name: "idx_composite_active_category", where: "(active = true)"
+    t.index ["active", "success_rate"], name: "idx_composite_active_success", where: "(active = true)"
     t.index ["active", "usage_count"], name: "idx_composite_active_usage"
     t.index ["category_id", "active"], name: "index_composite_patterns_on_category_id_and_active"
     t.index ["category_id"], name: "index_composite_patterns_on_category_id"
     t.index ["name"], name: "index_composite_patterns_on_name"
     t.index ["operator", "active"], name: "idx_composite_operator_active"
     t.index ["operator"], name: "index_composite_patterns_on_operator"
+    t.index ["pattern_ids"], name: "idx_composite_pattern_ids_gin", using: :gin
     t.index ["pattern_ids"], name: "index_composite_patterns_on_pattern_ids", using: :gin
     t.index ["success_rate", "usage_count"], name: "idx_composite_performance", where: "(active = true)"
   end
@@ -209,9 +286,23 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
     t.boolean "auto_categorized", default: false
     t.float "categorization_confidence"
     t.string "categorization_method"
+    t.datetime "categorized_at"
+    t.string "categorized_by"
+    t.float "ml_confidence"
+    t.text "ml_confidence_explanation"
+    t.integer "ml_suggested_category_id"
+    t.datetime "ml_last_corrected_at", precision: nil
+    t.integer "ml_correction_count", default: 0
+    t.index "EXTRACT(hour FROM transaction_date), EXTRACT(dow FROM transaction_date)", name: "idx_expenses_hour_dow"
     t.index ["amount"], name: "index_expenses_on_amount"
+    t.index ["auto_categorized", "categorization_confidence", "created_at"], name: "idx_auto_categorized_tracking", where: "(auto_categorized = true)"
     t.index ["auto_categorized", "categorization_confidence"], name: "idx_on_auto_categorized_categorization_confidence_98abf3d147"
     t.index ["bank_name", "transaction_date"], name: "index_expenses_on_bank_name_and_transaction_date"
+    t.index ["categorization_method"], name: "index_expenses_on_categorization_method"
+    t.index ["categorized_at"], name: "index_expenses_on_categorized_at"
+    t.index ["categorized_by"], name: "index_expenses_on_categorized_by"
+    t.index ["category_id", "created_at"], name: "idx_uncategorized_expenses", where: "(category_id IS NULL)"
+    t.index ["category_id", "merchant_normalized"], name: "index_expenses_on_category_id_and_merchant_normalized"
     t.index ["category_id", "transaction_date", "amount"], name: "index_expenses_uncategorized", where: "(category_id IS NULL)"
     t.index ["category_id", "transaction_date"], name: "index_expenses_on_category_id_and_transaction_date"
     t.index ["category_id"], name: "index_expenses_on_category_id"
@@ -228,9 +319,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
     t.index ["email_account_id", "transaction_date"], name: "index_expenses_on_email_account_id_and_transaction_date"
     t.index ["email_account_id"], name: "index_expenses_on_email_account_id"
     t.index ["merchant_name", "amount"], name: "index_expenses_on_merchant_name_and_amount"
-    t.index ["merchant_name", "category_id"], name: "idx_expenses_merchant_category"
+    t.index ["merchant_name"], name: "idx_expenses_merchant_trgm", opclass: :gin_trgm_ops, where: "(merchant_name IS NOT NULL)", using: :gin
     t.index ["merchant_name"], name: "index_expenses_on_merchant_name"
+    t.index ["merchant_normalized", "category_id"], name: "idx_expenses_merchant_category", where: "(merchant_normalized IS NOT NULL)"
+    t.index ["merchant_normalized", "category_id"], name: "idx_expenses_uncategorized_with_merchant", where: "((category_id IS NULL) AND (merchant_normalized IS NOT NULL))"
+    t.index ["merchant_normalized", "category_id"], name: "index_expenses_uncategorized_with_merchant", where: "((category_id IS NULL) AND (merchant_normalized IS NOT NULL))"
+    t.index ["merchant_normalized", "transaction_date", "amount"], name: "index_expenses_on_merchant_date_amount"
+    t.index ["merchant_normalized"], name: "index_expenses_merchant_similarity", opclass: :gist_trgm_ops, where: "(merchant_normalized IS NOT NULL)", using: :gist
     t.index ["merchant_normalized"], name: "index_expenses_on_merchant_normalized"
+    t.index ["merchant_normalized"], name: "index_expenses_on_merchant_normalized_trgm", opclass: :gin_trgm_ops, using: :gin
     t.index ["status", "transaction_date"], name: "index_expenses_on_status_and_transaction_date"
     t.index ["status"], name: "index_expenses_on_status"
     t.index ["transaction_date", "amount"], name: "index_expenses_on_transaction_date_and_amount"
@@ -239,6 +336,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
     t.index ["transaction_date", "currency", "amount"], name: "index_expenses_on_date_currency_amount"
     t.index ["transaction_date", "merchant_name", "amount"], name: "index_expenses_on_date_merchant_amount"
     t.index ["transaction_date", "status", "amount"], name: "index_expenses_on_date_status_amount"
+    t.index ["transaction_date"], name: "idx_expenses_transaction_date"
     t.index ["transaction_date"], name: "index_expenses_on_transaction_date"
   end
 
@@ -273,8 +371,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
     t.datetime "last_seen_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index "lower((normalized_name)::text)", name: "idx_merchant_aliases_normalized_lower"
+    t.index ["canonical_merchant_id", "confidence", "match_count"], name: "idx_merchant_alias_confidence", where: "(confidence >= (0.8)::double precision)"
     t.index ["canonical_merchant_id", "confidence"], name: "index_merchant_aliases_on_canonical_merchant_id_and_confidence"
     t.index ["canonical_merchant_id"], name: "index_merchant_aliases_on_canonical_merchant_id"
+    t.index ["normalized_name"], name: "idx_merchant_alias_trgm", opclass: :gin_trgm_ops, using: :gin
     t.index ["normalized_name"], name: "index_merchant_aliases_on_normalized_name", opclass: :gin_trgm_ops, using: :gin
     t.index ["raw_name"], name: "index_merchant_aliases_on_raw_name"
   end
@@ -305,14 +406,22 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["categorization_pattern_id", "created_at"], name: "idx_feedbacks_pattern_time"
+    t.index ["categorization_pattern_id", "was_correct", "created_at"], name: "idx_feedback_pattern_performance"
     t.index ["categorization_pattern_id", "was_correct"], name: "idx_feedbacks_pattern_correct"
     t.index ["categorization_pattern_id", "was_correct"], name: "idx_on_categorization_pattern_id_was_correct_e615042861"
     t.index ["categorization_pattern_id"], name: "index_pattern_feedbacks_on_categorization_pattern_id"
+    t.index ["category_id", "created_at", "feedback_type"], name: "idx_feedbacks_category_created_type"
+    t.index ["category_id", "was_correct", "created_at"], name: "idx_feedback_category_stats"
+    t.index ["category_id", "was_correct", "created_at"], name: "idx_feedbacks_category_correct_created"
     t.index ["category_id"], name: "index_pattern_feedbacks_on_category_id"
+    t.index ["created_at", "feedback_type"], name: "idx_feedbacks_created_type"
+    t.index ["created_at", "was_correct"], name: "idx_feedback_analytics"
     t.index ["created_at"], name: "index_pattern_feedbacks_on_created_at"
     t.index ["expense_id", "categorization_pattern_id"], name: "idx_feedbacks_expense_pattern", unique: true
     t.index ["expense_id", "created_at"], name: "idx_feedbacks_expense_created"
+    t.index ["expense_id", "feedback_type", "created_at"], name: "idx_feedbacks_expense_type_created"
     t.index ["expense_id"], name: "index_pattern_feedbacks_on_expense_id"
+    t.index ["feedback_type", "created_at"], name: "idx_feedback_type_recent", where: "((feedback_type)::text = ANY ((ARRAY['correction'::character varying, 'corrected'::character varying])::text[]))"
   end
 
   create_table "pattern_learning_events", force: :cascade do |t|
@@ -324,13 +433,37 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
     t.jsonb "context_data", default: {}
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "event_type"
+    t.jsonb "metadata", default: {}
     t.index ["category_id", "created_at"], name: "idx_learning_events_category_time"
+    t.index ["category_id", "pattern_used", "created_at"], name: "idx_learning_category_pattern_created"
     t.index ["category_id"], name: "index_pattern_learning_events_on_category_id"
+    t.index ["confidence_score", "was_correct"], name: "idx_learning_confidence", where: "(confidence_score IS NOT NULL)"
+    t.index ["created_at", "category_id", "event_type"], name: "idx_learning_created_category_type"
+    t.index ["created_at", "was_correct", "category_id"], name: "idx_learning_created_correct_category"
     t.index ["created_at"], name: "index_pattern_learning_events_on_created_at"
+    t.index ["event_type", "created_at"], name: "index_pattern_learning_events_on_event_type_and_created_at"
+    t.index ["event_type"], name: "index_pattern_learning_events_on_event_type"
     t.index ["expense_id"], name: "index_pattern_learning_events_on_expense_id"
+    t.index ["pattern_used", "was_correct", "created_at"], name: "idx_learning_events_analysis"
     t.index ["pattern_used"], name: "index_pattern_learning_events_on_pattern_used"
+    t.index ["was_correct", "created_at"], name: "idx_learning_correct_created"
     t.index ["was_correct", "created_at"], name: "idx_learning_events_correct_time"
     t.index ["was_correct"], name: "index_pattern_learning_events_on_was_correct"
+  end
+
+  create_table "processed_emails", force: :cascade do |t|
+    t.string "message_id", null: false
+    t.bigint "email_account_id", null: false
+    t.datetime "processed_at", null: false
+    t.string "uid"
+    t.text "subject"
+    t.string "from_address"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email_account_id"], name: "index_processed_emails_on_email_account_id"
+    t.index ["message_id", "email_account_id"], name: "idx_processed_emails_unique", unique: true
+    t.index ["processed_at"], name: "index_processed_emails_on_processed_at"
   end
 
   create_table "solid_queue_blocked_executions", force: :cascade do |t|
@@ -566,12 +699,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
     t.index ["category_id"], name: "index_user_category_preferences_on_category_id"
     t.index ["context_type", "context_value", "preference_weight"], name: "idx_user_prefs_context_weight"
     t.index ["context_type", "context_value"], name: "idx_user_prefs_context"
+    t.index ["email_account_id", "context_type", "context_value", "preference_weight"], name: "idx_user_pref_lookup"
     t.index ["email_account_id", "context_type", "context_value"], name: "idx_on_email_account_id_context_type_context_value_b40292993e"
     t.index ["email_account_id"], name: "index_user_category_preferences_on_email_account_id"
+    t.index ["preference_weight", "usage_count"], name: "idx_user_pref_priority", where: "(preference_weight >= 5)"
   end
 
   add_foreign_key "budgets", "categories"
   add_foreign_key "budgets", "email_accounts"
+  add_foreign_key "bulk_operation_items", "bulk_operations"
+  add_foreign_key "bulk_operation_items", "categories", column: "new_category_id"
+  add_foreign_key "bulk_operation_items", "categories", column: "previous_category_id"
+  add_foreign_key "bulk_operation_items", "expenses"
+  add_foreign_key "bulk_operations", "categories", column: "target_category_id"
   add_foreign_key "categories", "categories", column: "parent_id"
   add_foreign_key "categorization_patterns", "categories"
   add_foreign_key "composite_patterns", "categories"
@@ -585,6 +725,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_11_210806) do
   add_foreign_key "pattern_feedbacks", "expenses"
   add_foreign_key "pattern_learning_events", "categories"
   add_foreign_key "pattern_learning_events", "expenses"
+  add_foreign_key "processed_emails", "email_accounts"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade

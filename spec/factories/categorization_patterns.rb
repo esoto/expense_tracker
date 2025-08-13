@@ -5,7 +5,7 @@ FactoryBot.define do
     association :category
 
     pattern_type { "merchant" }
-    pattern_value { "Test Merchant #{SecureRandom.hex(4)}" }
+    sequence(:pattern_value) { |n| "Test Merchant #{n}_#{SecureRandom.hex(8)}" }
     confidence_weight { 1.0 }
     active { true }
     user_created { false }

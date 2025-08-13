@@ -318,6 +318,9 @@ module Categorization
 
     # Reset the engine safely
     def reset!
+      # Guard against nil mutex during initialization
+      return unless @reset_mutex
+      
       @reset_mutex.synchronize do
         # In test environment, shut down thread pool to prevent race conditions
         if Rails.env.test? && @thread_pool

@@ -7,7 +7,7 @@ require 'memory_profiler'
 RSpec.describe "Categorization Load Testing", type: :performance do
   let(:engine) {
     reset_categorization_engine!
-    Categorization::Engine.instance
+    create_test_engine
   }
 
   describe "high volume categorization" do

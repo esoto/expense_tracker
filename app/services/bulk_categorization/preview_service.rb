@@ -5,10 +5,11 @@ module BulkCategorization
   class PreviewService
     attr_reader :expenses, :category
 
-    def initialize(expenses:, category:)
+    def initialize(expenses:, category:, engine: nil)
       @expenses = Array(expenses)
       @category = category
-      @categorization_engine = Categorization::Engine.instance
+      # Use dependency injection - create new engine if not provided
+      @categorization_engine = engine || Categorization::Engine.create
     end
 
     def generate

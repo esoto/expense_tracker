@@ -126,8 +126,10 @@ RSpec.describe Categorization::PatternLearner do
       end
 
       it "invalidates cache after learning" do
-        expect(Categorization::PatternCache.instance).to receive(:invalidate_all)
-        learner.learn_from_correction(expense, food_category)
+        pattern_cache = instance_double(Categorization::PatternCache)
+        expect(pattern_cache).to receive(:invalidate_all)
+        learner_with_cache = described_class.new(pattern_cache: pattern_cache)
+        learner_with_cache.learn_from_correction(expense, food_category)
       end
     end
 
@@ -217,8 +219,10 @@ RSpec.describe Categorization::PatternLearner do
       end
 
       it "invalidates cache once after batch" do
-        expect(Categorization::PatternCache.instance).to receive(:invalidate_all).once
-        learner.batch_learn(corrections)
+        pattern_cache = instance_double(Categorization::PatternCache)
+        expect(pattern_cache).to receive(:invalidate_all).once
+        learner_with_cache = described_class.new(pattern_cache: pattern_cache)
+        learner_with_cache.batch_learn(corrections)
       end
 
       it "tracks metrics correctly" do

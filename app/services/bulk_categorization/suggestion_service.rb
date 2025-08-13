@@ -5,10 +5,11 @@ module BulkCategorization
   class SuggestionService
     attr_reader :expenses, :options
 
-    def initialize(expenses:, options: {})
+    def initialize(expenses:, options: {}, engine: nil)
       @expenses = Array(expenses)
       @options = default_options.merge(options)
-      @categorization_engine = Categorization::Engine.instance
+      # Use dependency injection - create new engine if not provided
+      @categorization_engine = engine || Categorization::Engine.create
     end
 
     def generate_suggestions

@@ -21,23 +21,25 @@ module Categorization
     METRICS_KEY = "cat:metrics"
 
     class << self
-      # Thread-safe singleton instance
+      # Get or create a default instance (for services that haven't migrated to DI yet)
       def instance
-        @instance ||= new
+        @default_instance ||= new
       end
 
-      delegate :get_pattern, :get_patterns, :get_composite_pattern,
-               :get_user_preference, :invalidate, :invalidate_all,
-               :warm_cache, :metrics, :hit_rate, to: :instance
+      # Factory method for creating cache instances
+      def create(options = {})
+        new(options)
+      end
     end
 
-    def initialize
+    def initialize(options = {})
       @memory_cache = build_memory_cache
       @redis_available = redis_available?
       @metrics_collector = MetricsCollector.new
       @lock = Mutex.new
+      @logger = options.fetch(:logger, Rails.logger)
 
-      Rails.logger.info "[PatternCache] Initialized with #{@redis_available ? 'Redis + Memory' : 'Memory only'} caching"
+      @logger.info "[PatternCache] Initialized with #{@redis_available ? 'Redis + Memory' : 'Memory only'} caching"
     end
 
     # Get a single pattern by ID with caching

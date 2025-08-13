@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "ostruct"
+
 module Categorization
   # Factory for creating and managing categorization engine instances
   # Replaces singleton pattern with configurable instances for better testing
@@ -60,17 +62,8 @@ module Categorization
       def create_engine(name, custom_config = {})
         config = configuration.to_h.merge(custom_config)
 
-        engine = Engine.new(
-          cache_size: config[:cache_size],
-          cache_ttl: config[:cache_ttl],
-          batch_size: config[:batch_size],
-          enable_circuit_breaker: config[:enable_circuit_breaker],
-          circuit_breaker_threshold: config[:circuit_breaker_threshold],
-          circuit_breaker_timeout: config[:circuit_breaker_timeout],
-          enable_metrics: config[:enable_metrics],
-          enable_learning: config[:enable_learning],
-          confidence_threshold: config[:confidence_threshold]
-        )
+        # Use the proper Engine class with dependency injection
+        engine = Engine.create(config)
 
         engines[name] = engine
         engine
@@ -78,73 +71,4 @@ module Categorization
     end
   end
 
-  # Update Engine class to remove singleton pattern
-  class Engine
-    attr_reader :config, :metrics, :cache
-
-    def initialize(options = {})
-      @config = options
-      @mutex = Mutex.new
-      @logger = options[:logger] || Rails.logger
-
-      initialize_components(options)
-      initialize_metrics if options[:enable_metrics]
-
-      @logger.info "[Categorization::Engine] Initialized with config: #{options.inspect}"
-    end
-
-    # Remove singleton-related code
-    # Remove class methods that delegate to instance
-
-    private
-
-    def initialize_components(options)
-      # Initialize cache
-      @cache = LruCache.new(
-        max_size: options[:cache_size] || 1000,
-        ttl_seconds: options[:cache_ttl] || 300
-      )
-
-      # Initialize services (no longer using singleton)
-      @pattern_cache_service = options[:pattern_cache] || PatternCache.new
-      @fuzzy_matcher = options[:fuzzy_matcher] || Matchers::FuzzyMatcher.new
-      @confidence_calculator = options[:confidence_calculator] || ConfidenceCalculator.new
-      @pattern_learner = options[:pattern_learner] || PatternLearner.new
-
-      # Initialize circuit breakers if enabled
-      if options[:enable_circuit_breaker]
-        initialize_circuit_breakers(options)
-      end
-    end
-
-    def initialize_circuit_breakers(options)
-      threshold = options[:circuit_breaker_threshold] || 5
-      timeout = options[:circuit_breaker_timeout] || 60
-
-      @circuit_breakers = {
-        database: SimpleCircuitBreaker.new(
-          name: "database",
-          threshold: threshold,
-          timeout: timeout,
-          logger: @logger
-        ),
-        cache: SimpleCircuitBreaker.new(
-          name: "cache",
-          threshold: threshold,
-          timeout: timeout,
-          logger: @logger
-        )
-      }
-    end
-
-    def initialize_metrics
-      @metrics = Concurrent::Hash.new do |hash, key|
-        hash[key] = Concurrent::AtomicFixnum.new(0)
-      end
-
-      @timing_metrics = Concurrent::Hash.new do |hash, key|
-        hash[key] = []
-      end
-    end
-  end
 end

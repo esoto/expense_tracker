@@ -51,12 +51,15 @@ module Categorization
       ].freeze
 
       class << self
+        # Get or create a default instance (for services that haven't migrated to DI yet)
         def instance
-          @instance ||= new
+          @default_instance ||= new
         end
 
-        delegate :match, :match_pattern, :match_merchant, :batch_match,
-                 :calculate_similarity, :metrics, to: :instance
+        # Factory method for creating matcher instances
+        def create(options = {})
+          new(options)
+        end
       end
 
       def initialize(options = {})

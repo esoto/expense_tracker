@@ -8,7 +8,8 @@ module BulkCategorization
     def initialize(confidence_threshold: 0.8, options: {})
       @confidence_threshold = confidence_threshold
       @options = default_options.merge(options)
-      @categorization_engine = Categorization::Engine.instance
+      # Use dependency injection - engine must be provided
+      @categorization_engine = options[:engine] || Categorization::Engine.create
       @results = []
       @errors = []
     end

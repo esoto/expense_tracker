@@ -21,6 +21,8 @@ module Services
           expenses_created: 0,
           processing_time: 0
         }
+        # Support dependency injection for categorization engine
+        @categorization_engine = options[:categorization_engine] || Categorization::Engine.create
       end
 
       # Main method to fetch and process new emails
@@ -384,8 +386,8 @@ module Services
       end
 
       def suggest_category(expense)
-        # Use the new performance-optimized categorization engine
-        result = Categorization::Engine.instance.categorize(expense)
+        # Use the injected categorization engine
+        result = @categorization_engine.categorize(expense)
 
         if result&.successful? && result.confidence > 0.7
           # Store categorization metadata for expense update

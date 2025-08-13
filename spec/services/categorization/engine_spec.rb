@@ -8,6 +8,43 @@ RSpec.describe Categorization::Engine, type: :service do
     reset_categorization_engine!
     described_class.instance
   end
+  
+  # Test isolation with comprehensive singleton reset
+  before(:each) do
+    # Force complete reset of all singletons and their state
+    # This addresses the root cause: persistent singleton state between tests
+    force_reset_all_singletons
+    wait_for_async_operations
+  end
+  
+  after(:each) do
+    # Clean up after each test to prevent state leakage
+    wait_for_async_operations
+    force_reset_all_singletons
+  end
+
+  # Helper method to completely reset all singleton state
+  def force_reset_all_singletons
+    # Reset engine and all its dependencies
+    reset_categorization_engine!(force_gc: false)
+    
+    # Force reset PatternCache singleton with new mutex
+    if defined?(Categorization::PatternCache)
+      pc = Categorization::PatternCache
+      pc.instance_variable_set(:@instance, nil)
+      pc.instance_variable_set(:@instance_mutex, Mutex.new)
+    end
+    
+    # Force reset FuzzyMatcher singleton  
+    if defined?(Categorization::Matchers::FuzzyMatcher)
+      fm = Categorization::Matchers::FuzzyMatcher
+      fm.instance_variable_set(:@instance, nil)
+      fm.instance_variable_set(:@instance_mutex, Mutex.new)
+    end
+    
+    # Clear all caches completely
+    Rails.cache.clear
+  end
 
   let(:category) { create(:category, name: "Groceries") }
   let(:expense) do
@@ -16,11 +53,6 @@ RSpec.describe Categorization::Engine, type: :service do
            description: "Grocery shopping",
            amount: 125.50,
            transaction_date: Time.current)
-  end
-
-  # Ensure cleanup after each test
-  after(:each) do
-    wait_for_async_operations if respond_to?(:wait_for_async_operations)
   end
 
   describe ".instance" do
@@ -41,9 +73,7 @@ RSpec.describe Categorization::Engine, type: :service do
                preference_weight: 8.0)
       end
 
-      # TODO: This test passes in isolation but fails in full suite due to test order dependency
-      # Need to investigate what other test is interfering with UserCategoryPreference state
-      xit "prioritizes user preferences" do
+      it "prioritizes user preferences" do
         result = engine.categorize(expense)
 
         expect(result).to be_successful
@@ -84,11 +114,11 @@ RSpec.describe Categorization::Engine, type: :service do
                success_count: 25)
       end
 
-      it "finds and uses matching patterns", skip: "Flaky test - passes in isolation" do
+      it "finds and uses matching patterns" do
         # Ensure patterns are loaded in engine
         reset_categorization_engine!
         wait_for_async_operations
-        
+
         result = engine.categorize(expense)
 
         expect(result).to be_successful
@@ -98,7 +128,7 @@ RSpec.describe Categorization::Engine, type: :service do
         expect(result.method).to eq("fuzzy_match")
       end
 
-      it "includes confidence breakdown", skip: "Related to flaky pattern matching test" do
+      it "includes confidence breakdown" do
         result = engine.categorize(expense)
 
         expect(result.confidence_breakdown).to be_present
@@ -126,7 +156,7 @@ RSpec.describe Categorization::Engine, type: :service do
       end
     end
 
-    context "with no matching patterns", skip: "Engine state isolation issues" do
+    context "with no matching patterns" do
       it "returns no_match result" do
         result = engine.categorize(expense)
 
@@ -137,7 +167,7 @@ RSpec.describe Categorization::Engine, type: :service do
       end
     end
 
-    context "with low confidence matches", skip: "Engine state isolation issues" do
+    context "with low confidence matches" do
       let!(:weak_pattern) do
         create(:categorization_pattern,
                pattern_type: "keyword",
@@ -157,7 +187,7 @@ RSpec.describe Categorization::Engine, type: :service do
       end
     end
 
-    context "with auto-update enabled", skip: "Engine state isolation issues" do
+    context "with auto-update enabled" do
       let!(:pattern) do
         create(:categorization_pattern,
                pattern_type: "merchant",
@@ -193,7 +223,7 @@ RSpec.describe Categorization::Engine, type: :service do
       end
     end
 
-    context "with performance tracking", skip: "Engine state isolation issues" do
+    context "with performance tracking" do
       let!(:pattern) do
         create(:categorization_pattern,
                pattern_type: "merchant",
@@ -260,8 +290,9 @@ RSpec.describe Categorization::Engine, type: :service do
       end
 
       it "invalidates cache after learning" do
-        expect_any_instance_of(Categorization::PatternCache)
-          .to receive(:invalidate_all).at_least(:once)
+        # Get the actual instance that will be used
+        cache_instance = Categorization::PatternCache.instance
+        expect(cache_instance).to receive(:invalidate_all).at_least(:once)
 
         engine.learn_from_correction(expense, correct_category, predicted_category)
       end
@@ -452,11 +483,11 @@ RSpec.describe Categorization::Engine, type: :service do
 
     it "clears all caches" do
       expect_any_instance_of(Categorization::PatternCache)
-        .to receive(:invalidate_all)
+        .to receive(:invalidate_all).at_least(:once)
       expect_any_instance_of(Categorization::Matchers::FuzzyMatcher)
-        .to receive(:clear_cache)
+        .to receive(:clear_cache).at_least(:once)
       expect_any_instance_of(Categorization::ConfidenceCalculator)
-        .to receive(:clear_cache)
+        .to receive(:clear_cache).at_least(:once)
 
       engine.reset!
     end

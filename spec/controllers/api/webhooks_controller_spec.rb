@@ -237,7 +237,7 @@ RSpec.describe Api::WebhooksController, type: :controller do
       json_response = JSON.parse(response.body)
       expect(json_response["status"]).to eq("success")
       expect(json_response["expenses"]).to be_an(Array)
-      
+
       # Should include at least our test expenses (may have others from different tests)
       expect(json_response["expenses"].size).to be >= 2
       expense_ids = json_response["expenses"].map { |e| e["id"] }
@@ -249,11 +249,11 @@ RSpec.describe Api::WebhooksController, type: :controller do
 
       json_response = JSON.parse(response.body)
       expenses = json_response["expenses"]
-      
+
       # Find our test expenses in the results
-      our_expenses = expenses.select { |e| [expense1.id, expense2.id].include?(e["id"]) }
+      our_expenses = expenses.select { |e| [ expense1.id, expense2.id ].include?(e["id"]) }
       expect(our_expenses.size).to eq(2)
-      
+
       # expense2 (30 min ago) should come before expense1 (1 hour ago) in the results
       expense2_index = expenses.find_index { |e| e["id"] == expense2.id }
       expense1_index = expenses.find_index { |e| e["id"] == expense1.id }

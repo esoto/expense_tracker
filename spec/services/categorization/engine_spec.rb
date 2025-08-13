@@ -40,7 +40,6 @@ RSpec.describe Categorization::Engine, type: :service do
       expect(custom_engine.service_registry).to eq(registry)
 
       custom_engine.shutdown!
->>>>>>> e077f8f (♻️ refactor(categorization): complete dependency injection implementation replacing singleton pattern)
     end
   end
 

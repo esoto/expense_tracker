@@ -98,4 +98,3 @@ class BulkCategorizationActionsController < ApplicationController
                   :uncategorized_only, :confidence_threshold)
   end
 end
-

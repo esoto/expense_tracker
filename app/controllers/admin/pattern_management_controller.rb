@@ -65,4 +65,3 @@ class Admin::PatternManagementController < Admin::BaseController
     true
   end
 end
-

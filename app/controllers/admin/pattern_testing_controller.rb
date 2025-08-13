@@ -44,4 +44,3 @@ class Admin::PatternTestingController < Admin::BaseController
     true
   end
 end
-

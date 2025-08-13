@@ -493,7 +493,7 @@ RSpec.describe CategorizationPattern, type: :model do
       p3.update_columns(success_rate: 0.95, usage_count: 5)
 
       # Test only the patterns we created to avoid seed data interference
-      ordered = described_class.where(id: [p1.id, p2.id, p3.id]).ordered_by_success
+      ordered = described_class.where(id: [ p1.id, p2.id, p3.id ]).ordered_by_success
       expect(ordered.first).to eq(p3) # Highest success rate
       expect(ordered.second).to eq(p2) # Same success rate as p1 but more usage
     end

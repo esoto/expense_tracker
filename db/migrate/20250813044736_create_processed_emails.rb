@@ -11,7 +11,7 @@ class CreateProcessedEmails < ActiveRecord::Migration[8.0]
       t.timestamps
     end
 
-    add_index :processed_emails, [:message_id, :email_account_id], unique: true, name: 'idx_processed_emails_unique'
+    add_index :processed_emails, [ :message_id, :email_account_id ], unique: true, name: 'idx_processed_emails_unique'
     add_index :processed_emails, :processed_at
   end
 end

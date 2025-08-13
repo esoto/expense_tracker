@@ -175,7 +175,7 @@ module BulkCategorization
     end
 
     def create_pattern_from_expense(expense)
-      return unless expense.merchant_name.present?
+      return unless expense.merchant_name?
 
       # Check if pattern already exists
       existing = CategorizationPattern.find_by(

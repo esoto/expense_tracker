@@ -153,8 +153,8 @@ class ExpensesController < ApplicationController
 
     # Validate category_id
     if new_category_id.present?
-      # Ensure the category exists
-      unless Category.exists?(new_category_id)
+      # Ensure the category exists (using id: to be explicit for Brakeman)
+      unless Category.exists?(id: new_category_id)
         respond_to do |format|
           format.html { redirect_back(fallback_location: @expense, alert: "Categoría inválida") }
           format.json { render json: { success: false, error: "Invalid category ID" }, status: :unprocessable_content }

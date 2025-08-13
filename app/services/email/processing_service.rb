@@ -75,7 +75,7 @@ module Services
       def valid_account?
         return false unless email_account
 
-        if email_account.email.blank?
+        unless email_account.email?
           add_error("Email address is required")
           return false
         end
@@ -541,19 +541,19 @@ module Services
         def apply_parsing_rule(rule)
           text = email_data[:html_body] || email_data[:text_body] || email_data[:body] || ""
           # Fix encoding issues
-          text = text.force_encoding('UTF-8') if text.respond_to?(:force_encoding)
+          text = text.force_encoding("UTF-8") if text.respond_to?(:force_encoding)
           parsed_data = rule.parse_email(text)
-          
+
           return [] if parsed_data.empty? || !parsed_data[:amount]
-          
-          [{
+
+          [ {
             amount: parsed_data[:amount],
             description: parsed_data[:description] || extract_description_near_amount(text, parsed_data[:amount].to_s),
             date: parsed_data[:transaction_date] || extract_date(text),
             merchant: parsed_data[:merchant_name] || extract_merchant(text),
             raw_text: text[0..500],
             email_message_id: email_data[:message_id]
-          }]
+          } ]
         end
 
         def parse_amount(text)

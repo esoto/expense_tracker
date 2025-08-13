@@ -26,7 +26,7 @@ class AdminUser < ApplicationRecord
   validates :name, presence: true, length: { maximum: 100 }
   validates :password, length: { minimum: PASSWORD_MIN_LENGTH },
                       format: {
-                        with: /\A(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/,
+                        with: /\A(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).+\z/,
                         message: "must include uppercase, lowercase, number, and special character"
                       },
                       if: :password_digest_changed?

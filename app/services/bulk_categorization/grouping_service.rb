@@ -101,7 +101,7 @@ module BulkCategorization
       # Use batch processing to find similar merchants using pg_trgm
       remaining_expenses.each do |expense|
         next if processed.include?(expense.id)
-        next if expense.merchant_normalized.blank?
+        next unless expense.merchant_normalized?
 
         # Use database query with trigram similarity instead of in-memory calculation
         similar_expenses = find_similar_expenses_optimized(expense, remaining_expenses, processed)

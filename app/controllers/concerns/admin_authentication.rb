@@ -50,7 +50,8 @@ module AdminAuthentication
   end
 
   def store_location
-    session[:return_to] = request.fullpath if request.get?
+    # Store location only for GET requests (not HEAD)
+    session[:return_to] = request.fullpath if request.get? && !request.head?
   end
 
   def redirect_back_or(default)

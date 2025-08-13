@@ -4,9 +4,9 @@ module ApiCaching
   extend ActiveSupport::Concern
 
   included do
-    # Set cache headers for GET requests
+    # Set cache headers for GET requests (excluding HEAD)
     def set_cache_headers(max_age: 300, public: true, must_revalidate: true)
-      return unless request.get?
+      return unless request.get? && !request.head?
 
       if public
         expires_in max_age.seconds, public: true, must_revalidate: must_revalidate
@@ -15,9 +15,9 @@ module ApiCaching
       end
     end
 
-    # Set ETag and handle conditional GET
+    # Set ETag and handle conditional GET (excluding HEAD)
     def handle_conditional_get(resource)
-      return unless request.get?
+      return unless request.get? && !request.head?
 
       if resource.respond_to?(:cache_key_with_version)
         fresh_when(resource, public: true)

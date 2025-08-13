@@ -1,10 +1,10 @@
 <div class="space-y-4">
   <% grouped_expenses.each do |group| %>
-    <div id="expense_group_<%= group[:id] %>" 
+    <div id="expense_group_<%= group[:id] %>"
          class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
          data-group-id="<%= group[:id] %>"
          data-expense-ids="<%= group[:expense_ids].to_json %>">
-      
+
       <!-- Group Header -->
       <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
         <div class="flex items-center justify-between">
@@ -12,22 +12,22 @@
             <h3 class="text-lg font-semibold text-slate-900">
               <%= group[:grouping_key] %>
             </h3>
-            
+
             <!-- Confidence Badge -->
             <% confidence_level = group[:confidence] > 0.8 ? "high" : group[:confidence] > 0.6 ? "medium" : "low" %>
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                         <%= confidence_level == "high" ? "bg-emerald-100 text-emerald-800" : 
-                             confidence_level == "medium" ? "bg-amber-100 text-amber-800" : 
+                         <%= confidence_level == "high" ? "bg-emerald-100 text-emerald-800" :
+                             confidence_level == "medium" ? "bg-amber-100 text-amber-800" :
                              "bg-rose-100 text-rose-800" %>">
               <%= (group[:confidence] * 100).round %>% confidence
             </span>
-            
+
             <!-- Group Type Badge -->
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
               <%= group[:grouping_type].to_s.humanize %>
             </span>
           </div>
-          
+
           <div class="flex items-center space-x-2">
             <span class="text-sm text-slate-600">
               <%= group[:count] %> expense<%= "s" if group[:count] != 1 %>
@@ -56,7 +56,7 @@
                 </span>
               <% end %>
             </div>
-            
+
             <button data-action="click->bulk-categorization#applySuggestion"
                     data-category-id="<%= group[:suggested_category].id %>"
                     data-group-id="<%= group[:id] %>"
@@ -77,13 +77,13 @@
                     class="block w-64 px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
               <option value="">Select a category...</option>
               <% @categories.each do |category| %>
-                <option value="<%= category.id %>" 
+                <option value="<%= category.id %>"
                         <%= "selected" if group[:suggested_category] == category %>>
                   <%= category.parent ? "#{category.parent.name} → " : "" %><%= category.name %>
                 </option>
               <% end %>
             </select>
-            
+
             <!-- Apply Button -->
             <button data-action="click->bulk-categorization#applyCategory"
                     data-group-id="<%= group[:id] %>"
@@ -94,7 +94,7 @@
               Apply to All
             </button>
           </div>
-          
+
           <div class="flex items-center space-x-2">
             <!-- Preview Button -->
             <button data-action="click->bulk-categorization#preview"
@@ -106,12 +106,12 @@
               </svg>
               Preview
             </button>
-            
+
             <!-- Expand/Collapse Button -->
             <button data-action="click->bulk-categorization#toggleExpenses"
                     data-group-id="<%= group[:id] %>"
                     class="inline-flex items-center px-3 py-2 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors">
-              <svg class="w-4 h-4 transform transition-transform" 
+              <svg class="w-4 h-4 transform transition-transform"
                    data-bulk-categorization-target="expandIcon"
                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -122,14 +122,14 @@
       </div>
 
       <!-- Expense Details (Collapsed by default) -->
-      <div id="expenses_<%= group[:id] %>" 
+      <div id="expenses_<%= group[:id] %>"
            class="hidden"
            data-bulk-categorization-target="expenseList">
         <div class="px-6 py-4 space-y-3">
           <% group[:expenses].each do |expense| %>
             <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
               <div class="flex items-center space-x-3">
-                <input type="checkbox" 
+                <input type="checkbox"
                        data-expense-id="<%= expense.id %>"
                        data-group-id="<%= group[:id] %>"
                        data-action="change->bulk-categorization#updateSelection"
@@ -140,17 +140,17 @@
                     <%= expense.display_description %>
                   </p>
                   <p class="text-xs text-slate-600">
-                    <%= expense.transaction_date.strftime("%b %d, %Y") %> • 
+                    <%= expense.transaction_date.strftime("%b %d, %Y") %> •
                     <%= expense.bank_name %>
                   </p>
                 </div>
               </div>
-              
+
               <div class="flex items-center space-x-3">
                 <span class="text-sm font-semibold text-slate-900">
                   ₡<%= number_with_delimiter(expense.amount.to_i) %>
                 </span>
-                
+
                 <!-- Individual Category Override -->
                 <select data-expense-id="<%= expense.id %>"
                         data-action="change->bulk-categorization#overrideCategory"

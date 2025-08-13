@@ -1,7 +1,7 @@
 <%= form_with(model: @admin_user, url: admin_login_path, local: true, class: "space-y-6") do |form| %>
   <div>
     <%= form.label :email, class: "block text-sm font-medium text-slate-700 mb-1" %>
-    <%= form.email_field :email, 
+    <%= form.email_field :email,
           class: "form-input appearance-none rounded-lg relative block w-full px-3 py-2 border border-slate-300 placeholder-slate-500 text-slate-900 focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm",
           placeholder: "admin@company.com",
           required: true,
@@ -19,12 +19,12 @@
 
   <div class="flex items-center justify-between">
     <div class="flex items-center">
-      <%= form.check_box :remember_me, 
+      <%= form.check_box :remember_me,
             class: "h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded" %>
-      <%= form.label :remember_me, "Remember me", 
+      <%= form.label :remember_me, "Remember me",
             class: "ml-2 block text-sm text-slate-700" %>
     </div>
-    
+
     <div class="text-sm">
       <!-- Future: Add forgot password link -->
       <span class="text-slate-500">Need help? Contact IT</span>

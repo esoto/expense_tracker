@@ -6,7 +6,7 @@
         <h1 class="text-2xl font-bold text-slate-900">Pattern Analytics Dashboard</h1>
         <p class="text-slate-600 mt-1">Monitor and optimize categorization pattern performance</p>
       </div>
-      
+
       <!-- Filters -->
       <div class="flex flex-wrap gap-3" data-controller="pattern-analytics-filters">
         <!-- Time Period Filter -->
@@ -19,33 +19,33 @@
           <option value="year" <%= 'selected' if params[:time_period] == 'year' %>>Last Year</option>
           <option value="today" <%= 'selected' if params[:time_period] == 'today' %>>Today</option>
         </select>
-        
+
         <!-- Category Filter -->
         <select data-action="change->pattern-analytics-filters#updateCategory"
                 data-pattern-analytics-filters-target="category"
                 class="rounded-lg border-slate-200 text-sm focus:border-teal-500 focus:ring-teal-500">
           <option value="">All Categories</option>
           <% Category.order(:name).each do |category| %>
-            <option value="<%= category.id %>" 
+            <option value="<%= category.id %>"
                     <%= 'selected' if params[:category_id] == category.id.to_s %>>
               <%= category.name %>
             </option>
           <% end %>
         </select>
-        
+
         <!-- Pattern Type Filter -->
         <select data-action="change->pattern-analytics-filters#updatePatternType"
                 data-pattern-analytics-filters-target="patternType"
                 class="rounded-lg border-slate-200 text-sm focus:border-teal-500 focus:ring-teal-500">
           <option value="">All Types</option>
           <% CategorizationPattern::PATTERN_TYPES.each do |type| %>
-            <option value="<%= type %>" 
+            <option value="<%= type %>"
                     <%= 'selected' if params[:pattern_type] == type %>>
               <%= type.humanize %>
             </option>
           <% end %>
         </select>
-        
+
         <!-- Export Button -->
         <div class="relative" data-controller="dropdown">
           <button data-action="click->dropdown#toggle"
@@ -57,11 +57,11 @@
           </button>
           <div data-dropdown-target="menu"
                class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 z-10">
-            <%= link_to "Export as CSV", 
+            <%= link_to "Export as CSV",
                         export_analytics_pattern_dashboard_index_path(format_type: :csv, **request.query_parameters),
                         class: "block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50",
                         data: { turbo_method: :get } %>
-            <%= link_to "Export as JSON", 
+            <%= link_to "Export as JSON",
                         export_analytics_pattern_dashboard_index_path(format_type: :json, **request.query_parameters),
                         class: "block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50",
                         data: { turbo_method: :get } %>
@@ -111,7 +111,7 @@
         </button>
       </div>
     </div>
-    <div id="trend_chart" 
+    <div id="trend_chart"
          data-controller="pattern-trend-chart"
          data-pattern-trend-chart-url-value="<%= trends_analytics_pattern_dashboard_index_path %>"
          class="h-80">
@@ -193,7 +193,7 @@
   <!-- Usage Heatmap -->
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
     <h2 class="text-lg font-semibold text-slate-900 mb-4">Pattern Usage Heatmap</h2>
-    <div id="usage_heatmap" 
+    <div id="usage_heatmap"
          data-controller="pattern-heatmap"
          data-pattern-heatmap-url-value="<%= heatmap_analytics_pattern_dashboard_index_path %>"
          class="h-64">

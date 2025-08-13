@@ -2,13 +2,13 @@
 <%# This partial displays the category with ML confidence indicators and correction interface %>
 
 <turbo-frame id="expense_<%= expense.id %>_category" class="inline-block">
-  <div class="relative inline-flex items-center gap-2" 
+  <div class="relative inline-flex items-center gap-2"
        data-controller="category-confidence"
        data-category-confidence-expense-id-value="<%= expense.id %>"
        data-category-confidence-level-value="<%= expense.confidence_level %>"
        data-category-confidence-percentage-value="<%= expense.confidence_percentage %>"
        data-category-confidence-explanation-value="<%= expense.ml_confidence_explanation || '' %>">
-    
+
     <%# Category Badge %>
     <% if expense.category %>
       <span class="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full transition-all"
@@ -20,7 +20,7 @@
         Sin categoría
       </span>
     <% end %>
-    
+
     <%# Confidence Indicator %>
     <% if expense.ml_confidence.present? %>
       <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border cursor-help <%= confidence_color_class(expense.confidence_level) %>"
@@ -28,7 +28,7 @@
             tabindex="0"
             role="button"
             aria-label="Confianza: <%= expense.confidence_percentage %>%">
-        
+
         <%# Confidence Icon %>
         <% case expense.confidence_level %>
         <% when :high %>
@@ -44,10 +44,10 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
           </svg>
         <% end %>
-        
+
         <%= expense.confidence_percentage %>%
       </span>
-      
+
       <%# Quick Correction Button for Low Confidence %>
       <% if expense.needs_review? %>
         <button class="inline-flex items-center justify-center w-6 h-6 rounded-full hover:bg-amber-50 transition-colors"
@@ -61,15 +61,15 @@
         </button>
       <% end %>
     <% end %>
-    
+
     <%# Learning Indicator %>
-    <% if expense.ml_last_corrected_at.present? && expense.ml_last_corrected_at > 1.hour.ago %>
+    <% if expense.ml_last_corrected_at? && expense.ml_last_corrected_at > 1.hour.ago %>
       <span class="inline-flex items-center justify-center w-5 h-5 text-xs animate-pulse"
             title="Sistema aprendiendo de esta corrección">
         🧠
       </span>
     <% end %>
-    
+
     <%# Suggested Category Display (if different from current) %>
     <% if expense.ml_suggested_category_id.present? && expense.ml_suggested_category_id != expense.category_id %>
       <div class="absolute top-full mt-1 left-0 z-30 p-2 bg-amber-50 border border-amber-200 rounded-lg shadow-lg whitespace-nowrap">
@@ -93,7 +93,7 @@
                           method: :post,
                           class: "inline-flex items-center justify-center w-6 h-6 bg-rose-600 text-white rounded hover:bg-rose-700",
                           title: "Rechazar sugerencia",
-                          data: { 
+                          data: {
                             turbo_frame: "expense_#{expense.id}_category",
                             action: "click->category-confidence#showCorrection"
                           } do %>
@@ -125,7 +125,7 @@
           </span>
         <% end %>
       </div>
-      
+
       <% if expense.ml_confidence.present? %>
         <div class="flex items-center gap-1">
           <% case expense.confidence_level %>
@@ -148,7 +148,7 @@
         </div>
       <% end %>
     </div>
-    
+
     <% if expense.needs_review? %>
       <button class="mt-2 w-full px-3 py-1.5 bg-amber-100 text-amber-800 text-xs font-medium rounded-lg hover:bg-amber-200 transition-colors"
               data-controller="category-confidence"

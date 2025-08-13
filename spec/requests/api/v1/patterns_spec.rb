@@ -37,7 +37,7 @@ RSpec.describe "Api::V1::Patterns", type: :request do
       expect(json["patterns"]).to be_an(Array)
       expect(json["patterns"].size).to be >= 3
       expect(json["meta"]).to include("current_page", "total_pages", "total_count")
-      
+
       # Check total count includes our patterns
       expect(json["meta"]["total_count"]).to be >= 3
     end

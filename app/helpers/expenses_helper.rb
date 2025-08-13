@@ -60,7 +60,7 @@ module ExpensesHelper
 
   # Returns tooltip text for confidence display
   def confidence_tooltip_text(expense)
-    if expense.ml_confidence_explanation.present?
+    if expense.ml_confidence_explanation?
       expense.ml_confidence_explanation
     else
       case expense.confidence_level
@@ -141,7 +141,7 @@ module ExpensesHelper
 
   # Returns the learning indicator for recently corrected expenses
   def learning_indicator(expense)
-    return "" unless expense.ml_last_corrected_at.present?
+    return "" unless expense.ml_last_corrected_at?
 
     if expense.ml_last_corrected_at > 1.hour.ago
       content_tag :span,

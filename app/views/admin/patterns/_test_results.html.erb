@@ -6,7 +6,7 @@
       </h3>
       <span class="text-xs text-slate-500">Sorted by confidence</span>
     </div>
-    
+
     <% matching_patterns.each_with_index do |match, index| %>
       <div class="border <%= index == 0 ? 'border-teal-200 bg-teal-50' : 'border-slate-200' %> rounded-lg p-4">
         <div class="flex justify-between items-start mb-2">
@@ -27,12 +27,12 @@
             <div class="text-xs text-slate-500">confidence</div>
           </div>
         </div>
-        
+
         <div class="mb-2">
           <span class="text-sm text-slate-600">Pattern:</span>
           <code class="ml-2 text-sm bg-white px-2 py-1 rounded"><%= match[:pattern].pattern_value %></code>
         </div>
-        
+
         <div class="flex justify-between items-center">
           <div>
             <span class="text-sm text-slate-600">Category:</span>
@@ -47,7 +47,7 @@
       </div>
     <% end %>
   </div>
-  
+
   <div class="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
     <div class="flex">
       <svg class="w-5 h-5 text-amber-600 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

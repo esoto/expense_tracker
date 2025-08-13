@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
-    
+
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <%= stylesheet_link_tag "builds/tailwind", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
-    
+
     <!-- Security headers for admin area -->
     <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
@@ -75,17 +75,17 @@
       .animate-fade-in {
         animation: fadeIn 0.3s ease-in-out forwards;
       }
-      
+
       @keyframes fadeIn {
         from { opacity: 0; transform: translateY(-10px); }
         to { opacity: 1; transform: translateY(0); }
       }
-      
+
       /* Auto-hide flash messages after 5 seconds */
       #flash-messages > div {
         animation: fadeIn 0.3s ease-in-out forwards, fadeOut 0.3s ease-in-out 4.7s forwards;
       }
-      
+
       @keyframes fadeOut {
         from { opacity: 1; transform: translateY(0); }
         to { opacity: 0; transform: translateY(-10px); }
@@ -100,7 +100,7 @@
     .form-input {
       transition: all 0.2s ease-in-out;
     }
-    
+
     .form-input:focus {
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(15, 118, 110, 0.15);

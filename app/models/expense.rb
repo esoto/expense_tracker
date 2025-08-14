@@ -18,6 +18,9 @@ class Expense < ApplicationRecord
   validates :status, presence: true, inclusion: { in: [ "pending", "processed", "failed", "duplicate" ] }
   validates :currency, presence: true
 
+  # Callbacks
+  before_save :normalize_merchant_name
+
   # Scopes
   scope :recent, -> { order(transaction_date: :desc) }
   scope :by_status, ->(status) { where(status: status) }
@@ -331,5 +334,27 @@ class Expense < ApplicationRecord
     )
   rescue StandardError => e
     Rails.logger.error "Failed to trigger metrics refresh after deletion: #{e.message}"
+  end
+
+  private
+
+  def normalize_merchant_name
+    if merchant_name.present? && merchant_normalized != normalized_merchant_value
+      self.merchant_normalized = normalized_merchant_value
+    end
+  end
+
+  def normalized_merchant_value
+    return nil if merchant_name.blank?
+    
+    # Normalize merchant name for search:
+    # - Convert to lowercase
+    # - Remove special characters except spaces and alphanumeric
+    # - Compress multiple spaces to single space
+    # - Strip leading/trailing whitespace
+    merchant_name.downcase
+                 .gsub(/[^\w\s]/, ' ')
+                 .squeeze(' ')
+                 .strip
   end
 end

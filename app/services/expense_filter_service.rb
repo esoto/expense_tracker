@@ -91,7 +91,7 @@ class ExpenseFilterService
     return cached_result if cache_enabled? && cached_result.present?
 
     start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-    
+
     # Track query execution
     query_counter = 0
     query_subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |_name, _start, _finish, _id, payload|
@@ -105,7 +105,7 @@ class ExpenseFilterService
 
     # Calculate performance metrics
     query_time = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
-    
+
     # Unsubscribe from notifications
     ActiveSupport::Notifications.unsubscribe(query_subscriber) if query_subscriber
     queries_executed = query_counter
@@ -159,7 +159,7 @@ class ExpenseFilterService
 
   def set_defaults
     @page ||= 1
-    @per_page = [@per_page.to_i, MAX_PER_PAGE].min if @per_page
+    @per_page = [ @per_page.to_i, MAX_PER_PAGE ].min if @per_page
     @per_page ||= DEFAULT_PER_PAGE
     @sort_by ||= "transaction_date"
     @sort_direction ||= "desc"
@@ -259,7 +259,7 @@ class ExpenseFilterService
       pagination_meta = build_offset_pagination_meta(expenses, total)
     end
 
-    [expenses, pagination_meta]
+    [ expenses, pagination_meta ]
   end
 
   def build_result(expenses, pagination_meta, query_time, queries_executed)
@@ -317,13 +317,13 @@ class ExpenseFilterService
   def generate_filters_hash
     Digest::SHA256.hexdigest({
       account_ids: account_ids,
-      dates: [start_date, end_date],
+      dates: [ start_date, end_date ],
       categories: category_ids,
       banks: banks,
-      amounts: [min_amount, max_amount],
+      amounts: [ min_amount, max_amount ],
       status: status,
       search: search_query,
-      sort: [sort_by, sort_direction]
+      sort: [ sort_by, sort_direction ]
     }.to_json)
   end
 
@@ -341,7 +341,7 @@ class ExpenseFilterService
   end
 
   def cache_key
-    ["expense_filter", generate_filters_hash, page, per_page].join("/")
+    [ "expense_filter", generate_filters_hash, page, per_page ].join("/")
   end
 
   def check_index_usage(scope)
@@ -351,9 +351,9 @@ class ExpenseFilterService
     begin
       # Only explain if we have records to check
       return true if scope.is_a?(Array) || scope.empty?
-      
+
       explain_output = scope.limit(1).explain
-      explain_output.include?("Index Scan") || 
+      explain_output.include?("Index Scan") ||
         explain_output.include?("Bitmap Index Scan") ||
         explain_output.include?("Index Only Scan")
     rescue StandardError => e
@@ -366,7 +366,7 @@ class ExpenseFilterService
     last_expense = expenses.last
     next_cursor = if last_expense
                     Expense.encode_cursor(last_expense)
-                  end
+    end
 
     {
       total_count: nil, # Not available with cursor pagination

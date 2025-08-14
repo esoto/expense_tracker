@@ -2,7 +2,7 @@
 
 require "csv"
 
-module BulkCategorization
+module Services::BulkCategorization
   # Service to export categorization reports in various formats
   class ExportService
     attr_reader :start_date, :end_date, :format

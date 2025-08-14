@@ -58,7 +58,7 @@ class BulkCategorizationsController < ApplicationController
       end
     else
       # Process small batches synchronously
-      result = BulkCategorization::ApplyService.new(
+      result = Services::BulkCategorization::ApplyService.new(
         expense_ids: expense_ids,
         category_id: params[:category_id],
         user_id: current_user_id
@@ -85,7 +85,7 @@ class BulkCategorizationsController < ApplicationController
   # POST /bulk_categorizations/suggest
   # Get AI-powered suggestions for a group of expenses
   def suggest
-    service = BulkCategorization::SuggestionService.new(
+    service = Services::BulkCategorization::SuggestionService.new(
       expenses: Expense.where(id: params[:expense_ids])
     )
 
@@ -103,7 +103,7 @@ class BulkCategorizationsController < ApplicationController
     expenses = Expense.where(id: params[:expense_ids])
     category = Category.find(params[:category_id])
 
-    preview_data = BulkCategorization::PreviewService.new(
+    preview_data = Services::BulkCategorization::PreviewService.new(
       expenses: expenses,
       category: category
     ).generate
@@ -117,7 +117,7 @@ class BulkCategorizationsController < ApplicationController
   # POST /bulk_categorizations/:id/undo
   # Undo a bulk categorization operation
   def undo
-    result = BulkCategorization::UndoService.new(
+    result = Services::BulkCategorization::UndoService.new(
       bulk_operation: @bulk_operation
     ).call
 
@@ -138,7 +138,7 @@ class BulkCategorizationsController < ApplicationController
   # GET /bulk_categorizations/export
   # Export categorization report
   def export
-    exporter = BulkCategorization::ExportService.new(
+    exporter = Services::BulkCategorization::ExportService.new(
       start_date: params[:start_date],
       end_date: params[:end_date],
       format: params[:format_type] || "csv"
@@ -154,7 +154,7 @@ class BulkCategorizationsController < ApplicationController
   # POST /bulk_categorizations/auto_categorize
   # Automatically categorize high-confidence matches
   def auto_categorize
-    service = BulkCategorization::AutoCategorizationService.new(
+    service = Services::BulkCategorization::AutoCategorizationService.new(
       confidence_threshold: params[:confidence_threshold] || 0.8
     )
 
@@ -190,7 +190,7 @@ class BulkCategorizationsController < ApplicationController
   end
 
   def group_similar_expenses(expenses)
-    BulkCategorization::GroupingService.new(expenses).group_by_similarity
+    Services::BulkCategorization::GroupingService.new(expenses).group_by_similarity
   end
 
   def calculate_statistics(grouped_expenses)

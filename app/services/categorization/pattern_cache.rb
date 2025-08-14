@@ -7,12 +7,32 @@ module Categorization
   class PatternCache
     include ActiveSupport::Benchmarkable
 
-    # Cache configuration constants
-    MEMORY_CACHE_MAX_SIZE = 50 * 1024 # 50MB memory cache size in kilobytes
-    DEFAULT_MEMORY_TTL = 5.minutes
-    DEFAULT_REDIS_TTL = 24.hours
-    CACHE_VERSION = "v1"
-    METRICS_SAMPLE_RATE = 0.01 # Sample 1% of requests for detailed metrics
+    # Cache configuration constants (use centralized config if available)
+    MEMORY_CACHE_MAX_SIZE = if defined?(Services::Infrastructure::PerformanceConfig)
+                              Services::Infrastructure::PerformanceConfig::CACHE_CONFIG[:memory_cache_max_size_mb] * 1024
+    else
+                              50 * 1024 # 50MB memory cache size in kilobytes
+    end
+    DEFAULT_MEMORY_TTL = if defined?(Services::Infrastructure::PerformanceConfig)
+                          Services::Infrastructure::PerformanceConfig::CACHE_CONFIG[:memory_cache_ttl]
+    else
+                          5.minutes
+    end
+    DEFAULT_REDIS_TTL = if defined?(Services::Infrastructure::PerformanceConfig)
+                         Services::Infrastructure::PerformanceConfig::CACHE_CONFIG[:redis_cache_ttl]
+    else
+                         24.hours
+    end
+    CACHE_VERSION = if defined?(Services::Infrastructure::PerformanceConfig)
+                     Services::Infrastructure::PerformanceConfig.cache_version
+    else
+                     "v1"
+    end
+    METRICS_SAMPLE_RATE = if defined?(Services::Infrastructure::PerformanceConfig)
+                           Services::Infrastructure::PerformanceConfig::MONITORING_CONFIG[:metrics_sample_rate]
+    else
+                           0.01 # Sample 1% of requests for detailed metrics
+    end
 
     # Cache key prefixes
     PATTERN_KEY_PREFIX = "cat:pattern"
@@ -254,6 +274,14 @@ module Categorization
       }
     end
 
+    # Clear memory cache (useful for cleanup in long-running processes)
+    def clear_memory_cache
+      @lock.synchronize do
+        @memory_cache.clear
+        Rails.logger.info "[PatternCache] Memory cache cleared"
+      end
+    end
+
     # Preload patterns for a collection of expenses
     def preload_for_expenses(expenses)
       return if expenses.blank?
@@ -320,16 +348,43 @@ module Categorization
         end
       end
 
-      # L3: Fetch from database
+      # L3: Fetch from database with race condition protection
       @metrics_collector.record_miss
 
-      value = yield
-      return nil unless value
+      # Use a lock to prevent cache stampede
+      lock_key = "#{key}:lock"
+      race_condition_ttl = if defined?(Services::Infrastructure::PerformanceConfig)
+                            Services::Infrastructure::PerformanceConfig.race_condition_ttl
+      else
+                            10.seconds
+      end
 
-      # Write to both cache tiers
-      cache_value(key, value, memory_ttl: memory_ttl, redis_ttl: redis_ttl)
+      # Try to acquire lock for cache refresh
+      if @redis_available
+        lock_acquired = redis_client.set(lock_key, 1, nx: true, ex: race_condition_ttl.to_i)
 
-      value
+        if !lock_acquired
+          # Another process is refreshing, wait and retry from cache
+          sleep(0.1) # Brief wait
+
+          # Try cache again
+          value = fetch_from_redis(key) || fetch_from_memory(key)
+          return value if value
+        end
+      end
+
+      begin
+        value = yield
+        return nil unless value
+
+        # Write to both cache tiers
+        cache_value(key, value, memory_ttl: memory_ttl, redis_ttl: redis_ttl)
+
+        value
+      ensure
+        # Release lock if we acquired it
+        redis_client.del(lock_key) if @redis_available && lock_acquired
+      end
     rescue => e
       Rails.logger.error "[PatternCache] Error in fetch_with_tiered_cache: #{e.message}"
       # Fallback to direct database query

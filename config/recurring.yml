@@ -28,6 +28,15 @@ development:
     priority: 5
     schedule: every 30 minutes
     description: "Pre-calculate expense metrics for all active email accounts (dev mode)"
+  
+  # Warm pattern cache more frequently in development for testing
+  warm_pattern_cache:
+    class: PatternCacheWarmerJob
+    command: "PatternCacheWarmerJob.perform_later"
+    queue: low
+    priority: 10
+    schedule: every 5 minutes
+    description: "Pre-warm pattern cache with frequently used patterns (dev mode)"
 
 test:
   # No recurring jobs in test environment
@@ -35,3 +44,13 @@ test:
 production:
   <<: *default
   # Production uses default settings with hourly metric calculation
+  
+  # Warm the pattern cache every 15 minutes to ensure optimal performance
+  # This keeps frequently used patterns in memory for < 1ms lookups
+  warm_pattern_cache:
+    class: PatternCacheWarmerJob
+    command: "PatternCacheWarmerJob.perform_later"
+    queue: low
+    priority: 10
+    schedule: every 15 minutes
+    description: "Pre-warm pattern cache with frequently used patterns for optimal categorization performance"

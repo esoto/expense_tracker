@@ -1,0 +1,103 @@
+/* View Toggle Styles */
+
+/* Compact Mode Styles */
+.compact-mode tbody tr {
+  @apply h-12;
+}
+
+.compact-mode .expense-description {
+  @apply hidden;
+}
+
+.compact-mode .expense-category-cell [data-category-confidence-target="badge"] {
+  @apply hidden md:inline-flex;
+}
+
+.compact-mode .expense-category-cell button[data-category-confidence-target="correctionTrigger"] {
+  @apply hidden;
+}
+
+/* Simplified category display in compact mode */
+.compact-mode .expense-category-cell .relative.inline-flex {
+  @apply gap-1;
+}
+
+/* Expanded Mode Styles */
+.expanded-mode tbody tr {
+  @apply min-h-[4rem];
+}
+
+.expanded-mode .expense-description {
+  @apply block;
+}
+
+.expanded-mode .expense-category-cell [data-category-confidence-target="badge"] {
+  @apply inline-flex;
+}
+
+/* Transition effects */
+table tbody tr {
+  @apply transition-all duration-200 ease-in-out;
+}
+
+/* Responsive behavior */
+@media (max-width: 768px) {
+  /* Auto-hide expanded columns on mobile */
+  [data-view-toggle-target="expandedColumns"] {
+    @apply hidden;
+  }
+  
+  /* Compact category display on mobile */
+  .expense-category-cell [data-category-confidence-target="badge"] {
+    @apply text-[10px] px-1 py-0.5;
+  }
+  
+  /* Smaller padding on mobile */
+  table td {
+    @apply px-3 py-2;
+  }
+}
+
+/* Toggle button active states */
+button[data-view-toggle-target="toggleButton"].active-compact {
+  @apply bg-teal-100 text-teal-800 border border-teal-300;
+}
+
+button[data-view-toggle-target="toggleButton"].active-expanded {
+  @apply bg-amber-100 text-amber-800 border border-amber-300;
+}
+
+/* Smooth column visibility transitions */
+[data-view-toggle-target="expandedColumns"] {
+  @apply transition-opacity duration-200;
+}
+
+[data-view-toggle-target="expandedColumns"].hiding {
+  @apply opacity-0;
+}
+
+[data-view-toggle-target="expandedColumns"].hidden {
+  @apply hidden opacity-0;
+}
+
+/* Accessibility: Focus styles for keyboard navigation */
+button[data-view-toggle-target="toggleButton"]:focus {
+  @apply ring-2 ring-teal-500 ring-offset-2 outline-none;
+}
+
+/* Print styles: Always show expanded view when printing */
+@media print {
+  .compact-mode tbody tr,
+  .expanded-mode tbody tr {
+    @apply h-auto;
+  }
+  
+  .expense-description,
+  [data-view-toggle-target="expandedColumns"] {
+    @apply block !important;
+  }
+  
+  button[data-view-toggle-target="toggleButton"] {
+    @apply hidden;
+  }
+}

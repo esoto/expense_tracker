@@ -10,7 +10,7 @@ class ExpenseFilterService
   attr_accessor :account_ids, :date_range, :start_date, :end_date,
                 :category_ids, :banks, :min_amount, :max_amount,
                 :status, :search_query, :sort_by, :sort_direction,
-                :page, :per_page, :cursor, :use_cursor
+                :page, :per_page, :cursor, :use_cursor, :period
 
   # Validations
   validates :per_page, numericality: { less_than_or_equal_to: 100 }, allow_nil: true
@@ -130,7 +130,8 @@ class ExpenseFilterService
   private
 
   def normalize_params(params)
-    normalized = params.deep_symbolize_keys
+    # Convert to hash and symbolize keys
+    normalized = params.to_h.deep_symbolize_keys
 
     # Handle date range shortcuts
     if normalized[:date_range].present?
@@ -138,6 +139,11 @@ class ExpenseFilterService
       normalized[:start_date] = dates[:start]
       normalized[:end_date] = dates[:end]
     end
+
+    # Handle single value filters that get converted to arrays
+    # Remove the single value keys since they're converted in the controller
+    normalized.delete(:category)
+    normalized.delete(:bank)
 
     # Clean array parameters
     normalized[:category_ids] = Array(normalized[:category_ids]).compact if normalized[:category_ids]

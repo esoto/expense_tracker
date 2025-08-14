@@ -33,6 +33,20 @@ module Services
         def analytics(service: nil, time_window: 1.hour)
           Analytics.get_metrics(service: service, time_window: time_window)
         end
+
+        def cache_metrics
+          CacheMonitor.metrics
+        end
+
+        # Convenience method for recording metrics
+        def record_metric(metric_name, value, tags = {})
+          PerformanceTracker.record_custom_metric(metric_name, value, tags)
+        end
+
+        # Convenience method for recording errors
+        def record_error(error_name, details, tags = {})
+          ErrorTracker.report_custom_error(error_name, details, tags)
+        end
       end
 
       # Queue monitoring module
@@ -239,6 +253,20 @@ module Services
             components
           end
 
+          def record_custom_metric(metric_name, value, tags = {})
+            key = "#{CACHE_PREFIX}:custom_metrics:#{metric_name}:#{Date.current}"
+
+            data = Rails.cache.fetch(key, expires_in: 24.hours) { { values: [], tags: {} } }
+
+            data[:values] << { value: value, timestamp: Time.current }
+            data[:tags].merge!(tags)
+
+            # Keep only last 1000 values to prevent memory bloat
+            data[:values] = data[:values].last(1000)
+
+            Rails.cache.write(key, data, expires_in: 24.hours)
+          end
+
           private
 
           def default_metrics
@@ -285,6 +313,22 @@ module Services
               top_errors: top_errors(errors),
               error_rate: calculate_error_rate(time_window)
             }
+          end
+
+          def report_custom_error(error_name, details, tags = {})
+            key = "custom_errors:#{error_name}:#{Time.current.to_i}"
+
+            data = {
+              error_name: error_name,
+              details: details,
+              tags: tags,
+              timestamp: Time.current
+            }
+
+            Rails.cache.write(key, data, expires_in: 24.hours)
+
+            # Also log the error
+            Rails.logger.error "[CustomError] #{error_name}: #{details.inspect} (tags: #{tags.inspect})"
           end
 
           private
@@ -458,6 +502,199 @@ module Services
             start = Time.current
             Rails.cache.redis.ping
             ((Time.current - start) * 1000).round(2)
+          end
+        end
+      end
+
+      # Cache monitoring module
+      module CacheMonitor
+        extend ActiveSupport::Concern
+
+        class << self
+          def metrics
+            {
+              pattern_cache: pattern_cache_metrics,
+              rails_cache: rails_cache_metrics,
+              performance: cache_performance_metrics,
+              health: cache_health_status
+            }
+          end
+
+          def pattern_cache_metrics
+            return {} unless defined?(Categorization::PatternCache)
+
+            cache = Categorization::PatternCache.instance
+            cache_metrics = cache.metrics
+
+            {
+              hit_rate: cache_metrics[:hit_rate],
+              total_hits: cache_metrics[:hits],
+              total_misses: cache_metrics[:misses],
+              memory_entries: cache_metrics[:memory_cache_entries],
+              redis_available: cache_metrics[:redis_available],
+              average_lookup_time_ms: cache_metrics[:average_lookup_time_ms] || 0,
+              warmup_status: warmup_status
+            }
+          rescue => e
+            Rails.logger.error "Failed to get pattern cache metrics: #{e.message}"
+            { error: e.message }
+          end
+
+          def rails_cache_metrics
+            if Rails.cache.respond_to?(:stats)
+              Rails.cache.stats
+            else
+              {
+                type: Rails.cache.class.name,
+                available: test_cache_availability
+              }
+            end
+          end
+
+          def cache_performance_metrics
+            key_prefix = "performance_metrics:pattern_cache"
+
+            # Fetch recent performance data
+            recent_data = []
+            10.times do |i|
+              key = "#{key_prefix}:warming:#{(Date.current - i.days)}"
+              if data = Rails.cache.read(key)
+                recent_data << data
+              end
+            end
+
+            return {} if recent_data.empty?
+
+            durations = recent_data.map { |d| d[:duration] || 0 }.compact
+            patterns_cached = recent_data.map { |d| d[:patterns] || 0 }.compact
+
+            {
+              average_warming_duration_seconds: durations.empty? ? 0 : (durations.sum / durations.size.to_f).round(3),
+              average_patterns_warmed: patterns_cached.empty? ? 0 : (patterns_cached.sum / patterns_cached.size.to_f).round,
+              last_warming_at: recent_data.first[:timestamp] || nil,
+              warming_success_rate: calculate_warming_success_rate(recent_data)
+            }
+          end
+
+          def cache_health_status
+            pattern_cache_health = check_pattern_cache_health
+            rails_cache_health = check_rails_cache_health
+
+            overall_status = if pattern_cache_health[:status] == "healthy" && rails_cache_health[:status] == "healthy"
+                                "healthy"
+            elsif pattern_cache_health[:status] == "critical" || rails_cache_health[:status] == "critical"
+                                "critical"
+            else
+                                "degraded"
+            end
+
+            {
+              overall: overall_status,
+              pattern_cache: pattern_cache_health,
+              rails_cache: rails_cache_health,
+              recommendations: generate_cache_recommendations(pattern_cache_health, rails_cache_health)
+            }
+          end
+
+          private
+
+          def warmup_status
+            last_warmup_key = "pattern_cache:last_warmup"
+            last_warmup = Rails.cache.read(last_warmup_key)
+
+            return { status: "never_run" } unless last_warmup
+
+            time_since = Time.current - last_warmup[:timestamp]
+
+            status = if time_since < 20.minutes
+                       "recent"
+            elsif time_since < 1.hour
+                       "stale"
+            else
+                       "outdated"
+            end
+
+            {
+              status: status,
+              last_run: last_warmup[:timestamp],
+              minutes_ago: (time_since / 60).round
+            }
+          end
+
+          def test_cache_availability
+            Rails.cache.write("health_check_#{Time.current.to_i}", "test", expires_in: 1.second)
+            true
+          rescue
+            false
+          end
+
+          def check_pattern_cache_health
+            return { status: "not_configured" } unless defined?(Categorization::PatternCache)
+
+            metrics = pattern_cache_metrics
+
+            status = if metrics[:error]
+                       "critical"
+            elsif metrics[:hit_rate].to_f < 50
+                       "degraded"
+            elsif metrics[:hit_rate].to_f < 80
+                       "warning"
+            else
+                       "healthy"
+            end
+
+            {
+              status: status,
+              hit_rate: metrics[:hit_rate],
+              memory_usage: metrics[:memory_entries],
+              issues: identify_pattern_cache_issues(metrics)
+            }
+          end
+
+          def check_rails_cache_health
+            available = test_cache_availability
+
+            {
+              status: available ? "healthy" : "critical",
+              available: available
+            }
+          end
+
+          def identify_pattern_cache_issues(metrics)
+            issues = []
+
+            issues << "Low hit rate (#{metrics[:hit_rate]}%)" if metrics[:hit_rate].to_f < 80
+            issues << "High memory usage (#{metrics[:memory_entries]} entries)" if metrics[:memory_entries].to_i > 10_000
+            issues << "Redis unavailable" unless metrics[:redis_available]
+            issues << "Slow lookups (#{metrics[:average_lookup_time_ms]}ms)" if metrics[:average_lookup_time_ms].to_f > 5
+
+            issues
+          end
+
+          def generate_cache_recommendations(pattern_cache_health, rails_cache_health)
+            recommendations = []
+
+            if pattern_cache_health[:hit_rate].to_f < 80
+              recommendations << "Consider increasing cache warming frequency"
+              recommendations << "Review pattern matching logic for optimization"
+            end
+
+            if pattern_cache_health[:memory_usage].to_i > 10_000
+              recommendations << "Consider implementing cache eviction for old patterns"
+            end
+
+            unless rails_cache_health[:available]
+              recommendations << "Critical: Rails cache is unavailable - check Redis/Solid Cache configuration"
+            end
+
+            recommendations
+          end
+
+          def calculate_warming_success_rate(recent_data)
+            return 0 if recent_data.empty?
+
+            successful = recent_data.count { |d| !d[:error] }
+            ((successful.to_f / recent_data.size) * 100).round(2)
           end
         end
       end

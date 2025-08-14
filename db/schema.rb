@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_13_044736) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_13_235428) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -174,6 +174,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_13_044736) do
     t.index ["active", "pattern_type"], name: "index_categorization_patterns_on_active_and_pattern_type"
     t.index ["active", "success_rate", "usage_count"], name: "idx_patterns_active_success_usage"
     t.index ["active", "updated_at"], name: "idx_patterns_recently_used", where: "(active = true)"
+    t.index ["active", "usage_count", "success_rate", "updated_at"], name: "idx_patterns_performance_tracking", where: "((active = true) AND (usage_count > 0))", comment: "Index for tracking pattern performance and effectiveness"
     t.index ["active", "usage_count", "success_rate"], name: "idx_patterns_frequently_used", where: "(usage_count >= 10)"
     t.index ["active", "usage_count", "success_rate"], name: "idx_patterns_performance", where: "(active = true)"
     t.index ["category_id", "active", "pattern_type"], name: "idx_patterns_category_active_type"
@@ -185,6 +186,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_13_044736) do
     t.index ["pattern_type", "active", "confidence_weight"], name: "idx_patterns_type_active_confidence"
     t.index ["pattern_type", "active", "success_rate"], name: "idx_patterns_lookup"
     t.index ["pattern_type", "active", "success_rate"], name: "idx_patterns_type_active_success"
+    t.index ["pattern_type", "pattern_value", "active", "success_rate"], name: "idx_patterns_optimized_lookup", where: "(active = true)", comment: "Optimized index for pattern matching queries"
     t.index ["pattern_type", "pattern_value"], name: "idx_on_pattern_type_pattern_value_fad6f38255"
     t.index ["pattern_value"], name: "idx_patterns_value"
     t.index ["pattern_value"], name: "idx_patterns_value_trgm", opclass: :gin_trgm_ops, using: :gin
@@ -215,6 +217,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_13_044736) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["active", "category_id", "success_rate"], name: "idx_composite_active_category", where: "(active = true)"
+    t.index ["active", "operator", "success_rate"], name: "idx_composite_patterns_lookup", where: "(active = true)", comment: "Optimized index for composite pattern lookups"
     t.index ["active", "success_rate"], name: "idx_composite_active_success", where: "(active = true)"
     t.index ["active", "usage_count"], name: "idx_composite_active_usage"
     t.index ["category_id", "active"], name: "index_composite_patterns_on_category_id_and_active"
@@ -301,6 +304,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_13_044736) do
     t.index ["categorization_method"], name: "index_expenses_on_categorization_method"
     t.index ["categorized_at"], name: "index_expenses_on_categorized_at"
     t.index ["categorized_by"], name: "index_expenses_on_categorized_by"
+    t.index ["category_id", "created_at", "merchant_normalized"], name: "idx_expenses_uncategorized_optimized", order: { created_at: :desc }, where: "(category_id IS NULL)", comment: "Optimized index for finding uncategorized expenses"
     t.index ["category_id", "created_at"], name: "idx_uncategorized_expenses", where: "(category_id IS NULL)"
     t.index ["category_id", "merchant_normalized"], name: "index_expenses_on_category_id_and_merchant_normalized"
     t.index ["category_id", "transaction_date", "amount"], name: "index_expenses_uncategorized", where: "(category_id IS NULL)"
@@ -415,6 +419,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_13_044736) do
     t.index ["category_id", "was_correct", "created_at"], name: "idx_feedbacks_category_correct_created"
     t.index ["category_id"], name: "index_pattern_feedbacks_on_category_id"
     t.index ["created_at", "feedback_type"], name: "idx_feedbacks_created_type"
+    t.index ["created_at", "was_correct", "feedback_type"], name: "idx_feedback_analytics_optimized", order: { created_at: :desc }, comment: "Optimized index for feedback analytics and performance tracking"
     t.index ["created_at", "was_correct"], name: "idx_feedback_analytics"
     t.index ["created_at"], name: "index_pattern_feedbacks_on_created_at"
     t.index ["expense_id", "categorization_pattern_id"], name: "idx_feedbacks_expense_pattern", unique: true
@@ -697,6 +702,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_13_044736) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["category_id"], name: "index_user_category_preferences_on_category_id"
+    t.index ["context_type", "context_value", "category_id"], name: "idx_user_prefs_merchant_lookup", where: "((context_type)::text = 'merchant'::text)", comment: "Optimized index for merchant preference lookups"
     t.index ["context_type", "context_value", "preference_weight"], name: "idx_user_prefs_context_weight"
     t.index ["context_type", "context_value"], name: "idx_user_prefs_context"
     t.index ["email_account_id", "context_type", "context_value", "preference_weight"], name: "idx_user_pref_lookup"

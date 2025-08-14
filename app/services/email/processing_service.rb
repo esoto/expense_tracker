@@ -1,91 +1,90 @@
 # frozen_string_literal: true
 
-module Services
-  module Email
-    # ProcessingService consolidates email fetching, parsing, and processing
-    # into a single cohesive service. This replaces multiple separate services
-    # for better maintainability and clearer interfaces.
-    class ProcessingService
-      include ActiveModel::Model
+module Services::Email
+  # ProcessingService consolidates email fetching, parsing, and processing
+  # into a single cohesive service. This replaces multiple separate services
+  # for better maintainability and clearer interfaces.
+  class ProcessingService
+    include ActiveModel::Model
 
-      attr_accessor :email_account, :options
-      attr_reader :errors, :metrics, :last_categorization_confidence, :last_categorization_method
+    attr_accessor :email_account, :options
+    attr_reader :errors, :metrics, :last_categorization_confidence, :last_categorization_method
 
-      def initialize(email_account, options = {})
-        @email_account = email_account
-        @options = options
-        @errors = []
-        @metrics = {
-          emails_found: 0,
-          emails_processed: 0,
-          expenses_created: 0,
-          processing_time: 0
-        }
-        # Support dependency injection for categorization engine
-        @categorization_engine = options[:categorization_engine] || Categorization::Engine.create
-      end
+    def initialize(email_account, options = {})
+      @email_account = email_account
+      @options = options
+      @errors = []
+      @metrics = {
+        emails_found: 0,
+        emails_processed: 0,
+        expenses_created: 0,
+        processing_time: 0
+      }
+      # Support dependency injection for categorization engine
+      @categorization_engine = options[:categorization_engine] || Categorization::Engine.create
+    end
 
-      # Main method to fetch and process new emails
-      def process_new_emails(since: 1.week.ago)
-        return failure_response("Invalid email account") unless valid_account?
+    # Main method to fetch and process new emails
+    def process_new_emails(since: 1.week.ago)
+      return failure_response("Invalid email account") unless valid_account?
 
-        start_time = Time.current
+      start_time = Time.current
 
-        begin
-          # Fetch emails via IMAP
-          emails = fetch_emails(since)
-          @metrics[:emails_found] = emails.count
+      begin
+        # Fetch emails via IMAP
+        emails = fetch_emails(since)
+        @metrics[:emails_found] = emails.count
 
-          # Process each email
-          results = process_emails(emails)
+        # Process each email
+        results = process_emails(emails)
 
-          @metrics[:processing_time] = Time.current - start_time
+        @metrics[:processing_time] = Time.current - start_time
 
-          success_response(results)
-        rescue StandardError => e
-          handle_error(e)
-          failure_response("Email processing failed: #{e.message}")
-        end
-      end
-
-      # Fetch emails without processing (for preview/testing)
-      def fetch_only(since: 1.week.ago, limit: 100)
-        return [] unless valid_account?
-
-        @options[:limit] = limit
-        fetch_emails(since)
-      end
-
-      # Parse a single email for expenses
-      def parse_email(email_data)
-        parser = EmailParser.new(email_data, email_account)
-        parser.extract_expenses
-      end
-
-      # Test connection to email server
-      def test_connection
-        with_imap_connection do |imap|
-          imap.examine("INBOX")
-          { success: true, message: "Connection successful" }
-        end
+        success_response(results)
       rescue StandardError => e
-        { success: false, message: e.message }
+        handle_error(e)
+        failure_response("Email processing failed: #{e.message}")
+      end
+    end
+
+    # Fetch emails without processing (for preview/testing)
+    def fetch_only(since: 1.week.ago, limit: 100)
+      return [] unless valid_account?
+
+      @options[:limit] = limit
+      fetch_emails(since)
+    end
+
+    # Parse a single email for expenses
+    def parse_email(email_data)
+      parser = EmailParser.new(email_data, email_account)
+      parser.extract_expenses
+    end
+
+    # Test connection to email server
+    def test_connection
+      with_imap_connection do |imap|
+        imap.examine("INBOX")
+        { success: true, message: "Connection successful" }
+      end
+    rescue StandardError => e
+      { success: false, message: e.message }
+    end
+
+    private
+
+    def valid_account?
+      return false unless email_account
+
+      unless email_account.email?
+        add_error("Email address is required")
+        return false
       end
 
-      private
-
-      def valid_account?
-        return false unless email_account
-
-        unless email_account.email?
-          add_error("Email address is required")
-          return false
-        end
-
-        if email_account.password.blank? && !email_account.oauth_configured?
-          add_error("Password or OAuth configuration is required")
-          return false
-        end
+      if email_account.password.blank? && !email_account.oauth_configured?
+        add_error("Password or OAuth configuration is required")
+        return false
+      end
 
         true
       end
@@ -451,7 +450,7 @@ module Services
         add_error(error.message)
 
         # Report to error tracking service
-        ::Services::Infrastructure::MonitoringService::ErrorTracker.report(error, context: {
+        Services::Infrastructure::MonitoringService::ErrorTracker.report(error, context: {
           email_account_id: email_account.id,
           service: "EmailProcessingService"
         })
@@ -624,6 +623,5 @@ module Services
           expense[:date].is_a?(Date)
         end
       end
-    end
   end
 end

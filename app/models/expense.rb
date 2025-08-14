@@ -1,4 +1,7 @@
 class Expense < ApplicationRecord
+  include ExpenseQueryOptimizer
+  include QuerySecurity
+  
   # Associations
   belongs_to :email_account
   belongs_to :category, optional: true

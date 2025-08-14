@@ -8,24 +8,46 @@ class ExpensesController < ApplicationController
     # Handle dashboard navigation context
     setup_navigation_context
 
-    # Base query with includes - now includes ml_suggested_category to prevent N+1
-    @expenses = current_user_expenses.includes(:category, :email_account, :ml_suggested_category)
+    # Use the optimized ExpenseFilterService for performance
+    filter_service = ExpenseFilterService.new(
+      filter_params.merge(
+        account_ids: current_user_email_accounts.pluck(:id)
+      )
+    )
 
-    # Apply filters efficiently
-    @expenses = apply_filters(@expenses)
+    @result = filter_service.call
 
-    # Order and limit
-    @expenses = @expenses.order(transaction_date: :desc, created_at: :desc)
-                        .limit(25)
-
-    # Calculate summary with separate optimized query
-    calculate_summary_statistics
+    if @result.success?
+      @expenses = @result.expenses
+      @total_count = @result.total_count
+      @performance_metrics = @result.performance_metrics
+      
+      # Extract metadata for UI
+      @filters_applied = @result.metadata[:filters_applied]
+      @current_page = @result.metadata[:page]
+      @per_page = @result.metadata[:per_page]
+      
+      # Calculate summary statistics from the result
+      calculate_summary_from_result(@result)
+    else
+      # Fallback to empty result on error
+      @expenses = []
+      @total_count = 0
+      @performance_metrics = { error: true }
+      flash.now[:alert] = "Error loading expenses. Please try again."
+    end
 
     # Set up scroll target if specified
     @scroll_to = params[:scroll_to] if params[:scroll_to].present?
 
     # Add filter description for UI
     @filter_description = build_filter_description
+
+    respond_to do |format|
+      format.html
+      format.json { render json: @result }
+      format.turbo_stream
+    end
   end
 
   # GET /expenses/1
@@ -272,6 +294,22 @@ class ExpensesController < ApplicationController
     params.require(:expense).permit(:amount, :currency, :transaction_date, :merchant_name, :description, :category_id, :email_account_id, :notes)
   end
 
+  def filter_params
+    params.permit(
+      :date_range, :start_date, :end_date,
+      :search_query, :status, :period,
+      :min_amount, :max_amount,
+      :sort_by, :sort_direction,
+      :page, :per_page, :cursor, :use_cursor,
+      :category, :bank, # Single value filters
+      category_ids: [], banks: [] # Array filters
+    ).tap do |p|
+      # Convert single value filters to arrays if needed
+      p[:category_ids] = [params[:category]] if params[:category].present? && !p[:category_ids].present?
+      p[:banks] = [params[:bank]] if params[:bank].present? && !p[:banks].present?
+    end
+  end
+
   def expense_json(expense)
     {
       id: expense.id,
@@ -411,6 +449,24 @@ class ExpensesController < ApplicationController
       .group("categories.name")
       .sum(:amount)
       .sort_by { |_, amount| -amount }
+  end
+
+  def calculate_summary_from_result(result)
+    # Extract summary statistics from the filtered result
+    if result.expenses.any?
+      @total_amount = result.expenses.sum(&:amount)
+      @expense_count = result.total_count || result.expenses.count
+      
+      # Group by category for summary
+      @categories_summary = result.expenses
+        .group_by { |e| e.category&.name || "Uncategorized" }
+        .transform_values { |expenses| expenses.sum(&:amount) }
+        .sort_by { |_, amount| -amount }
+    else
+      @total_amount = 0
+      @expense_count = 0
+      @categories_summary = []
+    end
   end
 
   def default_empty_metrics

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_13_235428) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_14_015048) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -43,11 +43,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_13_235428) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "token_hash"
-    t.index ["active", "expires_at"], name: "idx_tokens_active_expires"
     t.index ["active", "expires_at"], name: "index_api_tokens_on_active_and_expires_at"
     t.index ["active"], name: "index_api_tokens_on_active"
     t.index ["expires_at"], name: "index_api_tokens_on_expires_at"
-    t.index ["last_used_at"], name: "idx_tokens_last_used"
     t.index ["token_digest"], name: "index_api_tokens_on_token_digest", unique: true
     t.index ["token_hash"], name: "index_api_tokens_on_token_hash", unique: true
   end
@@ -296,52 +294,33 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_13_235428) do
     t.integer "ml_suggested_category_id"
     t.datetime "ml_last_corrected_at", precision: nil
     t.integer "ml_correction_count", default: 0
+    t.integer "lock_version", default: 0, null: false
+    t.datetime "deleted_at"
+    t.integer "deleted_by_id"
     t.index "EXTRACT(hour FROM transaction_date), EXTRACT(dow FROM transaction_date)", name: "idx_expenses_hour_dow"
-    t.index ["amount"], name: "index_expenses_on_amount"
+    t.index "EXTRACT(year FROM transaction_date), EXTRACT(month FROM transaction_date)", name: "idx_expenses_year_month", where: "(deleted_at IS NULL)", comment: "For monthly/yearly aggregations"
+    t.index ["amount"], name: "idx_expenses_amount_brin", using: :brin
     t.index ["auto_categorized", "categorization_confidence", "created_at"], name: "idx_auto_categorized_tracking", where: "(auto_categorized = true)"
-    t.index ["auto_categorized", "categorization_confidence"], name: "idx_on_auto_categorized_categorization_confidence_98abf3d147"
-    t.index ["bank_name", "transaction_date"], name: "index_expenses_on_bank_name_and_transaction_date"
-    t.index ["categorization_method"], name: "index_expenses_on_categorization_method"
-    t.index ["categorized_at"], name: "index_expenses_on_categorized_at"
-    t.index ["categorized_by"], name: "index_expenses_on_categorized_by"
+    t.index ["auto_categorized", "categorization_confidence"], name: "idx_expenses_auto_categorized", where: "((auto_categorized = true) AND (deleted_at IS NULL))", comment: "For tracking auto-categorization performance"
+    t.index ["bank_name", "transaction_date", "amount"], name: "idx_expenses_bank_reconciliation", where: "(deleted_at IS NULL)", comment: "For bank statement reconciliation"
     t.index ["category_id", "created_at", "merchant_normalized"], name: "idx_expenses_uncategorized_optimized", order: { created_at: :desc }, where: "(category_id IS NULL)", comment: "Optimized index for finding uncategorized expenses"
-    t.index ["category_id", "created_at"], name: "idx_uncategorized_expenses", where: "(category_id IS NULL)"
-    t.index ["category_id", "merchant_normalized"], name: "index_expenses_on_category_id_and_merchant_normalized"
-    t.index ["category_id", "transaction_date", "amount"], name: "index_expenses_uncategorized", where: "(category_id IS NULL)"
-    t.index ["category_id", "transaction_date"], name: "index_expenses_on_category_id_and_transaction_date"
-    t.index ["category_id"], name: "index_expenses_on_category_id"
-    t.index ["created_at", "transaction_date"], name: "index_expenses_on_created_and_transaction_date"
-    t.index ["currency"], name: "index_expenses_on_currency"
+    t.index ["category_id", "merchant_normalized", "transaction_date"], name: "idx_expenses_uncategorized", where: "((category_id IS NULL) AND (deleted_at IS NULL))", comment: "For finding uncategorized expenses"
+    t.index ["category_id", "transaction_date", "amount"], name: "idx_expenses_category_analysis", where: "(deleted_at IS NULL)", comment: "For category-based analytics and reporting"
+    t.index ["category_id", "transaction_date"], name: "idx_expenses_category_date", where: "((category_id IS NOT NULL) AND (deleted_at IS NULL))"
+    t.index ["currency", "transaction_date"], name: "idx_expenses_currency_date", where: "(deleted_at IS NULL)", comment: "For multi-currency reporting"
+    t.index ["email_account_id", "amount", "transaction_date", "merchant_name"], name: "idx_expenses_duplicate_detection", comment: "For detecting potential duplicate transactions"
     t.index ["email_account_id", "amount", "transaction_date"], name: "index_expenses_on_account_amount_date_for_duplicates"
-    t.index ["email_account_id", "category_id", "transaction_date"], name: "idx_expenses_account_uncategorized", where: "(category_id IS NULL)"
-    t.index ["email_account_id", "created_at"], name: "index_expenses_on_email_account_id_and_created_at"
     t.index ["email_account_id", "status", "transaction_date", "amount"], name: "idx_expenses_account_status_date_amount"
-    t.index ["email_account_id", "transaction_date", "category_id", "amount"], name: "idx_expenses_account_date_category_amount"
-    t.index ["email_account_id", "transaction_date", "currency"], name: "idx_expenses_account_date_currency"
-    t.index ["email_account_id", "transaction_date", "merchant_name"], name: "idx_expenses_account_date_merchant"
-    t.index ["email_account_id", "transaction_date", "status"], name: "idx_expenses_account_date_status"
-    t.index ["email_account_id", "transaction_date"], name: "index_expenses_on_email_account_id_and_transaction_date"
-    t.index ["email_account_id"], name: "index_expenses_on_email_account_id"
-    t.index ["merchant_name", "amount"], name: "index_expenses_on_merchant_name_and_amount"
-    t.index ["merchant_name"], name: "idx_expenses_merchant_trgm", opclass: :gin_trgm_ops, where: "(merchant_name IS NOT NULL)", using: :gin
-    t.index ["merchant_name"], name: "index_expenses_on_merchant_name"
+    t.index ["email_account_id", "transaction_date", "amount", "merchant_name", "category_id", "status"], name: "idx_expenses_list_covering", where: "(deleted_at IS NULL)"
+    t.index ["email_account_id", "transaction_date", "category_id"], name: "idx_expenses_filter_primary", where: "(deleted_at IS NULL)"
+    t.index ["email_account_id", "transaction_date", "deleted_at"], name: "idx_expenses_primary_filter", where: "(deleted_at IS NULL)", comment: "Primary index for common filtering operations"
+    t.index ["email_account_id", "transaction_date"], name: "idx_expenses_uncategorized_new", where: "((category_id IS NULL) AND (deleted_at IS NULL))"
+    t.index ["merchant_name"], name: "idx_expenses_merchant_trgm_new", opclass: :gin_trgm_ops, where: "(deleted_at IS NULL)", using: :gin
     t.index ["merchant_normalized", "category_id"], name: "idx_expenses_merchant_category", where: "(merchant_normalized IS NOT NULL)"
-    t.index ["merchant_normalized", "category_id"], name: "idx_expenses_uncategorized_with_merchant", where: "((category_id IS NULL) AND (merchant_normalized IS NOT NULL))"
-    t.index ["merchant_normalized", "category_id"], name: "index_expenses_uncategorized_with_merchant", where: "((category_id IS NULL) AND (merchant_normalized IS NOT NULL))"
-    t.index ["merchant_normalized", "transaction_date", "amount"], name: "index_expenses_on_merchant_date_amount"
-    t.index ["merchant_normalized"], name: "index_expenses_merchant_similarity", opclass: :gist_trgm_ops, where: "(merchant_normalized IS NOT NULL)", using: :gist
-    t.index ["merchant_normalized"], name: "index_expenses_on_merchant_normalized"
+    t.index ["merchant_normalized"], name: "idx_expenses_merchant_search", opclass: :gin_trgm_ops, where: "((merchant_normalized IS NOT NULL) AND (deleted_at IS NULL))", using: :gin, comment: "Trigram index for merchant name fuzzy search"
     t.index ["merchant_normalized"], name: "index_expenses_on_merchant_normalized_trgm", opclass: :gin_trgm_ops, using: :gin
-    t.index ["status", "transaction_date"], name: "index_expenses_on_status_and_transaction_date"
-    t.index ["status"], name: "index_expenses_on_status"
-    t.index ["transaction_date", "amount"], name: "index_expenses_on_transaction_date_and_amount"
-    t.index ["transaction_date", "category_id", "amount"], name: "index_expenses_on_date_category_amount"
-    t.index ["transaction_date", "category_id"], name: "idx_expenses_date_category"
-    t.index ["transaction_date", "currency", "amount"], name: "index_expenses_on_date_currency_amount"
-    t.index ["transaction_date", "merchant_name", "amount"], name: "index_expenses_on_date_merchant_amount"
-    t.index ["transaction_date", "status", "amount"], name: "index_expenses_on_date_status_amount"
-    t.index ["transaction_date"], name: "idx_expenses_transaction_date"
-    t.index ["transaction_date"], name: "index_expenses_on_transaction_date"
+    t.index ["status", "created_at"], name: "idx_expenses_status_tracking", where: "(deleted_at IS NULL)", comment: "For tracking pending/processed expenses"
+    t.index ["status", "email_account_id", "created_at"], name: "idx_expenses_status_account", where: "(deleted_at IS NULL)"
   end
 
   create_table "failed_broadcast_stores", force: :cascade do |t|
@@ -426,7 +405,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_13_235428) do
     t.index ["expense_id", "created_at"], name: "idx_feedbacks_expense_created"
     t.index ["expense_id", "feedback_type", "created_at"], name: "idx_feedbacks_expense_type_created"
     t.index ["expense_id"], name: "index_pattern_feedbacks_on_expense_id"
-    t.index ["feedback_type", "created_at"], name: "idx_feedback_type_recent", where: "((feedback_type)::text = ANY ((ARRAY['correction'::character varying, 'corrected'::character varying])::text[]))"
+    t.index ["feedback_type", "created_at"], name: "idx_feedback_type_recent", where: "((feedback_type)::text = ANY (ARRAY[('correction'::character varying)::text, ('corrected'::character varying)::text]))"
   end
 
   create_table "pattern_learning_events", force: :cascade do |t|

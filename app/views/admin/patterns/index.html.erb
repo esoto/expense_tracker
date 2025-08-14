@@ -12,7 +12,7 @@
         </svg>
         New Pattern
       <% end %>
-      <%= link_to test_admin_patterns_path, class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center" do %>
+      <%= link_to admin_patterns_test_path, class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center" do %>
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
@@ -24,7 +24,7 @@
         </svg>
         Import
       </button>
-      <%= link_to export_admin_patterns_path(format: :csv), class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center" do %>
+      <%= link_to admin_patterns_export_path(format: :csv), class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center" do %>
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
         </svg>
@@ -197,7 +197,7 @@
   <div class="mt-6 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
     <h2 class="text-lg font-semibold text-slate-900 mb-4">Pattern Performance Over Time</h2>
     <div data-controller="pattern-chart"
-         data-pattern-chart-url-value="<%= performance_admin_patterns_path(format: :json) %>"
+         data-pattern-chart-url-value="<%= admin_patterns_performance_path(format: :json) %>"
          class="h-64">
       <canvas data-pattern-chart-target="canvas"></canvas>
     </div>

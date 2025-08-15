@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module BulkCategorization
+module Services::BulkCategorization
   # Service to generate preview data before applying bulk categorization
   class PreviewService
     attr_reader :expenses, :category

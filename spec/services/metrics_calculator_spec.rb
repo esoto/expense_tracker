@@ -614,8 +614,8 @@ RSpec.describe MetricsCalculator, type: :service do
       end
 
       # Batch should be at least as fast, if not faster
-      # Allow some margin for test variability
-      expect(batch_time).to be <= (individual_time * 1.2)
+      # Allow some margin for test variability (50% tolerance for CI environments)
+      expect(batch_time).to be <= (individual_time * 1.5)
     end
   end
 

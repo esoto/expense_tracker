@@ -237,7 +237,7 @@
       <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
         <h2 class="text-xl font-semibold text-slate-900 mb-4">Quick Test</h2>
 
-        <%= form_with url: test_single_admin_pattern_path(@pattern),
+        <%= form_with url: admin_test_single_pattern_path(@pattern),
                       method: :get,
                       data: { turbo_frame: "single_test_result" } do |f| %>
           <div class="mb-3">

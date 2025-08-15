@@ -281,11 +281,11 @@ class SyncConflict < ApplicationRecord
 
   def restore_state(state)
     if state["existing_expense"].present?
-      existing_expense.update!(state["existing_expense"].except("id", "created_at", "updated_at"))
+      existing_expense.reload.update!(state["existing_expense"].except("id", "created_at", "updated_at", "lock_version"))
     end
 
     if state["new_expense"].present? && new_expense
-      new_expense.update!(state["new_expense"].except("id", "created_at", "updated_at"))
+      new_expense.reload.update!(state["new_expense"].except("id", "created_at", "updated_at", "lock_version"))
     end
   end
 

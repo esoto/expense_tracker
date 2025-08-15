@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module BulkCategorization
+module Services::BulkCategorization
   # Batch processor for memory-efficient bulk operations
   # Processes large datasets in configurable batch sizes to avoid memory issues
   class BatchProcessor

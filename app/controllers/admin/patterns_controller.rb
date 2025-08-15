@@ -67,6 +67,12 @@ module Admin
       )
     end
 
+    # GET /admin/patterns/:id/edit
+    def edit
+      # @pattern is already loaded by set_pattern before_action
+      # Load categories for the form dropdown
+    end
+
     # POST /admin/patterns
     def create
       @pattern = CategorizationPattern.new(pattern_params)

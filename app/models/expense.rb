@@ -5,6 +5,7 @@ class Expense < ApplicationRecord
   belongs_to :ml_suggested_category, class_name: "Category", foreign_key: "ml_suggested_category_id", optional: true
   has_many :pattern_feedbacks, dependent: :destroy
   has_many :pattern_learning_events, dependent: :destroy
+  has_many :bulk_operation_items, dependent: :destroy
 
   # Enums
   enum :currency, { crc: 0, usd: 1, eur: 2 }

@@ -93,9 +93,7 @@ Rails.application.routes.draw do
     delete "logout", to: "sessions#destroy"
     get "logout", to: "sessions#destroy"  # Allow GET for logout links
 
-    resources :patterns
-
-    # Pattern testing and management operations
+    # Pattern testing and management operations (must come before resources :patterns)
     get "patterns/test", to: "pattern_testing#test"
     post "patterns/test_pattern", to: "pattern_testing#test_pattern"
     get "patterns/:id/test_single", to: "pattern_testing#test_single", as: :test_single_pattern
@@ -105,6 +103,8 @@ Rails.application.routes.draw do
     get "patterns/statistics", to: "pattern_management#statistics"
     get "patterns/performance", to: "pattern_management#performance"
     post "patterns/:id/toggle_active", to: "pattern_management#toggle_active", as: :toggle_active_pattern
+
+    resources :patterns
     resources :composite_patterns do
       member do
         post :toggle_active

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module BulkCategorization
+module Services::BulkCategorization
   # Service to generate AI-powered categorization suggestions for expenses
   class SuggestionService
     attr_reader :expenses, :options

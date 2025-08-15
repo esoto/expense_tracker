@@ -25,14 +25,14 @@ module Email
     end
 
     # Main method to fetch and process new emails
-    def process_new_emails(since: 1.week.ago)
+    def process_new_emails(since: 1.week.ago, until_date: nil)
       return failure_response("Invalid email account") unless valid_account?
 
       start_time = Time.current
 
       begin
         # Fetch emails via IMAP
-        emails = fetch_emails(since)
+        emails = fetch_emails(since, until_date)
         @metrics[:emails_found] = emails.count
 
         # Process each email
@@ -48,11 +48,11 @@ module Email
     end
 
     # Fetch emails without processing (for preview/testing)
-    def fetch_only(since: 1.week.ago, limit: 100)
+    def fetch_only(since: 1.week.ago, until_date: nil, limit: 100)
       return [] unless valid_account?
 
       @options[:limit] = limit
-      fetch_emails(since)
+      fetch_emails(since, until_date)
     end
 
     # Parse a single email for expenses
@@ -89,14 +89,14 @@ module Email
         true
       end
 
-      def fetch_emails(since)
+      def fetch_emails(since, until_date = nil)
         emails = []
 
         with_imap_connection do |imap|
           imap.examine("INBOX")
 
           # Search for emails from known senders
-          message_ids = search_for_transaction_emails(imap, since)
+          message_ids = search_for_transaction_emails(imap, since, until_date)
 
           return [] if message_ids.empty?
 
@@ -253,8 +253,8 @@ module Email
         end
       end
 
-      def search_for_transaction_emails(imap, since)
-        search_criteria = build_search_criteria(since)
+      def search_for_transaction_emails(imap, since, until_date = nil)
+        search_criteria = build_search_criteria(since, until_date)
 
         message_ids = []
 
@@ -271,19 +271,28 @@ module Email
         message_ids.uniq.sort.reverse.take(options[:limit] || 100)
       end
 
-      def build_search_criteria(since)
-        date_filter = since.strftime("%d-%b-%Y")
+      def build_search_criteria(since, until_date = nil)
+        since_filter = since.strftime("%d-%b-%Y")
 
         criteria = []
+        base_date_criteria = [ "SINCE", since_filter ]
+
+        # Add BEFORE filter if until_date is provided
+        if until_date
+          # IMAP BEFORE searches for messages with a date before the given date
+          # To include messages ON the until_date, we use the day after
+          before_filter = (until_date + 1.day).strftime("%d-%b-%Y")
+          base_date_criteria << "BEFORE" << before_filter
+        end
 
         # Add criteria for known bank/transaction senders
         known_senders.each do |sender|
-          criteria << [ "SINCE", date_filter, "FROM", sender ]
+          criteria << base_date_criteria + [ "FROM", sender ]
         end
 
         # Add criteria for transaction keywords
         transaction_keywords.each do |keyword|
-          criteria << [ "SINCE", date_filter, "SUBJECT", keyword ]
+          criteria << base_date_criteria + [ "SUBJECT", keyword ]
         end
 
         criteria

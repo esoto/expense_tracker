@@ -34,7 +34,7 @@ namespace :email do
           puts "✅ Connection successful"
 
           # Process emails
-          result = service.process_new_emails(since: since_date)
+          result = service.process_new_emails(since: since_date, until_date: until_date)
 
           if result[:success]
             metrics = result[:metrics] || {}

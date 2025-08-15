@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Services::BulkCategorization
+module BulkCategorization
   # Service to group similar uncategorized expenses for bulk processing
   # Uses merchant similarity, amounts, and dates to create logical groups
   class GroupingService

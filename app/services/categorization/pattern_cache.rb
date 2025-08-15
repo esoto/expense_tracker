@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Services::Categorization
+module Categorization
   # High-performance two-tier caching service for categorization patterns
   # Implements memory cache (L1) and Redis cache (L2) with automatic fallback
   # Ensures < 1ms response times for pattern lookups with monitoring capabilities

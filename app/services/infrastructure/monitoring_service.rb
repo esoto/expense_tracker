@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-module Services
-  module Infrastructure
+module Infrastructure
     # MonitoringService consolidates all monitoring, metrics, and analytics functionality
     # including queue monitoring, job monitoring, performance tracking, and error tracking.
     # This replaces multiple separate monitoring services for better cohesion.

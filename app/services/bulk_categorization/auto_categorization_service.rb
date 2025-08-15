@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Services::BulkCategorization
+module BulkCategorization
   # Service to automatically categorize expenses with high confidence
   class AutoCategorizationService
     attr_reader :confidence_threshold, :options

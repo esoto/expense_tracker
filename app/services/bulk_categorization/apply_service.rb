@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Services::BulkCategorization
+module BulkCategorization
   # Service to apply categorization to multiple expenses at once
   # Handles validation, database updates, pattern learning, and audit logging
   class ApplyService

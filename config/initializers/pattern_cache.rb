@@ -19,7 +19,7 @@ if Rails.env.production? || Rails.env.staging?
         sleep 5 # Wait for application to fully initialize
 
         ActiveRecord::Base.connection_pool.with_connection do
-          Services::Categorization::PatternCache.instance.warm_cache
+          Categorization::PatternCache.instance.warm_cache
         end
       rescue => e
         Rails.logger.error "[PatternCache] Cache warming failed: #{e.message}"
@@ -32,11 +32,11 @@ end
 # Optional: Log cache configuration (skip in test to avoid issues)
 unless Rails.env.test?
   Rails.application.config.after_initialize do
-    if defined?(Services::Categorization::PatternCache)
+    if defined?(Categorization::PatternCache)
       cache_config = {
         memory_ttl: Rails.application.config.pattern_cache_memory_ttl,
         redis_ttl: Rails.application.config.pattern_cache_redis_ttl,
-        redis_available: Services::Categorization::PatternCache.instance.instance_variable_get(:@redis_available)
+        redis_available: Categorization::PatternCache.instance.instance_variable_get(:@redis_available)
       }
 
       Rails.logger.info "[PatternCache] Configuration: #{cache_config.inspect}"

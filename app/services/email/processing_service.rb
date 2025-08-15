@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Services::Email
+module Email
   # ProcessingService consolidates email fetching, parsing, and processing
   # into a single cohesive service. This replaces multiple separate services
   # for better maintainability and clearer interfaces.
@@ -450,7 +450,7 @@ module Services::Email
         add_error(error.message)
 
         # Report to error tracking service
-        Services::Infrastructure::MonitoringService::ErrorTracker.report(error, context: {
+        Infrastructure::MonitoringService::ErrorTracker.report(error, context: {
           email_account_id: email_account.id,
           service: "EmailProcessingService"
         })

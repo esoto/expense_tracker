@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-module Services
-  module Infrastructure
+module Infrastructure
     # BroadcastService consolidates all broadcast-related functionality including
     # analytics, error handling, rate limiting, and reliability features.
     # This replaces multiple separate broadcast services for better cohesion.

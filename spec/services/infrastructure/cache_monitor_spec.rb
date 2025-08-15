@@ -3,7 +3,7 @@
 require 'rails_helper'
 require_relative '../../../app/services/infrastructure/monitoring_service'
 
-RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor do
+RSpec.describe Infrastructure::MonitoringService::CacheMonitor do
   describe '.metrics' do
     it 'returns comprehensive cache metrics' do
       metrics = described_class.metrics

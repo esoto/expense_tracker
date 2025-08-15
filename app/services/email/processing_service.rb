@@ -370,6 +370,7 @@ module Email
           merchant_normalized: expense_data[:merchant]&.downcase&.strip,
           currency: expense_data[:currency]&.downcase || "usd",
           raw_email_content: expense_data[:raw_text],
+          bank_name: email_account.bank_name,
           status: "pending"
         )
 

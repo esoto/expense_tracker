@@ -126,7 +126,12 @@ module Email
 
               expenses.each do |expense|
                 next if expense == keeper
-                expense.update!(status: "duplicate", duplicate_of_id: keeper.id)
+                begin
+                  expense.reload.update!(status: "duplicate", duplicate_of_id: keeper.id)
+                rescue ActiveRecord::StaleObjectError
+                  # Expense was modified concurrently, skip marking as duplicate
+                  Rails.logger.warn "Skipped marking expense #{expense.id} as duplicate due to concurrent modification"
+                end
               end
 
               resolved += 1

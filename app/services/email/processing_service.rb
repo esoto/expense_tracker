@@ -371,13 +371,18 @@ module Email
         if options[:auto_categorize]
           category = suggest_category(expense)
           if category
-            expense.update!(
-              category: category,
-              auto_categorized: true,
-              categorization_confidence: last_categorization_confidence,
-              categorization_method: last_categorization_method,
-              categorized_at: Time.current
-            )
+            begin
+              expense.reload.update!(
+                category: category,
+                auto_categorized: true,
+                categorization_confidence: last_categorization_confidence,
+                categorization_method: last_categorization_method,
+                categorized_at: Time.current
+              )
+            rescue ActiveRecord::StaleObjectError
+              # Expense was modified concurrently, skip auto-categorization
+              Rails.logger.warn "Skipped auto-categorization for expense #{expense.id} due to concurrent modification"
+            end
           end
         end
 

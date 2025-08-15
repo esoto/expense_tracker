@@ -1,0 +1,50 @@
+<%= turbo_stream.replace "test_results" do %>
+  <div class="space-y-4">
+    <h3 class="text-lg font-semibold text-slate-900">Test Results</h3>
+    
+    <% if @matching_patterns&.any? %>
+      <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+        <p class="text-emerald-700 font-medium mb-3">Found <%= pluralize(@matching_patterns.length, 'matching pattern') %>:</p>
+        
+        <div class="space-y-2">
+          <% @matching_patterns.each do |match| %>
+            <div class="bg-white border border-emerald-200 rounded-lg p-3">
+              <div class="flex justify-between items-start">
+                <div>
+                  <span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-700">
+                    <%= match[:pattern_type]&.humanize %>
+                  </span>
+                  <span class="ml-2 font-medium"><%= match[:pattern_value] %></span>
+                </div>
+                <div class="text-right">
+                  <span class="px-2 py-1 text-xs rounded-full bg-teal-100 text-teal-700">
+                    <%= match[:category] %>
+                  </span>
+                  <div class="text-sm text-slate-600 mt-1">
+                    Confidence: <%= match[:confidence]&.round(1) %>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% else %>
+      <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <p class="text-amber-700">No matching patterns found for the provided expense data.</p>
+      </div>
+    <% end %>
+    
+    <% if @test_expense %>
+      <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
+        <h4 class="font-medium text-slate-900 mb-2">Test Data:</h4>
+        <div class="text-sm text-slate-600 space-y-1">
+          <div><strong>Merchant:</strong> <%= @test_expense.merchant_name %></div>
+          <div><strong>Description:</strong> <%= @test_expense.description %></div>
+          <div><strong>Amount:</strong> <%= number_to_currency(@test_expense.amount) if @test_expense.amount %></div>
+          <div><strong>Date:</strong> <%= @test_expense.transaction_date&.strftime('%Y-%m-%d %H:%M') %></div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% end %>

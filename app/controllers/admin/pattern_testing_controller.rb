@@ -2,7 +2,6 @@
 
 # Controller for pattern testing and management operations
 class Admin::PatternTestingController < Admin::BaseController
-  before_action :require_admin_authentication
   before_action :require_pattern_management_permission
 
   def test

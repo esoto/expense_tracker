@@ -23,7 +23,7 @@ RSpec.describe "CreateCategorizationPatternTables Migration", type: :migration d
         skip "Cannot check table existence due to transaction error: #{e.message}"
         return
       end
-      
+
       expect { migration.change }.not_to raise_error
 
       # Check all tables exist

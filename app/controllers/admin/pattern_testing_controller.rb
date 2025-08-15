@@ -2,7 +2,7 @@
 
 # Controller for pattern testing and management operations
 class Admin::PatternTestingController < Admin::BaseController
-  before_action :require_pattern_management_permission, except: [:test]
+  before_action :require_pattern_management_permission, except: [ :test ]
 
   def test
     @patterns = CategorizationPattern.active.includes(:category)

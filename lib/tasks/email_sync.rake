@@ -21,7 +21,7 @@ namespace :email do
         require Rails.root.join("app/services/email/processing_service")
 
         # Create processing service with auto-categorization
-        service = Services::Email::ProcessingService.new(email_account, {
+        service = Email::ProcessingService.new(email_account, {
           auto_categorize: true,
           limit: 500
         })
@@ -139,7 +139,7 @@ namespace :email do
 
       begin
         require Rails.root.join("app/services/email/processing_service")
-        service = Services::Email::ProcessingService.new(email_account, auto_categorize: true)
+        service = Email::ProcessingService.new(email_account, auto_categorize: true)
         expense_data = {
           amount: sample[:amount] + rand(-10.0..10.0).round(2),
           description: sample[:description],

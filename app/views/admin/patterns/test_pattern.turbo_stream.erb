@@ -1,11 +1,10 @@
 <%= turbo_stream.replace "test_results" do %>
   <div class="space-y-4">
     <h3 class="text-lg font-semibold text-slate-900">Test Results</h3>
-    
     <% if @matching_patterns&.any? %>
       <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
         <p class="text-emerald-700 font-medium mb-3">Found <%= pluralize(@matching_patterns.length, 'matching category', 'matching categories') %>:</p>
-        
+
         <div class="space-y-3">
           <% @matching_patterns.each do |match| %>
             <div class="bg-white border border-emerald-200 rounded-lg p-4">
@@ -24,11 +23,11 @@
                   </div>
                 </div>
               </div>
-              
+
               <div class="text-sm text-slate-600">
                 <strong>Patterns matched:</strong> <%= pluralize(match[:pattern_count], 'pattern') %>
               </div>
-              
+
               <% if match[:patterns].any? %>
                 <div class="mt-2 space-y-1">
                   <% match[:patterns].each do |pattern| %>
@@ -48,7 +47,7 @@
         <p class="text-amber-700">No matching patterns found for the provided expense data.</p>
       </div>
     <% end %>
-    
+
     <% if @test_expense %>
       <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
         <h4 class="font-medium text-slate-900 mb-2">Test Data:</h4>

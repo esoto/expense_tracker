@@ -351,4 +351,3 @@ module Infrastructure
       end
     end
   end
-end

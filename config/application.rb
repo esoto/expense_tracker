@@ -39,6 +39,5 @@ module ExpenseTracker
     config.i18n.default_locale = :es
     config.i18n.available_locales = [ :es, :en ]
     config.i18n.fallbacks = [ :en ]
-
   end
 end

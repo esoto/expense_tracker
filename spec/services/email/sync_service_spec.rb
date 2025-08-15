@@ -1,7 +1,7 @@
 require 'rails_helper'
 require_relative '../../../app/services/email/sync_service'
 
-RSpec.describe Services::Email::SyncService do
+RSpec.describe Email::SyncService do
   let(:service) { described_class.new }
 
   describe '#sync_emails' do
@@ -21,7 +21,7 @@ RSpec.describe Services::Email::SyncService do
       it 'raises SyncError for non-existent account' do
         expect {
           service.sync_emails(email_account_id: 99999)
-        }.to raise_error(Services::Email::SyncService::SyncError, "Cuenta de correo no encontrada.")
+        }.to raise_error(Email::SyncService::SyncError, "Cuenta de correo no encontrada.")
       end
 
       it 'raises SyncError for inactive account' do
@@ -29,7 +29,7 @@ RSpec.describe Services::Email::SyncService do
 
         expect {
           service.sync_emails(email_account_id: inactive_account.id)
-        }.to raise_error(Services::Email::SyncService::SyncError, "La cuenta de correo está inactiva.")
+        }.to raise_error(Email::SyncService::SyncError, "La cuenta de correo está inactiva.")
       end
     end
 
@@ -61,7 +61,7 @@ RSpec.describe Services::Email::SyncService do
       it 'raises SyncError when no active accounts exist' do
         expect {
           service.sync_emails
-        }.to raise_error(Services::Email::SyncService::SyncError, "No hay cuentas de correo activas configuradas.")
+        }.to raise_error(Email::SyncService::SyncError, "No hay cuentas de correo activas configuradas.")
       end
     end
   end
@@ -73,7 +73,7 @@ RSpec.describe Services::Email::SyncService do
       it 'validates account existence' do
         expect {
           service.send(:sync_specific_account, 99999)
-        }.to raise_error(Services::Email::SyncService::SyncError, "Cuenta de correo no encontrada.")
+        }.to raise_error(Email::SyncService::SyncError, "Cuenta de correo no encontrada.")
       end
 
       it 'validates account is active' do
@@ -81,7 +81,7 @@ RSpec.describe Services::Email::SyncService do
 
         expect {
           service.send(:sync_specific_account, inactive_account.id)
-        }.to raise_error(Services::Email::SyncService::SyncError, "La cuenta de correo está inactiva.")
+        }.to raise_error(Email::SyncService::SyncError, "La cuenta de correo está inactiva.")
       end
 
       it 'enqueues job for valid active account' do
@@ -110,7 +110,7 @@ RSpec.describe Services::Email::SyncService do
       it 'raises error when no active accounts' do
         expect {
           service.send(:sync_all_accounts)
-        }.to raise_error(Services::Email::SyncService::SyncError, "No hay cuentas de correo activas configuradas.")
+        }.to raise_error(Email::SyncService::SyncError, "No hay cuentas de correo activas configuradas.")
       end
 
       context 'message pluralization' do
@@ -134,11 +134,11 @@ RSpec.describe Services::Email::SyncService do
 
   describe 'SyncError' do
     it 'is a StandardError subclass' do
-      expect(Services::Email::SyncService::SyncError.new).to be_a(StandardError)
+      expect(Email::SyncService::SyncError.new).to be_a(StandardError)
     end
 
     it 'accepts custom messages' do
-      error = Services::Email::SyncService::SyncError.new("Custom error message")
+      error = Email::SyncService::SyncError.new("Custom error message")
       expect(error.message).to eq("Custom error message")
     end
   end

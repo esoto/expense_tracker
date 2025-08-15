@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Services::Categorization::PatternCache do
+RSpec.describe Categorization::PatternCache do
   let(:cache) { described_class.new }
   let(:category) { create(:category, name: "Food & Dining") }
   let(:pattern) do

@@ -1,4 +1,4 @@
-<%= form_with model: [:admin, @pattern], local: true do |f| %>
+<%= form_with model: @pattern, url: (@pattern.persisted? ? admin_pattern_path(@pattern) : admin_patterns_path), local: true do |f| %>
   <% if @pattern.errors.any? %>
     <div class="mb-6 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg">
       <h3 class="font-semibold mb-2">Please fix the following errors:</h3>

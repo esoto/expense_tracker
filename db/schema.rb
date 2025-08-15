@@ -11,6 +11,7 @@
 # It's strongly recommended that you check this file into your version control system.
 
 ActiveRecord::Schema[8.0].define(version: 2025_08_14_015048) do
+
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -301,14 +302,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_14_015048) do
     t.index "EXTRACT(year FROM transaction_date), EXTRACT(month FROM transaction_date)", name: "idx_expenses_year_month", where: "(deleted_at IS NULL)", comment: "For monthly/yearly aggregations"
     t.index ["amount"], name: "idx_expenses_amount_brin", using: :brin
     t.index ["auto_categorized", "categorization_confidence", "created_at"], name: "idx_auto_categorized_tracking", where: "(auto_categorized = true)"
-    t.index ["auto_categorized", "categorization_confidence"], name: "idx_expenses_auto_categorized", where: "((auto_categorized = true) AND (deleted_at IS NULL))", comment: "For tracking auto-categorization performance"
-    t.index ["bank_name", "transaction_date", "amount"], name: "idx_expenses_bank_reconciliation", where: "(deleted_at IS NULL)", comment: "For bank statement reconciliation"
+    t.index ["auto_categorized", "categorization_confidence"], name: "idx_on_auto_categorized_categorization_confidence_98abf3d147"
+    t.index ["bank_name", "transaction_date"], name: "index_expenses_on_bank_name_and_transaction_date"
+    t.index ["categorization_method"], name: "index_expenses_on_categorization_method"
+    t.index ["categorized_at"], name: "index_expenses_on_categorized_at"
+    t.index ["categorized_by"], name: "index_expenses_on_categorized_by"
     t.index ["category_id", "created_at", "merchant_normalized"], name: "idx_expenses_uncategorized_optimized", order: { created_at: :desc }, where: "(category_id IS NULL)", comment: "Optimized index for finding uncategorized expenses"
-    t.index ["category_id", "merchant_normalized", "transaction_date"], name: "idx_expenses_uncategorized", where: "((category_id IS NULL) AND (deleted_at IS NULL))", comment: "For finding uncategorized expenses"
-    t.index ["category_id", "transaction_date", "amount"], name: "idx_expenses_category_analysis", where: "(deleted_at IS NULL)", comment: "For category-based analytics and reporting"
-    t.index ["category_id", "transaction_date"], name: "idx_expenses_category_date", where: "((category_id IS NOT NULL) AND (deleted_at IS NULL))"
-    t.index ["currency", "transaction_date"], name: "idx_expenses_currency_date", where: "(deleted_at IS NULL)", comment: "For multi-currency reporting"
-    t.index ["email_account_id", "amount", "transaction_date", "merchant_name"], name: "idx_expenses_duplicate_detection", comment: "For detecting potential duplicate transactions"
+    t.index ["category_id", "created_at"], name: "idx_uncategorized_expenses", where: "(category_id IS NULL)"
+    t.index ["category_id", "merchant_normalized"], name: "index_expenses_on_category_id_and_merchant_normalized"
+    t.index ["category_id", "transaction_date", "amount"], name: "index_expenses_uncategorized", where: "(category_id IS NULL)"
+    t.index ["category_id", "transaction_date"], name: "index_expenses_on_category_id_and_transaction_date"
+    t.index ["category_id"], name: "index_expenses_on_category_id"
+    t.index ["created_at", "transaction_date"], name: "index_expenses_on_created_and_transaction_date"
+    t.index ["currency"], name: "index_expenses_on_currency"
     t.index ["email_account_id", "amount", "transaction_date"], name: "index_expenses_on_account_amount_date_for_duplicates"
     t.index ["email_account_id", "status", "transaction_date", "amount"], name: "idx_expenses_account_status_date_amount"
     t.index ["email_account_id", "transaction_date", "amount", "merchant_name", "category_id", "status"], name: "idx_expenses_list_covering", where: "(deleted_at IS NULL)"

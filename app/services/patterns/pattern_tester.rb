@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'ostruct'
+
 module Patterns
   # Service object for testing categorization patterns against expenses
   # with caching and performance optimization

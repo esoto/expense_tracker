@@ -65,14 +65,13 @@
     <!-- Confidence Weight -->
     <div>
       <%= f.label :confidence_weight, class: "block text-sm font-medium text-slate-700 mb-2" %>
-      <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-4" data-controller="range-display">
         <%= f.range_field :confidence_weight,
             min: CategorizationPattern::MIN_CONFIDENCE_WEIGHT,
             max: CategorizationPattern::MAX_CONFIDENCE_WEIGHT,
             step: 0.1,
             class: "flex-1",
             data: {
-              controller: "range-display",
               "range-display-target": "slider",
               action: "input->range-display#updateValue"
             } %>

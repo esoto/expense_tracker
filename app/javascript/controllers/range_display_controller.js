@@ -4,17 +4,12 @@ export default class extends Controller {
   static targets = ["slider", "value"]
   
   connect() {
-    console.log("RangeDisplayController connected")
-    console.log("Has slider target:", this.hasSliderTarget)
-    console.log("Has value target:", this.hasValueTarget)
     this.updateValue()
   }
   
   updateValue() {
-    console.log("updateValue called")
     if (this.hasSliderTarget && this.hasValueTarget) {
       const value = parseFloat(this.sliderTarget.value).toFixed(1)
-      console.log("Updating value to:", value)
       this.valueTarget.textContent = value
       
       // Update slider color based on value

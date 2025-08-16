@@ -1,5 +1,5 @@
 <!-- Bulk Operations Modal -->
-<div id="bulk_operations_modal" 
+<div id="bulk_operations_modal"
      class="fixed inset-0 z-50 hidden overflow-y-auto"
      data-controller="bulk-operations"
      data-bulk-operations-selected-ids-value="[]"
@@ -8,17 +8,16 @@
      aria-labelledby="bulk_operations_title"
      aria-hidden="true"
      role="dialog">
-  
   <!-- Modal Overlay -->
   <div class="fixed inset-0 bg-slate-900 bg-opacity-50 transition-opacity opacity-0"
        data-bulk-operations-target="overlay"
        data-action="click->bulk-operations#close"></div>
-  
+
   <!-- Modal Content -->
   <div class="flex min-h-screen items-center justify-center p-4">
     <div class="relative transform overflow-hidden rounded-xl bg-white shadow-xl transition-all translate-y-4 opacity-0 sm:w-full sm:max-w-2xl"
          data-bulk-operations-target="form">
-      
+
       <!-- Modal Header -->
       <div class="bg-teal-700 px-6 py-4">
         <div class="flex items-center justify-between">
@@ -39,18 +38,18 @@
           <span data-bulk-operations-target="selectedCount">0</span> gastos seleccionados
         </p>
       </div>
-      
+
       <!-- Modal Body -->
       <div class="px-6 py-4">
         <!-- Operation Type Selection -->
         <div class="space-y-4">
           <h4 class="text-sm font-medium text-slate-700">Selecciona una operación:</h4>
-          
+
           <div class="space-y-3">
             <!-- Categorize Option -->
             <label class="flex cursor-pointer items-start rounded-lg border border-slate-200 p-4 hover:bg-slate-50">
-              <input type="radio" 
-                     name="operation_type" 
+              <input type="radio"
+                     name="operation_type"
                      value="categorize"
                      data-action="change->bulk-operations#changeOperation"
                      class="mt-1 h-4 w-4 text-teal-600 focus:ring-teal-500">
@@ -66,11 +65,11 @@
                 </p>
               </div>
             </label>
-            
+
             <!-- Status Update Option -->
             <label class="flex cursor-pointer items-start rounded-lg border border-slate-200 p-4 hover:bg-slate-50">
-              <input type="radio" 
-                     name="operation_type" 
+              <input type="radio"
+                     name="operation_type"
                      value="status"
                      data-action="change->bulk-operations#changeOperation"
                      class="mt-1 h-4 w-4 text-teal-600 focus:ring-teal-500">
@@ -86,11 +85,11 @@
                 </p>
               </div>
             </label>
-            
+
             <!-- Delete Option -->
             <label class="flex cursor-pointer items-start rounded-lg border border-slate-200 p-4 hover:bg-rose-50">
-              <input type="radio" 
-                     name="operation_type" 
+              <input type="radio"
+                     name="operation_type"
                      value="delete"
                      data-action="change->bulk-operations#changeOperation"
                      class="mt-1 h-4 w-4 text-teal-600 focus:ring-teal-500">
@@ -108,10 +107,10 @@
             </label>
           </div>
         </div>
-        
+
         <!-- Operation-specific Options -->
         <!-- Categorize Options -->
-        <div class="mt-6 hidden space-y-4" 
+        <div class="mt-6 hidden space-y-4"
              data-operation-type="categorize"
              data-bulk-operations-target="operationSection">
           <div>
@@ -128,9 +127,9 @@
             </select>
           </div>
         </div>
-        
+
         <!-- Status Update Options -->
-        <div class="mt-6 hidden space-y-4" 
+        <div class="mt-6 hidden space-y-4"
              data-operation-type="status"
              data-bulk-operations-target="operationSection">
           <div>
@@ -148,9 +147,9 @@
             </select>
           </div>
         </div>
-        
+
         <!-- Delete Confirmation -->
-        <div class="mt-6 hidden space-y-4" 
+        <div class="mt-6 hidden space-y-4"
              data-operation-type="delete"
              data-bulk-operations-target="operationSection">
           <div class="rounded-lg bg-rose-50 border border-rose-200 p-4">
@@ -184,7 +183,7 @@
             </div>
           </div>
         </div>
-        
+
         <!-- Progress Container -->
         <div class="mt-6 hidden" data-bulk-operations-target="progressContainer">
           <div class="space-y-2">
@@ -199,7 +198,7 @@
             </div>
           </div>
         </div>
-        
+
         <!-- Success Message -->
         <div class="mt-4 hidden rounded-lg bg-emerald-50 border border-emerald-200 p-4"
              data-bulk-operations-target="successMessage">
@@ -210,7 +209,7 @@
             <p class="ml-3 text-sm text-emerald-700"></p>
           </div>
         </div>
-        
+
         <!-- Error Container -->
         <div class="mt-4 hidden rounded-lg bg-rose-50 border border-rose-200 p-4"
              data-bulk-operations-target="errorContainer">
@@ -227,7 +226,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- Modal Footer -->
       <div class="bg-slate-50 px-6 py-4">
         <div class="flex justify-end gap-3">

@@ -5,7 +5,7 @@ module BulkOperations
   # Optimized to use batch updates for performance
   class StatusUpdateService < BaseService
     VALID_STATUSES = %w[pending processed failed duplicate].freeze
-    
+
     attr_accessor :status
 
     validates :status, presence: true, inclusion: { in: VALID_STATUSES }
@@ -81,7 +81,7 @@ module BulkOperations
         ActionCable.server.broadcast(
           "expenses_#{expense.email_account_id}",
           {
-            action: 'status_updated',
+            action: "status_updated",
             expense_id: expense.id,
             status: expense.status
           }

@@ -1,7 +1,7 @@
 class Expense < ApplicationRecord
   include ExpenseQueryOptimizer
   include QuerySecurity
-  
+
   # Associations
   belongs_to :email_account
   belongs_to :category, optional: true
@@ -163,7 +163,7 @@ class Expense < ApplicationRecord
   def needs_review?
     confidence_level == :low || confidence_level == :very_low
   end
-  
+
   # Check if expense is locked from editing (can be expanded with business rules)
   def locked?
     # For now, no expenses are locked. This can be extended based on business rules
@@ -354,15 +354,15 @@ class Expense < ApplicationRecord
 
   def normalized_merchant_value
     return nil if merchant_name.blank?
-    
+
     # Normalize merchant name for search:
     # - Convert to lowercase
     # - Remove special characters except spaces and alphanumeric
     # - Compress multiple spaces to single space
     # - Strip leading/trailing whitespace
     merchant_name.downcase
-                 .gsub(/[^\w\s]/, ' ')
-                 .squeeze(' ')
+                 .gsub(/[^\w\s]/, " ")
+                 .squeeze(" ")
                  .strip
   end
 end

@@ -19,14 +19,14 @@
 
 <div class="space-y-6" data-controller="accessibility-enhanced">
   <!-- Filter Chips Display -->
-  <div data-controller="filter-chips" 
+  <div data-controller="filter-chips"
        data-filter-chips-base-url-value="/expenses"
        data-filter-chips-target="container"
        class="hidden bg-white rounded-xl shadow-sm border border-slate-200 p-4">
   </div>
 
   <!-- Header with Summary -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6" 
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
        data-controller="filter-persistence"
        data-filter-persistence-storage-type-value="session"
        data-filter-persistence-auto-restore-value="true"
@@ -51,10 +51,10 @@
     </div>
 
     <!-- Filters -->
-    <%= form_with url: expenses_path, method: :get, 
-                  class: "space-y-4 md:space-y-0 md:flex md:gap-4", 
+    <%= form_with url: expenses_path, method: :get,
+                  class: "space-y-4 md:space-y-0 md:flex md:gap-4",
                   local: true,
-                  data: { 
+                  data: {
                     "filter-persistence-target": "filterForm"
                   } do |form| %>
     <div class="flex-1">
@@ -105,13 +105,13 @@
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
           <h2 class="text-lg font-semibold text-slate-900">Lista de Gastos</h2>
-          
+
           <!-- Selection Counter -->
           <span class="hidden text-sm font-medium text-teal-700 bg-teal-100 px-3 py-1 rounded-lg"
                 data-batch-selection-target="selectionCounter">
             0 gastos seleccionados
           </span>
-          
+
           <!-- View Toggle Button -->
           <button type="button"
                   data-view-toggle-target="toggleButton"
@@ -119,20 +119,20 @@
                   class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
                   aria-label="Cambiar modo de vista"
                   title="Cambiar entre vista compacta y expandida (Ctrl+Shift+V)">
-            
+
             <!-- Compact Icon -->
             <svg data-view-toggle-target="compactIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
-            
+
             <!-- Expanded Icon -->
             <svg data-view-toggle-target="expandedIcon" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path>
             </svg>
-            
+
             <span data-view-toggle-target="buttonText">Vista Compacta</span>
           </button>
-          
+
           <!-- Batch Selection Mode Toggle -->
           <button type="button"
                   data-action="click->batch-selection#toggleSelectionMode"
@@ -145,7 +145,7 @@
             <span>Selección Múltiple</span>
           </button>
         </div>
-        
+
         <% if @active_period %>
           <span class="text-sm text-slate-600">
             Período: <%= { "day" => "Hoy", "week" => "Esta Semana", "month" => "Este Mes", "year" => "Este Año" }[@active_period] || @active_period.capitalize %>
@@ -195,7 +195,7 @@
     <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 text-center text-slate-600">
       Mostrando los <%= @expenses.count %> gastos más recientes
     </div>
-    
+
     <!-- Batch Selection Toolbar -->
     <div class="hidden fixed bottom-0 left-0 right-0 bg-white border-t-2 border-teal-600 shadow-lg z-40 px-6 py-4"
          data-batch-selection-target="selectionToolbar">
@@ -213,7 +213,7 @@
               <span class="text-slate-600">gastos seleccionados</span>
             </span>
           </div>
-          
+
           <!-- Clear Selection Button -->
           <button type="button"
                   data-batch-selection-target="clearSelectionButton"
@@ -222,7 +222,7 @@
             Limpiar selección
           </button>
         </div>
-        
+
         <!-- Bulk Actions -->
         <div class="flex items-center gap-3">
           <button type="button"

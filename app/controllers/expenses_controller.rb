@@ -21,12 +21,12 @@ class ExpensesController < ApplicationController
       @expenses = @result.expenses
       @total_count = @result.total_count
       @performance_metrics = @result.performance_metrics
-      
+
       # Extract metadata for UI
       @filters_applied = @result.metadata[:filters_applied]
       @current_page = @result.metadata[:page]
       @per_page = @result.metadata[:per_page]
-      
+
       # Calculate summary statistics from the result
       calculate_summary_from_result(@result)
     else
@@ -97,12 +97,12 @@ class ExpensesController < ApplicationController
   # DELETE /expenses/1
   def destroy
     @expense.destroy
-    
+
     respond_to do |format|
       format.html { redirect_to expenses_url, notice: "Gasto eliminado exitosamente." }
       format.turbo_stream do
         # Return an empty turbo stream since the JS controller handles the row removal
-        render turbo_stream: turbo_stream.append("toast-container", 
+        render turbo_stream: turbo_stream.append("toast-container",
           "<div data-controller='toast' data-toast-remove-delay-value='5000' class='hidden'>Gasto eliminado exitosamente</div>")
       end
       format.json { render json: { success: true, message: "Gasto eliminado exitosamente" } }
@@ -256,7 +256,7 @@ class ExpensesController < ApplicationController
   # PATCH /expenses/:id/update_status
   def update_status
     new_status = params[:status]
-    
+
     # Validate status parameter
     unless %w[pending processed failed duplicate].include?(new_status)
       respond_to do |format|
@@ -265,7 +265,7 @@ class ExpensesController < ApplicationController
       end
       return
     end
-    
+
     if @expense.update(status: new_status)
       respond_to do |format|
         format.html { redirect_back(fallback_location: @expense, notice: "Estado actualizado exitosamente") }
@@ -295,7 +295,7 @@ class ExpensesController < ApplicationController
   def duplicate
     # Create a duplicate of the expense
     duplicated_expense = @expense.dup
-    
+
     # Reset certain attributes for the duplicate
     duplicated_expense.transaction_date = Date.current
     duplicated_expense.status = "pending"
@@ -304,7 +304,7 @@ class ExpensesController < ApplicationController
     duplicated_expense.ml_confidence_explanation = nil
     duplicated_expense.ml_correction_count = 0
     duplicated_expense.ml_last_corrected_at = nil
-    
+
     if duplicated_expense.save
       respond_to do |format|
         format.html { redirect_to duplicated_expense, notice: "Gasto duplicado exitosamente" }
@@ -333,10 +333,10 @@ class ExpensesController < ApplicationController
   # POST /expenses/bulk_categorize
   def bulk_categorize
     return unless authorize_bulk_operation!
-    
+
     # Use strong parameters
     permitted = bulk_categorize_params
-    
+
     # Use the new service object for better performance and organization
     service = BulkOperations::CategorizationService.new(
       expense_ids: permitted[:expense_ids],
@@ -347,9 +347,9 @@ class ExpensesController < ApplicationController
         track_ml_corrections: true
       }
     )
-    
+
     result = service.call
-    
+
     if result[:success]
       render json: {
         success: true,
@@ -371,10 +371,10 @@ class ExpensesController < ApplicationController
   # POST /expenses/bulk_update_status
   def bulk_update_status
     return unless authorize_bulk_operation!
-    
+
     # Use strong parameters
     permitted = bulk_status_params
-    
+
     # Use the new service object for better performance
     service = BulkOperations::StatusUpdateService.new(
       expense_ids: permitted[:expense_ids],
@@ -384,9 +384,9 @@ class ExpensesController < ApplicationController
         broadcast_updates: true
       }
     )
-    
+
     result = service.call
-    
+
     if result[:success]
       render json: {
         success: true,
@@ -408,10 +408,10 @@ class ExpensesController < ApplicationController
   # DELETE /expenses/bulk_destroy
   def bulk_destroy
     return unless authorize_bulk_operation!
-    
+
     # Use strong parameters
     permitted = bulk_destroy_params
-    
+
     # Use the new service object for better performance
     service = BulkOperations::DeletionService.new(
       expense_ids: permitted[:expense_ids],
@@ -421,9 +421,9 @@ class ExpensesController < ApplicationController
         skip_callbacks: false # Ensure callbacks run for audit trail
       }
     )
-    
+
     result = service.call
-    
+
     if result[:success]
       render json: {
         success: true,
@@ -522,8 +522,8 @@ class ExpensesController < ApplicationController
       category_ids: [], banks: [] # Array filters
     ).tap do |p|
       # Convert single value filters to arrays if needed
-      p[:category_ids] = [params[:category]] if params[:category].present? && !p[:category_ids].present?
-      p[:banks] = [params[:bank]] if params[:bank].present? && !p[:banks].present?
+      p[:category_ids] = [ params[:category] ] if params[:category].present? && !p[:category_ids].present?
+      p[:banks] = [ params[:bank] ] if params[:bank].present? && !p[:banks].present?
     end
   end
 
@@ -673,7 +673,7 @@ class ExpensesController < ApplicationController
     if result.expenses.any?
       @total_amount = result.expenses.sum(&:amount)
       @expense_count = result.total_count || result.expenses.count
-      
+
       # Group by category for summary
       @categories_summary = result.expenses
         .group_by { |e| e.category&.name || "Uncategorized" }
@@ -743,23 +743,23 @@ class ExpensesController < ApplicationController
   def execute_bulk_operation(expense_ids)
     # Find expenses that belong to the user
     expenses = current_user_expenses.where(id: expense_ids)
-    
+
     # Check if all requested expenses were found
     if expenses.count != expense_ids.length
       missing_count = expense_ids.length - expenses.count
       return {
         success: false,
         message: "#{missing_count} gastos no encontrados o no autorizados",
-        errors: ["Algunos gastos no fueron encontrados o no tienes permiso para modificarlos"]
+        errors: [ "Algunos gastos no fueron encontrados o no tienes permiso para modificarlos" ]
       }
     end
-    
+
     # Execute operation in transaction for data consistency
     result = nil
     ActiveRecord::Base.transaction do
       result = yield(expenses)
     end
-    
+
     # Process result
     if result.is_a?(Hash) && result[:success_count]
       {
@@ -781,7 +781,7 @@ class ExpensesController < ApplicationController
     {
       success: false,
       message: "Error al procesar la operación",
-      errors: [e.message]
+      errors: [ e.message ]
     }
   end
 end

@@ -87,7 +87,7 @@ module BulkOperations
       expenses.where.not(ml_suggested_category_id: nil)
               .where.not(ml_suggested_category_id: category_id)
               .update_all(
-                ml_correction_count: Arel.sql('ml_correction_count + 1'),
+                ml_correction_count: Arel.sql("ml_correction_count + 1"),
                 ml_last_corrected_at: Time.current
               )
     end
@@ -98,7 +98,7 @@ module BulkOperations
         ActionCable.server.broadcast(
           "expenses_#{expense.email_account_id}",
           {
-            action: 'categorized',
+            action: "categorized",
             expense_id: expense.id,
             category_id: expense.category_id,
             category_name: expense.category&.name

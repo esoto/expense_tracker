@@ -30,7 +30,7 @@ module BulkOperations
 
     def call
       return results.merge(success: false, errors: errors.full_messages) unless valid?
-      return results.merge(success: false, errors: ["No expenses found"]) if expense_ids.empty?
+      return results.merge(success: false, errors: [ "No expenses found" ]) if expense_ids.empty?
 
       # Decide whether to process synchronously or asynchronously
       if should_process_in_background?
@@ -106,7 +106,7 @@ module BulkOperations
 
     def find_authorized_expenses
       scope = Expense.where(id: expense_ids)
-      
+
       # Apply user authorization if user is provided
       if user.present?
         email_account_ids = EmailAccount.where(user_id: user.id).pluck(:id)
@@ -121,7 +121,7 @@ module BulkOperations
       @results = results.merge(
         success: false,
         message: "#{missing_count} expenses not found or unauthorized",
-        errors: ["Some expenses were not found or you don't have permission to modify them"]
+        errors: [ "Some expenses were not found or you don't have permission to modify them" ]
       )
     end
 
@@ -145,11 +145,11 @@ module BulkOperations
     def handle_error(error)
       Rails.logger.error "Bulk operation error: #{error.message}"
       Rails.logger.error error.backtrace.join("\n")
-      
+
       @results = results.merge(
         success: false,
         message: "Error processing operation",
-        errors: [error.message]
+        errors: [ error.message ]
       )
     end
   end

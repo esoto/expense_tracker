@@ -88,7 +88,7 @@ module ExpenseQueryOptimizer
           # Validate cursor data
           raise ArgumentError, "Invalid cursor: missing date" unless decoded[:date]
           raise ArgumentError, "Invalid cursor: missing id" unless decoded[:id]
-          
+
           if direction == :forward
             query = query.where("(transaction_date, id) < (?, ?)", decoded[:date], decoded[:id])
           else
@@ -100,14 +100,14 @@ module ExpenseQueryOptimizer
         end
       end
 
-      query.limit([limit.to_i, 100].min) # Cap at 100 for safety
+      query.limit([ limit.to_i, 100 ].min) # Cap at 100 for safety
     end
 
     # Optimized aggregation queries
     def aggregate_by_category(start_date: nil, end_date: nil)
       query = not_deleted
       query = query.by_date_range(start_date, end_date) if start_date && end_date
-      
+
       query
         .group(:category_id)
         .pluck(
@@ -131,12 +131,12 @@ module ExpenseQueryOptimizer
       query = query.by_date_range(start_date, end_date) if start_date && end_date
 
       date_trunc = case period
-                   when :day then "DATE_TRUNC('day', transaction_date)"
-                   when :week then "DATE_TRUNC('week', transaction_date)"
-                   when :month then "DATE_TRUNC('month', transaction_date)"
-                   when :year then "DATE_TRUNC('year', transaction_date)"
-                   else "DATE_TRUNC('month', transaction_date)"
-                   end
+      when :day then "DATE_TRUNC('day', transaction_date)"
+      when :week then "DATE_TRUNC('week', transaction_date)"
+      when :month then "DATE_TRUNC('month', transaction_date)"
+      when :year then "DATE_TRUNC('year', transaction_date)"
+      else "DATE_TRUNC('month', transaction_date)"
+      end
 
       query
         .group(Arel.sql(date_trunc))
@@ -171,19 +171,19 @@ module ExpenseQueryOptimizer
 
     def decode_cursor(cursor)
       return nil if cursor.blank?
-      
+
       decoded = Base64.strict_decode64(cursor)
       parsed = JSON.parse(decoded).symbolize_keys
-      
+
       # Validate cursor structure
       unless parsed[:date] && parsed[:id]
         raise ArgumentError, "Invalid cursor structure"
       end
-      
+
       # Parse and validate date
       parsed[:date] = Time.parse(parsed[:date]) if parsed[:date].is_a?(String)
       parsed[:id] = parsed[:id].to_i
-      
+
       parsed
     rescue JSON::ParserError, ArgumentError => e
       raise ArgumentError, "Invalid cursor: #{e.message}"

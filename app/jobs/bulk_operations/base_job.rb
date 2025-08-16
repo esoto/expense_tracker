@@ -104,7 +104,7 @@ module BulkOperations
     def handle_job_error(error)
       Rails.logger.error "Bulk operation job error: #{error.message}"
       Rails.logger.error error.backtrace.join("\n")
-      
+
       track_progress(100, "Operation failed: #{error.message}", error: true)
     end
 

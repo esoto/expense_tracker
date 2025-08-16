@@ -5,13 +5,13 @@ require 'rails_helper'
 RSpec.describe "Bulk Operations Performance", type: :performance do
   let(:email_account) { create(:email_account) }
   let(:category) { create(:category) }
-  
+
   describe "BulkOperations::CategorizationService" do
     context "with 500 expenses" do
       let!(:expenses) do
         expenses = []
         500.times do |i|
-          expenses << build(:expense, 
+          expenses << build(:expense,
             email_account: email_account,
             category: nil,
             merchant_name: "Merchant #{i}",
@@ -37,7 +37,7 @@ RSpec.describe "Bulk Operations Performance", type: :performance do
 
         # Should complete in under 500ms (vs 2-4 seconds with individual updates)
         expect(execution_time).to be < 0.5
-        
+
         # Verify all expenses were updated
         expect(Expense.where(id: expenses, category_id: category.id).count).to eq(500)
       end
@@ -55,7 +55,7 @@ RSpec.describe "Bulk Operations Performance", type: :performance do
         )
 
         result = service.call
-        
+
         # Should return immediately with background job info
         expect(result[:success]).to be true
         expect(result[:background]).to be true
@@ -75,12 +75,12 @@ RSpec.describe "Bulk Operations Performance", type: :performance do
         )
 
         result = service.call
-        
+
         # Should process immediately
         expect(result[:success]).to be true
         expect(result[:background]).to be_falsey
         expect(result[:affected_count]).to eq(50)
-        
+
         # Verify all expenses were updated
         expect(Expense.where(id: expenses, category_id: category.id).count).to eq(50)
       end
@@ -92,7 +92,7 @@ RSpec.describe "Bulk Operations Performance", type: :performance do
       let!(:expenses) do
         expenses = []
         500.times do |i|
-          expenses << build(:expense, 
+          expenses << build(:expense,
             email_account: email_account,
             status: "pending",
             merchant_name: "Merchant #{i}"
@@ -128,7 +128,7 @@ RSpec.describe "Bulk Operations Performance", type: :performance do
 
       it "deletes all expenses efficiently" do
         initial_count = Expense.count
-        
+
         service = BulkOperations::DeletionService.new(
           expense_ids: expenses,
           options: { force_synchronous: true, skip_callbacks: true }

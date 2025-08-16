@@ -9,7 +9,7 @@ RSpec.describe ExpensesController, type: :controller do
   before do
     # Mock authentication and authorization
     allow(controller).to receive(:authenticate_user!)
-    allow(controller).to receive(:current_user_email_accounts).and_return([email_account])
+    allow(controller).to receive(:current_user_email_accounts).and_return([ email_account ])
   end
 
   describe "PATCH #update_status" do
@@ -60,7 +60,7 @@ RSpec.describe ExpensesController, type: :controller do
       it "prevents updating expenses from other accounts" do
         other_account = create(:email_account)
         other_expense = create(:expense, email_account: other_account)
-        
+
         patch :update_status, params: { id: other_expense.id, status: "processed" }
         expect(response).to redirect_to(expenses_path)
         expect(flash[:alert]).to include("no encontrado")
@@ -78,7 +78,7 @@ RSpec.describe ExpensesController, type: :controller do
     it "duplicates with correct attributes" do
       post :duplicate, params: { id: expense.id }
       duplicated = Expense.order(created_at: :desc).first
-      
+
       expect(duplicated.amount).to eq(expense.amount)
       expect(duplicated.merchant_name).to eq(expense.merchant_name)
       expect(duplicated.description).to eq(expense.description)
@@ -93,10 +93,10 @@ RSpec.describe ExpensesController, type: :controller do
         ml_suggested_category_id: new_category.id,
         ml_correction_count: 5
       )
-      
+
       post :duplicate, params: { id: expense.id }
       duplicated = Expense.order(created_at: :desc).first
-      
+
       expect(duplicated.transaction_date).to eq(Date.current)
       expect(duplicated.status).to eq("pending")
       expect(duplicated.ml_confidence).to be_nil
@@ -120,7 +120,7 @@ RSpec.describe ExpensesController, type: :controller do
       it "handles validation errors gracefully" do
         # Mock save to fail
         allow_any_instance_of(Expense).to receive(:save).and_return(false)
-        
+
         post :duplicate, params: { id: expense.id }, format: :json
         json_response = JSON.parse(response.body)
         expect(json_response["success"]).to be false
@@ -131,11 +131,11 @@ RSpec.describe ExpensesController, type: :controller do
       it "prevents duplicating expenses from other accounts" do
         other_account = create(:email_account)
         other_expense = create(:expense, email_account: other_account)
-        
+
         expect {
           post :duplicate, params: { id: other_expense.id }
         }.not_to change(Expense, :count)
-        
+
         expect(response).to redirect_to(expenses_path)
       end
     end
@@ -194,11 +194,11 @@ RSpec.describe ExpensesController, type: :controller do
       it "prevents deleting expenses from other accounts" do
         other_account = create(:email_account)
         other_expense = create(:expense, email_account: other_account)
-        
+
         expect {
           delete :destroy, params: { id: other_expense.id }
         }.not_to change(Expense, :count)
-        
+
         expect(response).to redirect_to(expenses_path)
       end
     end

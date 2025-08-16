@@ -17,9 +17,9 @@ class AddPerformanceIndexesToExpenses < ActiveRecord::Migration[8.0]
 
     # Primary composite index for filtering
     # This is the most critical index for common filter combinations
-    unless index_exists?(:expenses, [:email_account_id, :transaction_date, :category_id], name: 'idx_expenses_filter_primary')
+    unless index_exists?(:expenses, [ :email_account_id, :transaction_date, :category_id ], name: 'idx_expenses_filter_primary')
       add_index :expenses,
-                [:email_account_id, :transaction_date, :category_id],
+                [ :email_account_id, :transaction_date, :category_id ],
                 name: 'idx_expenses_filter_primary',
                 algorithm: :concurrently,
                 where: "deleted_at IS NULL"
@@ -27,45 +27,45 @@ class AddPerformanceIndexesToExpenses < ActiveRecord::Migration[8.0]
 
     # Covering index for list display - includes commonly accessed columns
     # This prevents table lookups for the most common queries
-    unless index_exists?(:expenses, [:email_account_id, :transaction_date, :amount, :merchant_name, :category_id, :status], name: 'idx_expenses_list_covering')
+    unless index_exists?(:expenses, [ :email_account_id, :transaction_date, :amount, :merchant_name, :category_id, :status ], name: 'idx_expenses_list_covering')
       add_index :expenses,
-                [:email_account_id, :transaction_date, :amount, :merchant_name, :category_id, :status],
+                [ :email_account_id, :transaction_date, :amount, :merchant_name, :category_id, :status ],
                 name: 'idx_expenses_list_covering',
                 algorithm: :concurrently,
                 where: "deleted_at IS NULL"
     end
 
     # Category filtering index - optimized for category-based queries
-    unless index_exists?(:expenses, [:category_id, :transaction_date], name: 'idx_expenses_category_date')
+    unless index_exists?(:expenses, [ :category_id, :transaction_date ], name: 'idx_expenses_category_date')
       add_index :expenses,
-                [:category_id, :transaction_date],
+                [ :category_id, :transaction_date ],
                 name: 'idx_expenses_category_date',
                 algorithm: :concurrently,
                 where: "category_id IS NOT NULL AND deleted_at IS NULL"
     end
 
     # Uncategorized expenses index - frequently used filter
-    unless index_exists?(:expenses, [:email_account_id, :transaction_date], name: 'idx_expenses_uncategorized_new')
+    unless index_exists?(:expenses, [ :email_account_id, :transaction_date ], name: 'idx_expenses_uncategorized_new')
       add_index :expenses,
-                [:email_account_id, :transaction_date],
+                [ :email_account_id, :transaction_date ],
                 name: 'idx_expenses_uncategorized_new',
                 algorithm: :concurrently,
                 where: "category_id IS NULL AND deleted_at IS NULL"
     end
 
     # Bank filtering index - for bank-specific queries
-    unless index_exists?(:expenses, [:bank_name, :transaction_date], name: 'idx_expenses_bank_date')
+    unless index_exists?(:expenses, [ :bank_name, :transaction_date ], name: 'idx_expenses_bank_date')
       add_index :expenses,
-                [:bank_name, :transaction_date],
+                [ :bank_name, :transaction_date ],
                 name: 'idx_expenses_bank_date',
                 algorithm: :concurrently,
                 where: "deleted_at IS NULL"
     end
 
     # Status filtering index - for status-based queries
-    unless index_exists?(:expenses, [:status, :email_account_id, :created_at], name: 'idx_expenses_status_account')
+    unless index_exists?(:expenses, [ :status, :email_account_id, :created_at ], name: 'idx_expenses_status_account')
       add_index :expenses,
-                [:status, :email_account_id, :created_at],
+                [ :status, :email_account_id, :created_at ],
                 name: 'idx_expenses_status_account',
                 algorithm: :concurrently,
                 where: "deleted_at IS NULL"
@@ -100,9 +100,9 @@ class AddPerformanceIndexesToExpenses < ActiveRecord::Migration[8.0]
   def down
     # Remove indexes in reverse order
     remove_index :expenses, name: 'idx_expenses_merchant_trgm_new' if index_exists?(:expenses, name: 'idx_expenses_merchant_trgm_new')
-    
+
     execute "DROP INDEX IF EXISTS idx_expenses_amount_brin;"
-    
+
     remove_index :expenses, name: 'idx_expenses_status_account' if index_exists?(:expenses, name: 'idx_expenses_status_account')
     remove_index :expenses, name: 'idx_expenses_bank_date' if index_exists?(:expenses, name: 'idx_expenses_bank_date')
     remove_index :expenses, name: 'idx_expenses_uncategorized_new' if index_exists?(:expenses, name: 'idx_expenses_uncategorized_new')

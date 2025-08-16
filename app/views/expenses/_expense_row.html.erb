@@ -7,7 +7,6 @@
     data-action="click->batch-selection#handleRowClick"
     tabindex="0"
     aria-selected="false">
-  
   <!-- Checkbox Column -->
   <td class="checkbox-cell hidden px-4 py-4 whitespace-nowrap">
     <input type="checkbox"
@@ -17,11 +16,10 @@
            class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded"
            aria-label="Seleccionar gasto <%= expense.merchant_name || 'sin comercio' %> de <%= expense.amount %>">
   </td>
-  
   <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
     <%= expense.transaction_date.strftime("%d/%m/%Y") %>
   </td>
-  
+
   <td class="px-6 py-4 text-sm text-slate-900">
     <div class="font-medium">
       <% if expense.merchant_name? %>
@@ -34,18 +32,18 @@
     <div class="text-slate-500 text-xs expense-description"><%= expense.description %></div>
     <% end %>
   </td>
-  
+
   <td class="px-6 py-4 whitespace-nowrap text-sm">
     <div class="expense-category-cell relative">
       <turbo-frame id="expense_<%= expense.id %>_category">
         <%= render "expenses/category_with_confidence", expense: expense %>
       </turbo-frame>
-      
+
       <!-- Inline Quick Actions Container -->
       <div class="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1 inline-actions-container"
            data-inline-actions-target="actionsContainer"
            data-view-toggle-target="expandedColumns">
-        
+
         <!-- Quick Categorize Button -->
         <div class="relative">
           <button type="button"
@@ -57,7 +55,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
             </svg>
           </button>
-          
+
           <!-- Category Dropdown -->
           <div class="category-dropdown-menu w-48 bg-white rounded-lg shadow-lg border border-slate-200 hidden overflow-hidden"
                data-inline-actions-target="categoryDropdown">
@@ -76,7 +74,7 @@
             </div>
           </div>
         </div>
-        
+
         <!-- Mark as Reviewed Button -->
         <button type="button"
                 class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-white border border-slate-200 hover:bg-emerald-50 hover:border-emerald-300 transition-colors"
@@ -94,7 +92,7 @@
           </svg>
           <% end %>
         </button>
-        
+
         <!-- Duplicate Button -->
         <button type="button"
                 class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-white border border-slate-200 hover:bg-amber-50 hover:border-amber-300 transition-colors"
@@ -106,7 +104,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
           </svg>
         </button>
-        
+
         <!-- Delete Button -->
         <div class="relative">
           <button type="button"
@@ -118,7 +116,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
             </svg>
           </button>
-          
+
           <!-- Delete Confirmation Modal -->
           <div class="delete-confirmation-modal w-56 bg-white rounded-lg shadow-xl border-2 border-rose-200 p-4 hidden"
                data-inline-actions-target="deleteConfirmation">
@@ -150,24 +148,24 @@
       </div>
     </div>
   </td>
-  
+
   <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-900">
     <%= defined?(currency_symbol) ? currency_symbol(expense) : "₡" %><%= number_with_delimiter(expense.amount.to_i) %>
   </td>
-  
+
   <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900" data-view-toggle-target="expandedColumns">
     <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
                  <%= expense.bank_name == 'BAC' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-700' %>">
       <%= expense.bank_name %>
     </span>
   </td>
-  
+
   <td class="px-6 py-4 whitespace-nowrap text-sm" data-view-toggle-target="expandedColumns">
     <turbo-frame id="expense_<%= expense.id %>_status">
       <%= render "expenses/status_badge", expense: expense %>
     </turbo-frame>
   </td>
-  
+
   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2" data-view-toggle-target="expandedColumns">
     <turbo-frame id="expense_<%= expense.id %>_actions">
       <%= render "expenses/inline_actions", expense: expense %>

@@ -9,7 +9,7 @@ module BulkOperations
     def perform_operation(expenses)
       # Store IDs before deletion for broadcasting
       expense_ids_to_delete = expenses.pluck(:id)
-      
+
       # Use destroy_all to trigger callbacks if needed
       # Use delete_all for better performance if callbacks aren't needed
       if options[:skip_callbacks]
@@ -17,7 +17,7 @@ module BulkOperations
       else
         deleted_count = 0
         failures = []
-        
+
         expenses.find_each do |expense|
           begin
             expense.destroy!
@@ -29,7 +29,7 @@ module BulkOperations
             }
           end
         end
-        
+
         return { success_count: deleted_count, failures: failures }
       end
 
@@ -59,7 +59,7 @@ module BulkOperations
         ActionCable.server.broadcast(
           "expenses",
           {
-            action: 'deleted',
+            action: "deleted",
             expense_id: expense_id
           }
         )

@@ -8,7 +8,7 @@ namespace :db do
       puts "=" * 50
 
       connection = ActiveRecord::Base.connection
-      
+
       # Check if required indexes exist
       required_indexes = [
         "idx_expenses_filter_primary",
@@ -21,7 +21,7 @@ namespace :db do
       ]
 
       existing_indexes = connection.indexes("expenses").map(&:name)
-      
+
       puts "\n📊 Required Indexes Status:"
       required_indexes.each do |index_name|
         if existing_indexes.include?(index_name)
@@ -34,7 +34,7 @@ namespace :db do
       # Check index usage statistics
       puts "\n📈 Index Usage Statistics:"
       index_stats_query = <<-SQL
-        SELECT 
+        SELECT#{' '}
           schemaname,
           tablename,
           indexname,
@@ -43,7 +43,7 @@ namespace :db do
           idx_tup_fetch as tuples_fetched,
           pg_size_pretty(pg_relation_size(indexrelid)) as index_size
         FROM pg_stat_user_indexes
-        WHERE schemaname = 'public' 
+        WHERE schemaname = 'public'#{' '}
           AND tablename = 'expenses'
         ORDER BY idx_scan DESC;
       SQL
@@ -63,10 +63,10 @@ namespace :db do
       # Check for unused indexes
       puts "\n🔍 Potentially Unused Indexes (0 scans):"
       unused_query = <<-SQL
-        SELECT indexname 
-        FROM pg_stat_user_indexes 
-        WHERE schemaname = 'public' 
-          AND tablename = 'expenses' 
+        SELECT indexname#{' '}
+        FROM pg_stat_user_indexes#{' '}
+        WHERE schemaname = 'public'#{' '}
+          AND tablename = 'expenses'#{' '}
           AND idx_scan = 0
       SQL
 
@@ -84,7 +84,7 @@ namespace :db do
       # Check table statistics
       puts "\n📊 Table Statistics:"
       table_stats_query = <<-SQL
-        SELECT 
+        SELECT#{' '}
           n_live_tup as live_tuples,
           n_dead_tup as dead_tuples,
           last_vacuum,
@@ -121,7 +121,7 @@ namespace :db do
       test_queries = [
         {
           name: "Filter by date range",
-          query: -> { 
+          query: -> {
             Expense.for_list_display
                    .where(transaction_date: 30.days.ago..Date.current)
                    .limit(50)
@@ -131,7 +131,7 @@ namespace :db do
           name: "Filter by category and date",
           query: -> {
             Expense.for_list_display
-                   .where(category_id: [1, 2, 3])
+                   .where(category_id: [ 1, 2, 3 ])
                    .where(transaction_date: 30.days.ago..Date.current)
                    .limit(50)
           }
@@ -158,11 +158,11 @@ namespace :db do
       test_queries.each do |test|
         puts "\n📝 Query: #{test[:name]}"
         puts "-" * 40
-        
+
         begin
           query = test[:query].call
           explain = query.explain
-          
+
           # Extract key metrics from EXPLAIN output
           if explain.include?("Index Scan") || explain.include?("Index Only Scan")
             puts "  ✅ Using index scan"
@@ -174,14 +174,14 @@ namespace :db do
 
           # Show first few lines of explain
           explain.lines.first(10).each { |line| puts "  #{line.strip}" }
-          
+
           # Run timing test
           start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
           query.to_a
           elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
-          
+
           puts "  ⏱️  Execution time: #{(elapsed * 1000).round(2)}ms"
-          
+
           if elapsed > 0.05
             puts "  ⚠️  Query exceeds 50ms target"
           else
@@ -204,7 +204,7 @@ namespace :db do
       result = checker.run
 
       puts "\n🏥 Health Status: #{result[:healthy] ? '✅ HEALTHY' : '❌ UNHEALTHY'}"
-      
+
       puts "\n📋 Check Results:"
       result[:checks].each do |check_name, status|
         icon = status ? "✅" : "❌"
@@ -213,7 +213,7 @@ namespace :db do
 
       # Performance recommendations
       puts "\n💡 Recommendations:"
-      
+
       if !result[:checks][:database_indexes]
         puts "  1. Run migrations to add missing indexes:"
         puts "     rails db:migrate"
@@ -228,7 +228,7 @@ namespace :db do
 
       # Check for table bloat
       bloat_query = <<-SQL
-        SELECT 
+        SELECT#{' '}
           pg_size_pretty(pg_relation_size('expenses')) as table_size,
           (SELECT count(*) FROM expenses) as row_count
       SQL
@@ -253,10 +253,10 @@ namespace :db do
       begin
         ActiveRecord::Base.connection.execute("VACUUM ANALYZE expenses;")
         puts "✅ VACUUM ANALYZE completed successfully"
-        
+
         # Show updated statistics
         stats_query = <<-SQL
-          SELECT 
+          SELECT#{' '}
             n_live_tup as live_tuples,
             n_dead_tup as dead_tuples,
             last_vacuum,
@@ -264,7 +264,7 @@ namespace :db do
           FROM pg_stat_user_tables
           WHERE schemaname = 'public' AND tablename = 'expenses';
         SQL
-        
+
         stats = ActiveRecord::Base.connection.execute(stats_query).first
         puts "\n📊 Updated Statistics:"
         puts "  Live Tuples: #{stats['live_tuples']}"
@@ -285,8 +285,8 @@ namespace :db do
       puts "=" * 50
 
       # Test with different data sizes
-      test_sizes = [100, 500, 1000, 5000, 10000]
-      
+      test_sizes = [ 100, 500, 1000, 5000, 10000 ]
+
       puts "\n📊 Performance by Dataset Size:"
       puts sprintf("%-10s %-15s %-15s %-15s", "Size", "Simple Query", "Filtered", "Complex")
       puts "-" * 55
@@ -311,22 +311,22 @@ namespace :db do
         complex_time = Benchmark.realtime do
           Expense.for_list_display
                  .where(transaction_date: 30.days.ago..Date.current)
-                 .by_categories([1, 2, 3])
+                 .by_categories([ 1, 2, 3 ])
                  .by_amount_range(100, 10000)
                  .limit(size)
                  .to_a
         end
 
-        puts sprintf("%-10d %-15.2fms %-15.2fms %-15.2fms", 
-                     size, 
-                     simple_time * 1000, 
-                     filtered_time * 1000, 
+        puts sprintf("%-10d %-15.2fms %-15.2fms %-15.2fms",
+                     size,
+                     simple_time * 1000,
+                     filtered_time * 1000,
                      complex_time * 1000)
       end
 
       # Check if any queries exceed 50ms threshold
       puts "\n✅ All queries should complete in < 50ms for optimal performance"
-      
+
       puts "\n" + "=" * 50
     end
   end

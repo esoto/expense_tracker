@@ -22,7 +22,7 @@ RSpec.describe ExpensesController, type: :request do
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
         expect(json["success"]).to be true
-        
+
         # Verify malicious params were not processed
         expenses.each(&:reload)
         expenses.each do |expense|
@@ -53,8 +53,8 @@ RSpec.describe ExpensesController, type: :request do
       end
 
       it "prevents SQL injection in expense_ids" do
-        malicious_ids = ["1 OR 1=1", "'; DROP TABLE expenses; --"]
-        
+        malicious_ids = [ "1 OR 1=1", "'; DROP TABLE expenses; --" ]
+
         post bulk_categorize_expenses_path, params: {
           expense_ids: malicious_ids,
           category_id: category.id
@@ -64,7 +64,7 @@ RSpec.describe ExpensesController, type: :request do
         expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json["success"]).to be false
-        
+
         # Table should still exist
         expect(Expense.table_exists?).to be true
       end
@@ -80,7 +80,7 @@ RSpec.describe ExpensesController, type: :request do
         }, as: :json
 
         expect(response).to have_http_status(:ok)
-        
+
         # Verify only status was updated
         expenses.each(&:reload)
         expenses.each do |expense|
@@ -105,7 +105,7 @@ RSpec.describe ExpensesController, type: :request do
     describe "DELETE /expenses/bulk_destroy" do
       it "filters out all parameters except expense_ids" do
         initial_count = Expense.count
-        
+
         delete bulk_destroy_expenses_path, params: {
           expense_ids: expense_ids,
           force: true, # Should be ignored
@@ -116,7 +116,7 @@ RSpec.describe ExpensesController, type: :request do
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
         expect(json["success"]).to be true
-        
+
         # Since we don't have user auth, all expenses should be deleted
         expect(Expense.where(id: expense_ids).count).to eq(0)
       end
@@ -124,9 +124,9 @@ RSpec.describe ExpensesController, type: :request do
       it "handles mixed expense ownership gracefully" do
         other_account = create(:email_account)
         other_expenses = create_list(:expense, 2, email_account: other_account)
-        
+
         mixed_ids = expense_ids + other_expenses.map(&:id)
-        
+
         delete bulk_destroy_expenses_path, params: {
           expense_ids: mixed_ids
         }, as: :json
@@ -135,8 +135,8 @@ RSpec.describe ExpensesController, type: :request do
         # In production with auth, this would fail
         json = JSON.parse(response.body)
         expect(json["success"]).to be true
-        
-        # Comment: In production with authentication, 
+
+        # Comment: In production with authentication,
         # this would return unauthorized error
       end
     end
@@ -157,7 +157,7 @@ RSpec.describe ExpensesController, type: :request do
         # Without user auth, operation succeeds
         # In production with auth, this would fail
         expect(json["success"]).to be true
-        
+
         # Comment: In production with authentication,
         # this would prevent modification of unauthorized expenses
       end
@@ -178,7 +178,7 @@ RSpec.describe ExpensesController, type: :request do
 
       # Should succeed but ignore the nested expense params
       expect(response).to have_http_status(:ok)
-      
+
       # Verify protected attributes weren't changed
       expenses.each(&:reload)
       expenses.each do |expense|

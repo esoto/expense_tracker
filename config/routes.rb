@@ -130,10 +130,10 @@ Rails.application.routes.draw do
   end
 
   # Bulk operations routes
-  scope path: 'expenses' do
-    post 'bulk_categorize', to: 'expenses#bulk_categorize'
-    post 'bulk_update_status', to: 'expenses#bulk_update_status'
-    delete 'bulk_destroy', to: 'expenses#bulk_destroy'
+  scope path: "expenses" do
+    post "bulk_categorize", to: "expenses#bulk_categorize"
+    post "bulk_update_status", to: "expenses#bulk_update_status"
+    delete "bulk_destroy", to: "expenses#bulk_destroy"
   end
 
   resources :budgets do

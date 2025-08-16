@@ -231,7 +231,9 @@ class ExpenseFilterService
     safe_direction = %w[asc desc].include?(sort_direction) ? sort_direction : "desc"
 
     # Add secondary sort by ID for consistent ordering
-    scope.order(Arel.sql("#{safe_column} #{safe_direction.upcase}, id DESC"))
+    # Use safe symbol-based ordering to avoid SQL injection warnings
+    primary_order = { safe_column.to_sym => safe_direction.to_sym }
+    scope.order(primary_order).order(id: :desc)
   end
 
   def apply_pagination(scope)

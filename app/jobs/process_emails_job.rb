@@ -2,7 +2,7 @@ class ProcessEmailsJob < ApplicationJob
   queue_as :email_processing
 
   # Add retry logic
-  retry_on ImapConnectionService::ConnectionError, wait: :exponentially_longer, attempts: 3
+  retry_on ImapConnectionService::ConnectionError, wait: 10.seconds, attempts: 3
   retry_on Net::ReadTimeout, wait: 5.seconds, attempts: 2
 
   # Add performance monitoring

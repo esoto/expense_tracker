@@ -31,15 +31,15 @@ class SyncSessionsController < ApplicationController
       session[:sync_session_id] = @sync_session.id
 
       respond_to do |format|
-        format.turbo_stream {
-          # For dashboard, redirect to sync_sessions page
-          if request.referer&.include?("dashboard")
-            redirect_to sync_sessions_path, notice: "Sincronización iniciada exitosamente"
-          else
-            redirect_to sync_sessions_path, notice: "Sincronización iniciada exitosamente"
-          end
-        }
-        format.html { redirect_to sync_sessions_path, notice: "Sincronización iniciada exitosamente" }
+        format.turbo_stream do
+          # Handle turbo stream requests - update the widget in place
+          prepare_widget_data
+          render turbo_stream: turbo_stream.replace("sync_status_widget",
+            partial: "sync_sessions/unified_widget")
+        end
+        format.html do
+          redirect_to sync_sessions_path, notice: "Sincronización iniciada exitosamente"
+        end
         format.json { render json: { id: @sync_session.id, status: @sync_session.status }, status: :created }
       end
     else
@@ -102,6 +102,11 @@ class SyncSessionsController < ApplicationController
     @sync_session = SyncSession.find(params[:id])
   end
 
+  def prepare_widget_data
+    @active_sync_session = @sync_session
+    @last_completed_sync = SyncSession.completed.recent.first
+  end
+
   def sync_params
     params.permit(:email_account_id, :since)
   end
@@ -120,15 +125,27 @@ class SyncSessionsController < ApplicationController
   end
 
   def handle_creation_error(result)
-    case result.error
-    when :sync_limit_exceeded
-      handle_sync_limit_exceeded
-    when :rate_limit_exceeded
-      handle_rate_limit_exceeded
-    when :account_not_found
-      redirect_to sync_sessions_path, alert: result.message
-    else
-      redirect_to sync_sessions_path, alert: result.message || "Error al crear la sincronización"
+    respond_to do |format|
+      format.turbo_stream do
+        @error_message = result.message || "Error al crear la sincronización"
+        @active_sync_session = nil
+        @last_completed_sync = SyncSession.completed.recent.first
+        render turbo_stream: turbo_stream.replace("sync_status_widget",
+          partial: "sync_sessions/unified_widget")
+      end
+      format.html do
+        case result.error
+        when :sync_limit_exceeded
+          handle_sync_limit_exceeded
+        when :rate_limit_exceeded
+          handle_rate_limit_exceeded
+        when :account_not_found
+          redirect_to sync_sessions_path, alert: result.message
+        else
+          redirect_to sync_sessions_path, alert: result.message || "Error al crear la sincronización"
+        end
+      end
+      format.json { render json: { error: result.message }, status: :unprocessable_entity }
     end
   end
 

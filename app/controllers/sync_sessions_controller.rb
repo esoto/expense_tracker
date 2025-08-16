@@ -32,9 +32,10 @@ class SyncSessionsController < ApplicationController
 
       respond_to do |format|
         format.turbo_stream {
-          # For dashboard, redirect to sync_sessions page
+          # If request comes from dashboard, render the updated widget via turbo frame
           if request.referer&.include?("dashboard")
-            redirect_to sync_sessions_path, notice: "Sincronización iniciada exitosamente"
+            prepare_widget_data
+            render turbo_stream: turbo_stream.replace("sync_status_widget", partial: "sync_sessions/unified_widget")
           else
             redirect_to sync_sessions_path, notice: "Sincronización iniciada exitosamente"
           end
@@ -100,6 +101,11 @@ class SyncSessionsController < ApplicationController
 
   def set_sync_session
     @sync_session = SyncSession.find(params[:id])
+  end
+
+  def prepare_widget_data
+    @active_sync_session = @sync_session
+    @last_completed_sync = SyncSession.completed.recent.first
   end
 
   def sync_params

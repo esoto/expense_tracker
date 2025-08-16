@@ -134,6 +134,7 @@ export default class extends Controller {
   static values = {
     sessionId: Number,
     active: Boolean,
+    enableWebsocket: { type: Boolean, default: true },
     connectionState: { type: String, default: "disconnected" },
     retryCount: { type: Number, default: 0 },
     maxRetries: { type: Number, default: 5 },
@@ -161,11 +162,14 @@ export default class extends Controller {
     // Load cached state if available
     this.loadCachedState()
     
-    // Check WebSocket support
-    if (!this.isWebSocketSupported()) {
+    // Check WebSocket support and if WebSocket is enabled
+    if (!this.enableWebsocketValue) {
+      this.log("info", "WebSocket disabled - no active sync session")
+      // Don't connect to WebSocket when no active session
+    } else if (!this.isWebSocketSupported()) {
       this.enablePollingMode()
-    } else if (this.activeValue && this.sessionIdValue) {
-      // Start subscription if active
+    } else if (this.activeValue && this.sessionIdValue && this.sessionIdValue > 0) {
+      // Start subscription if active and has valid session ID
       this.subscribeToChannel()
     }
     

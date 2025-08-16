@@ -4,7 +4,26 @@
        data-controller="sync-widget"
        data-sync-widget-session-id-value="<%= @active_sync_session&.id || 0 %>"
        data-sync-widget-active-value="<%= @active_sync_session.present? %>"
-       data-sync-widget-websocket-url-value="<%= Rails.application.config.action_cable.url %>">
+       data-sync-widget-websocket-url-value="<%= Rails.application.config.action_cable.url %>"
+       <% if @active_sync_session.present? %>data-sync-widget-enable-websocket-value="true"<% else %>data-sync-widget-enable-websocket-value="false"<% end %>>
+
+    <!-- Error Message Section -->
+    <% if @error_message.present? %>
+      <div class="px-6 py-4 bg-rose-50 border-b border-rose-200">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-rose-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-rose-800">
+              <%= @error_message %>
+            </p>
+          </div>
+        </div>
+      </div>
+    <% end %>
 
     <!-- Header Section -->
     <div class="px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-teal-50 to-white">
@@ -66,14 +85,12 @@
             <% end %>
           <% else %>
             <!-- Start Sync Button -->
-            <%= form_with url: sync_sessions_path, method: :post, data: { turbo: true } do |form| %>
-              <%= form.submit "Iniciar Sincronización",
-                  class: "inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-teal-700 rounded-lg hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all transform hover:scale-105 cursor-pointer",
-                  data: {
-                    disable_with: "Iniciando...",
-                    action: "click->sync-widget#startSync"
-                  } %>
-            <% end %>
+            <%= link_to "Iniciar Sincronización", sync_sessions_path,
+                class: "inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-teal-700 rounded-lg hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all transform hover:scale-105 cursor-pointer",
+                data: {
+                  turbo_method: :post,
+                  turbo_stream: true
+                } %>
           <% end %>
         </div>
       </div>
@@ -240,10 +257,12 @@
 
         <!-- Quick Action Buttons -->
         <div class="flex items-center justify-center space-x-3">
-          <%= form_with url: sync_sessions_path, method: :post, class: "inline-block" do |form| %>
-            <%= form.submit "Sincronizar Todas las Cuentas",
-                class: "inline-flex items-center px-4 py-2 bg-teal-700 text-white text-sm font-medium rounded-lg hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all cursor-pointer" %>
-          <% end %>
+          <%= link_to "Sincronizar Todas las Cuentas", sync_sessions_path,
+              class: "inline-flex items-center px-4 py-2 bg-teal-700 text-white text-sm font-medium rounded-lg hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all cursor-pointer",
+              data: {
+                turbo_method: :post,
+                turbo_stream: true
+              } %>
 
           <%= link_to sync_sessions_path,
               class: "inline-flex items-center px-4 py-2 bg-white text-slate-700 text-sm font-medium rounded-lg border border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors" do %>

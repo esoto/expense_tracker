@@ -14,7 +14,7 @@ RSpec.describe MetricsCalculationJob, type: :job do
     context 'without email_account_id' do
       it 'enqueues jobs for all active accounts when email_account_id is not provided' do
         expect(MetricsCalculationJob).to receive(:enqueue_for_all_accounts)
-        
+
         job.perform(period: :month, reference_date: current_date)
       end
     end

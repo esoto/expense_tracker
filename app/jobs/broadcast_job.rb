@@ -30,7 +30,7 @@ class BroadcastJob < ApplicationJob
   retry_on Redis::BaseError, wait: 5.seconds, attempts: 3
 
   # Retry general errors with exponential backoff
-  retry_on StandardError, wait: :exponentially_longer, attempts: 5 do |job, error|
+  retry_on StandardError, wait: 15.seconds, attempts: 5 do |job, error|
     # This block is called after all retry attempts have been exhausted
     Rails.logger.error "[BROADCAST_JOB] Final failure after all retries: #{error.message}"
 

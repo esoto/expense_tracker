@@ -9,10 +9,7 @@ end
 
 # Initialize monitoring if in production or explicitly enabled
 if Rails.env.production? || ENV["ENABLE_CATEGORIZATION_MONITORING"] == "true"
-  require "categorization/monitoring/metrics_collector"
-  require "categorization/monitoring/health_check"
-  require "categorization/monitoring/structured_logger"
-
+  # Files are autoloaded by Rails from app/services
   # Initialize metrics collector on startup
   Categorization::Monitoring::MetricsCollector.instance
 end

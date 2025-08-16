@@ -1,103 +1,102 @@
 # frozen_string_literal: true
 
-module Services
-  module Email
-    # ProcessingService consolidates email fetching, parsing, and processing
-    # into a single cohesive service. This replaces multiple separate services
-    # for better maintainability and clearer interfaces.
-    class ProcessingService
-      include ActiveModel::Model
+module Email
+  # ProcessingService consolidates email fetching, parsing, and processing
+  # into a single cohesive service. This replaces multiple separate services
+  # for better maintainability and clearer interfaces.
+  class ProcessingService
+    include ActiveModel::Model
 
-      attr_accessor :email_account, :options
-      attr_reader :errors, :metrics, :last_categorization_confidence, :last_categorization_method
+    attr_accessor :email_account, :options
+    attr_reader :errors, :metrics, :last_categorization_confidence, :last_categorization_method
 
-      def initialize(email_account, options = {})
-        @email_account = email_account
-        @options = options
-        @errors = []
-        @metrics = {
-          emails_found: 0,
-          emails_processed: 0,
-          expenses_created: 0,
-          processing_time: 0
-        }
-        # Support dependency injection for categorization engine
-        @categorization_engine = options[:categorization_engine] || Categorization::Engine.create
-      end
+    def initialize(email_account, options = {})
+      @email_account = email_account
+      @options = options
+      @errors = []
+      @metrics = {
+        emails_found: 0,
+        emails_processed: 0,
+        expenses_created: 0,
+        processing_time: 0
+      }
+      # Support dependency injection for categorization engine
+      @categorization_engine = options[:categorization_engine] || Categorization::Engine.create
+    end
 
-      # Main method to fetch and process new emails
-      def process_new_emails(since: 1.week.ago)
-        return failure_response("Invalid email account") unless valid_account?
+    # Main method to fetch and process new emails
+    def process_new_emails(since: 1.week.ago, until_date: nil)
+      return failure_response("Invalid email account") unless valid_account?
 
-        start_time = Time.current
+      start_time = Time.current
 
-        begin
-          # Fetch emails via IMAP
-          emails = fetch_emails(since)
-          @metrics[:emails_found] = emails.count
+      begin
+        # Fetch emails via IMAP
+        emails = fetch_emails(since, until_date)
+        @metrics[:emails_found] = emails.count
 
-          # Process each email
-          results = process_emails(emails)
+        # Process each email
+        results = process_emails(emails)
 
-          @metrics[:processing_time] = Time.current - start_time
+        @metrics[:processing_time] = Time.current - start_time
 
-          success_response(results)
-        rescue StandardError => e
-          handle_error(e)
-          failure_response("Email processing failed: #{e.message}")
-        end
-      end
-
-      # Fetch emails without processing (for preview/testing)
-      def fetch_only(since: 1.week.ago, limit: 100)
-        return [] unless valid_account?
-
-        @options[:limit] = limit
-        fetch_emails(since)
-      end
-
-      # Parse a single email for expenses
-      def parse_email(email_data)
-        parser = EmailParser.new(email_data, email_account)
-        parser.extract_expenses
-      end
-
-      # Test connection to email server
-      def test_connection
-        with_imap_connection do |imap|
-          imap.examine("INBOX")
-          { success: true, message: "Connection successful" }
-        end
+        success_response(results)
       rescue StandardError => e
-        { success: false, message: e.message }
+        handle_error(e)
+        failure_response("Email processing failed: #{e.message}")
+      end
+    end
+
+    # Fetch emails without processing (for preview/testing)
+    def fetch_only(since: 1.week.ago, until_date: nil, limit: 100)
+      return [] unless valid_account?
+
+      @options[:limit] = limit
+      fetch_emails(since, until_date)
+    end
+
+    # Parse a single email for expenses
+    def parse_email(email_data)
+      parser = EmailParser.new(email_data, email_account)
+      parser.extract_expenses
+    end
+
+    # Test connection to email server
+    def test_connection
+      with_imap_connection do |imap|
+        imap.examine("INBOX")
+        { success: true, message: "Connection successful" }
+      end
+    rescue StandardError => e
+      { success: false, message: e.message }
+    end
+
+    private
+
+    def valid_account?
+      return false unless email_account
+
+      unless email_account.email?
+        add_error("Email address is required")
+        return false
       end
 
-      private
-
-      def valid_account?
-        return false unless email_account
-
-        unless email_account.email?
-          add_error("Email address is required")
-          return false
-        end
-
-        if email_account.password.blank? && !email_account.oauth_configured?
-          add_error("Password or OAuth configuration is required")
-          return false
-        end
+      if email_account.password.blank? && !email_account.oauth_configured?
+        add_error("Password or OAuth configuration is required")
+        return false
+      end
 
         true
       end
 
-      def fetch_emails(since)
+      def fetch_emails(since, until_date = nil)
         emails = []
 
         with_imap_connection do |imap|
           imap.examine("INBOX")
 
           # Search for emails from known senders
-          message_ids = search_for_transaction_emails(imap, since)
+          message_ids = search_for_transaction_emails(imap, since, until_date)
 
           return [] if message_ids.empty?
 
@@ -254,8 +253,8 @@ module Services
         end
       end
 
-      def search_for_transaction_emails(imap, since)
-        search_criteria = build_search_criteria(since)
+      def search_for_transaction_emails(imap, since, until_date = nil)
+        search_criteria = build_search_criteria(since, until_date)
 
         message_ids = []
 
@@ -272,19 +271,28 @@ module Services
         message_ids.uniq.sort.reverse.take(options[:limit] || 100)
       end
 
-      def build_search_criteria(since)
-        date_filter = since.strftime("%d-%b-%Y")
+      def build_search_criteria(since, until_date = nil)
+        since_filter = since.strftime("%d-%b-%Y")
 
         criteria = []
+        base_date_criteria = [ "SINCE", since_filter ]
+
+        # Add BEFORE filter if until_date is provided
+        if until_date
+          # IMAP BEFORE searches for messages with a date before the given date
+          # To include messages ON the until_date, we use the day after
+          before_filter = (until_date + 1.day).strftime("%d-%b-%Y")
+          base_date_criteria << "BEFORE" << before_filter
+        end
 
         # Add criteria for known bank/transaction senders
         known_senders.each do |sender|
-          criteria << [ "SINCE", date_filter, "FROM", sender ]
+          criteria << base_date_criteria + [ "FROM", sender ]
         end
 
         # Add criteria for transaction keywords
         transaction_keywords.each do |keyword|
-          criteria << [ "SINCE", date_filter, "SUBJECT", keyword ]
+          criteria << base_date_criteria + [ "SUBJECT", keyword ]
         end
 
         criteria
@@ -362,6 +370,7 @@ module Services
           merchant_normalized: expense_data[:merchant]&.downcase&.strip,
           currency: expense_data[:currency]&.downcase || "usd",
           raw_email_content: expense_data[:raw_text],
+          bank_name: email_account.bank_name,
           status: "pending"
         )
 
@@ -372,13 +381,18 @@ module Services
         if options[:auto_categorize]
           category = suggest_category(expense)
           if category
-            expense.update!(
-              category: category,
-              auto_categorized: true,
-              categorization_confidence: last_categorization_confidence,
-              categorization_method: last_categorization_method,
-              categorized_at: Time.current
-            )
+            begin
+              expense.reload.update!(
+                category: category,
+                auto_categorized: true,
+                categorization_confidence: last_categorization_confidence,
+                categorization_method: last_categorization_method,
+                categorized_at: Time.current
+              )
+            rescue ActiveRecord::StaleObjectError
+              # Expense was modified concurrently, skip auto-categorization
+              Rails.logger.warn "Skipped auto-categorization for expense #{expense.id} due to concurrent modification"
+            end
           end
         end
 
@@ -451,7 +465,7 @@ module Services
         add_error(error.message)
 
         # Report to error tracking service
-        ::Services::Infrastructure::MonitoringService::ErrorTracker.report(error, context: {
+        Infrastructure::MonitoringService::ErrorTracker.report(error, context: {
           email_account_id: email_account.id,
           service: "EmailProcessingService"
         })
@@ -624,6 +638,5 @@ module Services
           expense[:date].is_a?(Date)
         end
       end
-    end
   end
 end

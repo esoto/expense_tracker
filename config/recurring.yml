@@ -6,7 +6,7 @@ default: &default
   # This pre-warms the cache with fresh metrics data
   calculate_metrics_hourly:
     class: MetricsCalculationJob
-    command: "MetricsCalculationJob.enqueue_for_all_accounts"
+    command: "MetricsCalculationJob.perform_later"
     queue: default
     priority: 5
     schedule: every hour at minute 5
@@ -23,7 +23,7 @@ development:
   # In development, run metrics calculation more frequently for testing
   calculate_metrics_hourly:
     class: MetricsCalculationJob
-    command: "MetricsCalculationJob.enqueue_for_all_accounts"
+    command: "MetricsCalculationJob.perform_later"
     queue: default
     priority: 5
     schedule: every 30 minutes

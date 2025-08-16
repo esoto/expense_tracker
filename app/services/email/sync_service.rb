@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-module Services
-  module Email
+module Email
     # SyncService consolidates synchronization operations including
     # session management, conflict detection, progress tracking, and metrics.
     # This is a simplified version that maintains backward compatibility
@@ -127,7 +126,12 @@ module Services
 
               expenses.each do |expense|
                 next if expense == keeper
-                expense.update!(status: "duplicate", duplicate_of_id: keeper.id)
+                begin
+                  expense.reload.update!(status: "duplicate", duplicate_of_id: keeper.id)
+                rescue ActiveRecord::StaleObjectError
+                  # Expense was modified concurrently, skip marking as duplicate
+                  Rails.logger.warn "Skipped marking expense #{expense.id} as duplicate due to concurrent modification"
+                end
               end
 
               resolved += 1
@@ -244,5 +248,4 @@ module Services
         similarity > 0.7
       end
     end
-  end
 end

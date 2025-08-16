@@ -15,8 +15,15 @@ class MetricsCalculationJob < ApplicationJob
   retry_on StandardError, wait: :polynomially_longer, attempts: 3
 
   # Job can be called with specific email_account_id and optionally period and date
-  # email_account_id is REQUIRED for data isolation
+  # If called without email_account_id, it will enqueue jobs for all active accounts
   def perform(email_account_id: nil, period: nil, reference_date: nil, force_refresh: false)
+    # If no email_account_id provided, enqueue jobs for all active accounts
+    if email_account_id.nil?
+      Rails.logger.info "MetricsCalculationJob called without email_account_id - enqueuing for all active accounts"
+      self.class.enqueue_for_all_accounts
+      return
+    end
+
     # Track start time for performance monitoring
     start_time = Time.current
 

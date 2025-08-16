@@ -12,9 +12,10 @@ RSpec.describe MetricsCalculationJob, type: :job do
 
   describe '#perform' do
     context 'without email_account_id' do
-      it 'raises error when email_account_id is not provided' do
-        expect { job.perform(period: :month, reference_date: current_date) }
-          .to raise_error(ArgumentError, /email_account_id is required/)
+      it 'enqueues jobs for all active accounts when email_account_id is not provided' do
+        expect(MetricsCalculationJob).to receive(:enqueue_for_all_accounts)
+
+        job.perform(period: :month, reference_date: current_date)
       end
     end
 

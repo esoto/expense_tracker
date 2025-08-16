@@ -71,7 +71,8 @@
       "Bash(RAILS_ENV=test bundle exec rspec manual_test_inline_actions.rb --format=documentation)",
       "Bash(RAILS_ENV=test bundle exec rspec test_stimulus.rb --format=documentation)",
       "Bash(mv:*)",
-      "Bash(npm test)"
+      "Bash(npm test)",
+      "Bash(rails --version)"
     ],
     "deny": []
   }

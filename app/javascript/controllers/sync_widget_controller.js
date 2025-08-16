@@ -1,6 +1,108 @@
 import { Controller } from "@hotwired/stimulus"
 import { createConsumer } from "@rails/actioncable"
-import errorMessages from "../services/error_messages"
+
+// Inline error messages to avoid import issues
+const errorMessages = {
+  getMessage(errorCode, category = null) {
+    const messages = {
+      connection: {
+        failed: "No se pudo conectar al servidor. Verificando conexión...",
+        lost: "Se perdió la conexión con el servidor",
+        timeout: "La conexión tardó demasiado tiempo. Reintentando...",
+        refused: "El servidor rechazó la conexión",
+        network: "Error de red. Verifica tu conexión a internet",
+        offline: "Sin conexión a internet",
+        online: "Conexión restaurada",
+        websocket_unsupported: "Tu navegador no soporta conexiones en tiempo real. Usando modo de actualización periódica.",
+        degraded_mode: "Funcionando en modo limitado"
+      },
+      auth: {
+        expired: "Tu sesión ha expirado. Por favor, recarga la página",
+        unauthorized: "No tienes permisos para acceder a este recurso"
+      },
+      sync: {
+        email_connection: "No se pudo conectar con el servidor de correo",
+        email_auth: "Error de autenticación con el correo. Verifica tus credenciales",
+        rate_limit: "Demasiadas solicitudes. Esperando antes de continuar...",
+        parsing_error: "Error al procesar los correos electrónicos",
+        duplicate_detected: "Se detectaron transacciones duplicadas",
+        no_emails: "No se encontraron correos nuevos para sincronizar",
+        processing_error: "Error al procesar las transacciones"
+      },
+      server: {
+        internal: "Error interno del servidor. El equipo ha sido notificado",
+        unavailable: "Servicio temporalmente no disponible"
+      },
+      recovery: {
+        retry_in: "Reintentando en %{seconds} segundos",
+        max_retries: "Se alcanzó el máximo de intentos",
+        recovered: "Conexión recuperada exitosamente",
+        switching_mode: "Cambiando a modo de actualización periódica"
+      },
+      actions: {
+        reload: "Recargar página"
+      },
+      status: {
+        connecting: "Conectando...",
+        connected: "Conectado",
+        disconnected: "Desconectado",
+        reconnecting: "Reconectando...",
+        failed: "Error"
+      }
+    };
+
+    if (category && messages[category] && messages[category][errorCode]) {
+      return messages[category][errorCode];
+    }
+
+    // Search all categories
+    for (const cat in messages) {
+      if (messages[cat][errorCode]) {
+        return messages[cat][errorCode];
+      }
+    }
+
+    return "Ocurrió un error inesperado.";
+  },
+
+  getAction(action) {
+    const actions = {
+      reload: "Recargar página",
+      retry: "Reintentar"
+    };
+    return actions[action] || action;
+  },
+
+  getStatus(status) {
+    const statuses = {
+      connecting: "Conectando...",
+      connected: "Conectado",
+      disconnected: "Desconectado",
+      reconnecting: "Reconectando...",
+      failed: "Error"
+    };
+    return statuses[status] || status;
+  },
+
+  getSuggestion(errorType) {
+    const suggestions = {
+      network: "Verifica tu conexión a internet e intenta de nuevo.",
+      auth: "Por favor, recarga la página e inicia sesión nuevamente.",
+      server: "El problema es temporal. Intenta de nuevo en unos minutos.",
+      email: "Verifica que las credenciales del correo sean correctas."
+    };
+    return suggestions[errorType] || "";
+  },
+
+  format(message, params = {}) {
+    let formatted = message;
+    for (const key in params) {
+      const placeholder = `%{${key}}`;
+      formatted = formatted.replace(placeholder, params[key]);
+    }
+    return formatted;
+  }
+};
 
 export default class extends Controller {
   static targets = [

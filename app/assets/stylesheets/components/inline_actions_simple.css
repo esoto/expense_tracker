@@ -1,0 +1,121 @@
+/* Simple CSS-based inline actions hover effect */
+.expense-row-with-actions {
+  position: relative;
+}
+
+/* Hide actions by default */
+.inline-actions-container {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 150ms ease-in-out, visibility 150ms ease-in-out;
+}
+
+/* Show actions on row hover */
+.expense-row-with-actions:hover .inline-actions-container,
+.expense-row-with-actions:focus-within .inline-actions-container,
+.inline-actions-container:hover,
+.inline-actions-container:focus-within {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Keep actions visible when dropdown is open */
+.expense-row-with-actions:has(.category-dropdown-menu:not(.hidden)) .inline-actions-container,
+.expense-row-with-actions:has(.delete-confirmation-modal:not(.hidden)) .inline-actions-container {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Compact mode - hide actions completely */
+.compact-mode .inline-actions-container {
+  display: none !important;
+}
+
+/* Expanded mode - ensure actions are positioned correctly */
+.expanded-mode .inline-actions-container {
+  display: flex !important;
+}
+
+/* Category dropdown positioning */
+.category-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.25rem;
+  z-index: 9999;
+  min-width: 12rem;
+  max-width: 16rem;
+}
+
+/* Delete confirmation positioning */
+.delete-confirmation-modal {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.25rem;
+  z-index: 9999;
+  min-width: 14rem;
+}
+
+/* Ensure dropdowns appear above other elements */
+.expense-category-cell {
+  position: relative;
+}
+
+/* Button container positioning */
+.expense-category-cell .relative {
+  position: relative;
+  z-index: 10;
+}
+
+/* Active dropdown state */
+.category-dropdown-menu:not(.hidden),
+.delete-confirmation-modal:not(.hidden) {
+  z-index: 10000;
+}
+
+/* Prevent overflow clipping in table cells */
+td.whitespace-nowrap {
+  overflow: visible !important;
+}
+
+/* Animation for dropdown appearance */
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: dropdownFadeIn 150ms ease-out;
+}
+
+/* Mobile responsiveness - always show actions on small screens */
+@media (max-width: 768px) {
+  .inline-actions-container {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+  
+  /* Adjust dropdown positioning on mobile */
+  .category-dropdown-menu,
+  .delete-confirmation-modal {
+    position: fixed !important;
+    left: 1rem !important;
+    right: 1rem !important;
+    bottom: 1rem !important;
+    top: auto !important;
+    margin: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+}

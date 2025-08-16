@@ -1,31 +1,53 @@
 class ExpensesController < ApplicationController
   before_action :authenticate_user!, except: [ :dashboard ] # Allow dashboard without auth for now
-  before_action :set_expense, only: [ :show, :edit, :update, :destroy, :correct_category, :accept_suggestion, :reject_suggestion ]
-  before_action :authorize_expense!, only: [ :edit, :update, :destroy, :correct_category, :accept_suggestion, :reject_suggestion ]
+  before_action :set_expense, only: [ :show, :edit, :update, :destroy, :correct_category, :accept_suggestion, :reject_suggestion, :update_status, :duplicate ]
+  before_action :authorize_expense!, only: [ :edit, :update, :destroy, :correct_category, :accept_suggestion, :reject_suggestion, :update_status, :duplicate ]
 
   # GET /expenses
   def index
     # Handle dashboard navigation context
     setup_navigation_context
 
-    # Base query with includes - now includes ml_suggested_category to prevent N+1
-    @expenses = current_user_expenses.includes(:category, :email_account, :ml_suggested_category)
+    # Use the optimized ExpenseFilterService for performance
+    filter_service = ExpenseFilterService.new(
+      filter_params.merge(
+        account_ids: current_user_email_accounts.pluck(:id)
+      )
+    )
 
-    # Apply filters efficiently
-    @expenses = apply_filters(@expenses)
+    @result = filter_service.call
 
-    # Order and limit
-    @expenses = @expenses.order(transaction_date: :desc, created_at: :desc)
-                        .limit(25)
+    if @result.success?
+      @expenses = @result.expenses
+      @total_count = @result.total_count
+      @performance_metrics = @result.performance_metrics
 
-    # Calculate summary with separate optimized query
-    calculate_summary_statistics
+      # Extract metadata for UI
+      @filters_applied = @result.metadata[:filters_applied]
+      @current_page = @result.metadata[:page]
+      @per_page = @result.metadata[:per_page]
+
+      # Calculate summary statistics from the result
+      calculate_summary_from_result(@result)
+    else
+      # Fallback to empty result on error
+      @expenses = []
+      @total_count = 0
+      @performance_metrics = { error: true }
+      flash.now[:alert] = "Error loading expenses. Please try again."
+    end
 
     # Set up scroll target if specified
     @scroll_to = params[:scroll_to] if params[:scroll_to].present?
 
     # Add filter description for UI
     @filter_description = build_filter_description
+
+    respond_to do |format|
+      format.html
+      format.json { render json: @result }
+      format.turbo_stream
+    end
   end
 
   # GET /expenses/1
@@ -75,7 +97,16 @@ class ExpensesController < ApplicationController
   # DELETE /expenses/1
   def destroy
     @expense.destroy
-    redirect_to expenses_url, notice: "Gasto eliminado exitosamente."
+
+    respond_to do |format|
+      format.html { redirect_to expenses_url, notice: "Gasto eliminado exitosamente." }
+      format.turbo_stream do
+        # Return an empty turbo stream since the JS controller handles the row removal
+        render turbo_stream: turbo_stream.append("toast-container",
+          "<div data-controller='toast' data-toast-remove-delay-value='5000' class='hidden'>Gasto eliminado exitosamente</div>")
+      end
+      format.json { render json: { success: true, message: "Gasto eliminado exitosamente" } }
+    end
   end
 
   # GET /expenses/dashboard
@@ -222,6 +253,196 @@ class ExpensesController < ApplicationController
     end
   end
 
+  # PATCH /expenses/:id/update_status
+  def update_status
+    new_status = params[:status]
+
+    # Validate status parameter
+    unless %w[pending processed failed duplicate].include?(new_status)
+      respond_to do |format|
+        format.html { redirect_back(fallback_location: @expense, alert: "Estado inválido") }
+        format.json { render json: { success: false, error: "Invalid status" }, status: :unprocessable_content }
+      end
+      return
+    end
+
+    if @expense.update(status: new_status)
+      respond_to do |format|
+        format.html { redirect_back(fallback_location: @expense, notice: "Estado actualizado exitosamente") }
+        format.turbo_stream do
+          render turbo_stream: [
+            turbo_stream.replace("expense_#{@expense.id}_status", partial: "expenses/status_badge", locals: { expense: @expense }),
+            turbo_stream.replace("expense_#{@expense.id}_actions", partial: "expenses/inline_actions", locals: { expense: @expense })
+          ]
+        end
+        format.json { render json: { success: true, expense: expense_json(@expense) } }
+      end
+    else
+      respond_to do |format|
+        format.html { redirect_back(fallback_location: @expense, alert: "Error al actualizar el estado") }
+        format.json { render json: { success: false, errors: @expense.errors.full_messages }, status: :unprocessable_content }
+      end
+    end
+  rescue StandardError => e
+    Rails.logger.error "Error updating expense status: #{e.message}"
+    respond_to do |format|
+      format.html { redirect_back(fallback_location: @expense, alert: "Error al actualizar el estado") }
+      format.json { render json: { success: false, error: e.message }, status: :internal_server_error }
+    end
+  end
+
+  # POST /expenses/:id/duplicate
+  def duplicate
+    # Create a duplicate of the expense
+    duplicated_expense = @expense.dup
+
+    # Reset certain attributes for the duplicate
+    duplicated_expense.transaction_date = Date.current
+    duplicated_expense.status = "pending"
+    duplicated_expense.ml_confidence = nil
+    duplicated_expense.ml_suggested_category_id = nil
+    duplicated_expense.ml_confidence_explanation = nil
+    duplicated_expense.ml_correction_count = 0
+    duplicated_expense.ml_last_corrected_at = nil
+
+    if duplicated_expense.save
+      respond_to do |format|
+        format.html { redirect_to duplicated_expense, notice: "Gasto duplicado exitosamente" }
+        format.turbo_stream do
+          render turbo_stream: [
+            turbo_stream.prepend("expenses_table_body", partial: "expenses/expense_row", locals: { expense: duplicated_expense }),
+            turbo_stream.update("flash_messages", partial: "shared/flash", locals: { notice: "Gasto duplicado exitosamente" })
+          ]
+        end
+        format.json { render json: { success: true, expense: expense_json(duplicated_expense) } }
+      end
+    else
+      respond_to do |format|
+        format.html { redirect_back(fallback_location: @expense, alert: "Error al duplicar el gasto") }
+        format.json { render json: { success: false, errors: duplicated_expense.errors.full_messages }, status: :unprocessable_content }
+      end
+    end
+  rescue StandardError => e
+    Rails.logger.error "Error duplicating expense: #{e.message}"
+    respond_to do |format|
+      format.html { redirect_back(fallback_location: @expense, alert: "Error al duplicar el gasto") }
+      format.json { render json: { success: false, error: e.message }, status: :internal_server_error }
+    end
+  end
+
+  # POST /expenses/bulk_categorize
+  def bulk_categorize
+    return unless authorize_bulk_operation!
+
+    # Use strong parameters
+    permitted = bulk_categorize_params
+
+    # Use the new service object for better performance and organization
+    service = BulkOperations::CategorizationService.new(
+      expense_ids: permitted[:expense_ids],
+      category_id: permitted[:category_id],
+      user: current_user_for_bulk_operations,
+      options: {
+        broadcast_updates: true,
+        track_ml_corrections: true
+      }
+    )
+
+    result = service.call
+
+    if result[:success]
+      render json: {
+        success: true,
+        message: result[:message],
+        affected_count: result[:affected_count],
+        failures: result[:failures],
+        background: result[:background],
+        job_id: result[:job_id]
+      }
+    else
+      render json: {
+        success: false,
+        message: result[:message] || "Error al categorizar gastos",
+        errors: result[:errors]
+      }, status: :unprocessable_content
+    end
+  end
+
+  # POST /expenses/bulk_update_status
+  def bulk_update_status
+    return unless authorize_bulk_operation!
+
+    # Use strong parameters
+    permitted = bulk_status_params
+
+    # Use the new service object for better performance
+    service = BulkOperations::StatusUpdateService.new(
+      expense_ids: permitted[:expense_ids],
+      status: permitted[:status],
+      user: current_user_for_bulk_operations,
+      options: {
+        broadcast_updates: true
+      }
+    )
+
+    result = service.call
+
+    if result[:success]
+      render json: {
+        success: true,
+        message: result[:message],
+        affected_count: result[:affected_count],
+        failures: result[:failures],
+        background: result[:background],
+        job_id: result[:job_id]
+      }
+    else
+      render json: {
+        success: false,
+        message: result[:message] || "Error al actualizar estado",
+        errors: result[:errors]
+      }, status: :unprocessable_content
+    end
+  end
+
+  # DELETE /expenses/bulk_destroy
+  def bulk_destroy
+    return unless authorize_bulk_operation!
+
+    # Use strong parameters
+    permitted = bulk_destroy_params
+
+    # Use the new service object for better performance
+    service = BulkOperations::DeletionService.new(
+      expense_ids: permitted[:expense_ids],
+      user: current_user_for_bulk_operations,
+      options: {
+        broadcast_updates: true,
+        skip_callbacks: false # Ensure callbacks run for audit trail
+      }
+    )
+
+    result = service.call
+
+    if result[:success]
+      render json: {
+        success: true,
+        message: result[:message],
+        affected_count: result[:affected_count],
+        failures: result[:failures],
+        reload: true, # Signal to reload the page after deletion
+        background: result[:background],
+        job_id: result[:job_id]
+      }
+    else
+      render json: {
+        success: false,
+        message: result[:message] || "Error al eliminar gastos",
+        errors: result[:errors]
+      }, status: :unprocessable_content
+    end
+  end
+
   private
 
   def set_expense
@@ -270,6 +491,40 @@ class ExpensesController < ApplicationController
 
   def expense_params
     params.require(:expense).permit(:amount, :currency, :transaction_date, :merchant_name, :description, :category_id, :email_account_id, :notes)
+  end
+
+  # Strong parameters for bulk operations
+  def bulk_categorize_params
+    params.permit(:category_id, expense_ids: [])
+  end
+
+  def bulk_status_params
+    params.permit(:status, expense_ids: [])
+  end
+
+  def bulk_destroy_params
+    params.permit(expense_ids: [])
+  end
+
+  def current_user_for_bulk_operations
+    # Return current_user if using authentication, nil otherwise
+    defined?(current_user) ? current_user : nil
+  end
+
+  def filter_params
+    params.permit(
+      :date_range, :start_date, :end_date,
+      :search_query, :status, :period,
+      :min_amount, :max_amount,
+      :sort_by, :sort_direction,
+      :page, :per_page, :cursor, :use_cursor,
+      :category, :bank, # Single value filters
+      category_ids: [], banks: [] # Array filters
+    ).tap do |p|
+      # Convert single value filters to arrays if needed
+      p[:category_ids] = [ params[:category] ] if params[:category].present? && !p[:category_ids].present?
+      p[:banks] = [ params[:bank] ] if params[:bank].present? && !p[:banks].present?
+    end
   end
 
   def expense_json(expense)
@@ -413,6 +668,24 @@ class ExpensesController < ApplicationController
       .sort_by { |_, amount| -amount }
   end
 
+  def calculate_summary_from_result(result)
+    # Extract summary statistics from the filtered result
+    if result.expenses.any?
+      @total_amount = result.expenses.sum(&:amount)
+      @expense_count = result.total_count || result.expenses.count
+
+      # Group by category for summary
+      @categories_summary = result.expenses
+        .group_by { |e| e.category&.name || "Uncategorized" }
+        .transform_values { |expenses| expenses.sum(&:amount) }
+        .sort_by { |_, amount| -amount }
+    else
+      @total_amount = 0
+      @expense_count = 0
+      @categories_summary = []
+    end
+  end
+
   def default_empty_metrics
     {
       period: :month,
@@ -453,6 +726,62 @@ class ExpensesController < ApplicationController
         end_date: Date.current
       },
       calculated_at: Time.current
+    }
+  end
+
+  def authorize_bulk_operation!
+    # Ensure user can perform bulk operations
+    # In test/development, allow if no authentication system is set up
+    # In production, this should verify proper user authorization
+    if Rails.env.production? && !defined?(current_user)
+      render json: { success: false, message: "No autorizado" }, status: :unauthorized
+      return false
+    end
+    true
+  end
+
+  def execute_bulk_operation(expense_ids)
+    # Find expenses that belong to the user
+    expenses = current_user_expenses.where(id: expense_ids)
+
+    # Check if all requested expenses were found
+    if expenses.count != expense_ids.length
+      missing_count = expense_ids.length - expenses.count
+      return {
+        success: false,
+        message: "#{missing_count} gastos no encontrados o no autorizados",
+        errors: [ "Algunos gastos no fueron encontrados o no tienes permiso para modificarlos" ]
+      }
+    end
+
+    # Execute operation in transaction for data consistency
+    result = nil
+    ActiveRecord::Base.transaction do
+      result = yield(expenses)
+    end
+
+    # Process result
+    if result.is_a?(Hash) && result[:success_count]
+      {
+        success: true,
+        affected_count: result[:success_count],
+        failures: result[:failures] || []
+      }
+    elsif result.is_a?(Hash) && result[:success]
+      result
+    else
+      {
+        success: true,
+        affected_count: expenses.count,
+        failures: []
+      }
+    end
+  rescue => e
+    Rails.logger.error "Bulk operation error: #{e.message}"
+    {
+      success: false,
+      message: "Error al procesar la operación",
+      errors: [ e.message ]
     }
   end
 end

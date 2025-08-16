@@ -1,0 +1,176 @@
+/* Batch Selection Component Styles */
+
+/* Checkbox styling */
+.checkbox-header,
+.checkbox-cell {
+  transition: opacity 0.2s ease-in-out, width 0.2s ease-in-out;
+}
+
+/* Selected row styling */
+tr[aria-selected="true"] {
+  background-color: rgb(240 253 250); /* teal-50 */
+  border-left: 3px solid rgb(15 118 110); /* teal-700 */
+}
+
+tr[aria-selected="true"]:hover {
+  background-color: rgb(204 251 241); /* teal-100 */
+}
+
+/* Indeterminate checkbox state */
+input[type="checkbox"]:indeterminate {
+  background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M5 8h6' stroke='%230F766E' stroke-width='2' stroke-linecap='round'/%3e%3c/svg%3e");
+  background-color: rgb(240 253 250);
+  border-color: rgb(15 118 110);
+}
+
+/* Selection toolbar animation */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out forwards;
+}
+
+/* Toolbar shadow enhancement */
+[data-batch-selection-target="selectionToolbar"] {
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Checkbox focus styles */
+input[type="checkbox"][data-batch-selection-target="checkbox"]:focus,
+input[type="checkbox"][data-batch-selection-target="masterCheckbox"]:focus {
+  outline: 2px solid rgb(20 184 166); /* teal-500 */
+  outline-offset: 2px;
+}
+
+/* Disabled bulk actions button */
+[data-batch-selection-target="bulkActionsButton"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Selection mode active indicator */
+.selection-mode-active .checkbox-header,
+.selection-mode-active .checkbox-cell {
+  display: table-cell !important;
+}
+
+/* Row hover in selection mode */
+.selection-mode-active tr:hover {
+  cursor: pointer;
+}
+
+/* Prevent text selection during batch operations */
+.selection-mode-active tbody {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  [data-batch-selection-target="selectionToolbar"] {
+    padding: 0.75rem;
+  }
+  
+  [data-batch-selection-target="selectionToolbar"] .max-w-7xl {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .checkbox-cell,
+  .checkbox-header {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+/* Accessibility improvements */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Keyboard navigation focus indicator */
+tr:focus-visible {
+  outline: 2px solid rgb(20 184 166); /* teal-500 */
+  outline-offset: -2px;
+}
+
+/* Smooth transitions for selection state changes */
+tr {
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+/* Selection counter badge animation */
+[data-batch-selection-target="selectionCounter"] {
+  transition: all 0.2s ease-in-out;
+}
+
+[data-batch-selection-target="selectionCounter"]:not(.hidden) {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Integration with view toggle modes */
+.compact-mode .checkbox-cell {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.expanded-mode .checkbox-cell {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+/* Loading state for bulk operations */
+.batch-operation-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.batch-operation-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}

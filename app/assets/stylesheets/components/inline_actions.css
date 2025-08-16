@@ -1,0 +1,146 @@
+/* Inline Actions Component Styles */
+
+/* Animation for fade in effect */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Smooth transitions for action buttons */
+.animate-fade-in {
+  animation: fadeIn 150ms ease-out;
+}
+
+/* Ensure proper z-index layering for dropdowns */
+.expense-category-cell {
+  position: relative;
+  z-index: 1;
+}
+
+/* Actions container positioning */
+[data-inline-actions-target="actionsContainer"] {
+  transition: opacity 150ms ease-in-out, visibility 150ms ease-in-out;
+  z-index: 20;
+}
+
+/* Category dropdown styles */
+[data-inline-actions-target="categoryDropdown"] {
+  max-height: 256px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+[data-inline-actions-target="categoryDropdown"]::-webkit-scrollbar {
+  width: 6px;
+}
+
+[data-inline-actions-target="categoryDropdown"]::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+[data-inline-actions-target="categoryDropdown"]::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+[data-inline-actions-target="categoryDropdown"]::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Delete confirmation styles */
+[data-inline-actions-target="deleteConfirmation"] {
+  min-width: 192px;
+}
+
+/* Hover effects for action buttons */
+[data-inline-actions-target="actionsContainer"] button {
+  transition: all 150ms ease-out;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+[data-inline-actions-target="actionsContainer"] button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px 0 rgb(0 0 0 / 0.1);
+}
+
+[data-inline-actions-target="actionsContainer"] button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+/* Focus styles for accessibility */
+[data-inline-actions-target="actionsContainer"] button:focus-visible {
+  outline: 2px solid #0f766e;
+  outline-offset: 2px;
+}
+
+/* Loading state for buttons */
+[data-inline-actions-target="actionsContainer"] button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 768px) {
+  [data-inline-actions-target="actionsContainer"] {
+    position: static;
+    margin-top: 8px;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  
+  [data-inline-actions-target="actionsContainer"] button {
+    width: 32px;
+    height: 32px;
+  }
+  
+  [data-inline-actions-target="categoryDropdown"],
+  [data-inline-actions-target="deleteConfirmation"] {
+    position: fixed;
+    right: 16px;
+    left: 16px;
+    width: auto;
+    bottom: 16px;
+    top: auto;
+  }
+}
+
+/* Integration with compact view mode */
+.compact-mode [data-inline-actions-target="actionsContainer"] {
+  gap: 2px;
+}
+
+.compact-mode [data-inline-actions-target="actionsContainer"] button {
+  width: 28px;
+  height: 28px;
+}
+
+.compact-mode [data-inline-actions-target="actionsContainer"] svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Screen reader only text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

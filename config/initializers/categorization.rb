@@ -4,7 +4,7 @@
 Rails.application.configure do
   categorization_config = Rails.application.config_for(:categorization)
 
-  config.x.categorization = categorization_config.deep_symbolize_keys
+  config.x.categorization = (categorization_config || {}).deep_symbolize_keys
 end
 
 # Initialize monitoring if in production or explicitly enabled

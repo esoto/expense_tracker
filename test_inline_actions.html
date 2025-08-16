@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Inline Actions</title>
+  <script>
+    // Simple test to check if JavaScript is working
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOM loaded');
+      
+      // Check for Stimulus
+      setTimeout(function() {
+        const row = document.querySelector('[data-controller="inline-actions"]');
+        console.log('Found row with inline-actions controller:', row);
+        
+        const container = document.querySelector('[data-inline-actions-target="actionsContainer"]');
+        console.log('Found actions container:', container);
+        console.log('Container classes:', container ? container.className : 'not found');
+        
+        // Try simulating hover
+        if (row) {
+          const event = new MouseEvent('mouseenter', {
+            bubbles: true,
+            cancelable: true,
+            view: window
+          });
+          row.dispatchEvent(event);
+          
+          setTimeout(function() {
+            console.log('After hover - Container classes:', container ? container.className : 'not found');
+          }, 500);
+        }
+      }, 1000);
+    });
+  </script>
+</head>
+<body>
+  <h1>Test Page - Check console for output</h1>
+  <p>Visit http://localhost:3001/expenses and check browser console</p>
+</body>
+</html>

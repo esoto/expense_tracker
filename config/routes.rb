@@ -124,7 +124,16 @@ Rails.application.routes.draw do
       post :correct_category
       post :accept_suggestion
       post :reject_suggestion
+      patch :update_status
+      post :duplicate
     end
+  end
+
+  # Bulk operations routes
+  scope path: "expenses" do
+    post "bulk_categorize", to: "expenses#bulk_categorize"
+    post "bulk_update_status", to: "expenses#bulk_update_status"
+    delete "bulk_destroy", to: "expenses#bulk_destroy"
   end
 
   resources :budgets do

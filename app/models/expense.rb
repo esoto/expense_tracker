@@ -162,6 +162,13 @@ class Expense < ApplicationRecord
   def needs_review?
     confidence_level == :low || confidence_level == :very_low
   end
+  
+  # Check if expense is locked from editing (can be expanded with business rules)
+  def locked?
+    # For now, no expenses are locked. This can be extended based on business rules
+    # e.g., expenses older than 90 days, reconciled expenses, etc.
+    false
+  end
 
   def accept_ml_suggestion!
     return false unless ml_suggested_category_id.present?

@@ -186,6 +186,34 @@ module Services
 
         aggregate_results(results)
       end
+      
+      # Simple categorize all method for bulk operations controller
+      def categorize_all
+        return { success: false, errors: [ "No expenses selected" ] } if expenses.empty?
+        return { success: false, errors: [ "No category provided" ] } unless @category_id || @category
+        
+        category = @category || Category.find_by(id: @category_id)
+        return { success: false, errors: [ "Category not found" ] } unless category
+        
+        success_count = 0
+        failures = []
+        
+        expenses.find_each do |expense|
+          if expense.update(category_id: category.id)
+            success_count += 1
+          else
+            failures << {
+              id: expense.id,
+              error: expense.errors.full_messages.join(", ")
+            }
+          end
+        end
+        
+        {
+          success_count: success_count,
+          failures: failures
+        }
+      end
 
       private
 

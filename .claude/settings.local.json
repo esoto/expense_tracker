@@ -65,7 +65,13 @@
       "Bash(RAILS_ENV=test bundle exec rails runner test_class_loading.rb)",
       "Bash(bundle exec spring:*)",
       "Bash(RAILS_ENV=test bundle exec rails runner \"puts MetricsRefreshJob.methods.grep(/retry/)\")",
-      "Bash(RAILS_ENV=development bin/rails db:seed)"
+      "Bash(RAILS_ENV=development bin/rails db:seed)",
+      "WebFetch(domain:localhost)",
+      "Bash(RAILS_ENV=test bundle exec rspec spec/system/inline_quick_actions_spec.rb --format=progress)",
+      "Bash(RAILS_ENV=test bundle exec rspec manual_test_inline_actions.rb --format=documentation)",
+      "Bash(RAILS_ENV=test bundle exec rspec test_stimulus.rb --format=documentation)",
+      "Bash(mv:*)",
+      "Bash(npm test)"
     ],
     "deny": []
   }

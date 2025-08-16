@@ -12,4 +12,7 @@
 /*
  *= require tailwind/application
  *= require components/view_toggle
+ *= require components/inline_actions
+ *= require components/inline_actions_simple
+ *= require components/batch_selection
  */

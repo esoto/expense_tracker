@@ -96,6 +96,9 @@ export default class extends Controller {
         const badges = frame.querySelectorAll('.confidence-badge')
         badges.forEach(badge => badge.classList.add('hidden'))
       })
+      
+      // Inline actions are hidden via CSS in compact mode
+      // No JavaScript manipulation needed
     })
     
     // Add compact mode class to table
@@ -129,6 +132,9 @@ export default class extends Controller {
         const badges = frame.querySelectorAll('.confidence-badge')
         badges.forEach(badge => badge.classList.remove('hidden'))
       })
+      
+      // Inline actions are shown via CSS in expanded mode
+      // No JavaScript manipulation needed
     })
     
     // Add expanded mode class to table

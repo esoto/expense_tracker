@@ -119,11 +119,16 @@ Rails.application.routes.draw do
     collection do
       get :dashboard
       post :sync_emails
+      post :bulk_categorize
+      post :bulk_update_status
+      delete :bulk_destroy
     end
     member do
       post :correct_category
       post :accept_suggestion
       post :reject_suggestion
+      patch :update_status
+      post :duplicate
     end
   end
 

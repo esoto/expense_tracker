@@ -1,0 +1,22 @@
+<% case expense.status %>
+<% when 'processed' %>
+<span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800">
+  Procesado
+</span>
+<% when 'pending' %>
+<span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-800">
+  Pendiente
+</span>
+<% when 'duplicate' %>
+<span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-rose-100 text-rose-800">
+  Duplicado
+</span>
+<% when 'failed' %>
+<span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-rose-100 text-rose-800">
+  Fallido
+</span>
+<% else %>
+<span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-800">
+  <%= expense.status&.capitalize || 'Desconocido' %>
+</span>
+<% end %>

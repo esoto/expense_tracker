@@ -22,10 +22,20 @@ default: &default
   password: <%= ENV.fetch("POSTGRES_PASSWORD") { "" } %>
   host: <%= ENV.fetch("POSTGRES_HOST") { "localhost" } %>
   port: <%= ENV.fetch("POSTGRES_PORT") { 5432 } %>
+  # Performance optimizations
+  checkout_timeout: 5
+  reaping_frequency: 10
+  idle_timeout: 300
+  connect_timeout: 2
 
 development:
   <<: *default
-  database: expense_tracker_integration_development
+  database: expense_tracker_epic_3_expense_list_optimization_development
+  # Development performance settings
+  statement_timeout: 10000  # 10 seconds
+  lock_timeout: 5000        # 5 seconds
+  variables:
+    work_mem: '4MB'
 
 # The test environment is used exclusively to run your application's
 # test suite. You never need to work with it otherwise. Remember that
@@ -33,7 +43,7 @@ development:
 # and recreated between test runs. Don't rely on the data there!
 test:
   <<: *default
-  database: expense_tracker_integration_test<%= ENV['TEST_ENV_NUMBER'] %>
+  database: expense_tracker_epic_3_expense_list_optimization_test<%= ENV['TEST_ENV_NUMBER'] %>
   # Optimize for testing performance
   min_messages: WARNING
   # Use template0 to avoid encoding issues
@@ -46,6 +56,13 @@ production:
     database: expense_tracker_integration_production
     username: <%= ENV.fetch("POSTGRES_USER") { "expense_tracker" } %>
     password: <%= ENV["POSTGRES_PASSWORD"] %>
+    # Production performance settings
+    pool: <%= ENV.fetch("DB_POOL", 25) %>
+    statement_timeout: 30000  # 30 seconds
+    lock_timeout: 10000       # 10 seconds
+    variables:
+      work_mem: '16MB'
+      random_page_cost: 1.1  # For SSD storage
   cache:
     <<: *default
     database: expense_tracker_integration_production_cache

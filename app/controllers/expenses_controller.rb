@@ -150,8 +150,8 @@ class ExpensesController < ApplicationController
     # Use optimized DashboardExpenseFilterService for Recent Expenses widget
     # This provides filtered, paginated results with performance optimization
     # Always fetch 15 expenses to support both compact and expanded views
-    view_mode = params[:view_mode] || 'compact'
-    
+    view_mode = params[:view_mode] || "compact"
+
     dashboard_filter_params = params.permit(
       :page, :per_page, :view_mode,
       :search_query, :status, :period,
@@ -164,10 +164,10 @@ class ExpensesController < ApplicationController
       include_summary: true,
       include_quick_filters: true
     )
-    
+
     dashboard_filter_service = DashboardExpenseFilterService.new(dashboard_filter_params)
     @expense_filter_result = dashboard_filter_service.call
-    
+
     if @expense_filter_result.success?
       @recent_expenses = @expense_filter_result.expenses
       @expense_summary_stats = @expense_filter_result.summary_stats
@@ -177,7 +177,7 @@ class ExpensesController < ApplicationController
     else
       # Fallback to basic recent expenses if filter service fails
       @recent_expenses = dashboard_data[:recent_expenses]
-      @expense_view_mode = 'compact'
+      @expense_view_mode = "compact"
       Rails.logger.error "Dashboard filter service failed, using fallback"
     end
 
@@ -230,12 +230,12 @@ class ExpensesController < ApplicationController
       respond_to do |format|
         format.html { redirect_back(fallback_location: @expense, notice: "Categoría actualizada correctamente") }
         format.turbo_stream { render turbo_stream: turbo_stream.replace("expense_#{@expense.id}_category", partial: "expenses/category_with_confidence", locals: { expense: @expense }) }
-        format.json { 
-          render json: { 
-            success: true, 
+        format.json {
+          render json: {
+            success: true,
             expense: expense_json(@expense),
             color: @expense.category&.color
-          } 
+          }
         }
       end
     else

@@ -2,7 +2,7 @@ class CategoriesController < ApplicationController
   # GET /categories.json
   def index
     @categories = Category.order(:name)
-    
+
     respond_to do |format|
       format.json do
         render json: @categories.map { |category|

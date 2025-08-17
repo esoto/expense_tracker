@@ -147,7 +147,39 @@ class ExpensesController < ApplicationController
     @current_month_total = @month_metrics[:metrics][:total_amount] || totals[:current_month_total]
     @last_month_total = @month_metrics[:trends][:previous_period_total] || totals[:last_month_total]
 
-    @recent_expenses = dashboard_data[:recent_expenses]
+    # Use optimized DashboardExpenseFilterService for Recent Expenses widget
+    # This provides filtered, paginated results with performance optimization
+    # Always fetch 15 expenses to support both compact and expanded views
+    view_mode = params[:view_mode] || 'compact'
+    
+    dashboard_filter_params = params.permit(
+      :page, :per_page, :view_mode,
+      :search_query, :status, :period,
+      :min_amount, :max_amount,
+      :sort_by, :sort_direction,
+      category_ids: [], banks: []
+    ).to_h.merge(
+      account_ids: current_user_email_accounts.pluck(:id),
+      per_page: params[:per_page] || 15,  # Always fetch 15 for view toggle support
+      include_summary: true,
+      include_quick_filters: true
+    )
+    
+    dashboard_filter_service = DashboardExpenseFilterService.new(dashboard_filter_params)
+    @expense_filter_result = dashboard_filter_service.call
+    
+    if @expense_filter_result.success?
+      @recent_expenses = @expense_filter_result.expenses
+      @expense_summary_stats = @expense_filter_result.summary_stats
+      @expense_quick_filters = @expense_filter_result.quick_filters
+      @expense_view_mode = view_mode  # Use the normalized view_mode
+      @expense_filter_performance = @expense_filter_result.performance_metrics
+    else
+      # Fallback to basic recent expenses if filter service fails
+      @recent_expenses = dashboard_data[:recent_expenses]
+      @expense_view_mode = 'compact'
+      Rails.logger.error "Dashboard filter service failed, using fallback"
+    end
 
     category_data = dashboard_data[:category_breakdown]
     @category_totals = category_data[:totals]
@@ -198,7 +230,13 @@ class ExpensesController < ApplicationController
       respond_to do |format|
         format.html { redirect_back(fallback_location: @expense, notice: "Categoría actualizada correctamente") }
         format.turbo_stream { render turbo_stream: turbo_stream.replace("expense_#{@expense.id}_category", partial: "expenses/category_with_confidence", locals: { expense: @expense }) }
-        format.json { render json: { success: true, expense: expense_json(@expense) } }
+        format.json { 
+          render json: { 
+            success: true, 
+            expense: expense_json(@expense),
+            color: @expense.category&.color
+          } 
+        }
       end
     else
       respond_to do |format|
@@ -534,9 +572,11 @@ class ExpensesController < ApplicationController
   def expense_json(expense)
     {
       id: expense.id,
-      amount: expense.amount,
+      amount: expense.amount.to_f.to_s,
       description: expense.description,
       merchant_name: expense.merchant_name,
+      status: expense.status,
+      transaction_date: expense.transaction_date,
       category: expense.category ? {
         id: expense.category.id,
         name: expense.category.name,

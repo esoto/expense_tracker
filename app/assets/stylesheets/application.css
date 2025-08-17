@@ -15,4 +15,5 @@
  *= require components/inline_actions
  *= require components/inline_actions_simple
  *= require components/batch_selection
+ *= require components/dashboard_expenses
  */

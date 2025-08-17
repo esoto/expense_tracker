@@ -1,0 +1,1012 @@
+/* Dashboard Expenses Component Styles - Epic 3 Task 3.2 */
+/* Manages compact and expanded view modes with smooth transitions */
+
+/* View Toggle Button Group */
+.dashboard-expenses-toggle {
+  @apply flex items-center bg-slate-100 rounded-lg p-1;
+  transition: all 0.2s ease-out;
+}
+
+.dashboard-expenses-toggle button {
+  @apply relative px-3 py-1.5 text-sm font-medium rounded transition-all duration-200;
+  @apply flex items-center gap-2;
+}
+
+.dashboard-expenses-toggle button[aria-pressed="false"] {
+  @apply text-slate-600 hover:text-slate-900;
+}
+
+.dashboard-expenses-toggle button[aria-pressed="true"] {
+  @apply bg-white text-slate-900 shadow-sm;
+}
+
+.dashboard-expenses-toggle button:disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+/* View mode icons */
+.dashboard-expenses-toggle .view-icon {
+  @apply w-4 h-4;
+  transition: transform 0.2s ease-out;
+}
+
+.dashboard-expenses-toggle button[aria-pressed="true"] .view-icon {
+  transform: scale(1.1);
+}
+
+/* Expense Row Styles */
+.dashboard-expense-row {
+  @apply relative flex items-center justify-between rounded-lg transition-all duration-200;
+  @apply hover:shadow-md hover:-translate-y-0.5;
+  position: relative; /* Ensure position context for absolute children */
+}
+
+/* Compact View Styles */
+.dashboard-expenses-compact .dashboard-expense-row {
+  @apply p-3 sm:p-3.5 bg-slate-50 hover:bg-slate-100;
+}
+
+.dashboard-expenses-compact .expense-details {
+  @apply space-y-0.5;
+}
+
+.dashboard-expenses-compact .expense-merchant {
+  @apply text-sm font-medium text-slate-900 truncate max-w-xs;
+}
+
+.dashboard-expenses-compact .expense-metadata {
+  @apply text-xs text-slate-600 flex items-center gap-1.5;
+}
+
+.dashboard-expenses-compact .expense-amount {
+  @apply text-base font-bold text-slate-900;
+}
+
+.dashboard-expenses-compact .expense-date {
+  @apply text-xs text-slate-500;
+}
+
+/* Expanded View Styles */
+.dashboard-expenses-expanded .dashboard-expense-row {
+  @apply p-4 sm:p-5 bg-white border border-slate-200;
+}
+
+.dashboard-expenses-expanded .expense-details {
+  @apply space-y-1.5;
+}
+
+.dashboard-expenses-expanded .expense-merchant {
+  @apply text-base font-semibold text-slate-900;
+}
+
+.dashboard-expenses-expanded .expense-metadata {
+  @apply text-sm text-slate-600 flex items-center gap-2;
+}
+
+.dashboard-expenses-expanded .expense-amount {
+  @apply text-lg font-bold text-slate-900;
+}
+
+.dashboard-expenses-expanded .expense-date {
+  @apply text-sm text-slate-600;
+}
+
+.dashboard-expenses-expanded .expense-expanded-details {
+  @apply mt-2 pt-2 border-t border-slate-100;
+  animation: fadeIn 0.2s ease-in;
+}
+
+/* Category Badge */
+.expense-category-badge {
+  @apply w-10 h-10 rounded-full flex items-center justify-center text-white font-bold;
+  @apply ring-2 ring-white ring-offset-1;
+  transition: transform 0.2s ease-out;
+}
+
+.dashboard-expense-row:hover .expense-category-badge {
+  transform: scale(1.05);
+}
+
+/* Uncategorized Badge */
+.expense-category-badge.uncategorized {
+  @apply bg-slate-400;
+}
+
+/* Quick Actions (for Task 3.3) */
+.expense-quick-actions {
+  @apply opacity-0 group-hover:opacity-100 transition-opacity duration-200;
+  @apply flex items-center gap-1;
+}
+
+/* Ensure quick actions container is properly positioned */
+.inline-quick-actions {
+  @apply flex items-center space-x-1;
+  position: relative;
+  z-index: 10;
+}
+
+.expense-quick-action {
+  @apply p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100;
+  @apply transition-all duration-150;
+}
+
+.expense-quick-action:hover {
+  transform: scale(1.1);
+}
+
+.expense-quick-action.delete:hover {
+  @apply text-rose-600 bg-rose-50;
+}
+
+/* ============================================
+   TASK 3.4: BATCH SELECTION STYLES
+   ============================================ */
+
+/* Selection Mode Active State */
+.selection-mode-active {
+  @apply relative;
+}
+
+.selection-mode-active .dashboard-expense-row {
+  @apply cursor-pointer;
+  padding-left: 3.5rem !important; /* Make room for checkbox */
+  transition: all 0.2s ease-out;
+}
+
+.selection-mode-active .dashboard-expense-row:hover {
+  @apply bg-teal-50;
+  border-color: theme('colors.teal.200') !important;
+}
+
+/* Selection Checkbox Container */
+.selection-mode-active [data-dashboard-expenses-target="selectionContainer"] {
+  @apply block;
+  position: absolute !important;
+  left: 0.75rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 20;
+}
+
+/* Selected Row State */
+.dashboard-expense-row.selected {
+  @apply bg-teal-50 border-teal-300 ring-1 ring-teal-200;
+  animation: selectPulse 0.3s ease-out;
+}
+
+.dashboard-expense-row.selected:hover {
+  @apply bg-teal-100 border-teal-400;
+}
+
+/* Selection Checkbox Styles */
+[data-dashboard-expenses-target="selectionCheckbox"] {
+  @apply cursor-pointer;
+  transition: transform 0.2s ease-out;
+}
+
+[data-dashboard-expenses-target="selectionCheckbox"]:hover {
+  transform: scale(1.1);
+}
+
+[data-dashboard-expenses-target="selectionCheckbox"]:focus {
+  @apply ring-2 ring-teal-500 ring-offset-2;
+}
+
+/* Selection Toolbar */
+[data-dashboard-expenses-target="selectionToolbar"] {
+  animation: slideDown 0.3s ease-out;
+}
+
+[data-dashboard-expenses-target="selectionToolbar"].hidden {
+  display: none !important;
+}
+
+/* Select All Checkbox */
+[data-dashboard-expenses-target="selectAllCheckbox"] {
+  @apply cursor-pointer;
+}
+
+[data-dashboard-expenses-target="selectAllCheckbox"]:indeterminate {
+  @apply bg-teal-300;
+}
+
+/* Batch Action Buttons */
+[data-dashboard-expenses-target="selectionToolbar"] button {
+  @apply transition-all duration-150;
+}
+
+[data-dashboard-expenses-target="selectionToolbar"] button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  @apply shadow-sm;
+}
+
+[data-dashboard-expenses-target="selectionToolbar"] button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Selection Count Badge */
+[data-dashboard-expenses-target="selectedCount"] {
+  @apply font-bold text-teal-700;
+  animation: countUpdate 0.3s ease-out;
+}
+
+/* Animations for Selection */
+@keyframes selectPulse {
+  0% {
+    transform: scale(1);
+    background-color: transparent;
+  }
+  50% {
+    transform: scale(1.01);
+    background-color: theme('colors.teal.100');
+  }
+  100% {
+    transform: scale(1);
+    background-color: theme('colors.teal.50');
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes countUpdate {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+/* Mobile Touch Optimizations for Selection */
+@media (hover: none) and (pointer: coarse) {
+  .selection-mode-active .dashboard-expense-row {
+    @apply pl-14;
+    min-height: 60px;
+  }
+  
+  [data-dashboard-expenses-target="selectionCheckbox"] {
+    min-width: 24px;
+    min-height: 24px;
+    @apply transform scale-125;
+  }
+  
+  /* Mobile-optimized toolbar */
+  [data-dashboard-expenses-target="selectionToolbar"] {
+    @apply flex-col sm:flex-row;
+    @apply space-y-2 sm:space-y-0;
+    @apply p-4;
+  }
+  
+  [data-dashboard-expenses-target="selectionToolbar"] .flex {
+    @apply flex-col sm:flex-row;
+    @apply w-full;
+  }
+  
+  [data-dashboard-expenses-target="selectionToolbar"] button {
+    @apply py-3 px-4;
+    min-height: 44px;
+    @apply text-base;
+    @apply w-full sm:w-auto;
+  }
+  
+  /* Ensure select all is visible */
+  [data-dashboard-expenses-target="selectAllCheckbox"] {
+    @apply transform scale-125;
+    min-width: 24px;
+    min-height: 24px;
+  }
+}
+
+/* Keyboard Navigation for Selection */
+.selection-mode-active .dashboard-expense-row:focus {
+  @apply ring-2 ring-teal-500 ring-offset-2;
+}
+
+.selection-mode-active .dashboard-expense-row:focus-within {
+  @apply ring-2 ring-teal-500 ring-offset-1;
+}
+
+/* Range Selection Visual Feedback */
+.selection-mode-active .dashboard-expense-row.in-range {
+  @apply bg-teal-25 border-teal-200;
+}
+
+/* Accessibility - High Contrast Mode */
+@media (prefers-contrast: high) {
+  .dashboard-expense-row.selected {
+    @apply border-2 border-current;
+  }
+  
+  [data-dashboard-expenses-target="selectionToolbar"] {
+    @apply border-2 border-current;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-expense-row.selected,
+  [data-dashboard-expenses-target="selectionContainer"],
+  [data-dashboard-expenses-target="selectionToolbar"],
+  [data-dashboard-expenses-target="selectedCount"] {
+    animation: none !important;
+  }
+}
+
+/* Container Styles */
+.dashboard-expenses-container {
+  @apply transition-all duration-300 ease-out;
+}
+
+.dashboard-expenses-list {
+  @apply transition-all duration-200;
+}
+
+.dashboard-expenses-compact .dashboard-expenses-list {
+  @apply space-y-2;
+}
+
+.dashboard-expenses-expanded .dashboard-expenses-list {
+  @apply space-y-3;
+}
+
+/* Loading State */
+.dashboard-expenses-loading {
+  @apply opacity-50 pointer-events-none;
+}
+
+.dashboard-expenses-loading::after {
+  content: "";
+  @apply absolute inset-0 bg-white/50 rounded-xl;
+  @apply flex items-center justify-center;
+}
+
+/* Empty State */
+.dashboard-expenses-empty {
+  @apply text-center py-12;
+}
+
+.dashboard-expenses-empty-icon {
+  @apply mx-auto h-12 w-12 text-slate-400;
+}
+
+.dashboard-expenses-empty-title {
+  @apply mt-3 text-sm font-medium text-slate-900;
+}
+
+.dashboard-expenses-empty-text {
+  @apply mt-1 text-sm text-slate-500;
+}
+
+/* Mobile Responsive Adjustments */
+@media (max-width: 767px) {
+  .dashboard-expenses-toggle button span.view-label {
+    @apply hidden;
+  }
+  
+  .dashboard-expenses-toggle button {
+    @apply px-2;
+  }
+  
+  .dashboard-expense-row {
+    @apply flex-col sm:flex-row items-start sm:items-center;
+  }
+  
+  .expense-merchant {
+    @apply max-w-full;
+  }
+  
+  /* Force compact view on mobile */
+  .dashboard-expenses-expanded {
+    @apply dashboard-expenses-compact;
+  }
+}
+
+/* Keyboard Navigation Focus Styles */
+.dashboard-expense-row:focus {
+  @apply outline-none ring-2 ring-teal-500 ring-offset-2;
+}
+
+.dashboard-expense-row:focus-visible {
+  @apply outline-none ring-2 ring-teal-500 ring-offset-2;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+}
+
+/* Performance Metrics (Development Only) */
+.dashboard-expenses-performance {
+  @apply px-4 py-2 bg-slate-50 border-b border-slate-200;
+  @apply text-xs text-slate-600 font-mono;
+}
+
+.dashboard-expenses-performance .metric {
+  @apply inline-block mr-3;
+}
+
+.dashboard-expenses-performance .metric-value {
+  @apply font-semibold text-slate-800;
+}
+
+.dashboard-expenses-performance .index-used {
+  @apply text-emerald-600 font-semibold;
+}
+
+.dashboard-expenses-performance .no-index {
+  @apply text-rose-600 font-semibold;
+}
+
+/* Accessibility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Smooth Height Transitions */
+.dashboard-expenses-container[data-transitioning="true"] {
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Quick Filter Pills */
+.dashboard-expense-filter {
+  @apply inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium;
+  @apply border transition-all duration-150;
+  @apply cursor-pointer select-none;
+}
+
+.dashboard-expense-filter:hover {
+  @apply shadow-sm transform scale-105;
+}
+
+.dashboard-expense-filter.active {
+  @apply bg-teal-50 border-teal-300 text-teal-700;
+}
+
+/* Load More Button */
+.dashboard-expenses-load-more {
+  @apply px-4 py-2 text-sm font-medium text-teal-700;
+  @apply bg-white border border-teal-300 rounded-lg;
+  @apply hover:bg-teal-50 transition-colors duration-200;
+  @apply focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2;
+}
+
+.dashboard-expenses-load-more:disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+/* Widget Header */
+.dashboard-expenses-header {
+  @apply px-6 py-4 border-b border-slate-200;
+  @apply flex items-center justify-between;
+}
+
+.dashboard-expenses-title {
+  @apply text-lg font-semibold text-slate-900;
+}
+
+.dashboard-expenses-actions {
+  @apply flex items-center gap-3;
+}
+
+/* Filter Active Indicator */
+.dashboard-expenses-filter-badge {
+  @apply px-2 py-1 text-xs font-medium;
+  @apply bg-teal-100 text-teal-700 rounded-full;
+}
+
+/* ============================================
+   TASK 3.3: INLINE ACTIONS STYLES
+   ============================================ */
+
+/* Inline Actions Container */
+.dashboard-expense-row .opacity-0 {
+  pointer-events: none;
+}
+
+.dashboard-expense-row:hover .opacity-0,
+.dashboard-expense-row:focus-within .opacity-0,
+.dashboard-expense-row .opacity-100 {
+  pointer-events: auto;
+}
+
+/* Action Button Styles */
+.dashboard-expense-row button[data-action*="dashboard-inline-actions"] {
+  @apply relative rounded-lg transition-all duration-150;
+  @apply focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1;
+}
+
+.dashboard-expense-row button[data-action*="dashboard-inline-actions"]:hover {
+  transform: scale(1.15);
+}
+
+/* Category Dropdown */
+[data-dashboard-inline-actions-target="categoryDropdown"] {
+  @apply absolute z-50 w-48;
+  @apply bg-white rounded-lg shadow-xl border border-slate-200;
+  @apply overflow-hidden;
+  max-height: 320px;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+}
+
+.dashboard-expense-row [data-dashboard-inline-actions-target="categoryDropdown"] .py-1 {
+  @apply max-h-64 overflow-y-auto;
+  scrollbar-width: thin;
+  scrollbar-color: theme('colors.slate.300') transparent;
+}
+
+.dashboard-expense-row [data-dashboard-inline-actions-target="categoryDropdown"] button {
+  @apply w-full px-3 py-2 text-left text-sm;
+  @apply hover:bg-teal-50 focus:bg-teal-50 focus:outline-none;
+  @apply flex items-center gap-2 transition-colors;
+}
+
+.dashboard-expense-row [data-dashboard-inline-actions-target="categoryDropdown"] button:hover .truncate {
+  @apply text-teal-700 font-medium;
+}
+
+/* Delete Confirmation Modal */
+[data-dashboard-inline-actions-target="deleteConfirmation"] {
+  @apply absolute z-50 w-56;
+  @apply bg-white rounded-lg shadow-2xl border border-rose-200 p-4;
+  animation: shake 0.3s ease-in-out;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.dashboard-expense-row [data-dashboard-inline-actions-target="deleteConfirmation"] button {
+  @apply transition-all duration-150;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-1;
+}
+
+.dashboard-expense-row [data-dashboard-inline-actions-target="deleteConfirmation"] button:first-of-type {
+  @apply focus:ring-rose-500;
+}
+
+.dashboard-expense-row [data-dashboard-inline-actions-target="deleteConfirmation"] button:last-of-type {
+  @apply focus:ring-slate-400;
+}
+
+/* Loading Overlay */
+.inline-action-loading {
+  @apply absolute inset-0 z-40 rounded-lg;
+  animation: fadeIn 0.15s ease-out;
+}
+
+/* Toast Notifications */
+.toast-notification {
+  @apply pointer-events-none;
+}
+
+.toast-notification > div {
+  @apply pointer-events-auto;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+.animate-slide-out {
+  animation: slide-out 0.3s ease-in;
+}
+
+/* Mobile Touch Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Make touch targets larger on mobile */
+  .dashboard-expense-row button[data-action*="dashboard-inline-actions"] {
+    @apply p-2;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  /* Show actions on tap instead of hover */
+  .dashboard-expense-row .opacity-0 {
+    @apply opacity-100;
+    @apply bg-white/95 rounded-lg shadow-sm p-1;
+  }
+  
+  /* Adjust dropdown positions for mobile */
+  .dashboard-expense-row [data-dashboard-inline-actions-target="categoryDropdown"],
+  .dashboard-expense-row [data-dashboard-inline-actions-target="deleteConfirmation"] {
+    position: fixed;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 1rem;
+    width: auto;
+  }
+}
+
+/* Keyboard Navigation Indicators */
+.dashboard-expense-row:focus-within button[data-action*="dashboard-inline-actions"]:focus {
+  @apply ring-2 ring-teal-500 ring-offset-2;
+}
+
+/* Status Button State Transitions */
+.dashboard-expense-row button[title*="procesado"] svg,
+.dashboard-expense-row button[title*="pendiente"] svg {
+  @apply transition-transform duration-200;
+}
+
+.dashboard-expense-row button[title*="procesado"]:hover svg {
+  transform: rotate(-20deg) scale(1.1);
+}
+
+.dashboard-expense-row button[title*="pendiente"]:hover svg {
+  transform: rotate(20deg) scale(1.1);
+}
+
+/* Duplicate Button Animation */
+.dashboard-expense-row button[title*="Duplicar"]:hover svg {
+  animation: duplicate-pulse 0.4s ease-in-out;
+}
+
+@keyframes duplicate-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}
+
+/* Category Selection Feedback */
+.dashboard-expense-row [data-dashboard-inline-actions-target="categoryDropdown"] button:active {
+  @apply bg-teal-100;
+  transform: scale(0.98);
+}
+
+/* Hover Intent Delay */
+@media (hover: hover) {
+  .dashboard-expense-row {
+    transition: box-shadow 0.2s ease-out 0.1s;
+  }
+  
+  .dashboard-expense-row .opacity-0 {
+    transition: opacity 0.2s ease-out 0.15s;
+  }
+}
+
+/* Accessibility - High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .dashboard-expense-row button[data-action*="dashboard-inline-actions"] {
+    @apply border border-current;
+  }
+  
+  .dashboard-expense-row [data-dashboard-inline-actions-target="categoryDropdown"],
+  .dashboard-expense-row [data-dashboard-inline-actions-target="deleteConfirmation"] {
+    @apply border-2 border-current;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-expense-row,
+  .dashboard-expense-row button[data-action*="dashboard-inline-actions"],
+  .inline-action-loading,
+  .toast-notification > div {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ============================================
+   TASK 3.5: BULK OPERATIONS MODAL STYLES
+   ============================================ */
+
+/* Modal Overlay */
+.bulk-modal-overlay {
+  @apply fixed inset-0 z-[9998] bg-slate-900/50 backdrop-blur-sm;
+  @apply flex items-center justify-center p-4;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Modal Container */
+.bulk-modal-container {
+  @apply bg-white rounded-xl shadow-2xl max-w-md w-full;
+  @apply transform transition-all duration-200;
+  animation: slideUpAndFade 0.3s ease-out;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Modal Header */
+.bulk-modal-header {
+  @apply px-6 py-4 border-b flex items-center justify-between;
+}
+
+.bulk-modal-header h3 {
+  @apply text-lg font-semibold;
+}
+
+.bulk-modal-close {
+  @apply p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100;
+  @apply transition-all duration-150;
+}
+
+.bulk-modal-close:hover {
+  transform: rotate(90deg);
+}
+
+/* Modal Body */
+.bulk-modal-body {
+  @apply px-6 py-4 flex-1 overflow-y-auto;
+}
+
+/* Modal Footer */
+.bulk-modal-footer {
+  @apply px-6 py-4 border-t border-slate-200;
+  @apply flex items-center justify-end space-x-3;
+}
+
+/* Button Styles */
+.btn-primary {
+  @apply px-4 py-2 bg-teal-700 text-white rounded-lg;
+  @apply hover:bg-teal-800 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2;
+  @apply font-medium text-sm transition-all duration-150;
+  @apply inline-flex items-center justify-center;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-secondary {
+  @apply px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded-lg;
+  @apply hover:bg-slate-50 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2;
+  @apply font-medium text-sm transition-all duration-150;
+  @apply inline-flex items-center justify-center;
+}
+
+.btn-danger {
+  @apply px-4 py-2 bg-rose-600 text-white rounded-lg;
+  @apply hover:bg-rose-700 focus:ring-2 focus:ring-rose-500 focus:ring-offset-2;
+  @apply font-medium text-sm transition-all duration-150;
+  @apply inline-flex items-center justify-center;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+/* Form Groups */
+.form-group {
+  @apply space-y-2;
+}
+
+.form-group label {
+  @apply block text-sm font-medium text-slate-700;
+}
+
+.form-group select,
+.form-group input[type="text"] {
+  @apply w-full px-3 py-2 border border-slate-300 rounded-lg;
+  @apply focus:ring-2 focus:ring-teal-500 focus:border-teal-500;
+  @apply text-sm transition-all duration-150;
+}
+
+/* Radio Button Groups */
+.form-group input[type="radio"] {
+  @apply h-4 w-4 border-slate-300;
+  @apply focus:ring-2 focus:ring-offset-2;
+}
+
+/* Loading Spinner */
+.spinner {
+  @apply inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Modal Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUpAndFade {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Toast Notification Styles (Task 3.5) */
+#toast-container {
+  pointer-events: none;
+}
+
+#toast-container > div {
+  pointer-events: auto;
+  @apply mb-2;
+}
+
+.animate-slide-in {
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+.animate-slide-out {
+  animation: slideOutToRight 0.3s ease-in;
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutToRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Mobile Responsive Modals */
+@media (max-width: 640px) {
+  .bulk-modal-container {
+    @apply max-w-full mx-4;
+    max-height: 85vh;
+  }
+  
+  .bulk-modal-header {
+    @apply px-4 py-3;
+  }
+  
+  .bulk-modal-body {
+    @apply px-4 py-3;
+  }
+  
+  .bulk-modal-footer {
+    @apply px-4 py-3 flex-col space-y-2 space-x-0;
+  }
+  
+  .bulk-modal-footer button {
+    @apply w-full;
+  }
+}
+
+/* Touch-friendly Bulk Actions */
+@media (hover: none) and (pointer: coarse) {
+  .bulk-modal-close {
+    @apply p-2;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  .form-group input[type="radio"] {
+    @apply w-5 h-5;
+  }
+  
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    @apply py-3;
+    min-height: 44px;
+  }
+}
+
+/* Dark Mode Support (if implemented in future) */
+@media (prefers-color-scheme: dark) {
+  .bulk-modal-overlay {
+    @apply bg-slate-950/80;
+  }
+  
+  .bulk-modal-container {
+    @apply bg-slate-800 text-slate-100;
+  }
+  
+  .bulk-modal-header {
+    @apply border-slate-700;
+  }
+  
+  .bulk-modal-footer {
+    @apply border-slate-700;
+  }
+  
+  .bulk-modal-close {
+    @apply text-slate-400 hover:text-slate-200 hover:bg-slate-700;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .bulk-modal-container {
+    @apply border-2 border-current;
+  }
+  
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    @apply border-2 border-current;
+  }
+}

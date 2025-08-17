@@ -114,13 +114,15 @@ Rails.application.routes.draw do
     root "patterns#index"
   end
 
+  # Categories route for JSON endpoint
+  resources :categories, only: [:index]
+  
   # Bulk operations routes (must come before general resources to avoid conflicts)
   scope "/expenses", controller: :expenses do
     post "bulk_categorize", action: :bulk_categorize, as: :bulk_categorize_expenses
     post "bulk_update_status", action: :bulk_update_status, as: :bulk_update_status_expenses
     delete "bulk_destroy", action: :bulk_destroy, as: :bulk_destroy_expenses
   end
-
   # Core expense CRUD routes
   resources :expenses, except: [] do
     collection do

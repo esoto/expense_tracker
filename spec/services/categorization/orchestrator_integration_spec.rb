@@ -254,7 +254,7 @@ RSpec.describe "Categorization::Orchestrator Integration", type: :service do
         )
         
         expect(result).to be_success
-        expect(result.patterns_created).to be >= 0
+        expect(result.patterns_created.size).to be >= 0
       end
       
       it "invalidates caches after learning" do

@@ -31,7 +31,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher, type: :service do
     end
 
     context "when handling Expense objects" do
-      let(:expense) { create(:expense, merchant_normalized: "Starbucks Coffee", description: "Morning coffee") }
+      let(:expense) { create(:expense, merchant_name: "Starbucks Coffee", merchant_normalized: "Starbucks Coffee", description: "Morning coffee") }
       let(:candidates) { [ "Starbucks", "Coffee Shop", "Restaurant" ] }
 
       it "correctly extracts merchant_name from Expense objects" do
@@ -41,7 +41,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher, type: :service do
       end
 
       it "handles Expense as a candidate" do
-        other_expense = create(:expense, merchant_normalized: "Coffee Time")
+        other_expense = create(:expense, merchant_name: "Coffee Time", merchant_normalized: "Coffee Time")
         # Use lower confidence threshold to include "Starbucks Coffee" match
         result = matcher.match("Coffee", [ expense, other_expense ], min_confidence: 0.3)
 
@@ -145,6 +145,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher, type: :service do
 
       # Create expense
       expense = create(:expense,
+                      merchant_name: "STARBUCKS COFFEE #12345",
                       merchant_normalized: "STARBUCKS COFFEE #12345",
                       description: "Morning coffee purchase")
 

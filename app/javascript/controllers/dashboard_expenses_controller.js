@@ -68,6 +68,8 @@ export default class extends Controller {
     if (this.ariaLiveRegion) {
       this.ariaLiveRegion.remove()
     }
+    // CRITICAL FIX: Clean up any lingering modals and toasts
+    this.cleanupModalsAndToasts()
   }
   
   // Initialize view mode from sessionStorage or data attribute
@@ -925,19 +927,17 @@ export default class extends Controller {
         this.selectionToolbarTarget.classList.remove("hidden")
         this.selectionToolbarTarget.style.display = "block"
         
-        // Enable/disable bulk action buttons based on selection count
-        this.selectionToolbarTarget.querySelectorAll("button").forEach(button => {
-          const action = button.dataset.action
-          if (action?.includes("bulkDelete") || 
-              action?.includes("bulkCategorize") || 
-              action?.includes("bulkUpdateStatus")) {
-            // These actions require at least one selection
-            button.disabled = count === 0
-            if (count === 0) {
-              button.classList.add("opacity-50", "cursor-not-allowed")
-            } else {
-              button.classList.remove("opacity-50", "cursor-not-allowed")
-            }
+        // CRITICAL FIX: Update visual state of bulk action buttons based on selection count
+        // Find buttons specifically by their data-bulk-action attributes
+        const bulkButtons = this.selectionToolbarTarget.querySelectorAll('[data-bulk-action]')
+        
+        bulkButtons.forEach(button => {
+          if (count > 0) {
+            button.classList.remove("opacity-50", "cursor-not-allowed")
+            button.removeAttribute('aria-disabled')
+          } else {
+            button.classList.add("opacity-50", "cursor-not-allowed")
+            button.setAttribute('aria-disabled', 'true')
           }
         })
       } else {
@@ -947,9 +947,12 @@ export default class extends Controller {
       }
     }
     
-    // Update ARIA live region
+    // Update ARIA live region with proper announcement
     if (count > 0) {
       this.announce(`${count} ${count === 1 ? 'elemento seleccionado' : 'elementos seleccionados'}`)
+    } else if (this.selectionModeValue) {
+      // Only announce empty selection in selection mode
+      this.announce("Ningún elemento seleccionado")
     }
   }
   
@@ -1001,12 +1004,12 @@ export default class extends Controller {
           </div>
           <div class="bulk-modal-footer">
             <button type="button" 
-                    class="btn-secondary"
+                    class="btn-secondary w-full sm:w-auto px-4 py-2"
                     data-action="click->dashboard-expenses#closeBulkModal">
               Cancelar
             </button>
             <button type="button" 
-                    class="btn-danger"
+                    class="btn-danger w-full sm:w-auto px-4 py-2"
                     data-action="click->dashboard-expenses#confirmBulkDelete">
               <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -1041,11 +1044,19 @@ export default class extends Controller {
         expense_ids: this.selectedIdsValue
       })
     })
-    .then(response => response.json())
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return response.json()
+    })
     .then(data => {
+      console.log("Bulk delete response:", data)
       if (data.success) {
         this.closeBulkModal()
-        this.showToast(data.message || `${data.affected_count} gastos eliminados exitosamente`, "success")
+        const message = data.message || `${data.affected_count || this.selectedIdsValue.length} gastos eliminados exitosamente`
+        console.log("Showing toast with message:", message)
+        this.showToast(message, "success")
         
         // Remove deleted rows from DOM
         this.selectedIdsValue.forEach(id => {
@@ -1147,12 +1158,12 @@ export default class extends Controller {
                 </div>
                 <div class="bulk-modal-footer">
                   <button type="button" 
-                          class="btn-secondary"
+                          class="btn-secondary w-full sm:w-auto px-4 py-2"
                           data-action="click->dashboard-expenses#closeBulkModal">
                     Cancelar
                   </button>
                   <button type="submit" 
-                          class="btn-primary">
+                          class="btn-primary w-full sm:w-auto px-4 py-2">
                     <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
                     </svg>
@@ -1207,11 +1218,20 @@ export default class extends Controller {
         category_id: categoryId
       })
     })
-    .then(response => response.json())
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return response.json()
+    })
     .then(data => {
+      console.log("Bulk categorize response:", data)
       if (data.success) {
         this.closeBulkModal()
-        this.showToast(data.message || `${data.affected_count} gastos categorizados exitosamente`, "success")
+        // Use the message from the backend service which includes the category name
+        const message = data.message || `${data.affected_count || this.selectedIdsValue.length} gastos categorizados exitosamente`
+        console.log("Showing toast with message:", message)
+        this.showToast(message, "success")
         
         // Update UI - reload the widget to show new categories
         this.reloadWidget()
@@ -1300,12 +1320,12 @@ export default class extends Controller {
             </div>
             <div class="bulk-modal-footer">
               <button type="button" 
-                      class="btn-secondary"
+                      class="btn-secondary w-full sm:w-auto px-4 py-2"
                       data-action="click->dashboard-expenses#closeBulkModal">
                 Cancelar
               </button>
               <button type="submit" 
-                      class="btn-primary bg-amber-600 hover:bg-amber-700">
+                      class="btn-primary bg-amber-600 hover:bg-amber-700 w-full sm:w-auto px-4 py-2">
                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
@@ -1350,11 +1370,19 @@ export default class extends Controller {
         status: status
       })
     })
-    .then(response => response.json())
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      return response.json()
+    })
     .then(data => {
+      console.log("Bulk status update response:", data)
       if (data.success) {
         this.closeBulkModal()
-        this.showToast(data.message || `${data.affected_count} gastos actualizados exitosamente`, "success")
+        const message = data.message || `${data.affected_count || this.selectedIdsValue.length} gastos actualizados exitosamente`
+        console.log("Showing toast with message:", message)
+        this.showToast(message, "success")
         
         // Update UI - reload the widget to show new statuses
         this.reloadWidget()
@@ -1388,13 +1416,17 @@ export default class extends Controller {
   
   // Helper: Insert modal into DOM
   insertModal(modalHtml) {
-    // Remove any existing modals
-    this.closeBulkModal()
+    // Remove any existing modals first
+    const existingModal = document.querySelector('.bulk-modal-overlay')
+    if (existingModal) {
+      existingModal.remove()
+    }
     
     // Create modal element
     const modalDiv = document.createElement('div')
     modalDiv.innerHTML = modalHtml
-    document.body.appendChild(modalDiv.firstElementChild)
+    const modalElement = modalDiv.firstElementChild
+    document.body.appendChild(modalElement)
     
     // Add escape key handler
     this.modalEscapeHandler = (e) => {
@@ -1405,40 +1437,68 @@ export default class extends Controller {
     document.addEventListener('keydown', this.modalEscapeHandler)
     
     // Add click outside handler
-    const overlay = document.querySelector('.bulk-modal-overlay')
-    if (overlay) {
-      overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
-          this.closeBulkModal()
-        }
-      })
-    }
+    modalElement.addEventListener('click', (e) => {
+      if (e.target === modalElement) {
+        this.closeBulkModal()
+      }
+    })
     
     // Animate modal entrance
     requestAnimationFrame(() => {
-      const modal = document.querySelector('.bulk-modal-overlay')
-      if (modal) {
-        modal.style.opacity = '0'
-        modal.style.transition = 'opacity 0.2s ease-out'
+      if (modalElement) {
+        modalElement.style.opacity = '0'
+        modalElement.style.transition = 'opacity 0.2s ease-out'
         requestAnimationFrame(() => {
-          modal.style.opacity = '1'
+          modalElement.style.opacity = '1'
         })
       }
     })
   }
   
   // Close bulk modal
-  closeBulkModal() {
+  closeBulkModal(event) {
+    event?.preventDefault()
+    event?.stopPropagation()
+    
+    console.log("Closing bulk modal")
     const modal = document.querySelector('.bulk-modal-overlay')
     if (modal) {
+      // Add closing state to prevent multiple close attempts
+      if (modal.dataset.closing === 'true') return
+      modal.dataset.closing = 'true'
+      
       modal.style.transition = 'opacity 0.2s ease-out'
       modal.style.opacity = '0'
+      
+      // Use a slightly longer timeout to ensure animation completes
       setTimeout(() => {
-        modal.remove()
-      }, 200)
+        if (modal && modal.parentNode) {
+          modal.remove()
+        }
+      }, 300) // Increased timeout for more reliable removal
     }
     
     // Remove escape key handler
+    if (this.modalEscapeHandler) {
+      document.removeEventListener('keydown', this.modalEscapeHandler)
+      this.modalEscapeHandler = null
+    }
+  }
+  
+  // CRITICAL FIX: Clean up all modals and toasts
+  cleanupModalsAndToasts() {
+    // Remove any bulk modals
+    document.querySelectorAll('.bulk-modal-overlay').forEach(modal => {
+      modal.remove()
+    })
+    
+    // Remove toast container
+    const toastContainer = document.getElementById('toast-container')
+    if (toastContainer) {
+      toastContainer.remove()
+    }
+    
+    // Clean up any event handlers
     if (this.modalEscapeHandler) {
       document.removeEventListener('keydown', this.modalEscapeHandler)
       this.modalEscapeHandler = null
@@ -1583,43 +1643,54 @@ export default class extends Controller {
   
   // Initialize ARIA live region for announcements
   initializeAriaLiveRegion() {
+    // Check if one already exists and remove it
+    const existingRegion = this.element.querySelector('[role="status"][aria-live="polite"]')
+    if (existingRegion) {
+      existingRegion.remove()
+    }
+    
     // Create persistent live region within the widget
     this.ariaLiveRegion = document.createElement("div")
     this.ariaLiveRegion.setAttribute("role", "status")
     this.ariaLiveRegion.setAttribute("aria-live", "polite")
     this.ariaLiveRegion.setAttribute("aria-atomic", "true")
     this.ariaLiveRegion.classList.add("sr-only")
+    // Use visibility hidden instead of offscreen positioning for better compatibility
     this.ariaLiveRegion.style.position = "absolute"
-    this.ariaLiveRegion.style.left = "-10000px"
     this.ariaLiveRegion.style.width = "1px"
     this.ariaLiveRegion.style.height = "1px"
+    this.ariaLiveRegion.style.padding = "0"
+    this.ariaLiveRegion.style.margin = "-1px"
     this.ariaLiveRegion.style.overflow = "hidden"
+    this.ariaLiveRegion.style.clip = "rect(0, 0, 0, 0)"
+    this.ariaLiveRegion.style.whiteSpace = "nowrap"
+    this.ariaLiveRegion.style.border = "0"
     // Append to widget element instead of body
     this.element.appendChild(this.ariaLiveRegion)
   }
   
   // Announce to screen readers
   announce(message) {
+    if (!this.ariaLiveRegion) {
+      // Initialize if not present
+      this.initializeAriaLiveRegion()
+    }
+    
     if (this.ariaLiveRegion) {
-      // Clear previous message
+      // CRITICAL FIX: Force update by clearing and setting with delay
+      // This ensures screen readers pick up the change
       this.ariaLiveRegion.textContent = ""
-      // Set new message after a brief delay to ensure it's announced
-      setTimeout(() => {
+      // Use requestAnimationFrame for better timing
+      requestAnimationFrame(() => {
         this.ariaLiveRegion.textContent = message
-      }, 100)
-    } else {
-      // Fallback if live region not initialized
-      const announcement = document.createElement("div")
-      announcement.setAttribute("role", "status")
-      announcement.setAttribute("aria-live", "polite")
-      announcement.setAttribute("aria-atomic", "true")
-      announcement.classList.add("sr-only")
-      announcement.textContent = message
-      
-      // Append to widget element if available, otherwise body
-      const container = this.element || document.body
-      container.appendChild(announcement)
-      setTimeout(() => announcement.remove(), 2000)
+        // Also update aria-label for better compatibility
+        this.ariaLiveRegion.setAttribute("aria-label", message)
+        
+        // Log for debugging in test environment
+        if (this.element.dataset.environment === "test" || this.element.dataset.environment === "development") {
+          console.log("ARIA announcement:", message)
+        }
+      })
     }
   }
 }

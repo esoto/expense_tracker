@@ -115,8 +115,8 @@ Rails.application.routes.draw do
   end
 
   # Categories route for JSON endpoint
-  resources :categories, only: [:index]
-  
+  resources :categories, only: [ :index ]
+
   # Bulk operations routes (must come before general resources to avoid conflicts)
   scope "/expenses", controller: :expenses do
     post "bulk_categorize", action: :bulk_categorize, as: :bulk_categorize_expenses

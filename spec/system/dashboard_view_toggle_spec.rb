@@ -3,7 +3,7 @@ require "rails_helper"
 RSpec.describe "Dashboard View Toggle", type: :system, js: true do
   let!(:email_account) { create(:email_account) }
   let!(:category) { create(:category, name: "Food", color: "#FF6B6B") }
-  
+
   # Create multiple expenses for testing view limits
   let!(:expenses) do
     20.times.map do |i|
@@ -106,14 +106,14 @@ RSpec.describe "Dashboard View Toggle", type: :system, js: true do
   describe "View Mode Persistence" do
     it "persists view mode in sessionStorage" do
       click_button "Expandida"
-      
+
       # Check sessionStorage via JavaScript
       stored_mode = page.evaluate_script("sessionStorage.getItem('dashboard_expense_view_mode')")
       expect(stored_mode).to eq("expanded")
-      
+
       # Refresh page
       visit dashboard_expenses_path
-      
+
       # Should still be in expanded mode
       expect(page).to have_css("button[aria-pressed='true'][data-mode='expanded']")
     end
@@ -122,7 +122,7 @@ RSpec.describe "Dashboard View Toggle", type: :system, js: true do
       click_button "Expandida"
       sleep 0.3
       click_button "Compacta"
-      
+
       stored_mode = page.evaluate_script("sessionStorage.getItem('dashboard_expense_view_mode')")
       expect(stored_mode).to eq("compact")
     end
@@ -132,18 +132,18 @@ RSpec.describe "Dashboard View Toggle", type: :system, js: true do
     it "toggles view with Ctrl+Shift+V" do
       # Start in compact mode
       expect(page).to have_css(".dashboard-expenses-compact")
-      
+
       # Press Ctrl+Shift+V to toggle to expanded
-      page.find("body").send_keys [:control, :shift, "v"]
+      page.find("body").send_keys [ :control, :shift, "v" ]
       sleep 0.5
-      
+
       expect(page).to have_css(".dashboard-expenses-expanded")
       expect(page).to have_css(".dashboard-expense-row:not(.hidden)", count: 15)
-      
+
       # Press again to toggle back to compact
-      page.find("body").send_keys [:control, :shift, "v"]
+      page.find("body").send_keys [ :control, :shift, "v" ]
       sleep 0.5
-      
+
       expect(page).to have_css(".dashboard-expenses-compact")
       expect(page).to have_css(".dashboard-expense-row:not(.hidden)", count: 5)
     end
@@ -162,7 +162,7 @@ RSpec.describe "Dashboard View Toggle", type: :system, js: true do
 
       it "forces compact view on mobile" do
         expect(page).to have_css(".dashboard-expenses-compact")
-        
+
         # Expanded button should be disabled
         expanded_button = find("button[data-mode='expanded']")
         expect(expanded_button[:disabled]).to eq("true")
@@ -179,7 +179,7 @@ RSpec.describe "Dashboard View Toggle", type: :system, js: true do
       it "prevents switching to expanded mode" do
         expanded_button = find("button[data-mode='expanded']")
         expanded_button.click
-        
+
         # Should remain in compact mode
         expect(page).to have_css(".dashboard-expenses-compact")
         expect(page).to have_css("button[aria-pressed='true'][data-mode='compact']")
@@ -191,12 +191,12 @@ RSpec.describe "Dashboard View Toggle", type: :system, js: true do
     it "smoothly transitions between views" do
       # Check for transition classes
       expense_rows = all(".dashboard-expense-row")
-      
+
       expect(expense_rows.first[:style]).to include("transition")
-      
+
       click_button "Expandida"
       sleep 0.3
-      
+
       # More rows should be visible after transition
       visible_rows = all(".dashboard-expense-row:not(.hidden)")
       expect(visible_rows.count).to be > 5
@@ -220,7 +220,7 @@ RSpec.describe "Dashboard View Toggle", type: :system, js: true do
     it "view toggle still works with empty state" do
       click_button "Expandida"
       expect(page).to have_css("button[aria-pressed='true'][data-mode='expanded']")
-      
+
       click_button "Compacta"
       expect(page).to have_css("button[aria-pressed='true'][data-mode='compact']")
     end
@@ -239,7 +239,7 @@ RSpec.describe "Dashboard View Toggle", type: :system, js: true do
   describe "Integration with Filters" do
     before do
       # Create an uncategorized expense
-      create(:expense, 
+      create(:expense,
         email_account: email_account,
         category: nil,
         merchant_name: "Uncategorized Merchant"
@@ -249,11 +249,11 @@ RSpec.describe "Dashboard View Toggle", type: :system, js: true do
 
     it "maintains view mode when applying filters" do
       click_button "Expandida"
-      
+
       # Apply a filter
       if page.has_button?("Sin categorizar")
         click_button "Sin categorizar"
-        
+
         # Should still be in expanded mode
         expect(page).to have_css("button[aria-pressed='true'][data-mode='expanded']")
       end
@@ -267,16 +267,16 @@ RSpec.describe "Dashboard View Toggle", type: :system, js: true do
         toggle_group = find(".dashboard-expenses-toggle")
         expect(toggle_group[:role]).to eq("group")
         expect(toggle_group["aria-label"]).to eq("Vista")
-        
+
         # Check buttons
         compact_button = find("button[data-mode='compact']")
         expect(compact_button["aria-label"]).to include("compacta")
-        expect(compact_button["aria-pressed"]).to be_in(["true", "false"])
-        
+        expect(compact_button["aria-pressed"]).to be_in([ "true", "false" ])
+
         expanded_button = find("button[data-mode='expanded']")
         expect(expanded_button["aria-label"]).to include("expandida")
-        expect(expanded_button["aria-pressed"]).to be_in(["true", "false"])
-        
+        expect(expanded_button["aria-pressed"]).to be_in([ "true", "false" ])
+
         # Check expense rows
         expense_rows = all(".dashboard-expense-row")
         expense_rows.each_with_index do |row, index|
@@ -290,7 +290,7 @@ RSpec.describe "Dashboard View Toggle", type: :system, js: true do
     it "supports keyboard navigation" do
       first_expense = find(".dashboard-expense-row", match: :first)
       first_expense.click
-      
+
       # Should be focusable
       expect(page.evaluate_script("document.activeElement.classList.contains('dashboard-expense-row')")).to be true
     end

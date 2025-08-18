@@ -21,12 +21,12 @@ RSpec.describe "Expenses Inline Actions API", type: :request do
            headers: { "Accept" => "application/json" }
 
       expect(response).to have_http_status(:success)
-      
+
       json = JSON.parse(response.body)
       expect(json["success"]).to be true
       expect(json["expense"]["category"]["id"]).to eq(new_category.id)
       expect(json["color"]).to eq(new_category.color)
-      
+
       expense.reload
       expect(expense.category_id).to eq(new_category.id)
     end
@@ -37,7 +37,7 @@ RSpec.describe "Expenses Inline Actions API", type: :request do
            headers: { "Accept" => "application/json" }
 
       expect(response).to have_http_status(:unprocessable_entity)
-      
+
       json = JSON.parse(response.body)
       expect(json["success"]).to be false
       expect(json["error"]).to include("Invalid category")
@@ -49,7 +49,7 @@ RSpec.describe "Expenses Inline Actions API", type: :request do
            headers: { "Accept" => "application/json" }
 
       expect(response).to have_http_status(:unprocessable_entity)
-      
+
       json = JSON.parse(response.body)
       expect(json["success"]).to be false
       expect(json["error"]).to include("Category ID required")
@@ -63,28 +63,28 @@ RSpec.describe "Expenses Inline Actions API", type: :request do
             headers: { "Accept" => "application/json" }
 
       expect(response).to have_http_status(:success)
-      
+
       json = JSON.parse(response.body)
       expect(json["success"]).to be true
       expect(json["expense"]["status"]).to eq("processed")
-      
+
       expense.reload
       expect(expense.status).to eq("processed")
     end
 
     it "toggles status from processed to pending" do
       expense.update!(status: "processed")
-      
+
       patch update_status_expense_path(expense),
             params: { status: "pending" },
             headers: { "Accept" => "application/json" }
 
       expect(response).to have_http_status(:success)
-      
+
       json = JSON.parse(response.body)
       expect(json["success"]).to be true
       expect(json["expense"]["status"]).to eq("pending")
-      
+
       expense.reload
       expect(expense.status).to eq("pending")
     end
@@ -95,7 +95,7 @@ RSpec.describe "Expenses Inline Actions API", type: :request do
             headers: { "Accept" => "application/json" }
 
       expect(response).to have_http_status(:unprocessable_entity)
-      
+
       json = JSON.parse(response.body)
       expect(json["success"]).to be false
       expect(json["error"]).to include("Invalid status")
@@ -110,12 +110,12 @@ RSpec.describe "Expenses Inline Actions API", type: :request do
       }.to change(Expense, :count).by(1)
 
       expect(response).to have_http_status(:success)
-      
+
       json = JSON.parse(response.body)
       expect(json["success"]).to be true
       expect(json["expense"]["merchant_name"]).to eq(expense.merchant_name)
       expect(json["expense"]["amount"]).to eq(expense.amount.to_f.to_s)
-      
+
       # New expense should have pending status
       new_expense = Expense.find(json["expense"]["id"])
       expect(new_expense.status).to eq("pending")
@@ -129,13 +129,13 @@ RSpec.describe "Expenses Inline Actions API", type: :request do
         ml_confidence_explanation: "High confidence",
         ml_correction_count: 3
       )
-      
+
       post duplicate_expense_path(expense),
            headers: { "Accept" => "application/json" }
 
       json = JSON.parse(response.body)
       new_expense = Expense.find(json["expense"]["id"])
-      
+
       expect(new_expense.ml_confidence).to be_nil
       expect(new_expense.ml_suggested_category_id).to be_nil
       expect(new_expense.ml_confidence_explanation).to be_nil
@@ -151,11 +151,11 @@ RSpec.describe "Expenses Inline Actions API", type: :request do
       }.to change(Expense, :count).by(-1)
 
       expect(response).to have_http_status(:success)
-      
+
       json = JSON.parse(response.body)
       expect(json["success"]).to be true
       expect(json["message"]).to include("eliminado exitosamente")
-      
+
       expect(Expense.find_by(id: expense.id)).to be_nil
     end
 
@@ -176,11 +176,11 @@ RSpec.describe "Expenses Inline Actions API", type: :request do
            headers: { "Accept" => "application/json" }
 
       json = JSON.parse(response.body)
-      
+
       expect(json).to have_key("success")
       expect(json).to have_key("expense")
       expect(json).to have_key("color")
-      
+
       expect(json["expense"]).to have_key("id")
       expect(json["expense"]).to have_key("amount")
       expect(json["expense"]).to have_key("category")
@@ -193,7 +193,7 @@ RSpec.describe "Expenses Inline Actions API", type: :request do
             headers: { "Accept" => "application/json" }
 
       json = JSON.parse(response.body)
-      
+
       expect(json).to have_key("success")
       expect(json).to have_key("expense")
       expect(json["expense"]).to have_key("status")
@@ -203,14 +203,14 @@ RSpec.describe "Expenses Inline Actions API", type: :request do
   describe "Performance" do
     it "completes category update quickly" do
       start_time = Time.now
-      
+
       post correct_category_expense_path(expense),
            params: { category_id: new_category.id },
            headers: { "Accept" => "application/json" }
-      
+
       end_time = Time.now
       response_time = (end_time - start_time) * 1000
-      
+
       # Should complete within 100ms
       expect(response_time).to be < 100
       expect(response).to have_http_status(:success)
@@ -218,14 +218,14 @@ RSpec.describe "Expenses Inline Actions API", type: :request do
 
     it "completes status update quickly" do
       start_time = Time.now
-      
+
       patch update_status_expense_path(expense),
             params: { status: "processed" },
             headers: { "Accept" => "application/json" }
-      
+
       end_time = Time.now
       response_time = (end_time - start_time) * 1000
-      
+
       # Should complete within 100ms
       expect(response_time).to be < 100
       expect(response).to have_http_status(:success)

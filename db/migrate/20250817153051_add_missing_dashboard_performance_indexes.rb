@@ -8,7 +8,6 @@ class AddMissingDashboardPerformanceIndexes < ActiveRecord::Migration[8.0]
 
   def up
     say_with_time "Creating missing performance indexes for dashboard operations..." do
-      
       # 1. Remove the existing non-INCLUDE covering index if it exists
       if index_exists?(:expenses, nil, name: "idx_expenses_list_covering")
         remove_index :expenses, name: "idx_expenses_list_covering"
@@ -34,7 +33,7 @@ class AddMissingDashboardPerformanceIndexes < ActiveRecord::Migration[8.0]
       if index_exists?(:expenses, nil, name: "idx_expenses_amount_range")
         remove_index :expenses, name: "idx_expenses_amount_range"
       end
-      
+
       if index_exists?(:expenses, nil, name: "idx_expenses_amount_brin")
         remove_index :expenses, name: "idx_expenses_amount_brin"
       end
@@ -51,7 +50,7 @@ class AddMissingDashboardPerformanceIndexes < ActiveRecord::Migration[8.0]
       # This index optimizes bulk selection and categorization operations
       unless index_exists?(:expenses, nil, name: "idx_expenses_batch_operations")
         add_index :expenses,
-                  [:email_account_id, :status, :category_id, :created_at],
+                  [ :email_account_id, :status, :category_id, :created_at ],
                   name: "idx_expenses_batch_operations",
                   algorithm: :concurrently,
                   where: "deleted_at IS NULL",
@@ -61,7 +60,7 @@ class AddMissingDashboardPerformanceIndexes < ActiveRecord::Migration[8.0]
       # 5. Add composite index for complex dashboard filters
       unless index_exists?(:expenses, nil, name: "idx_expenses_dashboard_filters")
         add_index :expenses,
-                  [:email_account_id, :deleted_at, :transaction_date, :category_id, :status, :bank_name],
+                  [ :email_account_id, :deleted_at, :transaction_date, :category_id, :status, :bank_name ],
                   name: "idx_expenses_dashboard_filters",
                   algorithm: :concurrently,
                   where: "deleted_at IS NULL",
@@ -122,9 +121,9 @@ class AddMissingDashboardPerformanceIndexes < ActiveRecord::Migration[8.0]
       remove_index_if_exists :expenses, name: "idx_expenses_hour_dow"
 
       # Restore simpler indexes if needed
-      unless index_exists?(:expenses, [:category_id, :transaction_date])
+      unless index_exists?(:expenses, [ :category_id, :transaction_date ])
         add_index :expenses,
-                  [:category_id, :transaction_date],
+                  [ :category_id, :transaction_date ],
                   name: "idx_expenses_uncategorized",
                   where: "category_id IS NULL AND deleted_at IS NULL"
       end

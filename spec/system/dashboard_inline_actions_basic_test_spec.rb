@@ -43,17 +43,17 @@ RSpec.describe "Dashboard Inline Actions Basic Test", type: :system, js: true do
 
   it "shows quick actions on hover" do
     expense_row = find("[data-expense-id='#{expense.id}']", match: :first)
-    
+
     # Actions should be hidden initially
     within expense_row do
       actions = find('[data-dashboard-expenses-target="quickActions"]', visible: :all)
       expect(actions).not_to be_visible
     end
-    
+
     # Hover to show actions
     expense_row.hover
     sleep 0.5 # Wait for CSS transition
-    
+
     # Actions should be visible
     within expense_row do
       actions = find('[data-dashboard-expenses-target="quickActions"]')

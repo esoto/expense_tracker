@@ -13,9 +13,9 @@ class DashboardExpenseFilterService < ExpenseFilterService
   class DashboardResult < ExpenseFilterService::Result
     attr_reader :summary_stats, :quick_filters, :view_mode
 
-    def initialize(expenses:, total_count:, metadata:, performance_metrics: {}, 
+    def initialize(expenses:, total_count:, metadata:, performance_metrics: {},
                    summary_stats: nil, quick_filters: nil, view_mode: nil)
-      super(expenses: expenses, total_count: total_count, 
+      super(expenses: expenses, total_count: total_count,
             metadata: metadata, performance_metrics: performance_metrics)
       @summary_stats = summary_stats
       @quick_filters = quick_filters
@@ -52,7 +52,7 @@ class DashboardExpenseFilterService < ExpenseFilterService
     @include_summary = params.delete(:include_summary) != false
     @include_quick_filters = params.delete(:include_quick_filters) != false
     @dashboard_context = true
-    
+
     # Set dashboard defaults and call parent
     dashboard_params = normalize_dashboard_params(params)
     super(dashboard_params)
@@ -62,7 +62,7 @@ class DashboardExpenseFilterService < ExpenseFilterService
     return cached_dashboard_result if dashboard_cache_enabled? && cached_dashboard_result.present?
 
     start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-    
+
     # Track query execution with dashboard context
     query_counter = 0
     query_subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |_name, _start, _finish, _id, payload|
@@ -81,22 +81,22 @@ class DashboardExpenseFilterService < ExpenseFilterService
 
     # Calculate performance metrics
     query_time = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
-    
+
     # Unsubscribe from notifications
     ActiveSupport::Notifications.unsubscribe(query_subscriber) if query_subscriber
     queries_executed = query_counter
 
     result = build_dashboard_result(
-      expenses, 
-      pagination_meta, 
-      query_time, 
+      expenses,
+      pagination_meta,
+      query_time,
       queries_executed,
       summary_stats,
       quick_filters
     )
-    
+
     cache_dashboard_result(result) if dashboard_cache_enabled?
-    
+
     # Log performance for dashboard context
     log_dashboard_performance(result) if query_time > 0.05
 
@@ -116,21 +116,21 @@ class DashboardExpenseFilterService < ExpenseFilterService
 
   def normalize_dashboard_params(params)
     normalized = params.to_h.deep_symbolize_keys
-    
+
     # Set dashboard-specific defaults
     normalized[:per_page] ||= DEFAULT_DASHBOARD_LIMIT
     normalized[:page] ||= 1
-    
+
     # Handle period-based filtering from dashboard
     if normalized[:period].present? && !normalized[:start_date] && !normalized[:end_date]
       dates = calculate_period_dates(normalized[:period])
       normalized[:start_date] = dates[:start]
       normalized[:end_date] = dates[:end]
     end
-    
+
     # Ensure we don't exceed dashboard limits
-    normalized[:per_page] = [normalized[:per_page].to_i, MAX_DASHBOARD_LIMIT].min
-    
+    normalized[:per_page] = [ normalized[:per_page].to_i, MAX_DASHBOARD_LIMIT ].min
+
     normalized
   end
 
@@ -146,36 +146,36 @@ class DashboardExpenseFilterService < ExpenseFilterService
     # Dashboard always shows most recent first by default
     safe_column = %w[transaction_date amount merchant_name created_at].include?(sort_by) ? sort_by : "transaction_date"
     safe_direction = %w[asc desc].include?(sort_direction) ? sort_direction : "desc"
-    
+
     # Use compound sorting for better UX
     primary_order = { safe_column.to_sym => safe_direction.to_sym }
     secondary_order = safe_column == "transaction_date" ? { created_at: :desc } : { transaction_date: :desc }
-    
+
     scope.order(primary_order).order(secondary_order).order(id: :desc)
   end
 
   def apply_dashboard_pagination(scope)
     # Dashboard uses simple offset pagination
     expenses = scope.limit(per_page).offset((page - 1) * per_page)
-    
+
     # Get total count efficiently
     total = if scope.respond_to?(:total_count)
               scope.total_count
-            else
+    else
               # Use cache for count queries
               cache_key = "dashboard_expense_count/#{generate_filters_hash}"
               Rails.cache.fetch(cache_key, expires_in: DASHBOARD_CACHE_TTL) do
                 scope.except(:limit, :offset, :order).count
               end
-            end
-    
+    end
+
     pagination_meta = {
       total_count: total,
       page: page,
       has_more: total > (page * per_page)
     }
-    
-    [expenses, pagination_meta]
+
+    [ expenses, pagination_meta ]
   end
 
   def calculate_summary_stats(scope)
@@ -191,7 +191,7 @@ class DashboardExpenseFilterService < ExpenseFilterService
         Arel.sql("COUNT(DISTINCT merchant_normalized)"),
         Arel.sql("COUNT(DISTINCT category_id)")
       )
-    
+
     {
       total_count: stats[0] || 0,
       total_amount: (stats[1] || 0).to_f,
@@ -206,7 +206,7 @@ class DashboardExpenseFilterService < ExpenseFilterService
   def generate_quick_filters(scope)
     # Generate available quick filter options based on current data
     base_scope = scope.except(:limit, :offset, :order)
-    
+
     {
       categories: base_scope
         .joins(:category)
@@ -214,18 +214,18 @@ class DashboardExpenseFilterService < ExpenseFilterService
         .order(Arel.sql("COUNT(*) DESC"))
         .limit(5)
         .pluck("categories.id", "categories.name", "categories.color", Arel.sql("COUNT(*)"))
-        .map { |id, name, color, count| 
+        .map { |id, name, color, count|
           { id: id, name: name, color: color, count: count }
         },
-      
+
       statuses: base_scope
         .group(:status)
         .count
         .sort_by { |_, count| -count }
-        .map { |status, count| 
+        .map { |status, count|
           { status: status, count: count, label: status.humanize }
         },
-      
+
       recent_periods: [
         { period: "today", label: "Hoy", count: count_for_period(base_scope, "today") },
         { period: "week", label: "Esta Semana", count: count_for_period(base_scope, "week") },
@@ -237,7 +237,7 @@ class DashboardExpenseFilterService < ExpenseFilterService
   def count_for_period(scope, period)
     dates = calculate_period_dates(period)
     return 0 unless dates[:start] && dates[:end]
-    
+
     scope.where(transaction_date: dates[:start]..dates[:end]).count
   end
 
@@ -301,7 +301,7 @@ class DashboardExpenseFilterService < ExpenseFilterService
   end
 
   def dashboard_cache_key
-    ["dashboard_expense_filter", generate_filters_hash, @view_mode, page, per_page].join("/")
+    [ "dashboard_expense_filter", generate_filters_hash, @view_mode, page, per_page ].join("/")
   end
 
   def log_dashboard_performance(result)

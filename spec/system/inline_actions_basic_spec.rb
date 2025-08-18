@@ -13,17 +13,17 @@ RSpec.describe "Inline Actions Basic", type: :system, js: true do
 
   it "shows inline action buttons on hover" do
     row = find("[data-expense-id='#{expense.id}']")
-    
+
     # Initially buttons should be hidden
     within row do
       actions = find('.inline-quick-actions', visible: :all)
       expect(actions[:style]).to include("opacity: 0")
     end
-    
+
     # Hover should show buttons
     row.hover
     sleep 0.5
-    
+
     within row do
       # Check if buttons are present
       expect(page).to have_css('button[title*="Categorizar"]', visible: :all)
@@ -37,20 +37,20 @@ RSpec.describe "Inline Actions Basic", type: :system, js: true do
     row = find("[data-expense-id='#{expense.id}']")
     row.hover
     sleep 0.5
-    
+
     within row do
       # Force visibility for test
       actions = find('.inline-quick-actions', visible: :all)
       page.execute_script("arguments[0].style.opacity = '1'", actions.native)
-      
+
       # Find and click status button
       status_button = find('button[data-action*="toggleStatus"]', visible: :all)
       page.execute_script("arguments[0].click()", status_button.native)
     end
-    
+
     # Wait for update
     sleep 1
-    
+
     # Check for success message
     expect(page).to have_content("Estado cambiado", wait: 5)
   end

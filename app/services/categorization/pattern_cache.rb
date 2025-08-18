@@ -58,8 +58,12 @@ module Categorization
       @metrics_collector = MetricsCollector.new
       @lock = Mutex.new
       @logger = options.fetch(:logger, Rails.logger)
+      @healthy = true
 
       @logger.info "[PatternCache] Initialized with #{@redis_available ? 'Redis + Memory' : 'Memory only'} caching"
+      
+      # Warm cache in production for consistent performance
+      warm_cache if Rails.env.production? && options.fetch(:warm_cache, true)
     end
 
     # Get a single pattern by ID with caching
@@ -75,6 +79,48 @@ module Categorization
           CategorizationPattern.active.find_by(id: pattern_id)
         end
       end
+    end
+
+    # Get patterns relevant to an expense
+    def get_patterns_for_expense(expense)
+      return [] unless expense
+
+      # Return cached patterns if available (for batch processing)
+      return @all_patterns if @all_patterns
+
+      benchmark_with_metrics("get_patterns_for_expense") do
+        # Get all active patterns that might match this expense
+        patterns = CategorizationPattern
+          .active
+          .includes(:category)
+          .order(usage_count: :desc, success_rate: :desc)
+          .limit(100)
+
+        patterns.to_a
+      end
+    end
+
+    # Preload patterns for multiple texts
+    def preload_for_texts(texts)
+      return if texts.blank?
+
+      # Load all patterns once for batch processing
+      @all_patterns = CategorizationPattern
+        .active
+        .includes(:category)
+        .order(usage_count: :desc, success_rate: :desc)
+        .to_a
+    end
+    
+    # Clear preloaded patterns after batch processing
+    def clear_preloaded_patterns
+      @all_patterns = nil
+    end
+
+    # Invalidate cache for a specific category
+    def invalidate_category(category_id)
+      # Invalidate all cached patterns for this category
+      @memory_cache.delete_matched("#{PATTERN_KEY_PREFIX}:*")
     end
 
     # Get multiple patterns by IDs efficiently
@@ -259,6 +305,47 @@ module Categorization
     # Get cache hit rate
     def hit_rate
       @metrics_collector.hit_rate
+    end
+
+    # Check service health
+    def healthy?
+      @healthy = begin
+        # Check memory cache is responding
+        @memory_cache.read("health_check_#{Time.current.to_i}") 
+        
+        # Check Redis if available
+        if @redis_available
+          redis_client.ping == "PONG"
+        end
+        
+        # Check metrics are being collected
+        @metrics_collector.hit_rate >= 0
+        
+        true
+      rescue => e
+        Rails.logger.error "[PatternCache] Health check failed: #{e.message}"
+        false
+      end
+    end
+
+    # Reset cache and metrics
+    def reset!
+      @lock.synchronize do
+        @memory_cache.clear
+        @metrics_collector = MetricsCollector.new
+        
+        if @redis_available
+          begin
+            redis_client.flushdb
+          rescue => e
+            Rails.logger.error "[PatternCache] Redis reset failed: #{e.message}"
+          end
+        end
+        
+        Rails.logger.info "[PatternCache] Cache and metrics reset completed"
+      end
+    rescue => e
+      Rails.logger.error "[PatternCache] Reset failed: #{e.message}"
     end
 
     # Get cache statistics (alias for metrics for compatibility)

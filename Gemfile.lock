@@ -150,11 +150,21 @@ GEM
       concurrent-ruby (~> 1.1)
       webrick (~> 1.7)
       websocket-driver (~> 0.7)
+    ffi (1.17.2-aarch64-linux-gnu)
+    ffi (1.17.2-aarch64-linux-musl)
+    ffi (1.17.2-arm-linux-gnu)
+    ffi (1.17.2-arm-linux-musl)
+    ffi (1.17.2-arm64-darwin)
+    ffi (1.17.2-x86_64-linux-gnu)
+    ffi (1.17.2-x86_64-linux-musl)
     fugit (1.11.1)
       et-orbi (~> 1, >= 1.2.11)
       raabro (~> 1.4)
     fuzzy-string-match (1.0.1)
       RubyInline (>= 3.8.6)
+    get_process_mem (1.0.0)
+      bigdecimal (>= 2.0)
+      ffi (~> 1.0)
     globalid (1.2.1)
       activesupport (>= 6.1)
     groupdate (6.7.0)
@@ -536,6 +546,7 @@ DEPENDENCIES
   debug
   factory_bot_rails
   fuzzy-string-match (~> 1.0)
+  get_process_mem
   groupdate
   hiredis (~> 0.6)
   importmap-rails

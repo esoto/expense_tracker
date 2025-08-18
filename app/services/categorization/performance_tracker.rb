@@ -187,6 +187,32 @@ module Categorization
       }
     end
 
+    # Get basic metrics (alias for summary for compatibility)
+    def metrics
+      summary
+    end
+
+    # Check service health
+    def healthy?
+      @healthy ||= begin
+        # Check if we have recent data
+        samples = @categorizations.to_a
+        if samples.empty?
+          # No data means we're just started, consider healthy
+          true
+        else
+          # Check if performance is acceptable
+          avg_time = average_categorization_time
+          error_rate_val = error_rate(samples)
+          
+          avg_time <= CRITICAL_TIME_MS && error_rate_val < 50.0
+        end
+      rescue => e
+        @logger.error "[PerformanceTracker] Health check failed: #{e.message}"
+        false
+      end
+    end
+
     private
 
     def record_categorization(expense_id:, duration_ms:, cache_hits:, successful:, method:, correlation_id:, error: nil)

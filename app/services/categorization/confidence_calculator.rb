@@ -148,6 +148,11 @@ module Categorization
       Rails.logger.info "[ConfidenceCalculator] Cache cleared"
     end
 
+    # Get metrics (made public for testing)
+    def metrics
+      @metrics
+    end
+
     private
 
     def calculate_factors(expense, pattern, match_result, options)
@@ -511,6 +516,33 @@ module Categorization
         sorted[index] || sorted.last
       end
     end
+
+    # Health check for service monitoring
+    def healthy?
+      @healthy ||= begin
+        # Test basic calculation functionality
+        test_result = calculate_confidence(
+          pattern_type: "merchant",
+          match_score: 0.9,
+          pattern_usage_count: 10,
+          pattern_success_rate: 0.95
+        )
+        test_result.is_a?(ConfidenceScore)
+      rescue => e
+        Rails.logger.error "[ConfidenceCalculator] Health check failed: #{e.message}"
+        false
+      end
+    end
+
+    # Reset internal state
+    def reset!
+      @metrics_collector = MetricsCollector.new if defined?(@metrics_collector)
+      @healthy = nil
+      Rails.logger.info "[ConfidenceCalculator] Service reset completed"
+    rescue => e
+      Rails.logger.error "[ConfidenceCalculator] Reset failed: #{e.message}"
+    end
+
   end
 
   # Value object representing a confidence score calculation result

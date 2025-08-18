@@ -86,6 +86,10 @@ module Categorization
       !successful?
     end
 
+    def error?
+      @error.present?
+    end
+
     def high_confidence?
       @confidence >= 0.85
     end

@@ -6,6 +6,8 @@ RSpec.describe ExpensesController, type: :controller do
 
   describe "GET #index" do
     before do
+      # Clean up any existing expenses to ensure test isolation
+      Expense.delete_all
       # Create expenses for different periods
       @today_expense = create(:expense,
         email_account: email_account,
@@ -18,7 +20,7 @@ RSpec.describe ExpensesController, type: :controller do
       @week_expense = create(:expense,
         email_account: email_account,
         category: category,
-        transaction_date: Date.current - 1.day,
+        transaction_date: Date.current.beginning_of_week + 1.day,  # Ensure it's within current week
         amount: 2000,
         merchant_name: "Week Shop"
       )
@@ -143,13 +145,13 @@ RSpec.describe ExpensesController, type: :controller do
       end
 
       it "filters by bank" do
-        bac_expense = create(:expense, bank_name: "BAC", email_account: email_account)
+        scotiabank_expense = create(:expense, bank_name: "Scotiabank", email_account: email_account)
 
-        get :index, params: { bank: "BAC" }
+        get :index, params: { bank: "Scotiabank" }
 
         expenses = assigns(:expenses)
         expect(expenses.count).to eq(1)
-        expect(expenses.first).to eq(bac_expense)
+        expect(expenses.first).to eq(scotiabank_expense)
       end
 
       it "filters by date range" do

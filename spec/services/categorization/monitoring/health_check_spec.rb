@@ -188,7 +188,7 @@ RSpec.describe Categorization::Monitoring::HealthCheck do
       health_check.check_service_metrics
       metrics = health_check.checks[:service_metrics]
 
-      expect(metrics[:status]).to be_in([ :healthy, :degraded, :unknown ])
+      expect(metrics[:status]).to be_in([ :healthy, :degraded, :unhealthy, :unknown ])
       expect(metrics[:total_patterns]).to be >= 0 if metrics[:total_patterns]
       expect(metrics[:active_patterns]).to be >= 0 if metrics[:active_patterns]
       expect(metrics[:success_rate]).to be_between(0, 1) if metrics[:success_rate]

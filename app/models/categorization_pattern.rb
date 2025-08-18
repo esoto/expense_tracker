@@ -190,19 +190,30 @@ class CategorizationPattern < ApplicationRecord
 
   # Get the effective confidence for this pattern
   def effective_confidence
-    base_confidence = confidence_weight
+    base_confidence = confidence_weight || 1.0
+    
+    # Guard against NaN or infinite values
+    base_confidence = 1.0 if base_confidence.nan? || base_confidence.infinite?
 
     # Adjust based on success rate if we have enough data
     adjusted_confidence = if usage_count >= 5
-      base_confidence * (0.5 + (success_rate * 0.5))
+      sr = success_rate || 0.0
+      sr = 0.0 if sr.nan? || sr.infinite?
+      base_confidence * (0.5 + (sr * 0.5))
     else
       base_confidence * 0.7 # Lower confidence for patterns with little data
     end
+    
+    # Guard against NaN before division
+    adjusted_confidence = 1.0 if adjusted_confidence.nan? || adjusted_confidence.infinite?
 
     # Map confidence to 0-1 range with a curve that gives high scores for good patterns
     # Use a square root curve to boost mid-range values while preserving ordering
     # This ensures patterns with weight >= 2 and good success rate achieve > 0.8 confidence
     normalized = Math.sqrt(adjusted_confidence / MAX_CONFIDENCE_WEIGHT).clamp(0, 1)
+    
+    # Guard against NaN from sqrt operation
+    normalized = 0.3 if normalized.nan? || normalized.infinite?
 
     # Ensure minimum confidence of 0.3 for any active pattern that matches
     [ normalized, 0.3 ].max

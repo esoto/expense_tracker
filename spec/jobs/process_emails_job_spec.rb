@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe ProcessEmailsJob, type: :job do
+RSpec.describe ProcessEmailsJob, type: :job, integration: true do
   let(:parsing_rule) { create(:parsing_rule, :bac) }
   let(:email_account) { create(:email_account, :bac) }
   let(:inactive_email_account) { create(:email_account, :inactive) }
@@ -10,7 +10,7 @@ RSpec.describe ProcessEmailsJob, type: :job do
     parsing_rule # Ensure parsing rule exists
   end
 
-  describe '#perform' do
+  describe '#perform', integration: true do
     context 'with specific email account id' do
       it 'processes single account' do
         job = ProcessEmailsJob.new
@@ -60,7 +60,7 @@ RSpec.describe ProcessEmailsJob, type: :job do
     end
   end
 
-  describe '#process_single_account' do
+  describe '#process_single_account', integration: true do
     let(:job) { ProcessEmailsJob.new }
     let(:since_time) { 2.days.ago }
 
@@ -214,7 +214,7 @@ RSpec.describe ProcessEmailsJob, type: :job do
     end
   end
 
-  describe '#process_all_accounts' do
+  describe '#process_all_accounts', integration: true do
     let(:job) { ProcessEmailsJob.new }
     let(:since_time) { 3.days.ago }
     let!(:active_account1) { create(:email_account, :bac) }
@@ -302,7 +302,7 @@ RSpec.describe ProcessEmailsJob, type: :job do
     end
   end
 
-  describe '#process_all_accounts_in_batches' do
+  describe '#process_all_accounts_in_batches', integration: true do
     let(:job) { ProcessEmailsJob.new }
     let(:since_time) { 3.days.ago }
 
@@ -346,7 +346,7 @@ RSpec.describe ProcessEmailsJob, type: :job do
     end
   end
 
-  describe 'around_perform performance monitoring' do
+  describe 'around_perform performance monitoring', integration: true do
     let(:job) { ProcessEmailsJob.new }
 
     before do
@@ -415,13 +415,13 @@ RSpec.describe ProcessEmailsJob, type: :job do
     end
   end
 
-  describe 'job queue configuration' do
+  describe 'job queue configuration', integration: true do
     it 'uses the email_processing queue' do
       expect(ProcessEmailsJob.new.queue_name).to eq('email_processing')
     end
   end
 
-  describe 'ActiveJob integration' do
+  describe 'ActiveJob integration', integration: true do
     it 'can be enqueued with perform_later' do
       since_time = 1.day.ago
       expect {
@@ -444,7 +444,7 @@ RSpec.describe ProcessEmailsJob, type: :job do
     end
   end
 
-  describe 'parameter variations' do
+  describe 'parameter variations', integration: true do
     let(:job) { ProcessEmailsJob.new }
 
     context 'with string email account id' do
@@ -486,7 +486,7 @@ RSpec.describe ProcessEmailsJob, type: :job do
     end
   end
 
-  describe 'error handling and resilience' do
+  describe 'error handling and resilience', integration: true do
     let(:job) { ProcessEmailsJob.new }
 
     context 'when database is temporarily unavailable' do
@@ -516,7 +516,7 @@ RSpec.describe ProcessEmailsJob, type: :job do
     end
   end
 
-  describe 'integration scenarios' do
+  describe 'integration scenarios', integration: true do
     context 'full workflow integration' do
       let!(:parsing_rule) { create(:parsing_rule, :bac) }
       let!(:email_account) { create(:email_account, :bac) }

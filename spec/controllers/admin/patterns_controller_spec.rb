@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Admin::PatternsController, type: :controller do
+RSpec.describe Admin::PatternsController, type: :controller, performance: true do
   let(:admin_user) { create(:admin_user, role: :admin) }
   let(:category) { Category.create!(name: 'Test Category') }
   let(:valid_attributes) do
@@ -43,14 +43,14 @@ RSpec.describe Admin::PatternsController, type: :controller do
     allow(controller).to receive(:check_rate_limit_for_import).and_return(true)
   end
 
-  describe "GET #index" do
+  describe "GET #index", performance: true do
     it "returns a success response" do
       CategorizationPattern.create!(valid_attributes)
       get :index
       expect(response).to be_successful
     end
 
-    it "loads patterns with statistics", :skip do
+    it "loads patterns with statistics", skip: true do
       pattern = CategorizationPattern.create!(valid_attributes)
       get :index
       expect(assigns(:patterns)).to include(pattern)
@@ -59,7 +59,7 @@ RSpec.describe Admin::PatternsController, type: :controller do
     end
   end
 
-  describe "GET #show" do
+  describe "GET #show", performance: true do
     it "returns a success response" do
       pattern = CategorizationPattern.create!(valid_attributes)
       get :show, params: { id: pattern.to_param }
@@ -67,14 +67,14 @@ RSpec.describe Admin::PatternsController, type: :controller do
     end
   end
 
-  describe "GET #new" do
+  describe "GET #new", performance: true do
     it "returns a success response" do
       get :new
       expect(response).to be_successful
     end
   end
 
-  describe "GET #edit" do
+  describe "GET #edit", performance: true do
     it "returns a success response" do
       pattern = CategorizationPattern.create!(valid_attributes)
       get :edit, params: { id: pattern.to_param }
@@ -82,7 +82,7 @@ RSpec.describe Admin::PatternsController, type: :controller do
     end
   end
 
-  describe "POST #create" do
+  describe "POST #create", performance: true do
     context "with valid params" do
       it "creates a new CategorizationPattern" do
         expect {
@@ -109,7 +109,7 @@ RSpec.describe Admin::PatternsController, type: :controller do
     end
   end
 
-  describe "PUT #update" do
+  describe "PUT #update", performance: true do
     context "with valid params" do
       let(:new_attributes) do
         {
@@ -134,7 +134,7 @@ RSpec.describe Admin::PatternsController, type: :controller do
     end
   end
 
-  describe "DELETE #destroy" do
+  describe "DELETE #destroy", performance: true do
     it "destroys the requested pattern" do
       pattern = CategorizationPattern.create!(valid_attributes)
       expect {

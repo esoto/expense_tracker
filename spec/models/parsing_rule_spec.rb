@@ -1,7 +1,7 @@
 require 'rails_helper'
 
-RSpec.describe ParsingRule, type: :model do
-  describe 'validations' do
+RSpec.describe ParsingRule, type: :model, integration: true do
+  describe 'validations', integration: true do
     it 'is valid with valid attributes' do
       rule = ParsingRule.new(
         bank_name: 'BAC',
@@ -37,7 +37,7 @@ RSpec.describe ParsingRule, type: :model do
     end
   end
 
-  describe 'associations' do
+  describe 'associations', integration: true do
     let(:parsing_rule) { ParsingRule.create!(bank_name: 'BAC', amount_pattern: 'test', date_pattern: 'test', active: true) }
 
     it 'has many email_accounts through bank_name' do
@@ -46,7 +46,7 @@ RSpec.describe ParsingRule, type: :model do
     end
   end
 
-  describe 'scopes' do
+  describe 'scopes', integration: true do
     let!(:active_rule) { ParsingRule.create!(bank_name: 'BAC', amount_pattern: 'test', date_pattern: 'test', active: true) }
     let!(:inactive_rule) { ParsingRule.create!(bank_name: 'BCR', amount_pattern: 'test', date_pattern: 'test', active: false) }
 
@@ -62,7 +62,7 @@ RSpec.describe ParsingRule, type: :model do
     end
   end
 
-  describe '#parse_email' do
+  describe '#parse_email', integration: true do
     let(:rule) do
       ParsingRule.create!(
         bank_name: 'BAC',
@@ -116,7 +116,7 @@ RSpec.describe ParsingRule, type: :model do
     end
   end
 
-  describe '#parse_date' do
+  describe '#parse_date', integration: true do
     let(:rule) { ParsingRule.new }
 
     it 'parses Spanish month abbreviations' do
@@ -151,7 +151,7 @@ RSpec.describe ParsingRule, type: :model do
     end
   end
 
-  describe '#extract_amount' do
+  describe '#extract_amount', integration: true do
     let(:rule) { ParsingRule.new }
 
     it 'extracts clean decimal amounts' do
@@ -174,7 +174,7 @@ RSpec.describe ParsingRule, type: :model do
     end
   end
 
-  describe '#test_patterns' do
+  describe '#test_patterns', integration: true do
     let(:rule) do
       ParsingRule.create!(
         bank_name: 'BAC',
@@ -228,7 +228,7 @@ RSpec.describe ParsingRule, type: :model do
     end
   end
 
-  describe 'edge cases and error handling' do
+  describe 'edge cases and error handling', integration: true do
     let(:rule) { create(:parsing_rule, :bac) }
 
     it 'handles email content with nil patterns gracefully' do

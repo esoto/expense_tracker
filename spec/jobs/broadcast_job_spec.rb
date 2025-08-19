@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe BroadcastJob, type: :job do
+RSpec.describe BroadcastJob, type: :job, integration: true do
   let(:sync_session) { create(:sync_session) }
   let(:channel_name) { 'SyncStatusChannel' }
   let(:target_type) { 'SyncSession' }
@@ -10,7 +10,7 @@ RSpec.describe BroadcastJob, type: :job do
   let(:data) { { status: 'processing', processed: 10, total: 100 } }
   let(:priority) { 'medium' }
 
-  describe '#perform' do
+  describe '#perform', integration: true do
     context 'when broadcast succeeds' do
       before do
         allow(BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(true)
@@ -208,7 +208,7 @@ RSpec.describe BroadcastJob, type: :job do
     end
   end
 
-  describe '.enqueue_broadcast' do
+  describe '.enqueue_broadcast', integration: true do
     let(:job_double) { double('Job') }
 
     before do
@@ -309,7 +309,7 @@ RSpec.describe BroadcastJob, type: :job do
     end
   end
 
-  describe '.stats' do
+  describe '.stats', integration: true do
     let(:critical_queue) { double('Queue', size: 2) }
     let(:high_queue) { double('Queue', size: 5) }
     let(:default_queue) { double('Queue', size: 10) }
@@ -354,7 +354,7 @@ RSpec.describe BroadcastJob, type: :job do
     end
   end
 
-  describe 'queue configuration' do
+  describe 'queue configuration', integration: true do
     it 'has correct queue mapping' do
       expect(described_class::QUEUE_MAPPING).to eq(
         critical: 'critical',
@@ -365,7 +365,7 @@ RSpec.describe BroadcastJob, type: :job do
     end
   end
 
-  describe 'job configuration' do
+  describe 'job configuration', integration: true do
     it 'uses ApplicationJob as base class' do
       expect(described_class).to be < ApplicationJob
     end
@@ -375,7 +375,7 @@ RSpec.describe BroadcastJob, type: :job do
     end
   end
 
-  describe 'integration test' do
+  describe 'integration test', integration: true do
     it 'performs end-to-end broadcast job successfully' do
       # Simulate real broadcast
       allow(SyncStatusChannel).to receive(:broadcast_to)

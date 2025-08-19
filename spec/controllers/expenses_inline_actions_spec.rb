@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe ExpensesController, type: :controller do
+RSpec.describe ExpensesController, type: :controller, integration: true do
   let(:email_account) { create(:email_account) }
   let(:category) { create(:category) }
   let(:new_category) { create(:category, name: "New Category") }
@@ -12,7 +12,7 @@ RSpec.describe ExpensesController, type: :controller do
     allow(controller).to receive(:current_user_email_accounts).and_return([ email_account ])
   end
 
-  describe "PATCH #update_status" do
+  describe "PATCH #update_status", integration: true do
     context "with valid status" do
       it "updates the expense status from pending to processed" do
         patch :update_status, params: { id: expense.id, status: "processed" }
@@ -68,7 +68,7 @@ RSpec.describe ExpensesController, type: :controller do
     end
   end
 
-  describe "POST #duplicate" do
+  describe "POST #duplicate", integration: true do
     it "creates a duplicate of the expense" do
       expect {
         post :duplicate, params: { id: expense.id }
@@ -141,7 +141,7 @@ RSpec.describe ExpensesController, type: :controller do
     end
   end
 
-  describe "POST #correct_category" do
+  describe "POST #correct_category", integration: true do
     it "updates the expense category" do
       post :correct_category, params: { id: expense.id, category_id: new_category.id }
       expense.reload
@@ -177,7 +177,7 @@ RSpec.describe ExpensesController, type: :controller do
     end
   end
 
-  describe "DELETE #destroy via inline actions" do
+  describe "DELETE #destroy via inline actions", integration: true do
     it "deletes the expense" do
       expense # create the expense
       expect {

@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe SyncConflictsController, type: :controller do
+RSpec.describe SyncConflictsController, type: :controller, performance: true do
   let(:sync_session) { create(:sync_session, :completed) }
   let(:existing_expense) { create(:expense, amount: 100.00, merchant_name: 'Original Store') }
   let(:new_expense) { create(:expense, amount: 150.00, merchant_name: 'Updated Store') }
@@ -14,7 +14,7 @@ RSpec.describe SyncConflictsController, type: :controller do
   end
   let(:resolved_conflict) { create(:sync_conflict, :resolved, sync_session: sync_session) }
 
-  describe 'GET #index' do
+  describe 'GET #index', performance: true do
     let!(:pending_conflict1) { create(:sync_conflict, sync_session: sync_session, status: 'pending', conflict_type: 'duplicate') }
     let!(:pending_conflict2) { create(:sync_conflict, sync_session: sync_session, status: 'pending', conflict_type: 'similar') }
     let!(:resolved_conflict) { create(:sync_conflict, :resolved, sync_session: sync_session, conflict_type: 'duplicate') }
@@ -151,8 +151,8 @@ RSpec.describe SyncConflictsController, type: :controller do
     end
   end
 
-  describe 'before_action callbacks' do
-    describe '#set_sync_conflict' do
+  describe 'before_action callbacks', performance: true do
+    describe '#set_sync_conflict', performance: true do
       it 'sets @sync_conflict for show action' do
         get :show, params: { id: sync_conflict.id }
         expect(assigns(:sync_conflict)).to eq(sync_conflict)
@@ -185,7 +185,7 @@ RSpec.describe SyncConflictsController, type: :controller do
       end
     end
 
-    describe '#set_sync_session' do
+    describe '#set_sync_session', performance: true do
       it 'sets @sync_session when sync_session_id is provided' do
         get :index, params: { sync_session_id: sync_session.id }
         expect(assigns(:sync_session)).to eq(sync_session)
@@ -204,7 +204,7 @@ RSpec.describe SyncConflictsController, type: :controller do
     end
   end
 
-  describe 'GET #show' do
+  describe 'GET #show', performance: true do
     let(:conflict_with_resolutions) do
       conflict = create(:sync_conflict, :with_new_expense,
                        existing_expense: existing_expense,
@@ -257,7 +257,7 @@ RSpec.describe SyncConflictsController, type: :controller do
     end
   end
 
-  describe 'POST #resolve' do
+  describe 'POST #resolve', performance: true do
     let(:service_double) { instance_double(ConflictResolutionService) }
     let(:resolve_params) { { resolved_by: 'test_user' } }
 
@@ -400,7 +400,7 @@ RSpec.describe SyncConflictsController, type: :controller do
     end
   end
 
-  describe 'POST #bulk_resolve' do
+  describe 'POST #bulk_resolve', performance: true do
     let!(:conflict1) { create(:sync_conflict, sync_session: sync_session, status: 'pending') }
     let!(:conflict2) { create(:sync_conflict, sync_session: sync_session, status: 'pending') }
     let!(:conflict3) { create(:sync_conflict, sync_session: sync_session, status: 'pending') }
@@ -494,7 +494,7 @@ RSpec.describe SyncConflictsController, type: :controller do
     end
   end
 
-  describe 'PATCH #undo' do
+  describe 'PATCH #undo', performance: true do
     let(:service_double) { instance_double(ConflictResolutionService) }
 
     before do
@@ -569,7 +569,7 @@ RSpec.describe SyncConflictsController, type: :controller do
     end
   end
 
-  describe 'GET #preview_merge' do
+  describe 'GET #preview_merge', performance: true do
     let(:service_double) { instance_double(ConflictResolutionService) }
     let(:merge_fields) { { 'amount' => 'new', 'merchant_name' => 'existing' } }
     let(:preview_data) do
@@ -673,8 +673,8 @@ RSpec.describe SyncConflictsController, type: :controller do
     end
   end
 
-  describe 'private methods' do
-    describe '#resolve_params' do
+  describe 'private methods', performance: true do
+    describe '#resolve_params', performance: true do
       let(:params_hash) do
         {
           resolved_by: 'test_user',
@@ -712,7 +712,7 @@ RSpec.describe SyncConflictsController, type: :controller do
       end
     end
 
-    describe '#calculate_merge_changes' do
+    describe '#calculate_merge_changes', performance: true do
       let(:preview_with_changes) do
         existing_expense.attributes.merge(
           'amount' => 250.00,
@@ -758,7 +758,7 @@ RSpec.describe SyncConflictsController, type: :controller do
     end
   end
 
-  describe 'error handling' do
+  describe 'error handling', performance: true do
     it 'handles ActiveRecord::RecordNotFound gracefully' do
       expect {
         get :show, params: { id: 99999 }
@@ -784,7 +784,7 @@ RSpec.describe SyncConflictsController, type: :controller do
     end
   end
 
-  describe 'integration scenarios' do
+  describe 'integration scenarios', performance: true do
     context 'complete resolution workflow' do
       let(:service_double) { instance_double(ConflictResolutionService) }
 
@@ -841,7 +841,7 @@ RSpec.describe SyncConflictsController, type: :controller do
     end
   end
 
-  describe 'controller integration and edge cases' do
+  describe 'controller integration and edge cases', performance: true do
     context 'when ConflictResolutionService is unavailable' do
       before do
         allow(ConflictResolutionService).to receive(:new).and_raise(StandardError.new('Service unavailable'))

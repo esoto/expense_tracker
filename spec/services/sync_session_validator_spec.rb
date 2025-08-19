@@ -1,9 +1,9 @@
 require 'rails_helper'
 
-RSpec.describe SyncSessionValidator do
+RSpec.describe SyncSessionValidator, integration: true do
   let(:validator) { described_class.new }
 
-  describe '#validate!' do
+  describe '#validate!', integration: true do
     context 'when no active syncs exist and rate limit not exceeded' do
       before do
         allow(validator).to receive(:active_sync_exists?).and_return(false)
@@ -43,7 +43,7 @@ RSpec.describe SyncSessionValidator do
     end
   end
 
-  describe '#can_create_sync?' do
+  describe '#can_create_sync?', integration: true do
     context 'when conditions are favorable' do
       before do
         allow(validator).to receive(:active_sync_exists?).and_return(false)
@@ -76,7 +76,7 @@ RSpec.describe SyncSessionValidator do
     end
   end
 
-  describe '#active_sync_exists?' do
+  describe '#active_sync_exists?', integration: true do
     context 'with no active syncs' do
       it 'returns false' do
         expect(validator.active_sync_exists?).to be false
@@ -108,7 +108,7 @@ RSpec.describe SyncSessionValidator do
     end
   end
 
-  describe '#recent_sync_count' do
+  describe '#recent_sync_count', integration: true do
     context 'with no recent syncs' do
       it 'returns 0' do
         expect(validator.recent_sync_count).to eq(0)
@@ -130,7 +130,7 @@ RSpec.describe SyncSessionValidator do
     end
   end
 
-  describe 'constants' do
+  describe 'constants', integration: true do
     it 'has appropriate rate limit settings' do
       expect(described_class::RATE_LIMIT_WINDOW).to eq(5.minutes)
       expect(described_class::MAX_SYNCS_PER_WINDOW).to eq(3)

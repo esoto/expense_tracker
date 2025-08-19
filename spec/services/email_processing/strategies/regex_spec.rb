@@ -1,10 +1,10 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::Strategies::Regex do
+RSpec.describe EmailProcessing::Strategies::Regex, integration: true do
   let(:parsing_rule) { create(:parsing_rule, :bac) }
   let(:strategy) { described_class.new(parsing_rule) }
 
-  describe '#parse_email' do
+  describe '#parse_email', integration: true do
     context 'with valid email content' do
       let(:email_content) do
         "Notificación de transacción\nMonto: CRC 5,000.00\nFecha: 03/08/2024\nComercio: Supermercado ABC Ciudad: San José\nTipo de Transacción: COMPRA"
@@ -70,7 +70,7 @@ RSpec.describe EmailProcessing::Strategies::Regex do
     end
   end
 
-  describe '#can_parse?' do
+  describe '#can_parse?', integration: true do
     context 'with valid content' do
       let(:email_content) { "Monto: CRC 1,000.00\nFecha: 03/08/2024" }
 
@@ -112,7 +112,7 @@ RSpec.describe EmailProcessing::Strategies::Regex do
     end
   end
 
-  describe '#extract_amount (private method)' do
+  describe '#extract_amount (private method)', integration: true do
     it 'handles various currency formats' do
       expect(strategy.send(:extract_amount, '₡1,000.00')).to eq(BigDecimal('1000.00'))
       expect(strategy.send(:extract_amount, '$1,234.56')).to eq(BigDecimal('1234.56'))
@@ -127,7 +127,7 @@ RSpec.describe EmailProcessing::Strategies::Regex do
     end
   end
 
-  describe '#parse_date (private method)' do
+  describe '#parse_date (private method)', integration: true do
     it 'handles various date formats' do
       expect(strategy.send(:parse_date, '03/08/2024')).to eq(Date.new(2024, 8, 3))
       expect(strategy.send(:parse_date, '03-08-2024')).to eq(Date.new(2024, 8, 3))

@@ -1,18 +1,18 @@
 require 'rails_helper'
 
-RSpec.describe ImapConnectionService do
+RSpec.describe ImapConnectionService, integration: true do
   let(:email_account) { create(:email_account, :bac) }
   let(:service) { described_class.new(email_account) }
   let(:mock_imap) { instance_double(Net::IMAP) }
 
-  describe '#initialize' do
+  describe '#initialize', integration: true do
     it 'sets email account and initializes empty errors' do
       expect(service.email_account).to eq(email_account)
       expect(service.errors).to be_empty
     end
   end
 
-  describe '#test_connection' do
+  describe '#test_connection', integration: true do
     context 'when connection succeeds' do
       it 'returns true for successful connection test' do
         allow(service).to receive(:with_connection).and_yield(mock_imap)
@@ -36,7 +36,7 @@ RSpec.describe ImapConnectionService do
     end
   end
 
-  describe '#search_emails' do
+  describe '#search_emails', integration: true do
     let(:search_criteria) { [ "SINCE", "01-Jan-2025" ] }
 
     context 'when search succeeds' do
@@ -62,7 +62,7 @@ RSpec.describe ImapConnectionService do
     end
   end
 
-  describe '#fetch_envelope' do
+  describe '#fetch_envelope', integration: true do
     let(:message_id) { 123 }
     let(:mock_envelope) { double('envelope', subject: 'Test Subject') }
 
@@ -92,7 +92,7 @@ RSpec.describe ImapConnectionService do
     end
   end
 
-  describe '#fetch_body_structure' do
+  describe '#fetch_body_structure', integration: true do
     let(:message_id) { 123 }
     let(:mock_structure) { double('structure', multipart?: true) }
 
@@ -118,7 +118,7 @@ RSpec.describe ImapConnectionService do
     end
   end
 
-  describe '#fetch_body_part' do
+  describe '#fetch_body_part', integration: true do
     let(:message_id) { 123 }
     let(:part_number) { "1" }
     let(:body_content) { "Email body content" }
@@ -145,7 +145,7 @@ RSpec.describe ImapConnectionService do
     end
   end
 
-  describe '#fetch_text_body' do
+  describe '#fetch_text_body', integration: true do
     let(:message_id) { 123 }
     let(:text_content) { "Plain text email content" }
 
@@ -171,7 +171,7 @@ RSpec.describe ImapConnectionService do
     end
   end
 
-  describe '#with_connection' do
+  describe '#with_connection', integration: true do
     let(:mock_settings) do
       {
         address: 'imap.test.com',
@@ -297,28 +297,28 @@ RSpec.describe ImapConnectionService do
     end
   end
 
-  describe 'error handling' do
-    describe 'ConnectionError' do
+  describe 'error handling', integration: true do
+    describe 'ConnectionError', integration: true do
       it 'is a StandardError subclass' do
         expect(ImapConnectionService::ConnectionError.new).to be_a(StandardError)
       end
     end
 
-    describe 'AuthenticationError' do
+    describe 'AuthenticationError', integration: true do
       it 'is a StandardError subclass' do
         expect(ImapConnectionService::AuthenticationError.new).to be_a(StandardError)
       end
     end
 
-    describe 'SearchError' do
+    describe 'SearchError', integration: true do
       it 'is a StandardError subclass' do
         expect(ImapConnectionService::SearchError.new).to be_a(StandardError)
       end
     end
   end
 
-  describe 'private methods' do
-    describe '#add_error' do
+  describe 'private methods', integration: true do
+    describe '#add_error', integration: true do
       it 'adds error to errors array and logs to Rails logger' do
         expect(Rails.logger).to receive(:error).with("[ImapConnectionService] #{email_account.email}: Test error")
 

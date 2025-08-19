@@ -2,10 +2,10 @@
 
 require "rails_helper"
 
-RSpec.describe "Api::V1::Patterns Security", type: :request do
+RSpec.describe "Api::V1::Patterns Security", type: :request, integration: true do
   let(:category) { create(:category, name: "Test Category") }
 
-  describe "Authentication" do
+  describe "Authentication", integration: true do
     let(:pattern) { create(:categorization_pattern, category: category) }
 
     context "without token" do
@@ -71,7 +71,7 @@ RSpec.describe "Api::V1::Patterns Security", type: :request do
     end
   end
 
-  describe "Token BCrypt verification" do
+  describe "Token BCrypt verification", integration: true do
     let(:api_token) { create(:api_token) }
     let(:raw_token) { api_token.token }
 
@@ -96,7 +96,7 @@ RSpec.describe "Api::V1::Patterns Security", type: :request do
     end
   end
 
-  describe "SQL Injection Prevention" do
+  describe "SQL Injection Prevention", integration: true do
     let(:api_token) { create(:api_token) }
     let(:headers) { { "Authorization" => "Bearer #{api_token.token}" } }
 
@@ -119,7 +119,7 @@ RSpec.describe "Api::V1::Patterns Security", type: :request do
     end
   end
 
-  describe "Input Validation" do
+  describe "Input Validation", integration: true do
     let(:api_token) { create(:api_token) }
     let(:headers) do
       {
@@ -146,7 +146,7 @@ RSpec.describe "Api::V1::Patterns Security", type: :request do
     end
   end
 
-  describe "Mass Assignment Protection" do
+  describe "Mass Assignment Protection", integration: true do
     let(:api_token) { create(:api_token) }
     let(:headers) do
       {

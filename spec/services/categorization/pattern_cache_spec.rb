@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::PatternCache do
+RSpec.describe Categorization::PatternCache, performance: true do
   let(:cache) { described_class.new }
   let(:category) { create(:category, name: "Food & Dining") }
   let(:pattern) do
@@ -35,7 +35,7 @@ RSpec.describe Categorization::PatternCache do
     Categorization::PatternCache.instance_variable_set(:@instance, nil)
   end
 
-  describe "#initialize" do
+  describe "#initialize", performance: true do
     it "initializes with memory cache" do
       expect(cache.instance_variable_get(:@memory_cache)).to be_present
     end
@@ -57,7 +57,7 @@ RSpec.describe Categorization::PatternCache do
     end
   end
 
-  describe "#get_pattern" do
+  describe "#get_pattern", performance: true do
     context "with no cached data" do
       it "fetches from database and caches result" do
         expect(CategorizationPattern).to receive(:active).and_call_original
@@ -101,7 +101,7 @@ RSpec.describe Categorization::PatternCache do
     end
   end
 
-  describe "#get_patterns" do
+  describe "#get_patterns", performance: true do
     let(:patterns) do
       3.times.map do |i|
         create(:categorization_pattern,
@@ -136,7 +136,7 @@ RSpec.describe Categorization::PatternCache do
     end
   end
 
-  describe "#get_patterns_by_type" do
+  describe "#get_patterns_by_type", performance: true do
     let!(:merchant_patterns) do
       2.times.map do |i|
         create(:categorization_pattern,
@@ -170,7 +170,7 @@ RSpec.describe Categorization::PatternCache do
     end
   end
 
-  describe "#get_composite_pattern" do
+  describe "#get_composite_pattern", performance: true do
     it "fetches and caches composite pattern" do
       result = cache.get_composite_pattern(composite.id)
 
@@ -189,7 +189,7 @@ RSpec.describe Categorization::PatternCache do
     end
   end
 
-  describe "#get_user_preference" do
+  describe "#get_user_preference", performance: true do
     it "fetches and caches user preference by merchant name" do
       # Ensure user_preference is created
       user_preference
@@ -215,7 +215,7 @@ RSpec.describe Categorization::PatternCache do
     end
   end
 
-  describe "#get_all_active_patterns" do
+  describe "#get_all_active_patterns", performance: true do
     let!(:active_patterns) do
       3.times.map { create(:categorization_pattern, active: true, category: category) }
     end
@@ -239,7 +239,7 @@ RSpec.describe Categorization::PatternCache do
     end
   end
 
-  describe "#invalidate" do
+  describe "#invalidate", performance: true do
     context "with CategorizationPattern" do
       before { cache.get_pattern(pattern.id) }
 
@@ -290,7 +290,7 @@ RSpec.describe Categorization::PatternCache do
     end
   end
 
-  describe "#invalidate_all" do
+  describe "#invalidate_all", performance: true do
     before do
       cache.get_pattern(pattern.id)
       cache.get_composite_pattern(composite.id)
@@ -316,7 +316,7 @@ RSpec.describe Categorization::PatternCache do
     end
   end
 
-  describe "#warm_cache" do
+  describe "#warm_cache", performance: true do
     let!(:frequently_used_patterns) do
       3.times.map do |i|
         create(:categorization_pattern,
@@ -357,7 +357,7 @@ RSpec.describe Categorization::PatternCache do
     end
   end
 
-  describe "#metrics" do
+  describe "#metrics", performance: true do
     before do
       cache.get_pattern(pattern.id)
       cache.get_pattern(pattern.id) # Hit
@@ -395,7 +395,7 @@ RSpec.describe Categorization::PatternCache do
     end
   end
 
-  describe "#preload_for_expenses" do
+  describe "#preload_for_expenses", performance: true do
     let(:expenses) do
       [
         build(:expense, merchant_name: "Starbucks"),
@@ -418,7 +418,7 @@ RSpec.describe Categorization::PatternCache do
     end
   end
 
-  describe "Performance benchmarks" do
+  describe "Performance benchmarks", performance: true do
     let(:patterns) do
       50.times.map do |i|
         create(:categorization_pattern,
@@ -462,7 +462,7 @@ RSpec.describe Categorization::PatternCache do
     end
   end
 
-  describe "Redis fallback behavior" do
+  describe "Redis fallback behavior", performance: true do
     context "when Redis becomes unavailable" do
       before do
         skip "Redis not available in test" unless defined?(Redis)
@@ -487,7 +487,7 @@ RSpec.describe Categorization::PatternCache do
     end
   end
 
-  describe "TTL configuration" do
+  describe "TTL configuration", performance: true do
     it "respects configured TTL values" do
       allow(Rails.application.config).to receive(:pattern_cache_memory_ttl).and_return(10.seconds)
       allow(Rails.application.config).to receive(:pattern_cache_redis_ttl).and_return(1.hour)

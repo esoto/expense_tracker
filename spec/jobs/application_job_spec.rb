@@ -1,7 +1,7 @@
 require 'rails_helper'
 
-RSpec.describe ApplicationJob, type: :job do
-  describe 'inheritance' do
+RSpec.describe ApplicationJob, type: :job, integration: true do
+  describe 'inheritance', integration: true do
     let(:test_job_class) do
       Class.new(ApplicationJob) do
         def perform(arg)
@@ -30,7 +30,7 @@ RSpec.describe ApplicationJob, type: :job do
     end
   end
 
-  describe 'configuration' do
+  describe 'configuration', integration: true do
     it 'uses default queue' do
       job = ApplicationJob.new
       expect(job.queue_name).to eq('default')

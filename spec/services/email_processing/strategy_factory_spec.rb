@@ -1,10 +1,10 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::StrategyFactory do
+RSpec.describe EmailProcessing::StrategyFactory, integration: true do
   let(:parsing_rule) { create(:parsing_rule, bank_name: 'Banco Nacional') }
   let(:email_content) { 'Monto: ₡1000\nFecha: 15/08/2024' }
 
-  describe '.create_strategy' do
+  describe '.create_strategy', integration: true do
     it 'creates default strategy for unknown banks' do
       strategy = described_class.create_strategy(parsing_rule)
       expect(strategy).to be_a(EmailProcessing::Strategies::Regex)
@@ -72,7 +72,7 @@ RSpec.describe EmailProcessing::StrategyFactory do
     end
   end
 
-  describe '.available_strategies' do
+  describe '.available_strategies', integration: true do
     it 'returns all available strategy keys' do
       strategies = described_class.available_strategies
       expect(strategies).to include(:default)
@@ -80,7 +80,7 @@ RSpec.describe EmailProcessing::StrategyFactory do
     end
   end
 
-  describe '.strategy_for_bank' do
+  describe '.strategy_for_bank', integration: true do
     it 'returns default strategy for unknown banks' do
       strategy_class = described_class.strategy_for_bank('Unknown Bank')
       expect(strategy_class).to eq(EmailProcessing::Strategies::Regex)
@@ -106,7 +106,7 @@ RSpec.describe EmailProcessing::StrategyFactory do
     end
   end
 
-  describe 'constants' do
+  describe 'constants', integration: true do
     it 'defines strategy mappings as frozen hash' do
       expect(described_class::STRATEGY_MAPPINGS).to be_frozen
       expect(described_class::STRATEGY_MAPPINGS).to be_a(Hash)

@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe "expenses/dashboard.html.erb", type: :view do
+RSpec.describe "expenses/dashboard.html.erb", type: :view, unit: true do
   let(:email_account) { create(:email_account) }
   let(:metrics_data) do
     {

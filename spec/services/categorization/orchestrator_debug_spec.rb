@@ -2,8 +2,8 @@
 
 require "rails_helper"
 
-RSpec.describe "Categorization::Orchestrator Debug", type: :service do
-  describe "Debug orchestrator creation" do
+RSpec.describe "Categorization::Orchestrator Debug", type: :service, integration: true do
+  describe "Debug orchestrator creation", integration: true do
     it "creates test orchestrator successfully" do
       begin
         orchestrator = Categorization::OrchestratorFactory.create_test

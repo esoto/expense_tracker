@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Api::HealthController, type: :controller do
+RSpec.describe Api::HealthController, type: :controller, performance: true do
   before do
     # Create sufficient data for health checks to pass
     category = create(:category)
@@ -23,7 +23,7 @@ RSpec.describe Api::HealthController, type: :controller do
     })
   end
 
-  describe "GET #index" do
+  describe "GET #index", performance: true do
     it "returns health status" do
       get :index, format: :json
 
@@ -59,7 +59,7 @@ RSpec.describe Api::HealthController, type: :controller do
     end
   end
 
-  describe "GET #ready" do
+  describe "GET #ready", performance: true do
     it "returns ready status when system is ready" do
       get :ready, format: :json
 
@@ -87,7 +87,7 @@ RSpec.describe Api::HealthController, type: :controller do
     end
   end
 
-  describe "GET #live" do
+  describe "GET #live", performance: true do
     it "returns live status" do
       get :live, format: :json
 
@@ -111,7 +111,7 @@ RSpec.describe Api::HealthController, type: :controller do
     end
   end
 
-  describe "GET #metrics" do
+  describe "GET #metrics", performance: true do
     before do
       # Create enough test data for health checks
       category = create(:category)

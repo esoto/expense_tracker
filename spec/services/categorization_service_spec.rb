@@ -2,13 +2,13 @@
 
 require "rails_helper"
 
-RSpec.describe CategorizationService do
+RSpec.describe CategorizationService, performance: true do
   let(:service) { described_class.new }
   let(:groceries_category) { create(:category, name: "Groceries") }
   let(:dining_category) { create(:category, name: "Dining") }
   let(:transport_category) { create(:category, name: "Transportation") }
 
-  describe "#categorize_expense" do
+  describe "#categorize_expense", performance: true do
     let(:expense) do
       create(:expense,
         merchant_name: "Starbucks Coffee",
@@ -359,7 +359,7 @@ RSpec.describe CategorizationService do
     end
   end
 
-  describe "#bulk_categorize" do
+  describe "#bulk_categorize", performance: true do
     let(:expenses) do
       [
         create(:expense, merchant_name: "Starbucks", amount: 5),
@@ -415,7 +415,7 @@ RSpec.describe CategorizationService do
     end
   end
 
-  describe "#suggest_new_patterns" do
+  describe "#suggest_new_patterns", performance: true do
     it "identifies frequently uncategorized merchants" do
       5.times { create(:expense, merchant_name: "New Coffee Shop", category: nil) }
       3.times { create(:expense, merchant_name: "New Restaurant", category: nil) }
@@ -446,7 +446,7 @@ RSpec.describe CategorizationService do
     end
   end
 
-  describe "#pattern_performance_report" do
+  describe "#pattern_performance_report", performance: true do
     before do
       @pattern1 = CategorizationPattern.create!(
         category: dining_category,

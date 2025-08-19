@@ -2,8 +2,8 @@
 
 require "rails_helper"
 
-RSpec.describe "Queue Visualization", type: :request do
-  describe "Dashboard with queue visualization" do
+RSpec.describe "Queue Visualization", type: :request, integration: true do
+  describe "Dashboard with queue visualization", integration: true do
     before do
       # Create test data
       create_email_accounts
@@ -44,8 +44,8 @@ RSpec.describe "Queue Visualization", type: :request do
     end
   end
 
-  describe "Queue API endpoints" do
-    describe "GET /api/queue/status" do
+  describe "Queue API endpoints", integration: true do
+    describe "GET /api/queue/status", integration: true do
       before { mock_queue_monitor_service }
 
       it "returns queue status as JSON" do
@@ -78,7 +78,7 @@ RSpec.describe "Queue Visualization", type: :request do
       end
     end
 
-    describe "POST /api/queue/pause" do
+    describe "POST /api/queue/pause", integration: true do
       before { mock_queue_monitor_service }
 
       it "pauses all queues" do
@@ -107,7 +107,7 @@ RSpec.describe "Queue Visualization", type: :request do
       end
     end
 
-    describe "POST /api/queue/resume" do
+    describe "POST /api/queue/resume", integration: true do
       before { mock_queue_monitor_service }
 
       it "resumes all queues" do
@@ -123,7 +123,7 @@ RSpec.describe "Queue Visualization", type: :request do
       end
     end
 
-    describe "POST /api/queue/jobs/:id/retry" do
+    describe "POST /api/queue/jobs/:id/retry", integration: true do
       let(:job_id) { 123 }
 
       before do
@@ -166,7 +166,7 @@ RSpec.describe "Queue Visualization", type: :request do
       end
     end
 
-    describe "POST /api/queue/jobs/:id/clear" do
+    describe "POST /api/queue/jobs/:id/clear", integration: true do
       let(:job_id) { 456 }
 
       before do
@@ -192,7 +192,7 @@ RSpec.describe "Queue Visualization", type: :request do
       end
     end
 
-    describe "POST /api/queue/retry_all_failed" do
+    describe "POST /api/queue/retry_all_failed", integration: true do
       before { mock_queue_monitor_service }
 
       it "retries all failed jobs" do
@@ -228,7 +228,7 @@ RSpec.describe "Queue Visualization", type: :request do
       end
     end
 
-    describe "GET /api/queue/metrics" do
+    describe "GET /api/queue/metrics", integration: true do
       before { mock_queue_monitor_service }
 
       it "returns detailed metrics" do
@@ -252,7 +252,7 @@ RSpec.describe "Queue Visualization", type: :request do
       end
     end
 
-    describe "GET /api/queue/health" do
+    describe "GET /api/queue/health", integration: true do
       before { mock_queue_monitor_service }
 
       context "when system is healthy" do
@@ -293,7 +293,7 @@ RSpec.describe "Queue Visualization", type: :request do
     end
   end
 
-  describe "Real-time updates via ActionCable" do
+  describe "Real-time updates via ActionCable", integration: true do
     it "broadcasts queue updates when pausing" do
       mock_queue_monitor_service
       allow(QueueMonitor).to receive(:pause_queue).and_return(true)

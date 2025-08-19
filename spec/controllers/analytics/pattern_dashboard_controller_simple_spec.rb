@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Analytics::PatternDashboardController, type: :controller do
+RSpec.describe Analytics::PatternDashboardController, type: :controller, performance: true do
   let(:admin_user) do
     AdminUser.create!(
       email: "test@example.com",
@@ -20,8 +20,8 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller do
     allow(controller).to receive(:admin_signed_in?).and_return(true)
   end
 
-  describe "Fixed Security Issues" do
-    describe "GET #trends" do
+  describe "Fixed Security Issues", performance: true do
+    describe "GET #trends", performance: true do
       it "handles SQL injection attempts safely" do
         malicious_input = "'; DROP TABLE users; --"
 
@@ -35,7 +35,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller do
       end
     end
 
-    describe "GET #index" do
+    describe "GET #index", performance: true do
       it "handles invalid date parameters gracefully" do
         get :index, params: {
           time_period: "custom",
@@ -57,7 +57,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller do
       end
     end
 
-    describe "GET #export" do
+    describe "GET #export", performance: true do
       it "validates export format" do
         get :export, params: { format_type: "malicious_format" }
 
@@ -77,7 +77,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller do
     end
   end
 
-  describe "Performance Optimizations" do
+  describe "Performance Optimizations", performance: true do
     it "uses caching for expensive operations" do
       expect(Rails.cache).to receive(:fetch).at_least(:once).and_call_original
       get :index
@@ -103,7 +103,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller do
     end
   end
 
-  describe "Error Handling" do
+  describe "Error Handling", performance: true do
     it "handles database errors gracefully" do
       analyzer = instance_double(Analytics::PatternPerformanceAnalyzer)
       allow(Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(analyzer)

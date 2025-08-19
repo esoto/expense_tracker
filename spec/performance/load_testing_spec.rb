@@ -73,7 +73,7 @@ RSpec.describe "Categorization Load Testing", type: :performance do
       puts "  Memory allocated during test: #{allocated_mb.round}MB"
     end
 
-    it "handles 10,000 expenses under performance targets", :slow do
+    it "handles 10,000 expenses under performance targets", slow: true do
       # Full load test (skip in CI unless specifically requested)
       skip "Skipping large load test unless FULL_LOAD_TEST=true" unless ENV['FULL_LOAD_TEST'] == 'true'
 

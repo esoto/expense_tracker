@@ -1,0 +1,248 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  RAILS_ENV: test
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_USER: postgres
+  POSTGRES_DB: expense_tracker_test
+
+jobs:
+  # Quick unit tests - run first for fast feedback
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3.0'
+          bundler-cache: true
+      
+      - name: Setup Database
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:schema:load
+      
+      - name: Run Unit Tests
+        run: bin/test-unit
+      
+      - name: Upload Coverage
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: unit-coverage
+          path: coverage/
+  
+  # Integration tests - run in parallel with unit tests
+  integration-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3.0'
+          bundler-cache: true
+      
+      - name: Setup Database
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:schema:load
+          bundle exec rails db:seed
+      
+      - name: Run Integration Tests
+        run: bin/test-integration
+      
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: integration-results
+          path: tmp/test-results/
+  
+  # System tests - only run after unit tests pass
+  system-tests:
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3.0'
+          bundler-cache: true
+      
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@latest
+        with:
+          chrome-version: stable
+      
+      - name: Setup Database
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:schema:load
+          bundle exec rails db:seed
+      
+      - name: Precompile Assets
+        run: bundle exec rails assets:precompile
+      
+      - name: Run System Tests
+        run: bundle exec rspec spec/system
+      
+      - name: Upload Screenshots
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: system-test-failures
+          path: tmp/screenshots/
+  
+  # Performance tests - only run on main branch
+  performance-tests:
+    if: github.ref == 'refs/heads/main'
+    needs: [unit-tests, integration-tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3.0'
+          bundler-cache: true
+      
+      - name: Setup Database
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:schema:load
+          bundle exec rails db:seed
+      
+      - name: Run Performance Tests
+        run: bin/test-performance
+      
+      - name: Upload Performance Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-report
+          path: tmp/performance/
+      
+      - name: Comment on PR with Performance Impact
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            // Parse performance results and comment on PR
+            const fs = require('fs');
+            const report = fs.readFileSync('tmp/performance/summary.json', 'utf8');
+            const data = JSON.parse(report);
+            
+            const comment = `## Performance Impact
+            
+            | Metric | Before | After | Change |
+            |--------|--------|-------|--------|
+            | Response Time | ${data.before.response_time}ms | ${data.after.response_time}ms | ${data.change.response_time} |
+            | Memory Usage | ${data.before.memory}MB | ${data.after.memory}MB | ${data.change.memory} |
+            | DB Queries | ${data.before.queries} | ${data.after.queries} | ${data.change.queries} |
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+  
+  # Final status check
+  test-suite-status:
+    needs: [unit-tests, integration-tests, system-tests]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Check Test Results
+        run: |
+          if [[ "${{ needs.unit-tests.result }}" != "success" || \
+                "${{ needs.integration-tests.result }}" != "success" || \
+                "${{ needs.system-tests.result }}" != "success" ]]; then
+            echo "Test suite failed"
+            exit 1
+          fi
+          echo "All tests passed!"

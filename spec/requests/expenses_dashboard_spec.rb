@@ -1,7 +1,7 @@
 require 'rails_helper'
 
-RSpec.describe "Expenses Dashboard", type: :request do
-  describe "GET /expenses/dashboard" do
+RSpec.describe "Expenses Dashboard", type: :request, integration: true do
+  describe "GET /expenses/dashboard", integration: true do
     it "displays the dashboard with sync status widget" do
       # Create test data
       email_account = create(:email_account, active: true)

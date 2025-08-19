@@ -3,8 +3,8 @@
 require "rails_helper"
 require "concurrent"
 
-RSpec.describe "Categorization::Orchestrator Thread Safety", type: :service do
-  describe "Concurrent operations" do
+RSpec.describe "Categorization::Orchestrator Thread Safety", type: :service, integration: true do
+  describe "Concurrent operations", integration: true do
     let(:orchestrator) { Categorization::OrchestratorFactory.create_production }
     
     # Create test data
@@ -46,7 +46,7 @@ RSpec.describe "Categorization::Orchestrator Thread Safety", type: :service do
       DatabaseCleaner.clean
     end
     
-    describe "Thread-safe initialization" do
+    describe "Thread-safe initialization", integration: true do
       it "safely initializes services across threads" do
         orchestrators = Concurrent::Array.new
         errors = Concurrent::Array.new
@@ -74,7 +74,7 @@ RSpec.describe "Categorization::Orchestrator Thread Safety", type: :service do
       end
     end
     
-    describe "Concurrent categorization" do
+    describe "Concurrent categorization", integration: true do
       it "handles multiple threads categorizing simultaneously" do
         results = Concurrent::Array.new
         errors = Concurrent::Array.new
@@ -123,7 +123,7 @@ RSpec.describe "Categorization::Orchestrator Thread Safety", type: :service do
       end
     end
     
-    describe "Concurrent batch processing" do
+    describe "Concurrent batch processing", integration: true do
       it "handles concurrent batch operations" do
         batches = @expenses.each_slice(5).to_a
         all_results = Concurrent::Array.new
@@ -186,7 +186,7 @@ RSpec.describe "Categorization::Orchestrator Thread Safety", type: :service do
       end
     end
     
-    describe "State management thread safety" do
+    describe "State management thread safety", integration: true do
       it "safely handles configuration changes during concurrent operations" do
         errors = Concurrent::Array.new
         results = Concurrent::Array.new
@@ -261,7 +261,7 @@ RSpec.describe "Categorization::Orchestrator Thread Safety", type: :service do
       end
     end
     
-    describe "Learning operation thread safety" do
+    describe "Learning operation thread safety", integration: true do
       it "handles concurrent learning operations" do
         errors = Concurrent::Array.new
         results = Concurrent::Array.new
@@ -326,7 +326,7 @@ RSpec.describe "Categorization::Orchestrator Thread Safety", type: :service do
       end
     end
     
-    describe "Circuit breaker thread safety" do
+    describe "Circuit breaker thread safety", integration: true do
       it "handles circuit breaker state changes safely" do
         # Create orchestrator with low circuit breaker threshold
         orch = Categorization::Orchestrator.new(
@@ -358,7 +358,7 @@ RSpec.describe "Categorization::Orchestrator Thread Safety", type: :service do
       end
     end
     
-    describe "Resource contention" do
+    describe "Resource contention", integration: true do
       it "handles high contention scenarios" do
         # Single expense that all threads will compete for
         expense = @expenses.first
@@ -411,7 +411,7 @@ RSpec.describe "Categorization::Orchestrator Thread Safety", type: :service do
       end
     end
     
-    describe "Deadlock prevention" do
+    describe "Deadlock prevention", integration: true do
       it "avoids deadlocks in complex scenarios" do
         completed = Concurrent::AtomicBoolean.new(false)
         

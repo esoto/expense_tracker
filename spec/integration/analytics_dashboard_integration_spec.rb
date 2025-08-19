@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "Analytics Dashboard Integration", type: :request do
+RSpec.describe "Analytics Dashboard Integration", type: :request, integration: true do
   let(:admin_user) { create(:admin_user, role: :admin) }
   let(:category) { create(:category, name: "Test Category") }
   let(:expense) { create(:expense, amount: 100, description: "Test expense") }
@@ -39,7 +39,7 @@ RSpec.describe "Analytics Dashboard Integration", type: :request do
     allow_any_instance_of(Analytics::PatternDashboardController).to receive(:require_analytics_permission).and_return(true)
   end
 
-  describe "GET /analytics/pattern_dashboard" do
+  describe "GET /analytics/pattern_dashboard", integration: true do
     it "loads the dashboard successfully" do
       get analytics_pattern_dashboard_index_path
 
@@ -69,7 +69,7 @@ RSpec.describe "Analytics Dashboard Integration", type: :request do
     end
   end
 
-  describe "GET /analytics/pattern_dashboard/trends" do
+  describe "GET /analytics/pattern_dashboard/trends", integration: true do
     it "returns trend data as JSON" do
       get trends_analytics_pattern_dashboard_index_path,
           params: { interval: "daily" },
@@ -94,7 +94,7 @@ RSpec.describe "Analytics Dashboard Integration", type: :request do
     end
   end
 
-  describe "GET /analytics/pattern_dashboard/heatmap" do
+  describe "GET /analytics/pattern_dashboard/heatmap", integration: true do
     it "returns heatmap data as JSON" do
       get heatmap_analytics_pattern_dashboard_index_path,
           headers: { "Accept" => "application/json" }
@@ -108,7 +108,7 @@ RSpec.describe "Analytics Dashboard Integration", type: :request do
     end
   end
 
-  describe "GET /analytics/pattern_dashboard/export" do
+  describe "GET /analytics/pattern_dashboard/export", integration: true do
     it "exports data as CSV" do
       get export_analytics_pattern_dashboard_index_path,
           params: { format_type: "csv" }
@@ -151,7 +151,7 @@ RSpec.describe "Analytics Dashboard Integration", type: :request do
     end
   end
 
-  describe "Cache invalidation" do
+  describe "Cache invalidation", integration: true do
     it "clears analytics cache when patterns are updated" do
       pattern = create(:categorization_pattern, category: category)
 

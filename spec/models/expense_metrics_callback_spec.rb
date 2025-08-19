@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe "Expense metrics callbacks", type: :model do
+RSpec.describe "Expense metrics callbacks", type: :model, integration: true do
   let(:email_account) { create(:email_account) }
   let(:expense) { create(:expense, email_account: email_account, amount: 100, transaction_date: Date.current) }
 
@@ -10,8 +10,8 @@ RSpec.describe "Expense metrics callbacks", type: :model do
     Rails.cache.clear
   end
 
-  describe 'after_commit callbacks' do
-    describe '#trigger_metrics_refresh' do
+  describe 'after_commit callbacks', integration: true do
+    describe '#trigger_metrics_refresh', integration: true do
       context 'on create' do
         it 'triggers metrics refresh job' do
           expect(MetricsRefreshJob).to receive(:enqueue_debounced).with(
@@ -106,7 +106,7 @@ RSpec.describe "Expense metrics callbacks", type: :model do
       end
     end
 
-    describe '#trigger_metrics_refresh_for_deletion' do
+    describe '#trigger_metrics_refresh_for_deletion', integration: true do
       it 'triggers metrics refresh when expense is deleted' do
         expense # Create the expense first
 
@@ -134,7 +134,7 @@ RSpec.describe "Expense metrics callbacks", type: :model do
     end
   end
 
-  describe 'bulk operations' do
+  describe 'bulk operations', integration: true do
     it 'uses debouncing to prevent job flooding on bulk creates' do
       # Each expense creation triggers job once (not twice due to proper callback logic)
       expect(MetricsRefreshJob).to receive(:enqueue_debounced).exactly(5).times
@@ -155,7 +155,7 @@ RSpec.describe "Expense metrics callbacks", type: :model do
     end
   end
 
-  describe 'integration with dashboard cache clearing' do
+  describe 'integration with dashboard cache clearing', integration: true do
     it 'clears dashboard cache in addition to triggering metrics refresh' do
       expect(DashboardService).to receive(:clear_cache)
       expect(MetricsRefreshJob).to receive(:enqueue_debounced)

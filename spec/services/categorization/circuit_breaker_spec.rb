@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service do
+RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service, integration: true do
   let(:circuit_breaker) do
     described_class.new(
       failure_threshold: 3,
@@ -10,7 +10,7 @@ RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service do
     )
   end
   
-  describe "#call" do
+  describe "#call", integration: true do
     context "when circuit is closed" do
       it "executes the block successfully" do
         result = circuit_breaker.call { "success" }
@@ -137,7 +137,7 @@ RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service do
     end
   end
   
-  describe "#record_failure" do
+  describe "#record_failure", integration: true do
     it "increments failure count" do
       expect(circuit_breaker.state).to eq(:closed)
       
@@ -152,7 +152,7 @@ RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service do
     end
   end
   
-  describe "#reset!" do
+  describe "#reset!", integration: true do
     it "resets circuit to initial state" do
       # Open the circuit
       3.times { circuit_breaker.record_failure }
@@ -169,7 +169,7 @@ RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service do
     end
   end
   
-  describe "thread safety" do
+  describe "thread safety", integration: true do
     it "handles concurrent failures safely" do
       threads = 10.times.map do
         Thread.new do
@@ -230,7 +230,7 @@ RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service do
     end
   end
   
-  describe "integration with orchestrator" do
+  describe "integration with orchestrator", integration: true do
     let(:orchestrator) do
       Categorization::Orchestrator.new(
         circuit_breaker: circuit_breaker
@@ -289,7 +289,7 @@ RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service do
     end
   end
   
-  describe "configuration" do
+  describe "configuration", integration: true do
     it "respects custom failure threshold" do
       cb = described_class.new(failure_threshold: 5, timeout: 1.second)
       

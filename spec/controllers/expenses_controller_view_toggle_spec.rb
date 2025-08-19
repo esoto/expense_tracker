@@ -1,8 +1,8 @@
 require 'rails_helper'
 
-RSpec.describe ExpensesController, type: :controller do
+RSpec.describe ExpensesController, type: :controller, performance: true do
   render_views
-  describe "View Toggle Feature Integration" do
+  describe "View Toggle Feature Integration", performance: true do
     let(:email_account) { create(:email_account) }
     let(:category) { create(:category, name: "Transportation", color: "#0F766E") }
 
@@ -46,7 +46,7 @@ RSpec.describe ExpensesController, type: :controller do
       )
     end
 
-    describe "GET #index with view toggle support" do
+    describe "GET #index with view toggle support", performance: true do
       it "renders the index view with toggle controls" do
         get :index
 
@@ -102,7 +102,7 @@ RSpec.describe ExpensesController, type: :controller do
       end
     end
 
-    describe "View data structure" do
+    describe "View data structure", performance: true do
       it "provides all necessary data for both compact and expanded views" do
         get :index
 
@@ -137,7 +137,7 @@ RSpec.describe ExpensesController, type: :controller do
       end
     end
 
-    describe "Performance considerations" do
+    describe "Performance considerations", performance: true do
       before do
         # Create more expenses for performance testing
         25.times do |i|
@@ -173,7 +173,7 @@ RSpec.describe ExpensesController, type: :controller do
       end
     end
 
-    describe "Accessibility attributes" do
+    describe "Accessibility attributes", performance: true do
       it "includes proper ARIA labels" do
         get :index
 
@@ -192,7 +192,7 @@ RSpec.describe ExpensesController, type: :controller do
       end
     end
 
-    describe "Mobile responsiveness preparation" do
+    describe "Mobile responsiveness preparation", performance: true do
       it "includes responsive classes" do
         get :index
 
@@ -210,7 +210,7 @@ RSpec.describe ExpensesController, type: :controller do
       end
     end
 
-    describe "Integration with existing features" do
+    describe "Integration with existing features", performance: true do
       it "maintains compatibility with ML confidence display" do
         get :index
 

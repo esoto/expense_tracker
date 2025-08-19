@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe ProgressBatchCollector, type: :service do
+RSpec.describe ProgressBatchCollector, type: :service, integration: true do
   include ActiveSupport::Testing::TimeHelpers
   let(:sync_session) { create(:sync_session) }
   let(:config) do
@@ -26,7 +26,7 @@ RSpec.describe ProgressBatchCollector, type: :service do
     subject.stop if subject.active?
   end
 
-  describe '#initialize' do
+  describe '#initialize', integration: true do
     it 'initializes with correct configuration' do
       collector = described_class.new(sync_session, config: config)
 
@@ -55,7 +55,7 @@ RSpec.describe ProgressBatchCollector, type: :service do
     end
   end
 
-  describe '#add_progress_update' do
+  describe '#add_progress_update', integration: true do
     it 'adds progress update to batch' do
       # Use values that won't trigger milestone flush (5/100 = 5%)
       subject.add_progress_update(processed: 5, total: 100, detected: 2)
@@ -93,7 +93,7 @@ RSpec.describe ProgressBatchCollector, type: :service do
     end
   end
 
-  describe '#add_account_update' do
+  describe '#add_account_update', integration: true do
     it 'adds account-specific update to batch' do
       subject.add_account_update(
         account_id: 123,
@@ -114,7 +114,7 @@ RSpec.describe ProgressBatchCollector, type: :service do
     end
   end
 
-  describe '#add_critical_update' do
+  describe '#add_critical_update', integration: true do
     context 'when critical_immediate is enabled' do
       it 'broadcasts critical messages immediately' do
         expect(subject).to receive(:broadcast_critical_update).with(
@@ -166,7 +166,7 @@ RSpec.describe ProgressBatchCollector, type: :service do
     end
   end
 
-  describe '#add_activity_update' do
+  describe '#add_activity_update', integration: true do
     it 'adds activity update to batch' do
       subject.add_activity_update(
         activity_type: 'email_fetch',
@@ -183,7 +183,7 @@ RSpec.describe ProgressBatchCollector, type: :service do
     end
   end
 
-  describe '#flush_batch' do
+  describe '#flush_batch', integration: true do
     before do
       # Use 3% to avoid triggering milestone flush at 10%
       subject.add_progress_update(processed: 3, total: 100)
@@ -233,7 +233,7 @@ RSpec.describe ProgressBatchCollector, type: :service do
     end
   end
 
-  describe '#stop' do
+  describe '#stop', integration: true do
     it 'stops the collector and flushes remaining updates' do
       subject.add_progress_update(processed: 10, total: 100)
 
@@ -254,7 +254,7 @@ RSpec.describe ProgressBatchCollector, type: :service do
     end
   end
 
-  describe 'thread management' do
+  describe 'thread management', integration: true do
     it 'creates named timer thread' do
       collector = described_class.new(sync_session, config: config)
 
@@ -296,7 +296,7 @@ RSpec.describe ProgressBatchCollector, type: :service do
     end
   end
 
-  describe 'memory management' do
+  describe 'memory management', integration: true do
     it 'enforces max memory limit' do
       config_with_low_limit = config.merge(max_memory_updates: 3)
       collector = described_class.new(sync_session, config: config_with_low_limit)
@@ -323,7 +323,7 @@ RSpec.describe ProgressBatchCollector, type: :service do
     end
   end
 
-  describe 'batch size triggering' do
+  describe 'batch size triggering', integration: true do
     it 'flushes when batch size limit is reached' do
       expect(subject).to receive(:flush_batch)
 
@@ -332,7 +332,7 @@ RSpec.describe ProgressBatchCollector, type: :service do
     end
   end
 
-  describe 'time-based flushing' do
+  describe 'time-based flushing', integration: true do
     it 'flushes batch based on time interval' do
       # Set a known last batch time in the past
       old_time = config[:batch_interval] + 1.second
@@ -346,7 +346,7 @@ RSpec.describe ProgressBatchCollector, type: :service do
     end
   end
 
-  describe '#stats' do
+  describe '#stats', integration: true do
     it 'returns collector statistics' do
       # Use progress values that won't trigger milestone flush
       subject.add_progress_update(processed: 3, total: 100) # 3% won't trigger flush
@@ -370,7 +370,7 @@ RSpec.describe ProgressBatchCollector, type: :service do
   #   # Tests removed as finalizer feature was removed
   # end
 
-  describe 'broadcast grouping' do
+  describe 'broadcast grouping', integration: true do
     before do
       # Add mixed update types - use values that won't trigger milestone flush
       subject.add_progress_update(processed: 3, total: 100) # 3% - no milestone
@@ -404,7 +404,7 @@ RSpec.describe ProgressBatchCollector, type: :service do
     end
   end
 
-  describe 'thread safety' do
+  describe 'thread safety', integration: true do
     it 'handles concurrent updates safely' do
       threads = 10.times.map do |i|
         Thread.new do

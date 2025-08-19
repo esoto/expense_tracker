@@ -2,8 +2,8 @@
 
 require 'rails_helper'
 
-RSpec.describe Categorization::Orchestrator, type: :service do
-  describe 'Performance and Safety Improvements' do
+RSpec.describe Categorization::Orchestrator, type: :service, integration: true do
+  describe 'Performance and Safety Improvements', integration: true do
     let(:orchestrator) { Categorization::OrchestratorFactory.create_test }
     let(:expense) do
       create(:expense, 
@@ -13,7 +13,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
       )
     end
     
-    describe 'N+1 Query Prevention' do
+    describe 'N+1 Query Prevention', integration: true do
       it 'preloads categories efficiently in batch processing' do
         expenses = create_list(:expense, 10, merchant_name: 'Test Merchant')
         categories = create_list(:category, 5)
@@ -35,7 +35,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
       end
     end
     
-    describe 'Thread Safety' do
+    describe 'Thread Safety', integration: true do
       it 'handles concurrent categorization requests safely' do
         expenses = create_list(:expense, 20)
         results = Concurrent::Array.new
@@ -64,7 +64,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
       end
     end
     
-    describe 'Elapsed Time Tracking' do
+    describe 'Elapsed Time Tracking', integration: true do
       it 'accurately tracks processing time' do
         result = orchestrator.categorize(expense)
         
@@ -83,7 +83,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
       end
     end
     
-    describe 'Error Differentiation' do
+    describe 'Error Differentiation', integration: true do
       it 'handles database errors specifically' do
         allow(CategorizationPattern).to receive(:active).and_raise(ActiveRecord::StatementInvalid.new("Database error"))
         
@@ -114,7 +114,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
       end
     end
     
-    describe 'Circuit Breaker Integration' do
+    describe 'Circuit Breaker Integration', integration: true do
       let(:circuit_breaker) { Categorization::Orchestrator::CircuitBreaker.new(failure_threshold: 3) }
       let(:orchestrator_with_breaker) do
         Categorization::OrchestratorFactory.create_custom(
@@ -152,7 +152,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
       end
     end
     
-    describe 'Monitoring Integration' do
+    describe 'Monitoring Integration', integration: true do
       it 'tracks performance metrics' do
         # Stub the module if it's defined
         if defined?(Infrastructure::MonitoringService::PerformanceTracker)
@@ -201,7 +201,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
       end
     end
     
-    describe 'Batch Processing Optimization' do
+    describe 'Batch Processing Optimization', integration: true do
       it 'supports parallel processing for large batches' do
         expenses = create_list(:expense, 20)
         
@@ -228,7 +228,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
       end
     end
     
-    describe 'Performance Alerting' do
+    describe 'Performance Alerting', integration: true do
       it 'logs warning when operation exceeds threshold' do
         # Create a pattern so we have something to match
         category = create(:category, name: 'Electronics')

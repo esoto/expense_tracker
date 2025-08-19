@@ -2,8 +2,8 @@
 
 require "rails_helper"
 
-RSpec.describe "Categorization::Orchestrator Test Summary", type: :service do
-  describe "Production readiness validation" do
+RSpec.describe "Categorization::Orchestrator Test Summary", type: :service, integration: true do
+  describe "Production readiness validation", integration: true do
     let(:orchestrator) { Categorization::OrchestratorFactory.create_test }
     
     before(:all) do
@@ -33,7 +33,7 @@ RSpec.describe "Categorization::Orchestrator Test Summary", type: :service do
       )
     end
     
-    describe "Core functionality" do
+    describe "Core functionality", integration: true do
       it "categorizes expenses successfully" do
         result = orchestrator.categorize(@expense)
         expect(result).to be_a(Categorization::CategorizationResult)
@@ -63,7 +63,7 @@ RSpec.describe "Categorization::Orchestrator Test Summary", type: :service do
       end
     end
     
-    describe "Performance validation" do
+    describe "Performance validation", integration: true do
       it "meets <10ms target for single categorization" do
         # Warm up
         orchestrator.categorize(@expense)
@@ -81,7 +81,7 @@ RSpec.describe "Categorization::Orchestrator Test Summary", type: :service do
       end
     end
     
-    describe "Error handling" do
+    describe "Error handling", integration: true do
       it "handles nil expense gracefully" do
         result = orchestrator.categorize(nil)
         expect(result).to be_failed
@@ -96,7 +96,7 @@ RSpec.describe "Categorization::Orchestrator Test Summary", type: :service do
       end
     end
     
-    describe "Thread safety" do
+    describe "Thread safety", integration: true do
       it "handles concurrent operations" do
         results = []
         mutex = Mutex.new
@@ -115,7 +115,7 @@ RSpec.describe "Categorization::Orchestrator Test Summary", type: :service do
       end
     end
     
-    describe "Health monitoring" do
+    describe "Health monitoring", integration: true do
       it "reports health status" do
         expect(orchestrator).to respond_to(:healthy?)
         health = orchestrator.healthy?
@@ -129,7 +129,7 @@ RSpec.describe "Categorization::Orchestrator Test Summary", type: :service do
       end
     end
     
-    describe "Configuration management" do
+    describe "Configuration management", integration: true do
       it "accepts configuration changes" do
         expect {
           orchestrator.configure(min_confidence: 0.6)
@@ -137,7 +137,7 @@ RSpec.describe "Categorization::Orchestrator Test Summary", type: :service do
       end
     end
     
-    describe "Service reset" do
+    describe "Service reset", integration: true do
       it "resets services without errors" do
         expect { orchestrator.reset! }.not_to raise_error
         
@@ -148,7 +148,7 @@ RSpec.describe "Categorization::Orchestrator Test Summary", type: :service do
     end
   end
   
-  describe "QA Requirements Validation" do
+  describe "QA Requirements Validation", integration: true do
     it "✅ Service classes properly loaded" do
       orchestrator = Categorization::OrchestratorFactory.create_test
       expect(orchestrator.pattern_cache).not_to be_nil
@@ -197,7 +197,7 @@ RSpec.describe "Categorization::Orchestrator Test Summary", type: :service do
     end
   end
   
-  describe "Test Coverage Summary" do
+  describe "Test Coverage Summary", integration: true do
     it "prints test coverage report" do
       puts "\n" + "="*60
       puts "ORCHESTRATOR TEST SUITE SUMMARY"

@@ -2,16 +2,16 @@
 
 require "rails_helper"
 
-RSpec.describe CategorizationPattern, type: :model do
+RSpec.describe CategorizationPattern, type: :model, performance: true do
   let(:category) { Category.create!(name: "Food & Dining") }
 
-  describe "associations" do
+  describe "associations", performance: true do
     it { should belong_to(:category) }
     it { should have_many(:pattern_feedbacks).dependent(:destroy) }
     it { should have_many(:expenses).through(:pattern_feedbacks) }
   end
 
-  describe "validations" do
+  describe "validations", performance: true do
     subject { described_class.new(category: category, pattern_type: "merchant", pattern_value: "test") }
 
     it { should validate_presence_of(:pattern_type) }
@@ -127,7 +127,7 @@ RSpec.describe CategorizationPattern, type: :model do
     end
   end
 
-  describe "scopes" do
+  describe "scopes", performance: true do
     let!(:active_pattern) { described_class.create!(category: category, pattern_type: "merchant", pattern_value: "active", active: true) }
     let!(:inactive_pattern) { described_class.create!(category: category, pattern_type: "merchant", pattern_value: "inactive", active: false) }
     let!(:user_pattern) { described_class.create!(category: category, pattern_type: "merchant", pattern_value: "user", user_created: true) }
@@ -153,7 +153,7 @@ RSpec.describe CategorizationPattern, type: :model do
     end
   end
 
-  describe "callbacks" do
+  describe "callbacks", performance: true do
     it "calculates success rate before save" do
       pattern = described_class.create!(
         category: category,
@@ -167,7 +167,7 @@ RSpec.describe CategorizationPattern, type: :model do
     end
   end
 
-  describe "#matches?" do
+  describe "#matches?", performance: true do
     let(:pattern) { described_class.new(category: category) }
     let(:email_account) { EmailAccount.create!(email: "test@example.com", provider: "gmail", bank_name: "Test Bank") }
     let(:expense) do
@@ -315,7 +315,7 @@ RSpec.describe CategorizationPattern, type: :model do
     end
   end
 
-  describe "#record_usage" do
+  describe "#record_usage", performance: true do
     let(:pattern) do
       described_class.create!(
         category: category,
@@ -340,7 +340,7 @@ RSpec.describe CategorizationPattern, type: :model do
     end
   end
 
-  describe "#effective_confidence" do
+  describe "#effective_confidence", performance: true do
     let(:pattern) do
       described_class.new(
         category: category,
@@ -367,7 +367,7 @@ RSpec.describe CategorizationPattern, type: :model do
     end
   end
 
-  describe "#check_and_deactivate_if_poor_performance" do
+  describe "#check_and_deactivate_if_poor_performance", performance: true do
     let(:pattern) do
       described_class.create!(
         category: category,
@@ -406,7 +406,7 @@ RSpec.describe CategorizationPattern, type: :model do
     end
   end
 
-  describe "metadata handling" do
+  describe "metadata handling", performance: true do
     it "initializes metadata as empty hash if nil" do
       pattern = described_class.new(
         category: category,
@@ -427,7 +427,7 @@ RSpec.describe CategorizationPattern, type: :model do
     end
   end
 
-  describe "additional scopes" do
+  describe "additional scopes", performance: true do
     before do
       # Create patterns with various characteristics
       described_class.create!(
@@ -499,7 +499,7 @@ RSpec.describe CategorizationPattern, type: :model do
     end
   end
 
-  describe "constants" do
+  describe "constants", performance: true do
     it "defines pattern types" do
       expect(described_class::PATTERN_TYPES).to eq(%w[merchant keyword description amount_range regex time])
     end

@@ -3,11 +3,11 @@
 require "rails_helper"
 require "ostruct"
 
-RSpec.describe Categorization::Monitoring::StructuredLogger do
+RSpec.describe Categorization::Monitoring::StructuredLogger, performance: true do
   let(:mock_logger) { instance_double(Logger) }
   let(:structured_logger) { described_class.new(logger: mock_logger) }
 
-  describe "#log_categorization" do
+  describe "#log_categorization", performance: true do
     let(:expense) { create(:expense, description: "Test purchase at Store") }
     let(:category) { create(:category, name: "Shopping") }
     let(:result) do
@@ -62,7 +62,7 @@ RSpec.describe Categorization::Monitoring::StructuredLogger do
     end
   end
 
-  describe "#log_learning" do
+  describe "#log_learning", performance: true do
     let(:pattern) { create(:categorization_pattern) }
 
     it "logs learning events with changes" do
@@ -83,7 +83,7 @@ RSpec.describe Categorization::Monitoring::StructuredLogger do
     end
   end
 
-  describe "#log_error" do
+  describe "#log_error", performance: true do
     let(:error) { StandardError.new("Test error message") }
 
     before do
@@ -116,7 +116,7 @@ RSpec.describe Categorization::Monitoring::StructuredLogger do
     end
   end
 
-  describe "#with_correlation_id" do
+  describe "#with_correlation_id", performance: true do
     it "uses provided correlation ID for all logs in block" do
       correlation_id = "test_correlation_123"
 
@@ -142,7 +142,7 @@ RSpec.describe Categorization::Monitoring::StructuredLogger do
     end
   end
 
-  describe "#with_context" do
+  describe "#with_context", performance: true do
     it "adds context to logs within block" do
       expect(mock_logger).to receive(:add).with(
         Logger::INFO,
@@ -165,7 +165,7 @@ RSpec.describe Categorization::Monitoring::StructuredLogger do
     end
   end
 
-  describe "#child" do
+  describe "#child", performance: true do
     it "creates child logger with inherited context" do
       parent = described_class.new(logger: mock_logger, context: { parent_key: "parent_value" })
       child = parent.child(child_key: "child_value")
@@ -186,7 +186,7 @@ RSpec.describe Categorization::Monitoring::StructuredLogger do
     end
   end
 
-  describe "class methods" do
+  describe "class methods", performance: true do
     it "provides convenience class methods" do
       expect(described_class).to respond_to(:log_categorization)
       expect(described_class).to respond_to(:log_learning)

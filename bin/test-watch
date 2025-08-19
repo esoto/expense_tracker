@@ -1,0 +1,50 @@
+#!/usr/bin/env ruby
+# Watch mode for continuous testing during development
+
+require 'pathname'
+require 'listen'
+
+ENV['RAILS_ENV'] ||= 'test'
+ENV['TEST_TIER'] = 'unit'
+
+puts "\n👁️  Starting test watcher (unit tests only)...\n"
+puts "Press Ctrl+C to stop\n\n"
+
+def run_tests(files = [])
+  system('clear')
+  
+  if files.empty?
+    puts "Running all unit tests..."
+    system("bin/test-unit")
+  else
+    spec_files = files.map do |file|
+      if file.end_with?('_spec.rb')
+        file
+      else
+        # Convert app file to spec file
+        spec_file = file.sub('app/', 'spec/unit/')
+                       .sub('.rb', '_spec.rb')
+        File.exist?(spec_file) ? spec_file : nil
+      end
+    end.compact
+    
+    if spec_files.any?
+      puts "Running tests for: #{spec_files.join(', ')}"
+      system("bin/test-unit #{spec_files.join(' ')}")
+    end
+  end
+  
+  puts "\n👁️  Watching for changes..."
+end
+
+# Initial run
+run_tests
+
+# Watch for changes
+listener = Listen.to('app', 'spec/unit') do |modified, added, removed|
+  changed_files = (modified + added).select { |f| f.end_with?('.rb') }
+  run_tests(changed_files) if changed_files.any?
+end
+
+listener.start
+sleep

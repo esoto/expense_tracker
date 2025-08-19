@@ -2,8 +2,8 @@
 
 require "rails_helper"
 
-RSpec.describe CategorizationPattern, type: :model do
-  describe "Task 1.7.1 Fixes - Expense Object Matching" do
+RSpec.describe CategorizationPattern, type: :model, performance: true do
+  describe "Task 1.7.1 Fixes - Expense Object Matching", performance: true do
     let(:category) { create(:category, name: "Food") }
 
     context "when matching Expense objects with merchant patterns" do
@@ -179,7 +179,7 @@ RSpec.describe CategorizationPattern, type: :model do
     end
   end
 
-  describe "Edge Cases and Error Handling" do
+  describe "Edge Cases and Error Handling", performance: true do
     let(:category) { create(:category) }
     let(:pattern) { create(:categorization_pattern, category: category) }
 
@@ -208,7 +208,7 @@ RSpec.describe CategorizationPattern, type: :model do
     end
   end
 
-  describe "Performance" do
+  describe "Performance", performance: true do
     let(:category) { create(:category) }
 
     it "matches quickly even with complex patterns" do

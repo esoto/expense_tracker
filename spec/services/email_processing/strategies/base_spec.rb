@@ -1,16 +1,16 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::Strategies::Base do
+RSpec.describe EmailProcessing::Strategies::Base, unit: true do
   let(:parsing_rule) { create(:parsing_rule) }
   let(:strategy) { described_class.new(parsing_rule) }
 
-  describe '#initialize' do
+  describe '#initialize', unit: true do
     it 'stores the parsing rule' do
       expect(strategy.send(:parsing_rule)).to eq(parsing_rule)
     end
   end
 
-  describe '#parse_email' do
+  describe '#parse_email', unit: true do
     it 'raises NotImplementedError' do
       expect { strategy.parse_email('email content') }.to raise_error(
         NotImplementedError,
@@ -19,7 +19,7 @@ RSpec.describe EmailProcessing::Strategies::Base do
     end
   end
 
-  describe '#can_parse?' do
+  describe '#can_parse?', unit: true do
     it 'returns true for any content' do
       expect(strategy.can_parse?('any content')).to be true
     end
@@ -33,7 +33,7 @@ RSpec.describe EmailProcessing::Strategies::Base do
     end
   end
 
-  describe 'inheritance' do
+  describe 'inheritance', unit: true do
     let(:subclass) do
       Class.new(described_class) do
         def parse_email(email_content)

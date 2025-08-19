@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "Api::V1::Categorization", type: :request do
+RSpec.describe "Api::V1::Categorization", type: :request, integration: true do
   let(:api_token) { create(:api_token) }
   let(:headers) do
     {
@@ -21,7 +21,7 @@ RSpec.describe "Api::V1::Categorization", type: :request do
            confidence_weight: 2.0)
   end
 
-  describe "POST /api/v1/categorization/suggest" do
+  describe "POST /api/v1/categorization/suggest", integration: true do
     context "with valid parameters" do
       let(:valid_params) do
         {
@@ -90,7 +90,7 @@ RSpec.describe "Api::V1::Categorization", type: :request do
     end
   end
 
-  describe "POST /api/v1/categorization/feedback" do
+  describe "POST /api/v1/categorization/feedback", integration: true do
     let(:pattern) { default_pattern }
 
     context "with valid feedback" do
@@ -173,7 +173,7 @@ RSpec.describe "Api::V1::Categorization", type: :request do
     end
   end
 
-  describe "POST /api/v1/categorization/batch_suggest" do
+  describe "POST /api/v1/categorization/batch_suggest", integration: true do
     context "with valid batch" do
       let(:valid_params) do
         {
@@ -226,7 +226,7 @@ RSpec.describe "Api::V1::Categorization", type: :request do
     end
   end
 
-  describe "GET /api/v1/categorization/statistics" do
+  describe "GET /api/v1/categorization/statistics", integration: true do
     before do
       # Create additional test data
       create_list(:categorization_pattern, 5, category: category)
@@ -275,7 +275,7 @@ RSpec.describe "Api::V1::Categorization", type: :request do
     end
   end
 
-  describe "Rate limiting" do
+  describe "Rate limiting", integration: true do
     it "enforces rate limits on suggestion endpoint" do
       # Make requests up to the limit
       valid_params = { merchant_name: "Test" }

@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::CachedCategorizationService do
+RSpec.describe Categorization::CachedCategorizationService, performance: true do
   let(:service) { described_class.new }
   let(:cache) { Categorization::PatternCache.instance }
   let(:groceries_category) { create(:category, name: "Groceries") }
@@ -22,7 +22,7 @@ RSpec.describe Categorization::CachedCategorizationService do
     cache.invalidate_all
   end
 
-  describe "#categorize_expense" do
+  describe "#categorize_expense", performance: true do
     context "with user preference match" do
       let!(:user_preference) do
         create(:user_category_preference,
@@ -167,7 +167,7 @@ RSpec.describe Categorization::CachedCategorizationService do
     end
   end
 
-  describe "#bulk_categorize" do
+  describe "#bulk_categorize", performance: true do
     let(:expenses) do
       [
         create(:expense, merchant_name: "Starbucks"),
@@ -229,7 +229,7 @@ RSpec.describe Categorization::CachedCategorizationService do
     end
   end
 
-  describe "#cache_metrics" do
+  describe "#cache_metrics", performance: true do
     before do
       # Generate some cache activity
       3.times { service.categorize_expense(expense) }
@@ -243,7 +243,7 @@ RSpec.describe Categorization::CachedCategorizationService do
     end
   end
 
-  describe "#warm_cache" do
+  describe "#warm_cache", performance: true do
     let!(:frequently_used_patterns) do
       3.times.map do |i|
         create(:categorization_pattern,
@@ -268,7 +268,7 @@ RSpec.describe Categorization::CachedCategorizationService do
     end
   end
 
-  describe "Performance comparison" do
+  describe "Performance comparison", performance: true do
     let(:regular_service) { CategorizationService.new }
     let(:cached_service) { described_class.new }
 
@@ -312,7 +312,7 @@ RSpec.describe Categorization::CachedCategorizationService do
     end
   end
 
-  describe "Cache invalidation integration" do
+  describe "Cache invalidation integration", performance: true do
     let!(:pattern) do
       create(:categorization_pattern,
              category: dining_category,

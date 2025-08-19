@@ -1,9 +1,9 @@
 require "rails_helper"
 
-RSpec.describe SyncStatusChannel, type: :channel do
+RSpec.describe SyncStatusChannel, type: :channel, integration: true do
   let(:sync_session) { create(:sync_session) }
 
-  describe "subscription" do
+  describe "subscription", integration: true do
     context "with valid session" do
       before do
         # Stub the connection with a valid session info
@@ -171,7 +171,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
   end
 
-  describe "unsubscription" do
+  describe "unsubscription", integration: true do
     before do
       stub_connection(current_session_info: {
         session_id: "test_session_123",
@@ -206,7 +206,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
   end
 
-  describe "pause_updates action" do
+  describe "pause_updates action", integration: true do
     before do
       stub_connection(current_session_info: {
         session_id: "test_session_123",
@@ -240,7 +240,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
   end
 
-  describe "resume_updates action" do
+  describe "resume_updates action", integration: true do
     before do
       stub_connection(current_session_info: {
         session_id: "test_session_123",
@@ -329,7 +329,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
   end
 
-  describe ".broadcast_progress" do
+  describe ".broadcast_progress", integration: true do
     include_context "broadcast reliability service mocked"
     it "broadcasts progress update to the session" do
       expect {
@@ -392,7 +392,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
   end
 
-  describe ".broadcast_account_progress" do
+  describe ".broadcast_account_progress", integration: true do
     include_context "broadcast reliability service mocked"
     let(:email_account) { create(:email_account) }
     let(:sync_session_account) do
@@ -447,7 +447,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
   end
 
-  describe ".broadcast_account_update" do
+  describe ".broadcast_account_update", integration: true do
     include_context "broadcast reliability service mocked"
     it "broadcasts account update with calculated progress" do
       expect {
@@ -478,7 +478,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
   end
 
-  describe ".broadcast_completion" do
+  describe ".broadcast_completion", integration: true do
     include_context "broadcast reliability service mocked"
     it "broadcasts completion message" do
       expect {
@@ -518,7 +518,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
   end
 
-  describe ".broadcast_failure" do
+  describe ".broadcast_failure", integration: true do
     include_context "broadcast reliability service mocked"
     it "broadcasts failure message with error details" do
       error_message = "Connection timeout"
@@ -573,7 +573,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
   end
 
-  describe ".broadcast_status" do
+  describe ".broadcast_status", integration: true do
     include_context "broadcast reliability service mocked"
     let(:email_account) { create(:email_account) }
     let!(:sync_session_account) do
@@ -659,7 +659,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
   end
 
-  describe ".broadcast_activity" do
+  describe ".broadcast_activity", integration: true do
     include_context "broadcast reliability service mocked"
     it "broadcasts activity message with timestamp" do
       expect {
@@ -699,8 +699,8 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
   end
 
-  describe "time formatting private methods" do
-    describe ".format_time_remaining" do
+  describe "time formatting private methods", integration: true do
+    describe ".format_time_remaining", integration: true do
       it "formats seconds correctly" do
         result = SyncStatusChannel.send(:format_time_remaining, 30)
         expect(result).to eq("30 segundos")
@@ -732,7 +732,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
       end
     end
 
-    describe ".format_duration" do
+    describe ".format_duration", integration: true do
       it "formats seconds only" do
         result = SyncStatusChannel.send(:format_duration, 30)
         expect(result).to eq("30s")
@@ -760,8 +760,8 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
   end
 
-  describe "helper methods functionality" do
-    describe "build_accounts_data" do
+  describe "helper methods functionality", integration: true do
+    describe "build_accounts_data", integration: true do
       let(:email_account) { create(:email_account) }
       let!(:sync_session_account) do
         create(:sync_session_account,
@@ -808,7 +808,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
       end
     end
 
-    describe "security logging" do
+    describe "security logging", integration: true do
       it "logs security events during subscription flows" do
         # Test security logging by triggering scenarios that would log events
         stub_connection(current_session_info: {
@@ -828,7 +828,7 @@ RSpec.describe SyncStatusChannel, type: :channel do
     end
   end
 
-  describe "edge cases and error handling" do
+  describe "edge cases and error handling", integration: true do
     before do
       stub_connection(current_session_info: {
         session_id: "test_session_123",

@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe BulkCategorization::GroupingService do
+RSpec.describe BulkCategorization::GroupingService, integration: true do
   let(:email_account) { create(:email_account) }
   let(:category) { create(:category, name: "Food & Dining") }
 
@@ -15,7 +15,7 @@ RSpec.describe BulkCategorization::GroupingService do
   let(:expenses) { [ expense1, expense2, expense3, expense4, expense5 ] }
   let(:service) { described_class.new(expenses) }
 
-  describe '#group_by_similarity' do
+  describe '#group_by_similarity', integration: true do
     it 'groups expenses with the same merchant' do
       groups = service.group_by_similarity
 
@@ -61,7 +61,7 @@ RSpec.describe BulkCategorization::GroupingService do
     end
   end
 
-  describe '#group_by' do
+  describe '#group_by', integration: true do
     context 'when grouping by merchant' do
       it 'groups expenses by exact merchant match' do
         groups = service.group_by(:merchant)
@@ -103,7 +103,7 @@ RSpec.describe BulkCategorization::GroupingService do
     end
   end
 
-  describe 'similarity calculation' do
+  describe 'similarity calculation', integration: true do
     it 'calculates high similarity for similar merchants' do
       service_instance = described_class.new([])
 

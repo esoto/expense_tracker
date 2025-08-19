@@ -1,11 +1,11 @@
 require 'rails_helper'
 
-RSpec.describe DashboardService do
+RSpec.describe DashboardService, integration: true do
   let(:service) { described_class.new }
   let(:category) { create(:category) }
   let(:email_account) { create(:email_account, :bac) }
 
-  describe '#analytics' do
+  describe '#analytics', integration: true do
     let!(:current_month_expense) { create(:expense, amount: 100.0, transaction_date: Date.current, category: category, email_account: email_account) }
     let!(:last_month_expense) { create(:expense, amount: 200.0, transaction_date: 1.month.ago, category: category, email_account: email_account) }
 
@@ -108,8 +108,8 @@ RSpec.describe DashboardService do
     end
   end
 
-  describe 'private methods' do
-    describe '#current_month_total' do
+  describe 'private methods', integration: true do
+    describe '#current_month_total', integration: true do
       it 'calculates expenses for current month only' do
         create(:expense, amount: 100.0, transaction_date: Date.current, category: category, email_account: email_account)
         create(:expense, amount: 200.0, transaction_date: 1.month.ago, category: category, email_account: email_account)
@@ -119,7 +119,7 @@ RSpec.describe DashboardService do
       end
     end
 
-    describe '#last_month_total' do
+    describe '#last_month_total', integration: true do
       it 'calculates expenses for last month only' do
         create(:expense, amount: 100.0, transaction_date: Date.current, category: category, email_account: email_account)
         create(:expense, amount: 200.0, transaction_date: 1.month.ago, category: category, email_account: email_account)
@@ -130,7 +130,7 @@ RSpec.describe DashboardService do
     end
   end
 
-  describe 'caching behavior' do
+  describe 'caching behavior', integration: true do
     before do
       Rails.cache.clear
     end
@@ -153,7 +153,7 @@ RSpec.describe DashboardService do
     end
   end
 
-  describe '.clear_cache' do
+  describe '.clear_cache', integration: true do
     before do
       Rails.cache.write('dashboard_analytics', { test: 'data' })
       Rails.cache.write('dashboard_other', { test: 'data' })
@@ -166,7 +166,7 @@ RSpec.describe DashboardService do
     end
   end
 
-  describe 'edge cases' do
+  describe 'edge cases', integration: true do
     context 'with no data' do
       before do
         Expense.destroy_all

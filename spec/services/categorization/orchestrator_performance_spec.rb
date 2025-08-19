@@ -4,8 +4,8 @@ require "rails_helper"
 require "benchmark"
 require "get_process_mem"
 
-RSpec.describe "Categorization::Orchestrator Performance", type: :service do
-  describe "Performance benchmarks" do
+RSpec.describe "Categorization::Orchestrator Performance", type: :service, performance: true do
+  describe "Performance benchmarks", performance: true do
     let(:orchestrator) { Categorization::OrchestratorFactory.create_production }
     
     # Create comprehensive test data
@@ -67,7 +67,7 @@ RSpec.describe "Categorization::Orchestrator Performance", type: :service do
       DatabaseCleaner.clean
     end
     
-    describe "Single categorization performance" do
+    describe "Single categorization performance", performance: true do
       it "meets production performance targets" do
         expense = @test_expenses.first
         
@@ -117,7 +117,7 @@ RSpec.describe "Categorization::Orchestrator Performance", type: :service do
       end
     end
     
-    describe "Batch categorization performance" do
+    describe "Batch categorization performance", performance: true do
       it "processes batches efficiently" do
         batch_sizes = [10, 25, 50, 100]
         
@@ -180,7 +180,7 @@ RSpec.describe "Categorization::Orchestrator Performance", type: :service do
       end
     end
     
-    describe "Memory efficiency" do
+    describe "Memory efficiency", performance: true do
       it "maintains stable memory usage" do
         initial_memory = GetProcessMem.new.mb
         
@@ -226,7 +226,7 @@ RSpec.describe "Categorization::Orchestrator Performance", type: :service do
       end
     end
     
-    describe "Cache effectiveness" do
+    describe "Cache effectiveness", performance: true do
       it "improves performance with cache hits" do
         expense = @test_expenses.first
         
@@ -251,7 +251,7 @@ RSpec.describe "Categorization::Orchestrator Performance", type: :service do
       end
     end
     
-    describe "Load testing" do
+    describe "Load testing", performance: true do
       it "handles sustained load" do
         duration_seconds = 5
         operations = []
@@ -319,7 +319,7 @@ RSpec.describe "Categorization::Orchestrator Performance", type: :service do
       end
     end
     
-    describe "Database query optimization" do
+    describe "Database query optimization", performance: true do
       it "avoids N+1 queries" do
         expenses = @test_expenses.sample(10)
         

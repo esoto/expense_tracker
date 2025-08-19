@@ -2,11 +2,11 @@
 
 require "rails_helper"
 
-RSpec.describe "Expense Write Performance", type: :model do
+RSpec.describe "Expense Write Performance", type: :model, performance: true do
   let(:email_account) { create(:email_account) }
   let(:category) { create(:category) }
 
-  describe "INSERT performance" do
+  describe "INSERT performance", performance: true do
     it "completes single inserts within 100ms" do
       durations = []
 
@@ -58,7 +58,7 @@ RSpec.describe "Expense Write Performance", type: :model do
     end
   end
 
-  describe "UPDATE performance" do
+  describe "UPDATE performance", performance: true do
     let!(:expenses) { create_list(:expense, 50, email_account: email_account) }
 
     it "completes single updates within 100ms" do
@@ -113,7 +113,7 @@ RSpec.describe "Expense Write Performance", type: :model do
     end
   end
 
-  describe "DELETE performance" do
+  describe "DELETE performance", performance: true do
     let!(:expenses) { create_list(:expense, 50, email_account: email_account) }
 
     it "completes soft deletes within 100ms" do
@@ -145,7 +145,7 @@ RSpec.describe "Expense Write Performance", type: :model do
     end
   end
 
-  describe "Index impact on write operations" do
+  describe "Index impact on write operations", performance: true do
     it "maintains acceptable performance with all indexes" do
       # Test that indexes don't significantly impact write performance
       insert_times = []
@@ -171,7 +171,7 @@ RSpec.describe "Expense Write Performance", type: :model do
     end
   end
 
-  describe "Concurrent write performance" do
+  describe "Concurrent write performance", performance: true do
     it "handles concurrent inserts without significant degradation" do
       threads = []
       durations = Concurrent::Array.new
@@ -202,7 +202,7 @@ RSpec.describe "Expense Write Performance", type: :model do
     end
   end
 
-  describe "Transaction performance" do
+  describe "Transaction performance", performance: true do
     it "completes complex transactions within acceptable time" do
       start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 

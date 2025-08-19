@@ -1,0 +1,8 @@
+--require spec_helper
+--require rails_helper
+--format documentation
+--color
+--order defined
+--tag performance
+--profile 20
+--exclude-pattern "spec/{unit,integration,system}/**/*_spec.rb"

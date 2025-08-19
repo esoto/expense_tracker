@@ -1,0 +1,32 @@
+#!/usr/bin/env ruby
+# Fast unit tests for development workflow
+# Only runs tests tagged as :unit or by default (models, controllers, services without integration tags)
+
+require 'fileutils'
+
+# Ensure we're in the Rails root
+Dir.chdir(File.expand_path('..', __dir__))
+
+# Set test environment
+ENV['RAILS_ENV'] = 'test'
+
+# Build RSpec command with properly quoted arguments
+cmd = "bundle exec rspec --tag unit --format progress --profile=5 --fail-fast=5 --order random"
+
+puts "🧪 Running unit tests (should complete in <30 seconds)..."
+puts "Command: #{cmd}"
+puts
+
+# Execute with proper exit code
+system(cmd)
+exit_code = $?.exitstatus
+
+if exit_code == 0
+  puts
+  puts "✅ All unit tests passed!"
+else
+  puts
+  puts "❌ Some unit tests failed (exit code: #{exit_code})"
+end
+
+exit exit_code

@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe "SyncSessions", type: :request do
+RSpec.describe "SyncSessions", type: :request, integration: true do
   include ActiveSupport::Testing::TimeHelpers
   let!(:email_account1) { create(:email_account, :bac, active: true) }
   let!(:email_account2) { create(:email_account, :gmail, active: true) }
@@ -25,7 +25,7 @@ RSpec.describe "SyncSessions", type: :request do
     SyncConflict.destroy_all if defined?(SyncConflict)
   end
 
-  describe 'GET /sync_sessions' do
+  describe 'GET /sync_sessions', integration: true do
     let(:active_session) { create(:sync_session, :running) }
     let(:completed_session) { create(:sync_session, :completed) }
     let(:old_session) { create(:sync_session, created_at: 2.days.ago) }
@@ -45,7 +45,7 @@ RSpec.describe "SyncSessions", type: :request do
     end
   end
 
-  describe 'GET /sync_sessions/:id' do
+  describe 'GET /sync_sessions/:id', integration: true do
     let(:sync_session) { create(:sync_session) }
     let!(:session_account1) { create(:sync_session_account, sync_session: sync_session, email_account: email_account1) }
     let!(:session_account2) { create(:sync_session_account, sync_session: sync_session, email_account: email_account2) }
@@ -66,7 +66,7 @@ RSpec.describe "SyncSessions", type: :request do
     end
   end
 
-  describe 'POST /sync_sessions' do
+  describe 'POST /sync_sessions', integration: true do
     before do
       allow(ProcessEmailsJob).to receive(:perform_later)
       # Ensure the validator mock is properly set for all non-validation tests
@@ -236,7 +236,7 @@ RSpec.describe "SyncSessions", type: :request do
     end
   end
 
-  describe 'POST /sync_sessions/:id/cancel' do
+  describe 'POST /sync_sessions/:id/cancel', integration: true do
     context 'with active session' do
       let(:sync_session) { create(:sync_session, :running) }
 
@@ -278,7 +278,7 @@ RSpec.describe "SyncSessions", type: :request do
     end
   end
 
-  describe 'POST /sync_sessions/:id/retry' do
+  describe 'POST /sync_sessions/:id/retry', integration: true do
     before do
       allow(ProcessEmailsJob).to receive(:perform_later)
     end
@@ -388,7 +388,7 @@ RSpec.describe "SyncSessions", type: :request do
     end
   end
 
-  describe 'GET /sync_sessions/status' do
+  describe 'GET /sync_sessions/status', integration: true do
     let(:sync_session) { create(:sync_session, :running,
                                 total_emails: 100,
                                 processed_emails: 50,

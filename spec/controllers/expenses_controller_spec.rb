@@ -1,10 +1,10 @@
 require 'rails_helper'
 
-RSpec.describe ExpensesController, type: :controller do
+RSpec.describe ExpensesController, type: :controller, integration: true do
   let(:email_account) { create(:email_account) }
   let(:category) { create(:category, name: "Food", color: "#10B981") }
 
-  describe "GET #index" do
+  describe "GET #index", integration: true do
     before do
       # Clean up any existing expenses to ensure test isolation
       Expense.delete_all
@@ -220,7 +220,7 @@ RSpec.describe ExpensesController, type: :controller do
     end
   end
 
-  describe "GET #dashboard" do
+  describe "GET #dashboard", integration: true do
     it "returns success status" do
       get :dashboard
       expect(response).to have_http_status(:success)

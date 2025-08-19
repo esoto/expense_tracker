@@ -2,16 +2,16 @@
 
 require "rails_helper"
 
-RSpec.describe CompositePattern, type: :model do
+RSpec.describe CompositePattern, type: :model, integration: true do
   let(:category) { Category.create!(name: "Transportation") }
   let(:pattern1) { CategorizationPattern.create!(category: category, pattern_type: "merchant", pattern_value: "uber") }
   let(:pattern2) { CategorizationPattern.create!(category: category, pattern_type: "merchant", pattern_value: "lyft") }
 
-  describe "associations" do
+  describe "associations", integration: true do
     it { should belong_to(:category) }
   end
 
-  describe "validations" do
+  describe "validations", integration: true do
     subject do
       described_class.new(
         category: category,
@@ -107,7 +107,7 @@ RSpec.describe CompositePattern, type: :model do
     end
   end
 
-  describe "scopes" do
+  describe "scopes", integration: true do
     let!(:active_composite) { described_class.create!(category: category, name: "Active", operator: "OR", pattern_ids: [ pattern1.id ], active: true) }
     let!(:inactive_composite) { described_class.create!(category: category, name: "Inactive", operator: "OR", pattern_ids: [ pattern1.id ], active: false) }
     let!(:user_composite) { described_class.create!(category: category, name: "User", operator: "OR", pattern_ids: [ pattern1.id ], user_created: true) }
@@ -123,7 +123,7 @@ RSpec.describe CompositePattern, type: :model do
     end
   end
 
-  describe "#component_patterns" do
+  describe "#component_patterns", integration: true do
     let(:composite) do
       described_class.create!(
         category: category,
@@ -145,7 +145,7 @@ RSpec.describe CompositePattern, type: :model do
     end
   end
 
-  describe "#matches?" do
+  describe "#matches?", integration: true do
     let(:email_account) { EmailAccount.create!(email: "test@example.com", provider: "gmail", bank_name: "Test Bank") }
     let(:expense) do
       Expense.new(
@@ -264,7 +264,7 @@ RSpec.describe CompositePattern, type: :model do
     end
   end
 
-  describe "#add_pattern" do
+  describe "#add_pattern", integration: true do
     let(:composite) do
       described_class.create!(
         category: category,
@@ -290,7 +290,7 @@ RSpec.describe CompositePattern, type: :model do
     end
   end
 
-  describe "#remove_pattern" do
+  describe "#remove_pattern", integration: true do
     let(:composite) do
       described_class.create!(
         category: category,
@@ -312,7 +312,7 @@ RSpec.describe CompositePattern, type: :model do
     end
   end
 
-  describe "#description" do
+  describe "#description", integration: true do
     let(:composite) do
       described_class.new(
         category: category,
@@ -347,7 +347,7 @@ RSpec.describe CompositePattern, type: :model do
     end
   end
 
-  describe "#effective_confidence" do
+  describe "#effective_confidence", integration: true do
     let(:composite) do
       described_class.create!(
         category: category,

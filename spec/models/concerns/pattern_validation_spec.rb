@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe PatternValidation do
+RSpec.describe PatternValidation, integration: true do
   # Create a test class that includes the concern
   let(:test_class) do
     Class.new(CategorizationPattern) do
@@ -15,7 +15,7 @@ RSpec.describe PatternValidation do
   let(:category) { create(:category) }
   let(:pattern) { test_class.new(category: category) }
 
-  describe "normalization" do
+  describe "normalization", integration: true do
     context "text patterns" do
       it "normalizes merchant patterns to lowercase and strips whitespace" do
         pattern.pattern_type = "merchant"
@@ -74,7 +74,7 @@ RSpec.describe PatternValidation do
     end
   end
 
-  describe "validation" do
+  describe "validation", integration: true do
     context "text pattern validation" do
       before do
         pattern.pattern_type = "merchant"
@@ -284,7 +284,7 @@ RSpec.describe PatternValidation do
     end
   end
 
-  describe "integration with CategorizationPattern" do
+  describe "integration with CategorizationPattern", integration: true do
     let(:pattern) { build(:categorization_pattern, category: category) }
 
     it "includes the validation concern" do

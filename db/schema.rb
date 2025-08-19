@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_14_015048) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_17_153051) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -304,14 +304,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_14_015048) do
     t.index ["auto_categorized", "categorization_confidence"], name: "idx_expenses_auto_categorized", where: "((auto_categorized = true) AND (deleted_at IS NULL))", comment: "For tracking auto-categorization performance"
     t.index ["bank_name", "transaction_date", "amount"], name: "idx_expenses_bank_reconciliation", where: "(deleted_at IS NULL)", comment: "For bank statement reconciliation"
     t.index ["category_id", "created_at", "merchant_normalized"], name: "idx_expenses_uncategorized_optimized", order: { created_at: :desc }, where: "(category_id IS NULL)", comment: "Optimized index for finding uncategorized expenses"
-    t.index ["category_id", "merchant_normalized", "transaction_date"], name: "idx_expenses_uncategorized", where: "((category_id IS NULL) AND (deleted_at IS NULL))", comment: "For finding uncategorized expenses"
     t.index ["category_id", "transaction_date", "amount"], name: "idx_expenses_category_analysis", where: "(deleted_at IS NULL)", comment: "For category-based analytics and reporting"
     t.index ["category_id", "transaction_date"], name: "idx_expenses_category_date", where: "((category_id IS NOT NULL) AND (deleted_at IS NULL))"
     t.index ["currency", "transaction_date"], name: "idx_expenses_currency_date", where: "(deleted_at IS NULL)", comment: "For multi-currency reporting"
     t.index ["email_account_id", "amount", "transaction_date", "merchant_name"], name: "idx_expenses_duplicate_detection", comment: "For detecting potential duplicate transactions"
     t.index ["email_account_id", "amount", "transaction_date"], name: "index_expenses_on_account_amount_date_for_duplicates"
+    t.index ["email_account_id", "deleted_at", "transaction_date", "category_id", "status", "bank_name"], name: "idx_expenses_dashboard_filters", where: "(deleted_at IS NULL)", comment: "Composite index for complex dashboard filter combinations"
+    t.index ["email_account_id", "status", "category_id", "created_at"], name: "idx_expenses_batch_operations", where: "(deleted_at IS NULL)", comment: "Optimized for batch selection and bulk operations"
     t.index ["email_account_id", "status", "transaction_date", "amount"], name: "idx_expenses_account_status_date_amount"
-    t.index ["email_account_id", "transaction_date", "amount", "merchant_name", "category_id", "status"], name: "idx_expenses_list_covering", where: "(deleted_at IS NULL)"
+    t.index ["email_account_id", "transaction_date", "amount", "merchant_name", "category_id", "status"], name: "idx_expenses_list_covering", order: { transaction_date: :desc }, where: "(deleted_at IS NULL)", include: ["description", "bank_name", "currency", "auto_categorized", "categorization_confidence", "created_at", "updated_at"]
     t.index ["email_account_id", "transaction_date", "category_id"], name: "idx_expenses_filter_primary", where: "(deleted_at IS NULL)"
     t.index ["email_account_id", "transaction_date", "deleted_at"], name: "idx_expenses_primary_filter", where: "(deleted_at IS NULL)", comment: "Primary index for common filtering operations"
     t.index ["email_account_id", "transaction_date"], name: "idx_expenses_uncategorized_new", where: "((category_id IS NULL) AND (deleted_at IS NULL))"
@@ -320,6 +321,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_14_015048) do
     t.index ["merchant_normalized"], name: "idx_expenses_merchant_search", opclass: :gin_trgm_ops, where: "((merchant_normalized IS NOT NULL) AND (deleted_at IS NULL))", using: :gin, comment: "Trigram index for merchant name fuzzy search"
     t.index ["merchant_normalized"], name: "index_expenses_on_merchant_normalized_trgm", opclass: :gin_trgm_ops, using: :gin
     t.index ["status", "created_at"], name: "idx_expenses_status_tracking", where: "(deleted_at IS NULL)", comment: "For tracking pending/processed expenses"
+    t.index ["status", "email_account_id", "created_at"], name: "idx_expenses_pending_status", order: { created_at: :desc }, where: "(((status)::text = 'pending'::text) AND (deleted_at IS NULL))"
     t.index ["status", "email_account_id", "created_at"], name: "idx_expenses_status_account", where: "(deleted_at IS NULL)"
   end
 

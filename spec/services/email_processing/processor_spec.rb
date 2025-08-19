@@ -1,18 +1,18 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::Processor do
+RSpec.describe EmailProcessing::Processor, integration: true do
   let(:email_account) { create(:email_account, :bac) }
   let(:processor) { described_class.new(email_account) }
   let(:mock_imap_service) { instance_double(ImapConnectionService) }
 
-  describe '#initialize' do
+  describe '#initialize', integration: true do
     it 'sets email account and initializes empty errors' do
       expect(processor.email_account).to eq(email_account)
       expect(processor.errors).to be_empty
     end
   end
 
-  describe '#process_emails' do
+  describe '#process_emails', integration: true do
     context 'with empty message list' do
       it 'returns zero counts' do
         result = processor.process_emails([], mock_imap_service)
@@ -134,7 +134,7 @@ RSpec.describe EmailProcessing::Processor do
     end
   end
 
-  describe '#transaction_email?' do
+  describe '#transaction_email?', integration: true do
     it 'identifies transaction emails with "transacción"' do
       result = processor.send(:transaction_email?, 'Información de transacción realizada')
       expect(result).to be true
@@ -156,7 +156,7 @@ RSpec.describe EmailProcessing::Processor do
     end
   end
 
-  describe '#extract_email_data' do
+  describe '#extract_email_data', integration: true do
     let(:message_id) { 123 }
     let(:envelope) do
       double('envelope',
@@ -191,7 +191,7 @@ RSpec.describe EmailProcessing::Processor do
     end
   end
 
-  describe '#extract_email_body' do
+  describe '#extract_email_body', integration: true do
     let(:message_id) { 123 }
     let(:simple_structure) { double('structure', multipart?: false) }
     let(:multipart_structure) { double('structure', multipart?: true) }
@@ -276,7 +276,7 @@ RSpec.describe EmailProcessing::Processor do
     end
   end
 
-  describe '#extract_multipart_body' do
+  describe '#extract_multipart_body', integration: true do
     let(:message_id) { 123 }
     let(:multipart_structure) { double('structure') }
 
@@ -322,7 +322,7 @@ RSpec.describe EmailProcessing::Processor do
     end
   end
 
-  describe '#find_text_part' do
+  describe '#find_text_part', integration: true do
     let(:text_part) { double('part', media_type: 'TEXT', subtype: 'PLAIN') }
     let(:html_part) { double('part', media_type: 'TEXT', subtype: 'HTML') }
 
@@ -368,7 +368,7 @@ RSpec.describe EmailProcessing::Processor do
     end
   end
 
-  describe '#find_html_part' do
+  describe '#find_html_part', integration: true do
     let(:text_part) { double('part', media_type: 'TEXT', subtype: 'PLAIN') }
     let(:html_part) { double('part', media_type: 'TEXT', subtype: 'HTML') }
 
@@ -398,7 +398,7 @@ RSpec.describe EmailProcessing::Processor do
     end
   end
 
-  describe '#extract_text_from_html' do
+  describe '#extract_text_from_html', integration: true do
     it 'removes HTML tags and normalizes text' do
       html = '<html><body><h1>Title</h1><p>Content here</p></body></html>'
       result = processor.send(:extract_text_from_html, html)
@@ -483,7 +483,7 @@ RSpec.describe EmailProcessing::Processor do
     end
   end
 
-  describe '#build_from_address' do
+  describe '#build_from_address', integration: true do
     context 'with valid from address' do
       let(:envelope) do
         double('envelope',
@@ -516,8 +516,8 @@ RSpec.describe EmailProcessing::Processor do
     end
   end
 
-  describe 'error handling' do
-    describe '#add_error' do
+  describe 'error handling', integration: true do
+    describe '#add_error', integration: true do
       it 'adds error to errors array and logs to Rails logger' do
         expect(Rails.logger).to receive(:error).with("[EmailProcessing::Processor] #{email_account.email}: Test error")
 

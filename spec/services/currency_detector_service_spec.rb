@@ -1,10 +1,10 @@
 require 'rails_helper'
 
-RSpec.describe CurrencyDetectorService do
+RSpec.describe CurrencyDetectorService, integration: true do
   let(:email_content) { 'Transaction completed at AMAZON.COM for USD 250.00' }
   let(:service) { described_class.new(email_content: email_content) }
 
-  describe '#initialize' do
+  describe '#initialize', integration: true do
     it 'sets email content' do
       expect(service.instance_variable_get(:@email_content)).to eq(email_content)
     end
@@ -15,7 +15,7 @@ RSpec.describe CurrencyDetectorService do
     end
   end
 
-  describe '#detect_currency' do
+  describe '#detect_currency', integration: true do
     context 'USD detection' do
       it 'detects currency from $ symbol in email content' do
         service = described_class.new(email_content: 'Purchase for $150.00')
@@ -150,7 +150,7 @@ RSpec.describe CurrencyDetectorService do
     end
   end
 
-  describe '#apply_currency_to_expense' do
+  describe '#apply_currency_to_expense', integration: true do
     let(:expense) { instance_double(Expense, usd!: nil, eur!: nil, crc!: nil) }
 
     it 'applies USD currency to expense' do
@@ -186,7 +186,7 @@ RSpec.describe CurrencyDetectorService do
     end
   end
 
-  describe 'constants' do
+  describe 'constants', integration: true do
     it 'defines USD patterns' do
       expect(described_class::USD_PATTERNS).to eq(%w[$ usd dollar])
     end
@@ -200,8 +200,8 @@ RSpec.describe CurrencyDetectorService do
     end
   end
 
-  describe 'private methods' do
-    describe '#build_detection_text' do
+  describe 'private methods', integration: true do
+    describe '#build_detection_text', integration: true do
       it 'combines all text sources' do
         service = described_class.new(email_content: 'Email content')
         parsed_data = {
@@ -230,7 +230,7 @@ RSpec.describe CurrencyDetectorService do
       end
     end
 
-    describe '#contains_usd?' do
+    describe '#contains_usd?', integration: true do
       it 'detects USD patterns' do
         expect(service.send(:contains_usd?, 'amount $100')).to be true
         expect(service.send(:contains_usd?, 'usd payment')).to be true
@@ -239,7 +239,7 @@ RSpec.describe CurrencyDetectorService do
       end
     end
 
-    describe '#contains_eur?' do
+    describe '#contains_eur?', integration: true do
       it 'detects EUR patterns' do
         expect(service.send(:contains_eur?, 'amount €100')).to be true
         expect(service.send(:contains_eur?, 'eur payment')).to be true

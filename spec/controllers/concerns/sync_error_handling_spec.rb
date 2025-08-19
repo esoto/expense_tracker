@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe SyncErrorHandling, type: :controller do
+RSpec.describe SyncErrorHandling, type: :controller, unit: true do
   controller(ApplicationController) do
     include SyncErrorHandling
 
@@ -40,7 +40,7 @@ RSpec.describe SyncErrorHandling, type: :controller do
     allow(controller).to receive(:sync_sessions_path).and_return('/sync_sessions')
   end
 
-  describe 'ActiveRecord::RecordNotFound handling' do
+  describe 'ActiveRecord::RecordNotFound handling', unit: true do
     it 'redirects to sync sessions with alert for HTML' do
       get :not_found
       expect(response).to redirect_to('/sync_sessions')
@@ -54,7 +54,7 @@ RSpec.describe SyncErrorHandling, type: :controller do
     end
   end
 
-  describe 'ActiveRecord::RecordInvalid handling' do
+  describe 'ActiveRecord::RecordInvalid handling', unit: true do
     it 'redirects with validation errors for HTML' do
       get :validation_error
       expect(response).to redirect_to('/sync_sessions')
@@ -72,7 +72,7 @@ RSpec.describe SyncErrorHandling, type: :controller do
     end
   end
 
-  describe 'sync limit exceeded handling' do
+  describe 'sync limit exceeded handling', unit: true do
     it 'redirects with appropriate message for HTML' do
       get :sync_limit
       expect(response).to redirect_to('/sync_sessions')
@@ -88,7 +88,7 @@ RSpec.describe SyncErrorHandling, type: :controller do
     end
   end
 
-  describe 'rate limit exceeded handling' do
+  describe 'rate limit exceeded handling', unit: true do
     it 'redirects with rate limit message for HTML' do
       get :rate_limit
       expect(response).to redirect_to('/sync_sessions')

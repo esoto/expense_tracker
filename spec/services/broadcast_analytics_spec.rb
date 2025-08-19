@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe BroadcastAnalytics, type: :service do
+RSpec.describe BroadcastAnalytics, type: :service, unit: true do
   include ActiveSupport::Testing::TimeHelpers
   let(:channel_name) { 'SyncStatusChannel' }
   let(:target_type) { 'SyncSession' }
@@ -18,7 +18,7 @@ RSpec.describe BroadcastAnalytics, type: :service do
     allow(RedisAnalyticsService).to receive(:record_timing).and_raise(StandardError, "Redis not available")
   end
 
-  describe '.record_success' do
+  describe '.record_success', unit: true do
     it 'records successful broadcast event' do
       freeze_time do
         described_class.record_success(
@@ -133,7 +133,7 @@ RSpec.describe BroadcastAnalytics, type: :service do
     end
   end
 
-  describe '.record_failure' do
+  describe '.record_failure', unit: true do
     let(:error_message) { 'Connection timeout' }
 
     it 'records failed broadcast event' do
@@ -208,7 +208,7 @@ RSpec.describe BroadcastAnalytics, type: :service do
     end
   end
 
-  describe '.record_queued' do
+  describe '.record_queued', unit: true do
     it 'records queued broadcast event' do
       freeze_time do
         described_class.record_queued(
@@ -243,7 +243,7 @@ RSpec.describe BroadcastAnalytics, type: :service do
     end
   end
 
-  describe '.get_metrics' do
+  describe '.get_metrics', unit: true do
     before do
       freeze_time do
         # Record some test data
@@ -306,7 +306,7 @@ RSpec.describe BroadcastAnalytics, type: :service do
     end
   end
 
-  describe '.get_channel_metrics' do
+  describe '.get_channel_metrics', unit: true do
     before do
       freeze_time do
         described_class.record_success(
@@ -341,7 +341,7 @@ RSpec.describe BroadcastAnalytics, type: :service do
     end
   end
 
-  describe '.get_dashboard_metrics' do
+  describe '.get_dashboard_metrics', unit: true do
     it 'returns comprehensive dashboard data' do
       dashboard_metrics = described_class.get_dashboard_metrics
 
@@ -369,7 +369,7 @@ RSpec.describe BroadcastAnalytics, type: :service do
     end
   end
 
-  describe 'counter incrementation' do
+  describe 'counter incrementation', unit: true do
     it 'handles multiple increments for same hour' do
       freeze_time do
         3.times do
@@ -411,7 +411,7 @@ RSpec.describe BroadcastAnalytics, type: :service do
     end
   end
 
-  describe 'duration statistics' do
+  describe 'duration statistics', unit: true do
     it 'tracks min, max, sum, and count for durations' do
       freeze_time do
         # Record multiple durations
@@ -442,7 +442,7 @@ RSpec.describe BroadcastAnalytics, type: :service do
     end
   end
 
-  describe 'time window calculations' do
+  describe 'time window calculations', unit: true do
     before do
       # Clear any existing cache data
       Rails.cache.clear
@@ -492,7 +492,7 @@ RSpec.describe BroadcastAnalytics, type: :service do
     end
   end
 
-  describe 'error handling' do
+  describe 'error handling', unit: true do
     it 'handles cache errors gracefully' do
       allow(Rails.cache).to receive(:write).and_raise(StandardError, 'Cache error')
 
@@ -518,7 +518,7 @@ RSpec.describe BroadcastAnalytics, type: :service do
     end
   end
 
-  describe '.cleanup_old_data' do
+  describe '.cleanup_old_data', unit: true do
     it 'logs cleanup completion' do
       allow(Rails.logger).to receive(:info)
 

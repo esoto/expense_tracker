@@ -2,16 +2,16 @@
 
 require 'rails_helper'
 
-RSpec.describe Budget, type: :model do
+RSpec.describe Budget, type: :model, integration: true do
   let(:email_account) { create(:email_account) }
   let(:category) { create(:category) }
 
-  describe 'associations' do
+  describe 'associations', integration: true do
     it { should belong_to(:email_account) }
     it { should belong_to(:category).optional }
   end
 
-  describe 'validations' do
+  describe 'validations', integration: true do
     subject { build(:budget, email_account: email_account) }
 
     it { should validate_presence_of(:name) }
@@ -53,38 +53,38 @@ RSpec.describe Budget, type: :model do
     end
   end
 
-  describe 'enums' do
+  describe 'enums', integration: true do
     it { should define_enum_for(:period).with_values(daily: 0, weekly: 1, monthly: 2, yearly: 3).with_prefix(true) }
   end
 
-  describe 'scopes' do
+  describe 'scopes', integration: true do
     let!(:active_budget) { create(:budget, email_account: email_account, active: true, period: 'monthly', category: nil) }
     let!(:inactive_budget) { create(:budget, email_account: email_account, active: false, period: 'weekly', category: nil) }
     let!(:category_budget) { create(:budget, email_account: email_account, category: category, period: 'daily', active: true) }
     let!(:general_budget) { create(:budget, email_account: email_account, category: nil, period: 'yearly', active: true) }
 
-    describe '.active' do
+    describe '.active', integration: true do
       it 'returns only active budgets' do
         expect(Budget.active).to include(active_budget)
         expect(Budget.active).not_to include(inactive_budget)
       end
     end
 
-    describe '.inactive' do
+    describe '.inactive', integration: true do
       it 'returns only inactive budgets' do
         expect(Budget.inactive).to include(inactive_budget)
         expect(Budget.inactive).not_to include(active_budget)
       end
     end
 
-    describe '.for_category' do
+    describe '.for_category', integration: true do
       it 'returns budgets for specific category' do
         expect(Budget.for_category(category.id)).to include(category_budget)
         expect(Budget.for_category(category.id)).not_to include(general_budget)
       end
     end
 
-    describe '.general' do
+    describe '.general', integration: true do
       it 'returns budgets without category' do
         expect(Budget.general).to include(general_budget)
         expect(Budget.general).not_to include(category_budget)
@@ -92,7 +92,7 @@ RSpec.describe Budget, type: :model do
     end
   end
 
-  describe '#current_period_range' do
+  describe '#current_period_range', integration: true do
     context 'for daily budget' do
       let(:budget) { build(:budget, period: 'daily') }
 
@@ -134,7 +134,7 @@ RSpec.describe Budget, type: :model do
     end
   end
 
-  describe '#calculate_current_spend!' do
+  describe '#calculate_current_spend!', integration: true do
     let(:budget) { create(:budget, email_account: email_account, period: 'monthly', amount: 100000) }
 
     context 'with expenses in period' do
@@ -168,7 +168,7 @@ RSpec.describe Budget, type: :model do
     end
   end
 
-  describe '#usage_percentage' do
+  describe '#usage_percentage', integration: true do
     let(:budget) { create(:budget, amount: 100000) }
 
     it 'returns percentage of budget used' do
@@ -182,7 +182,7 @@ RSpec.describe Budget, type: :model do
     end
   end
 
-  describe '#status' do
+  describe '#status', integration: true do
     let(:budget) { create(:budget, amount: 100000, warning_threshold: 70, critical_threshold: 90) }
 
     context 'when under warning threshold' do
@@ -214,7 +214,7 @@ RSpec.describe Budget, type: :model do
     end
   end
 
-  describe '#status_color' do
+  describe '#status_color', integration: true do
     let(:budget) { create(:budget) }
 
     it 'returns appropriate color for each status' do
@@ -232,7 +232,7 @@ RSpec.describe Budget, type: :model do
     end
   end
 
-  describe '#on_track?' do
+  describe '#on_track?', integration: true do
     let(:budget) { create(:budget, period: 'monthly') }
 
     context 'when usage is below 50%' do
@@ -259,7 +259,7 @@ RSpec.describe Budget, type: :model do
     end
   end
 
-  describe '#duplicate_for_next_period' do
+  describe '#duplicate_for_next_period', integration: true do
     let!(:budget) { create(:budget, email_account: email_account, period: 'monthly', start_date: Date.current.beginning_of_month, active: false) }
 
     it 'creates a new budget for the next period' do
@@ -283,7 +283,7 @@ RSpec.describe Budget, type: :model do
     end
   end
 
-  describe '#deactivate!' do
+  describe '#deactivate!', integration: true do
     let(:budget) { create(:budget, active: true) }
 
     it 'sets active to false' do
@@ -292,8 +292,8 @@ RSpec.describe Budget, type: :model do
     end
   end
 
-  describe 'callbacks' do
-    describe 'after_create' do
+  describe 'callbacks', integration: true do
+    describe 'after_create', integration: true do
       let(:budget) { build(:budget, email_account: email_account) }
 
       it 'calculates current spend after creation' do
@@ -303,7 +303,7 @@ RSpec.describe Budget, type: :model do
     end
   end
 
-  describe '#formatted_amount' do
+  describe '#formatted_amount', integration: true do
     let(:budget) { build(:budget, amount: 125000, currency: 'CRC') }
 
     it 'formats amount with currency symbol' do
@@ -312,7 +312,7 @@ RSpec.describe Budget, type: :model do
     end
   end
 
-  describe '#currency_symbol' do
+  describe '#currency_symbol', integration: true do
     it 'returns correct symbol for each currency' do
       budget = build(:budget, currency: 'CRC')
       expect(budget.currency_symbol).to eq('₡')

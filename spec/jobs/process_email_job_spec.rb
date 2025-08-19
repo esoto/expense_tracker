@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe ProcessEmailJob, type: :job do
+RSpec.describe ProcessEmailJob, type: :job, integration: true do
   # Keep using create for tests that need real database records
   let!(:parsing_rule) { create(:parsing_rule, :bac) }
   let(:email_account) { create(:email_account, :bac) }
@@ -33,7 +33,7 @@ RSpec.describe ProcessEmailJob, type: :job do
     # No need for mocking since we're using real records
   end
 
-  describe '#perform' do
+  describe '#perform', integration: true do
     context 'with valid email account and data' do
       it 'creates an expense successfully' do
         expect {
@@ -163,7 +163,7 @@ RSpec.describe ProcessEmailJob, type: :job do
     end
   end
 
-  describe '#save_failed_parsing' do
+  describe '#save_failed_parsing', integration: true do
     let(:job) { ProcessEmailJob.new }
     let(:errors) { [ "Amount not found", "Date format invalid" ] }
     let(:failed_email_data) do
@@ -242,13 +242,13 @@ RSpec.describe ProcessEmailJob, type: :job do
     end
   end
 
-  describe 'job queue configuration' do
+  describe 'job queue configuration', integration: true do
     it 'uses the default queue' do
       expect(ProcessEmailJob.new.queue_name).to eq('default')
     end
   end
 
-  describe 'ActiveJob integration' do
+  describe 'ActiveJob integration', integration: true do
     it 'can be enqueued with perform_later' do
       expect {
         ProcessEmailJob.perform_later(email_account.id, email_data)
@@ -262,7 +262,7 @@ RSpec.describe ProcessEmailJob, type: :job do
     end
   end
 
-  describe 'edge cases' do
+  describe 'edge cases', integration: true do
     context 'with empty email data' do
       let(:empty_email_data) { {} }
 

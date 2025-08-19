@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::Strategies::Regex do
+RSpec.describe EmailProcessing::Strategies::Regex, integration: true do
   let(:parsing_rule) do
     create(:parsing_rule,
       bank_name: 'Banco Nacional',
@@ -27,13 +27,13 @@ RSpec.describe EmailProcessing::Strategies::Regex do
     EMAIL
   end
 
-  describe '#initialize' do
+  describe '#initialize', integration: true do
     it 'sets the parsing rule' do
       expect(strategy.instance_variable_get(:@parsing_rule)).to eq(parsing_rule)
     end
   end
 
-  describe '#parse_email' do
+  describe '#parse_email', integration: true do
     it 'extracts all data from email content' do
       result = strategy.parse_email(email_content)
 
@@ -168,7 +168,7 @@ RSpec.describe EmailProcessing::Strategies::Regex do
     end
   end
 
-  describe '#can_parse?' do
+  describe '#can_parse?', integration: true do
     it 'returns true when required patterns match' do
       expect(strategy.can_parse?(email_content)).to be true
     end
@@ -202,8 +202,8 @@ RSpec.describe EmailProcessing::Strategies::Regex do
     end
   end
 
-  describe 'private methods' do
-    describe '#extract_amount' do
+  describe 'private methods', integration: true do
+    describe '#extract_amount', integration: true do
       it 'cleans and converts amount strings' do
         test_cases = [
           { input: '₡1,234.56', expected: BigDecimal('1234.56') },
@@ -228,7 +228,7 @@ RSpec.describe EmailProcessing::Strategies::Regex do
       end
     end
 
-    describe '#parse_date' do
+    describe '#parse_date', integration: true do
       it 'parses various date formats' do
         test_cases = [
           { input: '15/08/2024', expected: Date.new(2024, 8, 15) },

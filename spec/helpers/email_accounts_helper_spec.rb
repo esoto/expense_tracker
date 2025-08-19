@@ -1,7 +1,7 @@
 require 'rails_helper'
 
-RSpec.describe EmailAccountsHelper, type: :helper do
-  describe "#bank_options" do
+RSpec.describe EmailAccountsHelper, type: :helper, unit: true do
+  describe "#bank_options", unit: true do
     it "returns an array of bank names" do
       expect(helper.bank_options).to be_an(Array)
     end
@@ -16,7 +16,7 @@ RSpec.describe EmailAccountsHelper, type: :helper do
     end
   end
 
-  describe "#email_provider_options" do
+  describe "#email_provider_options", unit: true do
     it "returns an array of arrays" do
       expect(helper.email_provider_options).to be_an(Array)
       expect(helper.email_provider_options.first).to be_an(Array)

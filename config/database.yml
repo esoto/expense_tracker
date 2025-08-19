@@ -30,7 +30,7 @@ default: &default
 
 development:
   <<: *default
-  database: expense_tracker_epic_3_expense_list_optimization_development
+  database: expense_tracker_integration_development
   # Development performance settings
   statement_timeout: 10000  # 10 seconds
   lock_timeout: 5000        # 5 seconds
@@ -43,7 +43,7 @@ development:
 # and recreated between test runs. Don't rely on the data there!
 test:
   <<: *default
-  database: expense_tracker_epic_3_expense_list_optimization_test<%= ENV['TEST_ENV_NUMBER'] %>
+  database: expense_tracker_integration_test<%= ENV['TEST_ENV_NUMBER'] %>
   # Optimize for testing performance
   min_messages: WARNING
   # Use template0 to avoid encoding issues

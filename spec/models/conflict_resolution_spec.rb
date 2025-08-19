@@ -1,16 +1,16 @@
 require 'rails_helper'
 
-RSpec.describe ConflictResolution, type: :model do
+RSpec.describe ConflictResolution, type: :model, integration: true do
   let(:sync_session) { create(:sync_session) }
   let(:sync_conflict) { create(:sync_conflict, sync_session: sync_session) }
 
-  describe 'associations' do
+  describe 'associations', integration: true do
     it { should belong_to(:sync_conflict) }
     it { should belong_to(:undone_by_resolution).class_name('ConflictResolution').optional }
     it { should have_one(:undoes_resolution).class_name('ConflictResolution').with_foreign_key('undone_by_resolution_id') }
   end
 
-  describe 'validations' do
+  describe 'validations', integration: true do
     it { should validate_presence_of(:action) }
 
     it 'validates action inclusion' do
@@ -47,7 +47,7 @@ RSpec.describe ConflictResolution, type: :model do
     end
   end
 
-  describe 'scopes' do
+  describe 'scopes', integration: true do
     let!(:undone_resolution) { create(:conflict_resolution, sync_conflict: sync_conflict, undone: true) }
     let!(:not_undone_resolution) { create(:conflict_resolution, sync_conflict: sync_conflict, undone: false) }
     let!(:manual_resolution) { create(:conflict_resolution, sync_conflict: sync_conflict, resolution_method: 'manual') }
@@ -56,41 +56,41 @@ RSpec.describe ConflictResolution, type: :model do
     let!(:undoable_resolution) { create(:conflict_resolution, sync_conflict: sync_conflict, undoable: true, undone: false) }
     let!(:non_undoable_resolution) { create(:conflict_resolution, sync_conflict: sync_conflict, undoable: false, undone: false) }
 
-    describe '.not_undone' do
+    describe '.not_undone', integration: true do
       it 'returns only resolutions that are not undone' do
         expect(ConflictResolution.not_undone).to include(not_undone_resolution)
         expect(ConflictResolution.not_undone).not_to include(undone_resolution)
       end
     end
 
-    describe '.undone' do
+    describe '.undone', integration: true do
       it 'returns only undone resolutions' do
         expect(ConflictResolution.undone).to include(undone_resolution)
         expect(ConflictResolution.undone).not_to include(not_undone_resolution)
       end
     end
 
-    describe '.recent' do
+    describe '.recent', integration: true do
       it 'orders by created_at desc' do
         expect(ConflictResolution.recent.first).to eq(ConflictResolution.order(created_at: :desc).first)
       end
     end
 
-    describe '.manual' do
+    describe '.manual', integration: true do
       it 'returns only manual resolutions' do
         expect(ConflictResolution.manual).to include(manual_resolution)
         expect(ConflictResolution.manual).not_to include(auto_resolution, bulk_resolution)
       end
     end
 
-    describe '.automatic' do
+    describe '.automatic', integration: true do
       it 'returns auto and bulk resolutions' do
         expect(ConflictResolution.automatic).to include(auto_resolution, bulk_resolution)
         expect(ConflictResolution.automatic).not_to include(manual_resolution)
       end
     end
 
-    describe '.undoable' do
+    describe '.undoable', integration: true do
       it 'returns only undoable and not undone resolutions' do
         expect(ConflictResolution.undoable).to include(undoable_resolution)
         expect(ConflictResolution.undoable).not_to include(non_undoable_resolution, undone_resolution)
@@ -98,7 +98,7 @@ RSpec.describe ConflictResolution, type: :model do
     end
   end
 
-  describe '#can_undo?' do
+  describe '#can_undo?', integration: true do
     context 'when resolution is undoable, not undone, and not an undo action' do
       let(:resolution) { create(:conflict_resolution, sync_conflict: sync_conflict, undoable: true, undone: false, action: 'keep_existing') }
 
@@ -132,7 +132,7 @@ RSpec.describe ConflictResolution, type: :model do
     end
   end
 
-  describe '#undo_action?' do
+  describe '#undo_action?', integration: true do
     it 'returns true when action is undo' do
       resolution = build(:conflict_resolution, action: 'undo')
       expect(resolution.undo_action?).to be true
@@ -144,7 +144,7 @@ RSpec.describe ConflictResolution, type: :model do
     end
   end
 
-  describe '#display_action' do
+  describe '#display_action', integration: true do
     it 'returns Spanish translations for known actions' do
       translations = {
         'keep_existing' => 'Mantener existente',
@@ -167,7 +167,7 @@ RSpec.describe ConflictResolution, type: :model do
     end
   end
 
-  describe '#display_method' do
+  describe '#display_method', integration: true do
     it 'returns Spanish translations for known methods' do
       translations = {
         'manual' => 'Manual',
@@ -193,7 +193,7 @@ RSpec.describe ConflictResolution, type: :model do
     end
   end
 
-  describe '#changed_fields' do
+  describe '#changed_fields', integration: true do
     context 'when changes_made is blank' do
       let(:resolution) { create(:conflict_resolution, sync_conflict: sync_conflict, changes_made: nil) }
 
@@ -293,7 +293,7 @@ RSpec.describe ConflictResolution, type: :model do
     end
   end
 
-  describe '#summary' do
+  describe '#summary', integration: true do
     it 'returns appropriate summary for keep_existing action' do
       resolution = build(:conflict_resolution, action: 'keep_existing')
       expect(resolution.summary).to eq('Se mantuvo el gasto existente y se marcó el nuevo como duplicado')
@@ -342,7 +342,7 @@ RSpec.describe ConflictResolution, type: :model do
     end
   end
 
-  describe 'edge cases and validations' do
+  describe 'edge cases and validations', integration: true do
     it 'handles empty changes_made gracefully in changed_fields' do
       resolution = create(:conflict_resolution, sync_conflict: sync_conflict, changes_made: {})
       expect(resolution.changed_fields).to eq([])
@@ -366,7 +366,7 @@ RSpec.describe ConflictResolution, type: :model do
     end
   end
 
-  describe 'associations edge cases' do
+  describe 'associations edge cases', integration: true do
     it 'can create resolution that undoes another resolution' do
       original_resolution = create(:conflict_resolution, sync_conflict: sync_conflict, action: 'keep_existing')
       undo_resolution = create(:conflict_resolution, sync_conflict: sync_conflict, action: 'undo', undone_by_resolution: original_resolution)

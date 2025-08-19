@@ -10,7 +10,9 @@ env:
   RAILS_ENV: test
   POSTGRES_PASSWORD: postgres
   POSTGRES_USER: postgres
-  POSTGRES_DB: expense_tracker_test
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  POSTGRES_DB: expense_tracker_integration_test
 
 jobs:
   # Quick unit tests - run first for fast feedback
@@ -37,13 +39,18 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.3.0'
+          ruby-version: '3.4.1'
           bundler-cache: true
       
       - name: Setup Database
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         run: |
           bundle exec rails db:create
-          bundle exec rails db:schema:load
+          bundle exec rails db:migrate
       
       - name: Run Unit Tests
         run: bin/test-unit
@@ -89,13 +96,18 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.3.0'
+          ruby-version: '3.4.1'
           bundler-cache: true
       
       - name: Setup Database
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         run: |
           bundle exec rails db:create
-          bundle exec rails db:schema:load
+          bundle exec rails db:migrate
           bundle exec rails db:seed
       
       - name: Run Integration Tests
@@ -133,7 +145,7 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.3.0'
+          ruby-version: '3.4.1'
           bundler-cache: true
       
       - name: Setup Chrome
@@ -142,9 +154,14 @@ jobs:
           chrome-version: stable
       
       - name: Setup Database
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         run: |
           bundle exec rails db:create
-          bundle exec rails db:schema:load
+          bundle exec rails db:migrate
           bundle exec rails db:seed
       
       - name: Precompile Assets
@@ -186,13 +203,18 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.3.0'
+          ruby-version: '3.4.1'
           bundler-cache: true
       
       - name: Setup Database
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         run: |
           bundle exec rails db:create
-          bundle exec rails db:schema:load
+          bundle exec rails db:migrate
           bundle exec rails db:seed
       
       - name: Run Performance Tests

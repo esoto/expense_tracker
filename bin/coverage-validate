@@ -1,0 +1,171 @@
+#!/usr/bin/env ruby
+# Coverage Policy Validation Script
+# Validates coverage against defined policies and quality gates
+
+require 'fileutils'
+
+# Ensure we're in the Rails root
+Dir.chdir(File.expand_path('..', __dir__))
+
+# Load Rails environment for policy validation
+require_relative '../config/environment'
+require_relative '../lib/coverage_policy_validator'
+
+class CoverageValidationRunner
+  def initialize
+    @validator = CoveragePolicyValidator.new
+  end
+
+  def run_validation(options = {})
+    puts "🔍 Running Coverage Policy Validation"
+    puts "=" * 50
+
+    # Validate specific tier or all tiers
+    if options[:tier]
+      validate_single_tier(options[:tier])
+    else
+      validate_all_tiers
+    end
+
+    # Generate enforcement report
+    report = @validator.generate_enforcement_report
+
+    # Handle CI/CD integration
+    handle_ci_integration(report) if options[:ci]
+
+    # Return exit code
+    report[:enforcement_summary][:status] == 'PASSED' ? 0 : 1
+  end
+
+  private
+
+  def validate_single_tier(tier)
+    puts "Validating #{tier} tier..."
+    result = @validator.validate_tier(tier)
+    
+    puts result ? "✅ #{tier} tier passed validation" : "❌ #{tier} tier failed validation"
+    result
+  end
+
+  def validate_all_tiers
+    puts "Validating all tiers..."
+    @validator.validate_all_tiers
+  end
+
+  def handle_ci_integration(report)
+    puts "\n🤖 CI/CD Integration"
+    puts "-" * 30
+
+    # Set environment variables for CI systems
+    ENV['COVERAGE_STATUS'] = report[:enforcement_summary][:status]
+    ENV['COVERAGE_VIOLATIONS'] = report[:enforcement_summary][:total_violations].to_s
+    ENV['COVERAGE_CRITICAL_VIOLATIONS'] = report[:enforcement_summary][:critical_violations].to_s
+
+    # Generate CI-friendly output
+    puts "COVERAGE_STATUS=#{ENV['COVERAGE_STATUS']}"
+    puts "COVERAGE_VIOLATIONS=#{ENV['COVERAGE_VIOLATIONS']}"
+    puts "COVERAGE_CRITICAL_VIOLATIONS=#{ENV['COVERAGE_CRITICAL_VIOLATIONS']}"
+
+    # Generate JUnit XML for CI systems that support it
+    generate_junit_report(report)
+
+    # Generate GitHub Actions annotations
+    generate_github_annotations(report) if ENV['GITHUB_ACTIONS']
+  end
+
+  def generate_junit_report(report)
+    junit_xml = <<~XML
+      <?xml version="1.0" encoding="UTF-8"?>
+      <testsuites name="Coverage Policy Validation" tests="#{report[:violations].size + 1}" failures="#{report[:violations].size}" time="1">
+        <testsuite name="Coverage Validation" tests="#{report[:violations].size + 1}" failures="#{report[:violations].size}" time="1">
+          <testcase name="Overall Policy Compliance" classname="Coverage.Policy">
+            #{report[:enforcement_summary][:status] == 'FAILED' ? '<failure message="Coverage policy violations detected"/>' : ''}
+          </testcase>
+    XML
+
+    report[:violations].each do |violation|
+      junit_xml += <<~XML
+        <testcase name="#{violation[:type]} - #{violation[:tier]}" classname="Coverage.#{violation[:tier].capitalize}">
+          <failure message="#{violation[:message]}" type="#{violation[:type]}"/>
+        </testcase>
+      XML
+    end
+
+    junit_xml += "</testsuite>\n</testsuites>"
+
+    File.write('coverage/junit-coverage-policy.xml', junit_xml)
+    puts "📄 JUnit report: coverage/junit-coverage-policy.xml"
+  end
+
+  def generate_github_annotations(report)
+    puts "\n📝 GitHub Actions Annotations:"
+
+    report[:violations].each do |violation|
+      severity = violation[:severity] == :critical ? 'error' : 'warning'
+      puts "::#{severity}::#{violation[:tier]} - #{violation[:message]}"
+    end
+
+    report[:warnings].each do |warning|
+      puts "::warning::#{warning[:tier]} - #{warning[:message]}"
+    end
+
+    if report[:enforcement_summary][:status] == 'FAILED'
+      puts "::error::Coverage policy validation failed with #{report[:enforcement_summary][:total_violations]} violations"
+    end
+  end
+end
+
+# Parse command line options
+options = {}
+tier = nil
+
+ARGV.each_with_index do |arg, index|
+  case arg
+  when '--tier'
+    tier = ARGV[index + 1]
+    options[:tier] = tier
+  when '--ci'
+    options[:ci] = true
+  when '--help', '-h'
+    puts <<~HELP
+      Coverage Policy Validation
+
+      Usage: bin/coverage-validate [OPTIONS]
+
+      Options:
+        --tier TIER    Validate specific tier (unit, integration, system, performance)
+        --ci           Enable CI/CD integration features
+        --help, -h     Show this help message
+
+      Examples:
+        bin/coverage-validate                    # Validate all tiers
+        bin/coverage-validate --tier unit       # Validate only unit tests
+        bin/coverage-validate --ci              # Run with CI integration
+
+      The script will:
+      1. Load coverage policy from config/coverage_policy.yml
+      2. Validate coverage data against defined thresholds
+      3. Generate enforcement reports
+      4. Return appropriate exit codes for CI/CD pipelines
+    HELP
+    exit 0
+  end
+end
+
+# Validate tier parameter
+if tier && !%w[unit integration system performance combined].include?(tier)
+  puts "❌ Invalid tier: #{tier}"
+  puts "Valid tiers: unit, integration, system, performance, combined"
+  exit 1
+end
+
+# Run validation
+begin
+  runner = CoverageValidationRunner.new
+  exit_code = runner.run_validation(options)
+  exit exit_code
+rescue => e
+  puts "❌ Validation failed with error: #{e.message}"
+  puts e.backtrace.first(5) if ENV['DEBUG']
+  exit 1
+end

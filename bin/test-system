@@ -7,8 +7,9 @@ require 'fileutils'
 # Ensure we're in the Rails root
 Dir.chdir(File.expand_path('..', __dir__))
 
-# Set test environment
+# Set test environment and tier for coverage  
 ENV['RAILS_ENV'] = 'test'
+ENV['TEST_TIER'] = 'system'
 
 # Build RSpec command for system tests
 cmd_parts = [

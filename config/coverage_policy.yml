@@ -1,0 +1,214 @@
+# Coverage Policy Configuration
+# Defines coverage thresholds, enforcement rules, and quality gates
+
+# Global Coverage Settings
+global:
+  # Default minimum coverage for all tiers
+  default_minimum: 70
+  
+  # Files to exclude from coverage analysis
+  exclude_patterns:
+    - "/config/"
+    - "/vendor/"
+    - "/spec/"
+    - "/features/"
+    - "/db/migrate/"
+    - "/lib/tasks/"
+    - "/app/assets/"
+  
+  # Files to include even if they match exclude patterns
+  force_include_patterns:
+    - "/app/services/"
+    - "/app/models/"
+    - "/app/controllers/"
+
+# Tier-Specific Coverage Thresholds
+tiers:
+  unit:
+    # Unit tests should have highest coverage (fast, focused)
+    minimum_overall: 85
+    minimum_per_file: 80
+    critical_threshold: 50  # Files below this are flagged as critical
+    
+    # Enforce strict coverage for these file types
+    strict_enforcement:
+      - "/app/models/"
+      - "/app/services/"
+      - "/app/helpers/"
+    
+    # Expected coverage targets by component
+    targets:
+      models: 95           # Models should be thoroughly unit tested
+      services: 90         # Business logic needs comprehensive coverage
+      helpers: 85          # Helper methods should be well tested
+      controllers: 70      # Basic controller logic (detailed testing in integration)
+      jobs: 80            # Background jobs need good unit coverage
+
+  integration:
+    # Integration tests focus on service interactions
+    minimum_overall: 75
+    minimum_per_file: 70
+    critical_threshold: 40
+    
+    # Key areas for integration testing
+    focus_areas:
+      - "/app/services/email/"
+      - "/app/services/sync/"
+      - "/app/controllers/api/"
+      - "/app/jobs/"
+    
+    targets:
+      api_controllers: 85  # API endpoints need thorough integration testing
+      background_jobs: 80  # Jobs need integration testing
+      service_orchestrators: 90  # Complex services need high coverage
+      models: 60          # Model integration with database
+
+  system:
+    # System tests cover user workflows end-to-end
+    minimum_overall: 60
+    minimum_per_file: 50
+    critical_threshold: 30
+    
+    # Focus on user-facing components
+    focus_areas:
+      - "/app/controllers/"
+      - "/app/views/"
+      - "/app/javascript/"
+    
+    targets:
+      user_workflows: 80   # Critical user paths
+      controllers: 70      # User-facing controllers
+      views: 50           # Template rendering
+      javascript: 40      # Frontend interactions
+
+  performance:
+    # Performance tests target specific bottlenecks
+    minimum_overall: 50
+    minimum_per_file: 40
+    critical_threshold: 20
+    
+    # Performance-critical areas
+    focus_areas:
+      - "/app/services/categorization/"
+      - "/app/services/bulk_operations/"
+      - "/app/models/" # Database queries
+    
+    targets:
+      algorithms: 70      # Algorithm implementations
+      bulk_operations: 80 # Mass data operations
+      database_queries: 60 # Query optimization targets
+
+  combined:
+    # Combined coverage from all tiers
+    minimum_overall: 90
+    minimum_per_file: 85
+    critical_threshold: 60
+    
+    # High standards for comprehensive coverage
+    targets:
+      overall: 92         # Aspirational overall target
+      critical_files: 95  # Core business logic files
+
+# Quality Gates
+quality_gates:
+  # Prevent commits/deployments if coverage drops
+  enforce_minimum: true
+  
+  # Allow coverage to drop by this much before failing
+  allowed_drop_percentage: 2
+  
+  # Files that must maintain high coverage
+  protected_files:
+    - "/app/models/expense.rb"
+    - "/app/models/category.rb" 
+    - "/app/services/categorization/"
+    - "/app/controllers/expenses_controller.rb"
+  
+  # Minimum coverage for protected files
+  protected_file_minimum: 90
+
+# Reporting Configuration
+reporting:
+  # Generate trend analysis over time
+  track_trends: true
+  
+  # Number of historical reports to keep
+  history_retention: 30
+  
+  # Generate alerts for coverage drops
+  alerts:
+    enabled: true
+    email_recipients: []  # Add email addresses for alerts
+    slack_webhook: ""     # Add Slack webhook for notifications
+  
+  # Export formats
+  export_formats:
+    - json
+    - yaml
+    - csv
+    - markdown
+
+# CI/CD Integration
+ci_cd:
+  # Fail build if coverage drops below threshold
+  fail_on_coverage_drop: true
+  
+  # Minimum coverage for CI to pass
+  ci_minimum_coverage: 80
+  
+  # Skip coverage check for these branches
+  skip_branches:
+    - "hotfix/*"
+    - "docs/*"
+  
+  # Post coverage comments on PRs
+  pr_comments: true
+  
+  # Coverage badges configuration
+  badges:
+    enabled: true
+    style: "flat-square"
+    colors:
+      excellent: "brightgreen"  # 90%+
+      good: "green"            # 80-89%
+      fair: "yellow"           # 70-79%
+      poor: "orange"           # 60-69%
+      critical: "red"          # <60%
+
+# Development Workflow
+development:
+  # Show coverage in test output
+  show_inline_coverage: true
+  
+  # Open coverage report after running tests
+  auto_open_report: false
+  
+  # Watch mode configuration
+  watch_mode:
+    enabled: true
+    file_patterns:
+      - "app/**/*.rb"
+      - "spec/**/*.rb"
+    
+    # Auto-run tests when files change
+    auto_run_tests: true
+    
+    # Minimum test tier to run in watch mode
+    default_tier: "unit"
+
+# Custom Rules
+custom_rules:
+  # Files that require 100% coverage
+  require_full_coverage:
+    - "/app/models/concerns/security.rb"
+    - "/app/services/authentication/"
+  
+  # Files that are exempt from coverage requirements
+  coverage_exempt:
+    - "/app/controllers/application_controller.rb"  # Framework boilerplate
+    - "/app/mailers/application_mailer.rb"         # Framework boilerplate
+  
+  # Complex files that need extra attention
+  complexity_thresholds:
+    high_complexity_min_coverage: 95  # Complex files need higher coverage
+    complexity_line_threshold: 100    # Files >100 lines considered complex

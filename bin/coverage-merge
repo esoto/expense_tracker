@@ -1,0 +1,327 @@
+#!/usr/bin/env ruby
+# Coverage Merge Tool
+# Combines coverage results from multiple test tiers into unified reports
+
+require 'fileutils'
+require 'json'
+
+# Ensure we're in the Rails root
+Dir.chdir(File.expand_path('..', __dir__))
+
+class CoverageMerger
+  TIERS = %w[unit integration system performance].freeze
+  COVERAGE_DIR = 'coverage'
+  
+  def initialize
+    @merged_coverage = {}
+    @tier_metadata = {}
+  end
+  
+  def merge_all_tiers
+    puts "🔄 Merging coverage from all test tiers..."
+    puts "=" * 60
+    
+    # Create combined directory
+    combined_dir = File.join(COVERAGE_DIR, 'combined')
+    FileUtils.mkdir_p(combined_dir)
+    
+    # Collect coverage data from all available tiers
+    available_tiers = collect_tier_data
+    
+    if available_tiers.empty?
+      puts "❌ No coverage data found. Please run tests first:"
+      puts "  bin/test-unit      # for unit test coverage"
+      puts "  bin/test-integration  # for integration test coverage"
+      puts "  bin/test-system    # for system test coverage"
+      puts "  bin/test-performance # for performance test coverage"
+      exit 1
+    end
+    
+    # Merge coverage data
+    merge_coverage_data(available_tiers)
+    
+    # Generate combined reports
+    generate_combined_resultset(combined_dir)
+    generate_tier_comparison_report(combined_dir, available_tiers)
+    generate_coverage_matrix(combined_dir, available_tiers)
+    
+    puts "\n✨ Coverage merge complete!"
+    puts "📁 Combined reports available in: #{combined_dir}/"
+    puts "🌐 Open coverage/combined/index.html for detailed view"
+  end
+  
+  private
+  
+  def collect_tier_data
+    available_tiers = []
+    
+    TIERS.each do |tier|
+      tier_dir = File.join(COVERAGE_DIR, tier)
+      resultset_file = File.join(tier_dir, '.resultset.json')
+      
+      if File.exist?(resultset_file)
+        begin
+          resultset = JSON.parse(File.read(resultset_file))
+          coverage_data = resultset.values.first
+          
+          if coverage_data && coverage_data['coverage']
+            available_tiers << tier
+            @tier_metadata[tier] = {
+              timestamp: coverage_data['timestamp'],
+              command_name: resultset.keys.first,
+              file_count: coverage_data['coverage'].size
+            }
+            
+            puts "✅ Found #{tier} coverage (#{coverage_data['coverage'].size} files)"
+          end
+        rescue JSON::ParserError => e
+          puts "⚠️  Invalid JSON in #{tier} tier: #{e.message}"
+        rescue => e
+          puts "⚠️  Error reading #{tier} tier: #{e.message}"
+        end
+      else
+        puts "⏳ No data for #{tier} tier (run bin/test-#{tier} first)"
+      end
+    end
+    
+    available_tiers
+  end
+  
+  def merge_coverage_data(available_tiers)
+    puts "\n🔀 Merging coverage data from #{available_tiers.size} tiers..."
+    
+    # Initialize merged coverage structure
+    @merged_coverage = {}
+    
+    available_tiers.each do |tier|
+      tier_dir = File.join(COVERAGE_DIR, tier)
+      resultset_file = File.join(tier_dir, '.resultset.json')
+      
+      resultset = JSON.parse(File.read(resultset_file))
+      coverage_data = resultset.values.first['coverage']
+      
+      puts "  📊 Processing #{tier} tier (#{coverage_data.size} files)..."
+      
+      coverage_data.each do |file_path, line_coverage|
+        # Skip test files and config files
+        next if file_path.include?('/spec/') || file_path.include?('/config/')
+        
+        if @merged_coverage[file_path]
+          # Merge line coverage by taking the maximum hits from any tier
+          merged_lines = @merged_coverage[file_path]
+          line_coverage.each_with_index do |hits, line_index|
+            if merged_lines[line_index].nil?
+              merged_lines[line_index] = hits
+            elsif hits && merged_lines[line_index]
+              merged_lines[line_index] = [merged_lines[line_index], hits].max
+            elsif hits
+              merged_lines[line_index] = hits
+            end
+          end
+        else
+          @merged_coverage[file_path] = line_coverage.dup
+        end
+      end
+    end
+    
+    puts "  ✅ Merged coverage for #{@merged_coverage.size} unique files"
+  end
+  
+  def generate_combined_resultset(combined_dir)
+    puts "\n📊 Generating combined SimpleCov resultset..."
+    
+    # Create SimpleCov-compatible resultset
+    combined_resultset = {
+      "Combined Test Suite" => {
+        "coverage" => @merged_coverage,
+        "timestamp" => Time.now.to_i
+      }
+    }
+    
+    # Write resultset file
+    resultset_file = File.join(combined_dir, '.resultset.json')
+    File.write(resultset_file, JSON.pretty_generate(combined_resultset))
+    
+    puts "  ✅ Created #{resultset_file}"
+    
+    # Generate HTML report using SimpleCov
+    generate_html_report(combined_dir)
+  end
+  
+  def generate_html_report(combined_dir)
+    puts "  🌐 Generating HTML coverage report..."
+    
+    # Run SimpleCov formatter manually
+    temp_env = ENV['TEST_TIER']
+    ENV['TEST_TIER'] = 'combined'
+    
+    # Use a simple Ruby script to generate the HTML report
+    script = <<~RUBY
+      require 'simplecov'
+      require_relative 'spec/support/coverage/combined_coverage'
+      
+      # Load the resultset
+      SimpleCov.coverage_dir '#{combined_dir}'
+      SimpleCov::ResultMerger.resultset_path = '#{File.join(combined_dir, '.resultset.json')}'
+      
+      # Generate HTML report
+      result = SimpleCov::Result.from_hash(#{@merged_coverage.to_json})
+      SimpleCov::Formatter::HTMLFormatter.new.format(result)
+    RUBY
+    
+    # Write and execute the script
+    script_file = 'tmp/generate_coverage_report.rb'
+    FileUtils.mkdir_p('tmp')
+    File.write(script_file, script)
+    
+    system("ruby #{script_file}")
+    FileUtils.rm_f(script_file)
+    
+    ENV['TEST_TIER'] = temp_env
+    
+    puts "  ✅ HTML report generated in #{combined_dir}/index.html"
+  end
+  
+  def generate_tier_comparison_report(combined_dir, available_tiers)
+    puts "\n📈 Generating tier comparison report..."
+    
+    comparison_data = {
+      generated_at: Time.now.iso8601,
+      tiers_included: available_tiers,
+      tier_metadata: @tier_metadata,
+      file_coverage_by_tier: {},
+      summary: {}
+    }
+    
+    # Calculate coverage for each file in each tier
+    available_tiers.each do |tier|
+      tier_dir = File.join(COVERAGE_DIR, tier)
+      resultset_file = File.join(tier_dir, '.resultset.json')
+      
+      resultset = JSON.parse(File.read(resultset_file))
+      coverage_data = resultset.values.first['coverage']
+      
+      tier_stats = { files: 0, total_lines: 0, covered_lines: 0 }
+      
+      coverage_data.each do |file_path, line_coverage|
+        next if file_path.include?('/spec/') || file_path.include?('/config/')
+        
+        total_lines = line_coverage.size
+        covered_lines = line_coverage.compact.count { |hits| hits && hits > 0 }
+        percentage = total_lines > 0 ? (covered_lines.to_f / total_lines * 100) : 0
+        
+        comparison_data[:file_coverage_by_tier][file_path] ||= {}
+        comparison_data[:file_coverage_by_tier][file_path][tier] = {
+          total_lines: total_lines,
+          covered_lines: covered_lines,
+          percentage: percentage.round(2)
+        }
+        
+        tier_stats[:files] += 1
+        tier_stats[:total_lines] += total_lines
+        tier_stats[:covered_lines] += covered_lines
+      end
+      
+      tier_stats[:percentage] = tier_stats[:total_lines] > 0 ? 
+        (tier_stats[:covered_lines].to_f / tier_stats[:total_lines] * 100).round(2) : 0
+      
+      comparison_data[:summary][tier] = tier_stats
+    end
+    
+    # Save comparison report
+    comparison_file = File.join(combined_dir, 'tier_comparison.json')
+    File.write(comparison_file, JSON.pretty_generate(comparison_data))
+    
+    puts "  ✅ Tier comparison saved to #{comparison_file}"
+    
+    # Generate human-readable summary
+    generate_readable_summary(combined_dir, comparison_data)
+  end
+  
+  def generate_readable_summary(combined_dir, comparison_data)
+    summary_content = <<~SUMMARY
+      # Coverage Analysis Summary
+      
+      Generated: #{comparison_data[:generated_at]}
+      
+      ## Test Tier Coverage
+      
+    SUMMARY
+    
+    comparison_data[:summary].each do |tier, stats|
+      summary_content += <<~TIER_STATS
+        ### #{tier.capitalize} Tests
+        - **Coverage**: #{stats[:percentage]}%
+        - **Files**: #{stats[:files]}
+        - **Lines**: #{stats[:covered_lines]}/#{stats[:total_lines]}
+        
+      TIER_STATS
+    end
+    
+    # Find files with significant coverage differences
+    interesting_files = comparison_data[:file_coverage_by_tier].select do |file_path, tier_data|
+      percentages = tier_data.values.map { |data| data[:percentage] }
+      percentages.max - percentages.min > 30 # 30% difference between tiers
+    end
+    
+    if interesting_files.any?
+      summary_content += "\n## Files with Significant Coverage Differences\n\n"
+      
+      interesting_files.first(10).each do |file_path, tier_data|
+        summary_content += "### #{file_path}\n"
+        tier_data.each do |tier, data|
+          summary_content += "- **#{tier}**: #{data[:percentage]}%\n"
+        end
+        summary_content += "\n"
+      end
+    end
+    
+    summary_file = File.join(combined_dir, 'COVERAGE_SUMMARY.md')
+    File.write(summary_file, summary_content)
+    
+    puts "  ✅ Human-readable summary saved to #{summary_file}"
+  end
+  
+  def generate_coverage_matrix(combined_dir, available_tiers)
+    puts "\n📋 Generating coverage matrix..."
+    
+    # Create a matrix showing which files are covered by which test tiers
+    matrix = {}
+    
+    @merged_coverage.each do |file_path, _|
+      matrix[file_path] = {}
+      
+      available_tiers.each do |tier|
+        tier_dir = File.join(COVERAGE_DIR, tier)
+        resultset_file = File.join(tier_dir, '.resultset.json')
+        
+        if File.exist?(resultset_file)
+          resultset = JSON.parse(File.read(resultset_file))
+          coverage_data = resultset.values.first['coverage']
+          
+          if coverage_data[file_path]
+            line_coverage = coverage_data[file_path]
+            total_lines = line_coverage.size
+            covered_lines = line_coverage.compact.count { |hits| hits && hits > 0 }
+            percentage = total_lines > 0 ? (covered_lines.to_f / total_lines * 100).round(1) : 0
+            
+            matrix[file_path][tier] = percentage
+          else
+            matrix[file_path][tier] = 0
+          end
+        end
+      end
+    end
+    
+    matrix_file = File.join(combined_dir, 'coverage_matrix.json')
+    File.write(matrix_file, JSON.pretty_generate(matrix))
+    
+    puts "  ✅ Coverage matrix saved to #{matrix_file}"
+  end
+end
+
+# Run the merger
+if __FILE__ == $0
+  merger = CoverageMerger.new
+  merger.merge_all_tiers
+end

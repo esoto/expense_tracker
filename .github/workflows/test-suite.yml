@@ -56,12 +56,15 @@ jobs:
       - name: Run Unit Tests
         run: bin/test-unit
       
-      - name: Upload Coverage
+      - name: Validate Unit Test Coverage
+        run: bin/coverage-validate --tier unit --ci
+        
+      - name: Upload Unit Coverage
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: unit-coverage
-          path: coverage/
+          path: coverage/unit/
   
   # Integration tests - run in parallel with unit tests
   integration-tests:
@@ -114,12 +117,15 @@ jobs:
       - name: Run Integration Tests
         run: bin/test-integration
       
-      - name: Upload Test Results
+      - name: Validate Integration Coverage
+        run: bin/coverage-validate --tier integration --ci
+        
+      - name: Upload Integration Coverage
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: integration-results
-          path: tmp/test-results/
+          name: integration-coverage
+          path: coverage/integration/
   
   # System tests - only run after unit tests pass
   system-tests:
@@ -169,8 +175,18 @@ jobs:
         run: bundle exec rails assets:precompile
       
       - name: Run System Tests
-        run: bundle exec rspec spec/system
+        run: bin/test-system
       
+      - name: Validate System Coverage
+        run: bin/coverage-validate --tier system --ci
+        
+      - name: Upload System Coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: system-coverage
+          path: coverage/system/
+          
       - name: Upload Screenshots
         uses: actions/upload-artifact@v4
         if: failure()
@@ -253,9 +269,64 @@ jobs:
               body: comment
             });
   
+  # Combined coverage analysis
+  combined-coverage:
+    needs: [unit-tests, integration-tests, system-tests]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.1'
+          bundler-cache: true
+      
+      - name: Download Unit Coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: unit-coverage
+          path: coverage/unit/
+        continue-on-error: true
+      
+      - name: Download Integration Coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: integration-coverage
+          path: coverage/integration/
+        continue-on-error: true
+      
+      - name: Download System Coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: system-coverage
+          path: coverage/system/
+        continue-on-error: true
+      
+      - name: Merge Coverage Results
+        run: bin/coverage-merge
+        continue-on-error: true
+      
+      - name: Analyze Combined Coverage
+        run: bin/coverage-analyze
+        continue-on-error: true
+      
+      - name: Validate Combined Coverage Policy
+        run: bin/coverage-validate --ci
+        continue-on-error: true
+      
+      - name: Upload Combined Coverage Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: combined-coverage-report
+          path: coverage/
+  
   # Final status check
   test-suite-status:
-    needs: [unit-tests, integration-tests, system-tests]
+    needs: [unit-tests, integration-tests, system-tests, combined-coverage]
     runs-on: ubuntu-latest
     if: always()
     
@@ -269,3 +340,11 @@ jobs:
             exit 1
           fi
           echo "All tests passed!"
+          
+      - name: Check Coverage Status
+        run: |
+          if [[ "${{ needs.combined-coverage.result }}" == "success" ]]; then
+            echo "✅ Combined coverage analysis completed successfully"
+          else
+            echo "⚠️ Combined coverage analysis had issues (non-blocking)"
+          fi

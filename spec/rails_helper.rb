@@ -8,16 +8,39 @@ abort("The Rails environment is running in production mode!") if Rails.env.produ
 # that will avoid rails generators crashing because migrations haven't been run yet
 # return unless Rails.env.test?
 require 'rspec/rails'
-require 'simplecov'
 
-SimpleCov.start 'rails' do
-  add_group "Models", "app/models"
-  add_group "Controllers", "app/controllers"
-  add_group "Services", "app/services"
-  add_group "Jobs", "app/jobs"
-  add_group "Mailers", "app/mailers"
-  add_group "Long files" do |src_file|
-    src_file.lines.count > 100
+# Tiered Coverage System
+# Load appropriate coverage configuration based on test tier
+unless defined?($coverage_started)
+  $coverage_started = true
+  
+  test_tier = ENV['TEST_TIER'] || 'combined'
+  puts "🔍 Loading #{test_tier} coverage configuration..."
+
+  case test_tier
+  when 'unit'
+    require_relative 'support/coverage/unit_coverage'
+  when 'integration'  
+    require_relative 'support/coverage/integration_coverage'
+  when 'system'
+    require_relative 'support/coverage/system_coverage'
+  when 'performance'
+    require_relative 'support/coverage/performance_coverage'
+  when 'combined'
+    require_relative 'support/coverage/combined_coverage'
+  else
+    # Fallback to basic SimpleCov configuration
+    require 'simplecov'
+    SimpleCov.start 'rails' do
+      add_group "Models", "app/models"
+      add_group "Controllers", "app/controllers"
+      add_group "Services", "app/services"
+      add_group "Jobs", "app/jobs"
+      add_group "Mailers", "app/mailers"
+      add_group "Long files" do |src_file|
+        src_file.lines.count > 100
+      end
+    end
   end
 end
 

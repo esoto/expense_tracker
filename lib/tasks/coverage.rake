@@ -157,8 +157,13 @@ namespace :coverage do
             total_lines = 0
             covered_lines = 0
             
-            coverage_data['coverage'].each do |file_path, line_coverage|
+            coverage_data['coverage'].each do |file_path, file_data|
               next if file_path.include?('/spec/') || file_path.include?('/config/')
+              
+              # Handle both old and new SimpleCov formats
+              line_coverage = file_data.is_a?(Array) ? file_data : file_data['lines']
+              next unless line_coverage
+              
               total_lines += line_coverage.size
               covered_lines += line_coverage.compact.count { |hits| hits && hits > 0 }
             end
@@ -220,8 +225,13 @@ namespace :coverage do
       total_lines = 0
       covered_lines = 0
       
-      coverage_data.each do |file_path, line_coverage|
+      coverage_data.each do |file_path, file_data|
         next if file_path.include?('/spec/') || file_path.include?('/config/')
+        
+        # Handle both old and new SimpleCov formats
+        line_coverage = file_data.is_a?(Array) ? file_data : file_data['lines']
+        next unless line_coverage
+        
         total_lines += line_coverage.size
         covered_lines += line_coverage.compact.count { |hits| hits && hits > 0 }
       end

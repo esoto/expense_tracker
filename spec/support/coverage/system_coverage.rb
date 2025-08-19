@@ -92,9 +92,7 @@ if ENV['TEST_TIER'] == 'system'
   
   # Merge policy for system test results
   merge_timeout 10800 # 3 hours (system tests are slowest)
-  command_name "system-tests-#{Time.now.to_i}"
-end
-
+    command_name "system-tests-#{Time.now.to_i}"
   end
 
   puts "🌐 System Test Coverage: Tracking end-to-end user workflows"

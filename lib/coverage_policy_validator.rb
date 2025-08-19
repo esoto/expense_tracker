@@ -112,8 +112,12 @@ class CoveragePolicyValidator
     total_lines = 0
     covered_lines = 0
 
-    coverage_data.each do |file_path, line_coverage|
+    coverage_data.each do |file_path, file_data|
       next if should_exclude_file?(file_path)
+      
+      # Handle both old and new SimpleCov formats
+      line_coverage = file_data.is_a?(Array) ? file_data : file_data['lines']
+      next unless line_coverage
       
       total_lines += line_coverage.size
       covered_lines += line_coverage.compact.count { |hits| hits && hits > 0 }
@@ -137,9 +141,13 @@ class CoveragePolicyValidator
     minimum_per_file = tier_policy['minimum_per_file']
     critical_threshold = tier_policy['critical_threshold']
 
-    coverage_data.each do |file_path, line_coverage|
+    coverage_data.each do |file_path, file_data|
       next if should_exclude_file?(file_path)
 
+      # Handle both old and new SimpleCov formats
+      line_coverage = file_data.is_a?(Array) ? file_data : file_data['lines']
+      next unless line_coverage
+      
       total_lines = line_coverage.size
       next if total_lines.zero?
 
@@ -187,7 +195,10 @@ class CoveragePolicyValidator
       matching_files = coverage_data.keys.select { |file| file.include?(file_pattern) }
       
       matching_files.each do |file_path|
-        line_coverage = coverage_data[file_path]
+        file_data = coverage_data[file_path]
+        line_coverage = file_data.is_a?(Array) ? file_data : file_data['lines']
+        next unless line_coverage
+        
         total_lines = line_coverage.size
         next if total_lines.zero?
 
@@ -215,7 +226,10 @@ class CoveragePolicyValidator
       matching_files = coverage_data.keys.select { |file| file.include?(file_pattern) }
       
       matching_files.each do |file_path|
-        line_coverage = coverage_data[file_path]
+        file_data = coverage_data[file_path]
+        line_coverage = file_data.is_a?(Array) ? file_data : file_data['lines']
+        next unless line_coverage
+        
         total_lines = line_coverage.size
         next if total_lines.zero?
 
@@ -237,8 +251,12 @@ class CoveragePolicyValidator
     complexity_threshold = custom_rules['complexity_line_threshold'] || 100
     high_complexity_min = custom_rules['high_complexity_min_coverage'] || 95
 
-    coverage_data.each do |file_path, line_coverage|
+    coverage_data.each do |file_path, file_data|
       next if should_exclude_file?(file_path)
+      
+      # Handle both old and new SimpleCov formats
+      line_coverage = file_data.is_a?(Array) ? file_data : file_data['lines']
+      next unless line_coverage
       
       total_lines = line_coverage.size
       next if total_lines < complexity_threshold

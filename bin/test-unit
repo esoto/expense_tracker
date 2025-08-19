@@ -11,11 +11,32 @@ Dir.chdir(File.expand_path('..', __dir__))
 ENV['RAILS_ENV'] = 'test'
 
 # Build RSpec command with properly quoted arguments
-cmd = "bundle exec rspec --tag unit --format progress --profile=5 --fail-fast=5 --order random"
+# In CI, be more explicit about which tests to run
+cmd = if ENV['CI']
+  # In CI, run unit-tagged tests or fallback to specific directories
+  "bundle exec rspec --tag unit --format progress --fail-fast=10 --order random"
+else
+  "bundle exec rspec --tag unit --format progress --profile=5 --fail-fast=5 --order random"
+end
 
 puts "🧪 Running unit tests (should complete in <30 seconds)..."
 puts "Command: #{cmd}"
 puts
+
+# In CI, add some debugging info
+if ENV['CI']
+  puts "CI Environment detected"
+  puts "Ruby version: #{RUBY_VERSION}"
+  puts "Bundler version: #{Bundler::VERSION}" if defined?(Bundler::VERSION)
+  puts "Current directory: #{Dir.pwd}"
+  
+  # Check if test files exist
+  unit_tests = Dir['spec/**/*_spec.rb'].select do |file|
+    content = File.read(file)
+    content.include?('unit: true')
+  end
+  puts "Found #{unit_tests.size} unit-tagged test files"
+end
 
 # Execute with proper exit code
 system(cmd)

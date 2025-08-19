@@ -8,6 +8,7 @@ on:
 
 env:
   RAILS_ENV: test
+  CI: true
   POSTGRES_PASSWORD: postgres
   POSTGRES_USER: postgres
   POSTGRES_HOST: localhost

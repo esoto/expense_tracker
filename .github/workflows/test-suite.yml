@@ -57,7 +57,7 @@ jobs:
         run: bin/test-unit
       
       - name: Upload Coverage
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: unit-coverage
@@ -115,7 +115,7 @@ jobs:
         run: bin/test-integration
       
       - name: Upload Test Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: integration-results
@@ -150,7 +150,7 @@ jobs:
           bundler-cache: true
       
       - name: Setup Chrome
-        uses: browser-actions/setup-chrome@latest
+        uses: browser-actions/setup-chrome@v1
         with:
           chrome-version: stable
       
@@ -172,7 +172,7 @@ jobs:
         run: bundle exec rspec spec/system
       
       - name: Upload Screenshots
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: system-test-failures
@@ -222,14 +222,14 @@ jobs:
         run: bin/test-performance
       
       - name: Upload Performance Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: performance-report
           path: tmp/performance/
       
       - name: Comment on PR with Performance Impact
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             // Parse performance results and comment on PR

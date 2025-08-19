@@ -70,8 +70,10 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
 
   describe "POST #duplicate", integration: true do
     it "creates a duplicate of the expense" do
+      # Ensure expense is created before measuring the change
+      expense_id = expense.id
       expect {
-        post :duplicate, params: { id: expense.id }
+        post :duplicate, params: { id: expense_id }
       }.to change(Expense, :count).by(1)
     end
 

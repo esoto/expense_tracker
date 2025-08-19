@@ -6,7 +6,7 @@ RSpec.describe "Categorization::Orchestrator Test Summary", type: :service, inte
   describe "Production readiness validation", integration: true do
     let(:orchestrator) { Categorization::OrchestratorFactory.create_test }
 
-    before(:all) do
+    before(:each) do
       # Create test data
       @category = Category.create!(name: "Test Category")
       @pattern = CategorizationPattern.create!(
@@ -15,7 +15,7 @@ RSpec.describe "Categorization::Orchestrator Test Summary", type: :service, inte
         category: @category,
         confidence_weight: 2.0
       )
-      @email_account = EmailAccount.first || EmailAccount.create!(
+      @email_account = EmailAccount.create!(
         email: "test@example.com",
         provider: "gmail",
         bank_name: "Test Bank",

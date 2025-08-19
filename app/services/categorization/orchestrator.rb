@@ -94,7 +94,7 @@ module Categorization
               return validation_result unless validation_result.nil?
 
               # Step 2: Check user preferences (highest priority)
-              if opts[:check_user_preferences] && expense.merchant_name.present?
+              if opts[:check_user_preferences] && expense.merchant_name?
                 preference_result = check_user_preference(expense, opts)
                 return preference_result if preference_result&.successful?
               end
@@ -291,7 +291,7 @@ module Categorization
       return CategorizationResult.error("Expense cannot be nil") unless expense
       return CategorizationResult.error("Expense must be persisted") unless expense.persisted?
 
-      unless expense.merchant_name.present? || expense.description.present?
+      unless expense.merchant_name? || expense.description?
         return CategorizationResult.error("Expense must have merchant or description")
       end
 
@@ -337,7 +337,7 @@ module Categorization
       end
 
       # Match merchant patterns
-      if expense.merchant_name.present?
+      if expense.merchant_name?
         merchant_patterns = patterns.select { |p| p.pattern_type == "merchant" }
         merchant_matches = @matcher.match_pattern(
           expense.merchant_name,
@@ -348,7 +348,7 @@ module Categorization
       end
 
       # Match description patterns
-      if expense.description.present?
+      if expense.description?
         description_patterns = patterns.select { |p| p.pattern_type.in?(%w[keyword description]) }
         description_matches = @matcher.match_pattern(
           expense.description,

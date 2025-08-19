@@ -61,7 +61,7 @@ module Categorization
       @healthy = true
 
       @logger.info "[PatternCache] Initialized with #{@redis_available ? 'Redis + Memory' : 'Memory only'} caching"
-      
+
       # Warm cache in production for consistent performance
       warm_cache if Rails.env.production? && options.fetch(:warm_cache, true)
     end
@@ -111,7 +111,7 @@ module Categorization
         .order(usage_count: :desc, success_rate: :desc)
         .to_a
     end
-    
+
     # Clear preloaded patterns after batch processing
     def clear_preloaded_patterns
       @all_patterns = nil
@@ -311,16 +311,16 @@ module Categorization
     def healthy?
       @healthy = begin
         # Check memory cache is responding
-        @memory_cache.read("health_check_#{Time.current.to_i}") 
-        
+        @memory_cache.read("health_check_#{Time.current.to_i}")
+
         # Check Redis if available
         if @redis_available
           redis_client.ping == "PONG"
         end
-        
+
         # Check metrics are being collected
         @metrics_collector.hit_rate >= 0
-        
+
         true
       rescue => e
         Rails.logger.error "[PatternCache] Health check failed: #{e.message}"
@@ -333,7 +333,7 @@ module Categorization
       @lock.synchronize do
         @memory_cache.clear
         @metrics_collector = MetricsCollector.new
-        
+
         if @redis_available
           begin
             redis_client.flushdb
@@ -341,7 +341,7 @@ module Categorization
             Rails.logger.error "[PatternCache] Redis reset failed: #{e.message}"
           end
         end
-        
+
         Rails.logger.info "[PatternCache] Cache and metrics reset completed"
       end
     rescue => e

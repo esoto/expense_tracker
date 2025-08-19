@@ -525,7 +525,7 @@ class ExpensesController < ApplicationController
       if params[:category].present? && !p[:category_ids].present?
         # Convert category name to ID
         category = Category.find_by(name: params[:category])
-        p[:category_ids] = category ? [category.id] : []
+        p[:category_ids] = category ? [ category.id ] : []
       end
       p[:banks] = [ params[:bank] ] if params[:bank].present? && !p[:banks].present?
     end

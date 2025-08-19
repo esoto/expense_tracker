@@ -542,7 +542,6 @@ module Categorization
     rescue => e
       Rails.logger.error "[ConfidenceCalculator] Reset failed: #{e.message}"
     end
-
   end
 
   # Value object representing a confidence score calculation result

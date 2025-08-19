@@ -12,17 +12,17 @@ RSpec.configure do |config|
       # Disable action mailer deliveries
       ActionMailer::Base.delivery_method = :test
       ActionMailer::Base.perform_deliveries = false
-      
+
       # Disable active job queue processing
       ActiveJob::Base.queue_adapter = :test
-      
+
       # Disable broadcasting in unit tests
       ActionCable.server.config.disable_request_forgery_protection = true if defined?(ActionCable)
     end
 
     # Set test-specific configurations
     Rails.application.config.cache_store = :null_store if defined?(Rails)
-    
+
     # Disable external service calls
     if defined?(WebMock)
       WebMock.enable!
@@ -45,7 +45,7 @@ RSpec.configure do |config|
   config.before(:each, :unit) do
     # Clear any cached data before each unit test
     Rails.cache.clear if defined?(Rails) && Rails.respond_to?(:cache)
-    
+
     # Reset any service state
     if defined?(Categorization::CachedCategorizationService)
       Categorization::CachedCategorizationService.instance_variable_set(:@cache, nil)
@@ -61,7 +61,7 @@ RSpec.configure do |config|
     # Reduce garbage collection frequency during unit tests
     if RUBY_ENGINE == 'ruby'
       GC.disable
-      
+
       # Re-enable GC after unit tests
       RSpec.configuration.after(:suite) do
         next unless RSpec.configuration.inclusion_filter[:unit]
@@ -84,7 +84,6 @@ RSpec.configure do |config|
       end
     end
   end
-
 end
 
 # Module for unit test optimization utilities
@@ -158,7 +157,7 @@ module UnitTestHelpers
   def skip_expensive_setup
     # Skip database seeds
     allow(Rails.application).to receive(:load_seed) if defined?(Rails)
-    
+
     # Skip asset precompilation
     allow_any_instance_of(ActionView::Base).to receive(:asset_path) { |path| path }
   end

@@ -63,11 +63,11 @@ module TierAutoTagger
       return :system if system_test?(file_path)
       return :performance if performance_test?(file_path)
       return :integration if integration_test?(file_path)
-      
+
       # Read file content for deeper analysis
       content = File.read(file_path) if File.exist?(file_path)
       return analyze_content(content, file_path) if content
-      
+
       :unit # Default to unit test
     rescue => e
       Rails.logger.warn("Failed to analyze #{file_path}: #{e.message}")
@@ -100,18 +100,18 @@ module TierAutoTagger
 
       tier = analyze_file(file_path)
       content = File.read(file_path)
-      
+
       # Skip if already has tier tags
       return tier if has_tier_tags?(content)
 
       # Add tag to the first describe block
       updated_content = add_tier_tag(content, tier)
-      
+
       if updated_content != content
         File.write(file_path, updated_content)
         puts "Tagged #{file_path} as :#{tier}"
       end
-      
+
       tier
     end
 
@@ -168,7 +168,7 @@ module TierAutoTagger
         indent = $1
         describe_keyword = $2
         description = $3
-        
+
         # Check if there are already hash-style metadata
         if description.include?(',') && (description.include?('type:') || description.include?(':'))
           # Add as hash key

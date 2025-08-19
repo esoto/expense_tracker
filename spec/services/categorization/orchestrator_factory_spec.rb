@@ -152,7 +152,7 @@ RSpec.describe Categorization::OrchestratorFactory, type: :service do
 
       it "performs simple text matching" do
         pattern = create(:categorization_pattern, pattern_value: "food")
-        result = matcher.match_pattern("Whole Foods Market", [pattern])
+        result = matcher.match_pattern("Whole Foods Market", [ pattern ])
 
         expect(result).to be_success
         expect(result.matches).to be_an(Array)
@@ -173,7 +173,7 @@ RSpec.describe Categorization::OrchestratorFactory, type: :service do
       it "calculates simple confidence score" do
         expense = create(:expense)
         pattern = create(:categorization_pattern)
-        
+
         result = calculator.calculate(expense, pattern, 0.9)
 
         expect(result.score).to eq(0.81) # 0.9 * 0.9
@@ -192,7 +192,7 @@ RSpec.describe Categorization::OrchestratorFactory, type: :service do
 
       it "returns disabled message" do
         result = learner.learn_from_correction(nil, nil, nil)
-        
+
         expect(result).to be_failure
         expect(result.message).to eq("Learning disabled")
       end
@@ -217,7 +217,7 @@ RSpec.describe Categorization::OrchestratorFactory, type: :service do
 
   describe "Integration" do
     it "creates working orchestrator for each environment" do
-      [:production, :test, :development, :minimal].each do |env|
+      [ :production, :test, :development, :minimal ].each do |env|
         orchestrator = case env
         when :production then described_class.create_production
         when :test then described_class.create_test

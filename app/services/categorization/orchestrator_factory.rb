@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'ostruct'
+require "ostruct"
 
 module Categorization
   # Factory for creating orchestrator instances with proper dependency injection
@@ -25,11 +25,11 @@ module Categorization
       def service_registry
         @service_registry ||= {}
       end
-      
+
       # Create production-ready orchestrator with all optimizations
       def create_production(options = {})
         registry = build_production_registry(options)
-        
+
         Orchestrator.new(
           pattern_cache: registry[:pattern_cache],
           matcher: registry[:matcher],
@@ -44,7 +44,7 @@ module Categorization
       # Create test orchestrator with simplified services
       def create_test(options = {})
         registry = build_test_registry(options)
-        
+
         Orchestrator.new(
           pattern_cache: registry[:pattern_cache],
           matcher: registry[:matcher],
@@ -58,7 +58,7 @@ module Categorization
       # Create development orchestrator with debugging features
       def create_development(options = {})
         registry = build_development_registry(options)
-        
+
         Orchestrator.new(
           pattern_cache: registry[:pattern_cache],
           matcher: registry[:matcher],
@@ -72,7 +72,7 @@ module Categorization
       # Create custom orchestrator with provided services
       def create_custom(services = {})
         registry = build_custom_registry(services)
-        
+
         Orchestrator.new(
           pattern_cache: registry[:pattern_cache],
           matcher: registry[:matcher],
@@ -100,7 +100,7 @@ module Categorization
 
       def build_production_registry(options)
         @registry_mutex ||= Mutex.new
-        
+
         @registry_mutex.synchronize do
           {
             pattern_cache: options[:pattern_cache] || get_or_create_service(:pattern_cache) { build_production_pattern_cache },
@@ -112,7 +112,7 @@ module Categorization
           }
         end
       end
-      
+
       def get_or_create_service(key, &block)
         service_registry[key] ||= yield
       end
@@ -187,7 +187,7 @@ module Categorization
           logger: Rails.logger
         )
       end
-      
+
       def build_production_circuit_breaker
         Orchestrator::CircuitBreaker.new(
           failure_threshold: 5,
@@ -252,7 +252,7 @@ module Categorization
           logger: Rails.logger
         )
       end
-      
+
       def build_development_circuit_breaker
         Orchestrator::CircuitBreaker.new(
           failure_threshold: 10,
@@ -339,7 +339,7 @@ module Categorization
             text_match: { value: base_score, contribution: 0.7 },
             pattern_quality: { value: 0.8, contribution: 0.3 }
           },
-          metadata: { factors_used: [:text_match, :pattern_quality] }
+          metadata: { factors_used: [ :text_match, :pattern_quality ] }
         )
       end
 
@@ -387,11 +387,11 @@ module Categorization
       def track_operation(name)
         yield if block_given?
       end
-      
+
       def record(operation, duration, metadata = {})
         # No-op
       end
-      
+
       def record_failure(operation, metadata = {})
         # No-op
       end
@@ -408,21 +408,21 @@ module Categorization
         true
       end
     end
-    
+
     # Test circuit breaker that never opens
     class TestCircuitBreaker
       def call
         yield
       end
-      
+
       def record_failure
         # No-op
       end
-      
+
       def reset!
         # No-op
       end
-      
+
       def state
         :closed
       end

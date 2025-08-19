@@ -823,7 +823,7 @@ module Categorization
     def healthy?
       @healthy ||= begin
         # Test basic matching functionality
-        test_result = match("test", ["test"])
+        test_result = match("test", [ "test" ])
         test_result.is_a?(MatchResult)
       rescue => e
         Rails.logger.error "[FuzzyMatcher] Health check failed: #{e.message}"

@@ -87,10 +87,10 @@ module Categorization
       return { status: :shutdown } if shutdown?
 
       @logger.info "[EngineV2] Starting warm-up..."
-      
+
       # Warm up pattern cache
       pattern_count = warm_pattern_cache
-      
+
       @logger.info "[EngineV2] Warm-up completed"
       {
         patterns: pattern_count,
@@ -125,7 +125,7 @@ module Categorization
 
       @orchestrator.reset!
       @metrics = { total: 0, successful: 0 }
-      
+
       @logger.info "[EngineV2] Engine reset completed"
     end
 

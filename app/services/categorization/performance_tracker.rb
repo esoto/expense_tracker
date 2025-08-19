@@ -204,7 +204,7 @@ module Categorization
           # Check if performance is acceptable
           avg_time = average_categorization_time
           error_rate_val = error_rate(samples)
-          
+
           avg_time <= CRITICAL_TIME_MS && error_rate_val < 50.0
         end
       rescue => e

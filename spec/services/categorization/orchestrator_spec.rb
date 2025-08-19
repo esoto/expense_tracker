@@ -61,7 +61,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
       let(:match_result) do
         Categorization::Matchers::MatchResult.new(
           success: true,
-          matches: [{ pattern: pattern, score: 0.85 }]
+          matches: [ { pattern: pattern, score: 0.85 } ]
         )
       end
 
@@ -72,13 +72,13 @@ RSpec.describe Categorization::Orchestrator, type: :service do
             text_match: { value: 0.85, contribution: 0.7 },
             pattern_quality: { value: 0.75, contribution: 0.3 }
           },
-          metadata: { factors_used: [:text_match, :pattern_quality] }
+          metadata: { factors_used: [ :text_match, :pattern_quality ] }
         )
       end
 
       before do
         allow(pattern_cache).to receive(:get_user_preference).and_return(nil)
-        allow(pattern_cache).to receive(:get_patterns_for_expense).and_return([pattern])
+        allow(pattern_cache).to receive(:get_patterns_for_expense).and_return([ pattern ])
         allow(matcher).to receive(:match_pattern).and_return(match_result)
         allow(confidence_calculator).to receive(:calculate).and_return(confidence_score)
       end
@@ -120,7 +120,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
 
         it "prioritizes user preference" do
           # Since we're using mocked services, the user preference logic
-          # may not work exactly as in production. We'll verify the 
+          # may not work exactly as in production. We'll verify the
           # key behavior: that the result uses the correct category
           # with high confidence
           result = orchestrator.categorize(expense)
@@ -172,7 +172,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
 
         before do
           allow(pattern_cache).to receive(:get_patterns_for_expense)
-            .and_return([pattern, other_pattern])
+            .and_return([ pattern, other_pattern ])
           allow(matcher).to receive(:match_pattern).and_return(multi_match_result)
           allow(confidence_calculator).to receive(:calculate)
             .with(expense, pattern, 0.85)
@@ -248,10 +248,10 @@ RSpec.describe Categorization::Orchestrator, type: :service do
 
       it "returns error for expense without merchant or description" do
         invalid_expense = create(:expense, merchant_name: nil, merchant_normalized: nil, description: nil)
-        
+
         # Mock pattern_cache to not expect get_user_preference call
         allow(pattern_cache).to receive(:get_user_preference).and_return(nil)
-        
+
         result = orchestrator.categorize(invalid_expense)
 
         expect(result).to be_failed
@@ -294,7 +294,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
 
       it "handles matcher errors" do
         allow(pattern_cache).to receive(:get_user_preference).and_return(nil)
-        allow(pattern_cache).to receive(:get_patterns_for_expense).and_return([create(:categorization_pattern)])
+        allow(pattern_cache).to receive(:get_patterns_for_expense).and_return([ create(:categorization_pattern) ])
         allow(matcher).to receive(:match_pattern).and_raise(StandardError, "Matcher error")
 
         result = orchestrator.categorize(expense)
@@ -529,7 +529,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
 
       # Warm up the cache
       orchestrator.categorize(expense)
-      
+
       # Measure actual performance
       start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       result = orchestrator.categorize(expense)

@@ -53,7 +53,7 @@ class UndoHistory < ApplicationRecord
     create!(
       undoable_type: records.first.class.name,
       action_type: :bulk_delete,
-      record_data: { 
+      record_data: {
         ids: records.map(&:id),
         records: records.map(&:attributes)
       },
@@ -86,13 +86,13 @@ class UndoHistory < ApplicationRecord
 
     transaction do
       case action_type
-      when 'soft_delete'
+      when "soft_delete"
         undo_single_deletion
-      when 'bulk_delete'
+      when "bulk_delete"
         undo_bulk_deletion
-      when 'bulk_update'
+      when "bulk_update"
         undo_bulk_update
-      when 'bulk_categorize'
+      when "bulk_categorize"
         undo_bulk_categorization
       end
 
@@ -122,7 +122,7 @@ class UndoHistory < ApplicationRecord
 
   def time_remaining
     return 0 if expired? || undone?
-    
+
     seconds_left = (expires_at - Time.current).to_i
     seconds_left > 0 ? seconds_left : 0
   end
@@ -147,42 +147,42 @@ class UndoHistory < ApplicationRecord
     return false unless undoable_type.present? && record_data.present?
 
     klass = undoable_type.constantize
-    record = klass.with_deleted.find_by(id: record_data['id'])
-    
+    record = klass.with_deleted.find_by(id: record_data["id"])
+
     if record
       record.restore!
     else
       # Recreate the record if it was permanently deleted
-      klass.create!(record_data.except('id', 'created_at', 'updated_at', 'deleted_at'))
+      klass.create!(record_data.except("id", "created_at", "updated_at", "deleted_at"))
     end
   end
 
   def undo_bulk_deletion
-    return false unless record_data['ids'].present?
+    return false unless record_data["ids"].present?
 
     klass = undoable_type.constantize
-    records = klass.with_deleted.where(id: record_data['ids'])
-    
+    records = klass.with_deleted.where(id: record_data["ids"])
+
     records.each(&:restore!)
-    
+
     # Recreate any missing records
-    missing_ids = record_data['ids'] - records.pluck(:id)
-    if missing_ids.any? && record_data['records'].present?
-      record_data['records'].each do |attrs|
-        next unless missing_ids.include?(attrs['id'])
-        klass.create!(attrs.except('id', 'created_at', 'updated_at', 'deleted_at'))
+    missing_ids = record_data["ids"] - records.pluck(:id)
+    if missing_ids.any? && record_data["records"].present?
+      record_data["records"].each do |attrs|
+        next unless missing_ids.include?(attrs["id"])
+        klass.create!(attrs.except("id", "created_at", "updated_at", "deleted_at"))
       end
     end
   end
 
   def undo_bulk_update
-    return false unless record_data['ids'].present? && record_data['original_values'].present?
+    return false unless record_data["ids"].present? && record_data["original_values"].present?
 
     klass = undoable_type.constantize
-    records = klass.where(id: record_data['ids'])
-    
+    records = klass.where(id: record_data["ids"])
+
     records.each_with_index do |record, index|
-      original_values = record_data['original_values'][index]
+      original_values = record_data["original_values"][index]
       record.update!(original_values) if original_values.present?
     end
   end

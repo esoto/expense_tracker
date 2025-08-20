@@ -5,7 +5,7 @@ class AddSoftDeleteToExpenses < ActiveRecord::Migration[8.0]
       add_column :expenses, :deleted_at, :datetime
       add_index :expenses, :deleted_at
     end
-    
+
     unless column_exists?(:expenses, :deleted_by)
       add_column :expenses, :deleted_by, :string
     end

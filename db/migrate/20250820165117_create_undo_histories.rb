@@ -19,8 +19,8 @@ class CreateUndoHistories < ActiveRecord::Migration[8.0]
     end
 
     add_index :undo_histories, :created_at
-    add_index :undo_histories, [:user_id, :created_at]
-    add_index :undo_histories, [:action_type, :undone_at]
-    add_index :undo_histories, [:expires_at, :undone_at], where: "undone_at IS NULL"
+    add_index :undo_histories, [ :user_id, :created_at ]
+    add_index :undo_histories, [ :action_type, :undone_at ]
+    add_index :undo_histories, [ :expires_at, :undone_at ], where: "undone_at IS NULL"
   end
 end

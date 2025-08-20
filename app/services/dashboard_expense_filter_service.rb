@@ -52,6 +52,8 @@ class DashboardExpenseFilterService < ExpenseFilterService
     @include_summary = params.delete(:include_summary) != false
     @include_quick_filters = params.delete(:include_quick_filters) != false
     @dashboard_context = true
+    @use_cursor_pagination = params.delete(:use_cursor) == true
+    @cursor = params.delete(:cursor)
 
     # Set dashboard defaults and call parent
     dashboard_params = normalize_dashboard_params(params)
@@ -155,6 +157,14 @@ class DashboardExpenseFilterService < ExpenseFilterService
   end
 
   def apply_dashboard_pagination(scope)
+    if @use_cursor_pagination
+      apply_cursor_pagination(scope)
+    else
+      apply_offset_pagination(scope)
+    end
+  end
+
+  def apply_offset_pagination(scope)
     # Dashboard uses simple offset pagination
     expenses = scope.limit(per_page).offset((page - 1) * per_page)
 
@@ -176,6 +186,70 @@ class DashboardExpenseFilterService < ExpenseFilterService
     }
 
     [ expenses, pagination_meta ]
+  end
+
+  def apply_cursor_pagination(scope)
+    # Cursor-based pagination for virtual scrolling
+    # Cursor format: "date:id" for stable pagination
+    expenses = scope
+
+    if @cursor.present?
+      cursor_date, cursor_id = decode_cursor(@cursor)
+      # Use compound condition for stable ordering
+      expenses = expenses.where(
+        "(transaction_date < :date) OR (transaction_date = :date AND id < :id)",
+        date: cursor_date,
+        id: cursor_id
+      )
+    end
+
+    # Fetch one extra to determine if there are more
+    limit_with_extra = per_page + 1
+    expenses = expenses.limit(limit_with_extra)
+    
+    # Check if we have more items
+    has_more = expenses.size > per_page
+    expenses = expenses.first(per_page) if has_more
+
+    # Generate next cursor from last item
+    next_cursor = if has_more && expenses.any?
+                    last_expense = expenses.last
+                    encode_cursor(last_expense.transaction_date, last_expense.id)
+                  end
+
+    # Estimate total count (for virtual scroll height calculation)
+    # Use cached count for performance
+    total = if @cursor.blank?
+              cache_key = "dashboard_expense_count/#{generate_filters_hash}"
+              Rails.cache.fetch(cache_key, expires_in: DASHBOARD_CACHE_TTL) do
+                scope.except(:limit, :offset, :order).count
+              end
+            else
+              # For subsequent pages, use estimated count
+              expenses.size + (@cursor.present? ? per_page * 2 : 0) # Rough estimate
+            end
+
+    pagination_meta = {
+      total_count: total,
+      has_more: has_more,
+      next_cursor: next_cursor,
+      cursor_used: true
+    }
+
+    [ expenses, pagination_meta ]
+  end
+
+  def encode_cursor(date, id)
+    Base64.urlsafe_encode64("#{date}:#{id}")
+  end
+
+  def decode_cursor(cursor)
+    decoded = Base64.urlsafe_decode64(cursor)
+    date_str, id_str = decoded.split(":")
+    [ Date.parse(date_str), id_str.to_i ]
+  rescue StandardError => e
+    Rails.logger.error "Invalid cursor: #{cursor} - #{e.message}"
+    [ Date.current, 0 ]
   end
 
   def calculate_summary_stats(scope)
@@ -262,25 +336,35 @@ class DashboardExpenseFilterService < ExpenseFilterService
   end
 
   def build_dashboard_result(expenses, pagination_meta, query_time, queries_executed, summary_stats, quick_filters)
+    metadata = {
+      per_page: per_page,
+      has_more: pagination_meta[:has_more],
+      filters_applied: count_active_filters,
+      filters_hash: generate_filters_hash,
+      sort: { by: sort_by, direction: sort_direction },
+      dashboard_context: true
+    }
+
+    # Add cursor or page based on pagination type
+    if pagination_meta[:cursor_used]
+      metadata[:next_cursor] = pagination_meta[:next_cursor]
+      metadata[:cursor_pagination] = true
+    else
+      metadata[:page] = pagination_meta[:page] || page
+    end
+
     DashboardResult.new(
       expenses: expenses,
       total_count: pagination_meta[:total_count],
-      metadata: {
-        page: pagination_meta[:page],
-        per_page: per_page,
-        has_more: pagination_meta[:has_more],
-        filters_applied: count_active_filters,
-        filters_hash: generate_filters_hash,
-        sort: { by: sort_by, direction: sort_direction },
-        dashboard_context: true
-      },
+      metadata: metadata,
       performance_metrics: {
         query_time_ms: (query_time * 1000).round(2),
         cached: false,
         index_used: check_index_usage(expenses),
         queries_executed: queries_executed,
         rows_examined: expenses.count,
-        dashboard_optimized: true
+        dashboard_optimized: true,
+        cursor_used: pagination_meta[:cursor_used] || false
       },
       summary_stats: summary_stats,
       quick_filters: quick_filters,

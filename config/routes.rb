@@ -128,6 +128,7 @@ Rails.application.routes.draw do
     collection do
       get :dashboard
       post :sync_emails
+      get :virtual_scroll  # Task 3.7: Virtual scrolling endpoint
     end
     member do
       post :duplicate

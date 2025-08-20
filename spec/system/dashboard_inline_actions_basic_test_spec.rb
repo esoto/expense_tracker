@@ -15,6 +15,8 @@ RSpec.describe "Dashboard Inline Actions Basic Test", type: :system, js: true do
   end
 
   before do
+    # Force desktop viewport for proper hover testing
+    page.driver.browser.manage.window.resize_to(1400, 900)
     visit dashboard_expenses_path
     wait_for_turbo
   end
@@ -44,9 +46,9 @@ RSpec.describe "Dashboard Inline Actions Basic Test", type: :system, js: true do
   it "shows quick actions on hover" do
     expense_row = find("[data-expense-id='#{expense.id}']", match: :first)
 
-    # Actions should be hidden initially
+    # Actions should be hidden initially (opacity: 0)
     within expense_row do
-      actions = find('[data-dashboard-expenses-target="quickActions"]', visible: :all)
+      actions = find('.inline-actions-container', visible: :all)
       expect(actions).not_to be_visible
     end
 
@@ -56,7 +58,7 @@ RSpec.describe "Dashboard Inline Actions Basic Test", type: :system, js: true do
 
     # Actions should be visible
     within expense_row do
-      actions = find('[data-dashboard-expenses-target="quickActions"]')
+      actions = find('.inline-actions-container')
       expect(actions).to be_visible
     end
   end

@@ -1,0 +1,210 @@
+<%# Task 3.6: Dashboard Expense List Partial for AJAX Updates %>
+<% if recent_expenses.any? %>
+<div class="dashboard-expenses-list" data-dashboard-expenses-target="list">
+  <% recent_expenses.each_with_index do |expense, index| %>
+  <!-- Expense Row (Task 3.2: View Toggle Support + Task 3.3: Inline Actions) -->
+  <div class="dashboard-expense-row group <%= index >= 5 && expense_view_mode == 'compact' ? 'hidden' : '' %> <%= index >= 15 && expense_view_mode == 'expanded' ? 'hidden' : '' %>" 
+       data-expense-id="<%= expense.id %>" 
+       data-expense-status="<%= expense.status %>" 
+       data-dashboard-expenses-target="expenseRow" 
+       data-controller="dashboard-inline-actions" 
+       data-dashboard-inline-actions-expense-id-value="<%= expense.id %>" 
+       data-dashboard-inline-actions-current-status-value="<%= expense.status %>" 
+       data-environment="<%= Rails.env %>" 
+       tabindex="0" 
+       role="article" 
+       aria-label="Gasto <%= index + 1 %>">
+
+    <!-- Selection Checkbox (Task 3.4) -->
+    <div class="hidden absolute left-3 top-1/2 -translate-y-1/2" data-dashboard-expenses-target="selectionContainer">
+      <input type="checkbox" 
+             class="rounded border-slate-300 text-teal-600 focus:ring-teal-500 cursor-pointer" 
+             data-expense-id="<%= expense.id %>" 
+             data-dashboard-expenses-target="selectionCheckbox" 
+             data-action="change->dashboard-expenses#toggleSelection" 
+             aria-label="Seleccionar gasto <%= expense.merchant_name || 'Comercio desconocido' %>">
+    </div>
+
+    <div class="flex items-center space-x-4 flex-1">
+      <!-- Category Icon -->
+      <div class="flex-shrink-0">
+        <% if expense.category %>
+        <div class="expense-category-badge" style="background-color: <%= expense.category.color %>;" title="<%= expense.category.name %>">
+          <%= expense.category.name.first %>
+        </div>
+        <% else %>
+        <div class="expense-category-badge uncategorized" title="Sin categoría">
+          ?
+        </div>
+        <% end %>
+      </div>
+
+      <!-- Expense Details -->
+      <div class="expense-details flex-1">
+        <p class="expense-merchant">
+          <%= expense.merchant_name || "Comercio desconocido" %>
+          <% if expense.ml_confidence.present? && expense.ml_confidence > 0.7 %>
+          <span class="ml-1 text-xs text-emerald-600" title="Alta confianza ML">✓</span>
+          <% end %>
+        </p>
+        <p class="expense-metadata">
+          <span><%= expense.transaction_date.strftime("%d/%m/%Y") %></span>
+          <span>•</span>
+          <span><%= expense.category&.name || "Sin categoría" %></span>
+          <span>•</span>
+          <span><%= expense.bank_name %></span>
+        </p>
+
+        <!-- Expanded view details -->
+        <div class="expense-expanded-details <%= expense_view_mode == 'expanded' ? '' : 'hidden' %>" data-dashboard-expenses-target="expandedDetails">
+          <% if expense.description.present? %>
+          <p class="text-xs text-slate-600 line-clamp-2"><%= expense.description %></p>
+          <% end %>
+          <div class="text-xs text-slate-500 mt-1">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+              <%= expense.status.humanize %>
+            </span>
+            <span class="ml-2">ID: #<%= expense.id %></span>
+            <% if expense.email_account %>
+            <span class="ml-2">Cuenta: <%= expense.email_account.email.split('@').first %></span>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Amount and Quick Actions -->
+    <div class="flex items-center space-x-3">
+      <div class="text-right">
+        <p class="expense-amount">
+          <%= currency_symbol(expense) %><%= number_with_delimiter(expense.amount.to_i) %>
+        </p>
+        <p class="expense-date">
+          <%= format_datetime(expense.created_at) %>
+        </p>
+      </div>
+
+      <!-- Inline Quick Actions (Task 3.3: Dashboard Inline Actions) -->
+      <div class="inline-quick-actions" data-dashboard-expenses-target="quickActions">
+        <div class="flex items-center space-x-1">
+          <!-- Quick Categorize -->
+          <div class="relative">
+            <button type="button" 
+                    class="p-1 text-slate-400 hover:text-teal-600 transition-colors" 
+                    title="Categorizar (C)" 
+                    data-action="click->dashboard-inline-actions#toggleCategoryDropdown" 
+                    aria-label="Cambiar categoría">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+              </svg>
+            </button>
+
+            <!-- Category Dropdown (hidden by default) -->
+            <div class="absolute right-0 top-8 z-50 w-48 bg-white rounded-lg shadow-lg border border-slate-200 hidden" 
+                 data-dashboard-inline-actions-target="categoryDropdown">
+              <div class="py-1 max-h-64 overflow-y-auto">
+                <% Category.all.order(:name).each do |category| %>
+                <button type="button" 
+                        class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2 transition-colors" 
+                        data-action="click->dashboard-inline-actions#selectCategory" 
+                        data-category-id="<%= category.id %>" 
+                        data-category-name="<%= category.name %>">
+                  <span class="inline-block w-3 h-3 rounded-full flex-shrink-0" style="background-color: <%= category.color %>"></span>
+                  <span class="truncate"><%= category.name %></span>
+                </button>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status Toggle -->
+          <button type="button" 
+                  class="p-1 transition-colors <%= expense.status == 'pending' ? 'text-amber-500 hover:text-emerald-600' : 'text-emerald-500 hover:text-amber-600' %>" 
+                  title="<%= expense.status == 'pending' ? 'Marcar como procesado' : 'Marcar como pendiente' %> (S)" 
+                  data-action="click->dashboard-inline-actions#toggleStatus" 
+                  aria-label="Cambiar estado">
+            <% if expense.status == 'pending' %>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <% else %>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <% end %>
+          </button>
+
+          <!-- Duplicate -->
+          <button type="button" 
+                  class="p-1 text-slate-400 hover:text-amber-600 transition-colors" 
+                  title="Duplicar (D)" 
+                  data-action="click->dashboard-inline-actions#duplicateExpense" 
+                  aria-label="Duplicar gasto">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+            </svg>
+          </button>
+
+          <!-- Delete -->
+          <div class="relative">
+            <button type="button" 
+                    class="p-1 text-slate-400 hover:text-rose-600 transition-colors" 
+                    title="Eliminar (Del)" 
+                    data-action="click->dashboard-inline-actions#showDeleteConfirmation" 
+                    aria-label="Eliminar gasto">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
+            </button>
+
+            <!-- Delete Confirmation Modal -->
+            <div class="absolute right-0 top-8 z-50 w-56 bg-white rounded-lg shadow-xl border border-rose-200 p-4 hidden" 
+                 data-dashboard-inline-actions-target="deleteConfirmation">
+              <div class="flex items-start gap-3 mb-3">
+                <div class="flex-shrink-0 w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center">
+                  <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                  </svg>
+                </div>
+                <div class="flex-1">
+                  <h3 class="text-sm font-semibold text-slate-900">Confirmar eliminación</h3>
+                  <p class="text-xs text-slate-600 mt-1">Esta acción no se puede deshacer</p>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button type="button" 
+                        class="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors" 
+                        data-action="click->dashboard-inline-actions#confirmDelete">
+                  Eliminar
+                </button>
+                <button type="button" 
+                        class="flex-1 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors" 
+                        data-action="click->dashboard-inline-actions#cancelDelete">
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% end %>
+</div>
+
+<% else %>
+<!-- Empty State -->
+<div class="dashboard-expenses-empty p-6">
+  <svg class="dashboard-expenses-empty-icon mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+  </svg>
+  <h3 class="dashboard-expenses-empty-title mt-3 text-sm font-medium text-slate-900">No hay gastos</h3>
+  <p class="dashboard-expenses-empty-text mt-1 text-sm text-slate-500">
+    <% if expense_filter_result && expense_filter_result.metadata[:filters_applied] > 0 %>
+    No se encontraron gastos con los filtros aplicados.
+    <% else %>
+    Aún no tienes gastos registrados.
+    <% end %>
+  </p>
+</div>
+<% end %>

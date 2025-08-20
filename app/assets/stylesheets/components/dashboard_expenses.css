@@ -34,73 +34,66 @@
   transform: scale(1.1);
 }
 
-/* Expense Row Styles */
-.dashboard-expense-row {
-  @apply relative flex items-center justify-between rounded-lg transition-all duration-200;
-  @apply hover:shadow-md hover:-translate-y-0.5;
-  position: relative; /* Ensure position context for absolute children */
+/* Table-based Expense Row Styles for Dashboard */
+#dashboard-expenses-widget table {
+  @apply min-w-full divide-y divide-slate-200;
 }
 
-/* Compact View Styles */
-.dashboard-expenses-compact .dashboard-expense-row {
-  @apply p-3 sm:p-3.5 bg-slate-50 hover:bg-slate-100;
+#dashboard-expenses-widget thead {
+  @apply bg-slate-50;
 }
 
-.dashboard-expenses-compact .expense-details {
-  @apply space-y-0.5;
+#dashboard-expenses-widget tbody tr {
+  @apply hover:bg-slate-50 transition-all duration-200;
 }
 
-.dashboard-expenses-compact .expense-merchant {
-  @apply text-sm font-medium text-slate-900 truncate max-w-xs;
+/* Compact View - Hide expanded columns */
+.dashboard-expenses-compact [data-dashboard-expenses-target="expandedColumns"] {
+  @apply hidden;
 }
 
-.dashboard-expenses-compact .expense-metadata {
-  @apply text-xs text-slate-600 flex items-center gap-1.5;
+/* Expanded View - Show all columns */
+.dashboard-expenses-expanded [data-dashboard-expenses-target="expandedColumns"] {
+  @apply table-cell;
 }
 
-.dashboard-expenses-compact .expense-amount {
-  @apply text-base font-bold text-slate-900;
+/* Ensure consistent cell spacing */
+#dashboard-expenses-widget td,
+#dashboard-expenses-widget th {
+  @apply px-6 py-4;
 }
 
-.dashboard-expenses-compact .expense-date {
-  @apply text-xs text-slate-500;
+#dashboard-expenses-widget th {
+  @apply text-left text-xs font-medium text-slate-500 uppercase tracking-wider;
 }
 
-/* Expanded View Styles */
-.dashboard-expenses-expanded .dashboard-expense-row {
-  @apply p-4 sm:p-5 bg-white border border-slate-200;
+#dashboard-expenses-widget td {
+  @apply whitespace-nowrap text-sm;
 }
 
-.dashboard-expenses-expanded .expense-details {
-  @apply space-y-1.5;
+/* Category styling for dashboard table - matching main expenses */
+#dashboard-expenses-widget .expense-category-cell {
+  @apply relative;
 }
 
-.dashboard-expenses-expanded .expense-merchant {
-  @apply text-base font-semibold text-slate-900;
+/* Quick Actions - inherit from main expenses table */
+#dashboard-expenses-widget .inline-actions-container {
+  @apply opacity-0 group-hover:opacity-100 transition-opacity duration-200;
 }
 
-.dashboard-expenses-expanded .expense-metadata {
-  @apply text-sm text-slate-600 flex items-center gap-2;
-}
-
-.dashboard-expenses-expanded .expense-amount {
-  @apply text-lg font-bold text-slate-900;
-}
-
-.dashboard-expenses-expanded .expense-date {
-  @apply text-sm text-slate-600;
-}
-
-.dashboard-expenses-expanded .expense-expanded-details {
-  @apply mt-2 pt-2 border-t border-slate-100;
-  animation: fadeIn 0.2s ease-in;
-}
-
-/* Category Badge */
+/* Category Badge Styles */
 .expense-category-badge {
-  @apply w-10 h-10 rounded-full flex items-center justify-center text-white font-bold;
-  @apply ring-2 ring-white ring-offset-1;
+  @apply w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs;
+  width: 2rem !important; /* 32px width */
+  height: 2rem !important; /* 32px height */
+  font-size: 0.75rem; /* 12px font size */
   transition: transform 0.2s ease-out;
+}
+
+/* Ensure inline background-color styles take precedence for categorized badges */
+.expense-category-badge[style*="background-color"] {
+  /* Allow inline styles to work - remove any conflicting background */
+  background: none !important;
 }
 
 .dashboard-expense-row:hover .expense-category-badge {
@@ -123,6 +116,16 @@
   @apply flex items-center space-x-1;
   position: relative;
   z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease-out;
+}
+
+/* Show actions on hover */
+.dashboard-expense-row:hover .inline-quick-actions,
+.dashboard-expense-row:focus-within .inline-quick-actions {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .expense-quick-action {
@@ -147,35 +150,29 @@
   @apply relative;
 }
 
-.selection-mode-active .dashboard-expense-row {
+.selection-mode-active #dashboard-expenses-widget tbody tr {
   @apply cursor-pointer;
-  padding-left: 3.5rem !important; /* Make room for checkbox */
   transition: all 0.2s ease-out;
 }
 
-.selection-mode-active .dashboard-expense-row:hover {
+.selection-mode-active #dashboard-expenses-widget tbody tr:hover {
   @apply bg-teal-50;
-  border-color: theme('colors.teal.200') !important;
 }
 
-/* Selection Checkbox Container */
-.selection-mode-active [data-dashboard-expenses-target="selectionContainer"] {
-  @apply block;
-  position: absolute !important;
-  left: 0.75rem !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  z-index: 20;
+/* Show checkbox column when selection mode is active */
+.selection-mode-active #dashboard-expenses-widget .checkbox-cell,
+.selection-mode-active #dashboard-expenses-widget .checkbox-header {
+  @apply table-cell;
 }
 
-/* Selected Row State */
-.dashboard-expense-row.selected {
-  @apply bg-teal-50 border-teal-300 ring-1 ring-teal-200;
+/* Selected Row State for table */
+#dashboard-expenses-widget tbody tr.selected {
+  @apply bg-teal-50;
   animation: selectPulse 0.3s ease-out;
 }
 
-.dashboard-expense-row.selected:hover {
-  @apply bg-teal-100 border-teal-400;
+#dashboard-expenses-widget tbody tr.selected:hover {
+  @apply bg-teal-100;
 }
 
 /* Selection Checkbox Styles */
@@ -279,8 +276,7 @@
 
 /* Mobile Touch Optimizations for Selection */
 @media (hover: none) and (pointer: coarse) {
-  .selection-mode-active .dashboard-expense-row {
-    @apply pl-14;
+  .selection-mode-active #dashboard-expenses-widget tbody tr {
     min-height: 60px;
   }
   
@@ -318,22 +314,22 @@
 }
 
 /* Keyboard Navigation for Selection */
-.selection-mode-active .dashboard-expense-row:focus {
+.selection-mode-active #dashboard-expenses-widget tbody tr:focus {
   @apply ring-2 ring-teal-500 ring-offset-2;
 }
 
-.selection-mode-active .dashboard-expense-row:focus-within {
+.selection-mode-active #dashboard-expenses-widget tbody tr:focus-within {
   @apply ring-2 ring-teal-500 ring-offset-1;
 }
 
 /* Range Selection Visual Feedback */
-.selection-mode-active .dashboard-expense-row.in-range {
+.selection-mode-active #dashboard-expenses-widget tbody tr.in-range {
   @apply bg-teal-25 border-teal-200;
 }
 
 /* Accessibility - High Contrast Mode */
 @media (prefers-contrast: high) {
-  .dashboard-expense-row.selected {
+  #dashboard-expenses-widget tbody tr.selected {
     @apply border-2 border-current;
   }
   
@@ -344,7 +340,7 @@
 
 /* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
-  .dashboard-expense-row.selected,
+  #dashboard-expenses-widget tbody tr.selected,
   [data-dashboard-expenses-target="selectionContainer"],
   [data-dashboard-expenses-target="selectionToolbar"],
   [data-dashboard-expenses-target="selectedCount"] {
@@ -357,16 +353,9 @@
   @apply transition-all duration-300 ease-out;
 }
 
-.dashboard-expenses-list {
+/* Table-specific styles */
+#dashboard-expenses-widget table {
   @apply transition-all duration-200;
-}
-
-.dashboard-expenses-compact .dashboard-expenses-list {
-  @apply space-y-2;
-}
-
-.dashboard-expenses-expanded .dashboard-expenses-list {
-  @apply space-y-3;
 }
 
 /* Loading State */
@@ -385,18 +374,6 @@
   @apply text-center py-12;
 }
 
-.dashboard-expenses-empty-icon {
-  @apply mx-auto h-12 w-12 text-slate-400;
-}
-
-.dashboard-expenses-empty-title {
-  @apply mt-3 text-sm font-medium text-slate-900;
-}
-
-.dashboard-expenses-empty-text {
-  @apply mt-1 text-sm text-slate-500;
-}
-
 /* Mobile Responsive Adjustments */
 @media (max-width: 767px) {
   .dashboard-expenses-toggle button span.view-label {
@@ -407,12 +384,9 @@
     @apply px-2;
   }
   
-  .dashboard-expense-row {
-    @apply flex-col sm:flex-row items-start sm:items-center;
-  }
-  
-  .expense-merchant {
-    @apply max-w-full;
+  /* Responsive table adjustments */
+  #dashboard-expenses-widget {
+    @apply overflow-x-auto;
   }
   
   /* Force compact view on mobile */
@@ -421,12 +395,12 @@
   }
 }
 
-/* Keyboard Navigation Focus Styles */
-.dashboard-expense-row:focus {
+/* Keyboard Navigation Focus Styles for table rows */
+#dashboard-expenses-widget tbody tr:focus {
   @apply outline-none ring-2 ring-teal-500 ring-offset-2;
 }
 
-.dashboard-expense-row:focus-visible {
+#dashboard-expenses-widget tbody tr:focus-visible {
   @apply outline-none ring-2 ring-teal-500 ring-offset-2;
 }
 
@@ -545,28 +519,22 @@
    TASK 3.3: INLINE ACTIONS STYLES
    ============================================ */
 
-/* Inline Actions Container */
-.dashboard-expense-row .opacity-0 {
-  pointer-events: none;
-}
-
-.dashboard-expense-row:hover .opacity-0,
-.dashboard-expense-row:focus-within .opacity-0,
-.dashboard-expense-row .opacity-100 {
-  pointer-events: auto;
+/* Inline Actions for Dashboard Table */
+#dashboard-expenses-widget .inline-actions-container {
+  /* Inherits from main table styles */
 }
 
 /* Action Button Styles */
-.dashboard-expense-row button[data-action*="dashboard-inline-actions"] {
+#dashboard-expenses-widget button[data-action*="dashboard-inline-actions"] {
   @apply relative rounded-lg transition-all duration-150;
   @apply focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1;
 }
 
-.dashboard-expense-row button[data-action*="dashboard-inline-actions"]:hover {
+#dashboard-expenses-widget button[data-action*="dashboard-inline-actions"]:hover {
   transform: scale(1.15);
 }
 
-/* Category Dropdown */
+/* Category Dropdown - works with table structure */
 [data-dashboard-inline-actions-target="categoryDropdown"] {
   @apply absolute z-50 w-48;
   @apply bg-white rounded-lg shadow-xl border border-slate-200;
@@ -577,19 +545,19 @@
   margin-top: 0.5rem;
 }
 
-.dashboard-expense-row [data-dashboard-inline-actions-target="categoryDropdown"] .py-1 {
+#dashboard-expenses-widget [data-dashboard-inline-actions-target="categoryDropdown"] .py-1 {
   @apply max-h-64 overflow-y-auto;
   scrollbar-width: thin;
   scrollbar-color: theme('colors.slate.300') transparent;
 }
 
-.dashboard-expense-row [data-dashboard-inline-actions-target="categoryDropdown"] button {
+#dashboard-expenses-widget [data-dashboard-inline-actions-target="categoryDropdown"] button {
   @apply w-full px-3 py-2 text-left text-sm;
   @apply hover:bg-teal-50 focus:bg-teal-50 focus:outline-none;
   @apply flex items-center gap-2 transition-colors;
 }
 
-.dashboard-expense-row [data-dashboard-inline-actions-target="categoryDropdown"] button:hover .truncate {
+#dashboard-expenses-widget [data-dashboard-inline-actions-target="categoryDropdown"] button:hover .truncate {
   @apply text-teal-700 font-medium;
 }
 
@@ -609,16 +577,16 @@
   75% { transform: translateX(4px); }
 }
 
-.dashboard-expense-row [data-dashboard-inline-actions-target="deleteConfirmation"] button {
+#dashboard-expenses-widget [data-dashboard-inline-actions-target="deleteConfirmation"] button {
   @apply transition-all duration-150;
   @apply focus:outline-none focus:ring-2 focus:ring-offset-1;
 }
 
-.dashboard-expense-row [data-dashboard-inline-actions-target="deleteConfirmation"] button:first-of-type {
+#dashboard-expenses-widget [data-dashboard-inline-actions-target="deleteConfirmation"] button:first-of-type {
   @apply focus:ring-rose-500;
 }
 
-.dashboard-expense-row [data-dashboard-inline-actions-target="deleteConfirmation"] button:last-of-type {
+#dashboard-expenses-widget [data-dashboard-inline-actions-target="deleteConfirmation"] button:last-of-type {
   @apply focus:ring-slate-400;
 }
 
@@ -670,21 +638,15 @@
 /* Mobile Touch Optimizations */
 @media (hover: none) and (pointer: coarse) {
   /* Make touch targets larger on mobile */
-  .dashboard-expense-row button[data-action*="dashboard-inline-actions"] {
+  #dashboard-expenses-widget button[data-action*="dashboard-inline-actions"] {
     @apply p-2;
     min-width: 44px;
     min-height: 44px;
   }
   
-  /* Show actions on tap instead of hover */
-  .dashboard-expense-row .opacity-0 {
-    @apply opacity-100;
-    @apply bg-white/95 rounded-lg shadow-sm p-1;
-  }
-  
   /* Adjust dropdown positions for mobile */
-  .dashboard-expense-row [data-dashboard-inline-actions-target="categoryDropdown"],
-  .dashboard-expense-row [data-dashboard-inline-actions-target="deleteConfirmation"] {
+  #dashboard-expenses-widget [data-dashboard-inline-actions-target="categoryDropdown"],
+  #dashboard-expenses-widget [data-dashboard-inline-actions-target="deleteConfirmation"] {
     position: fixed;
     right: 1rem;
     top: 50%;
@@ -695,26 +657,26 @@
 }
 
 /* Keyboard Navigation Indicators */
-.dashboard-expense-row:focus-within button[data-action*="dashboard-inline-actions"]:focus {
+#dashboard-expenses-widget tbody tr:focus-within button[data-action*="dashboard-inline-actions"]:focus {
   @apply ring-2 ring-teal-500 ring-offset-2;
 }
 
 /* Status Button State Transitions */
-.dashboard-expense-row button[title*="procesado"] svg,
-.dashboard-expense-row button[title*="pendiente"] svg {
+#dashboard-expenses-widget button[title*="procesado"] svg,
+#dashboard-expenses-widget button[title*="pendiente"] svg {
   @apply transition-transform duration-200;
 }
 
-.dashboard-expense-row button[title*="procesado"]:hover svg {
+#dashboard-expenses-widget button[title*="procesado"]:hover svg {
   transform: rotate(-20deg) scale(1.1);
 }
 
-.dashboard-expense-row button[title*="pendiente"]:hover svg {
+#dashboard-expenses-widget button[title*="pendiente"]:hover svg {
   transform: rotate(20deg) scale(1.1);
 }
 
 /* Duplicate Button Animation */
-.dashboard-expense-row button[title*="Duplicar"]:hover svg {
+#dashboard-expenses-widget button[title*="Duplicar"]:hover svg {
   animation: duplicate-pulse 0.4s ease-in-out;
 }
 
@@ -724,38 +686,38 @@
 }
 
 /* Category Selection Feedback */
-.dashboard-expense-row [data-dashboard-inline-actions-target="categoryDropdown"] button:active {
+#dashboard-expenses-widget [data-dashboard-inline-actions-target="categoryDropdown"] button:active {
   @apply bg-teal-100;
   transform: scale(0.98);
 }
 
 /* Hover Intent Delay */
 @media (hover: hover) {
-  .dashboard-expense-row {
-    transition: box-shadow 0.2s ease-out 0.1s;
+  #dashboard-expenses-widget tbody tr {
+    transition: background-color 0.2s ease-out;
   }
   
-  .dashboard-expense-row .opacity-0 {
+  #dashboard-expenses-widget .opacity-0 {
     transition: opacity 0.2s ease-out 0.15s;
   }
 }
 
 /* Accessibility - High Contrast Mode Support */
 @media (prefers-contrast: high) {
-  .dashboard-expense-row button[data-action*="dashboard-inline-actions"] {
+  #dashboard-expenses-widget button[data-action*="dashboard-inline-actions"] {
     @apply border border-current;
   }
   
-  .dashboard-expense-row [data-dashboard-inline-actions-target="categoryDropdown"],
-  .dashboard-expense-row [data-dashboard-inline-actions-target="deleteConfirmation"] {
+  #dashboard-expenses-widget [data-dashboard-inline-actions-target="categoryDropdown"],
+  #dashboard-expenses-widget [data-dashboard-inline-actions-target="deleteConfirmation"] {
     @apply border-2 border-current;
   }
 }
 
 /* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
-  .dashboard-expense-row,
-  .dashboard-expense-row button[data-action*="dashboard-inline-actions"],
+  #dashboard-expenses-widget tbody tr,
+  #dashboard-expenses-widget button[data-action*="dashboard-inline-actions"],
   .inline-action-loading,
   .toast-notification > div {
     animation: none !important;
@@ -1008,5 +970,501 @@
   .btn-secondary,
   .btn-danger {
     @apply border-2 border-current;
+  }
+}
+
+/* ============================================
+   TASK 3.6: DASHBOARD FILTER CHIPS STYLES
+   ============================================ */
+
+/* Filter Chips Container */
+.dashboard-filter-chips {
+  @apply relative bg-white;
+  transition: all 0.3s ease-out;
+}
+
+/* Filter Chip Base Styles */
+.dashboard-filter-chips button[data-dashboard-filter-chips-target*="Chip"] {
+  @apply relative inline-flex items-center gap-1.5;
+  @apply px-3 py-1.5 text-sm font-medium;
+  @apply rounded-full border transition-all duration-200;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-teal-500;
+  transform-origin: center;
+}
+
+/* Inactive Chip State */
+.dashboard-filter-chips button[aria-pressed="false"] {
+  @apply bg-white text-slate-700 border-slate-300;
+  @apply hover:bg-slate-50 hover:border-slate-400;
+  @apply hover:shadow-sm;
+}
+
+.dashboard-filter-chips button[aria-pressed="false"]:hover {
+  transform: translateY(-1px) scale(1.02);
+}
+
+/* Active Chip State */
+.dashboard-filter-chips button[aria-pressed="true"] {
+  @apply bg-teal-700 text-white border-teal-700;
+  @apply hover:bg-teal-800 hover:border-teal-800;
+  @apply shadow-md;
+  animation: chipActivate 0.2s ease-out;
+}
+
+.dashboard-filter-chips button[aria-pressed="true"]:hover {
+  transform: translateY(-1px) scale(1.05);
+}
+
+/* Category Chip Color Indicator */
+.dashboard-filter-chips button[data-dashboard-filter-chips-target*="categoryChip"] .w-2 {
+  transition: transform 0.2s ease-out;
+}
+
+.dashboard-filter-chips button[data-dashboard-filter-chips-target*="categoryChip"][aria-pressed="true"] .w-2 {
+  transform: scale(1.3);
+  @apply ring-2 ring-white ring-offset-1;
+}
+
+/* Status Chip Icons */
+.dashboard-filter-chips button[data-dashboard-filter-chips-target*="statusChip"] svg {
+  transition: all 0.2s ease-out;
+}
+
+.dashboard-filter-chips button[data-dashboard-filter-chips-target*="statusChip"][aria-pressed="true"] svg {
+  transform: scale(1.2);
+}
+
+/* Period Chip Calendar Icon */
+.dashboard-filter-chips button[data-dashboard-filter-chips-target*="periodChip"] svg {
+  transition: all 0.2s ease-out;
+}
+
+.dashboard-filter-chips button[data-dashboard-filter-chips-target*="periodChip"][aria-pressed="true"] svg {
+  @apply text-white;
+  transform: rotate(-5deg) scale(1.1);
+}
+
+/* Clear All Button */
+.dashboard-filter-chips button[data-dashboard-filter-chips-target="clearButton"] {
+  @apply relative inline-flex items-center gap-1.5;
+  @apply px-3 py-1.5 text-sm font-medium;
+  @apply text-rose-600 hover:text-rose-700;
+  @apply transition-all duration-200;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-rose-500;
+}
+
+.dashboard-filter-chips button[data-dashboard-filter-chips-target="clearButton"]:hover {
+  transform: scale(1.05);
+}
+
+.dashboard-filter-chips button[data-dashboard-filter-chips-target="clearButton"]:hover svg {
+  animation: rotateX 0.3s ease-in-out;
+}
+
+/* Filter Count Badge */
+.dashboard-filter-chips [data-dashboard-filter-chips-target="filterCount"] {
+  animation: countBounce 0.3s ease-out;
+}
+
+/* Loading State */
+.dashboard-filter-chips button.opacity-50 {
+  @apply cursor-wait;
+  animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Filter Chip Loading Indicator */
+.dashboard-filter-chips [data-dashboard-filter-chips-target="loadingIndicator"] {
+  @apply pointer-events-none;
+}
+
+/* Active Filters Summary */
+#active-filters-summary {
+  @apply px-2 py-1 bg-teal-50 rounded-lg inline-flex items-center gap-2;
+  @apply text-xs text-slate-600;
+  animation: fadeIn 0.3s ease-out;
+}
+
+#active-filters-text {
+  @apply font-medium text-teal-700;
+}
+
+/* Chip Animations */
+@keyframes chipActivate {
+  0% {
+    transform: scale(1);
+    background-color: theme('colors.white');
+  }
+  50% {
+    transform: scale(1.08);
+    background-color: theme('colors.teal.600');
+  }
+  100% {
+    transform: scale(1);
+    background-color: theme('colors.teal.700');
+  }
+}
+
+@keyframes rotateX {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(180deg);
+  }
+}
+
+@keyframes countBounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.3);
+  }
+  75% {
+    transform: scale(0.9);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Mobile Responsive Filter Chips */
+@media (max-width: 640px) {
+  .dashboard-filter-chips {
+    @apply px-3 py-3;
+  }
+  
+  .dashboard-filter-chips .space-y-3 {
+    @apply space-y-2;
+  }
+  
+  .dashboard-filter-chips button[data-dashboard-filter-chips-target*="Chip"] {
+    @apply px-2.5 py-1 text-xs;
+    min-height: 32px;
+  }
+  
+  .dashboard-filter-chips .text-xs.uppercase {
+    @apply hidden;
+  }
+  
+  .dashboard-filter-chips .flex-wrap {
+    @apply gap-1.5;
+  }
+  
+  /* Stack filter rows on mobile */
+  .dashboard-filter-chips > div > div:nth-child(2) {
+    @apply flex-col items-start;
+  }
+  
+  /* Clear button always visible on mobile when filters active */
+  .dashboard-filter-chips button[data-dashboard-filter-chips-target="clearButton"].flex {
+    @apply mt-2 w-full justify-center;
+  }
+}
+
+/* Touch-friendly Filter Chips */
+@media (hover: none) and (pointer: coarse) {
+  .dashboard-filter-chips button[data-dashboard-filter-chips-target*="Chip"] {
+    min-height: 40px;
+    @apply px-3 py-2;
+  }
+  
+  .dashboard-filter-chips button[data-dashboard-filter-chips-target="clearButton"] {
+    min-height: 40px;
+    @apply px-4 py-2;
+  }
+}
+
+/* Keyboard Navigation for Filter Chips */
+.dashboard-filter-chips button:focus-visible {
+  @apply ring-2 ring-teal-500 ring-offset-2;
+  @apply outline-none;
+  z-index: 10;
+}
+
+/* Accessibility - High Contrast Mode */
+@media (prefers-contrast: high) {
+  .dashboard-filter-chips button[data-dashboard-filter-chips-target*="Chip"] {
+    @apply border-2;
+  }
+  
+  .dashboard-filter-chips button[aria-pressed="true"] {
+    @apply border-current;
+  }
+  
+  .dashboard-filter-chips [data-dashboard-filter-chips-target="filterCount"] {
+    @apply border border-current;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-filter-chips button[data-dashboard-filter-chips-target*="Chip"],
+  .dashboard-filter-chips button[data-dashboard-filter-chips-target*="Chip"] svg,
+  .dashboard-filter-chips [data-dashboard-filter-chips-target="filterCount"],
+  #active-filters-summary {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  .dashboard-filter-chips button[aria-pressed="true"] {
+    transform: none !important;
+  }
+}
+
+/* Filter Chips Performance Optimization */
+.dashboard-filter-chips {
+  contain: layout style;
+  will-change: auto;
+}
+
+.dashboard-filter-chips button[data-dashboard-filter-chips-target*="Chip"] {
+  contain: layout style paint;
+  will-change: transform, background-color;
+}
+
+/* Smooth Expense List Transitions */
+.dashboard-expenses-container[data-dashboard-filter-chips-target="expenseContainer"] {
+  transition: opacity 0.2s ease-out;
+}
+
+.dashboard-expenses-container.filtering {
+  @apply opacity-50 pointer-events-none;
+}
+
+/* Filter Loading Overlay */
+.dashboard-filter-chips .absolute.z-10 {
+  backdrop-filter: blur(2px);
+}
+
+/* ============================================
+   TASK 3.8: FILTER PERSISTENCE STYLES
+   ============================================ */
+
+/* Filter Persistence Indicator */
+.filter-persistence-indicator {
+  @apply inline-flex items-center px-2 py-1 bg-teal-50 text-teal-700 text-xs rounded-full;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Filter Persistence Notification */
+.filter-persistence-notification {
+  @apply p-3 rounded-lg border;
+  animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Share Filter Tooltip */
+.filter-share-tooltip {
+  @apply absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2;
+  @apply px-3 py-2 bg-slate-900 text-white text-xs rounded-lg;
+  @apply opacity-0 invisible transition-all duration-200;
+  @apply pointer-events-none z-50;
+}
+
+.filter-share-tooltip::after {
+  content: '';
+  @apply absolute top-full left-1/2 transform -translate-x-1/2;
+  @apply border-4 border-transparent border-t-slate-900;
+}
+
+.filter-share-button:hover .filter-share-tooltip,
+.filter-share-button:focus .filter-share-tooltip {
+  @apply opacity-100 visible;
+}
+
+/* Filter State Badges */
+.filter-state-badge {
+  @apply inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full;
+  @apply bg-teal-100 text-teal-800 border border-teal-200;
+}
+
+.filter-state-badge.restored {
+  @apply bg-emerald-100 text-emerald-800 border-emerald-200;
+  animation: badgeFadeIn 0.5s ease-out;
+}
+
+.filter-state-badge.synced {
+  @apply bg-amber-100 text-amber-800 border-amber-200;
+  animation: badgeFadeIn 0.5s ease-out;
+}
+
+@keyframes badgeFadeIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Persistence Status Animations */
+.persistence-saving {
+  @apply relative;
+}
+
+.persistence-saving::after {
+  content: '';
+  @apply absolute inset-0 bg-teal-500 opacity-10 rounded;
+  animation: savePulse 0.5s ease-out;
+}
+
+@keyframes savePulse {
+  from {
+    opacity: 0.3;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+/* Cross-Tab Sync Notification */
+.cross-tab-sync-notification {
+  @apply fixed bottom-4 right-4 p-3 bg-slate-50 border border-slate-200 rounded-lg shadow-lg z-50;
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+/* Filter Restored Indicator */
+.filter-restored-indicator {
+  @apply inline-flex items-center px-2 py-1 bg-teal-50 text-teal-700 text-xs rounded-full ml-2;
+  animation: indicatorPulse 0.5s ease-out;
+}
+
+@keyframes indicatorPulse {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Scroll Position Restored Indicator */
+.scroll-restored-indicator {
+  @apply fixed bottom-4 left-4 px-3 py-2 bg-teal-50 text-teal-700 text-sm rounded-lg shadow-md z-40;
+  animation: slideInFromLeft 0.3s ease-out;
+}
+
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Smart Suggestions */
+.smart-suggestions-notification {
+  @apply mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg;
+  animation: slideInDown 0.3s ease-out;
+}
+
+/* Filter Persistence Actions */
+.filter-persistence-actions {
+  @apply flex items-center gap-2;
+}
+
+.filter-persistence-actions button {
+  @apply p-1.5 text-slate-400 hover:text-teal-600 transition-colors;
+  @apply focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1;
+}
+
+.filter-persistence-actions button:hover {
+  transform: scale(1.1);
+}
+
+/* URL State Indicator */
+.url-state-indicator {
+  @apply absolute top-0 right-0 w-2 h-2 bg-teal-500 rounded-full;
+  animation: urlStatePulse 2s ease-in-out infinite;
+}
+
+@keyframes urlStatePulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.4;
+  }
+}
+
+/* Mobile Responsive Persistence UI */
+@media (max-width: 640px) {
+  .filter-persistence-notification {
+    @apply mx-2 text-sm;
+  }
+  
+  .filter-persistence-actions {
+    @apply fixed bottom-4 right-4 bg-white rounded-full shadow-lg p-2;
+    @apply border border-slate-200;
+  }
+  
+  .smart-suggestions-notification {
+    @apply mx-2 text-sm;
+  }
+}
+
+/* Accessibility - High Contrast Mode */
+@media (prefers-contrast: high) {
+  .filter-persistence-indicator,
+  .filter-state-badge,
+  .filter-persistence-notification {
+    @apply border-2 border-current;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .filter-persistence-indicator,
+  .filter-state-badge,
+  .filter-restored-indicator,
+  .scroll-restored-indicator,
+  .persistence-saving::after {
+    animation: none !important;
+  }
+  
+  .filter-persistence-notification,
+  .smart-suggestions-notification {
+    animation: none !important;
+    transition: none !important;
   }
 }

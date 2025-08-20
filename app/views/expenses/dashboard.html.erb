@@ -448,8 +448,24 @@
   </div>
 </div>
 
-<!-- Enhanced Recent Expenses Widget with Filtering (Epic 3 Task 3.2) -->
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 dashboard-expenses-<%= @expense_view_mode || 'compact' %>" id="dashboard-expenses-widget" data-controller="dashboard-expenses" data-dashboard-expenses-view-mode-value="<%= @expense_view_mode || 'compact' %>" data-environment="<%= Rails.env %>">
+<!-- Enhanced Recent Expenses Widget with Virtual Scrolling (Epic 3 Task 3.7) -->
+<% use_virtual_scroll = @recent_expenses.size > 50 || params[:enable_virtual] == "true" %>
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 dashboard-expenses-<%= @expense_view_mode || 'compact' %>" 
+     id="dashboard-expenses-widget" 
+     data-controller="dashboard-expenses <%= use_virtual_scroll ? 'dashboard-virtual-scroll' : '' %> dashboard-filter-persistence" 
+     data-dashboard-expenses-view-mode-value="<%= @expense_view_mode || 'compact' %>" 
+     data-dashboard-virtual-scroll-total-items-value="<%= @expense_filter_result&.total_count || 0 %>"
+     data-dashboard-virtual-scroll-view-mode-value="<%= @expense_view_mode || 'compact' %>"
+     data-dashboard-virtual-scroll-has-more-value="<%= @expense_filter_result&.metadata&.dig(:has_more) || false %>"
+     data-dashboard-filter-persistence-auto-restore-value="true"
+     data-dashboard-filter-persistence-show-notifications-value="true"
+     data-dashboard-filter-persistence-sync-across-tabs-value="true"
+     data-environment="<%= Rails.env %>">
+
+  <!-- Filter Persistence Notification Area (Task 3.8) -->
+  <div data-dashboard-filter-persistence-target="restoreNotification" 
+       class="hidden mb-4"
+       style="display: none;"></div>
 
   <!-- Header with Actions -->
   <div class="px-6 py-4 border-b border-slate-200">
@@ -588,9 +604,207 @@
     </div>
   </div>
 
+  <!-- Task 3.6: Dashboard Filter Chips -->
+  <div class="dashboard-filter-chips border-b border-slate-200" 
+       data-controller="dashboard-filter-chips"
+       data-dashboard-filter-chips-dashboard-url-value="/expenses/dashboard">
+    
+    <div class="p-4 space-y-3">
+      <!-- Loading Indicator -->
+      <div class="hidden absolute inset-0 bg-white bg-opacity-75 z-10 flex items-center justify-center" data-dashboard-filter-chips-target="loadingIndicator">
+        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-700"></div>
+      </div>
+
+      <!-- Category Filters -->
+      <% if @expense_filter_result&.quick_filters&.dig(:categories)&.any? %>
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Categorías:</span>
+        <% @expense_filter_result.quick_filters[:categories].each do |category| %>
+        <button type="button"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full border transition-all duration-200 bg-white text-slate-700 border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-teal-500"
+                data-dashboard-filter-chips-target="chip categoryChip"
+                data-category-id="<%= category[:id] %>"
+                data-action="click->dashboard-filter-chips#toggleCategory"
+                aria-pressed="false"
+                role="button"
+                tabindex="0">
+          <span class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: <%= category[:color] %>"></span>
+          <span><%= category[:name] %></span>
+          <span class="text-xs text-slate-500">(<%= category[:count] %>)</span>
+        </button>
+        <% end %>
+      </div>
+      <% end %>
+
+      <!-- Status & Period Filters Row -->
+      <div class="flex flex-wrap items-center gap-4">
+        <!-- Status Filters -->
+        <% if @expense_filter_result&.quick_filters&.dig(:statuses)&.any? %>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Estado:</span>
+          <% @expense_filter_result.quick_filters[:statuses].each do |status| %>
+          <button type="button"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full border transition-all duration-200 bg-white text-slate-700 border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-teal-500"
+                  data-dashboard-filter-chips-target="chip statusChip"
+                  data-status="<%= status[:status] %>"
+                  data-action="click->dashboard-filter-chips#toggleStatus"
+                  aria-pressed="false"
+                  role="button"
+                  tabindex="0">
+            <% if status[:status] == 'pending' %>
+            <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <% else %>
+            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <% end %>
+            <span><%= status[:label] %></span>
+            <span class="text-xs text-slate-500">(<%= status[:count] %>)</span>
+          </button>
+          <% end %>
+        </div>
+        <% end %>
+
+        <!-- Period Filters -->
+        <% if @expense_filter_result&.quick_filters&.dig(:recent_periods)&.any? %>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Período:</span>
+          <% @expense_filter_result.quick_filters[:recent_periods].each do |period| %>
+          <button type="button"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full border transition-all duration-200 bg-white text-slate-700 border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-teal-500"
+                  data-dashboard-filter-chips-target="chip periodChip"
+                  data-period="<%= period[:period] %>"
+                  data-action="click->dashboard-filter-chips#selectPeriod"
+                  aria-pressed="false"
+                  role="button"
+                  tabindex="0">
+            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <span><%= period[:label] %></span>
+            <span class="text-xs text-slate-500">(<%= period[:count] %>)</span>
+          </button>
+          <% end %>
+        </div>
+        <% end %>
+
+        <!-- Clear All Button -->
+        <button type="button"
+                class="hidden items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-rose-600 hover:text-rose-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-rose-500"
+                data-dashboard-filter-chips-target="clearButton"
+                data-action="click->dashboard-filter-chips#clearAllFilters"
+                title="Limpiar todos los filtros (Esc)">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+          <span>Limpiar filtros</span>
+          <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-rose-600 rounded-full hidden" data-dashboard-filter-chips-target="filterCount">0</span>
+        </button>
+        
+        <!-- Filter Persistence Actions (Task 3.8) -->
+        <div class="flex items-center gap-2">
+          <!-- Share Filters Button -->
+          <button type="button"
+                  class="p-1.5 text-slate-400 hover:text-teal-600 transition-colors"
+                  data-dashboard-filter-persistence-target="shareButton"
+                  data-action="click->dashboard-filter-persistence#shareFilters"
+                  title="Compartir filtros">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a3 3 0 10-2.684-2.684m0 0a3 3 0 00-2.684 2.684M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </button>
+          
+          <!-- Reset Filters Button -->
+          <button type="button"
+                  class="p-1.5 text-slate-400 hover:text-rose-600 transition-colors"
+                  data-dashboard-filter-persistence-target="resetButton"
+                  data-action="click->dashboard-filter-persistence#resetFilters"
+                  title="Restablecer filtros y preferencias">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+          </button>
+          
+          <!-- Persistence Indicator -->
+          <div data-dashboard-filter-persistence-target="persistenceIndicator" 
+               class="hidden text-xs text-teal-600"
+               style="display: none;"></div>
+        </div>
+      </div>
+
+      <!-- Active Filters Summary (shown when filters are applied) -->
+      <div class="hidden text-xs text-slate-600" id="active-filters-summary">
+        <span class="font-medium">Filtros activos:</span>
+        <span id="active-filters-text"></span>
+      </div>
+      
+      <!-- Filter State Indicator (Task 3.8) -->
+      <div class="filter-chips-container" data-filter-chips-container></div>
+    </div>
+  </div>
+
   <!-- Expense List Container -->
-  <div class="dashboard-expenses-container p-6" data-dashboard-expenses-target="container">
-    <% if @recent_expenses.any? %>
+  <div class="dashboard-expenses-container <%= use_virtual_scroll ? 'virtual-scroll-container' : '' %> p-6" 
+       data-dashboard-expenses-target="container" 
+       data-dashboard-filter-chips-target="expenseContainer"
+       <%= use_virtual_scroll ? 'data-dashboard-virtual-scroll-target="viewport"' : '' %>>
+    
+    <% if use_virtual_scroll %>
+      <!-- Virtual Scroll Structure -->
+      <div class="virtual-scroll-viewport" data-dashboard-virtual-scroll-target="viewport">
+        <div class="virtual-scroll-content" data-dashboard-virtual-scroll-target="scrollContent">
+          <div class="virtual-scroll-items" data-dashboard-virtual-scroll-target="itemContainer">
+            <!-- Items will be rendered here by virtual scroll controller -->
+          </div>
+        </div>
+        
+        <!-- Loading indicators -->
+        <div class="virtual-scroll-loading virtual-scroll-loading-top hidden" data-dashboard-virtual-scroll-target="loadingTop">
+          <svg class="virtual-scroll-spinner" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+        
+        <div class="virtual-scroll-loading virtual-scroll-loading-bottom hidden" data-dashboard-virtual-scroll-target="loadingBottom">
+          <svg class="virtual-scroll-spinner" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+      </div>
+      
+      <!-- Scroll position indicator -->
+      <div class="virtual-scroll-position" data-dashboard-virtual-scroll-target="scrollPosition">
+        <span data-dashboard-virtual-scroll-target="scrollPositionText">0%</span>
+      </div>
+      
+      <!-- Visual scroll indicator -->
+      <div class="virtual-scroll-indicator">
+        <div class="indicator" style="height: 0%"></div>
+      </div>
+      
+      <!-- Performance stats (development only) -->
+      <% if Rails.env.development? %>
+      <div class="virtual-scroll-stats">
+        <div class="stat">
+          <span class="stat-label">Rendered:</span>
+          <span class="stat-value" data-dashboard-virtual-scroll-target="renderedCount">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Total:</span>
+          <span class="stat-value" data-dashboard-virtual-scroll-target="totalCount"><%= @expense_filter_result&.total_count || 0 %></span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">FPS:</span>
+          <span class="stat-value" data-dashboard-virtual-scroll-target="fps">60</span>
+        </div>
+      </div>
+      <% end %>
+      
+    <% elsif @recent_expenses.any? %>
     <div class="dashboard-expenses-list" data-dashboard-expenses-target="list">
       <% @recent_expenses.each_with_index do |expense, index| %>
       <!-- Expense Row (Task 3.2: View Toggle Support + Task 3.3: Inline Actions) -->
@@ -661,7 +875,7 @@
           </div>
 
           <!-- Inline Quick Actions (Task 3.3: Dashboard Inline Actions) -->
-          <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 inline-quick-actions">
+          <div class="inline-quick-actions" data-dashboard-expenses-target="quickActions">
             <div class="flex items-center space-x-1">
               <!-- Quick Categorize -->
               <div class="relative">
@@ -742,22 +956,14 @@
       <% end %>
     </div>
 
-    <!-- Pagination (if more than page size) -->
-    <% if @expense_filter_result && @expense_filter_result.metadata[:has_more] %>
-    <div class="mt-4 flex justify-center">
-      <button type="button" class="px-4 py-2 text-sm font-medium text-teal-700 bg-white border border-teal-300 rounded-lg hover:bg-teal-50 transition-colors" data-action="click->dashboard-expenses#loadMore">
-        Cargar más gastos
-      </button>
-    </div>
-    <% end %>
     <% else %>
     <!-- Empty State -->
-    <div class="dashboard-expenses-empty">
-      <svg class="dashboard-expenses-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="dashboard-expenses-empty p-6">
+      <svg class="dashboard-expenses-empty-icon mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
       </svg>
-      <h3 class="dashboard-expenses-empty-title">No hay gastos</h3>
-      <p class="dashboard-expenses-empty-text">
+      <h3 class="dashboard-expenses-empty-title mt-3 text-sm font-medium text-slate-900">No hay gastos</h3>
+      <p class="dashboard-expenses-empty-text mt-1 text-sm text-slate-500">
         <% if @expense_filter_result && @expense_filter_result.metadata[:filters_applied] > 0 %>
         No se encontraron gastos con los filtros aplicados.
         <% else %>
@@ -767,6 +973,15 @@
     </div>
     <% end %>
   </div>
+
+  <!-- Pagination (if more than page size) -->
+  <% if @recent_expenses.any? && @expense_filter_result && @expense_filter_result.metadata[:has_more] %>
+  <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 text-center">
+    <button type="button" class="px-4 py-2 text-sm font-medium text-teal-700 bg-white border border-teal-300 rounded-lg hover:bg-teal-50 transition-colors" data-action="click->dashboard-expenses#loadMore">
+      Cargar más gastos
+    </button>
+  </div>
+  <% end %>
 
   <!-- Summary Stats (if available) -->
   <% if @expense_summary_stats %>

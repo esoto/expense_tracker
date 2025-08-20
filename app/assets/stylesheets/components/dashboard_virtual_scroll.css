@@ -1,0 +1,382 @@
+/* Dashboard Virtual Scroll Styles - Epic 3 Task 3.7 */
+/* High-performance virtual scrolling for large expense datasets */
+
+/* Virtual Scroll Container */
+.virtual-scroll-container {
+  @apply relative overflow-hidden;
+  height: 600px; /* Default height, adjustable */
+  contain: layout style paint;
+  will-change: auto;
+}
+
+/* Virtual Viewport */
+.virtual-scroll-viewport {
+  @apply relative h-full overflow-y-auto overflow-x-hidden;
+  /* Smooth scrolling with momentum on touch devices */
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  /* Prevent rubber-banding on iOS */
+  overscroll-behavior-y: contain;
+}
+
+/* Scroll Content (creates scrollable height) */
+.virtual-scroll-content {
+  @apply relative;
+  pointer-events: none;
+  min-height: 100%;
+}
+
+/* Item Container (holds rendered items) */
+.virtual-scroll-items {
+  @apply absolute inset-0;
+  pointer-events: auto;
+}
+
+/* Virtual Expense Item */
+.virtual-expense-item {
+  @apply absolute w-full;
+  contain: layout style;
+  will-change: transform;
+  transition: none; /* Disable transitions for performance */
+}
+
+/* Optimize rendering performance */
+.virtual-expense-item[data-virtual="true"] {
+  /* Use GPU acceleration */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Loading Indicators */
+.virtual-scroll-loading {
+  @apply absolute left-0 right-0 z-10;
+  @apply flex items-center justify-center py-4;
+  @apply bg-white bg-opacity-90 backdrop-blur-sm;
+}
+
+.virtual-scroll-loading-top {
+  @apply top-0 border-b border-slate-200;
+}
+
+.virtual-scroll-loading-bottom {
+  @apply bottom-0 border-t border-slate-200;
+}
+
+.virtual-scroll-spinner {
+  @apply animate-spin h-5 w-5 text-teal-700;
+}
+
+/* Scroll Position Indicator */
+.virtual-scroll-position {
+  @apply fixed right-4 bottom-20 z-50;
+  @apply bg-white rounded-full shadow-lg border border-slate-200;
+  @apply px-3 py-2 text-xs font-medium text-slate-700;
+  @apply opacity-0 transition-opacity duration-200;
+  pointer-events: none;
+}
+
+.virtual-scroll-viewport:hover ~ .virtual-scroll-position,
+.virtual-scroll-viewport:focus ~ .virtual-scroll-position {
+  @apply opacity-100;
+}
+
+/* Visual Scroll Bar Indicator */
+.virtual-scroll-indicator {
+  @apply fixed right-2 top-1/2 -translate-y-1/2 z-40;
+  @apply w-1 h-32 bg-slate-200 rounded-full overflow-hidden;
+  @apply opacity-0 transition-opacity duration-200;
+  pointer-events: none;
+}
+
+.virtual-scroll-viewport:hover ~ .virtual-scroll-indicator,
+.virtual-scroll-viewport:focus ~ .virtual-scroll-indicator {
+  @apply opacity-50;
+}
+
+.virtual-scroll-indicator .indicator {
+  @apply absolute bottom-0 left-0 right-0;
+  @apply bg-teal-700 rounded-full;
+  transition: height 0.1s ease-out;
+}
+
+/* Sentinels for infinite loading */
+.virtual-scroll-sentinel {
+  @apply absolute left-0 right-0 h-px;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.virtual-scroll-sentinel.top {
+  @apply top-0;
+}
+
+.virtual-scroll-sentinel.bottom {
+  @apply bottom-0;
+}
+
+/* Expense Row Styles in Virtual Scroll */
+.virtual-expense-item .dashboard-expense-row {
+  @apply relative flex items-center;
+  @apply px-4 py-3 sm:px-6 sm:py-4;
+  @apply bg-white hover:bg-slate-50;
+  @apply border-b border-slate-100;
+  @apply transition-colors duration-150;
+  @apply cursor-pointer;
+  min-height: 72px; /* Compact view height */
+}
+
+/* Expanded View Adjustments */
+.virtual-scroll-container[data-view-mode="expanded"] .virtual-expense-item .dashboard-expense-row {
+  min-height: 96px; /* Expanded view height */
+  @apply py-4 sm:py-5;
+}
+
+/* Performance Optimizations for Large Lists */
+.virtual-expense-item .expense-category-badge {
+  /* Disable animations for better performance */
+  animation: none !important;
+  transition: none !important;
+}
+
+.virtual-expense-item .inline-quick-actions {
+  /* Simplify hover effects for performance */
+  transition: opacity 0.15s ease-out;
+}
+
+/* Memory-efficient placeholder styles */
+.virtual-expense-placeholder {
+  @apply absolute w-full;
+  @apply bg-slate-50 animate-pulse;
+  contain: strict;
+}
+
+.virtual-expense-placeholder .placeholder-content {
+  @apply flex items-center px-6 py-4 space-x-4;
+}
+
+.virtual-expense-placeholder .placeholder-badge {
+  @apply w-8 h-8 bg-slate-200 rounded-full;
+}
+
+.virtual-expense-placeholder .placeholder-text {
+  @apply flex-1 space-y-2;
+}
+
+.virtual-expense-placeholder .placeholder-line {
+  @apply h-3 bg-slate-200 rounded;
+}
+
+.virtual-expense-placeholder .placeholder-line.short {
+  @apply w-2/3;
+}
+
+.virtual-expense-placeholder .placeholder-amount {
+  @apply w-20 h-4 bg-slate-200 rounded;
+}
+
+/* Error State */
+.virtual-scroll-error {
+  @apply flex flex-col items-center justify-center py-8;
+  @apply text-center;
+}
+
+.virtual-scroll-error-icon {
+  @apply w-12 h-12 text-rose-400 mb-3;
+}
+
+.virtual-scroll-error-title {
+  @apply text-sm font-medium text-slate-900 mb-1;
+}
+
+.virtual-scroll-error-message {
+  @apply text-xs text-slate-600 mb-4;
+}
+
+.virtual-scroll-error-retry {
+  @apply px-3 py-1.5 text-xs font-medium;
+  @apply bg-white border border-slate-300 rounded-lg;
+  @apply hover:bg-slate-50 transition-colors;
+}
+
+/* Empty State */
+.virtual-scroll-empty {
+  @apply flex flex-col items-center justify-center py-12;
+  @apply text-center;
+}
+
+.virtual-scroll-empty-icon {
+  @apply w-12 h-12 text-slate-400 mb-3;
+}
+
+.virtual-scroll-empty-title {
+  @apply text-sm font-medium text-slate-900 mb-1;
+}
+
+.virtual-scroll-empty-message {
+  @apply text-xs text-slate-600;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 640px) {
+  .virtual-scroll-container {
+    height: calc(100vh - 200px); /* Adjust for mobile viewport */
+  }
+  
+  .virtual-expense-item .dashboard-expense-row {
+    @apply px-3 py-2;
+    min-height: 64px; /* Smaller on mobile */
+  }
+  
+  .virtual-scroll-container[data-view-mode="expanded"] .virtual-expense-item .dashboard-expense-row {
+    min-height: 88px;
+  }
+  
+  /* Hide position indicator on mobile */
+  .virtual-scroll-position,
+  .virtual-scroll-indicator {
+    @apply hidden;
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .virtual-expense-item .dashboard-expense-row {
+    /* Larger touch targets */
+    min-height: 76px;
+  }
+  
+  /* Disable hover effects on touch */
+  .virtual-expense-item .dashboard-expense-row:hover {
+    @apply bg-white;
+  }
+  
+  /* Show actions immediately on touch devices */
+  .virtual-expense-item .inline-quick-actions {
+    @apply opacity-100;
+  }
+}
+
+/* Performance Monitoring (Development Only) */
+.virtual-scroll-stats {
+  @apply fixed bottom-4 left-4 z-50;
+  @apply bg-black bg-opacity-75 text-white text-xs font-mono;
+  @apply px-3 py-2 rounded-lg;
+  @apply space-y-1;
+}
+
+.virtual-scroll-stats .stat {
+  @apply flex justify-between space-x-4;
+}
+
+.virtual-scroll-stats .stat-label {
+  @apply text-slate-300;
+}
+
+.virtual-scroll-stats .stat-value {
+  @apply text-emerald-400 font-bold;
+}
+
+/* Accessibility */
+.virtual-scroll-viewport:focus {
+  @apply outline-none ring-2 ring-teal-500 ring-offset-2;
+}
+
+.virtual-expense-item:focus-within {
+  @apply ring-2 ring-teal-500 ring-offset-1;
+}
+
+/* Screen Reader Support */
+.virtual-scroll-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .virtual-expense-item .dashboard-expense-row {
+    @apply border-2 border-slate-300;
+  }
+  
+  .virtual-expense-item .dashboard-expense-row:hover {
+    @apply border-slate-900;
+  }
+  
+  .virtual-scroll-loading {
+    @apply border-2 border-current;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .virtual-scroll-viewport {
+    scroll-behavior: auto;
+  }
+  
+  .virtual-expense-item,
+  .virtual-scroll-loading,
+  .virtual-scroll-position,
+  .virtual-scroll-indicator {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  .virtual-scroll-spinner {
+    animation: none !important;
+    @apply opacity-50;
+  }
+}
+
+/* Dark Mode Support (Future Enhancement) */
+@media (prefers-color-scheme: dark) {
+  .virtual-scroll-container {
+    @apply bg-slate-900;
+  }
+  
+  .virtual-expense-item .dashboard-expense-row {
+    @apply bg-slate-800 hover:bg-slate-700;
+    @apply text-slate-100 border-slate-700;
+  }
+  
+  .virtual-scroll-loading {
+    @apply bg-slate-800 bg-opacity-90;
+  }
+  
+  .virtual-scroll-position {
+    @apply bg-slate-800 text-slate-100 border-slate-700;
+  }
+}
+
+/* Performance CSS Containment */
+.virtual-scroll-container {
+  contain: layout style paint;
+}
+
+.virtual-scroll-viewport {
+  contain: layout style;
+}
+
+.virtual-expense-item {
+  contain: layout style paint;
+}
+
+/* GPU Acceleration Hints */
+.virtual-scroll-viewport,
+.virtual-expense-item {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Prevent Layout Shifts */
+.virtual-expense-item img,
+.virtual-expense-item svg {
+  @apply max-w-full h-auto;
+  contain: layout style;
+}

@@ -41,7 +41,7 @@ end
 
 # Execute with proper exit code
 system(cmd)
-exit_code = $?.exitstatus
+exit_code = $?.exitstatus || 1
 
 if exit_code == 0
   puts

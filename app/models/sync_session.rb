@@ -170,7 +170,7 @@ class SyncSession < ApplicationRecord
   private
 
   def generate_session_token
-    self.session_token = SecureRandom.urlsafe_base64(32)
+    self.session_token ||= SecureRandom.urlsafe_base64(32)
   end
 
   def track_status_changes

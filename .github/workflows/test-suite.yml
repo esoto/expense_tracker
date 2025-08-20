@@ -35,7 +35,7 @@ jobs:
           - 5432:5432
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -95,7 +95,7 @@ jobs:
           - 6379:6379
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -147,7 +147,7 @@ jobs:
           - 5432:5432
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -215,7 +215,7 @@ jobs:
           - 5432:5432
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
@@ -276,7 +276,7 @@ jobs:
     if: always()
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1

@@ -997,7 +997,7 @@ export default class extends Controller {
                   ¿Estás seguro de que quieres eliminar <strong>${count} ${count === 1 ? 'gasto' : 'gastos'}</strong>?
                 </p>
                 <p class="mt-2 text-sm text-slate-600">
-                  Esta acción no se puede deshacer. Los gastos eliminados no se podrán recuperar.
+                  Los gastos se eliminarán pero podrás deshacer esta acción durante los próximos 30 segundos.
                 </p>
               </div>
             </div>
@@ -1054,9 +1054,19 @@ export default class extends Controller {
       console.log("Bulk delete response:", data)
       if (data.success) {
         this.closeBulkModal()
-        const message = data.message || `${data.affected_count || this.selectedIdsValue.length} gastos eliminados exitosamente`
-        console.log("Showing toast with message:", message)
-        this.showToast(message, "success")
+        
+        // Show undo notification if undo_id is provided
+        if (data.undo_id) {
+          this.showUndoNotification(
+            data.undo_id,
+            data.message || `${data.affected_count || this.selectedIdsValue.length} gastos eliminados`,
+            data.undo_time_remaining || 30
+          )
+        } else {
+          const message = data.message || `${data.affected_count || this.selectedIdsValue.length} gastos eliminados exitosamente`
+          console.log("Showing toast with message:", message)
+          this.showToast(message, "success")
+        }
         
         // Remove deleted rows from DOM
         this.selectedIdsValue.forEach(id => {
@@ -1667,6 +1677,57 @@ export default class extends Controller {
     this.ariaLiveRegion.style.border = "0"
     // Append to widget element instead of body
     this.element.appendChild(this.ariaLiveRegion)
+  }
+  
+  // Show undo notification
+  showUndoNotification(undoId, message, timeRemaining) {
+    // Create undo notification element
+    const notificationHtml = `
+      <div class="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 
+                  bg-white rounded-lg shadow-xl border border-slate-200 p-4 
+                  transform transition-all duration-300 slide-in-bottom"
+           data-controller="undo-manager"
+           data-undo-manager-undo-id-value="${undoId}"
+           data-undo-manager-time-remaining-value="${timeRemaining}">
+        <div class="flex items-start justify-between">
+          <div class="flex items-start space-x-3 flex-1">
+            <div class="flex-shrink-0">
+              <svg class="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-slate-900" data-undo-manager-target="message">
+                ${message}
+              </p>
+              <p class="text-xs text-slate-600 mt-1">
+                Tiempo restante: <span class="font-medium" data-undo-manager-target="timer">${timeRemaining}s</span>
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2 ml-4">
+            <button type="button"
+                    class="px-3 py-1.5 text-sm font-medium text-white bg-teal-700 rounded-lg hover:bg-teal-800 transition-colors"
+                    data-undo-manager-target="undoButton"
+                    data-action="click->undo-manager#undo">
+              Deshacer
+            </button>
+            <button type="button"
+                    class="p-1 text-slate-400 hover:text-slate-600 transition-colors"
+                    data-action="click->undo-manager#dismiss">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    `
+    
+    // Add notification to page
+    const container = document.createElement('div')
+    container.innerHTML = notificationHtml
+    document.body.appendChild(container.firstElementChild)
   }
   
   // Announce to screen readers

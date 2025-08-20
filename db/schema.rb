@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_17_153051) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_20_165152) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -297,17 +297,26 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_17_153051) do
     t.integer "lock_version", default: 0, null: false
     t.datetime "deleted_at"
     t.integer "deleted_by_id"
+    t.string "deleted_by"
     t.index "EXTRACT(hour FROM transaction_date), EXTRACT(dow FROM transaction_date)", name: "idx_expenses_hour_dow"
     t.index "EXTRACT(year FROM transaction_date), EXTRACT(month FROM transaction_date)", name: "idx_expenses_year_month", where: "(deleted_at IS NULL)", comment: "For monthly/yearly aggregations"
     t.index ["amount"], name: "idx_expenses_amount_brin", using: :brin
     t.index ["auto_categorized", "categorization_confidence", "created_at"], name: "idx_auto_categorized_tracking", where: "(auto_categorized = true)"
-    t.index ["auto_categorized", "categorization_confidence"], name: "idx_expenses_auto_categorized", where: "((auto_categorized = true) AND (deleted_at IS NULL))", comment: "For tracking auto-categorization performance"
-    t.index ["bank_name", "transaction_date", "amount"], name: "idx_expenses_bank_reconciliation", where: "(deleted_at IS NULL)", comment: "For bank statement reconciliation"
+    t.index ["auto_categorized", "categorization_confidence"], name: "idx_on_auto_categorized_categorization_confidence_98abf3d147"
+    t.index ["bank_name", "transaction_date"], name: "idx_expenses_bank_date", where: "(deleted_at IS NULL)"
+    t.index ["bank_name", "transaction_date"], name: "index_expenses_on_bank_name_and_transaction_date"
+    t.index ["categorization_method"], name: "index_expenses_on_categorization_method"
+    t.index ["categorized_at"], name: "index_expenses_on_categorized_at"
+    t.index ["categorized_by"], name: "index_expenses_on_categorized_by"
     t.index ["category_id", "created_at", "merchant_normalized"], name: "idx_expenses_uncategorized_optimized", order: { created_at: :desc }, where: "(category_id IS NULL)", comment: "Optimized index for finding uncategorized expenses"
-    t.index ["category_id", "transaction_date", "amount"], name: "idx_expenses_category_analysis", where: "(deleted_at IS NULL)", comment: "For category-based analytics and reporting"
+    t.index ["category_id", "created_at"], name: "idx_uncategorized_expenses", where: "(category_id IS NULL)"
+    t.index ["category_id", "merchant_normalized"], name: "index_expenses_on_category_id_and_merchant_normalized"
+    t.index ["category_id", "transaction_date", "amount"], name: "index_expenses_uncategorized", where: "(category_id IS NULL)"
     t.index ["category_id", "transaction_date"], name: "idx_expenses_category_date", where: "((category_id IS NOT NULL) AND (deleted_at IS NULL))"
-    t.index ["currency", "transaction_date"], name: "idx_expenses_currency_date", where: "(deleted_at IS NULL)", comment: "For multi-currency reporting"
-    t.index ["email_account_id", "amount", "transaction_date", "merchant_name"], name: "idx_expenses_duplicate_detection", comment: "For detecting potential duplicate transactions"
+    t.index ["category_id", "transaction_date"], name: "index_expenses_on_category_id_and_transaction_date"
+    t.index ["category_id"], name: "index_expenses_on_category_id"
+    t.index ["created_at", "transaction_date"], name: "index_expenses_on_created_and_transaction_date"
+    t.index ["currency"], name: "index_expenses_on_currency"
     t.index ["email_account_id", "amount", "transaction_date"], name: "index_expenses_on_account_amount_date_for_duplicates"
     t.index ["email_account_id", "deleted_at", "transaction_date", "category_id", "status", "bank_name"], name: "idx_expenses_dashboard_filters", where: "(deleted_at IS NULL)", comment: "Composite index for complex dashboard filter combinations"
     t.index ["email_account_id", "status", "category_id", "created_at"], name: "idx_expenses_batch_operations", where: "(deleted_at IS NULL)", comment: "Optimized for batch selection and bulk operations"
@@ -671,6 +680,32 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_17_153051) do
     t.index ["metadata"], name: "index_sync_sessions_on_metadata", using: :gin
     t.index ["session_token"], name: "index_sync_sessions_on_session_token", unique: true
     t.index ["status"], name: "index_sync_sessions_on_status"
+  end
+
+  create_table "undo_histories", force: :cascade do |t|
+    t.string "undoable_type"
+    t.bigint "undoable_id"
+    t.bigint "user_id"
+    t.integer "action_type", null: false
+    t.jsonb "record_data", default: {}, null: false
+    t.string "description"
+    t.boolean "is_bulk", default: false
+    t.integer "affected_count", default: 1
+    t.datetime "expires_at"
+    t.datetime "expired_at"
+    t.datetime "undone_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["action_type", "undone_at"], name: "index_undo_histories_on_action_type_and_undone_at"
+    t.index ["action_type"], name: "index_undo_histories_on_action_type"
+    t.index ["created_at"], name: "index_undo_histories_on_created_at"
+    t.index ["expires_at", "undone_at"], name: "index_undo_histories_on_expires_at_and_undone_at", where: "(undone_at IS NULL)"
+    t.index ["expires_at"], name: "index_undo_histories_on_expires_at"
+    t.index ["is_bulk"], name: "index_undo_histories_on_is_bulk"
+    t.index ["undoable_type", "undoable_id"], name: "index_undo_histories_on_undoable"
+    t.index ["undone_at"], name: "index_undo_histories_on_undone_at"
+    t.index ["user_id", "created_at"], name: "index_undo_histories_on_user_id_and_created_at"
+    t.index ["user_id"], name: "index_undo_histories_on_user_id"
   end
 
   create_table "user_category_preferences", force: :cascade do |t|

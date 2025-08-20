@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe "Dashboard Card Navigation", type: :system, js: true do
+RSpec.describe "Dashboard Card Navigation", type: :system, js: true, tier: :system do
   before do
     # Create test data
     @email_account = create(:email_account)

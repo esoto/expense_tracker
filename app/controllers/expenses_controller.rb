@@ -520,9 +520,11 @@ class ExpensesController < ApplicationController
         message: result[:message],
         affected_count: result[:affected_count],
         failures: result[:failures],
-        reload: true, # Signal to reload the page after deletion
+        reload: false, # Don't reload to preserve undo notification
         background: result[:background],
-        job_id: result[:job_id]
+        job_id: result[:job_id],
+        undo_id: result[:undo_id],
+        undo_time_remaining: result[:undo_time_remaining]
       }
     else
       render json: {

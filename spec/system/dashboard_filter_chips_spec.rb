@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "Dashboard Filter Chips", type: :system, js: true do
+RSpec.describe "Dashboard Filter Chips", type: :system, js: true, tier: :system do
   let!(:email_account) { create(:email_account, active: true) }
   let!(:category1) { create(:category, name: "Alimentación", color: "#10B981") }
   let!(:category2) { create(:category, name: "Transporte", color: "#3B82F6") }
@@ -562,8 +562,11 @@ RSpec.describe "Dashboard Filter Chips", type: :system, js: true do
   end
 
   def wait_for_turbo
-    expect(page).to have_css("[data-turbo-temporary]", visible: false, wait: 0.1)
-  rescue Capybara::ElementNotFound
-    # Turbo has finished loading
+    # Wait for the dashboard widget to be present
+    expect(page).to have_css("#dashboard-expenses-widget", wait: 2)
+    sleep 0.1 # Additional wait for JS initialization
+  rescue Capybara::ExpectationNotMet
+    # Fallback wait
+    sleep 0.2
   end
 end

@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe "Dashboard Batch Selection", type: :system, js: true do
+RSpec.describe "Dashboard Batch Selection", type: :system, js: true, tier: :system do
   let!(:email_account) { create(:email_account) }
   let!(:food_category) { create(:category, name: "Food", color: "#FF6B6B") }
   let!(:transport_category) { create(:category, name: "Transport", color: "#4ECDC4") }

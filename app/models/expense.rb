@@ -1,6 +1,7 @@
 class Expense < ApplicationRecord
   include ExpenseQueryOptimizer
   include QuerySecurity
+  include SoftDelete
 
   # Associations
   belongs_to :email_account

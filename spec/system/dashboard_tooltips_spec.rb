@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Dashboard tooltips', type: :system, js: true, skip: "JavaScript timing issues in CI environment" do
+RSpec.describe 'Dashboard tooltips', type: :system, js: true, tier: :system, skip: "JavaScript timing issues in CI environment" do
   let(:email_account) { create(:email_account) }
 
   before do

@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe "Dashboard View Toggle", type: :system, js: true do
+RSpec.describe "Dashboard View Toggle", type: :system, js: true, tier: :system do
   let!(:email_account) { create(:email_account) }
   let!(:category) { create(:category, name: "Food", color: "#FF6B6B") }
 

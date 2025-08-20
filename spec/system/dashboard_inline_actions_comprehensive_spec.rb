@@ -1,7 +1,7 @@
 require "rails_helper"
 require "support/inline_actions_helper"
 
-RSpec.describe "Dashboard Inline Actions Comprehensive", type: :system, js: true do
+RSpec.describe "Dashboard Inline Actions Comprehensive", type: :system, js: true, tier: :system do
   let!(:email_account) { create(:email_account) }
   let!(:category_food) { create(:category, name: "Food", color: "#FF6B6B") }
   let!(:category_transport) { create(:category, name: "Transport", color: "#4ECDC4") }

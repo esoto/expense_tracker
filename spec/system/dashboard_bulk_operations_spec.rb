@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe "Dashboard Bulk Operations", type: :system, js: true do
+RSpec.describe "Dashboard Bulk Operations", type: :system, js: true, tier: :system do
   let(:email_account) { create(:email_account) }
   let(:category1) { create(:category, name: "Food", color: "#FF5733") }
   let(:category2) { create(:category, name: "Transport", color: "#33FF57") }

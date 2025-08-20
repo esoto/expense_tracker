@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe "Dashboard Accessibility", type: :system, js: true do
+RSpec.describe "Dashboard Accessibility", type: :system, js: true, tier: :system do
   include AccessibilityHelper
 
   let!(:categories) { create_list(:category, 3) }

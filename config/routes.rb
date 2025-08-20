@@ -164,6 +164,13 @@ Rails.application.routes.draw do
     end
   end
 
+  # Undo histories routes
+  resources :undo_histories, only: [] do
+    member do
+      post :undo
+    end
+  end
+
   resources :sync_conflicts do
     member do
       post :resolve

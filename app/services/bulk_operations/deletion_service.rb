@@ -1,26 +1,28 @@
 # frozen_string_literal: true
 
 module BulkOperations
-  # Service for bulk deletion of expenses
-  # Handles soft deletes and maintains audit trail if configured
+  # Service for bulk deletion of expenses with undo support
+  # Handles soft deletes and maintains audit trail
   class DeletionService < BaseService
     protected
 
     def perform_operation(expenses)
-      # Store IDs before deletion for broadcasting
-      expense_ids_to_delete = expenses.pluck(:id)
+      # Store expenses before deletion for undo
+      expenses_to_delete = expenses.to_a
+      expense_ids_to_delete = expenses_to_delete.map(&:id)
 
-      # Use destroy_all to trigger callbacks if needed
-      # Use delete_all for better performance if callbacks aren't needed
-      if options[:skip_callbacks]
-        deleted_count = expenses.delete_all
-      else
-        deleted_count = 0
-        failures = []
+      # Perform soft deletion with undo support
+      deleted_count = 0
+      failures = []
 
-        expenses.find_each do |expense|
+      ActiveRecord::Base.transaction do
+        expenses_to_delete.each do |expense|
           begin
-            expense.destroy!
+            if expense.respond_to?(:soft_delete!)
+              expense.soft_delete!(deleted_by: user&.email)
+            else
+              expense.destroy!
+            end
             deleted_count += 1
           rescue StandardError => e
             failures << {
@@ -30,7 +32,13 @@ module BulkOperations
           end
         end
 
-        return { success_count: deleted_count, failures: failures }
+        # Create undo history record if we deleted anything
+        if deleted_count > 0 && defined?(UndoHistory)
+          @undo_record = UndoHistory.create_for_bulk_deletion(
+            expenses_to_delete.select { |e| expense_ids_to_delete.include?(e.id) },
+            user: user
+          )
+        end
       end
 
       # Broadcast deletions if needed
@@ -38,10 +46,18 @@ module BulkOperations
         broadcast_deletions(expense_ids_to_delete)
       end
 
-      {
+      result = {
         success_count: deleted_count,
-        failures: []
+        failures: failures
       }
+
+      # Add undo information if available
+      if @undo_record
+        result[:undo_id] = @undo_record.id
+        result[:undo_time_remaining] = @undo_record.time_remaining
+      end
+
+      result
     end
 
     def success_message(count)

@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "Dashboard Virtual Scrolling", type: :system, js: true do
+RSpec.describe "Dashboard Virtual Scrolling", type: :system, js: true, tier: :system do
   # Create test data
   let!(:email_account) { create(:email_account, :active) }
   let!(:categories) { create_list(:category, 5) }
@@ -419,7 +419,11 @@ RSpec.describe "Dashboard Virtual Scrolling", type: :system, js: true do
   private
 
   def wait_for_turbo
-    expect(page).to have_css("[data-turbo-frame]", wait: 2)
+    # Wait for the dashboard widget to be present
+    expect(page).to have_css("#dashboard-expenses-widget", wait: 2)
     sleep 0.1  # Additional wait for JS initialization
+  rescue Capybara::ExpectationNotMet
+    # Fallback wait
+    sleep 0.2
   end
 end

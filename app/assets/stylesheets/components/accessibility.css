@@ -19,6 +19,18 @@
 }
 
 /* Screen reader only content that becomes visible when focused */
+.sr-only-focusable {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
 .sr-only-focusable:focus,
 .sr-only-focusable:active {
   position: static !important;
@@ -427,7 +439,8 @@ th[aria-sort="descending"]::after {
   outline-offset: 3px;
 }
 
-/* ARIA debugging */
+/* ARIA debugging - Disabled for production */
+/*
 [aria-label]:empty::after {
   content: "⚠️ Empty aria-label";
   color: orange;
@@ -443,3 +456,4 @@ th[aria-sort="descending"]::after {
   font-size: 8px;
   z-index: 9999;
 }
+*/

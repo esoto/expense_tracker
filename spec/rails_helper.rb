@@ -13,14 +13,14 @@ require 'rspec/rails'
 # Load appropriate coverage configuration based on test tier
 unless defined?($coverage_started)
   $coverage_started = true
-  
+
   test_tier = ENV['TEST_TIER'] || 'combined'
   puts "🔍 Loading #{test_tier} coverage configuration..."
 
   case test_tier
   when 'unit'
     require_relative 'support/coverage/unit_coverage'
-  when 'integration'  
+  when 'integration'
     require_relative 'support/coverage/integration_coverage'
   when 'system'
     require_relative 'support/coverage/system_coverage'

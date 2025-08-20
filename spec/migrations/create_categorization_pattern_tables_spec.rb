@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "CreateCategorizationPatternTables Migration", type: :migration do
+RSpec.describe "CreateCategorizationPatternTables Migration", type: :migration, unit: true do
   # Load the migration file
   let(:migration_file) { Dir[Rails.root.join("db/migrate/*_create_categorization_pattern_tables.rb")].first }
   let(:migration_class) do
@@ -11,7 +11,7 @@ RSpec.describe "CreateCategorizationPatternTables Migration", type: :migration d
   end
   let(:migration) { migration_class.new }
 
-  describe "up migration" do
+  describe "up migration", unit: true do
     it "creates all required tables" do
       # Skip if tables already exist to avoid transaction conflicts
       begin
@@ -139,7 +139,7 @@ RSpec.describe "CreateCategorizationPatternTables Migration", type: :migration d
     end
   end
 
-  describe "down migration" do
+  describe "down migration", unit: true do
     it "removes all created tables" do
       skip "Migration tests disabled due to transaction conflicts in test environment"
 
@@ -171,7 +171,7 @@ RSpec.describe "CreateCategorizationPatternTables Migration", type: :migration d
     end
   end
 
-  describe "rollback safety" do
+  describe "rollback safety", unit: true do
     it "can be rolled back and re-run multiple times" do
       skip "Migration tests disabled due to transaction conflicts in test environment"
       migration.change

@@ -2,15 +2,15 @@
 
 require "rails_helper"
 
-RSpec.describe Analytics::PatternDashboardController, type: :controller do
+RSpec.describe Analytics::PatternDashboardController, type: :controller, performance: true do
   let(:admin_user) { create(:admin_user, role: :admin) }
   let(:category) { create(:category) }
   let(:pattern) { create(:categorization_pattern, category: category) }
 
   before { sign_in_as(admin_user) }
 
-  describe "Security Fixes" do
-    describe "GET #trends" do
+  describe "Security Fixes", performance: true do
+    describe "GET #trends", performance: true do
       context "SQL injection prevention" do
         it "safely handles malicious interval parameter" do
           get :trends, params: { interval: "'; DROP TABLE users; --" }, format: :json
@@ -33,7 +33,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller do
       end
     end
 
-    describe "GET #export" do
+    describe "GET #export", performance: true do
       context "rate limiting" do
         it "enforces export rate limit of 5 per hour" do
           5.times do
@@ -113,7 +113,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller do
       end
     end
 
-    describe "GET #index" do
+    describe "GET #index", performance: true do
       context "date parsing error handling" do
         it "handles invalid start date gracefully" do
           get :index, params: {
@@ -169,8 +169,8 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller do
     end
   end
 
-  describe "Error Handling" do
-    describe "GET #heatmap" do
+  describe "Error Handling", performance: true do
+    describe "GET #heatmap", performance: true do
       context "database query failures" do
         before do
           allow_any_instance_of(Analytics::PatternPerformanceAnalyzer)
@@ -186,7 +186,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller do
       end
     end
 
-    describe "GET #trends" do
+    describe "GET #trends", performance: true do
       context "unexpected errors" do
         before do
           allow_any_instance_of(Analytics::PatternPerformanceAnalyzer)
@@ -202,7 +202,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller do
       end
     end
 
-    describe "GET #refresh" do
+    describe "GET #refresh", performance: true do
       it "validates component parameter" do
         get :refresh, params: { component: "invalid_component" }
         expect(response).to have_http_status(:unprocessable_content)
@@ -217,8 +217,8 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller do
     end
   end
 
-  describe "Performance Optimizations" do
-    describe "GET #index" do
+  describe "Performance Optimizations", performance: true do
+    describe "GET #index", performance: true do
       it "uses caching for expensive queries" do
         expect(Rails.cache).to receive(:fetch).at_least(:once).and_call_original
         get :index

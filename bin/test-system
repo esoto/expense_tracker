@@ -1,0 +1,40 @@
+#!/usr/bin/env ruby
+# System tests for full browser integration testing
+# Only runs when explicitly requested due to slow execution
+
+require 'fileutils'
+
+# Ensure we're in the Rails root
+Dir.chdir(File.expand_path('..', __dir__))
+
+# Set test environment and tier for coverage  
+ENV['RAILS_ENV'] = 'test'
+ENV['TEST_TIER'] = 'system'
+
+# Build RSpec command for system tests
+cmd_parts = [
+  'bundle exec rspec',
+  'spec/system',
+  '--format documentation',
+  '--order random'
+]
+
+cmd = cmd_parts.join(' ')
+
+puts "🌐 Running system tests (may take 5-15 minutes)..."
+puts "Command: #{cmd}"
+puts
+
+# Execute with proper exit code
+system(cmd)
+exit_code = $?.exitstatus
+
+if exit_code == 0
+  puts
+  puts "✅ All system tests passed!"
+else
+  puts
+  puts "❌ Some system tests failed (exit code: #{exit_code})"
+end
+
+exit exit_code

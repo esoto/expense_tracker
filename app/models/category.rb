@@ -17,6 +17,7 @@ class Category < ApplicationRecord
   # Scopes
   scope :root_categories, -> { where(parent_id: nil) }
   scope :subcategories, -> { where.not(parent_id: nil) }
+  scope :active, -> { all } # For now, all categories are considered active
 
   # Instance methods
   def root?

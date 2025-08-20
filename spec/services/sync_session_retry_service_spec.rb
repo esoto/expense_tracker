@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe SyncSessionRetryService do
+RSpec.describe SyncSessionRetryService, integration: true do
   let(:email_account) { create(:email_account, active: true) }
   let(:original_session) { create(:sync_session, :failed) }
   let(:params) { {} }
@@ -11,7 +11,7 @@ RSpec.describe SyncSessionRetryService do
     allow(ProcessEmailsJob).to receive(:perform_later)
   end
 
-  describe '#call' do
+  describe '#call', integration: true do
     context 'with valid retry conditions' do
       it 'creates a new sync session' do
         expect { service.call }.to change(SyncSession, :count).by(1)

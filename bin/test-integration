@@ -1,0 +1,49 @@
+#!/usr/bin/env ruby
+# Integration tests for comprehensive validation
+# Includes service integration, request tests, and component integration
+
+require 'fileutils'
+
+# Ensure we're in the Rails root
+Dir.chdir(File.expand_path('..', __dir__))
+
+# Set test environment and tier for coverage
+ENV['RAILS_ENV'] = 'test'
+ENV['TEST_TIER'] = 'integration'
+
+# Build RSpec command for integration tests
+cmd_parts = [
+  'bundle exec rspec',
+  '--tag integration',
+  '--format documentation',
+  '--order random'
+]
+
+# Add integration test paths
+test_paths = %w[
+  spec/requests
+  spec/services --tag integration
+  spec/channels
+  spec/jobs
+].join(' ')
+
+# Also include any specs explicitly tagged as integration
+cmd = "#{cmd_parts.join(' ')} #{test_paths}"
+
+puts "🔗 Running integration tests (may take 2-5 minutes)..."
+puts "Command: #{cmd}"
+puts
+
+# Execute with proper exit code
+system(cmd)
+exit_code = $?.exitstatus
+
+if exit_code == 0
+  puts
+  puts "✅ All integration tests passed!"
+else
+  puts
+  puts "❌ Some integration tests failed (exit code: #{exit_code})"
+end
+
+exit exit_code

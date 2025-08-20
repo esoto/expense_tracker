@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Analytics::PatternDashboardController, type: :controller do
+RSpec.describe Analytics::PatternDashboardController, type: :controller, performance: true do
   let(:admin_user) { create(:admin_user, role: :admin) }
   let(:read_only_user) { create(:admin_user, role: :read_only) }
   let(:super_admin_user) { create(:admin_user, role: :super_admin) }
@@ -10,8 +10,8 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller do
   let(:category) { create(:category) }
   let(:pattern) { create(:categorization_pattern, category: category) }
 
-  describe "Authentication and Authorization" do
-    describe "GET #index" do
+  describe "Authentication and Authorization", performance: true do
+    describe "GET #index", performance: true do
       context "when not authenticated" do
         it "redirects to admin login" do
           get :index
@@ -48,7 +48,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller do
       end
     end
 
-    describe "GET #export" do
+    describe "GET #export", performance: true do
       context "when not authenticated" do
         it "redirects to admin login" do
           get :export
@@ -69,10 +69,10 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller do
     end
   end
 
-  describe "Rate Limiting" do
+  describe "Rate Limiting", performance: true do
     before { sign_in_as(admin_user) }
 
-    describe "GET #export" do
+    describe "GET #export", performance: true do
       it "enforces rate limiting after 5 exports per hour" do
         # Clear any existing rate limit cache
         Rails.cache.delete("export_rate_limit:#{admin_user.id}")
@@ -103,10 +103,10 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller do
     end
   end
 
-  describe "SQL Injection Protection" do
+  describe "SQL Injection Protection", performance: true do
     before { sign_in_as(admin_user) }
 
-    describe "GET #trends" do
+    describe "GET #trends", performance: true do
       it "sanitizes interval parameter to prevent SQL injection" do
         # Attempt SQL injection via interval parameter
         malicious_interval = "daily'; DROP TABLE users; --"
@@ -135,10 +135,10 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller do
     end
   end
 
-  describe "Export Format Validation" do
+  describe "Export Format Validation", performance: true do
     before { sign_in_as(admin_user) }
 
-    describe "GET #export" do
+    describe "GET #export", performance: true do
       it "only accepts csv and json formats" do
         %w[csv json].each do |format|
           get :export, params: { format_type: format }
@@ -181,10 +181,10 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller do
     end
   end
 
-  describe "Date Parsing Error Handling" do
+  describe "Date Parsing Error Handling", performance: true do
     before { sign_in_as(admin_user) }
 
-    describe "custom date range parsing" do
+    describe "custom date range parsing", performance: true do
       it "handles invalid date formats gracefully" do
         get :index, params: {
           time_period: "custom",
@@ -226,7 +226,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller do
     end
   end
 
-  describe "Cache Invalidation" do
+  describe "Cache Invalidation", performance: true do
     before { sign_in_as(admin_user) }
 
     it "includes pattern update timestamp in cache key" do
@@ -266,7 +266,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller do
     end
   end
 
-  describe "Performance Optimizations" do
+  describe "Performance Optimizations", performance: true do
     before do
       sign_in_as(admin_user)
       # Create test data
@@ -293,7 +293,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller do
     end
   end
 
-  describe "Security Headers" do
+  describe "Security Headers", performance: true do
     before { sign_in_as(admin_user) }
 
     it "sets appropriate security headers" do

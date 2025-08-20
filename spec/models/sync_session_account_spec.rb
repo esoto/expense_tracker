@@ -1,19 +1,19 @@
 require 'rails_helper'
 
-RSpec.describe SyncSessionAccount, type: :model do
+RSpec.describe SyncSessionAccount, type: :model, integration: true do
   include ActiveSupport::Testing::TimeHelpers
 
-  describe 'associations' do
+  describe 'associations', integration: true do
     it { should belong_to(:sync_session) }
     it { should belong_to(:email_account) }
   end
 
-  describe 'validations' do
+  describe 'validations', integration: true do
     it { should validate_presence_of(:status) }
     it { should validate_inclusion_of(:status).in_array(%w[pending waiting processing completed failed]) }
   end
 
-  describe 'scopes' do
+  describe 'scopes', integration: true do
     before do
       SyncSessionAccount.destroy_all
     end
@@ -24,26 +24,26 @@ RSpec.describe SyncSessionAccount, type: :model do
     let!(:completed_account) { create(:sync_session_account, status: 'completed') }
     let!(:failed_account) { create(:sync_session_account, status: 'failed') }
 
-    describe '.active' do
+    describe '.active', integration: true do
       it 'returns only processing accounts' do
         expect(SyncSessionAccount.active.to_a).to eq([ processing_account ])
       end
     end
 
-    describe '.completed' do
+    describe '.completed', integration: true do
       it 'returns only completed accounts' do
         expect(SyncSessionAccount.completed.to_a).to eq([ completed_account ])
       end
     end
 
-    describe '.failed' do
+    describe '.failed', integration: true do
       it 'returns only failed accounts' do
         expect(SyncSessionAccount.failed.to_a).to eq([ failed_account ])
       end
     end
   end
 
-  describe '#progress_percentage' do
+  describe '#progress_percentage', integration: true do
     subject(:session_account) { build(:sync_session_account, total_emails: total, processed_emails: processed) }
 
     context 'when total_emails is zero' do
@@ -83,10 +83,10 @@ RSpec.describe SyncSessionAccount, type: :model do
     end
   end
 
-  describe 'status query methods' do
+  describe 'status query methods', integration: true do
     subject(:session_account) { build(:sync_session_account, status: status) }
 
-    describe '#processing?' do
+    describe '#processing?', integration: true do
       context 'when status is processing' do
         let(:status) { 'processing' }
         it { expect(session_account).to be_processing }
@@ -98,7 +98,7 @@ RSpec.describe SyncSessionAccount, type: :model do
       end
     end
 
-    describe '#completed?' do
+    describe '#completed?', integration: true do
       context 'when status is completed' do
         let(:status) { 'completed' }
         it { expect(session_account).to be_completed }
@@ -110,7 +110,7 @@ RSpec.describe SyncSessionAccount, type: :model do
       end
     end
 
-    describe '#failed?' do
+    describe '#failed?', integration: true do
       context 'when status is failed' do
         let(:status) { 'failed' }
         it { expect(session_account).to be_failed }
@@ -122,7 +122,7 @@ RSpec.describe SyncSessionAccount, type: :model do
       end
     end
 
-    describe '#pending?' do
+    describe '#pending?', integration: true do
       context 'when status is pending' do
         let(:status) { 'pending' }
         it { expect(session_account).to be_pending }
@@ -134,7 +134,7 @@ RSpec.describe SyncSessionAccount, type: :model do
       end
     end
 
-    describe '#waiting?' do
+    describe '#waiting?', integration: true do
       context 'when status is waiting' do
         let(:status) { 'waiting' }
         it { expect(session_account).to be_waiting }
@@ -147,11 +147,11 @@ RSpec.describe SyncSessionAccount, type: :model do
     end
   end
 
-  describe 'state transition methods' do
+  describe 'state transition methods', integration: true do
     let(:sync_session) { create(:sync_session) }
     let(:session_account) { create(:sync_session_account, sync_session: sync_session, status: 'pending') }
 
-    describe '#start_processing!' do
+    describe '#start_processing!', integration: true do
       it 'changes status to processing' do
         expect { session_account.start_processing! }.to change { session_account.status }.from('pending').to('processing')
       end
@@ -167,7 +167,7 @@ RSpec.describe SyncSessionAccount, type: :model do
       end
     end
 
-    describe '#complete!' do
+    describe '#complete!', integration: true do
       before do
         session_account.start_processing!
         allow(sync_session).to receive(:update_progress)
@@ -188,7 +188,7 @@ RSpec.describe SyncSessionAccount, type: :model do
       end
     end
 
-    describe '#fail!' do
+    describe '#fail!', integration: true do
       before { session_account.start_processing! }
 
       it 'changes status to failed' do
@@ -215,7 +215,7 @@ RSpec.describe SyncSessionAccount, type: :model do
     end
   end
 
-  describe '#update_progress' do
+  describe '#update_progress', integration: true do
     let(:sync_session) { create(:sync_session, total_emails: 100, processed_emails: 50, detected_expenses: 10) }
     let(:session_account) { create(:sync_session_account, sync_session: sync_session, total_emails: 0, processed_emails: 0, detected_expenses: 0) }
 
@@ -267,8 +267,8 @@ RSpec.describe SyncSessionAccount, type: :model do
     end
   end
 
-  describe 'edge cases and error handling' do
-    describe 'concurrent updates' do
+  describe 'edge cases and error handling', integration: true do
+    describe 'concurrent updates', integration: true do
       let(:sync_session) { create(:sync_session) }
       let(:session_account) { create(:sync_session_account, sync_session: sync_session, status: 'processing') }
 
@@ -286,7 +286,7 @@ RSpec.describe SyncSessionAccount, type: :model do
       end
     end
 
-    describe 'orphaned records' do
+    describe 'orphaned records', integration: true do
       let(:session_account) { create(:sync_session_account) }
 
       it 'is destroyed when sync_session is destroyed' do
@@ -301,7 +301,7 @@ RSpec.describe SyncSessionAccount, type: :model do
     end
   end
 
-  describe 'factory' do
+  describe 'factory', integration: true do
     it 'has a valid factory' do
       expect(build(:sync_session_account)).to be_valid
     end
@@ -328,7 +328,7 @@ RSpec.describe SyncSessionAccount, type: :model do
     end
   end
 
-  describe 'integration with sync_session' do
+  describe 'integration with sync_session', integration: true do
     let(:sync_session) { create(:sync_session) }
     let!(:account1) { create(:sync_session_account, sync_session: sync_session) }
     let!(:account2) { create(:sync_session_account, sync_session: sync_session) }

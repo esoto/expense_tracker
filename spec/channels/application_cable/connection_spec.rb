@@ -1,7 +1,7 @@
 require "rails_helper"
 
-RSpec.describe ApplicationCable::Connection, type: :channel do
-  describe "#connect" do
+RSpec.describe ApplicationCable::Connection, type: :channel, integration: true do
+  describe "#connect", integration: true do
     context "in test environment" do
       it "successfully connects with test session" do
         connect "/cable"
@@ -101,7 +101,7 @@ RSpec.describe ApplicationCable::Connection, type: :channel do
     end
   end
 
-  describe "private methods" do
+  describe "private methods", integration: true do
     # Since we can't easily instantiate a Connection object in tests,
     # we'll test the method logic using a simple class that includes the same method
     let(:test_class) do
@@ -121,7 +121,7 @@ RSpec.describe ApplicationCable::Connection, type: :channel do
 
     let(:test_instance) { test_class.new }
 
-    describe "#extract_session_id" do
+    describe "#extract_session_id", integration: true do
       it "extracts session_id from hash with string keys" do
         session_data = { "session_id" => "test_123" }
         result = test_instance.extract_session_id(session_data)

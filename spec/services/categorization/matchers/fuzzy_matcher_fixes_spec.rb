@@ -2,8 +2,8 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::Matchers::FuzzyMatcher, type: :service do
-  describe "Task 1.7.1 Fixes - ActiveRecord Object Handling" do
+RSpec.describe Categorization::Matchers::FuzzyMatcher, type: :service, performance: true do
+  describe "Task 1.7.1 Fixes - ActiveRecord Object Handling", performance: true do
     let(:matcher) { described_class.new }
     let(:category) { create(:category, name: "Food") }
 
@@ -31,7 +31,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher, type: :service do
     end
 
     context "when handling Expense objects" do
-      let(:expense) { create(:expense, merchant_normalized: "Starbucks Coffee", description: "Morning coffee") }
+      let(:expense) { create(:expense, merchant_name: "Starbucks Coffee", merchant_normalized: "Starbucks Coffee", description: "Morning coffee") }
       let(:candidates) { [ "Starbucks", "Coffee Shop", "Restaurant" ] }
 
       it "correctly extracts merchant_name from Expense objects" do
@@ -41,7 +41,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher, type: :service do
       end
 
       it "handles Expense as a candidate" do
-        other_expense = create(:expense, merchant_normalized: "Coffee Time")
+        other_expense = create(:expense, merchant_name: "Coffee Time", merchant_normalized: "Coffee Time")
         # Use lower confidence threshold to include "Starbucks Coffee" match
         result = matcher.match("Coffee", [ expense, other_expense ], min_confidence: 0.3)
 
@@ -51,7 +51,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher, type: :service do
     end
   end
 
-  describe "Task 1.7.1 Fixes - Jaro-Winkler Scoring Calibration" do
+  describe "Task 1.7.1 Fixes - Jaro-Winkler Scoring Calibration", performance: true do
     let(:matcher) { described_class.new }
 
     context "with dissimilar strings" do
@@ -84,7 +84,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher, type: :service do
     end
   end
 
-  describe "Task 1.7.1 Fixes - Text Normalization Configuration" do
+  describe "Task 1.7.1 Fixes - Text Normalization Configuration", performance: true do
     context "when normalization is disabled" do
       let(:matcher) { described_class.new(normalize_text: false) }
 
@@ -120,7 +120,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher, type: :service do
     end
   end
 
-  describe "Task 1.7.1 Fixes - Integration Tests" do
+  describe "Task 1.7.1 Fixes - Integration Tests", performance: true do
     let(:matcher) { described_class.new }
     let(:category) { create(:category, name: "Food") }
 
@@ -145,6 +145,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher, type: :service do
 
       # Create expense
       expense = create(:expense,
+                      merchant_name: "STARBUCKS COFFEE #12345",
                       merchant_normalized: "STARBUCKS COFFEE #12345",
                       description: "Morning coffee purchase")
 
@@ -173,7 +174,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher, type: :service do
     end
   end
 
-  describe "Performance Requirements" do
+  describe "Performance Requirements", performance: true do
     let(:matcher) { described_class.new }
 
     it "completes matching within reasonable threshold" do

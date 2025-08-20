@@ -1,10 +1,10 @@
 require 'rails_helper'
 
-RSpec.describe ExpenseSummaryService do
+RSpec.describe ExpenseSummaryService, integration: true do
   let(:category) { create(:category) }
   let(:email_account) { create(:email_account, :bac) }
 
-  describe '#initialize' do
+  describe '#initialize', integration: true do
     it 'normalizes valid periods' do
       service = described_class.new("week")
       expect(service.period).to eq("week")
@@ -21,7 +21,7 @@ RSpec.describe ExpenseSummaryService do
     end
   end
 
-  describe '#summary' do
+  describe '#summary', integration: true do
     let!(:week_expense) { create(:expense, amount: 100.0, transaction_date: 3.days.ago, category: category, email_account: email_account) }
     let!(:month_expense) { create(:expense, amount: 200.0, transaction_date: 2.weeks.ago, category: category, email_account: email_account) }
     let!(:year_expense) { create(:expense, amount: 300.0, transaction_date: 6.months.ago, category: category, email_account: email_account) }
@@ -94,7 +94,7 @@ RSpec.describe ExpenseSummaryService do
     end
   end
 
-  describe 'private methods' do
+  describe 'private methods', integration: true do
     let(:service) { described_class.new("month") }
     let(:start_date) { 1.month.ago.beginning_of_day }
     let(:end_date) { Time.current.end_of_day }
@@ -103,21 +103,21 @@ RSpec.describe ExpenseSummaryService do
       create(:expense, amount: 150.0, transaction_date: 2.weeks.ago, category: category, email_account: email_account)
     end
 
-    describe '#total_amount_for_period' do
+    describe '#total_amount_for_period', integration: true do
       it 'calculates total amount for given period' do
         total = service.send(:total_amount_for_period, start_date, end_date)
         expect(total).to eq(150.0)
       end
     end
 
-    describe '#expense_count_for_period' do
+    describe '#expense_count_for_period', integration: true do
       it 'counts expenses for given period' do
         count = service.send(:expense_count_for_period, start_date, end_date)
         expect(count).to eq(1)
       end
     end
 
-    describe '#category_breakdown_for_period' do
+    describe '#category_breakdown_for_period', integration: true do
       it 'groups expenses by category for given period' do
         breakdown = service.send(:category_breakdown_for_period, start_date, end_date)
         expect(breakdown[category.name]).to eq(150.0)
@@ -125,7 +125,7 @@ RSpec.describe ExpenseSummaryService do
     end
   end
 
-  describe '.normalize_period' do
+  describe '.normalize_period', integration: true do
     let(:service) { described_class.new("month") }
 
     it 'accepts valid periods' do

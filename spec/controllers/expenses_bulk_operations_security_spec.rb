@@ -2,14 +2,14 @@
 
 require 'rails_helper'
 
-RSpec.describe ExpensesController, type: :request do
+RSpec.describe ExpensesController, type: :request, unit: true do
   let(:email_account) { create(:email_account) }
   let(:category) { create(:category) }
   let(:expenses) { create_list(:expense, 3, email_account: email_account) }
   let(:expense_ids) { expenses.map(&:id) }
 
-  describe "Security: Strong Parameters" do
-    describe "POST /expenses/bulk_categorize" do
+  describe "Security: Strong Parameters", unit: true do
+    describe "POST /expenses/bulk_categorize", unit: true do
       it "filters out unpermitted parameters" do
         post bulk_categorize_expenses_path, params: {
           expense_ids: expense_ids,
@@ -70,7 +70,7 @@ RSpec.describe ExpensesController, type: :request do
       end
     end
 
-    describe "POST /expenses/bulk_update_status" do
+    describe "POST /expenses/bulk_update_status", unit: true do
       it "filters out unpermitted parameters" do
         post bulk_update_status_expenses_path, params: {
           expense_ids: expense_ids,
@@ -102,7 +102,7 @@ RSpec.describe ExpensesController, type: :request do
       end
     end
 
-    describe "DELETE /expenses/bulk_destroy" do
+    describe "DELETE /expenses/bulk_destroy", unit: true do
       it "filters out all parameters except expense_ids" do
         initial_count = Expense.count
 
@@ -142,7 +142,7 @@ RSpec.describe ExpensesController, type: :request do
     end
   end
 
-  describe "Security: Authorization" do
+  describe "Security: Authorization", unit: true do
     context "when trying to modify expenses from different accounts" do
       let(:other_account) { create(:email_account) }
       let(:other_expenses) { create_list(:expense, 2, email_account: other_account) }
@@ -164,7 +164,7 @@ RSpec.describe ExpensesController, type: :request do
     end
   end
 
-  describe "Security: Mass Assignment Protection" do
+  describe "Security: Mass Assignment Protection", unit: true do
     it "prevents direct modification of protected attributes" do
       post bulk_categorize_expenses_path, params: {
         expense_ids: expense_ids,

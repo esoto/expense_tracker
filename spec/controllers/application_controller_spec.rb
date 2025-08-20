@@ -1,13 +1,13 @@
 require 'rails_helper'
 
-RSpec.describe ApplicationController, type: :controller do
+RSpec.describe ApplicationController, type: :controller, unit: true do
   controller do
     def index
       render plain: "Test action"
     end
   end
 
-  describe "browser version requirements" do
+  describe "browser version requirements", unit: true do
     it "allows modern browsers" do
       # Set a modern user agent that supports required features
       request.headers["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -21,7 +21,7 @@ RSpec.describe ApplicationController, type: :controller do
     end
   end
 
-  describe "configuration" do
+  describe "configuration", unit: true do
     it "has browser restrictions enabled" do
       # Verify that the controller has browser compatibility checks
       # This is verified by successful loading and inheritance
@@ -29,7 +29,7 @@ RSpec.describe ApplicationController, type: :controller do
     end
   end
 
-  describe "inheritance chain" do
+  describe "inheritance chain", unit: true do
     it "provides base functionality for other controllers" do
       expect(ExpensesController.superclass).to eq(ApplicationController)
       expect(Api::WebhooksController.superclass).to eq(ApplicationController)

@@ -1,7 +1,7 @@
 require 'rails_helper'
 
-RSpec.describe ApplicationMailer, type: :mailer do
-  describe 'default settings' do
+RSpec.describe ApplicationMailer, type: :mailer, unit: true do
+  describe 'default settings', unit: true do
     it 'sets default from address' do
       expect(ApplicationMailer.default[:from]).to eq('from@example.com')
     end
@@ -11,7 +11,7 @@ RSpec.describe ApplicationMailer, type: :mailer do
     end
   end
 
-  describe 'inheritance' do
+  describe 'inheritance', unit: true do
     let(:test_mailer_class) do
       Class.new(ApplicationMailer) do
         def test_email

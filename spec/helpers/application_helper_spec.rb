@@ -1,7 +1,7 @@
 require 'rails_helper'
 
-RSpec.describe ApplicationHelper, type: :helper do
-  describe '#currency_symbol' do
+RSpec.describe ApplicationHelper, type: :helper, integration: true do
+  describe '#currency_symbol', integration: true do
     it 'returns ₡ for CRC expenses' do
       expense = build(:expense, currency: 'crc')
       expect(helper.currency_symbol(expense)).to eq('₡')
@@ -26,7 +26,7 @@ RSpec.describe ApplicationHelper, type: :helper do
     end
   end
 
-  describe '#format_datetime' do
+  describe '#format_datetime', integration: true do
     it 'formats datetime correctly' do
       datetime = DateTime.new(2024, 8, 3, 14, 30, 0)
       expect(helper.format_datetime(datetime)).to eq('August 03, 2024 at 02:30 PM')
@@ -51,7 +51,7 @@ RSpec.describe ApplicationHelper, type: :helper do
     end
   end
 
-  describe '#format_date' do
+  describe '#format_date', integration: true do
     it 'formats date correctly' do
       date = Date.new(2024, 8, 3)
       expect(helper.format_date(date)).to eq('August 03, 2024')

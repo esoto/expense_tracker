@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe MetricsCalculator, type: :service do
+RSpec.describe MetricsCalculator, type: :service, performance: true do
   let(:current_date) { Date.parse('2025-08-10') }
   let(:calculator) { described_class.new(email_account: email_account, period: period, reference_date: current_date) }
   let(:period) { :month }
@@ -13,7 +13,7 @@ RSpec.describe MetricsCalculator, type: :service do
   let!(:category1) { create(:category, name: 'Food') }
   let!(:category2) { create(:category, name: 'Transport') }
 
-  describe '#initialize' do
+  describe '#initialize', performance: true do
     context 'with email_account' do
       it 'requires email_account parameter' do
         expect { described_class.new(period: :month) }
@@ -52,7 +52,7 @@ RSpec.describe MetricsCalculator, type: :service do
     end
   end
 
-  describe '#calculate' do
+  describe '#calculate', performance: true do
     before do
       # Create expenses for current month
       create(:expense,
@@ -324,7 +324,7 @@ RSpec.describe MetricsCalculator, type: :service do
     end
   end
 
-  describe 'caching' do
+  describe 'caching', performance: true do
     before do
       create(:expense,
              email_account: email_account,
@@ -362,7 +362,7 @@ RSpec.describe MetricsCalculator, type: :service do
     end
   end
 
-  describe '#calculate!' do
+  describe '#calculate!', performance: true do
     before do
       create(:expense,
              email_account: email_account,
@@ -393,7 +393,7 @@ RSpec.describe MetricsCalculator, type: :service do
     end
   end
 
-  describe '.clear_cache' do
+  describe '.clear_cache', performance: true do
     it 'clears all metrics calculator caches when no email_account specified' do
       Rails.cache.write('metrics_calculator:account_1:month:2025-08-10', 'test1')
       Rails.cache.write('metrics_calculator:account_2:week:2025-08-10', 'test2')
@@ -421,7 +421,7 @@ RSpec.describe MetricsCalculator, type: :service do
     end
   end
 
-  describe '.pre_calculate_all' do
+  describe '.pre_calculate_all', performance: true do
     it 'requires email_account parameter' do
       expect { described_class.pre_calculate_all(reference_date: current_date) }
         .to raise_error(MetricsCalculator::MissingEmailAccountError, /EmailAccount is required/)
@@ -449,7 +449,7 @@ RSpec.describe MetricsCalculator, type: :service do
     end
   end
 
-  describe '.batch_calculate' do
+  describe '.batch_calculate', performance: true do
     before do
       # Create test expenses for calculations
       create(:expense,
@@ -619,7 +619,7 @@ RSpec.describe MetricsCalculator, type: :service do
     end
   end
 
-  describe 'performance' do
+  describe 'performance', performance: true do
     before do
       # Create 100 expenses to test performance
       100.times do |i|
@@ -653,7 +653,7 @@ RSpec.describe MetricsCalculator, type: :service do
     end
   end
 
-  describe 'error handling' do
+  describe 'error handling', performance: true do
     it 'handles database errors gracefully' do
       allow(email_account.expenses).to receive(:where).and_raise(ActiveRecord::StatementInvalid, 'DB Error')
 
@@ -675,7 +675,7 @@ RSpec.describe MetricsCalculator, type: :service do
     end
   end
 
-  describe 'edge cases' do
+  describe 'edge cases', performance: true do
     context 'with very large amounts' do
       before do
         create(:expense,

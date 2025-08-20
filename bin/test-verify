@@ -1,0 +1,218 @@
+#!/usr/bin/env ruby
+# Comprehensive verification script for test organization
+# Analyzes test distribution, measures performance, and provides recommendations
+
+require 'fileutils'
+
+# Ensure we're in the Rails root
+Dir.chdir(File.expand_path('..', __dir__))
+
+# Set test environment
+ENV['RAILS_ENV'] = 'test'
+
+puts "🔍 Test Organization Verification"
+puts "=" * 50
+
+# Phase 1: Test Distribution Analysis
+puts "\n1️⃣ TEST DISTRIBUTION ANALYSIS"
+puts "-" * 30
+
+spec_files = Dir['spec/**/*_spec.rb']
+directories = {}
+tier_tags = { unit: 0, integration: 0, performance: 0, system: 0, untagged: 0 }
+
+spec_files.each do |file|
+  # Count by directory
+  dir = File.dirname(file).split('/')[1] # spec/models -> models
+  directories[dir] = (directories[dir] || 0) + 1
+  
+  # Check for tier tags
+  content = File.read(file)
+  if content.match?(/:unit/)
+    tier_tags[:unit] += 1
+  elsif content.match?(/:integration/)
+    tier_tags[:integration] += 1
+  elsif content.match?(/:performance/)
+    tier_tags[:performance] += 1
+  elsif content.match?(/:system/)
+    tier_tags[:system] += 1
+  else
+    tier_tags[:untagged] += 1
+  end
+end
+
+puts "📊 Files by directory:"
+directories.sort_by { |_, count| -count }.each do |dir, count|
+  percentage = (count.to_f / spec_files.length * 100).round(1)
+  puts "  #{dir.ljust(15)} #{count.to_s.rjust(3)} files (#{percentage}%)"
+end
+
+puts "\n🏷️  Files by tier tags:"
+total = tier_tags.values.sum
+tier_tags.each do |tier, count|
+  percentage = (count.to_f / total * 100).round(1)
+  emoji = { unit: '🧪', integration: '🔗', performance: '⚡', system: '🌐', untagged: '❓' }[tier]
+  puts "  #{emoji} #{tier.to_s.capitalize.ljust(12)} #{count.to_s.rjust(3)} files (#{percentage}%)"
+end
+
+# Phase 2: Performance Measurement
+puts "\n\n2️⃣ PERFORMANCE MEASUREMENT"
+puts "-" * 30
+
+def measure_test_time(command, description)
+  puts "⏱️  Measuring #{description}..."
+  start_time = Time.now
+  
+  # Run command and capture output
+  result = system("#{command} > /dev/null 2>&1")
+  end_time = Time.now
+  
+  duration = end_time - start_time
+  
+  if result
+    status = duration < 30 ? "✅" : duration < 60 ? "⚠️" : "❌"
+    puts "  #{status} #{description}: #{duration.round(1)}s"
+  else
+    puts "  ❌ #{description}: Failed to run"
+    duration = nil
+  end
+  
+  duration
+end
+
+# Test unit tests performance
+unit_time = measure_test_time("bin/test-unit", "Unit tests")
+integration_time = measure_test_time("timeout 120s bin/test-integration", "Integration tests (2min timeout)")
+
+# Phase 3: Test Script Verification
+puts "\n\n3️⃣ TEST SCRIPT VERIFICATION"
+puts "-" * 30
+
+scripts = %w[bin/test-unit bin/test-integration bin/test-performance bin/test-system]
+scripts.each do |script|
+  if File.exist?(script) && File.executable?(script)
+    puts "  ✅ #{script} exists and is executable"
+  else
+    puts "  ❌ #{script} missing or not executable"
+  end
+end
+
+# Phase 4: Configuration Verification
+puts "\n\n4️⃣ CONFIGURATION VERIFICATION"
+puts "-" * 30
+
+config_files = [
+  'spec/support/configs/tier_auto_tagger.rb',
+  'spec/support/configs/unit_test_optimizations.rb',
+  'lib/tasks/test.rake',
+  'lib/tasks/test_migration.rake'
+]
+
+config_files.each do |file|
+  if File.exist?(file)
+    puts "  ✅ #{file} exists"
+  else
+    puts "  ❌ #{file} missing"
+  end
+end
+
+# Phase 5: Optimization Recommendations
+puts "\n\n5️⃣ OPTIMIZATION RECOMMENDATIONS"
+puts "-" * 30
+
+recommendations = []
+
+if tier_tags[:untagged] > tier_tags[:unit]
+  recommendations << "🏷️  Run 'rails test:tag_tests' to tag #{tier_tags[:untagged]} untagged files"
+end
+
+if unit_time && unit_time > 30
+  recommendations << "⚡ Unit tests taking #{unit_time.round(1)}s (target: <30s) - review optimization opportunities"
+end
+
+if tier_tags[:unit] < tier_tags[:integration]
+  recommendations << "🔄 Consider converting some integration tests to unit tests (#{tier_tags[:integration]} integration vs #{tier_tags[:unit]} unit)"
+end
+
+if tier_tags[:performance] > 10
+  recommendations << "🎯 #{tier_tags[:performance]} performance tests - ensure they're not running in regular workflow"
+end
+
+if recommendations.any?
+  recommendations.each { |rec| puts "  #{rec}" }
+else
+  puts "  🎉 No immediate optimization recommendations!"
+end
+
+# Phase 6: Quick Wins Analysis
+puts "\n\n6️⃣ QUICK WINS ANALYSIS"
+puts "-" * 30
+
+# Analyze test files for common anti-patterns
+antipatterns = { excessive_creates: [], large_files: [], missing_mocks: [] }
+
+spec_files.sample([spec_files.length, 50].min).each do |file| # Sample up to 50 files
+  content = File.read(file)
+  
+  # Count create() usage
+  create_count = content.scan(/\.create\(|FactoryBot\.create/).length
+  antipatterns[:excessive_creates] << file if create_count > 5
+  
+  # Check file size
+  antipatterns[:large_files] << file if File.size(file) > 15_000
+  
+  # Check for mocking
+  antipatterns[:missing_mocks] << file unless content.match?(/allow|stub|double|mock/)
+end
+
+puts "Quick optimization opportunities:"
+puts "  🏭 Files with excessive create() calls: #{antipatterns[:excessive_creates].length}"
+puts "  📊 Large files (>15KB): #{antipatterns[:large_files].length}"
+puts "  🎭 Files without mocking: #{antipatterns[:missing_mocks].length}"
+
+if antipatterns[:excessive_creates].any?
+  puts "\n  Top files with excessive creates:"
+  antipatterns[:excessive_creates].first(3).each { |file| puts "    • #{file}" }
+end
+
+# Phase 7: Summary
+puts "\n\n7️⃣ SUMMARY"
+puts "-" * 30
+
+total_tests = spec_files.length
+unit_percentage = (tier_tags[:unit].to_f / total_tests * 100).round(1)
+tagged_percentage = ((total_tests - tier_tags[:untagged]).to_f / total_tests * 100).round(1)
+
+puts "📈 Test Suite Health Score:"
+
+health_score = 0
+health_score += 25 if unit_time && unit_time < 30    # Unit tests under 30s
+health_score += 20 if unit_percentage > 60           # Good unit test ratio
+health_score += 20 if tagged_percentage > 80         # Most tests tagged
+health_score += 15 if tier_tags[:performance] < 10   # Performance tests controlled
+health_score += 20 if scripts.all? { |s| File.exist?(s) && File.executable?(s) } # Scripts available
+
+score_emoji = health_score >= 80 ? "🟢" : health_score >= 60 ? "🟡" : "🔴"
+puts "  #{score_emoji} Overall Score: #{health_score}/100"
+
+puts "\n📋 Key Metrics:"
+puts "  • Total test files: #{total_tests}"
+puts "  • Tagged files: #{tagged_percentage}%"
+puts "  • Unit test ratio: #{unit_percentage}%"
+puts "  • Unit test time: #{unit_time ? "#{unit_time.round(1)}s" : "not measured"}"
+
+puts "\n🎯 Next Actions:"
+if health_score < 60
+  puts "  1. Run analysis: rails test:analyze"
+  puts "  2. Tag tests: rails test:tag_tests"
+  puts "  3. Optimize slowest unit tests"
+elsif health_score < 80
+  puts "  1. Fine-tune remaining issues"
+  puts "  2. Monitor unit test performance"
+else
+  puts "  ✅ Test organization looks good!"
+  puts "  • Continue using bin/test-unit for development"
+  puts "  • Run bin/test-verify periodically to monitor health"
+end
+
+exit(health_score >= 60 ? 0 : 1)

@@ -114,6 +114,13 @@ Rails.application.routes.draw do
     root "patterns#index"
   end
 
+  # Bulk operations routes (must come before general resources to avoid conflicts)
+  scope "/expenses", controller: :expenses do
+    post "bulk_categorize", action: :bulk_categorize, as: :bulk_categorize_expenses
+    post "bulk_update_status", action: :bulk_update_status, as: :bulk_update_status_expenses
+    delete "bulk_destroy", action: :bulk_destroy, as: :bulk_destroy_expenses
+  end
+
   # Core expense CRUD routes
   resources :expenses, except: [] do
     collection do
@@ -131,13 +138,6 @@ Rails.application.routes.draw do
     post "accept_suggestion", action: :accept_suggestion, as: :accept_suggestion_expense
     post "reject_suggestion", action: :reject_suggestion, as: :reject_suggestion_expense
     patch "update_status", action: :update_status, as: :update_status_expense
-  end
-
-  # Bulk operations routes (separated for clarity)
-  scope "/expenses", controller: :expenses do
-    post "bulk_categorize", action: :bulk_categorize, as: :bulk_categorize_expenses
-    post "bulk_update_status", action: :bulk_update_status, as: :bulk_update_status_expenses
-    delete "bulk_destroy", action: :bulk_destroy, as: :bulk_destroy_expenses
   end
 
   resources :budgets do

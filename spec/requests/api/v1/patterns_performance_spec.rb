@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "Api::V1::Patterns Performance", type: :request do
+RSpec.describe "Api::V1::Patterns Performance", type: :request, performance: true do
   let(:api_token) { create(:api_token) }
   let(:headers) do
     {
@@ -11,7 +11,7 @@ RSpec.describe "Api::V1::Patterns Performance", type: :request do
     }
   end
 
-  describe "Query Performance" do
+  describe "Query Performance", performance: true do
     before do
       # Create test data with various categories
       categories = create_list(:category, 5)
@@ -71,7 +71,7 @@ RSpec.describe "Api::V1::Patterns Performance", type: :request do
     end
   end
 
-  describe "Caching" do
+  describe "Caching", performance: true do
     let!(:pattern) { create(:categorization_pattern) }
 
     it "returns cache headers for GET requests" do
@@ -106,7 +106,7 @@ RSpec.describe "Api::V1::Patterns Performance", type: :request do
     end
   end
 
-  describe "Request/Response Headers" do
+  describe "Request/Response Headers", performance: true do
     it "includes API version header" do
       get "/api/v1/patterns", headers: headers
 
@@ -131,7 +131,7 @@ RSpec.describe "Api::V1::Patterns Performance", type: :request do
     end
   end
 
-  describe "Pagination Performance" do
+  describe "Pagination Performance", performance: true do
     before do
       create_list(:categorization_pattern, 100)
     end
@@ -162,7 +162,7 @@ RSpec.describe "Api::V1::Patterns Performance", type: :request do
     end
   end
 
-  describe "Statistics Queries" do
+  describe "Statistics Queries", performance: true do
     let!(:patterns) do
       5.times.map do |i|
         create(:categorization_pattern,

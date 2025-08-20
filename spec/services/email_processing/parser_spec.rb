@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::Parser, type: :service do
+RSpec.describe EmailProcessing::Parser, type: :service, performance: true do
   let(:parsing_rule) { create(:parsing_rule, :bac, bank_name: "TEST_BAC_UNIQUE") }
   let(:email_account) { create(:email_account, :bac, bank_name: "TEST_BAC_UNIQUE") }
   let(:category) { create(:category, name: 'Alimentación') }
@@ -31,7 +31,7 @@ RSpec.describe EmailProcessing::Parser, type: :service do
     EMAIL
   end
 
-  describe '#initialize' do
+  describe '#initialize', performance: true do
     it 'sets email account and email data' do
       parsing_rule  # Ensure parsing rule exists
       parser = EmailProcessing::Parser.new(email_account, email_data)
@@ -53,7 +53,7 @@ RSpec.describe EmailProcessing::Parser, type: :service do
     end
   end
 
-  describe '#parse_expense' do
+  describe '#parse_expense', performance: true do
     context 'with valid parsing rule and data' do
       before do
         category # ensure category exists
@@ -169,7 +169,7 @@ RSpec.describe EmailProcessing::Parser, type: :service do
     # Note: Validation error scenarios are complex to mock properly and are tested in integration
   end
 
-  describe '#email_content' do
+  describe '#email_content', performance: true do
     it 'returns cleaned email content' do
       content = parser.send(:email_content)
       expect(content).to include('PTA LEONA SOC')
@@ -198,7 +198,7 @@ RSpec.describe EmailProcessing::Parser, type: :service do
     end
   end
 
-  describe '#valid_parsed_data?' do
+  describe '#valid_parsed_data?', performance: true do
     it 'returns true for data with amount and date' do
       data = { amount: BigDecimal('100.00'), transaction_date: Date.current }
       result = parser.send(:valid_parsed_data?, data)
@@ -224,7 +224,7 @@ RSpec.describe EmailProcessing::Parser, type: :service do
     end
   end
 
-  describe '#find_duplicate_expense' do
+  describe '#find_duplicate_expense', performance: true do
     let(:parsed_data) do
       {
         amount: BigDecimal('100.00'),
@@ -308,7 +308,7 @@ RSpec.describe EmailProcessing::Parser, type: :service do
     end
   end
 
-  describe '#set_currency' do
+  describe '#set_currency', performance: true do
     let(:expense) { build(:expense, email_account: email_account) }
     let(:parsed_data) { { amount: BigDecimal('100.00') } }
 
@@ -349,7 +349,7 @@ RSpec.describe EmailProcessing::Parser, type: :service do
     end
   end
 
-  describe '#guess_category' do
+  describe '#guess_category', performance: true do
     let(:expense) { build(:expense, email_account: email_account) }
 
     before do
@@ -435,7 +435,7 @@ RSpec.describe EmailProcessing::Parser, type: :service do
     end
   end
 
-  describe '#add_error' do
+  describe '#add_error', performance: true do
     it 'adds error to errors array' do
       parser.send(:add_error, 'Test error message')
       expect(parser.errors).to include('Test error message')
@@ -447,7 +447,7 @@ RSpec.describe EmailProcessing::Parser, type: :service do
     end
   end
 
-  describe 'integration scenarios' do
+  describe 'integration scenarios', performance: true do
     context 'complete parsing workflow' do
       before do
         create(:category, name: 'Alimentación')
@@ -521,7 +521,7 @@ RSpec.describe EmailProcessing::Parser, type: :service do
     end
 
     context 'additional edge cases' do
-      describe '#create_expense error handling' do
+      describe '#create_expense error handling', performance: true do
         let(:parsed_data) do
           {
             amount: BigDecimal('100.50'),
@@ -568,7 +568,7 @@ RSpec.describe EmailProcessing::Parser, type: :service do
         end
       end
 
-      describe '#set_currency with nil values' do
+      describe '#set_currency with nil values', performance: true do
         let(:expense) { instance_double(Expense, usd!: nil, eur!: nil, crc!: nil) }
 
         it 'handles nil values in parsed_data gracefully' do
@@ -590,7 +590,7 @@ RSpec.describe EmailProcessing::Parser, type: :service do
         end
       end
 
-      describe '#guess_category with nil values' do
+      describe '#guess_category with nil values', performance: true do
         it 'handles expense with nil description and merchant_name' do
           expense = instance_double(Expense, description: nil, merchant_name: nil)
 
@@ -610,7 +610,7 @@ RSpec.describe EmailProcessing::Parser, type: :service do
         end
       end
 
-      describe '#email_content edge cases' do
+      describe '#email_content edge cases', performance: true do
         it 'handles nil email body' do
           parser.instance_variable_set(:@email_data, { body: nil })
 
@@ -637,7 +637,7 @@ RSpec.describe EmailProcessing::Parser, type: :service do
     end
   end
 
-  describe 'large email handling' do
+  describe 'large email handling', performance: true do
     let(:small_email) { "Small email content" * 100 } # ~1.9KB
     let(:large_email) { "Large email content " * 3000 } # ~60KB
 
@@ -675,7 +675,7 @@ RSpec.describe EmailProcessing::Parser, type: :service do
     end
   end
 
-  describe 'encoding issues' do
+  describe 'encoding issues', performance: true do
     context 'with quoted-printable encoding' do
       let(:quoted_printable_content) do
         "Notificaci=C3=B3n de transacci=C3=B3n\r\n" +
@@ -718,7 +718,7 @@ RSpec.describe EmailProcessing::Parser, type: :service do
     end
   end
 
-  describe 'error handling' do
+  describe 'error handling', performance: true do
     context 'when parsing rule is missing' do
       it 'returns nil when no parsing rule found' do
         # Create a parser with a bank that has no parsing rule
@@ -743,7 +743,7 @@ RSpec.describe EmailProcessing::Parser, type: :service do
     end
   end
 
-  describe '#add_error' do
+  describe '#add_error', performance: true do
     it 'logs errors with email account context' do
       expect(Rails.logger).to receive(:error).with("[EmailProcessing::Parser] #{email_account.email}: Test error")
       parser.send(:add_error, "Test error")
@@ -756,7 +756,7 @@ RSpec.describe EmailProcessing::Parser, type: :service do
     end
   end
 
-  describe 'performance optimizations' do
+  describe 'performance optimizations', performance: true do
     it 'uses StringIO for memory efficiency in large emails' do
       large_content = "Line\n" * 1000
       email_data[:body] = large_content

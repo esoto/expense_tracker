@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "Categorization Models Integration", type: :model do
+RSpec.describe "Categorization Models Integration", type: :model, integration: true do
   let(:category) { Category.create!(name: "Food & Dining") }
   let(:email_account) { EmailAccount.create!(email: "test@example.com", provider: "gmail", bank_name: "Test Bank") }
   let(:expense) do
@@ -17,7 +17,7 @@ RSpec.describe "Categorization Models Integration", type: :model do
     )
   end
 
-  describe "full categorization workflow" do
+  describe "full categorization workflow", integration: true do
     it "creates and uses patterns to categorize expenses" do
       # Create a merchant pattern
       merchant_pattern = CategorizationPattern.create!(
@@ -95,7 +95,7 @@ RSpec.describe "Categorization Models Integration", type: :model do
     end
   end
 
-  describe "merchant normalization" do
+  describe "merchant normalization", integration: true do
     it "normalizes merchant names and creates aliases" do
       # Create canonical merchant
       canonical = CanonicalMerchant.find_or_create_from_raw("STARBUCKS #1234")
@@ -119,7 +119,7 @@ RSpec.describe "Categorization Models Integration", type: :model do
     end
   end
 
-  describe "pattern learning and improvement" do
+  describe "pattern learning and improvement", integration: true do
     it "learns from user corrections" do
       # Initial wrong categorization
       wrong_category = Category.create!(name: "Shopping")
@@ -145,7 +145,7 @@ RSpec.describe "Categorization Models Integration", type: :model do
     end
   end
 
-  describe "performance tracking" do
+  describe "performance tracking", integration: true do
     it "tracks pattern performance over time" do
       pattern = CategorizationPattern.create!(
         category: category,
@@ -167,7 +167,7 @@ RSpec.describe "Categorization Models Integration", type: :model do
     end
   end
 
-  describe "database integrity" do
+  describe "database integrity", integration: true do
     it "maintains referential integrity with cascading deletes" do
       pattern = CategorizationPattern.create!(
         category: category,
@@ -196,7 +196,7 @@ RSpec.describe "Categorization Models Integration", type: :model do
     end
   end
 
-  describe "migration rollback safety" do
+  describe "migration rollback safety", integration: true do
     it "verifies all tables exist with correct structure" do
       # Check all tables exist
       expect(ActiveRecord::Base.connection.table_exists?(:categorization_patterns)).to be true

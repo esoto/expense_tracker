@@ -1,7 +1,7 @@
 require 'rails_helper'
 
-RSpec.describe Api::ClientErrorsController, type: :controller do
-  describe 'POST #create' do
+RSpec.describe Api::ClientErrorsController, type: :controller, unit: true do
+  describe 'POST #create', unit: true do
     let(:error_params) do
       {
         message: 'WebSocket connection failed',

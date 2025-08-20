@@ -1,0 +1,54 @@
+#!/usr/bin/env ruby
+# Fast unit tests for development workflow
+# Only runs tests tagged as :unit or by default (models, controllers, services without integration tags)
+
+require 'fileutils'
+
+# Ensure we're in the Rails root
+Dir.chdir(File.expand_path('..', __dir__))
+
+# Set test environment and tier for coverage
+ENV['RAILS_ENV'] = 'test'
+ENV['TEST_TIER'] = 'unit'
+
+# Build RSpec command with properly quoted arguments
+# In CI, be more explicit about which tests to run
+cmd = if ENV['CI']
+  # In CI, run unit-tagged tests or fallback to specific directories
+  "bundle exec rspec --tag unit --format progress --fail-fast=10 --order random"
+else
+  "bundle exec rspec --tag unit --format progress --profile=5 --fail-fast=5 --order random"
+end
+
+puts "🧪 Running unit tests (should complete in <30 seconds)..."
+puts "Command: #{cmd}"
+puts
+
+# In CI, add some debugging info
+if ENV['CI']
+  puts "CI Environment detected"
+  puts "Ruby version: #{RUBY_VERSION}"
+  puts "Bundler version: #{Bundler::VERSION}" if defined?(Bundler::VERSION)
+  puts "Current directory: #{Dir.pwd}"
+  
+  # Check if test files exist
+  unit_tests = Dir['spec/**/*_spec.rb'].select do |file|
+    content = File.read(file)
+    content.include?('unit: true')
+  end
+  puts "Found #{unit_tests.size} unit-tagged test files"
+end
+
+# Execute with proper exit code
+system(cmd)
+exit_code = $?.exitstatus
+
+if exit_code == 0
+  puts
+  puts "✅ All unit tests passed!"
+else
+  puts
+  puts "❌ Some unit tests failed (exit code: #{exit_code})"
+end
+
+exit exit_code

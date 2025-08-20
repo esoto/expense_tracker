@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job do
+RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job, integration: true do
   include ActiveJob::TestHelper
 
   let(:current_date) { Date.parse('2025-08-10') }
@@ -15,7 +15,7 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job do
     Rails.cache.clear
   end
 
-  describe 'concurrency control' do
+  describe 'concurrency control', integration: true do
     it 'prevents concurrent execution for same account' do
       lock_key = "metrics_calculation:#{email_account.id}"
       Rails.cache.write(lock_key, Time.current.to_s, expires_in: 5.minutes)
@@ -47,7 +47,7 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job do
     end
   end
 
-  describe 'performance monitoring' do
+  describe 'performance monitoring', integration: true do
     it 'tracks job metrics on success' do
       job.perform(email_account_id: email_account.id, period: :month, reference_date: current_date)
 
@@ -102,7 +102,7 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job do
     end
   end
 
-  describe 'force refresh' do
+  describe 'force refresh', integration: true do
     it 'clears cache when force_refresh is true' do
       # Pre-populate cache
       cache_key = "metrics_calculator:account_#{email_account.id}:month:#{current_date.iso8601}"
@@ -119,7 +119,7 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job do
     end
   end
 
-  describe 'extended cache' do
+  describe 'extended cache', integration: true do
     it 'uses ExtendedCacheMetricsCalculator for background calculations' do
       expect(ExtendedCacheMetricsCalculator).to receive(:new)
         .with(email_account: email_account, period: :month, reference_date: current_date, cache_hours: 4)
@@ -139,7 +139,7 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job do
     end
   end
 
-  describe '.enqueue_for_all_accounts' do
+  describe '.enqueue_for_all_accounts', integration: true do
     it 'enqueues jobs for all active email accounts' do
       # Assuming email_account and other_email_account are active by default
       expect {
@@ -163,11 +163,11 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job do
 end
 
 # Test for ExtendedCacheMetricsCalculator
-RSpec.describe ExtendedCacheMetricsCalculator do
+RSpec.describe ExtendedCacheMetricsCalculator, integration: true do
   let(:email_account) { create(:email_account) }
   let(:calculator) { described_class.new(email_account: email_account, period: :month, cache_hours: 4) }
 
-  describe '#initialize' do
+  describe '#initialize', integration: true do
     it 'accepts cache_hours parameter' do
       expect(calculator.cache_hours).to eq(4)
     end
@@ -177,7 +177,7 @@ RSpec.describe ExtendedCacheMetricsCalculator do
     end
   end
 
-  describe '#calculate' do
+  describe '#calculate', integration: true do
     it 'uses extended cache expiration' do
       # Create some test data
       create(:expense, email_account: email_account, amount: 100, transaction_date: Date.current)

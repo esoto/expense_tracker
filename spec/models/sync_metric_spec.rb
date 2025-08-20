@@ -1,14 +1,14 @@
 require 'rails_helper'
 
-RSpec.describe SyncMetric, type: :model do
+RSpec.describe SyncMetric, type: :model, performance: true do
   # Associations
-  describe 'associations' do
+  describe 'associations', performance: true do
     it { should belong_to(:sync_session) }
     it { should belong_to(:email_account).optional }
   end
 
   # Validations
-  describe 'validations' do
+  describe 'validations', performance: true do
     it { should validate_presence_of(:metric_type) }
     it { should validate_presence_of(:started_at) }
 
@@ -22,7 +22,7 @@ RSpec.describe SyncMetric, type: :model do
   end
 
   # Scopes
-  describe 'scopes' do
+  describe 'scopes', performance: true do
     let!(:sync_session) { create(:sync_session) }
     let!(:email_account) { create(:email_account) }
     let!(:successful_metric) { create(:sync_metric, sync_session: sync_session, success: true) }
@@ -30,21 +30,21 @@ RSpec.describe SyncMetric, type: :model do
     let!(:old_metric) { create(:sync_metric, sync_session: sync_session, started_at: 2.days.ago) }
     let!(:recent_metric) { create(:sync_metric, sync_session: sync_session, started_at: 1.hour.ago) }
 
-    describe '.successful' do
+    describe '.successful', performance: true do
       it 'returns only successful metrics' do
         expect(SyncMetric.successful).to include(successful_metric)
         expect(SyncMetric.successful).not_to include(failed_metric)
       end
     end
 
-    describe '.failed' do
+    describe '.failed', performance: true do
       it 'returns only failed metrics' do
         expect(SyncMetric.failed).to include(failed_metric)
         expect(SyncMetric.failed).not_to include(successful_metric)
       end
     end
 
-    describe '.by_type' do
+    describe '.by_type', performance: true do
       let!(:fetch_metric) { create(:sync_metric, sync_session: sync_session, metric_type: 'email_fetch') }
       let!(:parse_metric) { create(:sync_metric, sync_session: sync_session, metric_type: 'email_parse') }
 
@@ -54,7 +54,7 @@ RSpec.describe SyncMetric, type: :model do
       end
     end
 
-    describe '.recent' do
+    describe '.recent', performance: true do
       it 'returns metrics ordered by started_at desc' do
         results = SyncMetric.recent
         expect(results.map(&:started_at)).to eq(results.map(&:started_at).sort.reverse)
@@ -62,7 +62,7 @@ RSpec.describe SyncMetric, type: :model do
       end
     end
 
-    describe '.last_24_hours' do
+    describe '.last_24_hours', performance: true do
       it 'returns metrics from the last 24 hours' do
         expect(SyncMetric.last_24_hours).to include(recent_metric)
         expect(SyncMetric.last_24_hours).not_to include(old_metric)
@@ -71,8 +71,8 @@ RSpec.describe SyncMetric, type: :model do
   end
 
   # Callbacks
-  describe 'callbacks' do
-    describe '#calculate_duration' do
+  describe 'callbacks', performance: true do
+    describe '#calculate_duration', performance: true do
       let(:sync_session) { create(:sync_session) }
 
       context 'when completed_at and started_at are present' do
@@ -107,7 +107,7 @@ RSpec.describe SyncMetric, type: :model do
   end
 
   # Class methods
-  describe 'class methods' do
+  describe 'class methods', performance: true do
     let!(:sync_session) { create(:sync_session) }
 
     before do
@@ -135,7 +135,7 @@ RSpec.describe SyncMetric, type: :model do
       )
     end
 
-    describe '.average_duration_by_type' do
+    describe '.average_duration_by_type', performance: true do
       it 'returns average duration for each metric type' do
         averages = SyncMetric.average_duration_by_type(:last_24_hours)
 
@@ -144,7 +144,7 @@ RSpec.describe SyncMetric, type: :model do
       end
     end
 
-    describe '.success_rate_by_type' do
+    describe '.success_rate_by_type', performance: true do
       it 'returns success rate percentage for each metric type' do
         rates = SyncMetric.success_rate_by_type(:last_24_hours)
 
@@ -153,7 +153,7 @@ RSpec.describe SyncMetric, type: :model do
       end
     end
 
-    describe '.error_distribution' do
+    describe '.error_distribution', performance: true do
       before do
         create(:sync_metric,
           sync_session: sync_session,
@@ -184,7 +184,7 @@ RSpec.describe SyncMetric, type: :model do
       end
     end
 
-    describe '.peak_hours' do
+    describe '.peak_hours', performance: true do
       before do
         # Create metrics at different hours within the last 7 days
         create(:sync_metric, sync_session: sync_session, started_at: 2.days.ago.beginning_of_day + 9.hours)
@@ -201,7 +201,7 @@ RSpec.describe SyncMetric, type: :model do
       end
     end
 
-    describe '.account_performance_summary' do
+    describe '.account_performance_summary', performance: true do
       let!(:email_account1) { create(:email_account, bank_name: 'BAC', email: 'test1@example.com') }
       let!(:email_account2) { create(:email_account, bank_name: 'BCR', email: 'test2@example.com') }
 
@@ -278,7 +278,7 @@ RSpec.describe SyncMetric, type: :model do
       end
     end
 
-    describe '.hourly_performance' do
+    describe '.hourly_performance', performance: true do
       before do
         create(:sync_metric,
           sync_session: sync_session,
@@ -312,10 +312,10 @@ RSpec.describe SyncMetric, type: :model do
   end
 
   # Instance methods
-  describe 'instance methods' do
+  describe 'instance methods', performance: true do
     let(:sync_session) { create(:sync_session) }
 
-    describe '#duration_in_seconds' do
+    describe '#duration_in_seconds', performance: true do
       it 'converts duration from milliseconds to seconds' do
         metric = create(:sync_metric, sync_session: sync_session, duration: 5500)
         expect(metric.duration_in_seconds).to eq(5.5)
@@ -327,7 +327,7 @@ RSpec.describe SyncMetric, type: :model do
       end
     end
 
-    describe '#processing_rate' do
+    describe '#processing_rate', performance: true do
       context 'with valid data' do
         it 'calculates emails per second' do
           metric = create(:sync_metric,
@@ -362,7 +362,7 @@ RSpec.describe SyncMetric, type: :model do
       end
     end
 
-    describe '#status_badge' do
+    describe '#status_badge', performance: true do
       it 'returns success for successful metrics' do
         metric = create(:sync_metric, sync_session: sync_session, success: true)
         expect(metric.status_badge).to eq('success')

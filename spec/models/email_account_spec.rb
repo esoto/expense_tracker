@@ -1,7 +1,7 @@
 require 'rails_helper'
 
-RSpec.describe EmailAccount, type: :model do
-  describe 'validations' do
+RSpec.describe EmailAccount, type: :model, integration: true do
+  describe 'validations', integration: true do
     it 'is valid with valid attributes' do
       email_account = build(:email_account)
       expect(email_account).to be_valid
@@ -64,7 +64,7 @@ RSpec.describe EmailAccount, type: :model do
     end
   end
 
-  describe 'associations' do
+  describe 'associations', integration: true do
     let(:email_account) { create(:email_account) }
 
     it 'has many expenses' do
@@ -77,7 +77,7 @@ RSpec.describe EmailAccount, type: :model do
     end
   end
 
-  describe 'scopes' do
+  describe 'scopes', integration: true do
     let!(:active_account) { create(:email_account, :gmail, active: true) }
     let!(:inactive_account) { create(:email_account, :inactive) }
 
@@ -95,11 +95,11 @@ RSpec.describe EmailAccount, type: :model do
     end
   end
 
-  describe 'instance methods' do
+  describe 'instance methods', integration: true do
     let(:gmail_account) { build(:email_account, :gmail) }
     let(:custom_account) { build(:email_account, :custom) }
 
-    describe '#imap_settings' do
+    describe '#imap_settings', integration: true do
       it 'returns Gmail IMAP settings for Gmail provider' do
         settings = gmail_account.imap_settings
         expect(settings[:address]).to eq('imap.gmail.com')
@@ -116,7 +116,7 @@ RSpec.describe EmailAccount, type: :model do
       end
     end
 
-    describe '#active?' do
+    describe '#active?', integration: true do
       it 'returns true for active account' do
         gmail_account.active = true
         expect(gmail_account).to be_active
@@ -128,14 +128,14 @@ RSpec.describe EmailAccount, type: :model do
       end
     end
 
-    describe '#display_name' do
+    describe '#display_name', integration: true do
       it 'returns email and bank name' do
         expect(gmail_account.display_name).to eq('test@gmail.com (BAC)')
       end
     end
   end
 
-  describe 'encryption' do
+  describe 'encryption', integration: true do
     let(:email_account) { create(:email_account, encrypted_password: 'secret_password') }
 
     it 'encrypts password' do
@@ -149,7 +149,7 @@ RSpec.describe EmailAccount, type: :model do
     end
   end
 
-  describe 'settings management' do
+  describe 'settings management', integration: true do
     let(:email_account) { create(:email_account, :custom) }
 
     it 'stores and retrieves settings as JSON' do
@@ -171,7 +171,7 @@ RSpec.describe EmailAccount, type: :model do
     end
   end
 
-  describe 'IMAP provider settings' do
+  describe 'IMAP provider settings', integration: true do
     it 'returns outlook IMAP settings' do
       outlook_account = create(:email_account, provider: 'outlook', email: 'test@outlook.com')
       settings = outlook_account.imap_settings
@@ -206,7 +206,7 @@ RSpec.describe EmailAccount, type: :model do
     end
   end
 
-  describe 'constants' do
+  describe 'constants', integration: true do
     it 'defines Costa Rican banks' do
       expect(EmailAccount::COSTA_RICAN_BANKS).to include('BCR', 'BAC', 'Scotiabank', 'Banco Nacional')
       expect(EmailAccount::COSTA_RICAN_BANKS).to be_frozen

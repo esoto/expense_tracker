@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::Fetcher, 'sync session integration' do
+RSpec.describe EmailProcessing::Fetcher, 'sync session integration', integration: true do
   let(:email_account) { create(:email_account) }
   let(:sync_session) { create(:sync_session, :running) }
   let(:sync_session_account) { create(:sync_session_account, sync_session: sync_session, email_account: email_account, status: 'processing') }
@@ -21,7 +21,7 @@ RSpec.describe EmailProcessing::Fetcher, 'sync session integration' do
     allow(mock_email_processor).to receive(:errors).and_return([])
   end
 
-  describe 'when sync_session_account is provided' do
+  describe 'when sync_session_account is provided', integration: true do
     let(:message_ids) { [ 1, 2, 3, 4, 5 ] }
 
     before do
@@ -134,7 +134,7 @@ RSpec.describe EmailProcessing::Fetcher, 'sync session integration' do
     end
   end
 
-  describe 'when sync_session_account is nil' do
+  describe 'when sync_session_account is nil', integration: true do
     let(:fetcher_without_sync) do
       EmailProcessing::Fetcher.new(
         email_account,

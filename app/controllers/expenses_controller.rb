@@ -1,5 +1,5 @@
 class ExpensesController < ApplicationController
-  before_action :authenticate_user!, except: [ :dashboard ] # Allow dashboard without auth for now
+  before_action :authenticate_user!, except: [ :dashboard, :bulk_destroy, :bulk_categorize, :bulk_update_status ] # Allow bulk operations without auth for now
   before_action :set_expense, only: [ :show, :edit, :update, :destroy, :correct_category, :accept_suggestion, :reject_suggestion, :update_status, :duplicate ]
   before_action :authorize_expense!, only: [ :edit, :update, :destroy, :correct_category, :accept_suggestion, :reject_suggestion, :update_status, :duplicate ]
 
@@ -513,7 +513,7 @@ class ExpensesController < ApplicationController
 
   def filter_params
     params.permit(
-      :date_range, :start_date, :end_date,
+      :date_range, :start_date, :end_date, :date_from, :date_to,
       :search_query, :status, :period,
       :min_amount, :max_amount,
       :sort_by, :sort_direction,
@@ -522,7 +522,11 @@ class ExpensesController < ApplicationController
       category_ids: [], banks: [] # Array filters
     ).tap do |p|
       # Convert single value filters to arrays if needed
-      p[:category_ids] = [ params[:category] ] if params[:category].present? && !p[:category_ids].present?
+      if params[:category].present? && !p[:category_ids].present?
+        # Convert category name to ID
+        category = Category.find_by(name: params[:category])
+        p[:category_ids] = category ? [ category.id ] : []
+      end
       p[:banks] = [ params[:bank] ] if params[:bank].present? && !p[:banks].present?
     end
   end

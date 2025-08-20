@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe "Budgets", type: :request do
+RSpec.describe "Budgets", type: :request, integration: true do
   let(:email_account) { create(:email_account) }
   let(:category) { create(:category) }
   let(:valid_attributes) do
@@ -33,7 +33,7 @@ RSpec.describe "Budgets", type: :request do
     allow(EmailAccount).to receive_message_chain(:active, :first).and_return(email_account)
   end
 
-  describe "POST /budgets" do
+  describe "POST /budgets", integration: true do
     context "with valid parameters" do
       it "creates a new Budget" do
         expect {
@@ -68,7 +68,7 @@ RSpec.describe "Budgets", type: :request do
     end
   end
 
-  describe "PATCH /budgets/:id" do
+  describe "PATCH /budgets/:id", integration: true do
     let(:budget) { create(:budget, email_account: email_account) }
     let(:new_attributes) do
       {
@@ -109,7 +109,7 @@ RSpec.describe "Budgets", type: :request do
     end
   end
 
-  describe "DELETE /budgets/:id" do
+  describe "DELETE /budgets/:id", integration: true do
     let!(:budget) { create(:budget, email_account: email_account) }
 
     it "destroys the requested budget" do
@@ -125,7 +125,7 @@ RSpec.describe "Budgets", type: :request do
     end
   end
 
-  describe "POST /budgets/:id/duplicate" do
+  describe "POST /budgets/:id/duplicate", integration: true do
     let(:original_budget) { create(:budget, email_account: email_account, period: 'monthly', active: false) }
 
     it "creates a duplicate budget for the next period" do
@@ -143,7 +143,7 @@ RSpec.describe "Budgets", type: :request do
     end
   end
 
-  describe "POST /budgets/:id/deactivate" do
+  describe "POST /budgets/:id/deactivate", integration: true do
     let(:budget) { create(:budget, email_account: email_account, active: true) }
 
     it "deactivates the budget" do
@@ -159,7 +159,7 @@ RSpec.describe "Budgets", type: :request do
     end
   end
 
-  describe "GET /budgets/quick_set" do
+  describe "GET /budgets/quick_set", integration: true do
     it "returns success for HTML format" do
       get quick_set_budgets_path, params: { period: 'monthly' }
       expect(response).to be_successful

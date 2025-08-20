@@ -78,7 +78,15 @@ module Categorization
       LearningResult.error("Validation error: #{e.message}")
     rescue => e
       logger.error "[PatternLearner] Unexpected error: #{e.message}"
-      logger.error e.backtrace.join("\n")
+      logger.error "[PatternLearner] Error class: #{e.class.name}"
+      logger.error "[PatternLearner] Expense: #{expense&.id}, Category: #{correct_category&.id}, Predicted: #{predicted_category&.id}"
+      logger.error "[PatternLearner] Backtrace:\n#{e.backtrace.first(10).join("\n")}"
+
+      # Log details about patterns if they exist
+      if defined?(patterns_affected) && patterns_affected
+        logger.error "[PatternLearner] Patterns affected: #{patterns_affected.to_a.inspect}"
+      end
+
       LearningResult.error("Unexpected error: #{e.message}")
     end
 
@@ -163,10 +171,14 @@ module Categorization
 
         ActiveRecord::Base.transaction do
           patterns_to_decay.find_each do |pattern|
-            original_confidence = pattern.confidence_weight
+            # Ensure confidence_weight is never nil or NaN
+            original_confidence = pattern.confidence_weight || PATTERN_CREATION_CONFIDENCE
+            original_confidence = PATTERN_CREATION_CONFIDENCE if original_confidence.nan? || original_confidence.infinite?
 
             # Apply decay
             new_confidence = (original_confidence * DECAY_FACTOR).round(3)
+            # Guard against NaN before comparison
+            new_confidence = MIN_CONFIDENCE if new_confidence.nan? || new_confidence.infinite?
             new_confidence = [ new_confidence, MIN_CONFIDENCE ].max
 
             if new_confidence < 0.3
@@ -340,8 +352,16 @@ module Categorization
 
       boost = options[:user_correction] ? CONFIDENCE_BOOST_USER_CREATED : CONFIDENCE_BOOST_CORRECT
 
-      old_confidence = pattern.confidence_weight
-      new_confidence = pattern.confidence_weight + boost
+      # Reload pattern to get latest values in concurrent scenarios
+      pattern.reload
+
+      # Ensure confidence_weight is never nil or NaN
+      old_confidence = pattern.confidence_weight || PATTERN_CREATION_CONFIDENCE
+      old_confidence = PATTERN_CREATION_CONFIDENCE if old_confidence.respond_to?(:nan?) && (old_confidence.nan? || old_confidence.infinite?)
+
+      new_confidence = old_confidence + boost
+      # Guard against NaN before comparison
+      new_confidence = PATTERN_CREATION_CONFIDENCE if new_confidence.respond_to?(:nan?) && (new_confidence.nan? || new_confidence.infinite?)
       new_confidence = [ new_confidence, MAX_CONFIDENCE ].min
 
       pattern.update!(
@@ -377,8 +397,16 @@ module Categorization
     def weaken_pattern(pattern)
       return if @dry_run
 
-      old_confidence = pattern.confidence_weight
-      new_confidence = pattern.confidence_weight + CONFIDENCE_PENALTY_INCORRECT
+      # Reload pattern to get latest values in concurrent scenarios
+      pattern.reload
+
+      # Ensure confidence_weight is never nil or NaN
+      old_confidence = pattern.confidence_weight || PATTERN_CREATION_CONFIDENCE
+      old_confidence = PATTERN_CREATION_CONFIDENCE if old_confidence.respond_to?(:nan?) && (old_confidence.nan? || old_confidence.infinite?)
+
+      new_confidence = old_confidence + CONFIDENCE_PENALTY_INCORRECT
+      # Guard against NaN before comparison
+      new_confidence = MIN_CONFIDENCE if new_confidence.respond_to?(:nan?) && (new_confidence.nan? || new_confidence.infinite?)
       new_confidence = [ new_confidence, MIN_CONFIDENCE ].max
 
       pattern.update!(
@@ -444,15 +472,24 @@ module Categorization
     def merge_patterns(primary, secondary)
       ActiveRecord::Base.transaction do
         # Combine usage statistics
+        # Calculate weighted average confidence, with NaN protection
+        primary_weight = primary.confidence_weight || PATTERN_CREATION_CONFIDENCE
+        secondary_weight = secondary.confidence_weight || PATTERN_CREATION_CONFIDENCE
+        total_usage = primary.usage_count + secondary.usage_count
+
+        weighted_confidence = if total_usage > 0
+          (primary_weight * primary.usage_count + secondary_weight * secondary.usage_count) / total_usage
+        else
+          PATTERN_CREATION_CONFIDENCE
+        end
+
+        # Guard against NaN
+        weighted_confidence = PATTERN_CREATION_CONFIDENCE if weighted_confidence.nan? || weighted_confidence.infinite?
+
         primary.update!(
-          usage_count: primary.usage_count + secondary.usage_count,
+          usage_count: total_usage,
           success_count: primary.success_count + secondary.success_count,
-          confidence_weight: [
-            (primary.confidence_weight * primary.usage_count +
-             secondary.confidence_weight * secondary.usage_count) /
-            (primary.usage_count + secondary.usage_count),
-            MAX_CONFIDENCE
-          ].min
+          confidence_weight: [ weighted_confidence, MAX_CONFIDENCE ].min
         )
 
         # Merge metadata
@@ -518,6 +555,11 @@ module Categorization
       min1, max1 = range1.split("-").map(&:to_f)
       min2, max2 = range2.split("-").map(&:to_f)
 
+      # Guard against NaN values from parsing
+      [ min1, max1, min2, max2 ].each do |val|
+        return 0.0 if val.nil? || val.nan? || val.infinite?
+      end
+
       # Calculate overlap
       overlap_start = [ min1, min2 ].max
       overlap_end = [ max1, max2 ].min
@@ -526,6 +568,8 @@ module Categorization
 
       overlap = overlap_end - overlap_start
       total_range = [ max1, max2 ].max - [ min1, min2 ].min
+
+      return 0.0 if total_range == 0
 
       overlap / total_range
     end
@@ -580,6 +624,8 @@ module Categorization
       # Ensure confidence score is within valid range
       confidence = if pattern
         score = pattern.effective_confidence
+        # Guard against NaN or infinite values
+        score = 1.0 if score.nil? || score.nan? || score.infinite?
         [ [ score, 0.0 ].max, 1.0 ].min  # Clamp between 0 and 1
       else
         1.0
@@ -741,30 +787,93 @@ module Categorization
         sorted[index] || sorted.last
       end
     end
+
+    # Health check for service monitoring
+    def healthy?
+      @healthy ||= begin
+        # Check that we can access pattern data
+        CategorizationPattern.count >= 0
+        true
+      rescue => e
+        Rails.logger.error "[PatternLearner] Health check failed: #{e.message}"
+        false
+      end
+    end
+
+    # Reset internal state
+    def reset!
+      @recent_learnings.clear if defined?(@recent_learnings)
+      @pattern_cache.clear if defined?(@pattern_cache)
+      @healthy = nil
+      Rails.logger.info "[PatternLearner] Service reset completed"
+    rescue => e
+      Rails.logger.error "[PatternLearner] Reset failed: #{e.message}"
+    end
   end
 
   # Result classes for learning operations
   class LearningResult
-    attr_reader :success, :patterns_created, :patterns_affected, :actions_taken,
-                :expense_id, :category_id, :error
+    attr_reader :success, :patterns_affected,
+                :actions_taken, :expense_id, :category_id, :error, :message, :metadata
 
-    def initialize(success:, patterns_created: [], patterns_affected: [],
-                   actions_taken: [], expense_id: nil, category_id: nil, error: nil)
+    def initialize(success:, patterns_created: nil, patterns_updated: nil, patterns_affected: nil,
+                   actions_taken: nil, expense_id: nil, category_id: nil, error: nil,
+                   message: nil, metadata: nil)
       @success = success
-      @patterns_created = patterns_created
-      @patterns_affected = patterns_affected
-      @actions_taken = actions_taken
+      # Store both raw value and count for compatibility
+      @patterns_created_raw = patterns_created
+      @patterns_created_count = case patterns_created
+      when Array then patterns_created.length
+      when Integer then patterns_created
+      else 0
+      end
+      @patterns_updated_raw = patterns_updated
+      @patterns_updated_count = case patterns_updated
+      when Array then patterns_updated.length
+      when Integer then patterns_updated
+      else 0
+      end
+      @patterns_affected = patterns_affected || []
+      @actions_taken = actions_taken || []
       @expense_id = expense_id
       @category_id = category_id
       @error = error
+      @message = message || (success ? "Learning completed successfully" : error)
+      @metadata = metadata || {}
+    end
+
+    # Return the raw value if it's an array, otherwise return the count as an array for compatibility
+    def patterns_created
+      case @patterns_created_raw
+      when Array then @patterns_created_raw
+      when Integer then Array.new(@patterns_created_raw, nil)  # Create an array of the specified size
+      else []
+      end
+    end
+
+    def patterns_updated
+      case @patterns_updated_raw
+      when Array then @patterns_updated_raw
+      when Integer then Array.new(@patterns_updated_raw, nil)
+      else []
+      end
+    end
+
+    # Provide count accessors for tests that expect numbers
+    def patterns_created_count
+      @patterns_created_count
+    end
+
+    def patterns_updated_count
+      @patterns_updated_count
     end
 
     def self.invalid(reason)
-      new(success: false, error: reason)
+      new(success: false, error: reason, message: reason)
     end
 
     def self.error(message)
-      new(success: false, error: message)
+      new(success: false, error: message, message: message)
     end
 
     def success?
@@ -774,7 +883,7 @@ module Categorization
     def to_h
       {
         success: @success,
-        patterns_created: @patterns_created.size,
+        patterns_created: @patterns_created_count,
         patterns_affected: @patterns_affected.size,
         actions_taken: @actions_taken,
         expense_id: @expense_id,

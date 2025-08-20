@@ -2,12 +2,12 @@
 
 require 'rails_helper'
 
-RSpec.describe MetricsCalculator, 'budget calculations' do
+RSpec.describe MetricsCalculator, 'budget calculations', performance: true do
   let(:email_account) { create(:email_account) }
   let(:category) { create(:category) }
   let(:calculator) { described_class.new(email_account: email_account, period: :month) }
 
-  describe '#calculate_budget_data' do
+  describe '#calculate_budget_data', performance: true do
     context 'without any budgets' do
       it 'returns default budget data' do
         result = calculator.calculate
@@ -159,7 +159,7 @@ RSpec.describe MetricsCalculator, 'budget calculations' do
     end
   end
 
-  describe 'performance' do
+  describe 'performance', performance: true do
     before do
       # Create multiple budgets and expenses
       3.times do |i|

@@ -1,8 +1,8 @@
 require 'rails_helper'
 
-RSpec.describe ApiToken, type: :model do
+RSpec.describe ApiToken, type: :model, integration: true do
   include ActiveSupport::Testing::TimeHelpers
-  describe 'validations' do
+  describe 'validations', integration: true do
     let!(:token) { create(:api_token, name: 'Test Token', expires_at: 1.year.from_now, active: true) }
 
     it 'is valid with valid attributes' do
@@ -29,7 +29,7 @@ RSpec.describe ApiToken, type: :model do
     end
   end
 
-  describe 'scopes' do
+  describe 'scopes', integration: true do
     let!(:active_token) { create(:api_token, name: 'Active Token', expires_at: 1.year.from_now, active: true) }
     let!(:inactive_token) { create(:api_token, name: 'Inactive Token', expires_at: 1.year.from_now, active: false) }
     let!(:expired_token) { create(:api_token, name: 'Expired Token', expires_at: 1.day.from_now, active: true) }
@@ -45,7 +45,7 @@ RSpec.describe ApiToken, type: :model do
     end
   end
 
-  describe 'callbacks' do
+  describe 'callbacks', integration: true do
     it 'generates token on creation' do
       token = create(:api_token, name: 'Test Token', expires_at: 1.year.from_now)
       expect(token.token).to be_present
@@ -64,7 +64,7 @@ RSpec.describe ApiToken, type: :model do
     end
   end
 
-  describe '.authenticate' do
+  describe '.authenticate', integration: true do
     let!(:valid_token) { create(:api_token, name: 'Valid Token', expires_at: 1.year.from_now, active: true) }
     let!(:inactive_token) { create(:api_token, name: 'Inactive Token', expires_at: 1.year.from_now, active: false) }
 
@@ -151,7 +151,7 @@ RSpec.describe ApiToken, type: :model do
     end
   end
 
-  describe '#valid_token?' do
+  describe '#valid_token?', integration: true do
     it 'returns true for active unexpired token' do
       token = create(:api_token, name: 'Valid Token', expires_at: 1.year.from_now, active: true)
       expect(token).to be_valid_token
@@ -174,7 +174,7 @@ RSpec.describe ApiToken, type: :model do
     end
   end
 
-  describe '#expired?' do
+  describe '#expired?', integration: true do
     it 'returns true for expired token' do
       token = create(:api_token, name: 'Expired Token', expires_at: 1.year.from_now, active: true)
       token.update_column(:expires_at, 1.day.ago)
@@ -192,7 +192,7 @@ RSpec.describe ApiToken, type: :model do
     end
   end
 
-  describe '.generate_secure_token' do
+  describe '.generate_secure_token', integration: true do
     it 'generates unique tokens' do
       token1 = ApiToken.generate_secure_token
       token2 = ApiToken.generate_secure_token
@@ -203,7 +203,7 @@ RSpec.describe ApiToken, type: :model do
     end
   end
 
-  describe 'token security' do
+  describe 'token security', integration: true do
     let(:token) { create(:api_token, name: 'Security Test', expires_at: 1.year.from_now) }
 
     it 'stores hashed token digest' do
@@ -226,7 +226,7 @@ RSpec.describe ApiToken, type: :model do
     end
   end
 
-  describe 'additional methods' do
+  describe 'additional methods', integration: true do
     it 'can touch last_used timestamp' do
       token = create(:api_token, name: 'Test Token', expires_at: 1.year.from_now, active: true)
       expect(token.last_used_at).to be_nil
@@ -242,7 +242,7 @@ RSpec.describe ApiToken, type: :model do
     end
   end
 
-  describe 'expired scope' do
+  describe 'expired scope', integration: true do
     let!(:expired_token) { create(:api_token, :expired) }
     let!(:valid_token) { create(:api_token) }
 
@@ -252,7 +252,7 @@ RSpec.describe ApiToken, type: :model do
     end
   end
 
-  describe 'edge cases and validations' do
+  describe 'edge cases and validations', integration: true do
     it 'validates name length maximum' do
       long_name = 'a' * 256
       token = build(:api_token, name: long_name)
@@ -293,7 +293,7 @@ RSpec.describe ApiToken, type: :model do
     end
   end
 
-  describe 'callback edge cases' do
+  describe 'callback edge cases', integration: true do
     it 'does not generate token when updating existing record' do
       token = create(:api_token)
       original_digest = token.token_digest

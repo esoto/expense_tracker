@@ -1,17 +1,17 @@
 require 'rails_helper'
 
-RSpec.describe Expense, type: :model do
-  describe "ML Confidence functionality" do
+RSpec.describe Expense, type: :model, integration: true do
+  describe "ML Confidence functionality", integration: true do
     let(:email_account) { create(:email_account) }
     let(:category) { create(:category, name: "Alimentación") }
     let(:suggested_category) { create(:category, name: "Transporte") }
     let(:expense) { create(:expense, email_account: email_account, category: category) }
 
-    describe "associations" do
+    describe "associations", integration: true do
       it { should belong_to(:ml_suggested_category).class_name("Category").optional }
     end
 
-    describe "#confidence_level" do
+    describe "#confidence_level", integration: true do
       context "when ml_confidence is nil" do
         before { expense.ml_confidence = nil }
         it { expect(expense.confidence_level).to eq(:none) }
@@ -38,7 +38,7 @@ RSpec.describe Expense, type: :model do
       end
     end
 
-    describe "#confidence_percentage" do
+    describe "#confidence_percentage", integration: true do
       context "when ml_confidence is nil" do
         before { expense.ml_confidence = nil }
         it { expect(expense.confidence_percentage).to eq(0) }
@@ -50,7 +50,7 @@ RSpec.describe Expense, type: :model do
       end
     end
 
-    describe "#needs_review?" do
+    describe "#needs_review?", integration: true do
       context "when confidence level is low" do
         before { expense.ml_confidence = 0.55 }
         it { expect(expense.needs_review?).to be true }
@@ -67,7 +67,7 @@ RSpec.describe Expense, type: :model do
       end
     end
 
-    describe "#accept_ml_suggestion!" do
+    describe "#accept_ml_suggestion!", integration: true do
       context "when ml_suggested_category_id is present" do
         before do
           expense.ml_suggested_category_id = suggested_category.id
@@ -126,7 +126,7 @@ RSpec.describe Expense, type: :model do
       end
     end
 
-    describe "#reject_ml_suggestion!" do
+    describe "#reject_ml_suggestion!", integration: true do
       let(:new_category) { create(:category, name: "Servicios") }
 
       before do

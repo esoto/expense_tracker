@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe MetricsCalculationJob, type: :job do
+RSpec.describe MetricsCalculationJob, type: :job, integration: true do
   include ActiveJob::TestHelper
 
   let(:current_date) { Date.parse('2025-08-10') }
@@ -10,7 +10,7 @@ RSpec.describe MetricsCalculationJob, type: :job do
   let!(:email_account) { create(:email_account) }
   let!(:other_email_account) { create(:email_account, email: 'other@example.com') }
 
-  describe '#perform' do
+  describe '#perform', integration: true do
     context 'without email_account_id' do
       it 'enqueues jobs for all active accounts when email_account_id is not provided' do
         expect(MetricsCalculationJob).to receive(:enqueue_for_all_accounts)
@@ -175,7 +175,7 @@ RSpec.describe MetricsCalculationJob, type: :job do
     end
   end
 
-  describe 'job configuration' do
+  describe 'job configuration', integration: true do
     it 'uses default queue' do
       expect(described_class.new.queue_name).to eq('default')
     end
@@ -194,7 +194,7 @@ RSpec.describe MetricsCalculationJob, type: :job do
     end
   end
 
-  describe 'job enqueueing' do
+  describe 'job enqueueing', integration: true do
     it 'can be enqueued' do
       expect {
         described_class.perform_later(email_account_id: email_account.id, period: :month)
@@ -212,7 +212,7 @@ RSpec.describe MetricsCalculationJob, type: :job do
     end
   end
 
-  describe 'performance logging' do
+  describe 'performance logging', integration: true do
     it 'formats amounts correctly in logs' do
       allow_any_instance_of(ExtendedCacheMetricsCalculator)
         .to receive(:calculate)

@@ -1,0 +1,300 @@
+#!/usr/bin/env ruby
+# Coverage Analysis Tool
+# Analyzes coverage across all test tiers and generates comparative reports
+
+require 'fileutils'
+require 'json'
+require 'yaml'
+
+# Ensure we're in the Rails root
+Dir.chdir(File.expand_path('..', __dir__))
+
+class CoverageAnalyzer
+  TIERS = %w[unit integration system performance].freeze
+  COVERAGE_DIR = 'coverage'
+  
+  def initialize
+    @results = {}
+    @combined_stats = {}
+  end
+  
+  def analyze_all_tiers
+    puts "🔍 Analyzing coverage across all test tiers..."
+    puts "=" * 60
+    
+    TIERS.each do |tier|
+      analyze_tier(tier)
+    end
+    
+    generate_combined_report
+    generate_recommendations
+    
+    puts "\n✨ Coverage analysis complete!"
+    puts "📁 Detailed reports available in: coverage/"
+  end
+  
+  private
+  
+  def analyze_tier(tier)
+    tier_dir = File.join(COVERAGE_DIR, tier)
+    
+    if Dir.exist?(tier_dir)
+      puts "\n📊 Analyzing #{tier.upcase} test coverage..."
+      
+      # Look for SimpleCov's .resultset.json
+      resultset_file = File.join(tier_dir, '.resultset.json')
+      
+      if File.exist?(resultset_file)
+        analyze_resultset(tier, resultset_file)
+      else
+        puts "  ⚠️  No coverage data found for #{tier} tier"
+        @results[tier] = { error: "No coverage data available" }
+      end
+    else
+      puts "  ⚠️  No coverage directory found for #{tier} tier"
+      @results[tier] = { error: "Coverage directory not found" }
+    end
+  end
+  
+  def analyze_resultset(tier, resultset_file)
+    begin
+      resultset = JSON.parse(File.read(resultset_file))
+      
+      # SimpleCov stores results with command name keys
+      coverage_data = resultset.values.first
+      
+      if coverage_data && coverage_data['coverage']
+        stats = calculate_tier_stats(tier, coverage_data)
+        @results[tier] = stats
+        
+        puts "  📈 Overall Coverage: #{stats[:overall_percentage].round(2)}%"
+        puts "  📂 Files Covered: #{stats[:files_covered]}/#{stats[:total_files]}"
+        puts "  🎯 Above Threshold: #{stats[:files_above_threshold]}/#{stats[:total_files]}"
+        
+        if stats[:critical_gaps].any?
+          puts "  ⚠️  Critical Gaps: #{stats[:critical_gaps].size} files <50% coverage"
+        end
+      else
+        puts "  ❌ Invalid coverage data format"
+        @results[tier] = { error: "Invalid coverage data format" }
+      end
+      
+    rescue JSON::ParserError => e
+      puts "  ❌ Error parsing coverage data: #{e.message}"
+      @results[tier] = { error: "JSON parsing error: #{e.message}" }
+    rescue => e
+      puts "  ❌ Unexpected error: #{e.message}"
+      @results[tier] = { error: "Unexpected error: #{e.message}" }
+    end
+  end
+  
+  def calculate_tier_stats(tier, coverage_data)
+    files = coverage_data['coverage']
+    total_lines = 0
+    covered_lines = 0
+    file_stats = []
+    
+    thresholds = {
+      'unit' => 85,
+      'integration' => 75,
+      'system' => 60,
+      'performance' => 50
+    }
+    
+    threshold = thresholds[tier] || 70
+    
+    files.each do |file_path, line_coverage|
+      next if file_path.include?('/spec/') || file_path.include?('/config/')
+      
+      file_total = line_coverage.size
+      file_covered = line_coverage.compact.count { |hits| hits && hits > 0 }
+      file_percentage = file_total > 0 ? (file_covered.to_f / file_total * 100) : 0
+      
+      total_lines += file_total
+      covered_lines += file_covered
+      
+      file_stats << {
+        path: file_path,
+        total_lines: file_total,
+        covered_lines: file_covered,
+        percentage: file_percentage,
+        above_threshold: file_percentage >= threshold
+      }
+    end
+    
+    overall_percentage = total_lines > 0 ? (covered_lines.to_f / total_lines * 100) : 0
+    
+    {
+      tier: tier,
+      overall_percentage: overall_percentage,
+      total_files: file_stats.size,
+      files_covered: file_stats.count { |f| f[:percentage] > 0 },
+      files_above_threshold: file_stats.count { |f| f[:above_threshold] },
+      threshold: threshold,
+      total_lines: total_lines,
+      covered_lines: covered_lines,
+      file_stats: file_stats,
+      critical_gaps: file_stats.select { |f| f[:percentage] < 50 },
+      well_tested: file_stats.select { |f| f[:percentage] > 90 }
+    }
+  end
+  
+  def generate_combined_report
+    puts "\n🎯 COMBINED COVERAGE ANALYSIS"
+    puts "=" * 60
+    
+    successful_tiers = @results.select { |tier, data| !data.key?(:error) }
+    
+    if successful_tiers.empty?
+      puts "❌ No valid coverage data found across any tier"
+      return
+    end
+    
+    # Calculate combined statistics
+    all_files = Set.new
+    tier_coverage = {}
+    
+    successful_tiers.each do |tier, data|
+      tier_coverage[tier] = data[:overall_percentage]
+      data[:file_stats].each { |file| all_files << file[:path] }
+    end
+    
+    puts "📊 Coverage by Test Tier:"
+    tier_coverage.each do |tier, percentage|
+      status = case percentage
+               when 90..100 then "🟢 Excellent"
+               when 80...90 then "🟡 Good"
+               when 70...80 then "🟠 Fair"
+               else "🔴 Needs Work"
+               end
+      puts "  #{tier.capitalize.ljust(12)}: #{percentage.round(2).to_s.rjust(6)}% #{status}"
+    end
+    
+    # File-by-file analysis across tiers
+    puts "\n📂 Files with Coverage Gaps:"
+    gap_files = find_coverage_gaps(successful_tiers)
+    
+    if gap_files.empty?
+      puts "  ✅ No significant coverage gaps found!"
+    else
+      gap_files.first(10).each do |file_path, gap_info|
+        puts "  📄 #{file_path}"
+        gap_info.each do |tier, percentage|
+          status = percentage < 50 ? "🔴" : percentage < 70 ? "🟠" : "🟡"
+          puts "    #{tier}: #{percentage.round(1)}% #{status}"
+        end
+        puts
+      end
+      
+      if gap_files.size > 10
+        puts "  ... and #{gap_files.size - 10} more files with gaps"
+      end
+    end
+    
+    save_combined_report(successful_tiers, gap_files)
+  end
+  
+  def find_coverage_gaps(successful_tiers)
+    file_coverage = {}
+    
+    # Collect coverage data for each file across all tiers
+    successful_tiers.each do |tier, data|
+      data[:file_stats].each do |file_stat|
+        file_path = file_stat[:path]
+        file_coverage[file_path] ||= {}
+        file_coverage[file_path][tier] = file_stat[:percentage]
+      end
+    end
+    
+    # Find files with significant gaps (any tier <70% and not covered by others)
+    gap_files = file_coverage.select do |file_path, tier_data|
+      tier_data.values.any? { |percentage| percentage < 70 }
+    end
+    
+    # Sort by worst coverage first
+    gap_files.sort_by { |file_path, tier_data| tier_data.values.min }
+  end
+  
+  def generate_recommendations
+    puts "\n💡 COVERAGE RECOMMENDATIONS"
+    puts "=" * 60
+    
+    successful_tiers = @results.select { |tier, data| !data.key?(:error) }
+    
+    recommendations = []
+    
+    successful_tiers.each do |tier, data|
+      if data[:overall_percentage] < data[:threshold]
+        gap = data[:threshold] - data[:overall_percentage]
+        recommendations << {
+          priority: gap > 20 ? :high : gap > 10 ? :medium : :low,
+          type: :tier_coverage,
+          tier: tier,
+          message: "#{tier.capitalize} tests are #{gap.round(1)}% below target (#{data[:overall_percentage].round(1)}% vs #{data[:threshold]}%)"
+        }
+      end
+      
+      if data[:critical_gaps].size > 0
+        recommendations << {
+          priority: :high,
+          type: :critical_gaps,
+          tier: tier,
+          count: data[:critical_gaps].size,
+          message: "#{data[:critical_gaps].size} files have <50% coverage in #{tier} tests"
+        }
+      end
+    end
+    
+    # Sort by priority
+    priority_order = { high: 1, medium: 2, low: 3 }
+    recommendations.sort_by! { |rec| priority_order[rec[:priority]] }
+    
+    if recommendations.empty?
+      puts "✅ All coverage targets are being met!"
+    else
+      recommendations.each do |rec|
+        priority_icon = case rec[:priority]
+                       when :high then "🔴 HIGH"
+                       when :medium then "🟡 MEDIUM"
+                       when :low then "🟢 LOW"
+                       end
+        puts "  #{priority_icon}: #{rec[:message]}"
+      end
+    end
+    
+    puts "\n🎯 Suggested Actions:"
+    puts "  1. Run 'bin/test-unit' to generate unit test coverage"
+    puts "  2. Run 'bin/test-integration' for integration test coverage"
+    puts "  3. Run 'bin/test-system' for system test coverage"
+    puts "  4. Run 'bin/test-performance' for performance test coverage"
+    puts "  5. Use 'bin/coverage-merge' to create combined reports"
+  end
+  
+  def save_combined_report(successful_tiers, gap_files)
+    report_data = {
+      generated_at: Time.now.iso8601,
+      tiers: successful_tiers,
+      gap_files: gap_files.to_h,
+      summary: {
+        total_tiers_analyzed: successful_tiers.size,
+        total_unique_files: gap_files.size
+      }
+    }
+    
+    # Save as JSON for programmatic access
+    File.write('coverage/analysis_report.json', JSON.pretty_generate(report_data))
+    
+    # Save as YAML for human readability
+    File.write('coverage/analysis_report.yml', report_data.to_yaml)
+    
+    puts "\n💾 Detailed analysis saved to:"
+    puts "  📄 coverage/analysis_report.json (machine readable)"
+    puts "  📄 coverage/analysis_report.yml (human readable)"
+  end
+end
+
+# Run the analysis
+if __FILE__ == $0
+  analyzer = CoverageAnalyzer.new
+  analyzer.analyze_all_tiers
+end

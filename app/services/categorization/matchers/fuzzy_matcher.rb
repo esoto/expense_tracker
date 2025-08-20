@@ -528,10 +528,14 @@ module Categorization
 
         case candidate
         when Hash
-          item.merge(candidate)
+          # For hashes, preserve the text field if present, otherwise use extracted text
+          merged_item = item.merge(candidate)
+          merged_item[:text] ||= extracted_text if extracted_text
+          merged_item
         when String
           item.merge(text: candidate)
         else
+          # For objects (like Expense), always use the extracted text
           item.merge(
             id: candidate.try(:id),
             text: extracted_text,
@@ -813,6 +817,37 @@ module Categorization
           total > 0 ? (@cache_hits.to_f / total * 100).round(2) : 0.0
         end
       end
+    end
+
+    # Health check for service monitoring
+    def healthy?
+      @healthy ||= begin
+        # Test basic matching functionality
+        test_result = match("test", [ "test" ])
+        test_result.is_a?(MatchResult)
+      rescue => e
+        Rails.logger.error "[FuzzyMatcher] Health check failed: #{e.message}"
+        false
+      end
+    end
+
+    # Reset internal state
+    def reset!
+      @cache&.clear if @options[:enable_caching]
+      @metrics_collector = MetricsCollector.new
+      @normalizer.instance_variable_set(:@normalization_cache, {}) if @normalizer
+      @healthy = nil
+      Rails.logger.info "[FuzzyMatcher] Service reset completed"
+    rescue => e
+      Rails.logger.error "[FuzzyMatcher] Reset failed: #{e.message}"
+    end
+
+    # Get service metrics
+    def metrics
+      base_metrics = @metrics_collector.summary
+      # Add matches_performed count
+      base_metrics[:matches_performed] = base_metrics.dig(:operations, :match)&.fetch(:count, 0) || 0
+      base_metrics
     end
   end
 end

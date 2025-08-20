@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe MetricsRefreshJob, type: :job do
+RSpec.describe MetricsRefreshJob, type: :job, integration: true do
   let(:email_account) { create(:email_account) }
   let(:job) { described_class.new }
 
@@ -11,7 +11,7 @@ RSpec.describe MetricsRefreshJob, type: :job do
     Rails.cache.clear
   end
 
-  describe "#perform" do
+  describe "#perform", integration: true do
     context "with valid email account" do
       it "refreshes metrics for affected periods" do
         # Create some expenses
@@ -114,7 +114,7 @@ RSpec.describe MetricsRefreshJob, type: :job do
     end
   end
 
-  describe ".enqueue_debounced" do
+  describe ".enqueue_debounced", integration: true do
     it "prevents duplicate jobs within time window" do
       # First call should enqueue
       job1 = described_class.enqueue_debounced(email_account.id)
@@ -148,7 +148,7 @@ RSpec.describe MetricsRefreshJob, type: :job do
     end
   end
 
-  describe "period determination" do
+  describe "period determination", integration: true do
     it "determines affected periods correctly for a given date" do
       job = described_class.new
       affected_dates = [ Date.new(2024, 1, 15) ]
@@ -182,7 +182,7 @@ RSpec.describe MetricsRefreshJob, type: :job do
     end
   end
 
-  describe "cache clearing" do
+  describe "cache clearing", integration: true do
     it "clears cache for affected periods" do
       job = described_class.new
 
@@ -197,7 +197,7 @@ RSpec.describe MetricsRefreshJob, type: :job do
     end
   end
 
-  describe "integration with ActiveJob" do
+  describe "integration with ActiveJob", integration: true do
     it "can be enqueued and performed" do
       expect {
         described_class.perform_later(email_account.id)

@@ -1,11 +1,11 @@
 require 'rails_helper'
 
-RSpec.describe ConflictDetectionService do
+RSpec.describe ConflictDetectionService, integration: true do
   let(:sync_session) { create(:sync_session) }
   let(:email_account) { create(:email_account) }
   let(:service) { described_class.new(sync_session) }
 
-  describe '#detect_conflict_for_expense' do
+  describe '#detect_conflict_for_expense', integration: true do
     let(:existing_expense) do
       create(:expense,
         email_account: email_account,
@@ -102,7 +102,7 @@ RSpec.describe ConflictDetectionService do
     end
   end
 
-  describe '#detect_conflicts_batch' do
+  describe '#detect_conflicts_batch', integration: true do
     let(:new_expenses_data) do
       [
         {
@@ -147,7 +147,7 @@ RSpec.describe ConflictDetectionService do
     end
   end
 
-  describe '#auto_resolve_obvious_duplicates' do
+  describe '#auto_resolve_obvious_duplicates', integration: true do
     let!(:high_confidence_conflict) do
       create(:sync_conflict,
         sync_session: sync_session,
@@ -181,7 +181,7 @@ RSpec.describe ConflictDetectionService do
     end
   end
 
-  describe 'similarity calculation' do
+  describe 'similarity calculation', integration: true do
     let(:expense1) do
       build(:expense,
         amount: 100.00,

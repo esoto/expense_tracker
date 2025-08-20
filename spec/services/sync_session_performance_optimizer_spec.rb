@@ -1,11 +1,11 @@
 require 'rails_helper'
 
-RSpec.describe SyncSessionPerformanceOptimizer do
+RSpec.describe SyncSessionPerformanceOptimizer, performance: true do
   let(:email_account1) { create(:email_account) }
   let(:email_account2) { create(:email_account) }
   let(:sync_session) { create(:sync_session, :running) }
 
-  describe '.preload_for_index' do
+  describe '.preload_for_index', performance: true do
     let!(:session1) { create(:sync_session) }
     let!(:session2) { create(:sync_session) }
 
@@ -31,7 +31,7 @@ RSpec.describe SyncSessionPerformanceOptimizer do
     end
   end
 
-  describe '.preload_for_show' do
+  describe '.preload_for_show', performance: true do
     let!(:account1) { create(:sync_session_account, sync_session: sync_session, email_account: email_account1) }
     let!(:account2) { create(:sync_session_account, sync_session: sync_session, email_account: email_account2) }
 
@@ -52,7 +52,7 @@ RSpec.describe SyncSessionPerformanceOptimizer do
     end
   end
 
-  describe '.batch_update_progress' do
+  describe '.batch_update_progress', performance: true do
     let!(:session1) { create(:sync_session) }
     let!(:session2) { create(:sync_session) }
     let!(:account1) do
@@ -89,7 +89,7 @@ RSpec.describe SyncSessionPerformanceOptimizer do
     end
   end
 
-  describe '.cache_key_for_session' do
+  describe '.cache_key_for_session', performance: true do
     it 'returns a cache key with id and updated_at' do
       timestamp = Time.parse('2025-01-01 12:00:00 UTC')
       sync_session.update!(updated_at: timestamp)
@@ -99,14 +99,14 @@ RSpec.describe SyncSessionPerformanceOptimizer do
     end
   end
 
-  describe '.cache_key_for_status' do
+  describe '.cache_key_for_status', performance: true do
     it 'returns a cache key for status' do
       key = described_class.cache_key_for_status(123)
       expect(key).to eq("sync_session_status/123")
     end
   end
 
-  describe '.active_session_exists?' do
+  describe '.active_session_exists?', performance: true do
     it 'returns true when active session exists' do
       create(:sync_session, status: 'running')
       expect(described_class.active_session_exists?).to be true
@@ -128,14 +128,14 @@ RSpec.describe SyncSessionPerformanceOptimizer do
     end
   end
 
-  describe '.clear_active_session_cache' do
+  describe '.clear_active_session_cache', performance: true do
     it 'deletes the cache key' do
       expect(Rails.cache).to receive(:delete).with("active_sync_session_exists")
       described_class.clear_active_session_cache
     end
   end
 
-  describe '.calculate_metrics' do
+  describe '.calculate_metrics', performance: true do
     context 'with a running session' do
       let(:sync_session) do
         create(:sync_session,

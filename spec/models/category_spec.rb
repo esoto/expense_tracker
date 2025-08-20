@@ -1,7 +1,7 @@
 require 'rails_helper'
 
-RSpec.describe Category, type: :model do
-  describe 'validations' do
+RSpec.describe Category, type: :model, integration: true do
+  describe 'validations', integration: true do
     let(:category) { Category.new(name: 'Test Category', description: 'Test description', color: '#FF0000') }
     it 'is valid with valid attributes' do
       expect(category).to be_valid
@@ -50,7 +50,7 @@ RSpec.describe Category, type: :model do
     end
   end
 
-  describe 'associations' do
+  describe 'associations', integration: true do
     it { should belong_to(:parent).class_name('Category').optional }
     it { should have_many(:children).class_name('Category').with_foreign_key('parent_id').dependent(:nullify) }
     it { should have_many(:expenses).dependent(:nullify) }
@@ -68,7 +68,7 @@ RSpec.describe Category, type: :model do
     end
   end
 
-  describe 'scopes' do
+  describe 'scopes', integration: true do
     let!(:root_category) { create(:category, name: 'Root') }
     let!(:child_category) { create(:category, name: 'Child', parent: root_category) }
 
@@ -83,7 +83,7 @@ RSpec.describe Category, type: :model do
     end
   end
 
-  describe 'instance methods' do
+  describe 'instance methods', integration: true do
     let(:parent_category) { create(:category, name: 'Alimentación') }
     let(:child_category) { create(:category, name: 'Restaurantes', parent: parent_category) }
 
@@ -103,7 +103,7 @@ RSpec.describe Category, type: :model do
     end
   end
 
-  describe 'validations edge cases' do
+  describe 'validations edge cases', integration: true do
     it 'validates name length maximum' do
       long_name = 'a' * 256
       category = build(:category, name: long_name)

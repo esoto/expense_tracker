@@ -1,13 +1,13 @@
 require 'rails_helper'
 
-RSpec.describe ExpensesController, type: :controller do
-  describe "ML Confidence actions" do
+RSpec.describe ExpensesController, type: :controller, integration: true do
+  describe "ML Confidence actions", integration: true do
     let(:email_account) { create(:email_account) }
     let(:category) { create(:category, name: "Alimentación") }
     let(:new_category) { create(:category, name: "Transporte") }
     let(:expense) { create(:expense, email_account: email_account, category: category, ml_confidence: 0.65) }
 
-    describe "POST #correct_category" do
+    describe "POST #correct_category", integration: true do
       context "with valid category_id" do
         it "updates the expense category" do
           post :correct_category, params: { id: expense.id, category_id: new_category.id }
@@ -64,7 +64,7 @@ RSpec.describe ExpensesController, type: :controller do
       end
     end
 
-    describe "POST #accept_suggestion" do
+    describe "POST #accept_suggestion", integration: true do
       context "when suggestion exists" do
         before do
           expense.update!(ml_suggested_category_id: new_category.id)
@@ -110,7 +110,7 @@ RSpec.describe ExpensesController, type: :controller do
       end
     end
 
-    describe "POST #reject_suggestion" do
+    describe "POST #reject_suggestion", integration: true do
       before do
         expense.update!(ml_suggested_category_id: new_category.id)
       end

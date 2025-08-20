@@ -1,19 +1,19 @@
 require 'rails_helper'
 
-RSpec.describe SyncConflict, type: :model do
+RSpec.describe SyncConflict, type: :model, integration: true do
   let(:sync_session) { create(:sync_session) }
   let(:email_account) { create(:email_account) }
   let(:existing_expense) { create(:expense, email_account: email_account, amount: 100, transaction_date: Date.today) }
   let(:new_expense) { create(:expense, email_account: email_account, amount: 100, transaction_date: Date.today, status: 'duplicate') }
 
-  describe 'associations' do
+  describe 'associations', integration: true do
     it { should belong_to(:existing_expense).class_name('Expense') }
     it { should belong_to(:new_expense).class_name('Expense').optional }
     it { should belong_to(:sync_session) }
     it { should have_many(:conflict_resolutions).dependent(:destroy) }
   end
 
-  describe 'validations' do
+  describe 'validations', integration: true do
     it { should validate_presence_of(:conflict_type) }
     it { should validate_presence_of(:status) }
 
@@ -29,19 +29,19 @@ RSpec.describe SyncConflict, type: :model do
     end
   end
 
-  describe 'scopes' do
+  describe 'scopes', integration: true do
     let!(:pending_conflict) { create(:sync_conflict, status: 'pending') }
     let!(:resolved_conflict) { create(:sync_conflict, status: 'resolved') }
     let!(:auto_resolved_conflict) { create(:sync_conflict, status: 'auto_resolved') }
 
-    describe '.unresolved' do
+    describe '.unresolved', integration: true do
       it 'returns only pending conflicts' do
         expect(SyncConflict.unresolved).to include(pending_conflict)
         expect(SyncConflict.unresolved).not_to include(resolved_conflict, auto_resolved_conflict)
       end
     end
 
-    describe '.resolved' do
+    describe '.resolved', integration: true do
       it 'returns resolved and auto_resolved conflicts' do
         expect(SyncConflict.resolved).to include(resolved_conflict, auto_resolved_conflict)
         expect(SyncConflict.resolved).not_to include(pending_conflict)
@@ -49,7 +49,7 @@ RSpec.describe SyncConflict, type: :model do
     end
   end
 
-  describe '#resolve!' do
+  describe '#resolve!', integration: true do
     let(:conflict) { create(:sync_conflict, :with_new_expense, status: 'pending') }
 
     context 'with keep_existing action' do
@@ -87,7 +87,7 @@ RSpec.describe SyncConflict, type: :model do
     end
   end
 
-  describe '#undo_last_resolution!' do
+  describe '#undo_last_resolution!', integration: true do
     let(:conflict) { create(:sync_conflict, :with_new_expense) }
 
     before do
@@ -115,7 +115,7 @@ RSpec.describe SyncConflict, type: :model do
     end
   end
 
-  describe '#calculate_similarity_score' do
+  describe '#calculate_similarity_score', integration: true do
     let(:conflict) { build(:sync_conflict, :with_new_expense, similarity_score: nil) }
 
     context 'when expenses are identical' do
@@ -145,7 +145,7 @@ RSpec.describe SyncConflict, type: :model do
     end
   end
 
-  describe '#field_differences' do
+  describe '#field_differences', integration: true do
     let(:conflict) do
       create(:sync_conflict,
         differences: {
@@ -160,7 +160,7 @@ RSpec.describe SyncConflict, type: :model do
     end
   end
 
-  describe '#similar_conflicts' do
+  describe '#similar_conflicts', integration: true do
     let(:email_account) { create(:email_account) }
     let(:existing_expense) { create(:expense, email_account: email_account) }
     let(:sync_session) { create(:sync_session) }
@@ -178,7 +178,7 @@ RSpec.describe SyncConflict, type: :model do
     end
   end
 
-  describe '#can_bulk_resolve?' do
+  describe '#can_bulk_resolve?', integration: true do
     context 'when bulk_resolvable is true and status is pending' do
       let(:conflict) { create(:sync_conflict, bulk_resolvable: true, status: 'pending') }
 
@@ -204,7 +204,7 @@ RSpec.describe SyncConflict, type: :model do
     end
   end
 
-  describe '#formatted_similarity_score' do
+  describe '#formatted_similarity_score', integration: true do
     context 'when similarity_score is nil' do
       let(:conflict) { create(:sync_conflict, similarity_score: nil) }
 
@@ -222,7 +222,7 @@ RSpec.describe SyncConflict, type: :model do
     end
   end
 
-  describe 'similarity scoring edge cases' do
+  describe 'similarity scoring edge cases', integration: true do
     let(:existing_expense) { create(:expense, amount: 100, transaction_date: Date.today, merchant_name: 'Test Store', description: 'Test Purchase') }
     let(:new_expense) { create(:expense, amount: 99.5, transaction_date: Date.today - 2.days, merchant_name: 'Test', description: 'Purchase') }
     let(:conflict) { build(:sync_conflict, existing_expense: existing_expense, new_expense: new_expense, conflict_type: 'similar', similarity_score: nil) }
@@ -266,7 +266,7 @@ RSpec.describe SyncConflict, type: :model do
     end
   end
 
-  describe 'priority calculation based on conflict type and score' do
+  describe 'priority calculation based on conflict type and score', integration: true do
     context 'for duplicate conflicts' do
       it 'sets priority 1 for high similarity score (>=90)' do
         conflict = build(:sync_conflict, conflict_type: 'duplicate', similarity_score: 95, priority: nil)
@@ -315,7 +315,7 @@ RSpec.describe SyncConflict, type: :model do
     end
   end
 
-  describe '#resolve! with merged action' do
+  describe '#resolve! with merged action', integration: true do
     let(:existing_expense) { create(:expense, amount: 100, merchant_name: 'Old Store', description: 'Old Description') }
     let(:new_expense) { create(:expense, amount: 150, merchant_name: 'New Store', description: 'New Description') }
     let(:conflict) { create(:sync_conflict, existing_expense: existing_expense, new_expense: new_expense, status: 'pending') }
@@ -351,7 +351,7 @@ RSpec.describe SyncConflict, type: :model do
     end
   end
 
-  describe '#resolve! with custom action' do
+  describe '#resolve! with custom action', integration: true do
     let(:existing_expense) { create(:expense, amount: 100, merchant_name: 'Old Store') }
     let(:new_expense) { create(:expense, amount: 150, merchant_name: 'New Store') }
     let(:conflict) { create(:sync_conflict, existing_expense: existing_expense, new_expense: new_expense, status: 'pending') }
@@ -418,7 +418,7 @@ RSpec.describe SyncConflict, type: :model do
     end
   end
 
-  describe '#resolve! with custom action when new_expense is nil' do
+  describe '#resolve! with custom action when new_expense is nil', integration: true do
     let(:existing_expense) { create(:expense, amount: 100) }
     let(:conflict) { create(:sync_conflict, existing_expense: existing_expense, new_expense: nil, status: 'pending') }
 
@@ -433,7 +433,7 @@ RSpec.describe SyncConflict, type: :model do
     end
   end
 
-  describe 'callbacks' do
+  describe 'callbacks', integration: true do
     let(:conflict) { create(:sync_conflict, :with_new_expense, status: 'pending') }
 
     it 'broadcasts resolution when status changes to resolved' do

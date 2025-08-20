@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe "sync_sessions/_status_widget", type: :view do
+RSpec.describe "sync_sessions/_status_widget", type: :view, unit: true do
   before do
     # Define the URL helper methods for the view
     allow(view).to receive(:sync_sessions_path).and_return('/sync_sessions')

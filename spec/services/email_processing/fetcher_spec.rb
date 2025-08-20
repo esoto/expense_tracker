@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::Fetcher, type: :service do
+RSpec.describe EmailProcessing::Fetcher, type: :service, integration: true do
   let(:email_account) { create(:email_account, :bac) }
   let(:mock_imap_service) { instance_double(ImapConnectionService) }
   let(:mock_email_processor) { instance_double(EmailProcessing::Processor) }
@@ -11,7 +11,7 @@ RSpec.describe EmailProcessing::Fetcher, type: :service do
     allow(mock_email_processor).to receive(:errors).and_return([])
   end
 
-  describe '#initialize' do
+  describe '#initialize', integration: true do
     it 'sets the email account and initializes empty errors' do
       expect(fetcher.email_account).to eq(email_account)
       expect(fetcher.errors).to be_empty
@@ -26,7 +26,7 @@ RSpec.describe EmailProcessing::Fetcher, type: :service do
     end
   end
 
-  describe '#fetch_new_emails' do
+  describe '#fetch_new_emails', integration: true do
     context 'with valid account' do
       let(:message_ids) { [ 1, 2 ] }
 
@@ -127,8 +127,8 @@ RSpec.describe EmailProcessing::Fetcher, type: :service do
     end
   end
 
-  describe 'private methods' do
-    describe '#valid_account?' do
+  describe 'private methods', integration: true do
+    describe '#valid_account?', integration: true do
       context 'with valid account' do
         it 'returns true' do
           expect(fetcher.send(:valid_account?)).to be true
@@ -166,7 +166,7 @@ RSpec.describe EmailProcessing::Fetcher, type: :service do
       end
     end
 
-    describe '#search_and_process_emails' do
+    describe '#search_and_process_emails', integration: true do
       let(:message_ids) { [ 1, 2 ] }
       let(:since_date) { 1.day.ago }
 
@@ -190,7 +190,7 @@ RSpec.describe EmailProcessing::Fetcher, type: :service do
       end
     end
 
-    describe '#build_search_criteria' do
+    describe '#build_search_criteria', integration: true do
       it 'creates SINCE criteria with formatted date' do
         since_date = Date.new(2025, 1, 15)
         criteria = fetcher.send(:build_search_criteria, since_date)
@@ -198,7 +198,7 @@ RSpec.describe EmailProcessing::Fetcher, type: :service do
       end
     end
 
-    describe '#add_error' do
+    describe '#add_error', integration: true do
       it 'adds error to the errors array' do
         fetcher.send(:add_error, 'Test error')
         expect(fetcher.errors).to include('Test error')

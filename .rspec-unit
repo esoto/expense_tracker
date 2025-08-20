@@ -1,0 +1,7 @@
+--require spec_helper
+--require rails_helper
+--format progress
+--color
+--order random
+--tag unit
+--exclude-pattern "spec/{integration,performance,system}/**/*_spec.rb"

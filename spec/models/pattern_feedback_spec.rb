@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe PatternFeedback, type: :model do
+RSpec.describe PatternFeedback, type: :model, performance: true do
   let(:category) { Category.create!(name: "Food & Dining") }
   let(:email_account) { EmailAccount.create!(email: "test@example.com", provider: "gmail", bank_name: "Test Bank") }
   let(:expense) do
@@ -24,13 +24,13 @@ RSpec.describe PatternFeedback, type: :model do
     )
   end
 
-  describe "associations" do
+  describe "associations", performance: true do
     it { should belong_to(:categorization_pattern).optional }
     it { should belong_to(:expense) }
     it { should belong_to(:category) }
   end
 
-  describe "validations" do
+  describe "validations", performance: true do
     subject { described_class.new(expense: expense, category: category, feedback_type: "accepted") }
 
     # feedback_type has a before_validation callback that sets default value
@@ -45,7 +45,7 @@ RSpec.describe PatternFeedback, type: :model do
     it { should validate_inclusion_of(:feedback_type).in_array(%w[accepted rejected corrected correction]) }
   end
 
-  describe "scopes" do
+  describe "scopes", performance: true do
     let(:expense2) do
       Expense.create!(
         email_account: email_account,
@@ -149,8 +149,8 @@ RSpec.describe PatternFeedback, type: :model do
     end
   end
 
-  describe "callbacks" do
-    describe "set_default_feedback_type" do
+  describe "callbacks", performance: true do
+    describe "set_default_feedback_type", performance: true do
       it "sets feedback_type to accepted when was_correct is true" do
         feedback = described_class.new(
           expense: expense,
@@ -183,7 +183,7 @@ RSpec.describe PatternFeedback, type: :model do
       end
     end
 
-    describe "update_pattern_performance" do
+    describe "update_pattern_performance", performance: true do
       it "records successful usage for accepted feedback" do
         expect(pattern).to receive(:record_usage).with(true)
 
@@ -227,7 +227,7 @@ RSpec.describe PatternFeedback, type: :model do
       end
     end
 
-    describe "create_pattern_from_correction" do
+    describe "create_pattern_from_correction", performance: true do
       let(:new_category) { Category.create!(name: "Transportation") }
 
       it "creates a new pattern from correction feedback" do
@@ -277,7 +277,7 @@ RSpec.describe PatternFeedback, type: :model do
     end
   end
 
-  describe ".record_feedback" do
+  describe ".record_feedback", performance: true do
     it "creates feedback record with provided parameters" do
       feedback = described_class.record_feedback(
         expense: expense,
@@ -310,7 +310,7 @@ RSpec.describe PatternFeedback, type: :model do
     end
   end
 
-  describe "#successful?" do
+  describe "#successful?", performance: true do
     it "returns true when was_correct is true" do
       feedback = described_class.new(was_correct: true)
       expect(feedback.successful?).to be true
@@ -327,7 +327,7 @@ RSpec.describe PatternFeedback, type: :model do
     end
   end
 
-  describe "#improvement_suggestion" do
+  describe "#improvement_suggestion", performance: true do
     let(:feedback) do
       described_class.new(
         expense: expense,

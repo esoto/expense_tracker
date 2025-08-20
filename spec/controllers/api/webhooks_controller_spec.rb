@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe Api::WebhooksController, type: :controller do
+RSpec.describe Api::WebhooksController, type: :controller, performance: true do
   let(:api_token) { create(:api_token) }
   let(:email_account) { create(:email_account, :bac) }
   let(:category) { create(:category) }
@@ -10,7 +10,7 @@ RSpec.describe Api::WebhooksController, type: :controller do
     request.headers.merge!(valid_headers)
   end
 
-  describe "authentication" do
+  describe "authentication", performance: true do
     context "with valid API token" do
       it "allows access to endpoints" do
         post :process_emails
@@ -60,7 +60,7 @@ RSpec.describe Api::WebhooksController, type: :controller do
     end
   end
 
-  describe "POST #process_emails" do
+  describe "POST #process_emails", performance: true do
     context "with specific email account" do
       it "enqueues ProcessEmailsJob for specific account" do
         expect(ProcessEmailsJob).to receive(:perform_later).with(email_account.id, since: anything)
@@ -145,7 +145,7 @@ RSpec.describe Api::WebhooksController, type: :controller do
     end
   end
 
-  describe "POST #add_expense" do
+  describe "POST #add_expense", performance: true do
     let(:valid_expense_params) do
       {
         amount: 15000.0,
@@ -226,7 +226,7 @@ RSpec.describe Api::WebhooksController, type: :controller do
     end
   end
 
-  describe "GET #recent_expenses" do
+  describe "GET #recent_expenses", performance: true do
     let!(:expense1) { create(:expense, created_at: 1.hour.ago, category: category, email_account: email_account) }
     let!(:expense2) { create(:expense, created_at: 30.minutes.ago, category: category, email_account: email_account) }
 
@@ -296,7 +296,7 @@ RSpec.describe Api::WebhooksController, type: :controller do
     end
   end
 
-  describe "GET #expense_summary" do
+  describe "GET #expense_summary", performance: true do
     it "calls ExpenseSummaryService and returns JSON response" do
       expect_any_instance_of(ExpenseSummaryService).to receive(:period).and_return("month")
       expect_any_instance_of(ExpenseSummaryService).to receive(:summary).and_return({
@@ -329,8 +329,8 @@ RSpec.describe Api::WebhooksController, type: :controller do
     end
   end
 
-  describe "private methods" do
-    describe "#parse_since_parameter" do
+  describe "private methods", performance: true do
+    describe "#parse_since_parameter", performance: true do
       controller_instance = Api::WebhooksController.new
 
       it "handles numeric hours" do
@@ -382,7 +382,7 @@ RSpec.describe Api::WebhooksController, type: :controller do
       end
     end
 
-    describe "#default_email_account" do
+    describe "#default_email_account", performance: true do
       it "returns first active account when available" do
         controller.send(:authenticate_api_token) # Set up authentication
         result = controller.send(:default_email_account)
@@ -402,7 +402,7 @@ RSpec.describe Api::WebhooksController, type: :controller do
       end
     end
 
-    describe "#format_expense" do
+    describe "#format_expense", performance: true do
       let(:expense) { create(:expense, category: category, email_account: email_account) }
 
       it "formats expense data correctly" do
@@ -426,7 +426,7 @@ RSpec.describe Api::WebhooksController, type: :controller do
     end
   end
 
-  describe "security considerations" do
+  describe "security considerations", performance: true do
     it "skips CSRF token verification" do
       # This is tested implicitly by the fact that POST requests work without CSRF tokens
       # We can verify this by checking that POST requests succeed without CSRF tokens
@@ -462,7 +462,7 @@ RSpec.describe Api::WebhooksController, type: :controller do
     end
   end
 
-  describe "error handling" do
+  describe "error handling", performance: true do
     context "when ProcessEmailsJob fails to enqueue" do
       before do
         allow(ProcessEmailsJob).to receive(:perform_later).and_raise(StandardError.new("Queue error"))
@@ -488,7 +488,7 @@ RSpec.describe Api::WebhooksController, type: :controller do
     end
   end
 
-  describe "performance considerations" do
+  describe "performance considerations", performance: true do
     it "includes associations in recent_expenses to avoid N+1 queries" do
       expect(Expense).to receive(:includes).with(:category, :email_account).and_call_original
       get :recent_expenses

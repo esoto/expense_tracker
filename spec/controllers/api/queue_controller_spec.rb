@@ -2,8 +2,8 @@
 
 require "rails_helper"
 
-RSpec.describe Api::QueueController, type: :controller do
-  describe "GET #status" do
+RSpec.describe Api::QueueController, type: :controller, performance: true do
+  describe "GET #status", performance: true do
     before do
       allow(QueueMonitor).to receive(:queue_status).and_return(mock_queue_status)
     end
@@ -35,7 +35,7 @@ RSpec.describe Api::QueueController, type: :controller do
     end
   end
 
-  describe "POST #pause" do
+  describe "POST #pause", performance: true do
     context "without queue_name parameter" do
       it "pauses all queues" do
         expect(QueueMonitor).to receive(:pause_queue).with(nil).and_return(true)
@@ -100,7 +100,7 @@ RSpec.describe Api::QueueController, type: :controller do
     end
   end
 
-  describe "POST #resume" do
+  describe "POST #resume", performance: true do
     context "without queue_name parameter" do
       it "resumes all queues" do
         expect(QueueMonitor).to receive(:resume_queue).with(nil).and_return(true)
@@ -150,7 +150,7 @@ RSpec.describe Api::QueueController, type: :controller do
     end
   end
 
-  describe "POST #retry_job" do
+  describe "POST #retry_job", performance: true do
     routes { Rails.application.routes }
     let(:job_id) { 123 }
 
@@ -216,7 +216,7 @@ RSpec.describe Api::QueueController, type: :controller do
     end
   end
 
-  describe "POST #clear_job" do
+  describe "POST #clear_job", performance: true do
     let(:job_id) { 456 }
 
     context "when job exists" do
@@ -251,7 +251,7 @@ RSpec.describe Api::QueueController, type: :controller do
     end
   end
 
-  describe "POST #retry_all_failed" do
+  describe "POST #retry_all_failed", performance: true do
     context "when there are failed jobs" do
       it "retries all failed jobs" do
         expect(QueueMonitor).to receive(:retry_all_failed_jobs).and_return(10)
@@ -293,7 +293,7 @@ RSpec.describe Api::QueueController, type: :controller do
     end
   end
 
-  describe "GET #metrics" do
+  describe "GET #metrics", performance: true do
     let(:mock_metrics) do
       {
         queue_status: mock_queue_status,
@@ -325,7 +325,7 @@ RSpec.describe Api::QueueController, type: :controller do
     end
   end
 
-  describe "GET #health" do
+  describe "GET #health", performance: true do
     context "when system is healthy" do
       before do
         allow(QueueMonitor).to receive(:calculate_health_status).and_return(

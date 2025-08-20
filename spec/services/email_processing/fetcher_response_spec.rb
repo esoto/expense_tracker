@@ -1,7 +1,7 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::FetcherResponse do
-  describe '#initialize' do
+RSpec.describe EmailProcessing::FetcherResponse, integration: true do
+  describe '#initialize', integration: true do
     it 'sets default values when no parameters provided' do
       response = EmailProcessing::FetcherResponse.new
 
@@ -31,7 +31,7 @@ RSpec.describe EmailProcessing::FetcherResponse do
     end
   end
 
-  describe '#success?' do
+  describe '#success?', integration: true do
     it 'returns true when success is true' do
       response = EmailProcessing::FetcherResponse.new(success: true)
       expect(response.success?).to be true
@@ -43,7 +43,7 @@ RSpec.describe EmailProcessing::FetcherResponse do
     end
   end
 
-  describe '#failure?' do
+  describe '#failure?', integration: true do
     it 'returns false when success is true' do
       response = EmailProcessing::FetcherResponse.new(success: true)
       expect(response.failure?).to be false
@@ -55,7 +55,7 @@ RSpec.describe EmailProcessing::FetcherResponse do
     end
   end
 
-  describe '#has_errors?' do
+  describe '#has_errors?', integration: true do
     it 'returns false when no errors' do
       response = EmailProcessing::FetcherResponse.new(errors: [])
       expect(response.has_errors?).to be false
@@ -67,7 +67,7 @@ RSpec.describe EmailProcessing::FetcherResponse do
     end
   end
 
-  describe '#error_messages' do
+  describe '#error_messages', integration: true do
     it 'returns empty string when no errors' do
       response = EmailProcessing::FetcherResponse.new(errors: [])
       expect(response.error_messages).to eq('')
@@ -84,7 +84,7 @@ RSpec.describe EmailProcessing::FetcherResponse do
     end
   end
 
-  describe '#to_h' do
+  describe '#to_h', integration: true do
     it 'returns hash representation of response' do
       response = EmailProcessing::FetcherResponse.new(
         success: true,
@@ -104,7 +104,7 @@ RSpec.describe EmailProcessing::FetcherResponse do
     end
   end
 
-  describe '.success' do
+  describe '.success', integration: true do
     it 'creates successful response with default values' do
       response = EmailProcessing::FetcherResponse.success
 
@@ -136,7 +136,7 @@ RSpec.describe EmailProcessing::FetcherResponse do
     end
   end
 
-  describe '.failure' do
+  describe '.failure', integration: true do
     it 'creates failure response with errors' do
       response = EmailProcessing::FetcherResponse.failure(errors: [ 'Connection failed' ])
 

@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "Api::V1::Patterns", type: :request do
+RSpec.describe "Api::V1::Patterns", type: :request, integration: true do
   let(:api_token) { create(:api_token) }
   let(:headers) do
     {
@@ -22,7 +22,7 @@ RSpec.describe "Api::V1::Patterns", type: :request do
            success_count: 8)
   end
 
-  describe "GET /api/v1/patterns" do
+  describe "GET /api/v1/patterns", integration: true do
     before do
       create(:categorization_pattern, pattern_type: "keyword", pattern_value: "coffee", category: category)
       create(:categorization_pattern, pattern_type: "description", pattern_value: "uber", category: category)
@@ -85,7 +85,7 @@ RSpec.describe "Api::V1::Patterns", type: :request do
     end
   end
 
-  describe "GET /api/v1/patterns/:id" do
+  describe "GET /api/v1/patterns/:id", integration: true do
     it "returns a specific pattern" do
       get "/api/v1/patterns/#{pattern.id}", headers: headers
 
@@ -103,7 +103,7 @@ RSpec.describe "Api::V1::Patterns", type: :request do
     end
   end
 
-  describe "POST /api/v1/patterns" do
+  describe "POST /api/v1/patterns", integration: true do
     let(:valid_params) do
       {
         pattern: {
@@ -159,7 +159,7 @@ RSpec.describe "Api::V1::Patterns", type: :request do
     end
   end
 
-  describe "PATCH /api/v1/patterns/:id" do
+  describe "PATCH /api/v1/patterns/:id", integration: true do
     let(:update_params) do
       {
         pattern: {
@@ -192,7 +192,7 @@ RSpec.describe "Api::V1::Patterns", type: :request do
     end
   end
 
-  describe "DELETE /api/v1/patterns/:id" do
+  describe "DELETE /api/v1/patterns/:id", integration: true do
     it "soft deletes a pattern by deactivating it" do
       delete "/api/v1/patterns/#{pattern.id}", headers: headers
 
@@ -206,7 +206,7 @@ RSpec.describe "Api::V1::Patterns", type: :request do
     end
   end
 
-  describe "Rate limiting" do
+  describe "Rate limiting", integration: true do
     it "enforces rate limits on pattern creation" do
       # This test would need to be configured based on your rate limiting settings
       # For now, we'll just verify the endpoint exists

@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Api::BaseController, type: :controller do
+RSpec.describe Api::BaseController, type: :controller, integration: true do
   # Create a test controller that inherits from BaseController
   controller do
     def index
@@ -30,7 +30,7 @@ RSpec.describe Api::BaseController, type: :controller do
 
   let(:api_token) { create(:api_token) }
 
-  describe "Authentication" do
+  describe "Authentication", integration: true do
     context "with valid token" do
       before do
         request.headers["Authorization"] = "Bearer #{api_token.token}"
@@ -89,7 +89,7 @@ RSpec.describe Api::BaseController, type: :controller do
     end
   end
 
-  describe "Error Handling" do
+  describe "Error Handling", integration: true do
     before do
       request.headers["Authorization"] = "Bearer #{api_token.token}"
     end
@@ -148,7 +148,7 @@ RSpec.describe Api::BaseController, type: :controller do
     end
   end
 
-  describe "Headers" do
+  describe "Headers", integration: true do
     before do
       request.headers["Authorization"] = "Bearer #{api_token.token}"
     end
@@ -171,7 +171,7 @@ RSpec.describe Api::BaseController, type: :controller do
     end
   end
 
-  describe "Request Logging" do
+  describe "Request Logging", integration: true do
     before do
       request.headers["Authorization"] = "Bearer #{api_token.token}"
     end
@@ -183,7 +183,7 @@ RSpec.describe Api::BaseController, type: :controller do
     end
   end
 
-  describe "#render_success" do
+  describe "#render_success", integration: true do
     controller do
       def index
         render_success({ data: "test" })
@@ -216,7 +216,7 @@ RSpec.describe Api::BaseController, type: :controller do
     end
   end
 
-  describe "#render_error" do
+  describe "#render_error", integration: true do
     controller do
       def index
         render_error("Something went wrong", [ "Error 1", "Error 2" ])

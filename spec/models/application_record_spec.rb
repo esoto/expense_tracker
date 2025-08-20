@@ -1,7 +1,7 @@
 require 'rails_helper'
 
-RSpec.describe ApplicationRecord, type: :model do
-  describe 'abstract class' do
+RSpec.describe ApplicationRecord, type: :model, unit: true do
+  describe 'abstract class', unit: true do
     it 'is an abstract class' do
       expect(ApplicationRecord.abstract_class?).to be true
     end
@@ -11,7 +11,7 @@ RSpec.describe ApplicationRecord, type: :model do
     end
   end
 
-  describe 'inheritance' do
+  describe 'inheritance', unit: true do
     let(:test_model_class) do
       Class.new(ApplicationRecord) do
         self.table_name = 'expenses' # Use existing table for testing

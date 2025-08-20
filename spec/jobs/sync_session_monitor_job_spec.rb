@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe SyncSessionMonitorJob, type: :job do
+RSpec.describe SyncSessionMonitorJob, type: :job, integration: true do
   include ActiveJob::TestHelper
 
   # Optimized: Create once and reuse for faster tests
@@ -8,7 +8,7 @@ RSpec.describe SyncSessionMonitorJob, type: :job do
   let!(:account1) { create(:sync_session_account, sync_session: sync_session, status: 'processing') }
   let!(:account2) { create(:sync_session_account, sync_session: sync_session, status: 'processing') }
 
-  describe '#perform' do
+  describe '#perform', integration: true do
     context 'when sync session is not found' do
       it 'returns early without error' do
         expect { described_class.new.perform(999999) }.not_to raise_error
@@ -116,13 +116,13 @@ RSpec.describe SyncSessionMonitorJob, type: :job do
     end
   end
 
-  describe 'job queue configuration' do
+  describe 'job queue configuration', integration: true do
     it 'uses the default queue' do
       expect(described_class.new.queue_name).to eq('default')
     end
   end
 
-  describe 'ActiveJob integration' do
+  describe 'ActiveJob integration', integration: true do
     it 'can be enqueued with perform_later' do
       expect {
         described_class.perform_later(sync_session.id)

@@ -2,8 +2,8 @@
 
 require 'rails_helper'
 
-RSpec.describe BudgetsHelper, type: :helper do
-  describe '#progress_bar_color_class' do
+RSpec.describe BudgetsHelper, type: :helper, unit: true do
+  describe '#progress_bar_color_class', unit: true do
     it 'returns correct color class for each status' do
       expect(helper.progress_bar_color_class(:exceeded)).to eq('bg-rose-600')
       expect(helper.progress_bar_color_class(:critical)).to eq('bg-rose-500')
@@ -12,7 +12,7 @@ RSpec.describe BudgetsHelper, type: :helper do
     end
   end
 
-  describe '#remaining_amount_color_class' do
+  describe '#remaining_amount_color_class', unit: true do
     it 'returns correct color class for exceeded status' do
       expect(helper.remaining_amount_color_class(:exceeded)).to eq('text-rose-600')
     end
@@ -30,7 +30,7 @@ RSpec.describe BudgetsHelper, type: :helper do
     end
   end
 
-  describe '#status_text_color_class' do
+  describe '#status_text_color_class', unit: true do
     it 'returns correct text color class for each status' do
       expect(helper.status_text_color_class(:exceeded)).to eq('text-rose-700')
       expect(helper.status_text_color_class(:critical)).to eq('text-rose-700')
@@ -39,7 +39,7 @@ RSpec.describe BudgetsHelper, type: :helper do
     end
   end
 
-  describe '#status_icon' do
+  describe '#status_icon', unit: true do
     it 'generates SVG icon for exceeded status' do
       icon = helper.status_icon(:exceeded)
       expect(icon).to include('svg')
@@ -69,7 +69,7 @@ RSpec.describe BudgetsHelper, type: :helper do
     end
   end
 
-  describe '#period_from_label' do
+  describe '#period_from_label', unit: true do
     it 'converts Spanish month label to monthly' do
       expect(helper.period_from_label('Este Mes')).to eq('monthly')
       expect(helper.period_from_label('mes actual')).to eq('monthly')
@@ -96,7 +96,7 @@ RSpec.describe BudgetsHelper, type: :helper do
     end
   end
 
-  describe '#budget_period_options' do
+  describe '#budget_period_options', unit: true do
     it 'returns array of period options for select dropdown' do
       options = helper.budget_period_options
       expect(options).to be_an(Array)
@@ -108,7 +108,7 @@ RSpec.describe BudgetsHelper, type: :helper do
     end
   end
 
-  describe '#budget_currency_options' do
+  describe '#budget_currency_options', unit: true do
     it 'returns array of currency options for select dropdown' do
       options = helper.budget_currency_options
       expect(options).to be_an(Array)
@@ -119,7 +119,7 @@ RSpec.describe BudgetsHelper, type: :helper do
     end
   end
 
-  describe '#budget_category_options' do
+  describe '#budget_category_options', unit: true do
     let(:categories) do
       [
         double('Category', name: 'Alimentación', id: 1),

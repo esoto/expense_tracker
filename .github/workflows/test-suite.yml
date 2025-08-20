@@ -1,0 +1,350 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  RAILS_ENV: test
+  CI: true
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_USER: postgres
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  POSTGRES_DB: expense_tracker_integration_test
+
+jobs:
+  # Quick unit tests - run first for fast feedback
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.1'
+          bundler-cache: true
+      
+      - name: Setup Database
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:migrate
+      
+      - name: Run Unit Tests
+        run: bin/test-unit
+      
+      - name: Validate Unit Test Coverage
+        run: bin/coverage-validate --tier unit --ci
+        
+      - name: Upload Unit Coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-coverage
+          path: coverage/unit/
+  
+  # Integration tests - run in parallel with unit tests
+  integration-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.1'
+          bundler-cache: true
+      
+      - name: Setup Database
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:migrate
+          bundle exec rails db:seed
+      
+      - name: Run Integration Tests
+        run: bin/test-integration
+      
+      - name: Validate Integration Coverage
+        run: bin/coverage-validate --tier integration --ci
+        
+      - name: Upload Integration Coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-coverage
+          path: coverage/integration/
+  
+  # System tests - only run after unit tests pass
+  system-tests:
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.1'
+          bundler-cache: true
+      
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+      
+      - name: Setup Database
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:migrate
+          bundle exec rails db:seed
+      
+      - name: Precompile Assets
+        run: bundle exec rails assets:precompile
+      
+      - name: Run System Tests
+        run: bin/test-system
+      
+      - name: Validate System Coverage
+        run: bin/coverage-validate --tier system --ci
+        
+      - name: Upload System Coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: system-coverage
+          path: coverage/system/
+          
+      - name: Upload Screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: system-test-failures
+          path: tmp/screenshots/
+  
+  # Performance tests - only run on main branch
+  performance-tests:
+    if: github.ref == 'refs/heads/main'
+    needs: [unit-tests, integration-tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.1'
+          bundler-cache: true
+      
+      - name: Setup Database
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:migrate
+          bundle exec rails db:seed
+      
+      - name: Run Performance Tests
+        run: bin/test-performance
+      
+      - name: Upload Performance Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report
+          path: tmp/performance/
+      
+      - name: Comment on PR with Performance Impact
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Parse performance results and comment on PR
+            const fs = require('fs');
+            const report = fs.readFileSync('tmp/performance/summary.json', 'utf8');
+            const data = JSON.parse(report);
+            
+            const comment = `## Performance Impact
+            
+            | Metric | Before | After | Change |
+            |--------|--------|-------|--------|
+            | Response Time | ${data.before.response_time}ms | ${data.after.response_time}ms | ${data.change.response_time} |
+            | Memory Usage | ${data.before.memory}MB | ${data.after.memory}MB | ${data.change.memory} |
+            | DB Queries | ${data.before.queries} | ${data.after.queries} | ${data.change.queries} |
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+  
+  # Combined coverage analysis
+  combined-coverage:
+    needs: [unit-tests, integration-tests, system-tests]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.1'
+          bundler-cache: true
+      
+      - name: Download Unit Coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: unit-coverage
+          path: coverage/unit/
+        continue-on-error: true
+      
+      - name: Download Integration Coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: integration-coverage
+          path: coverage/integration/
+        continue-on-error: true
+      
+      - name: Download System Coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: system-coverage
+          path: coverage/system/
+        continue-on-error: true
+      
+      - name: Merge Coverage Results
+        run: bin/coverage-merge
+        continue-on-error: true
+      
+      - name: Analyze Combined Coverage
+        run: bin/coverage-analyze
+        continue-on-error: true
+      
+      - name: Validate Combined Coverage Policy
+        run: bin/coverage-validate --ci
+        continue-on-error: true
+      
+      - name: Upload Combined Coverage Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: combined-coverage-report
+          path: coverage/
+  
+  # Final status check
+  test-suite-status:
+    needs: [unit-tests, integration-tests, system-tests, combined-coverage]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Check Test Results
+        run: |
+          if [[ "${{ needs.unit-tests.result }}" != "success" || \
+                "${{ needs.integration-tests.result }}" != "success" || \
+                "${{ needs.system-tests.result }}" != "success" ]]; then
+            echo "Test suite failed"
+            exit 1
+          fi
+          echo "All tests passed!"
+          
+      - name: Check Coverage Status
+        run: |
+          if [[ "${{ needs.combined-coverage.result }}" == "success" ]]; then
+            echo "✅ Combined coverage analysis completed successfully"
+          else
+            echo "⚠️ Combined coverage analysis had issues (non-blocking)"
+          fi

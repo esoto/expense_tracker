@@ -1,18 +1,18 @@
 require 'rails_helper'
 
-RSpec.describe SyncSession, type: :model do
+RSpec.describe SyncSession, type: :model, integration: true do
   include ActiveSupport::Testing::TimeHelpers
-  describe 'associations' do
+  describe 'associations', integration: true do
     it { should have_many(:sync_session_accounts).dependent(:destroy) }
     it { should have_many(:email_accounts).through(:sync_session_accounts) }
   end
 
-  describe 'validations' do
+  describe 'validations', integration: true do
     it { should validate_presence_of(:status) }
     it { should validate_inclusion_of(:status).in_array(%w[pending running completed failed cancelled]) }
   end
 
-  describe 'scopes' do
+  describe 'scopes', integration: true do
     before do
       # Clear any existing sessions to avoid interference
       SyncSession.destroy_all
@@ -25,7 +25,7 @@ RSpec.describe SyncSession, type: :model do
     let!(:completed_session) { create(:sync_session, status: 'completed', created_at: 10.minutes.ago) }
     let!(:failed_session) { create(:sync_session, status: 'failed', created_at: 5.minutes.ago) }
 
-    describe '.recent' do
+    describe '.recent', integration: true do
       it 'orders sessions by created_at descending' do
         # Get IDs in expected order
         expected_order = [ failed_session, completed_session, running_session, pending_session, new_session, old_session ]
@@ -33,7 +33,7 @@ RSpec.describe SyncSession, type: :model do
       end
     end
 
-    describe '.active' do
+    describe '.active', integration: true do
       it 'returns only pending and running sessions' do
         active_sessions = SyncSession.active
         expect(active_sessions.map(&:status).uniq.sort).to eq([ 'pending', 'running' ])
@@ -42,14 +42,14 @@ RSpec.describe SyncSession, type: :model do
       end
     end
 
-    describe '.completed' do
+    describe '.completed', integration: true do
       it 'returns only completed sessions' do
         expect(SyncSession.completed.to_a).to eq([ completed_session ])
       end
     end
   end
 
-  describe '#progress_percentage' do
+  describe '#progress_percentage', integration: true do
     subject(:sync_session) { build(:sync_session, total_emails: total, processed_emails: processed) }
 
     context 'when total_emails is zero' do
@@ -89,7 +89,7 @@ RSpec.describe SyncSession, type: :model do
     end
   end
 
-  describe '#estimated_time_remaining' do
+  describe '#estimated_time_remaining', integration: true do
     let(:sync_session) { create(:sync_session, status: status, started_at: started_at, total_emails: 100, processed_emails: processed) }
     let(:started_at) { 1.minute.ago }
     let(:processed) { 25 }
@@ -128,10 +128,10 @@ RSpec.describe SyncSession, type: :model do
     end
   end
 
-  describe 'status query methods' do
+  describe 'status query methods', integration: true do
     subject(:sync_session) { build(:sync_session, status: status) }
 
-    describe '#running?' do
+    describe '#running?', integration: true do
       context 'when status is running' do
         let(:status) { 'running' }
         it { expect(sync_session).to be_running }
@@ -143,7 +143,7 @@ RSpec.describe SyncSession, type: :model do
       end
     end
 
-    describe '#completed?' do
+    describe '#completed?', integration: true do
       context 'when status is completed' do
         let(:status) { 'completed' }
         it { expect(sync_session).to be_completed }
@@ -155,7 +155,7 @@ RSpec.describe SyncSession, type: :model do
       end
     end
 
-    describe '#failed?' do
+    describe '#failed?', integration: true do
       context 'when status is failed' do
         let(:status) { 'failed' }
         it { expect(sync_session).to be_failed }
@@ -167,7 +167,7 @@ RSpec.describe SyncSession, type: :model do
       end
     end
 
-    describe '#cancelled?' do
+    describe '#cancelled?', integration: true do
       context 'when status is cancelled' do
         let(:status) { 'cancelled' }
         it { expect(sync_session).to be_cancelled }
@@ -179,7 +179,7 @@ RSpec.describe SyncSession, type: :model do
       end
     end
 
-    describe '#pending?' do
+    describe '#pending?', integration: true do
       context 'when status is pending' do
         let(:status) { 'pending' }
         it { expect(sync_session).to be_pending }
@@ -192,10 +192,10 @@ RSpec.describe SyncSession, type: :model do
     end
   end
 
-  describe 'state transition methods' do
+  describe 'state transition methods', integration: true do
     let(:sync_session) { create(:sync_session, status: 'pending') }
 
-    describe '#start!' do
+    describe '#start!', integration: true do
       it 'changes status to running' do
         expect { sync_session.start! }.to change { sync_session.status }.from('pending').to('running')
       end
@@ -213,7 +213,7 @@ RSpec.describe SyncSession, type: :model do
       end
     end
 
-    describe '#complete!' do
+    describe '#complete!', integration: true do
       before { sync_session.start! }
 
       it 'changes status to completed' do
@@ -233,7 +233,7 @@ RSpec.describe SyncSession, type: :model do
       end
     end
 
-    describe '#fail!' do
+    describe '#fail!', integration: true do
       before { sync_session.start! }
 
       it 'changes status to failed' do
@@ -266,7 +266,7 @@ RSpec.describe SyncSession, type: :model do
       end
     end
 
-    describe '#cancel!' do
+    describe '#cancel!', integration: true do
       before { sync_session.start! }
 
       it 'changes status to cancelled' do
@@ -287,7 +287,7 @@ RSpec.describe SyncSession, type: :model do
     end
   end
 
-  describe '#update_progress' do
+  describe '#update_progress', integration: true do
     let(:sync_session) { create(:sync_session) }
     let!(:account1) { create(:sync_session_account, sync_session: sync_session, total_emails: 50, processed_emails: 25, detected_expenses: 10) }
     let!(:account2) { create(:sync_session_account, sync_session: sync_session, total_emails: 100, processed_emails: 75, detected_expenses: 20) }
@@ -306,8 +306,8 @@ RSpec.describe SyncSession, type: :model do
     end
   end
 
-  describe 'edge cases and error handling' do
-    describe 'invalid status transitions' do
+  describe 'edge cases and error handling', integration: true do
+    describe 'invalid status transitions', integration: true do
       let(:sync_session) { create(:sync_session, status: 'completed') }
 
       it 'allows starting a completed session (no validation prevents it)' do
@@ -315,7 +315,7 @@ RSpec.describe SyncSession, type: :model do
       end
     end
 
-    describe 'concurrent updates' do
+    describe 'concurrent updates', integration: true do
       let(:sync_session) { create(:sync_session, status: 'running') }
 
       it 'handles concurrent status updates gracefully' do
@@ -333,7 +333,7 @@ RSpec.describe SyncSession, type: :model do
     end
   end
 
-  describe 'factory' do
+  describe 'factory', integration: true do
     it 'has a valid factory' do
       expect(build(:sync_session)).to be_valid
     end
@@ -358,7 +358,7 @@ RSpec.describe SyncSession, type: :model do
     end
   end
 
-  describe '#duration' do
+  describe '#duration', integration: true do
     context 'when session has not started' do
       let(:sync_session) { build(:sync_session, started_at: nil) }
 
@@ -388,7 +388,7 @@ RSpec.describe SyncSession, type: :model do
     end
   end
 
-  describe '#average_processing_time_per_email' do
+  describe '#average_processing_time_per_email', integration: true do
     context 'with no processed emails' do
       let(:sync_session) { build(:sync_session, processed_emails: 0) }
 
@@ -411,8 +411,8 @@ RSpec.describe SyncSession, type: :model do
     end
   end
 
-  describe 'callbacks' do
-    describe 'status change tracking' do
+  describe 'callbacks', integration: true do
+    describe 'status change tracking', integration: true do
       let(:sync_session) { create(:sync_session, :running) }
 
       it 'sets completed_at when transitioning to completed' do
@@ -436,26 +436,26 @@ RSpec.describe SyncSession, type: :model do
     end
   end
 
-  describe 'additional scopes' do
+  describe 'additional scopes', integration: true do
     let!(:failed_session) { create(:sync_session, :failed) }
     let!(:completed_session) { create(:sync_session, :completed) }
     let!(:cancelled_session) { create(:sync_session, status: 'cancelled') }
     let!(:running_session) { create(:sync_session, :running) }
 
-    describe '.failed' do
+    describe '.failed', integration: true do
       it 'returns only failed sessions' do
         expect(SyncSession.failed).to eq([ failed_session ])
       end
     end
 
-    describe '.finished' do
+    describe '.finished', integration: true do
       it 'returns completed, failed, and cancelled sessions' do
         expect(SyncSession.finished).to match_array([ failed_session, completed_session, cancelled_session ])
       end
     end
   end
 
-  describe '#add_job_id' do
+  describe '#add_job_id', integration: true do
     let(:sync_session) { create(:sync_session) }
 
     context 'when job_id is provided' do
@@ -521,7 +521,7 @@ RSpec.describe SyncSession, type: :model do
     end
   end
 
-  describe '#cancel_all_jobs' do
+  describe '#cancel_all_jobs', integration: true do
     let(:sync_session) { create(:sync_session) }
 
     before do

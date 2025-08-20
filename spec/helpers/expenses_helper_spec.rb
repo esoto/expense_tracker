@@ -1,10 +1,10 @@
 require 'rails_helper'
 
-RSpec.describe ExpensesHelper, type: :helper do
+RSpec.describe ExpensesHelper, type: :helper, unit: true do
   let(:category) { create(:category, name: "Alimentación", color: "#10B981") }
   let(:expense) { create(:expense, category: category) }
 
-  describe "#confidence_color_class" do
+  describe "#confidence_color_class", unit: true do
     it "returns correct class for high confidence" do
       expect(helper.confidence_color_class(:high))
         .to eq("bg-emerald-100 text-emerald-800 border-emerald-200")
@@ -31,7 +31,7 @@ RSpec.describe ExpensesHelper, type: :helper do
     end
   end
 
-  describe "#expense_confidence_badge" do
+  describe "#expense_confidence_badge", unit: true do
     context "when ml_confidence is present" do
       before { expense.ml_confidence = 0.85 }
 
@@ -52,7 +52,7 @@ RSpec.describe ExpensesHelper, type: :helper do
     end
   end
 
-  describe "#confidence_icon" do
+  describe "#confidence_icon", unit: true do
     it "returns check icon for high confidence" do
       icon = helper.confidence_icon(:high)
       expect(icon).to include("text-emerald-600")
@@ -78,7 +78,7 @@ RSpec.describe ExpensesHelper, type: :helper do
     end
   end
 
-  describe "#confidence_tooltip_text" do
+  describe "#confidence_tooltip_text", unit: true do
     context "with ml_confidence_explanation" do
       before do
         expense.ml_confidence = 0.85
@@ -123,7 +123,7 @@ RSpec.describe ExpensesHelper, type: :helper do
     end
   end
 
-  describe "#expense_category_badge" do
+  describe "#expense_category_badge", unit: true do
     context "with category" do
       it "returns a styled span with category name" do
         badge = helper.expense_category_badge(expense)
@@ -144,7 +144,7 @@ RSpec.describe ExpensesHelper, type: :helper do
     end
   end
 
-  describe "#learning_indicator" do
+  describe "#learning_indicator", unit: true do
     context "when recently corrected" do
       before { expense.ml_last_corrected_at = 30.minutes.ago }
 
@@ -172,7 +172,7 @@ RSpec.describe ExpensesHelper, type: :helper do
     end
   end
 
-  describe "#mobile_confidence_display" do
+  describe "#mobile_confidence_display", unit: true do
     context "when ml_confidence is present" do
       before { expense.ml_confidence = 0.75 }
 

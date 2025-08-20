@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe "API::WebhooksController", type: :request do
+RSpec.describe "API::WebhooksController", type: :request, integration: true do
   let(:valid_token) { create(:api_token) }
   let(:email_account) { create(:email_account) }
   let(:category) { create(:category) }

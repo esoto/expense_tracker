@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe BroadcastReliabilityService, type: :service do
+RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
   let(:sync_session) { create(:sync_session) }
   let(:test_data) { { status: 'processing', processed: 10, total: 100 } }
 
@@ -13,7 +13,7 @@ RSpec.describe BroadcastReliabilityService, type: :service do
     allow(BroadcastAnalytics).to receive(:record_queued)
   end
 
-  describe '.broadcast_with_retry' do
+  describe '.broadcast_with_retry', integration: true do
     context 'when broadcast succeeds on first attempt' do
       before do
         allow(SyncStatusChannel).to receive(:broadcast_to).with(sync_session, test_data)
@@ -179,7 +179,7 @@ RSpec.describe BroadcastReliabilityService, type: :service do
     end
   end
 
-  describe '.queue_broadcast' do
+  describe '.queue_broadcast', integration: true do
     let(:broadcast_job_double) { double('BroadcastJob') }
 
     before do
@@ -234,7 +234,7 @@ RSpec.describe BroadcastReliabilityService, type: :service do
     end
   end
 
-  describe '.priority_config' do
+  describe '.priority_config', integration: true do
     it 'returns correct configuration for each priority level' do
       critical_config = described_class.priority_config(:critical)
       expect(critical_config).to include(
@@ -272,7 +272,7 @@ RSpec.describe BroadcastReliabilityService, type: :service do
     end
   end
 
-  describe 'exponential backoff' do
+  describe 'exponential backoff', integration: true do
     let(:service) { described_class }
 
     it 'calculates correct backoff delays' do
@@ -294,7 +294,7 @@ RSpec.describe BroadcastReliabilityService, type: :service do
     end
   end
 
-  describe 'error handling' do
+  describe 'error handling', integration: true do
     context 'when broadcast raises BroadcastError' do
       before do
         allow(SyncStatusChannel).to receive(:broadcast_to).and_raise(
@@ -367,7 +367,7 @@ RSpec.describe BroadcastReliabilityService, type: :service do
     end
   end
 
-  describe 'thread safety' do
+  describe 'thread safety', integration: true do
     it 'handles concurrent broadcasts safely' do
       allow(SyncStatusChannel).to receive(:broadcast_to)
 

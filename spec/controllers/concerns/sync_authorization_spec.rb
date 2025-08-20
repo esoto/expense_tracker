@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe SyncAuthorization, type: :controller do
+RSpec.describe SyncAuthorization, type: :controller, unit: true do
   controller(ApplicationController) do
     include SyncAuthorization
 
@@ -9,7 +9,7 @@ RSpec.describe SyncAuthorization, type: :controller do
     end
   end
 
-  describe '#authorize_sync_access!' do
+  describe '#authorize_sync_access!', unit: true do
     context 'when sync access is allowed' do
       before do
         allow(controller).to receive(:sync_access_allowed?).and_return(true)
@@ -41,14 +41,14 @@ RSpec.describe SyncAuthorization, type: :controller do
     end
   end
 
-  describe '#sync_access_allowed?' do
+  describe '#sync_access_allowed?', unit: true do
     it 'returns true by default (placeholder)' do
       # This is a placeholder implementation
       expect(controller.send(:sync_access_allowed?)).to be true
     end
   end
 
-  describe '#authorize_sync_session_owner!' do
+  describe '#authorize_sync_session_owner!', unit: true do
     controller(ApplicationController) do
       include SyncAuthorization
 

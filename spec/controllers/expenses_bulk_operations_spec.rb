@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe ExpensesController, type: :controller do
+RSpec.describe ExpensesController, type: :controller, integration: true do
   let(:email_account) { create(:email_account) }
   let(:category1) { create(:category, name: "Food") }
   let(:category2) { create(:category, name: "Transport") }
@@ -12,7 +12,7 @@ RSpec.describe ExpensesController, type: :controller do
     ]
   end
 
-  describe "POST #bulk_categorize" do
+  describe "POST #bulk_categorize", integration: true do
     context "with valid parameters" do
       it "categorizes selected expenses" do
         expense_ids = expenses.map(&:id)
@@ -60,7 +60,7 @@ RSpec.describe ExpensesController, type: :controller do
     end
   end
 
-  describe "POST #bulk_update_status" do
+  describe "POST #bulk_update_status", integration: true do
     context "with valid parameters" do
       it "updates status of selected expenses" do
         expense_ids = expenses.map(&:id)
@@ -96,7 +96,7 @@ RSpec.describe ExpensesController, type: :controller do
     end
   end
 
-  describe "DELETE #bulk_destroy" do
+  describe "DELETE #bulk_destroy", integration: true do
     context "with valid parameters" do
       it "deletes selected expenses" do
         expense_ids = expenses.map(&:id)

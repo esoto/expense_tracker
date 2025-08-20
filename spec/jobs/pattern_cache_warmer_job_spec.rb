@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe PatternCacheWarmerJob, type: :job do
+RSpec.describe PatternCacheWarmerJob, type: :job, integration: true do
   let(:job) { described_class.new }
   let(:cache) { instance_double(Categorization::PatternCache) }
 
@@ -13,7 +13,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job do
     allow(Rails.logger).to receive(:warn)
   end
 
-  describe '#perform' do
+  describe '#perform', integration: true do
     context 'when cache warming succeeds' do
       let(:success_stats) do
         {
@@ -139,7 +139,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job do
     end
   end
 
-  describe '#check_cache_health' do
+  describe '#check_cache_health', integration: true do
     let(:cache_metrics) do
       {
         hit_rate: hit_rate,
@@ -191,7 +191,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job do
     end
   end
 
-  describe '#report_success' do
+  describe '#report_success', integration: true do
     let(:stats) do
       {
         patterns: 100,
@@ -238,7 +238,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job do
     end
   end
 
-  describe '#report_error' do
+  describe '#report_error', integration: true do
     let(:error_details) do
       {
         error: "Connection timeout",
@@ -277,7 +277,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job do
     end
   end
 
-  describe '#broadcast_event' do
+  describe '#broadcast_event', integration: true do
     let(:event_data) { { test: "data" } }
 
     context 'when ActionCable is available' do
@@ -320,7 +320,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job do
     end
   end
 
-  describe 'job configuration' do
+  describe 'job configuration', integration: true do
     it 'uses the low priority queue' do
       expect(described_class.queue_name).to eq('low')
     end

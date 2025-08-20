@@ -2,10 +2,10 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::EnhancedCategorizationService do
+RSpec.describe Categorization::EnhancedCategorizationService, performance: true do
   let(:service) { described_class.new }
 
-  describe "#categorize" do
+  describe "#categorize", performance: true do
     let(:food_category) { create(:category, name: "Food & Dining") }
     let(:transport_category) { create(:category, name: "Transportation") }
     let(:expense) do
@@ -171,7 +171,7 @@ RSpec.describe Categorization::EnhancedCategorizationService do
     end
   end
 
-  describe "#categorize_batch" do
+  describe "#categorize_batch", performance: true do
     let(:food_category) { create(:category, name: "Food & Dining") }
     let(:transport_category) { create(:category, name: "Transportation") }
 
@@ -222,7 +222,7 @@ RSpec.describe Categorization::EnhancedCategorizationService do
     end
   end
 
-  describe "#find_matching_patterns" do
+  describe "#find_matching_patterns", performance: true do
     let(:category) { create(:category) }
 
     before do
@@ -272,7 +272,7 @@ RSpec.describe Categorization::EnhancedCategorizationService do
     end
   end
 
-  describe "#suggest_categories" do
+  describe "#suggest_categories", performance: true do
     let(:food_category) { create(:category, name: "Food & Dining") }
     let(:shopping_category) { create(:category, name: "Shopping") }
 
@@ -339,7 +339,7 @@ RSpec.describe Categorization::EnhancedCategorizationService do
     end
   end
 
-  describe "#learn_from_feedback" do
+  describe "#learn_from_feedback", performance: true do
     let(:category) { create(:category) }
     let(:email_account) { create(:email_account) }
     let(:expense) { create(:expense, merchant_name: "NEW MERCHANT", email_account: email_account) }
@@ -398,7 +398,7 @@ RSpec.describe Categorization::EnhancedCategorizationService do
     end
   end
 
-  describe "#metrics" do
+  describe "#metrics", performance: true do
     it "returns comprehensive metrics" do
       # Perform some operations
       expense = build(:expense, merchant_name: "TEST")
@@ -418,7 +418,7 @@ RSpec.describe Categorization::EnhancedCategorizationService do
     end
   end
 
-  describe "Spanish text handling" do
+  describe "Spanish text handling", performance: true do
     let(:category) { create(:category, name: "Restaurantes") }
 
     let(:expense) do
@@ -452,7 +452,7 @@ RSpec.describe Categorization::EnhancedCategorizationService do
     end
   end
 
-  describe "performance" do
+  describe "performance", performance: true do
     it "categorizes within reasonable time" do
       expense = build(:expense, merchant_name: "STARBUCKS")
 

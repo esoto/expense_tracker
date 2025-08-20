@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe SyncProgressUpdater, type: :service do
+RSpec.describe SyncProgressUpdater, type: :service, integration: true do
   # Use build_stubbed to avoid database hits
   let(:sync_session) { build_stubbed(:sync_session, id: 1) }
   let(:email_account1) { build_stubbed(:email_account, id: 1) }
@@ -22,7 +22,7 @@ RSpec.describe SyncProgressUpdater, type: :service do
     allow(sync_session).to receive(:broadcast_dashboard_update)
   end
 
-  describe '#call' do
+  describe '#call', integration: true do
     context 'with sync session accounts' do
       before do
         # Mock the pluck query result
@@ -122,7 +122,7 @@ RSpec.describe SyncProgressUpdater, type: :service do
     end
   end
 
-  describe '#update_account_progress' do
+  describe '#update_account_progress', integration: true do
     let(:session_account) do
       build_stubbed(:sync_session_account,
                     sync_session: sync_session,

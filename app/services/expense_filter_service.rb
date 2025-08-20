@@ -7,7 +7,7 @@ class ExpenseFilterService
   include ActiveModel::Validations
 
   # Input attributes
-  attr_accessor :account_ids, :date_range, :start_date, :end_date,
+  attr_accessor :account_ids, :date_range, :start_date, :end_date, :date_from, :date_to,
                 :category_ids, :banks, :min_amount, :max_amount,
                 :status, :search_query, :sort_by, :sort_direction,
                 :page, :per_page, :cursor, :use_cursor, :period
@@ -183,6 +183,18 @@ class ExpenseFilterService
   end
 
   def filter_by_dates(scope)
+    # Handle period parameter first (takes precedence over explicit dates)
+    if period.present?
+      date_range = calculate_period_range(period)
+      return scope.where(transaction_date: date_range) if date_range
+    end
+
+    # Handle dashboard date_from and date_to parameters
+    if date_from.present? && date_to.present?
+      return scope.where(transaction_date: date_from.to_date..date_to.to_date)
+    end
+
+    # Handle traditional start_date and end_date parameters
     return scope unless start_date.present? || end_date.present?
 
     scope = scope.where("transaction_date >= ?", start_date.to_date) if start_date
@@ -223,6 +235,22 @@ class ExpenseFilterService
     return scope unless search_query.present?
 
     scope.search_merchant(search_query)
+  end
+
+  def calculate_period_range(period)
+    today = Date.current
+    case period
+    when "day"
+      today..today
+    when "week"
+      today.beginning_of_week..today.end_of_week
+    when "month"
+      today.beginning_of_month..today.end_of_month
+    when "year"
+      today.beginning_of_year..today.end_of_year
+    else
+      nil
+    end
   end
 
   def apply_sorting(scope)
@@ -307,7 +335,7 @@ class ExpenseFilterService
 
   def count_active_filters
     count = 0
-    count += 1 if start_date.present? || end_date.present?
+    count += 1 if period.present? || date_from.present? || date_to.present? || start_date.present? || end_date.present?
     count += 1 if category_ids.present?
     count += 1 if banks.present?
     count += 1 if min_amount.present? || max_amount.present?
@@ -319,7 +347,9 @@ class ExpenseFilterService
   def generate_filters_hash
     Digest::SHA256.hexdigest({
       account_ids: account_ids,
+      period: period,
       dates: [ start_date, end_date ],
+      dashboard_dates: [ date_from, date_to ],
       categories: category_ids,
       banks: banks,
       amounts: [ min_amount, max_amount ],

@@ -2,14 +2,14 @@
 
 require "rails_helper"
 
-RSpec.describe Analytics::PatternPerformanceAnalyzer do
+RSpec.describe Analytics::PatternPerformanceAnalyzer, performance: true do
   let(:category) { create(:category) }
   let(:pattern) { create(:categorization_pattern, category: category) }
   let(:expense) { create(:expense) }
   let(:analyzer) { described_class.new }
 
-  describe "Security Fixes" do
-    describe "#trend_analysis" do
+  describe "Security Fixes", performance: true do
+    describe "#trend_analysis", performance: true do
       context "SQL injection prevention" do
         it "sanitizes malicious interval input" do
           expect {
@@ -74,7 +74,7 @@ RSpec.describe Analytics::PatternPerformanceAnalyzer do
       end
     end
 
-    describe "#usage_heatmap" do
+    describe "#usage_heatmap", performance: true do
       context "error handling" do
         it "returns empty hash on database error" do
           allow(PatternFeedback).to receive(:where).and_raise(ActiveRecord::StatementInvalid)
@@ -102,7 +102,7 @@ RSpec.describe Analytics::PatternPerformanceAnalyzer do
       end
     end
 
-    describe "#category_performance" do
+    describe "#category_performance", performance: true do
       context "N+1 query prevention" do
         it "uses single query with aggregation" do
           create_list(:categorization_pattern, 5, category: category)
@@ -138,8 +138,8 @@ RSpec.describe Analytics::PatternPerformanceAnalyzer do
     end
   end
 
-  describe "Performance Optimizations" do
-    describe "Constants" do
+  describe "Performance Optimizations", performance: true do
+    describe "Constants", performance: true do
       it "defines all required constants" do
         expect(described_class::DEFAULT_PAGE_SIZE).to eq(25)
         expect(described_class::MAX_PAGE_SIZE).to eq(100)
@@ -149,7 +149,7 @@ RSpec.describe Analytics::PatternPerformanceAnalyzer do
       end
     end
 
-    describe "#top_patterns" do
+    describe "#top_patterns", performance: true do
       it "includes proper associations to prevent N+1" do
         create_list(:categorization_pattern, 5, category: category)
 
@@ -160,7 +160,7 @@ RSpec.describe Analytics::PatternPerformanceAnalyzer do
       end
     end
 
-    describe "#bottom_patterns" do
+    describe "#bottom_patterns", performance: true do
       it "includes proper associations to prevent N+1" do
         create_list(:categorization_pattern, 5, category: category)
 
@@ -171,7 +171,7 @@ RSpec.describe Analytics::PatternPerformanceAnalyzer do
       end
     end
 
-    describe "#recent_activity" do
+    describe "#recent_activity", performance: true do
       it "preloads all associations" do
         # Create different expenses to avoid unique constraint violation
         5.times do
@@ -202,7 +202,7 @@ RSpec.describe Analytics::PatternPerformanceAnalyzer do
     end
   end
 
-  describe "Cache Invalidation" do
+  describe "Cache Invalidation", performance: true do
     it "clears cache when patterns are updated" do
       pattern = create(:categorization_pattern)
 

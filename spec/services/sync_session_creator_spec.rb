@@ -1,11 +1,11 @@
 require 'rails_helper'
 
-RSpec.describe SyncSessionCreator do
+RSpec.describe SyncSessionCreator, integration: true do
   let(:email_account) { create(:email_account, active: true) }
   let(:params) { {} }
   let(:service) { described_class.new(params) }
 
-  describe '#call' do
+  describe '#call', integration: true do
     before do
       allow(ProcessEmailsJob).to receive(:perform_later)
     end

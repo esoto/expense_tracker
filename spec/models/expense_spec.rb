@@ -1,10 +1,10 @@
 require 'rails_helper'
 
-RSpec.describe Expense, type: :model do
+RSpec.describe Expense, type: :model, integration: true do
   let(:email_account) { create(:email_account, email: 'test@example.com', provider: 'gmail', bank_name: 'BAC', encrypted_password: 'pass') }
   let(:category) { create(:category, name: 'Test Category') }
 
-  describe 'validations' do
+  describe 'validations', integration: true do
     it 'is valid with valid attributes' do
       expense = build(:expense,
         amount: 100.50,
@@ -70,7 +70,7 @@ RSpec.describe Expense, type: :model do
     end
   end
 
-  describe 'associations' do
+  describe 'associations', integration: true do
     let(:expense) { create(:expense, email_account: email_account, category: category) }
 
     it 'belongs to email_account' do
@@ -85,7 +85,7 @@ RSpec.describe Expense, type: :model do
     end
   end
 
-  describe 'scopes' do
+  describe 'scopes', integration: true do
     let!(:recent_expense) { create(:expense, amount: 100, transaction_date: 1.day.ago, email_account: email_account) }
     let!(:old_expense) { create(:expense, amount: 50, transaction_date: 1.week.ago, email_account: email_account) }
     let!(:pending_expense) { create(:expense, amount: 75, transaction_date: Time.current, email_account: email_account, status: 'pending') }
@@ -123,7 +123,7 @@ RSpec.describe Expense, type: :model do
     end
   end
 
-  describe 'scopes (additional)' do
+  describe 'scopes (additional)', integration: true do
     let!(:categorized_expense) { create(:expense, amount: 100, email_account: email_account, category: category) }
     let!(:uncategorized_expense) { create(:expense, :without_category, amount: 200, email_account: email_account) }
     let!(:this_month_expense) { create(:expense, amount: 150, email_account: email_account, transaction_date: Date.current.beginning_of_month + 5.days) }
@@ -158,7 +158,7 @@ RSpec.describe Expense, type: :model do
     end
   end
 
-  describe 'class methods' do
+  describe 'class methods', integration: true do
     let!(:expense1) { create(:expense, amount: 100, transaction_date: Time.current, email_account: email_account, category: category) }
     let!(:expense2) { create(:expense, amount: 200, transaction_date: Time.current, email_account: email_account, category: category) }
     let!(:expense3) { create(:expense, amount: 150, transaction_date: 1.month.ago, email_account: email_account, category: category) }
@@ -183,11 +183,11 @@ RSpec.describe Expense, type: :model do
     end
   end
 
-  describe 'instance methods' do
+  describe 'instance methods', integration: true do
     let(:crc_expense) { create(:expense, amount: 95000, transaction_date: Time.current, email_account: email_account, currency: 'crc') }
     let(:usd_expense) { create(:expense, amount: 20.50, transaction_date: Time.current, email_account: email_account, currency: 'usd') }
 
-    describe '#formatted_amount' do
+    describe '#formatted_amount', integration: true do
       it 'formats CRC amounts with ₡ symbol' do
         expect(crc_expense.formatted_amount).to eq('₡95000.0')
       end
@@ -202,7 +202,7 @@ RSpec.describe Expense, type: :model do
       end
     end
 
-    describe '#formatted_amount' do
+    describe '#formatted_amount', integration: true do
       it 'includes currency symbols in formatted amounts' do
         expect(crc_expense.formatted_amount).to include('₡')
         expect(usd_expense.formatted_amount).to include('$')
@@ -212,7 +212,7 @@ RSpec.describe Expense, type: :model do
       end
     end
 
-    describe '#duplicate?' do
+    describe '#duplicate?', integration: true do
       it 'returns true when status is duplicate' do
         expense = create(:expense,
           amount: 100,
@@ -236,7 +236,7 @@ RSpec.describe Expense, type: :model do
       end
     end
 
-    describe 'status helper methods' do
+    describe 'status helper methods', integration: true do
       it 'has helper methods for all statuses' do
         pending_expense = create(:expense, amount: 100, transaction_date: Time.current, email_account: email_account, status: 'pending')
         processed_expense = create(:expense, amount: 100, transaction_date: Time.current, email_account: email_account, status: 'processed')
@@ -250,14 +250,14 @@ RSpec.describe Expense, type: :model do
       end
     end
 
-    describe '#bank_name' do
+    describe '#bank_name', integration: true do
       it 'returns bank name from email account' do
         expense = create(:expense, email_account: email_account)
         expect(expense.bank_name).to eq('BAC')
       end
     end
 
-    describe '#display_description' do
+    describe '#display_description', integration: true do
       it 'returns description when present' do
         expense = create(:expense, description: 'Test description', merchant_name: 'Test Merchant', email_account: email_account)
         expect(expense.display_description).to eq('Test description')
@@ -274,7 +274,7 @@ RSpec.describe Expense, type: :model do
       end
     end
 
-    describe '#parsed_email_data' do
+    describe '#parsed_email_data', integration: true do
       it 'returns parsed JSON data' do
         data = { 'amount' => '100.50', 'merchant' => 'Test Merchant' }
         expense = create(:expense, parsed_data: data.to_json, email_account: email_account)
@@ -292,7 +292,7 @@ RSpec.describe Expense, type: :model do
       end
     end
 
-    describe '#parsed_email_data=' do
+    describe '#parsed_email_data=', integration: true do
       it 'sets parsed_data as JSON string' do
         expense = create(:expense, email_account: email_account)
         data = { 'amount' => '100.50', 'merchant' => 'Test Merchant' }
@@ -301,7 +301,7 @@ RSpec.describe Expense, type: :model do
       end
     end
 
-    describe '#category_name' do
+    describe '#category_name', integration: true do
       let(:expense) { create(:expense, category: category, email_account: email_account) }
 
       it 'returns category name when category is present' do
@@ -317,7 +317,7 @@ RSpec.describe Expense, type: :model do
       end
     end
 
-    describe '#pending?' do
+    describe '#pending?', integration: true do
       it 'returns true when status is pending' do
         expense = create(:expense, status: 'pending', email_account: email_account)
         expect(expense.pending?).to be true
@@ -329,7 +329,7 @@ RSpec.describe Expense, type: :model do
       end
     end
 
-    describe '#failed?' do
+    describe '#failed?', integration: true do
       it 'returns true when status is failed' do
         expense = create(:expense, status: 'failed', email_account: email_account)
         expect(expense.failed?).to be true
@@ -342,8 +342,8 @@ RSpec.describe Expense, type: :model do
     end
   end
 
-  describe 'callbacks' do
-    describe 'after_commit :clear_dashboard_cache' do
+  describe 'callbacks', integration: true do
+    describe 'after_commit :clear_dashboard_cache', integration: true do
       it 'clears dashboard cache after creating an expense' do
         expect(DashboardService).to receive(:clear_cache)
         create(:expense, email_account: email_account)

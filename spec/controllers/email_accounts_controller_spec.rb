@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe EmailAccountsController, type: :controller do
+RSpec.describe EmailAccountsController, type: :controller, unit: true do
   let(:email_account) { create(:email_account) }
   let(:valid_attributes) {
     {
@@ -21,7 +21,7 @@ RSpec.describe EmailAccountsController, type: :controller do
     }
   }
 
-  describe "GET #index" do
+  describe "GET #index", unit: true do
     it "returns a success response" do
       email_account # create it
       get :index
@@ -38,7 +38,7 @@ RSpec.describe EmailAccountsController, type: :controller do
     end
   end
 
-  describe "GET #show" do
+  describe "GET #show", unit: true do
     it "returns a success response" do
       get :show, params: { id: email_account.to_param }
       expect(response).to be_successful
@@ -50,7 +50,7 @@ RSpec.describe EmailAccountsController, type: :controller do
     end
   end
 
-  describe "GET #new" do
+  describe "GET #new", unit: true do
     it "returns a success response" do
       get :new
       expect(response).to be_successful
@@ -62,7 +62,7 @@ RSpec.describe EmailAccountsController, type: :controller do
     end
   end
 
-  describe "GET #edit" do
+  describe "GET #edit", unit: true do
     it "returns a success response" do
       get :edit, params: { id: email_account.to_param }
       expect(response).to be_successful
@@ -74,7 +74,7 @@ RSpec.describe EmailAccountsController, type: :controller do
     end
   end
 
-  describe "POST #create" do
+  describe "POST #create", unit: true do
     context "with valid params" do
       it "creates a new EmailAccount" do
         expect {
@@ -152,7 +152,7 @@ RSpec.describe EmailAccountsController, type: :controller do
     end
   end
 
-  describe "PUT #update" do
+  describe "PUT #update", unit: true do
     context "with valid params" do
       let(:new_attributes) {
         {
@@ -282,7 +282,7 @@ RSpec.describe EmailAccountsController, type: :controller do
     end
   end
 
-  describe "DELETE #destroy" do
+  describe "DELETE #destroy", unit: true do
     it "destroys the requested email_account" do
       email_account # create it
       expect {
@@ -301,8 +301,8 @@ RSpec.describe EmailAccountsController, type: :controller do
     end
   end
 
-  describe "private methods" do
-    describe "#set_email_account" do
+  describe "private methods", unit: true do
+    describe "#set_email_account", unit: true do
       it "sets the email_account for member actions" do
         get :show, params: { id: email_account.to_param }
         expect(assigns(:email_account)).to eq(email_account)

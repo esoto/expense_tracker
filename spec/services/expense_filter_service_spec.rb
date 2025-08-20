@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe ExpenseFilterService, type: :service do
+RSpec.describe ExpenseFilterService, type: :service, performance: true do
   let(:email_account) { EmailAccount.create!(provider: "gmail", email: "test@example.com", bank_name: "BAC", active: true) }
   let(:category) { Category.create!(name: "Food", color: "#FF0000") }
 
@@ -39,7 +39,7 @@ RSpec.describe ExpenseFilterService, type: :service do
     )
   end
 
-  describe "#call" do
+  describe "#call", performance: true do
     context "with no filters" do
       let(:service) { described_class.new(account_ids: [ email_account.id ]) }
 
@@ -221,7 +221,7 @@ RSpec.describe ExpenseFilterService, type: :service do
     end
   end
 
-  describe "#to_json" do
+  describe "#to_json", performance: true do
     let(:service) { described_class.new(account_ids: [ email_account.id ]) }
 
     it "returns JSON representation" do

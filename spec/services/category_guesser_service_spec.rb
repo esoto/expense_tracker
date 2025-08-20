@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe CategoryGuesserService do
+RSpec.describe CategoryGuesserService, integration: true do
   let(:service) { described_class.new }
   let(:expense) { instance_double(Expense, description: nil, merchant_name: nil) }
 
@@ -16,13 +16,13 @@ RSpec.describe CategoryGuesserService do
     create(:category, name: 'Other')
   end
 
-  describe '#initialize' do
+  describe '#initialize', integration: true do
     it 'creates service instance' do
       expect(service).to be_a(described_class)
     end
   end
 
-  describe '#guess_category_for_expense' do
+  describe '#guess_category_for_expense', integration: true do
     context 'with Alimentación keywords' do
       it 'categorizes restaurant expenses' do
         allow(expense).to receive(:description).and_return('Dinner at RESTAURANT LA COCINA')
@@ -219,7 +219,7 @@ RSpec.describe CategoryGuesserService do
     end
   end
 
-  describe '#guess_category_from_text' do
+  describe '#guess_category_from_text', integration: true do
     it 'categorizes using description only' do
       category = service.guess_category_from_text(description: 'restaurant meal')
       expect(category.name).to eq('Alimentación')
@@ -249,7 +249,7 @@ RSpec.describe CategoryGuesserService do
     end
   end
 
-  describe '#available_categories' do
+  describe '#available_categories', integration: true do
     it 'returns list of available category names' do
       categories = service.available_categories
       expect(categories).to include('Alimentación', 'Transporte', 'Servicios', 'Entretenimiento', 'Salud', 'Compras')
@@ -257,7 +257,7 @@ RSpec.describe CategoryGuesserService do
     end
   end
 
-  describe '#keywords_for_category' do
+  describe '#keywords_for_category', integration: true do
     it 'returns keywords for Alimentación' do
       keywords = service.keywords_for_category('Alimentación')
       expect(keywords).to include('restaurant', 'restaurante', 'comida', 'food', 'super', 'supermercado', 'grocery', 'mercado')
@@ -274,7 +274,7 @@ RSpec.describe CategoryGuesserService do
     end
   end
 
-  describe 'constants' do
+  describe 'constants', integration: true do
     it 'defines category keywords mapping' do
       expect(described_class::CATEGORY_KEYWORDS).to be_a(Hash)
       expect(described_class::CATEGORY_KEYWORDS.keys).to include('Alimentación', 'Transporte')
@@ -290,8 +290,8 @@ RSpec.describe CategoryGuesserService do
     end
   end
 
-  describe 'private methods' do
-    describe '#build_search_text' do
+  describe 'private methods', integration: true do
+    describe '#build_search_text', integration: true do
       it 'combines description and merchant_name' do
         allow(expense).to receive(:description).and_return('Test description')
         allow(expense).to receive(:merchant_name).and_return('Test merchant')
@@ -314,7 +314,7 @@ RSpec.describe CategoryGuesserService do
       end
     end
 
-    describe '#build_search_text_from_parts' do
+    describe '#build_search_text_from_parts', integration: true do
       it 'combines parts correctly' do
         text = service.send(:build_search_text_from_parts, 'Description', 'Merchant')
         expect(text).to eq('description merchant')
@@ -326,7 +326,7 @@ RSpec.describe CategoryGuesserService do
       end
     end
 
-    describe '#find_matching_category' do
+    describe '#find_matching_category', integration: true do
       it 'finds category for matching text' do
         category = service.send(:find_matching_category, 'restaurant food')
         expect(category.name).to eq('Alimentación')
@@ -343,7 +343,7 @@ RSpec.describe CategoryGuesserService do
       end
     end
 
-    describe '#find_default_category' do
+    describe '#find_default_category', integration: true do
       it 'finds Sin Categoría first' do
         category = service.send(:find_default_category)
         expect(category.name).to eq('Sin Categoría')

@@ -98,6 +98,7 @@ group :development, :test do
   # Performance testing and profiling
   gem "memory_profiler"
   gem "benchmark-ips"
+  gem "get_process_mem"
 end
 
 group :development do

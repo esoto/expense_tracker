@@ -1,11 +1,11 @@
 require 'rails_helper'
 
-RSpec.describe Api::SyncSessionsController, type: :controller do
+RSpec.describe Api::SyncSessionsController, type: :controller, integration: true do
   let(:sync_session) { create(:sync_session) }
   let(:email_account) { create(:email_account) }
   let(:sync_account) { create(:sync_session_account, sync_session: sync_session, email_account: email_account) }
 
-  describe 'GET #status' do
+  describe 'GET #status', integration: true do
     context 'with valid sync session' do
       context 'when using token authentication' do
         it 'returns sync session status' do

@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe ProcessEmailsJob, type: :job do
+RSpec.describe ProcessEmailsJob, type: :job, integration: true do
   let(:email_account) { create(:email_account) }
   let(:sync_session) { create(:sync_session, :running) }
   let!(:sync_account) do
@@ -10,7 +10,7 @@ RSpec.describe ProcessEmailsJob, type: :job do
            status: 'pending')
   end
 
-  describe "job execution" do
+  describe "job execution", integration: true do
     context "with successful email processing" do
       before do
         # Mock IMAP service to return successful result

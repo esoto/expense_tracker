@@ -2,10 +2,10 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::Matchers::FuzzyMatcher do
+RSpec.describe Categorization::Matchers::FuzzyMatcher, performance: true do
   let(:matcher) { described_class.new }
 
-  describe "#match" do
+  describe "#match", performance: true do
     context "with valid inputs" do
       let(:candidates) do
         [
@@ -135,7 +135,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher do
     end
   end
 
-  describe "#match_pattern" do
+  describe "#match_pattern", performance: true do
     let(:category) { create(:category, name: "Food & Dining") }
     let(:patterns) do
       [
@@ -183,7 +183,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher do
     end
   end
 
-  describe "#match_merchant" do
+  describe "#match_merchant", performance: true do
     let(:merchants) do
       [
         create(:canonical_merchant,
@@ -231,7 +231,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher do
     end
   end
 
-  describe "#batch_match" do
+  describe "#batch_match", performance: true do
     let(:candidates) { [ "Starbucks", "Walmart", "Target" ] }
     let(:texts) { [ "starbucks", "walmart", "target" ] }
 
@@ -252,7 +252,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher do
     end
   end
 
-  describe "#calculate_similarity" do
+  describe "#calculate_similarity", performance: true do
     context "with Jaro-Winkler algorithm" do
       it "returns 1.0 for identical strings" do
         score = matcher.calculate_similarity("starbucks", "starbucks", :jaro_winkler)
@@ -327,7 +327,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher do
     end
   end
 
-  describe "performance" do
+  describe "performance", performance: true do
     let(:large_candidate_set) do
       (1..100).map { |i| { id: i, text: "Merchant #{i}" } }
     end
@@ -367,7 +367,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher do
     end
   end
 
-  describe "text normalization" do
+  describe "text normalization", performance: true do
     it "removes noise patterns" do
       candidates = [ { id: 1, text: "Starbucks" } ]
 
@@ -406,7 +406,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher do
     end
   end
 
-  describe "#clear_cache" do
+  describe "#clear_cache", performance: true do
     it "clears the cache" do
       # Populate cache
       candidates = [ "test" ]
@@ -422,7 +422,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher do
     end
   end
 
-  describe "edge cases" do
+  describe "edge cases", performance: true do
     it "handles nil values" do
       expect(matcher.match(nil, [ "test" ])).to be_empty
       expect(matcher.match("test", nil)).to be_empty
@@ -461,7 +461,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher do
     end
   end
 
-  describe "configuration options" do
+  describe "configuration options", performance: true do
     it "uses specified algorithms" do
       custom_matcher = described_class.new(algorithms: [ :levenshtein ])
 

@@ -1,10 +1,10 @@
 require 'rails_helper'
 require_relative '../../../app/services/email/sync_service'
 
-RSpec.describe Email::SyncService do
+RSpec.describe Email::SyncService, integration: true do
   let(:service) { described_class.new }
 
-  describe '#sync_emails' do
+  describe '#sync_emails', integration: true do
     context 'with specific email account' do
       let(:email_account) { create(:email_account, :bac) }
 
@@ -66,8 +66,8 @@ RSpec.describe Email::SyncService do
     end
   end
 
-  describe 'private methods' do
-    describe '#sync_specific_account' do
+  describe 'private methods', integration: true do
+    describe '#sync_specific_account', integration: true do
       let(:email_account) { create(:email_account, :bac) }
 
       it 'validates account existence' do
@@ -94,7 +94,7 @@ RSpec.describe Email::SyncService do
       end
     end
 
-    describe '#sync_all_accounts' do
+    describe '#sync_all_accounts', integration: true do
       it 'counts active accounts correctly' do
         create(:email_account, :bac)
         create(:email_account, :gmail)
@@ -132,7 +132,7 @@ RSpec.describe Email::SyncService do
     end
   end
 
-  describe 'SyncError' do
+  describe 'SyncError', integration: true do
     it 'is a StandardError subclass' do
       expect(Email::SyncService::SyncError.new).to be_a(StandardError)
     end

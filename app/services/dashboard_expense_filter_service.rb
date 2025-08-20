@@ -206,7 +206,7 @@ class DashboardExpenseFilterService < ExpenseFilterService
     # Fetch one extra to determine if there are more
     limit_with_extra = per_page + 1
     expenses = expenses.limit(limit_with_extra)
-    
+
     # Check if we have more items
     has_more = expenses.size > per_page
     expenses = expenses.first(per_page) if has_more
@@ -215,7 +215,7 @@ class DashboardExpenseFilterService < ExpenseFilterService
     next_cursor = if has_more && expenses.any?
                     last_expense = expenses.last
                     encode_cursor(last_expense.transaction_date, last_expense.id)
-                  end
+    end
 
     # Estimate total count (for virtual scroll height calculation)
     # Use cached count for performance
@@ -224,10 +224,10 @@ class DashboardExpenseFilterService < ExpenseFilterService
               Rails.cache.fetch(cache_key, expires_in: DASHBOARD_CACHE_TTL) do
                 scope.except(:limit, :offset, :order).count
               end
-            else
+    else
               # For subsequent pages, use estimated count
               expenses.size + (@cursor.present? ? per_page * 2 : 0) # Rough estimate
-            end
+    end
 
     pagination_meta = {
       total_count: total,

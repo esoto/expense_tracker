@@ -374,9 +374,9 @@ class ExpensesController < ApplicationController
         }
       }
     else
-      render json: { 
-        error: "Error loading expenses", 
-        message: result.metadata[:error] 
+      render json: {
+        error: "Error loading expenses",
+        message: result.metadata[:error]
       }, status: :internal_server_error
     end
   end

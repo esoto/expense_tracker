@@ -115,12 +115,7 @@ RSpec.configure do |config|
   # Profile slowest tests only for non-unit tests
   config.profile_examples = 10 unless config.files_to_run.any? { |f| f.include?('/unit/') }
 
-  # Use progress formatter for unit tests, documentation for others
-  config.formatter = if config.files_to_run.any? { |f| f.include?('/unit/') }
-                       'progress'
-  else
-                       'documentation'
-  end
+  # Formatter is configured in .rspec file
 
   # HOOKS
   # =====

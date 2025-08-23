@@ -46,7 +46,7 @@ module BulkOperations
         "duplicate" => "duplicado"
       }[status] || status
 
-      "#{count} gastos marcados como #{status_text}"
+      "#{count} gastos actualizados exitosamente"
     end
 
     def background_job_class

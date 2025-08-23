@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
   <head>
     <title><%= content_for(:title) || "Expense Tracker" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -23,8 +23,33 @@
   </head>
 
   <body class="bg-slate-50 min-h-screen">
+    <!-- Skip Navigation Links -->
+    <div class="sr-only-focusable">
+      <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+      <a href="#main-navigation" class="skip-link">Saltar a la navegación</a>
+    </div>
+
+    <!-- Accessibility Status Region -->
+    <div id="accessibility-status" 
+         class="sr-only" 
+         role="status" 
+         aria-live="polite" 
+         aria-atomic="true"
+         aria-relevant="additions text">
+    </div>
+
+    <!-- Accessibility Alert Region -->
+    <div id="accessibility-alerts" 
+         class="sr-only" 
+         role="alert" 
+         aria-live="assertive" 
+         aria-atomic="true">
+    </div>
     <!-- Navigation -->
-    <nav class="bg-white shadow-sm border-b border-slate-200">
+    <nav id="main-navigation" 
+         class="bg-white shadow-sm border-b border-slate-200" 
+         role="navigation" 
+         aria-label="Navegación principal">
       <div class="max-w-7xl mx-auto px-4">
         <div class="flex justify-between items-center py-4">
           <div class="flex items-center space-x-2">
@@ -33,17 +58,35 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
               </svg>
             </div>
-            <%= link_to "Expense Tracker", expenses_path, class: "text-xl font-bold text-slate-900" %>
+            <%= link_to "Expense Tracker", expenses_path, 
+                class: "text-xl font-bold text-slate-900", 
+                'aria-label': "Expense Tracker - Página principal" %>
           </div>
           <div class="flex items-center space-x-4">
-            <%= link_to "Dashboard", dashboard_expenses_path, class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path == dashboard_expenses_path}" %>
-            <%= link_to "Gastos", expenses_path, class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path == expenses_path}" %>
-            <%= link_to "Categorizar", bulk_categorizations_path, class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/bulk_categorizations')}" %>
-            <%= link_to "Analytics", analytics_pattern_dashboard_index_path, class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/analytics')}" %>
-            <%= link_to "Cuentas", email_accounts_path, class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path == email_accounts_path}" %>
-            <%= link_to "Sincronización", sync_sessions_path, class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/sync_sessions')}" %>
-            <%= link_to "Patrones", admin_patterns_path, class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/admin')}" %>
-            <%= link_to "Nuevo Gasto", new_expense_path, class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm" %>
+            <%= link_to "Dashboard", dashboard_expenses_path, 
+                class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path == dashboard_expenses_path}", 
+                'aria-current': (request.path == dashboard_expenses_path ? 'page' : nil) %>
+            <%= link_to "Gastos", expenses_path, 
+                class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path == expenses_path}", 
+                'aria-current': (request.path == expenses_path ? 'page' : nil) %>
+            <%= link_to "Categorizar", bulk_categorizations_path, 
+                class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/bulk_categorizations')}", 
+                'aria-current': (request.path.start_with?('/bulk_categorizations') ? 'page' : nil) %>
+            <%= link_to "Analytics", analytics_pattern_dashboard_index_path, 
+                class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/analytics')}", 
+                'aria-current': (request.path.start_with?('/analytics') ? 'page' : nil) %>
+            <%= link_to "Cuentas", email_accounts_path, 
+                class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path == email_accounts_path}", 
+                'aria-current': (request.path == email_accounts_path ? 'page' : nil) %>
+            <%= link_to "Sincronización", sync_sessions_path, 
+                class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/sync_sessions')}", 
+                'aria-current': (request.path.start_with?('/sync_sessions') ? 'page' : nil) %>
+            <%= link_to "Patrones", admin_patterns_path, 
+                class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/admin')}", 
+                'aria-current': (request.path.start_with?('/admin') ? 'page' : nil) %>
+            <%= link_to "Nuevo Gasto", new_expense_path, 
+                class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm", 
+                'aria-label': "Crear un nuevo gasto" %>
           </div>
         </div>
       </div>
@@ -74,7 +117,10 @@
     </div>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 py-6">
+    <main id="main-content" 
+          class="max-w-7xl mx-auto px-4 py-6" 
+          role="main" 
+          tabindex="-1">
       <%= yield %>
     </main>
   </body>

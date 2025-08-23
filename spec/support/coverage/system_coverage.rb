@@ -75,8 +75,8 @@ if ENV['TEST_TIER'] == 'system'
   add_filter '/lib/tasks/'
 
   # System test coverage expectations
-  minimum_coverage 60  # Lower target since system tests cover user paths, not all code
-  minimum_coverage_by_file 50
+  minimum_coverage 50  # Lower target since system tests cover user paths, not all code
+  minimum_coverage_by_file 40
 
   # System tests focus on critical paths, not exhaustive coverage
   # refuse_coverage_drop

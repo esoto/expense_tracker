@@ -1,0 +1,268 @@
+/* Mobile Touch Target Improvements
+   Ensures all interactive elements meet 44px minimum touch target requirement
+   for better mobile usability as per WCAG 2.1 AA standards */
+
+/* Global mobile touch target improvements */
+@media (max-width: 640px) {
+  /* Buttons - ensure minimum 44px height */
+  button,
+  .btn,
+  .button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"] {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 10px 16px;
+  }
+
+  /* Links in navigation and lists */
+  nav a,
+  .navigation a,
+  .expense-row a,
+  .dashboard-expense-row a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 12px;
+  }
+
+  /* Form controls */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="date"],
+  input[type="datetime-local"],
+  textarea,
+  select {
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  /* Checkboxes and radio buttons - increase touch area */
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 24px;
+    height: 24px;
+    /* Add invisible padding for larger touch target */
+    position: relative;
+  }
+
+  input[type="checkbox"]::before,
+  input[type="radio"]::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+  }
+
+  /* Dashboard specific touch targets */
+  .dashboard-expense-row {
+    min-height: 64px; /* Larger for easier row selection */
+    padding: 12px;
+  }
+
+  .inline-quick-actions button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px;
+  }
+
+  .dashboard-filter-chips button {
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+
+  /* View toggle buttons */
+  .dashboard-expenses-toggle button {
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+
+  /* Category badges - make them tappable */
+  .expense-category-badge {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Dropdown items */
+  .dropdown-item,
+  [role="menuitem"] {
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+
+  /* Modal buttons */
+  .modal-footer button,
+  .bulk-modal-footer button {
+    min-height: 44px;
+    padding: 10px 20px;
+  }
+
+  /* Close buttons */
+  .close,
+  .modal-close,
+  .bulk-modal-close,
+  [aria-label*="close"],
+  [aria-label*="Close"] {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px;
+  }
+
+  /* Tab navigation */
+  [role="tab"] {
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+
+  /* Pagination links */
+  .pagination a,
+  .pagination button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px;
+  }
+
+  /* Action icons in tables/lists */
+  .action-icon,
+  .table-action,
+  .list-action {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Expandable/collapsible triggers */
+  [aria-expanded],
+  .accordion-trigger,
+  .collapse-trigger {
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+
+  /* Floating action buttons */
+  .fab,
+  .floating-action-button {
+    width: 56px; /* Material Design recommends 56px for FABs on mobile */
+    height: 56px;
+  }
+
+  /* Chip/tag close buttons */
+  .chip .close,
+  .tag .close {
+    min-width: 32px; /* Smaller but still accessible */
+    min-height: 32px;
+    margin: -6px -6px -6px 8px; /* Extend touch area beyond visual bounds */
+  }
+
+  /* Slider handles */
+  input[type="range"]::-webkit-slider-thumb {
+    width: 44px;
+    height: 44px;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Toggle switches */
+  .toggle-switch,
+  .switch {
+    min-width: 60px;
+    min-height: 44px;
+  }
+
+  /* Card action areas */
+  .card-action,
+  .card-footer button {
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+
+  /* Toolbar buttons */
+  .toolbar button,
+  .toolbar a {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px;
+  }
+
+  /* Breadcrumb links */
+  .breadcrumb a {
+    min-height: 44px;
+    padding: 10px 8px;
+  }
+
+  /* Stepper controls */
+  .stepper-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Date picker cells */
+  .datepicker td,
+  .calendar-day {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Notification actions */
+  .notification-action,
+  .alert-action {
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+
+  /* Search input clear button */
+  .search-clear,
+  input[type="search"]::-webkit-search-cancel-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Accessibility enhancement for touch targets */
+@media (pointer: coarse) {
+  /* Apply to devices with coarse pointers (touch screens) */
+  .clickable,
+  [onclick],
+  [data-action*="click"] {
+    position: relative;
+  }
+
+  /* Extend touch area for small buttons */
+  .small-button::after,
+  .icon-button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Visual feedback for touch interactions */
+@media (hover: none) and (pointer: coarse) {
+  /* Touch devices - add visual feedback */
+  button:active,
+  a:active,
+  [role="button"]:active {
+    opacity: 0.8;
+    transform: scale(0.98);
+  }
+}

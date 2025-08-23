@@ -1,0 +1,459 @@
+/* Accessibility CSS - Task 3.9: Dashboard Accessibility */
+/* WCAG 2.1 AA Compliance Styles */
+
+/* ============================================
+   SCREEN READER UTILITIES
+   ============================================ */
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Screen reader only content that becomes visible when focused */
+.sr-only-focusable {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.sr-only-focusable:focus,
+.sr-only-focusable:active {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  padding: inherit !important;
+  margin: inherit !important;
+  overflow: visible !important;
+  clip: auto !important;
+  white-space: normal !important;
+}
+
+/* ============================================
+   SKIP NAVIGATION LINKS
+   ============================================ */
+
+.skip-link {
+  @apply absolute top-0 left-0 z-[9999];
+  @apply bg-teal-700 text-white px-4 py-2 rounded-br-lg;
+  @apply font-medium text-sm;
+  @apply focus:outline-none focus:ring-4 focus:ring-teal-300;
+  @apply transform -translate-y-full;
+  @apply transition-transform duration-150 ease-in-out;
+  text-decoration: none !important;
+}
+
+.skip-link:focus {
+  @apply transform translate-y-0;
+}
+
+/* ============================================
+   FOCUS INDICATORS
+   ============================================ */
+
+/* Enhanced focus indicators for better visibility */
+:focus {
+  @apply outline-none;
+}
+
+:focus-visible {
+  @apply outline-2 outline-offset-2 outline-teal-500;
+}
+
+/* High contrast focus indicators */
+@media (prefers-contrast: high) {
+  :focus-visible {
+    @apply outline-4 outline-offset-4;
+    outline-style: solid !important;
+  }
+  
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  a:focus-visible {
+    @apply outline-slate-900;
+    background-color: yellow !important;
+    color: black !important;
+  }
+}
+
+/* ============================================
+   KEYBOARD NAVIGATION
+   ============================================ */
+
+/* Ensure all interactive elements are keyboard accessible */
+button,
+[role="button"],
+input,
+select,
+textarea,
+a {
+  @apply focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2;
+}
+
+/* Tab navigation indicators */
+.tab-focus-indicator {
+  @apply ring-2 ring-teal-500 ring-offset-2;
+}
+
+/* Arrow key navigation indicators */
+.arrow-focus-indicator {
+  @apply bg-teal-50 ring-1 ring-teal-300;
+}
+
+/* ============================================
+   REDUCED MOTION SUPPORT
+   ============================================ */
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  /* Remove transforms that cause motion */
+  .hover\:scale-105:hover,
+  .hover\:-translate-y-1:hover,
+  .hover\:scale-110:hover {
+    transform: none !important;
+  }
+}
+
+/* ============================================
+   COLOR CONTRAST ENHANCEMENTS
+   ============================================ */
+
+/* Ensure proper contrast ratios for text */
+.text-contrast-aa {
+  /* Minimum 4.5:1 ratio for normal text */
+  color: #0F172A; /* slate-900 */
+}
+
+.text-contrast-aa-large {
+  /* Minimum 3:1 ratio for large text (18pt+) */
+  color: #334155; /* slate-700 */
+}
+
+.bg-contrast-aa {
+  background-color: #FFFFFF;
+  color: #0F172A;
+}
+
+/* Error states with proper contrast */
+.error-text-contrast {
+  color: #B91C1C; /* red-700 - passes 4.5:1 on white */
+}
+
+.success-text-contrast {
+  color: #047857; /* emerald-700 - passes 4.5:1 on white */
+}
+
+.warning-text-contrast {
+  color: #A16207; /* amber-700 - passes 4.5:1 on white */
+}
+
+/* ============================================
+   ARIA LIVE REGIONS
+   ============================================ */
+
+/* Ensure live regions are properly positioned */
+[aria-live],
+[role="status"],
+[role="alert"] {
+  /* Keep off-screen but accessible to screen readers */
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* When live regions need to be visible */
+[aria-live].visible,
+[role="status"].visible,
+[role="alert"].visible {
+  position: static;
+  left: auto;
+  width: auto;
+  height: auto;
+  overflow: visible;
+}
+
+/* ============================================
+   MODAL AND DIALOG ACCESSIBILITY
+   ============================================ */
+
+/* Modal focus trap styling */
+.modal-focus-trap {
+  /* Ensure modals are properly contained */
+  @apply fixed inset-0 z-50;
+}
+
+/* First and last focusable elements in modals */
+.modal-focus-guard {
+  position: absolute;
+  left: -9999px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ============================================
+   LOADING AND STATUS INDICATORS
+   ============================================ */
+
+/* Loading spinners with accessibility announcements */
+.loading-spinner[aria-label] {
+  @apply inline-block w-4 h-4 border-2 border-teal-600 border-t-transparent rounded-full;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Status indicators */
+.status-indicator {
+  @apply inline-flex items-center px-2 py-1 text-xs font-medium rounded-full;
+}
+
+.status-indicator.success {
+  @apply bg-emerald-100 text-emerald-800;
+}
+
+.status-indicator.error {
+  @apply bg-rose-100 text-rose-800;
+}
+
+.status-indicator.warning {
+  @apply bg-amber-100 text-amber-800;
+}
+
+.status-indicator.info {
+  @apply bg-slate-100 text-slate-800;
+}
+
+/* ============================================
+   RESPONSIVE TOUCH TARGETS
+   ============================================ */
+
+/* Ensure minimum touch target size (44px) on mobile */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  [role="button"],
+  input[type="checkbox"],
+  input[type="radio"],
+  a {
+    min-width: 44px;
+    min-height: 44px;
+    @apply flex items-center justify-center;
+  }
+  
+  /* Increase spacing between touch targets */
+  .touch-target-spacing > * + * {
+    margin-left: 8px;
+  }
+}
+
+/* ============================================
+   FORM ACCESSIBILITY
+   ============================================ */
+
+/* Required field indicators */
+.required::after {
+  content: " *";
+  color: #DC2626; /* red-600 */
+  font-weight: bold;
+  margin-left: 2px;
+}
+
+/* Error states for form fields */
+.field-error {
+  @apply border-rose-500 focus:border-rose-500 focus:ring-rose-500;
+}
+
+.field-error-message {
+  @apply text-rose-700 text-sm mt-1;
+}
+
+/* Success states for form fields */
+.field-success {
+  @apply border-emerald-500 focus:border-emerald-500 focus:ring-emerald-500;
+}
+
+/* ============================================
+   TABLE ACCESSIBILITY
+   ============================================ */
+
+/* Ensure table headers are properly associated */
+table th {
+  @apply font-semibold;
+}
+
+/* Sortable column headers */
+th[aria-sort] {
+  @apply cursor-pointer;
+  user-select: none;
+}
+
+th[aria-sort]:hover {
+  @apply bg-slate-100;
+}
+
+th[aria-sort="ascending"]::after {
+  content: " ↑";
+  @apply text-teal-600 ml-1;
+}
+
+th[aria-sort="descending"]::after {
+  content: " ↓";
+  @apply text-teal-600 ml-1;
+}
+
+/* ============================================
+   DARK MODE ACCESSIBILITY
+   ============================================ */
+
+/* High contrast mode support */
+@media (prefers-color-scheme: dark) {
+  .auto-dark-mode {
+    background-color: #0F172A; /* slate-900 */
+    color: #F8FAFC; /* slate-50 */
+  }
+  
+  .auto-dark-mode .text-slate-900 {
+    color: #F8FAFC !important;
+  }
+  
+  .auto-dark-mode .text-slate-600 {
+    color: #CBD5E1 !important;
+  }
+  
+  .auto-dark-mode .bg-white {
+    background-color: #1E293B !important; /* slate-800 */
+  }
+}
+
+/* ============================================
+   PRINT ACCESSIBILITY
+   ============================================ */
+
+/* Ensure good contrast and readability in print */
+@media print {
+  * {
+    background: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  
+  a,
+  a:visited {
+    text-decoration: underline;
+  }
+  
+  /* Hide interactive elements that don't work in print */
+  button,
+  .btn,
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Show URLs for links */
+  a[href]:after {
+    content: " (" attr(href) ")";
+    font-size: 90%;
+  }
+}
+
+/* ============================================
+   ANIMATION AND TRANSITION CONTROLS
+   ============================================ */
+
+/* Animation control utilities */
+.animate-respectfully {
+  animation-duration: 0.3s;
+  animation-timing-function: ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-respectfully {
+    animation: none !important;
+  }
+}
+
+/* Transition control utilities */
+.transition-respectfully {
+  transition-duration: 0.2s;
+  transition-timing-function: ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transition-respectfully {
+    transition: none !important;
+  }
+}
+
+/* ============================================
+   DEBUGGING UTILITIES (DEVELOPMENT ONLY)
+   ============================================ */
+
+/* Visual debugging for accessibility issues */
+.debug-accessibility {
+  outline: 2px dashed red !important;
+  outline-offset: 2px;
+}
+
+.debug-accessibility::before {
+  content: "A11Y: " attr(class);
+  position: absolute;
+  background: red;
+  color: white;
+  padding: 2px 4px;
+  font-size: 10px;
+  z-index: 9999;
+}
+
+/* Focus debugging */
+.debug-focus:focus {
+  outline: 3px solid magenta !important;
+  outline-offset: 3px;
+}
+
+/* ARIA debugging - Disabled for production */
+/*
+[aria-label]:empty::after {
+  content: "⚠️ Empty aria-label";
+  color: orange;
+  font-size: 10px;
+}
+
+[role]:not([role="button"]):not([role="link"]):not([role="status"]):not([role="alert"])::after {
+  content: "Role: " attr(role);
+  position: absolute;
+  background: blue;
+  color: white;
+  padding: 1px 3px;
+  font-size: 8px;
+  z-index: 9999;
+}
+*/

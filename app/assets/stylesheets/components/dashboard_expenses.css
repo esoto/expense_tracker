@@ -1,0 +1,1470 @@
+/* Dashboard Expenses Component Styles - Epic 3 Task 3.2 */
+/* Manages compact and expanded view modes with smooth transitions */
+
+/* View Toggle Button Group */
+.dashboard-expenses-toggle {
+  @apply flex items-center bg-slate-100 rounded-lg p-1;
+  transition: all 0.2s ease-out;
+}
+
+.dashboard-expenses-toggle button {
+  @apply relative px-3 py-1.5 text-sm font-medium rounded transition-all duration-200;
+  @apply flex items-center gap-2;
+}
+
+.dashboard-expenses-toggle button[aria-pressed="false"] {
+  @apply text-slate-600 hover:text-slate-900;
+}
+
+.dashboard-expenses-toggle button[aria-pressed="true"] {
+  @apply bg-white text-slate-900 shadow-sm;
+}
+
+.dashboard-expenses-toggle button:disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+/* View mode icons */
+.dashboard-expenses-toggle .view-icon {
+  @apply w-4 h-4;
+  transition: transform 0.2s ease-out;
+}
+
+.dashboard-expenses-toggle button[aria-pressed="true"] .view-icon {
+  transform: scale(1.1);
+}
+
+/* Table-based Expense Row Styles for Dashboard */
+#dashboard-expenses-widget table {
+  @apply min-w-full divide-y divide-slate-200;
+}
+
+#dashboard-expenses-widget thead {
+  @apply bg-slate-50;
+}
+
+#dashboard-expenses-widget tbody tr {
+  @apply hover:bg-slate-50 transition-all duration-200;
+}
+
+/* Compact View - Hide expanded columns */
+.dashboard-expenses-compact [data-dashboard-expenses-target="expandedColumns"] {
+  @apply hidden;
+}
+
+/* Expanded View - Show all columns */
+.dashboard-expenses-expanded [data-dashboard-expenses-target="expandedColumns"] {
+  @apply table-cell;
+}
+
+/* Ensure consistent cell spacing */
+#dashboard-expenses-widget td,
+#dashboard-expenses-widget th {
+  @apply px-6 py-4;
+}
+
+#dashboard-expenses-widget th {
+  @apply text-left text-xs font-medium text-slate-500 uppercase tracking-wider;
+}
+
+#dashboard-expenses-widget td {
+  @apply whitespace-nowrap text-sm;
+}
+
+/* Category styling for dashboard table - matching main expenses */
+#dashboard-expenses-widget .expense-category-cell {
+  @apply relative;
+}
+
+/* Quick Actions - inherit from main expenses table */
+#dashboard-expenses-widget .inline-actions-container {
+  @apply opacity-0 group-hover:opacity-100 transition-opacity duration-200;
+}
+
+/* Category Badge Styles */
+.expense-category-badge {
+  @apply w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs;
+  width: 2rem !important; /* 32px width */
+  height: 2rem !important; /* 32px height */
+  font-size: 0.75rem; /* 12px font size */
+  transition: transform 0.2s ease-out;
+}
+
+/* Ensure inline background-color styles take precedence for categorized badges */
+.expense-category-badge[style*="background-color"] {
+  /* Allow inline styles to work - remove any conflicting background */
+  background: none !important;
+}
+
+.dashboard-expense-row:hover .expense-category-badge {
+  transform: scale(1.05);
+}
+
+/* Uncategorized Badge */
+.expense-category-badge.uncategorized {
+  @apply bg-slate-400;
+}
+
+/* Quick Actions (for Task 3.3) */
+.expense-quick-actions {
+  @apply opacity-0 group-hover:opacity-100 transition-opacity duration-200;
+  @apply flex items-center gap-1;
+}
+
+/* Ensure quick actions container is properly positioned */
+.inline-quick-actions {
+  @apply flex items-center space-x-1;
+  position: relative;
+  z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease-out;
+}
+
+/* Show actions on hover */
+.dashboard-expense-row:hover .inline-quick-actions,
+.dashboard-expense-row:focus-within .inline-quick-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.expense-quick-action {
+  @apply p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100;
+  @apply transition-all duration-150;
+}
+
+.expense-quick-action:hover {
+  transform: scale(1.1);
+}
+
+.expense-quick-action.delete:hover {
+  @apply text-rose-600 bg-rose-50;
+}
+
+/* ============================================
+   TASK 3.4: BATCH SELECTION STYLES
+   ============================================ */
+
+/* Selection Mode Active State */
+.selection-mode-active {
+  @apply relative;
+}
+
+.selection-mode-active #dashboard-expenses-widget tbody tr {
+  @apply cursor-pointer;
+  transition: all 0.2s ease-out;
+}
+
+.selection-mode-active #dashboard-expenses-widget tbody tr:hover {
+  @apply bg-teal-50;
+}
+
+/* Show checkbox column when selection mode is active */
+.selection-mode-active #dashboard-expenses-widget .checkbox-cell,
+.selection-mode-active #dashboard-expenses-widget .checkbox-header {
+  @apply table-cell;
+}
+
+/* Selected Row State for table */
+#dashboard-expenses-widget tbody tr.selected {
+  @apply bg-teal-50;
+  animation: selectPulse 0.3s ease-out;
+}
+
+#dashboard-expenses-widget tbody tr.selected:hover {
+  @apply bg-teal-100;
+}
+
+/* Selection Checkbox Styles */
+[data-dashboard-expenses-target="selectionCheckbox"] {
+  @apply cursor-pointer;
+  transition: transform 0.2s ease-out;
+}
+
+[data-dashboard-expenses-target="selectionCheckbox"]:hover {
+  transform: scale(1.1);
+}
+
+[data-dashboard-expenses-target="selectionCheckbox"]:focus {
+  @apply ring-2 ring-teal-500 ring-offset-2;
+}
+
+/* Selection Toolbar */
+[data-dashboard-expenses-target="selectionToolbar"] {
+  animation: slideDown 0.3s ease-out;
+}
+
+[data-dashboard-expenses-target="selectionToolbar"].hidden {
+  display: none !important;
+}
+
+/* Select All Checkbox */
+[data-dashboard-expenses-target="selectAllCheckbox"] {
+  @apply cursor-pointer;
+}
+
+[data-dashboard-expenses-target="selectAllCheckbox"]:indeterminate {
+  @apply bg-teal-300;
+}
+
+/* Batch Action Buttons */
+[data-dashboard-expenses-target="selectionToolbar"] button {
+  @apply transition-all duration-150;
+}
+
+[data-dashboard-expenses-target="selectionToolbar"] button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  @apply shadow-sm;
+}
+
+[data-dashboard-expenses-target="selectionToolbar"] button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Selection Count Badge */
+[data-dashboard-expenses-target="selectedCount"] {
+  @apply font-bold text-teal-700;
+  animation: countUpdate 0.3s ease-out;
+}
+
+/* Animations for Selection */
+@keyframes selectPulse {
+  0% {
+    transform: scale(1);
+    background-color: transparent;
+  }
+  50% {
+    transform: scale(1.01);
+    background-color: theme('colors.teal.100');
+  }
+  100% {
+    transform: scale(1);
+    background-color: theme('colors.teal.50');
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes countUpdate {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+/* Mobile Touch Optimizations for Selection */
+@media (hover: none) and (pointer: coarse) {
+  .selection-mode-active #dashboard-expenses-widget tbody tr {
+    min-height: 60px;
+  }
+  
+  [data-dashboard-expenses-target="selectionCheckbox"] {
+    min-width: 24px;
+    min-height: 24px;
+    @apply transform scale-125;
+  }
+  
+  /* Mobile-optimized toolbar */
+  [data-dashboard-expenses-target="selectionToolbar"] {
+    @apply flex-col sm:flex-row;
+    @apply space-y-2 sm:space-y-0;
+    @apply p-4;
+  }
+  
+  [data-dashboard-expenses-target="selectionToolbar"] .flex {
+    @apply flex-col sm:flex-row;
+    @apply w-full;
+  }
+  
+  [data-dashboard-expenses-target="selectionToolbar"] button {
+    @apply py-3 px-4;
+    min-height: 44px;
+    @apply text-base;
+    @apply w-full sm:w-auto;
+  }
+  
+  /* Ensure select all is visible */
+  [data-dashboard-expenses-target="selectAllCheckbox"] {
+    @apply transform scale-125;
+    min-width: 24px;
+    min-height: 24px;
+  }
+}
+
+/* Keyboard Navigation for Selection */
+.selection-mode-active #dashboard-expenses-widget tbody tr:focus {
+  @apply ring-2 ring-teal-500 ring-offset-2;
+}
+
+.selection-mode-active #dashboard-expenses-widget tbody tr:focus-within {
+  @apply ring-2 ring-teal-500 ring-offset-1;
+}
+
+/* Range Selection Visual Feedback */
+.selection-mode-active #dashboard-expenses-widget tbody tr.in-range {
+  @apply bg-teal-25 border-teal-200;
+}
+
+/* Accessibility - High Contrast Mode */
+@media (prefers-contrast: high) {
+  #dashboard-expenses-widget tbody tr.selected {
+    @apply border-2 border-current;
+  }
+  
+  [data-dashboard-expenses-target="selectionToolbar"] {
+    @apply border-2 border-current;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  #dashboard-expenses-widget tbody tr.selected,
+  [data-dashboard-expenses-target="selectionContainer"],
+  [data-dashboard-expenses-target="selectionToolbar"],
+  [data-dashboard-expenses-target="selectedCount"] {
+    animation: none !important;
+  }
+}
+
+/* Container Styles */
+.dashboard-expenses-container {
+  @apply transition-all duration-300 ease-out;
+}
+
+/* Table-specific styles */
+#dashboard-expenses-widget table {
+  @apply transition-all duration-200;
+}
+
+/* Loading State */
+.dashboard-expenses-loading {
+  @apply opacity-50 pointer-events-none;
+}
+
+.dashboard-expenses-loading::after {
+  content: "";
+  @apply absolute inset-0 bg-white/50 rounded-xl;
+  @apply flex items-center justify-center;
+}
+
+/* Empty State */
+.dashboard-expenses-empty {
+  @apply text-center py-12;
+}
+
+/* Mobile Responsive Adjustments */
+@media (max-width: 767px) {
+  .dashboard-expenses-toggle button span.view-label {
+    @apply hidden;
+  }
+  
+  .dashboard-expenses-toggle button {
+    @apply px-2;
+  }
+  
+  /* Responsive table adjustments */
+  #dashboard-expenses-widget {
+    @apply overflow-x-auto;
+  }
+  
+  /* Force compact view on mobile */
+  .dashboard-expenses-expanded {
+    @apply dashboard-expenses-compact;
+  }
+}
+
+/* Keyboard Navigation Focus Styles for table rows */
+#dashboard-expenses-widget tbody tr:focus {
+  @apply outline-none ring-2 ring-teal-500 ring-offset-2;
+}
+
+#dashboard-expenses-widget tbody tr:focus-visible {
+  @apply outline-none ring-2 ring-teal-500 ring-offset-2;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+}
+
+/* Performance Metrics (Development Only) */
+.dashboard-expenses-performance {
+  @apply px-4 py-2 bg-slate-50 border-b border-slate-200;
+  @apply text-xs text-slate-600 font-mono;
+}
+
+.dashboard-expenses-performance .metric {
+  @apply inline-block mr-3;
+}
+
+.dashboard-expenses-performance .metric-value {
+  @apply font-semibold text-slate-800;
+}
+
+.dashboard-expenses-performance .index-used {
+  @apply text-emerald-600 font-semibold;
+}
+
+.dashboard-expenses-performance .no-index {
+  @apply text-rose-600 font-semibold;
+}
+
+/* Accessibility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Smooth Height Transitions */
+.dashboard-expenses-container[data-transitioning="true"] {
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Quick Filter Pills */
+.dashboard-expense-filter {
+  @apply inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium;
+  @apply border transition-all duration-150;
+  @apply cursor-pointer select-none;
+}
+
+.dashboard-expense-filter:hover {
+  @apply shadow-sm transform scale-105;
+}
+
+.dashboard-expense-filter.active {
+  @apply bg-teal-50 border-teal-300 text-teal-700;
+}
+
+/* Load More Button */
+.dashboard-expenses-load-more {
+  @apply px-4 py-2 text-sm font-medium text-teal-700;
+  @apply bg-white border border-teal-300 rounded-lg;
+  @apply hover:bg-teal-50 transition-colors duration-200;
+  @apply focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2;
+}
+
+.dashboard-expenses-load-more:disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+/* Widget Header */
+.dashboard-expenses-header {
+  @apply px-6 py-4 border-b border-slate-200;
+  @apply flex items-center justify-between;
+}
+
+.dashboard-expenses-title {
+  @apply text-lg font-semibold text-slate-900;
+}
+
+.dashboard-expenses-actions {
+  @apply flex items-center gap-3;
+}
+
+/* Filter Active Indicator */
+.dashboard-expenses-filter-badge {
+  @apply px-2 py-1 text-xs font-medium;
+  @apply bg-teal-100 text-teal-700 rounded-full;
+}
+
+/* ============================================
+   TASK 3.3: INLINE ACTIONS STYLES
+   ============================================ */
+
+/* Inline Actions for Dashboard Table */
+#dashboard-expenses-widget .inline-actions-container {
+  /* Inherits from main table styles */
+}
+
+/* Action Button Styles */
+#dashboard-expenses-widget button[data-action*="dashboard-inline-actions"] {
+  @apply relative rounded-lg transition-all duration-150;
+  @apply focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1;
+}
+
+#dashboard-expenses-widget button[data-action*="dashboard-inline-actions"]:hover {
+  transform: scale(1.15);
+}
+
+/* Category Dropdown - works with table structure */
+[data-dashboard-inline-actions-target="categoryDropdown"] {
+  @apply absolute z-50 w-48;
+  @apply bg-white rounded-lg shadow-xl border border-slate-200;
+  @apply overflow-hidden;
+  max-height: 320px;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+}
+
+#dashboard-expenses-widget [data-dashboard-inline-actions-target="categoryDropdown"] .py-1 {
+  @apply max-h-64 overflow-y-auto;
+  scrollbar-width: thin;
+  scrollbar-color: theme('colors.slate.300') transparent;
+}
+
+#dashboard-expenses-widget [data-dashboard-inline-actions-target="categoryDropdown"] button {
+  @apply w-full px-3 py-2 text-left text-sm;
+  @apply hover:bg-teal-50 focus:bg-teal-50 focus:outline-none;
+  @apply flex items-center gap-2 transition-colors;
+}
+
+#dashboard-expenses-widget [data-dashboard-inline-actions-target="categoryDropdown"] button:hover .truncate {
+  @apply text-teal-700 font-medium;
+}
+
+/* Delete Confirmation Modal */
+[data-dashboard-inline-actions-target="deleteConfirmation"] {
+  @apply absolute z-50 w-56;
+  @apply bg-white rounded-lg shadow-2xl border border-rose-200 p-4;
+  animation: shake 0.3s ease-in-out;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+#dashboard-expenses-widget [data-dashboard-inline-actions-target="deleteConfirmation"] button {
+  @apply transition-all duration-150;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-1;
+}
+
+#dashboard-expenses-widget [data-dashboard-inline-actions-target="deleteConfirmation"] button:first-of-type {
+  @apply focus:ring-rose-500;
+}
+
+#dashboard-expenses-widget [data-dashboard-inline-actions-target="deleteConfirmation"] button:last-of-type {
+  @apply focus:ring-slate-400;
+}
+
+/* Loading Overlay */
+.inline-action-loading {
+  @apply absolute inset-0 z-40 rounded-lg;
+  animation: fadeIn 0.15s ease-out;
+}
+
+/* Toast Notifications */
+.toast-notification {
+  @apply pointer-events-none;
+}
+
+.toast-notification > div {
+  @apply pointer-events-auto;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+.animate-slide-out {
+  animation: slide-out 0.3s ease-in;
+}
+
+/* Mobile Touch Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Make touch targets larger on mobile */
+  #dashboard-expenses-widget button[data-action*="dashboard-inline-actions"] {
+    @apply p-2;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  /* Adjust dropdown positions for mobile */
+  #dashboard-expenses-widget [data-dashboard-inline-actions-target="categoryDropdown"],
+  #dashboard-expenses-widget [data-dashboard-inline-actions-target="deleteConfirmation"] {
+    position: fixed;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 1rem;
+    width: auto;
+  }
+}
+
+/* Keyboard Navigation Indicators */
+#dashboard-expenses-widget tbody tr:focus-within button[data-action*="dashboard-inline-actions"]:focus {
+  @apply ring-2 ring-teal-500 ring-offset-2;
+}
+
+/* Status Button State Transitions */
+#dashboard-expenses-widget button[title*="procesado"] svg,
+#dashboard-expenses-widget button[title*="pendiente"] svg {
+  @apply transition-transform duration-200;
+}
+
+#dashboard-expenses-widget button[title*="procesado"]:hover svg {
+  transform: rotate(-20deg) scale(1.1);
+}
+
+#dashboard-expenses-widget button[title*="pendiente"]:hover svg {
+  transform: rotate(20deg) scale(1.1);
+}
+
+/* Duplicate Button Animation */
+#dashboard-expenses-widget button[title*="Duplicar"]:hover svg {
+  animation: duplicate-pulse 0.4s ease-in-out;
+}
+
+@keyframes duplicate-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}
+
+/* Category Selection Feedback */
+#dashboard-expenses-widget [data-dashboard-inline-actions-target="categoryDropdown"] button:active {
+  @apply bg-teal-100;
+  transform: scale(0.98);
+}
+
+/* Hover Intent Delay */
+@media (hover: hover) {
+  #dashboard-expenses-widget tbody tr {
+    transition: background-color 0.2s ease-out;
+  }
+  
+  #dashboard-expenses-widget .opacity-0 {
+    transition: opacity 0.2s ease-out 0.15s;
+  }
+}
+
+/* Accessibility - High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  #dashboard-expenses-widget button[data-action*="dashboard-inline-actions"] {
+    @apply border border-current;
+  }
+  
+  #dashboard-expenses-widget [data-dashboard-inline-actions-target="categoryDropdown"],
+  #dashboard-expenses-widget [data-dashboard-inline-actions-target="deleteConfirmation"] {
+    @apply border-2 border-current;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  #dashboard-expenses-widget tbody tr,
+  #dashboard-expenses-widget button[data-action*="dashboard-inline-actions"],
+  .inline-action-loading,
+  .toast-notification > div {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ============================================
+   TASK 3.5: BULK OPERATIONS MODAL STYLES
+   ============================================ */
+
+/* Modal Overlay */
+.bulk-modal-overlay {
+  @apply fixed inset-0 z-[9998] bg-slate-900/50 backdrop-blur-sm;
+  @apply flex items-center justify-center p-4;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Modal Container */
+.bulk-modal-container {
+  @apply bg-white rounded-xl shadow-2xl max-w-md w-full;
+  @apply transform transition-all duration-200;
+  animation: slideUpAndFade 0.3s ease-out;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Modal Header */
+.bulk-modal-header {
+  @apply px-6 py-4 border-b flex items-center justify-between;
+}
+
+.bulk-modal-header h3 {
+  @apply text-lg font-semibold;
+}
+
+.bulk-modal-close {
+  @apply p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100;
+  @apply transition-all duration-150;
+}
+
+.bulk-modal-close:hover {
+  transform: rotate(90deg);
+}
+
+/* Modal Body */
+.bulk-modal-body {
+  @apply px-6 py-4 flex-1 overflow-y-auto;
+}
+
+/* Modal Footer */
+.bulk-modal-footer {
+  @apply px-6 py-4 border-t border-slate-200;
+  @apply flex items-center justify-end space-x-3;
+}
+
+/* Button Styles */
+.btn-primary {
+  @apply px-4 py-2 bg-teal-700 text-white rounded-lg;
+  @apply hover:bg-teal-800 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2;
+  @apply font-medium text-sm transition-all duration-150;
+  @apply inline-flex items-center justify-center;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-secondary {
+  @apply px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded-lg;
+  @apply hover:bg-slate-50 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2;
+  @apply font-medium text-sm transition-all duration-150;
+  @apply inline-flex items-center justify-center;
+}
+
+.btn-danger {
+  @apply px-4 py-2 bg-rose-600 text-white rounded-lg;
+  @apply hover:bg-rose-700 focus:ring-2 focus:ring-rose-500 focus:ring-offset-2;
+  @apply font-medium text-sm transition-all duration-150;
+  @apply inline-flex items-center justify-center;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+/* Form Groups */
+.form-group {
+  @apply space-y-2;
+}
+
+.form-group label {
+  @apply block text-sm font-medium text-slate-700;
+}
+
+.form-group select,
+.form-group input[type="text"] {
+  @apply w-full px-3 py-2 border border-slate-300 rounded-lg;
+  @apply focus:ring-2 focus:ring-teal-500 focus:border-teal-500;
+  @apply text-sm transition-all duration-150;
+}
+
+/* Radio Button Groups */
+.form-group input[type="radio"] {
+  @apply h-4 w-4 border-slate-300;
+  @apply focus:ring-2 focus:ring-offset-2;
+}
+
+/* Loading Spinner */
+.spinner {
+  @apply inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Modal Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUpAndFade {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Toast Notification Styles (Task 3.5) */
+#toast-container {
+  pointer-events: none;
+}
+
+#toast-container > div {
+  pointer-events: auto;
+  @apply mb-2;
+}
+
+.animate-slide-in {
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+.animate-slide-out {
+  animation: slideOutToRight 0.3s ease-in;
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutToRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Mobile Responsive Modals */
+@media (max-width: 640px) {
+  .bulk-modal-container {
+    @apply max-w-full mx-4;
+    max-height: 85vh;
+  }
+  
+  .bulk-modal-header {
+    @apply px-4 py-3;
+  }
+  
+  .bulk-modal-body {
+    @apply px-4 py-3;
+  }
+  
+  .bulk-modal-footer {
+    @apply px-4 py-3 flex-col space-y-2 space-x-0;
+  }
+  
+  .bulk-modal-footer button {
+    @apply w-full;
+  }
+}
+
+/* Touch-friendly Bulk Actions */
+@media (hover: none) and (pointer: coarse) {
+  .bulk-modal-close {
+    @apply p-2;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  
+  .form-group input[type="radio"] {
+    @apply w-5 h-5;
+  }
+  
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    @apply py-3;
+    min-height: 44px;
+  }
+}
+
+/* Dark Mode Support (if implemented in future) */
+@media (prefers-color-scheme: dark) {
+  .bulk-modal-overlay {
+    @apply bg-slate-950/80;
+  }
+  
+  .bulk-modal-container {
+    @apply bg-slate-800 text-slate-100;
+  }
+  
+  .bulk-modal-header {
+    @apply border-slate-700;
+  }
+  
+  .bulk-modal-footer {
+    @apply border-slate-700;
+  }
+  
+  .bulk-modal-close {
+    @apply text-slate-400 hover:text-slate-200 hover:bg-slate-700;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .bulk-modal-container {
+    @apply border-2 border-current;
+  }
+  
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    @apply border-2 border-current;
+  }
+}
+
+/* ============================================
+   TASK 3.6: DASHBOARD FILTER CHIPS STYLES
+   ============================================ */
+
+/* Filter Chips Container */
+.dashboard-filter-chips {
+  @apply relative bg-white;
+  transition: all 0.3s ease-out;
+}
+
+/* Filter Chip Base Styles */
+.dashboard-filter-chips button[data-dashboard-filter-chips-target*="Chip"] {
+  @apply relative inline-flex items-center gap-1.5;
+  @apply px-3 py-1.5 text-sm font-medium;
+  @apply rounded-full border transition-all duration-200;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-teal-500;
+  transform-origin: center;
+}
+
+/* Inactive Chip State */
+.dashboard-filter-chips button[aria-pressed="false"] {
+  @apply bg-white text-slate-700 border-slate-300;
+  @apply hover:bg-slate-50 hover:border-slate-400;
+  @apply hover:shadow-sm;
+}
+
+.dashboard-filter-chips button[aria-pressed="false"]:hover {
+  transform: translateY(-1px) scale(1.02);
+}
+
+/* Active Chip State */
+.dashboard-filter-chips button[aria-pressed="true"] {
+  @apply bg-teal-700 text-white border-teal-700;
+  @apply hover:bg-teal-800 hover:border-teal-800;
+  @apply shadow-md;
+  animation: chipActivate 0.2s ease-out;
+}
+
+.dashboard-filter-chips button[aria-pressed="true"]:hover {
+  transform: translateY(-1px) scale(1.05);
+}
+
+/* Category Chip Color Indicator */
+.dashboard-filter-chips button[data-dashboard-filter-chips-target*="categoryChip"] .w-2 {
+  transition: transform 0.2s ease-out;
+}
+
+.dashboard-filter-chips button[data-dashboard-filter-chips-target*="categoryChip"][aria-pressed="true"] .w-2 {
+  transform: scale(1.3);
+  @apply ring-2 ring-white ring-offset-1;
+}
+
+/* Status Chip Icons */
+.dashboard-filter-chips button[data-dashboard-filter-chips-target*="statusChip"] svg {
+  transition: all 0.2s ease-out;
+}
+
+.dashboard-filter-chips button[data-dashboard-filter-chips-target*="statusChip"][aria-pressed="true"] svg {
+  transform: scale(1.2);
+}
+
+/* Period Chip Calendar Icon */
+.dashboard-filter-chips button[data-dashboard-filter-chips-target*="periodChip"] svg {
+  transition: all 0.2s ease-out;
+}
+
+.dashboard-filter-chips button[data-dashboard-filter-chips-target*="periodChip"][aria-pressed="true"] svg {
+  @apply text-white;
+  transform: rotate(-5deg) scale(1.1);
+}
+
+/* Clear All Button */
+.dashboard-filter-chips button[data-dashboard-filter-chips-target="clearButton"] {
+  @apply relative inline-flex items-center gap-1.5;
+  @apply px-3 py-1.5 text-sm font-medium;
+  @apply text-rose-600 hover:text-rose-700;
+  @apply transition-all duration-200;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-rose-500;
+}
+
+.dashboard-filter-chips button[data-dashboard-filter-chips-target="clearButton"]:hover {
+  transform: scale(1.05);
+}
+
+.dashboard-filter-chips button[data-dashboard-filter-chips-target="clearButton"]:hover svg {
+  animation: rotateX 0.3s ease-in-out;
+}
+
+/* Filter Count Badge */
+.dashboard-filter-chips [data-dashboard-filter-chips-target="filterCount"] {
+  animation: countBounce 0.3s ease-out;
+}
+
+/* Loading State */
+.dashboard-filter-chips button.opacity-50 {
+  @apply cursor-wait;
+  animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Filter Chip Loading Indicator */
+.dashboard-filter-chips [data-dashboard-filter-chips-target="loadingIndicator"] {
+  @apply pointer-events-none;
+}
+
+/* Active Filters Summary */
+#active-filters-summary {
+  @apply px-2 py-1 bg-teal-50 rounded-lg inline-flex items-center gap-2;
+  @apply text-xs text-slate-600;
+  animation: fadeIn 0.3s ease-out;
+}
+
+#active-filters-text {
+  @apply font-medium text-teal-700;
+}
+
+/* Chip Animations */
+@keyframes chipActivate {
+  0% {
+    transform: scale(1);
+    background-color: theme('colors.white');
+  }
+  50% {
+    transform: scale(1.08);
+    background-color: theme('colors.teal.600');
+  }
+  100% {
+    transform: scale(1);
+    background-color: theme('colors.teal.700');
+  }
+}
+
+@keyframes rotateX {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(180deg);
+  }
+}
+
+@keyframes countBounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.3);
+  }
+  75% {
+    transform: scale(0.9);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Mobile Responsive Filter Chips */
+@media (max-width: 640px) {
+  .dashboard-filter-chips {
+    @apply px-3 py-3;
+  }
+  
+  .dashboard-filter-chips .space-y-3 {
+    @apply space-y-2;
+  }
+  
+  .dashboard-filter-chips button[data-dashboard-filter-chips-target*="Chip"] {
+    @apply px-2.5 py-1 text-xs;
+    min-height: 32px;
+  }
+  
+  .dashboard-filter-chips .text-xs.uppercase {
+    @apply hidden;
+  }
+  
+  .dashboard-filter-chips .flex-wrap {
+    @apply gap-1.5;
+  }
+  
+  /* Stack filter rows on mobile */
+  .dashboard-filter-chips > div > div:nth-child(2) {
+    @apply flex-col items-start;
+  }
+  
+  /* Clear button always visible on mobile when filters active */
+  .dashboard-filter-chips button[data-dashboard-filter-chips-target="clearButton"].flex {
+    @apply mt-2 w-full justify-center;
+  }
+}
+
+/* Touch-friendly Filter Chips */
+@media (hover: none) and (pointer: coarse) {
+  .dashboard-filter-chips button[data-dashboard-filter-chips-target*="Chip"] {
+    min-height: 40px;
+    @apply px-3 py-2;
+  }
+  
+  .dashboard-filter-chips button[data-dashboard-filter-chips-target="clearButton"] {
+    min-height: 40px;
+    @apply px-4 py-2;
+  }
+}
+
+/* Keyboard Navigation for Filter Chips */
+.dashboard-filter-chips button:focus-visible {
+  @apply ring-2 ring-teal-500 ring-offset-2;
+  @apply outline-none;
+  z-index: 10;
+}
+
+/* Accessibility - High Contrast Mode */
+@media (prefers-contrast: high) {
+  .dashboard-filter-chips button[data-dashboard-filter-chips-target*="Chip"] {
+    @apply border-2;
+  }
+  
+  .dashboard-filter-chips button[aria-pressed="true"] {
+    @apply border-current;
+  }
+  
+  .dashboard-filter-chips [data-dashboard-filter-chips-target="filterCount"] {
+    @apply border border-current;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-filter-chips button[data-dashboard-filter-chips-target*="Chip"],
+  .dashboard-filter-chips button[data-dashboard-filter-chips-target*="Chip"] svg,
+  .dashboard-filter-chips [data-dashboard-filter-chips-target="filterCount"],
+  #active-filters-summary {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  .dashboard-filter-chips button[aria-pressed="true"] {
+    transform: none !important;
+  }
+}
+
+/* Filter Chips Performance Optimization */
+.dashboard-filter-chips {
+  contain: layout style;
+  will-change: auto;
+}
+
+.dashboard-filter-chips button[data-dashboard-filter-chips-target*="Chip"] {
+  contain: layout style paint;
+  will-change: transform, background-color;
+}
+
+/* Smooth Expense List Transitions */
+.dashboard-expenses-container[data-dashboard-filter-chips-target="expenseContainer"] {
+  transition: opacity 0.2s ease-out;
+}
+
+.dashboard-expenses-container.filtering {
+  @apply opacity-50 pointer-events-none;
+}
+
+/* Filter Loading Overlay */
+.dashboard-filter-chips .absolute.z-10 {
+  backdrop-filter: blur(2px);
+}
+
+/* ============================================
+   TASK 3.8: FILTER PERSISTENCE STYLES
+   ============================================ */
+
+/* Filter Persistence Indicator */
+.filter-persistence-indicator {
+  @apply inline-flex items-center px-2 py-1 bg-teal-50 text-teal-700 text-xs rounded-full;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Filter Persistence Notification */
+.filter-persistence-notification {
+  @apply p-3 rounded-lg border;
+  animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Share Filter Tooltip */
+.filter-share-tooltip {
+  @apply absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2;
+  @apply px-3 py-2 bg-slate-900 text-white text-xs rounded-lg;
+  @apply opacity-0 invisible transition-all duration-200;
+  @apply pointer-events-none z-50;
+}
+
+.filter-share-tooltip::after {
+  content: '';
+  @apply absolute top-full left-1/2 transform -translate-x-1/2;
+  @apply border-4 border-transparent border-t-slate-900;
+}
+
+.filter-share-button:hover .filter-share-tooltip,
+.filter-share-button:focus .filter-share-tooltip {
+  @apply opacity-100 visible;
+}
+
+/* Filter State Badges */
+.filter-state-badge {
+  @apply inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full;
+  @apply bg-teal-100 text-teal-800 border border-teal-200;
+}
+
+.filter-state-badge.restored {
+  @apply bg-emerald-100 text-emerald-800 border-emerald-200;
+  animation: badgeFadeIn 0.5s ease-out;
+}
+
+.filter-state-badge.synced {
+  @apply bg-amber-100 text-amber-800 border-amber-200;
+  animation: badgeFadeIn 0.5s ease-out;
+}
+
+@keyframes badgeFadeIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Persistence Status Animations */
+.persistence-saving {
+  @apply relative;
+}
+
+.persistence-saving::after {
+  content: '';
+  @apply absolute inset-0 bg-teal-500 opacity-10 rounded;
+  animation: savePulse 0.5s ease-out;
+}
+
+@keyframes savePulse {
+  from {
+    opacity: 0.3;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+/* Cross-Tab Sync Notification */
+.cross-tab-sync-notification {
+  @apply fixed bottom-4 right-4 p-3 bg-slate-50 border border-slate-200 rounded-lg shadow-lg z-50;
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+/* Filter Restored Indicator */
+.filter-restored-indicator {
+  @apply inline-flex items-center px-2 py-1 bg-teal-50 text-teal-700 text-xs rounded-full ml-2;
+  animation: indicatorPulse 0.5s ease-out;
+}
+
+@keyframes indicatorPulse {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Scroll Position Restored Indicator */
+.scroll-restored-indicator {
+  @apply fixed bottom-4 left-4 px-3 py-2 bg-teal-50 text-teal-700 text-sm rounded-lg shadow-md z-40;
+  animation: slideInFromLeft 0.3s ease-out;
+}
+
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Smart Suggestions */
+.smart-suggestions-notification {
+  @apply mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg;
+  animation: slideInDown 0.3s ease-out;
+}
+
+/* Filter Persistence Actions */
+.filter-persistence-actions {
+  @apply flex items-center gap-2;
+}
+
+.filter-persistence-actions button {
+  @apply p-1.5 text-slate-400 hover:text-teal-600 transition-colors;
+  @apply focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1;
+}
+
+.filter-persistence-actions button:hover {
+  transform: scale(1.1);
+}
+
+/* URL State Indicator */
+.url-state-indicator {
+  @apply absolute top-0 right-0 w-2 h-2 bg-teal-500 rounded-full;
+  animation: urlStatePulse 2s ease-in-out infinite;
+}
+
+@keyframes urlStatePulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.4;
+  }
+}
+
+/* Mobile Responsive Persistence UI */
+@media (max-width: 640px) {
+  .filter-persistence-notification {
+    @apply mx-2 text-sm;
+  }
+  
+  .filter-persistence-actions {
+    @apply fixed bottom-4 right-4 bg-white rounded-full shadow-lg p-2;
+    @apply border border-slate-200;
+  }
+  
+  .smart-suggestions-notification {
+    @apply mx-2 text-sm;
+  }
+}
+
+/* Accessibility - High Contrast Mode */
+@media (prefers-contrast: high) {
+  .filter-persistence-indicator,
+  .filter-state-badge,
+  .filter-persistence-notification {
+    @apply border-2 border-current;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .filter-persistence-indicator,
+  .filter-state-badge,
+  .filter-restored-indicator,
+  .scroll-restored-indicator,
+  .persistence-saving::after {
+    animation: none !important;
+  }
+  
+  .filter-persistence-notification,
+  .smart-suggestions-notification {
+    animation: none !important;
+    transition: none !important;
+  }
+}

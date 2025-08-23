@@ -102,7 +102,7 @@ class ConflictResolutionService
       # Mark new expense as duplicate if it exists
       if sync_conflict.new_expense
         sync_conflict.new_expense.update!(
-          status: "duplicate",
+          status: :duplicate,
           notes: "Duplicado de gasto ##{sync_conflict.existing_expense_id}"
         )
       end
@@ -119,13 +119,13 @@ class ConflictResolutionService
     ActiveRecord::Base.transaction do
       # Mark existing as duplicate, promote new
       sync_conflict.existing_expense.update!(
-        status: "duplicate",
+        status: :duplicate,
         notes: "Reemplazado por gasto ##{sync_conflict.new_expense_id}"
       )
 
       if sync_conflict.new_expense
         sync_conflict.new_expense.update!(
-          status: "processed"
+          status: :processed
         )
       end
 
@@ -140,11 +140,11 @@ class ConflictResolutionService
   def resolve_keep_both(options)
     ActiveRecord::Base.transaction do
       # Mark both as valid/processed
-      sync_conflict.existing_expense.update!(status: "processed")
+      sync_conflict.existing_expense.update!(status: :processed)
 
       if sync_conflict.new_expense
         sync_conflict.new_expense.update!(
-          status: "processed",
+          status: :processed,
           notes: "Mantenido como gasto separado"
         )
       end
@@ -178,7 +178,7 @@ class ConflictResolutionService
 
       # Mark new as duplicate
       new_expense.update!(
-        status: "duplicate",
+        status: :duplicate,
         notes: "Fusionado con gasto ##{existing.id}"
       )
 

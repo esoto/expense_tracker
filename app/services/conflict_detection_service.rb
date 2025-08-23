@@ -97,7 +97,7 @@ class ConflictDetectionService
 
   def find_candidate_expenses(new_expense_data)
     # Build query to find potential matches
-    scope = Expense.where(status: [ "processed", "pending" ])
+    scope = Expense.where(status: [ :processed, :pending ])
 
     # Must be from same account
     if new_expense_data[:email_account_id]

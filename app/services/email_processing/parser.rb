@@ -58,7 +58,7 @@ module EmailProcessing
       existing_expense = find_duplicate_expense(parsed_data)
 
       if existing_expense
-        existing_expense.update(status: "duplicate")
+        existing_expense.update(status: :duplicate)
         add_error("Duplicate expense found")
         return existing_expense
       end
@@ -71,7 +71,7 @@ module EmailProcessing
         description: parsed_data[:description],
         raw_email_content: email_content,
         parsed_data: parsed_data.to_json,
-        status: "pending",
+        status: :pending,
         email_body: email_data[:body].to_s,
         bank_name: email_account.bank_name
       )
@@ -83,7 +83,7 @@ module EmailProcessing
       expense.category = guess_category(expense)
 
       if expense.save
-        expense.update(status: "processed")
+        expense.update(status: :processed)
         Rails.logger.info "Created expense: #{expense.formatted_amount} from #{email_account.email}"
         expense
       else

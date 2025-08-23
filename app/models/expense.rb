@@ -12,15 +12,19 @@ class Expense < ApplicationRecord
 
   # Enums
   enum :currency, { crc: 0, usd: 1, eur: 2 }
+  enum :status, { pending: 0, processed: 1, failed: 2, duplicate: 3 }
 
   # Validations
   validates :amount, presence: true, numericality: { greater_than: 0 }
   validates :transaction_date, presence: true
-  validates :status, presence: true, inclusion: { in: [ "pending", "processed", "failed", "duplicate" ] }
+  validates :status, presence: true
   validates :currency, presence: true
 
   # Callbacks
   before_save :normalize_merchant_name
+  after_commit :clear_dashboard_cache
+  after_commit :trigger_metrics_refresh, on: [ :create, :update ]
+  after_destroy :trigger_metrics_refresh_for_deletion
 
   # Scopes
   scope :recent, -> { order(transaction_date: :desc) }
@@ -64,86 +68,6 @@ class Expense < ApplicationRecord
 
   def parsed_email_data=(hash)
     self.parsed_data = hash.to_json
-  end
-
-  def duplicate?
-    status == "duplicate"
-  end
-
-  def processed?
-    status == "processed"
-  end
-
-  def pending?
-    status == "pending"
-  end
-
-  def failed?
-    status == "failed"
-  end
-
-  # Currency detection methods (replacing CurrencyDetectorService)
-  def detect_and_set_currency(email_content = nil)
-    detected = detect_currency(email_content)
-    self.currency = detected
-    save if persisted?
-    detected
-  end
-
-  def detect_currency(email_content = nil)
-    text = build_currency_detection_text(email_content)
-
-    if text.match?(/\$|usd|dollar/i)
-      "usd"
-    elsif text.match?(/€|eur|euro/i)
-      "eur"
-    else
-      "crc" # Default for Costa Rican banks
-    end
-  end
-
-  private
-
-  def build_currency_detection_text(email_content)
-    [
-      email_content,
-      description,
-      merchant_name,
-      parsed_data
-    ].compact.join(" ").downcase
-  end
-
-  public
-
-  # Category guessing methods (replacing CategoryGuesserService)
-  def guess_category
-    text = [ description, merchant_name ].compact.join(" ").downcase
-    return nil if text.blank?
-
-    category_keywords = {
-      "Alimentación" => %w[restaurant restaurante comida food super supermercado grocery mercado],
-      "Transporte" => %w[gasolina gas combustible uber taxi transporte],
-      "Servicios" => %w[electricidad agua telefono internet cable servicio],
-      "Entretenimiento" => %w[cine movie teatro entertainment entretenimiento],
-      "Salud" => %w[farmacia medicina doctor hospital clinica salud],
-      "Compras" => %w[tienda store compra shopping mall centro comercial]
-    }
-
-    category_keywords.each do |category_name, keywords|
-      if keywords.any? { |keyword| text.include?(keyword) }
-        return Category.find_by(name: category_name)
-      end
-    end
-
-    # Try default categories
-    Category.find_by(name: "Sin Categoría") || Category.find_by(name: "Other")
-  end
-
-  def auto_categorize!
-    if category.nil?
-      self.category = guess_category
-      save if changed?
-    end
   end
 
   # ML Confidence methods
@@ -222,11 +146,6 @@ class Expense < ApplicationRecord
     end
   end
 
-  # Callbacks
-  after_commit :clear_dashboard_cache
-  after_commit :trigger_metrics_refresh, on: [ :create, :update ]
-  after_destroy :trigger_metrics_refresh_for_deletion
-
   # Class methods
   def self.total_amount_for_period(start_date, end_date)
     by_date_range(start_date, end_date).sum(:amount)
@@ -241,58 +160,6 @@ class Expense < ApplicationRecord
 
   def self.monthly_summary
     group_by_month(:transaction_date, last: 12).sum(:amount)
-  end
-
-  # Expense summary methods (replacing ExpenseSummaryService)
-  def self.summary_for_period(period = "month")
-    case period.to_s
-    when "week"
-      weekly_summary
-    when "month"
-      monthly_summary_report
-    when "year"
-      yearly_summary
-    else
-      monthly_summary_report
-    end
-  end
-
-  def self.weekly_summary
-    start_date = 1.week.ago.beginning_of_day
-    end_date = Time.current.end_of_day
-    build_summary(start_date, end_date)
-  end
-
-  def self.monthly_summary_report
-    start_date = 1.month.ago.beginning_of_day
-    end_date = Time.current.end_of_day
-    build_summary(start_date, end_date)
-  end
-
-  def self.yearly_summary
-    start_date = 1.year.ago.beginning_of_day
-    end_date = Time.current.end_of_day
-    summary = build_summary(start_date, end_date)
-    summary[:monthly_breakdown] = by_date_range(start_date, end_date)
-                                    .group_by_month(:transaction_date)
-                                    .sum(:amount)
-                                    .transform_values(&:to_f)
-    summary
-  end
-
-  def self.build_summary(start_date, end_date)
-    expenses = by_date_range(start_date, end_date)
-
-    {
-      total_amount: expenses.sum(:amount).to_f,
-      expense_count: expenses.count,
-      start_date: start_date.iso8601,
-      end_date: end_date.iso8601,
-      by_category: expenses.joins(:category)
-                          .group("categories.name")
-                          .sum(:amount)
-                          .transform_values(&:to_f)
-    }
   end
 
   private
@@ -344,23 +211,19 @@ class Expense < ApplicationRecord
     Rails.logger.error "Failed to trigger metrics refresh after deletion: #{e.message}"
   end
 
-  private
-
   def normalize_merchant_name
-    if merchant_name.present? && merchant_normalized != normalized_merchant_value
-      self.merchant_normalized = normalized_merchant_value
-    end
+    self.merchant_normalized = normalized_merchant_value
   end
 
   def normalized_merchant_value
-    return nil if merchant_name.blank?
+    return nil if self[:merchant_name].blank?
 
     # Normalize merchant name for search:
     # - Convert to lowercase
     # - Remove special characters except spaces and alphanumeric
     # - Compress multiple spaces to single space
     # - Strip leading/trailing whitespace
-    merchant_name.downcase
+    self[:merchant_name].downcase
                  .gsub(/[^\w\s]/, " ")
                  .squeeze(" ")
                  .strip

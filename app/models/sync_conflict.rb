@@ -241,12 +241,12 @@ class SyncConflict < ApplicationRecord
   def apply_resolution(action, resolution_data)
     case action
     when "keep_existing"
-      new_expense&.update!(status: "duplicate")
+      new_expense&.update!(status: :duplicate)
     when "keep_new"
-      existing_expense.update!(status: "duplicate")
-      new_expense&.update!(status: "processed")
+      existing_expense.update!(status: :duplicate)
+      new_expense&.update!(status: :processed)
     when "keep_both"
-      new_expense&.update!(status: "processed")
+      new_expense&.update!(status: :processed)
     when "merged"
       merge_expenses(resolution_data)
     when "custom"
@@ -265,7 +265,7 @@ class SyncConflict < ApplicationRecord
     end
 
     existing_expense.update!(updates) if updates.any?
-    new_expense&.update!(status: "duplicate")
+    new_expense&.update!(status: :duplicate)
   end
 
   def apply_custom_resolution(custom_data)

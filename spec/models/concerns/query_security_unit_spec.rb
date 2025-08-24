@@ -40,49 +40,67 @@ RSpec.shared_examples "QuerySecurity concern" do
 
   describe "scopes" do
     describe ".with_rate_limit" do
-      context "when rate limiting is disabled" do
-        before do
-          Rails.application.config.enable_query_rate_limiting = false
-        end
+      it "returns current scope or all without modification" do
+        # Test that the scope doesn't modify the SQL query itself
+        base_sql = model_class.all.to_sql
+        allow(model_class).to receive(:rate_limit_exceeded?).and_return(false)
+        allow(model_class).to receive(:increment_rate_limit)
 
-        it "does not enforce rate limits and returns relation" do
-          allow(model_class).to receive(:rate_limiting_enabled?).and_return(false)
-          result = model_class.with_rate_limit
-          expect(result).to be_a(ActiveRecord::Relation)
-        end
+        scoped_sql = model_class.with_rate_limit.to_sql
+        expect(scoped_sql).to eq(base_sql)
       end
 
-      context "when rate limiting is enabled" do
-        before do
-          Rails.application.config.enable_query_rate_limiting = true
-        end
+      it "works with existing scopes" do
+        allow(model_class).to receive(:rate_limit_exceeded?).and_return(false)
+        allow(model_class).to receive(:increment_rate_limit)
 
-        it "checks rate limits" do
-          allow(model_class).to receive(:rate_limit_exceeded?).and_return(false)
-          allow(model_class).to receive(:increment_rate_limit)
-          result = model_class.with_rate_limit("test_id")
-          expect(result).to be_a(ActiveRecord::Relation)
-        end
+        # Test that it preserves existing WHERE conditions
+        base_query = model_class.where(id: 1)
+        scoped_query = base_query.with_rate_limit
+
+        expect(scoped_query.to_sql).to include('WHERE')
+        expect(scoped_query.to_sql).to include('"id" = 1') if model_class.column_names.include?('id')
       end
     end
 
     describe ".with_cost_analysis" do
-      it "returns relation when query cost is acceptable" do
+      it "returns current scope without SQL modification" do
         allow(model_class).to receive(:estimate_query_cost).and_return(5000)
-        result = model_class.with_cost_analysis
-        expect(result).to be_a(ActiveRecord::Relation)
+
+        base_sql = model_class.all.to_sql
+        scoped_sql = model_class.with_cost_analysis.to_sql
+        expect(scoped_sql).to eq(base_sql)
+      end
+
+      it "preserves existing query conditions" do
+        allow(model_class).to receive(:estimate_query_cost).and_return(5000)
+
+        if model_class.column_names.include?('created_at')
+          base_query = model_class.where('created_at > ?', 1.day.ago)
+          scoped_query = base_query.with_cost_analysis
+
+          expect(scoped_query.to_sql).to include('created_at')
+          expect(scoped_query.to_sql).to include('>')
+        end
       end
     end
   end
 
   describe "SQL injection prevention" do
     describe ".sanitize_like_query" do
-      it "escapes special characters" do
+      it "escapes special characters to prevent SQL injection" do
         result = model_class.sanitize_like_query("test%_\\pattern")
         expect(result).to eq("test\\%\\_\\\\pattern")
+
+        # Test that escaped pattern works safely in SQL
+        if model_class.column_names.include?('description')
+          query = model_class.where("description LIKE ?", "%#{result}%")
+          expect(query.to_sql).to include('LIKE')
+          expect(query.to_sql).to include('test\\%\\_\\\\pattern')
+        end
       end
 
-      it "returns empty string for blank input" do
+      it "returns safe empty string for blank input" do
         expect(model_class.sanitize_like_query(nil)).to eq("")
         expect(model_class.sanitize_like_query("")).to eq("")
       end
@@ -109,56 +127,115 @@ RSpec.shared_examples "QuerySecurity concern" do
     end
 
     describe ".validate_sort_column" do
-      let(:allowed) { %w[id name created_at] }
-      it "allows whitelisted columns" do
-        expect(model_class.validate_sort_column("name", allowed)).to eq("name")
+      let(:allowed) { %w[id created_at] }
+
+      it "allows whitelisted columns in SQL ORDER BY" do
+        column = model_class.validate_sort_column("id", allowed)
+        expect(column).to eq("id")
+
+        # Test that validated column works safely in ORDER BY
+        if model_class.column_names.include?('id')
+          query = model_class.order(column => :asc)
+          expect(query.to_sql).to include('ORDER BY')
+          expect(query.to_sql).to include('"id"')
+        end
       end
 
-      it "returns default for invalid columns" do
-        expect(model_class.validate_sort_column("evil_column", allowed)).to eq("created_at")
+      it "prevents SQL injection by rejecting invalid columns" do
+        column = model_class.validate_sort_column("evil_column; DROP TABLE users; --", allowed)
+        expect(column).to eq("created_at") # Safe default
+
+        # Ensure the malicious input doesn't appear in SQL
+        if model_class.column_names.include?('created_at')
+          query = model_class.order(column => :desc)
+          expect(query.to_sql).not_to include("DROP TABLE")
+          expect(query.to_sql).not_to include("evil_column")
+        end
       end
 
-      it "returns default for blank column" do
-        expect(model_class.validate_sort_column(nil, allowed)).to eq("created_at")
+      it "returns safe default for blank column" do
+        column = model_class.validate_sort_column(nil, allowed)
+        expect(column).to eq("created_at")
       end
     end
 
     describe ".validate_sort_direction" do
-      it "allows asc and desc" do
+      it "allows safe ASC and DESC in SQL ORDER BY" do
         expect(model_class.validate_sort_direction("asc")).to eq("asc")
         expect(model_class.validate_sort_direction("DESC")).to eq("desc")
+
+        # Test that validated direction works in SQL
+        if model_class.column_names.include?('id')
+          asc_query = model_class.order(id: model_class.validate_sort_direction("asc"))
+          desc_query = model_class.order(id: model_class.validate_sort_direction("DESC"))
+
+          expect(asc_query.to_sql).to include('ASC')
+          expect(desc_query.to_sql).to include('DESC')
+        end
       end
 
-      it "returns desc for invalid direction" do
-        expect(model_class.validate_sort_direction("invalid")).to eq("desc")
+      it "prevents SQL injection by sanitizing invalid directions" do
+        direction = model_class.validate_sort_direction("ASC; DROP TABLE users; --")
+        expect(direction).to eq("desc") # Safe default
+
+        # Ensure malicious input doesn't appear in SQL
+        if model_class.column_names.include?('id')
+          query = model_class.order(id: direction)
+          expect(query.to_sql).not_to include("DROP TABLE")
+          expect(query.to_sql).to include('DESC')
+        end
       end
     end
   end
 
   describe "pagination security" do
     describe ".validate_page_size" do
-      it "returns default for invalid size" do
-        expect(model_class.validate_page_size(0)).to eq(50)
-        expect(model_class.validate_page_size(-1)).to eq(50)
+      it "prevents resource exhaustion with safe LIMIT values" do
+        page_size = model_class.validate_page_size(0)
+        expect(page_size).to eq(50) # Safe default
+
+        # Test that validated size works safely in SQL LIMIT
+        query = model_class.limit(page_size)
+        expect(query.to_sql).to include('LIMIT 50')
       end
 
-      it "caps at maximum size" do
-        expect(model_class.validate_page_size(200, 100)).to eq(100)
+      it "caps at maximum size to prevent memory issues" do
+        page_size = model_class.validate_page_size(200, 100)
+        expect(page_size).to eq(100)
+
+        # Test that capped size works in SQL
+        query = model_class.limit(page_size)
+        expect(query.to_sql).to include('LIMIT 100')
+        expect(query.to_sql).not_to include('LIMIT 200')
       end
 
-      it "allows valid sizes" do
-        expect(model_class.validate_page_size(25)).to eq(25)
+      it "allows valid sizes in SQL LIMIT clause" do
+        page_size = model_class.validate_page_size(25)
+        expect(page_size).to eq(25)
+
+        query = model_class.limit(page_size)
+        expect(query.to_sql).to include('LIMIT 25')
       end
     end
 
     describe ".validate_page_number" do
-      it "returns 1 for invalid page" do
-        expect(model_class.validate_page_number(0)).to eq(1)
-        expect(model_class.validate_page_number(-1)).to eq(1)
+      it "prevents negative OFFSET values in SQL" do
+        page = model_class.validate_page_number(0)
+        expect(page).to eq(1) # Safe minimum
+
+        page = model_class.validate_page_number(-1)
+        expect(page).to eq(1) # Safe minimum
       end
 
-      it "allows valid page numbers" do
-        expect(model_class.validate_page_number(5)).to eq(5)
+      it "allows valid page numbers for SQL OFFSET calculation" do
+        page = model_class.validate_page_number(5)
+        expect(page).to eq(5)
+
+        # Test OFFSET calculation (page - 1) * page_size
+        offset = (page - 1) * 10
+        query = model_class.limit(10).offset(offset)
+        expect(query.to_sql).to include('LIMIT 10')
+        expect(query.to_sql).to include('OFFSET 40')
       end
     end
   end
@@ -172,7 +249,7 @@ RSpec.shared_examples "QuerySecurity concern" do
 
     describe "#query_security_enabled?" do
       it "responds to query_security_enabled?" do
-        expect(model_instance.query_security_enabled?).to be_in([true, false])
+        expect(model_instance.query_security_enabled?).to be_in([ true, false ])
       end
     end
   end

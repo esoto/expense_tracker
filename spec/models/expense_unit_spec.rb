@@ -3,6 +3,8 @@
 require "rails_helper"
 
 RSpec.describe Expense, type: :model, unit: true do
+  # Test QuerySecurity concern
+  it_behaves_like "QuerySecurity concern"
   # Use build_stubbed for true unit testing
   let(:email_account) { build_stubbed(:email_account, id: 1, bank_name: "BCR") }
   let(:category) { build_stubbed(:category, id: 1, name: "Food") }

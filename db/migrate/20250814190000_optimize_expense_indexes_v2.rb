@@ -2,7 +2,7 @@
 
 # This migration optimizes the expense table indexes to reduce over-proliferation
 # Target: Maximum of 15 indexes (down from 23+)
-class OptimizeExpenseIndexes < ActiveRecord::Migration[8.0]
+class OptimizeExpenseIndexesV2 < ActiveRecord::Migration[8.0]
   def up
     # Remove duplicate and redundant indexes
     # Keep only the most efficient ones that cover multiple query patterns
@@ -116,7 +116,7 @@ class OptimizeExpenseIndexes < ActiveRecord::Migration[8.0]
   private
 
   def remove_index_if_exists(table, columns = nil, name: nil)
-    if name && index_exists?(table, name: name)
+    if name && index_exists?(table, nil, name: name)
       remove_index table, name: name
     elsif columns && index_exists?(table, columns)
       remove_index table, columns

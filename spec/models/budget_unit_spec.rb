@@ -27,7 +27,7 @@ RSpec.describe Budget, type: :model, unit: true do
   end
 
   describe "validations" do
-    subject { build(:budget, email_account: email_account) }
+    subject { build(:budget, email_account: create(:email_account)) }
 
     describe "name validation" do
       it "validates presence of name" do
@@ -90,7 +90,7 @@ RSpec.describe Budget, type: :model, unit: true do
 
     describe "start_date validation" do
       context "on update" do
-        subject { create(:budget, email_account: email_account) }
+        subject { build(:budget, email_account: create(:email_account)) }
 
         it "validates presence of start_date" do
           subject.start_date = nil
@@ -109,7 +109,7 @@ RSpec.describe Budget, type: :model, unit: true do
 
     describe "currency validation" do
       context "on update" do
-        subject { create(:budget, email_account: email_account) }
+        subject { build(:budget, email_account: create(:email_account)) }
 
         it "validates presence of currency" do
           subject.currency = nil
@@ -193,18 +193,20 @@ RSpec.describe Budget, type: :model, unit: true do
     end
 
     describe "unique active budget validation" do
+      let(:real_email_account) { create(:email_account) }
+      let(:real_category) { create(:category) }
       let!(:existing_budget) do
         create(:budget,
-          email_account: email_account,
-          category: category,
+          email_account: real_email_account,
+          category: real_category,
           period: :monthly,
           active: true)
       end
 
       it "prevents duplicate active budgets for same scope" do
         new_budget = build(:budget,
-          email_account: email_account,
-          category: category,
+          email_account: real_email_account,
+          category: real_category,
           period: :monthly,
           active: true)
         
@@ -214,8 +216,8 @@ RSpec.describe Budget, type: :model, unit: true do
 
       it "allows inactive budgets for same scope" do
         new_budget = build(:budget,
-          email_account: email_account,
-          category: category,
+          email_account: real_email_account,
+          category: real_category,
           period: :monthly,
           active: false)
         

@@ -58,8 +58,13 @@ Rails.application.configure do
   # Raise error when a before_action's only/except options reference missing actions.
   config.action_controller.raise_on_missing_callback_actions = true
 
-  # Configure Active Record encryption for test environment
-  config.active_record.encryption.primary_key = Rails.application.credentials.active_record_encryption&.primary_key
-  config.active_record.encryption.deterministic_key = Rails.application.credentials.active_record_encryption&.deterministic_key
-  config.active_record.encryption.key_derivation_salt = Rails.application.credentials.active_record_encryption&.key_derivation_salt
+  # Configure Active Record encryption for test environment with performance optimization
+  # Use simple static keys for faster test performance instead of pulling from credentials
+  config.active_record.encryption.primary_key = 'test_primary_key_12345678901234567890123456'
+  config.active_record.encryption.deterministic_key = 'test_deterministic_key_123456789012345678901'
+  config.active_record.encryption.key_derivation_salt = 'test_salt_123456789012345678901234567890123456'
+  
+  # Optimize encryption for test performance
+  config.active_record.encryption.hash_digest_class = OpenSSL::Digest::SHA1  # Faster than SHA256
+  config.active_record.encryption.support_sha1_for_non_deterministic_encryption = true
 end

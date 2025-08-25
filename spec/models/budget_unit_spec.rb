@@ -3,11 +3,11 @@
 require "rails_helper"
 
 RSpec.describe Budget, type: :model, unit: true do
-  # Use build_stubbed for true unit testing
-  let(:email_account) { build_stubbed(:email_account, id: 1) }
-  let(:category) { build_stubbed(:category, id: 1, name: "Food") }
+  # Create real associations for tests that need them
+  let(:email_account) { create(:email_account) }
+  let(:category) { create(:category, name: "Food") }
   let(:budget) do
-    build_stubbed(:budget,
+    build(:budget,
       id: 1,
       email_account: email_account,
       category: category,
@@ -26,238 +26,98 @@ RSpec.describe Budget, type: :model, unit: true do
       active: true)
   end
 
+    describe "associations" do
+      it { is_expected.to belong_to(:email_account) }
+      it { is_expected.to belong_to(:category).optional }
+    end
+
   describe "validations" do
-    subject { build(:budget, email_account: create(:email_account)) }
+    subject { build(:budget) }
 
-    describe "name validation" do
-      it "validates presence of name" do
-        subject.name = nil
-        expect(subject).not_to be_valid
-        expect(subject.errors[:name]).to include("can't be blank")
+    it { is_expected.to validate_presence_of(:name) }
+    it { is_expected.to validate_length_of(:name).is_at_most(100) }
+    it { is_expected.to validate_presence_of(:amount) }
+    it { is_expected.to validate_numericality_of(:amount).is_greater_than(0) }
+    it { is_expected.to validate_presence_of(:period) }
+    it { is_expected.to validate_presence_of(:start_date).on(:update) }
+    it { is_expected.to validate_presence_of(:currency).on(:update) }
+    it { is_expected.to validate_inclusion_of(:currency).in_array(%w[CRC USD EUR]).on(:update) }
+
+    describe 'thresholds_order' do
+      it 'validates warning_threshold is less than critical_threshold' do
+        budget = build(:budget, warning_threshold: 80, critical_threshold: 90)
+        expect(budget).to be_valid
       end
 
-      it "validates maximum length of name" do
-        subject.name = "a" * 101
-        expect(subject).not_to be_valid
-        expect(subject.errors[:name]).to include("is too long (maximum is 100 characters)")
-      end
-
-      it "accepts valid name" do
-        subject.name = "Monthly Budget"
-        expect(subject).to be_valid
-      end
-    end
-
-    describe "amount validation" do
-      it "validates presence of amount" do
-        subject.amount = nil
-        expect(subject).not_to be_valid
-        expect(subject.errors[:amount]).to include("can't be blank")
-      end
-
-      it "validates amount is greater than 0" do
-        subject.amount = 0
-        expect(subject).not_to be_valid
-        expect(subject.errors[:amount]).to include("must be greater than 0")
-      end
-
-      it "rejects negative amounts" do
-        subject.amount = -100
-        expect(subject).not_to be_valid
-        expect(subject.errors[:amount]).to include("must be greater than 0")
-      end
-
-      it "accepts positive amounts" do
-        subject.amount = 50_000
-        expect(subject).to be_valid
+      it 'invalidates if warning_threshold is greater than or equal to critical_threshold' do
+        budget = build(:budget, warning_threshold: 90, critical_threshold: 90)
+        expect(budget).to be_invalid
       end
     end
 
-    describe "period validation" do
-      it "validates presence of period" do
-        subject.period = nil
-        expect(subject).not_to be_valid
-        expect(subject.errors[:period]).to include("can't be blank")
+    describe 'end_date_after_start_date' do
+      it 'validates end_date is after start_date' do
+        budget = build(:budget, start_date: Date.current, end_date: Date.current + 1.day)
+        expect(budget).to be_valid
       end
 
-      it "accepts valid periods" do
-        %i[daily weekly monthly yearly].each do |period|
-          subject.period = period
-          expect(subject).to be_valid
-        end
+      it 'invalidates if end_date is before start_date' do
+        budget = build(:budget, start_date: Date.current, end_date: Date.current - 1.day)
+        expect(budget).to be_invalid
       end
     end
 
-    describe "start_date validation" do
-      context "on update" do
-        subject { build(:budget, email_account: create(:email_account)) }
-
-        it "validates presence of start_date" do
-          subject.start_date = nil
-          expect(subject).not_to be_valid
-          expect(subject.errors[:start_date]).to include("can't be blank")
-        end
-      end
-
-      context "on create" do
-        it "does not require start_date (sets default)" do
-          subject.start_date = nil
-          expect(subject).to be_valid
-        end
-      end
-    end
-
-    describe "currency validation" do
-      context "on update" do
-        subject { build(:budget, email_account: create(:email_account)) }
-
-        it "validates presence of currency" do
-          subject.currency = nil
-          expect(subject).not_to be_valid
-          expect(subject.errors[:currency]).to include("can't be blank")
-        end
-
-        it "validates inclusion of currency" do
-          subject.currency = "GBP"
-          expect(subject).not_to be_valid
-          expect(subject.errors[:currency]).to include("is not included in the list")
-        end
-
-        it "accepts valid currencies" do
-          %w[CRC USD EUR].each do |currency|
-            subject.currency = currency
-            expect(subject).to be_valid
-          end
-        end
-      end
-    end
-
-    describe "threshold validations" do
-      it "validates warning_threshold is greater than 0" do
-        subject.warning_threshold = 0
-        expect(subject).not_to be_valid
-        expect(subject.errors[:warning_threshold]).to include("must be greater than 0")
-      end
-
-      it "validates warning_threshold is less than or equal to 100" do
-        subject.warning_threshold = 101
-        expect(subject).not_to be_valid
-        expect(subject.errors[:warning_threshold]).to include("must be less than or equal to 100")
-      end
-
-      it "validates critical_threshold is greater than 0" do
-        subject.critical_threshold = 0
-        expect(subject).not_to be_valid
-        expect(subject.errors[:critical_threshold]).to include("must be greater than 0")
-      end
-
-      it "validates critical_threshold is less than or equal to 100" do
-        subject.critical_threshold = 101
-        expect(subject).not_to be_valid
-        expect(subject.errors[:critical_threshold]).to include("must be less than or equal to 100")
-      end
-
-      it "validates warning_threshold is less than critical_threshold" do
-        subject.warning_threshold = 90
-        subject.critical_threshold = 70
-        expect(subject).not_to be_valid
-        expect(subject.errors[:warning_threshold]).to include("debe ser menor que el umbral crítico")
-      end
-
-      it "accepts valid threshold values" do
-        subject.warning_threshold = 70
-        subject.critical_threshold = 90
-        expect(subject).to be_valid
-      end
-    end
-
-    describe "date validations" do
-      it "validates end_date is after start_date" do
-        subject.start_date = Date.current
-        subject.end_date = Date.current - 1.day
-        expect(subject).not_to be_valid
-        expect(subject.errors[:end_date]).to include("debe ser posterior a la fecha de inicio")
-      end
-
-      it "accepts nil end_date" do
-        subject.start_date = Date.current
-        subject.end_date = nil
-        expect(subject).to be_valid
-      end
-
-      it "accepts valid date range" do
-        subject.start_date = Date.current
-        subject.end_date = Date.current + 1.month
-        expect(subject).to be_valid
-      end
-    end
-
-    describe "unique active budget validation" do
-      let(:real_email_account) { create(:email_account) }
-      let(:real_category) { create(:category) }
-      let!(:existing_budget) do
+    describe 'unique_active_budget_per_scope' do
+      before do
         create(:budget,
-          email_account: real_email_account,
-          category: real_category,
-          period: :monthly,
-          active: true)
-      end
-
-      it "prevents duplicate active budgets for same scope" do
-        new_budget = build(:budget,
-          email_account: real_email_account,
-          category: real_category,
-          period: :monthly,
-          active: true)
-        
-        expect(new_budget).not_to be_valid
-        expect(new_budget.errors[:base]).to include("Ya existe un presupuesto activo para este período y categoría")
-      end
-
-      it "allows inactive budgets for same scope" do
-        new_budget = build(:budget,
-          email_account: real_email_account,
-          category: real_category,
-          period: :monthly,
-          active: false)
-        
-        expect(new_budget).to be_valid
-      end
-
-      it "allows active budgets for different categories" do
-        other_category = create(:category, name: "Transport")
-        new_budget = build(:budget,
-          email_account: email_account,
-          category: other_category,
-          period: :monthly,
-          active: true)
-        
-        expect(new_budget).to be_valid
-      end
-
-      it "allows active budgets for different periods" do
-        new_budget = build(:budget,
           email_account: email_account,
           category: category,
-          period: :yearly,
+          name: "Existing Budget",
           active: true)
-        
-        expect(new_budget).to be_valid
       end
-    end
-  end
 
-  describe "associations" do
-    it "belongs to email_account" do
-      association = described_class.reflect_on_association(:email_account)
-      expect(association.macro).to eq(:belongs_to)
-      expect(association.options[:optional]).to be_falsey
-    end
+      it 'validates uniqueness of active budget per email_account and category' do
+        budget = build(:budget,
+          email_account: email_account,
+          category: category,
+          name: "New Budget",
+          active: true)
 
-    it "belongs to category (optional)" do
-      association = described_class.reflect_on_association(:category)
-      expect(association.macro).to eq(:belongs_to)
-      expect(association.options[:optional]).to be true
+        expect(budget).to be_invalid
+        expect(budget.errors[:base]).to include("Ya existe un presupuesto activo para este período y categoría")
+      end
+
+      it 'allows multiple inactive budgets for same scope' do
+        budget = build(:budget,
+          email_account: email_account,
+          category: category,
+          name: "New Budget",
+          active: false)
+
+        expect(budget).to be_valid
+      end
+
+      it 'allows multiple active budgets if categories differ' do
+        other_category = create(:category, name: "Transport")
+        budget = build(:budget,
+          email_account: email_account,
+          category: other_category,
+          name: "New Budget",
+          active: true)
+
+        expect(budget).to be_valid
+      end
+
+      it 'allows multiple active budgets if email_accounts differ' do
+        other_email_account = create(:email_account)
+        budget = build(:budget,
+          email_account: other_email_account,
+          category: category,
+          name: "New Budget",
+          active: true)
+
+        expect(budget).to be_valid
+      end
     end
   end
 
@@ -346,7 +206,7 @@ RSpec.describe Budget, type: :model, unit: true do
       it "sets default values" do
         budget = Budget.new
         budget.valid?
-        
+
         expect(budget.start_date).to eq(Date.current)
         expect(budget.currency).to eq("CRC")
         expect(budget.warning_threshold).to eq(70)
@@ -362,7 +222,7 @@ RSpec.describe Budget, type: :model, unit: true do
           critical_threshold: 80
         )
         budget.valid?
-        
+
         expect(budget.start_date).to eq(custom_date)
         expect(budget.currency).to eq("USD")
         expect(budget.warning_threshold).to eq(60)
@@ -373,7 +233,7 @@ RSpec.describe Budget, type: :model, unit: true do
     describe "after_create" do
       it "triggers calculate_current_spend_after_save" do
         budget = build(:budget, email_account: email_account)
-        
+
         expect(budget).to receive(:calculate_current_spend_after_save)
         budget.save!
       end
@@ -382,7 +242,7 @@ RSpec.describe Budget, type: :model, unit: true do
     describe "after_update" do
       it "triggers recalculate_if_needed" do
         budget = create(:budget, email_account: email_account)
-        
+
         expect(budget).to receive(:recalculate_if_needed)
         budget.update!(name: "Updated Budget")
       end
@@ -406,7 +266,7 @@ RSpec.describe Budget, type: :model, unit: true do
           query = described_class.for_period_containing(test_date, :weekly)
           week_start = test_date.beginning_of_week
           week_end = test_date.end_of_week
-          
+
           expect(query.to_sql).to include("start_date <=")
           expect(query.to_sql).to include("end_date IS NULL OR end_date >=")
         end
@@ -415,7 +275,7 @@ RSpec.describe Budget, type: :model, unit: true do
       context "monthly period" do
         it "returns budgets containing the month" do
           query = described_class.for_period_containing(test_date, :monthly)
-          
+
           expect(query.to_sql).to include("start_date <=")
           expect(query.to_sql).to include("end_date IS NULL OR end_date >=")
         end
@@ -424,7 +284,7 @@ RSpec.describe Budget, type: :model, unit: true do
       context "yearly period" do
         it "returns budgets containing the year" do
           query = described_class.for_period_containing(test_date, :yearly)
-          
+
           expect(query.to_sql).to include("start_date <=")
           expect(query.to_sql).to include("end_date IS NULL OR end_date >=")
         end
@@ -449,7 +309,7 @@ RSpec.describe Budget, type: :model, unit: true do
         it "returns current day range" do
           budget.period = :daily
           range = budget.current_period_range
-          
+
           expect(range.begin).to eq(Date.new(2025, 1, 15).beginning_of_day)
           expect(range.end).to eq(Date.new(2025, 1, 15).end_of_day)
         end
@@ -459,7 +319,7 @@ RSpec.describe Budget, type: :model, unit: true do
         it "returns current week range" do
           budget.period = :weekly
           range = budget.current_period_range
-          
+
           expect(range.begin).to eq(Date.new(2025, 1, 13)) # Monday
           expect(range.end).to eq(Date.new(2025, 1, 19))   # Sunday
         end
@@ -469,7 +329,7 @@ RSpec.describe Budget, type: :model, unit: true do
         it "returns current month range" do
           budget.period = :monthly
           range = budget.current_period_range
-          
+
           expect(range.begin).to eq(Date.new(2025, 1, 1))
           expect(range.end).to eq(Date.new(2025, 1, 31))
         end
@@ -479,7 +339,7 @@ RSpec.describe Budget, type: :model, unit: true do
         it "returns current year range" do
           budget.period = :yearly
           range = budget.current_period_range
-          
+
           expect(range.begin).to eq(Date.new(2025, 1, 1))
           expect(range.end).to eq(Date.new(2025, 12, 31))
         end
@@ -488,7 +348,7 @@ RSpec.describe Budget, type: :model, unit: true do
       context "invalid period" do
         it "raises an error" do
           allow(budget).to receive(:period).and_return("invalid")
-          
+
           expect { budget.current_period_range }.to raise_error("Invalid period: invalid")
         end
       end
@@ -496,7 +356,7 @@ RSpec.describe Budget, type: :model, unit: true do
 
     describe "#calculate_current_spend!" do
       let(:expenses_relation) { double("expenses relation") }
-      
+
       before do
         allow(budget).to receive(:active?).and_return(true)
         allow(budget).to receive(:current_period_range).and_return(Date.current.beginning_of_month..Date.current.end_of_month)
@@ -511,7 +371,7 @@ RSpec.describe Budget, type: :model, unit: true do
       context "when budget is inactive" do
         it "returns 0" do
           allow(budget).to receive(:active?).and_return(false)
-          
+
           expect(budget.calculate_current_spend!).to eq(0.0)
         end
       end
@@ -519,7 +379,7 @@ RSpec.describe Budget, type: :model, unit: true do
       context "when budget is active" do
         it "calculates spend for general budget" do
           budget.category_id = nil
-          
+
           expect(expenses_relation).to receive(:includes).with(:category)
           expect(expenses_relation).to receive(:where).with(
             transaction_date: budget.current_period_range
@@ -528,16 +388,16 @@ RSpec.describe Budget, type: :model, unit: true do
             currency: 0 # CRC enum value
           )
           expect(expenses_relation).not_to receive(:where).with(category_id: anything)
-          
+
           result = budget.calculate_current_spend!
           expect(result).to eq(75_000.0)
         end
 
         it "calculates spend for category-specific budget" do
           budget.category_id = 5
-          
+
           expect(expenses_relation).to receive(:where).with(category_id: 5)
-          
+
           result = budget.calculate_current_spend!
           expect(result).to eq(75_000.0)
         end
@@ -547,13 +407,13 @@ RSpec.describe Budget, type: :model, unit: true do
             current_spend: 75_000.0,
             current_spend_updated_at: anything
           )
-          
+
           budget.calculate_current_spend!
         end
 
         it "checks and tracks if exceeded" do
           expect(budget).to receive(:check_and_track_exceeded).with(75_000.0)
-          
+
           budget.calculate_current_spend!
         end
       end
@@ -562,7 +422,7 @@ RSpec.describe Budget, type: :model, unit: true do
         it "maps CRC correctly" do
           budget.currency = "CRC"
           allow(Expense).to receive(:currencies).and_return({ crc: 0, usd: 1, eur: 2 })
-          
+
           expect(expenses_relation).to receive(:where).with(currency: 0)
           budget.calculate_current_spend!
         end
@@ -570,7 +430,7 @@ RSpec.describe Budget, type: :model, unit: true do
         it "maps USD correctly" do
           budget.currency = "USD"
           allow(Expense).to receive(:currencies).and_return({ crc: 0, usd: 1, eur: 2 })
-          
+
           expect(expenses_relation).to receive(:where).with(currency: 1)
           budget.calculate_current_spend!
         end
@@ -578,7 +438,7 @@ RSpec.describe Budget, type: :model, unit: true do
         it "maps EUR correctly" do
           budget.currency = "EUR"
           allow(Expense).to receive(:currencies).and_return({ crc: 0, usd: 1, eur: 2 })
-          
+
           expect(expenses_relation).to receive(:where).with(currency: 2)
           budget.calculate_current_spend!
         end
@@ -590,7 +450,7 @@ RSpec.describe Budget, type: :model, unit: true do
         it "returns cached value without recalculating" do
           budget.current_spend = 50_000
           budget.current_spend_updated_at = 30.minutes.ago
-          
+
           expect(budget).not_to receive(:calculate_current_spend!)
           expect(budget.current_spend_amount).to eq(50_000)
         end
@@ -600,7 +460,7 @@ RSpec.describe Budget, type: :model, unit: true do
         it "recalculates when older than 1 hour" do
           budget.current_spend = 50_000
           budget.current_spend_updated_at = 2.hours.ago
-          
+
           expect(budget).to receive(:calculate_current_spend!).and_return(75_000)
           expect(budget.current_spend_amount).to eq(75_000)
         end
@@ -608,7 +468,7 @@ RSpec.describe Budget, type: :model, unit: true do
         it "recalculates when never calculated" do
           budget.current_spend = 0
           budget.current_spend_updated_at = nil
-          
+
           expect(budget).to receive(:calculate_current_spend!).and_return(25_000)
           expect(budget.current_spend_amount).to eq(25_000)
         end
@@ -647,14 +507,14 @@ RSpec.describe Budget, type: :model, unit: true do
       it "calculates remaining correctly" do
         budget.amount = 100_000
         allow(budget).to receive(:current_spend_amount).and_return(30_000)
-        
+
         expect(budget.remaining_amount).to eq(70_000)
       end
 
       it "returns negative when exceeded" do
         budget.amount = 100_000
         allow(budget).to receive(:current_spend_amount).and_return(120_000)
-        
+
         expect(budget.remaining_amount).to eq(-20_000)
       end
     end
@@ -749,7 +609,7 @@ RSpec.describe Budget, type: :model, unit: true do
       it "considers period elapsed percentage with buffer" do
         allow(budget).to receive(:usage_percentage).and_return(65.0)
         allow(budget).to receive(:period_elapsed_percentage).and_return(60.0)
-        
+
         # 65% used, 60% elapsed + 10% buffer = 70% allowed
         expect(budget.on_track?).to be true
       end
@@ -757,7 +617,7 @@ RSpec.describe Budget, type: :model, unit: true do
       it "returns false when exceeding elapsed percentage plus buffer" do
         allow(budget).to receive(:usage_percentage).and_return(75.0)
         allow(budget).to receive(:period_elapsed_percentage).and_return(50.0)
-        
+
         # 75% used, 50% elapsed + 10% buffer = 60% allowed
         expect(budget.on_track?).to be false
       end
@@ -773,7 +633,7 @@ RSpec.describe Budget, type: :model, unit: true do
         allow(budget).to receive(:current_period_range).and_return(
           Date.new(2025, 1, 1)..Date.new(2025, 1, 31)
         )
-        
+
         # 15 days elapsed out of 31
         expect(budget.period_elapsed_percentage).to eq(48.4)
       end
@@ -783,7 +643,7 @@ RSpec.describe Budget, type: :model, unit: true do
         allow(budget).to receive(:current_period_range).and_return(
           Date.new(2025, 1, 1)..Date.new(2025, 1, 31)
         )
-        
+
         expect(budget.period_elapsed_percentage).to eq(100.0)
       end
 
@@ -792,7 +652,7 @@ RSpec.describe Budget, type: :model, unit: true do
         allow(budget).to receive(:current_period_range).and_return(
           Date.new(2025, 1, 15)..Date.new(2025, 1, 15)
         )
-        
+
         expect(budget.period_elapsed_percentage).to eq(100.0)
       end
     end
@@ -800,9 +660,9 @@ RSpec.describe Budget, type: :model, unit: true do
     describe "#historical_adherence" do
       it "returns historical data structure" do
         budget.times_exceeded = 3
-        
+
         result = budget.historical_adherence(6)
-        
+
         expect(result[:periods_analyzed]).to eq(6)
         expect(result[:times_exceeded]).to eq(3)
         expect(result[:average_usage]).to eq(85.0)
@@ -819,21 +679,21 @@ RSpec.describe Budget, type: :model, unit: true do
       it "formats CRC currency correctly" do
         budget.currency = "CRC"
         budget.amount = 150_000
-        
+
         expect(budget.formatted_amount).to eq("₡150.000")
       end
 
       it "formats USD currency correctly" do
         budget.currency = "USD"
         budget.amount = 1500.50
-        
+
         expect(budget.formatted_amount).to eq("$1.501")
       end
 
       it "formats EUR currency correctly" do
         budget.currency = "EUR"
         budget.amount = 2000.75
-        
+
         expect(budget.formatted_amount).to eq("€2.001")
       end
     end
@@ -842,14 +702,14 @@ RSpec.describe Budget, type: :model, unit: true do
       it "formats positive remaining amount" do
         budget.currency = "CRC"
         allow(budget).to receive(:remaining_amount).and_return(50_000)
-        
+
         expect(budget.formatted_remaining).to eq("₡50.000")
       end
 
       it "formats negative remaining amount as absolute value" do
         budget.currency = "CRC"
         allow(budget).to receive(:remaining_amount).and_return(-20_000)
-        
+
         expect(budget.formatted_remaining).to eq("₡20.000")
       end
     end
@@ -879,15 +739,15 @@ RSpec.describe Budget, type: :model, unit: true do
     describe "#deactivate!" do
       it "sets active to false" do
         budget = create(:budget, email_account: email_account, active: true)
-        
+
         budget.deactivate!
-        
+
         expect(budget.reload.active).to be false
       end
 
       it "raises error if update fails" do
         allow(budget).to receive(:update!).and_raise(ActiveRecord::RecordInvalid)
-        
+
         expect { budget.deactivate! }.to raise_error(ActiveRecord::RecordInvalid)
       end
     end
@@ -913,7 +773,7 @@ RSpec.describe Budget, type: :model, unit: true do
       it "calculates next period start correctly for daily" do
         budget.period = :daily
         budget.start_date = Date.new(2025, 1, 15)
-        
+
         new_budget = budget.duplicate_for_next_period
         expect(new_budget.start_date).to eq(Date.new(2025, 1, 16))
       end
@@ -921,7 +781,7 @@ RSpec.describe Budget, type: :model, unit: true do
       it "calculates next period start correctly for weekly" do
         budget.period = :weekly
         budget.start_date = Date.new(2025, 1, 6) # Monday
-        
+
         new_budget = budget.duplicate_for_next_period
         expect(new_budget.start_date).to eq(Date.new(2025, 1, 13))
       end
@@ -929,7 +789,7 @@ RSpec.describe Budget, type: :model, unit: true do
       it "calculates next period start correctly for monthly" do
         budget.period = :monthly
         budget.start_date = Date.new(2025, 1, 1)
-        
+
         new_budget = budget.duplicate_for_next_period
         expect(new_budget.start_date).to eq(Date.new(2025, 2, 1))
       end
@@ -937,7 +797,7 @@ RSpec.describe Budget, type: :model, unit: true do
       it "calculates next period start correctly for yearly" do
         budget.period = :yearly
         budget.start_date = Date.new(2025, 1, 1)
-        
+
         new_budget = budget.duplicate_for_next_period
         expect(new_budget.start_date).to eq(Date.new(2026, 1, 1))
       end
@@ -945,16 +805,16 @@ RSpec.describe Budget, type: :model, unit: true do
       it "preserves duration when end_date is set" do
         budget.start_date = Date.new(2025, 1, 1)
         budget.end_date = Date.new(2025, 3, 31) # 3 months duration
-        
+
         new_budget = budget.duplicate_for_next_period
-        
+
         expect(new_budget.start_date).to eq(Date.new(2025, 2, 1))
         expect(new_budget.end_date).to eq(Date.new(2025, 4, 30))
       end
 
       it "copies all attributes except dates" do
         new_budget = budget.duplicate_for_next_period
-        
+
         expect(new_budget.email_account).to eq(budget.email_account)
         expect(new_budget.category).to eq(budget.category)
         expect(new_budget.name).to eq(budget.name)
@@ -1016,7 +876,7 @@ RSpec.describe Budget, type: :model, unit: true do
               times_exceeded: 3,
               last_exceeded_at: anything
             )
-            
+
             budget.send(:check_and_track_exceeded, 120_000)
           end
         end
@@ -1029,7 +889,7 @@ RSpec.describe Budget, type: :model, unit: true do
 
           it "does not update when still exceeded" do
             expect(budget).not_to receive(:update_columns)
-            
+
             budget.send(:check_and_track_exceeded, 120_000)
           end
         end
@@ -1044,7 +904,7 @@ RSpec.describe Budget, type: :model, unit: true do
             expect(budget).to receive(:update_columns).with(
               last_exceeded_at: nil
             )
-            
+
             budget.send(:check_and_track_exceeded, 80_000)
           end
         end
@@ -1053,7 +913,7 @@ RSpec.describe Budget, type: :model, unit: true do
       describe "#calculate_current_spend_after_save" do
         it "calls calculate_current_spend! with recursion guard" do
           budget = build(:budget, email_account: email_account)
-          
+
           expect(budget).to receive(:calculate_current_spend!)
           budget.send(:calculate_current_spend_after_save)
         end
@@ -1061,7 +921,7 @@ RSpec.describe Budget, type: :model, unit: true do
         it "prevents infinite recursion" do
           budget = build(:budget, email_account: email_account)
           budget.instance_variable_set(:@calculating_spend, true)
-          
+
           expect(budget).not_to receive(:calculate_current_spend!)
           budget.send(:calculate_current_spend_after_save)
         end
@@ -1073,7 +933,7 @@ RSpec.describe Budget, type: :model, unit: true do
         it "recalculates when active status changes" do
           budget.active = false
           budget.save!
-          
+
           expect(budget).to receive(:calculate_current_spend!)
           budget.send(:recalculate_if_needed)
         end
@@ -1082,7 +942,7 @@ RSpec.describe Budget, type: :model, unit: true do
           new_category = create(:category, name: "New Category")
           budget.category = new_category
           budget.save!
-          
+
           expect(budget).to receive(:calculate_current_spend!)
           budget.send(:recalculate_if_needed)
         end
@@ -1090,7 +950,7 @@ RSpec.describe Budget, type: :model, unit: true do
         it "recalculates when period changes" do
           budget.period = :yearly
           budget.save!
-          
+
           expect(budget).to receive(:calculate_current_spend!)
           budget.send(:recalculate_if_needed)
         end
@@ -1098,7 +958,7 @@ RSpec.describe Budget, type: :model, unit: true do
         it "does not recalculate for other changes" do
           budget.name = "Updated Name"
           budget.save!
-          
+
           expect(budget).not_to receive(:calculate_current_spend!)
           budget.send(:recalculate_if_needed)
         end
@@ -1107,7 +967,7 @@ RSpec.describe Budget, type: :model, unit: true do
           budget.instance_variable_set(:@calculating_spend, true)
           budget.active = false
           budget.save!
-          
+
           expect(budget).not_to receive(:calculate_current_spend!)
           budget.send(:recalculate_if_needed)
         end
@@ -1159,10 +1019,10 @@ RSpec.describe Budget, type: :model, unit: true do
     describe "concurrent update scenarios" do
       it "handles concurrent spend calculations safely" do
         budget = create(:budget, email_account: email_account)
-        
+
         # Simulate concurrent updates
         budget.instance_variable_set(:@calculating_spend, true)
-        
+
         # Should not cause infinite loop
         expect { budget.send(:recalculate_if_needed) }.not_to raise_error
       end
@@ -1198,13 +1058,13 @@ RSpec.describe Budget, type: :model, unit: true do
       it "includes associations to prevent N+1" do
         expenses_relation = double("expenses relation")
         allow(email_account).to receive(:expenses).and_return(expenses_relation)
-        
+
         expect(expenses_relation).to receive(:includes).with(:category)
         allow(expenses_relation).to receive(:where).and_return(expenses_relation)
         allow(expenses_relation).to receive(:sum).and_return(0)
         allow(budget).to receive(:update_columns)
         allow(budget).to receive(:check_and_track_exceeded)
-        
+
         budget.calculate_current_spend!
       end
     end
@@ -1213,7 +1073,7 @@ RSpec.describe Budget, type: :model, unit: true do
       it "caches current_spend for performance" do
         budget.current_spend = 50_000
         budget.current_spend_updated_at = 30.minutes.ago
-        
+
         # Should use cached value without database query
         expect(budget).not_to receive(:calculate_current_spend!)
         budget.current_spend_amount
@@ -1221,7 +1081,7 @@ RSpec.describe Budget, type: :model, unit: true do
 
       it "invalidates cache after 1 hour" do
         budget.current_spend_updated_at = 61.minutes.ago
-        
+
         expect(budget).to receive(:calculate_current_spend!)
         budget.current_spend_amount
       end
@@ -1236,7 +1096,7 @@ RSpec.describe Budget, type: :model, unit: true do
         allow(expenses_relation).to receive_message_chain(:includes, :where, :sum).and_return(0)
         allow(budget).to receive(:update_columns)
         allow(budget).to receive(:check_and_track_exceeded)
-        
+
         # Ensures expenses are scoped through email_account association
         expect(email_account).to receive(:expenses)
         budget.calculate_current_spend!

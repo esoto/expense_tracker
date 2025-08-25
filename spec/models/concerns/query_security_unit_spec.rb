@@ -40,48 +40,49 @@ RSpec.shared_examples "QuerySecurity concern" do
 
   describe "scopes" do
     describe ".with_rate_limit" do
-      it "returns current scope or all without modification" do
-        # Test that the scope doesn't modify the SQL query itself
-        base_sql = model_class.all.to_sql
-        allow(model_class).to receive(:rate_limit_exceeded?).and_return(false)
-        allow(model_class).to receive(:increment_rate_limit)
-
-        scoped_sql = model_class.with_rate_limit.to_sql
-        expect(scoped_sql).to eq(base_sql)
+      it "calls rate_limit_exceeded? and increment_rate_limit for security validation" do
+        expect(model_class).to receive(:rate_limit_exceeded?).with(nil).and_return(false)
+        expect(model_class).to receive(:increment_rate_limit).with(nil)
+        model_class.with_rate_limit
       end
 
-      it "works with existing scopes" do
+      it "calls rate_limit_exceeded? with provided identifier" do
+        expect(model_class).to receive(:rate_limit_exceeded?).with("user_123").and_return(false)
+        expect(model_class).to receive(:increment_rate_limit).with("user_123")
+        model_class.with_rate_limit("user_123")
+      end
+
+      it "raises QueryAborted when rate limit exceeded" do
+        expect(model_class).to receive(:rate_limit_exceeded?).and_return(true)
+        expect {
+          model_class.with_rate_limit
+        }.to raise_error(ActiveRecord::QueryAborted, "Rate limit exceeded. Please try again later.")
+      end
+
+      it "does not raise error when rate limit not exceeded" do
         allow(model_class).to receive(:rate_limit_exceeded?).and_return(false)
         allow(model_class).to receive(:increment_rate_limit)
-
-        # Test that it preserves existing WHERE conditions
-        base_query = model_class.where(id: 1)
-        scoped_query = base_query.with_rate_limit
-
-        expect(scoped_query.to_sql).to include('WHERE')
-        expect(scoped_query.to_sql).to include('"id" = 1') if model_class.column_names.include?('id')
+        expect { model_class.with_rate_limit }.not_to raise_error
       end
     end
 
     describe ".with_cost_analysis" do
-      it "returns current scope without SQL modification" do
-        allow(model_class).to receive(:estimate_query_cost).and_return(5000)
-
-        base_sql = model_class.all.to_sql
-        scoped_sql = model_class.with_cost_analysis.to_sql
-        expect(scoped_sql).to eq(base_sql)
+      it "calls estimate_query_cost to analyze query performance" do
+        expect(model_class).to receive(:estimate_query_cost).and_return(5000)
+        model_class.with_cost_analysis
       end
 
-      it "preserves existing query conditions" do
+      it "raises QueryAborted when query cost exceeds limit" do
+        expect(model_class).to receive(:estimate_query_cost).and_return(15000)
+        expect(Rails.logger).to receive(:warn).with(/High cost query detected/)
+        expect {
+          model_class.with_cost_analysis
+        }.to raise_error(ActiveRecord::QueryAborted, "Query too expensive. Please narrow your search criteria.")
+      end
+
+      it "does not raise error when cost is acceptable" do
         allow(model_class).to receive(:estimate_query_cost).and_return(5000)
-
-        if model_class.column_names.include?('created_at')
-          base_query = model_class.where('created_at > ?', 1.day.ago)
-          scoped_query = base_query.with_cost_analysis
-
-          expect(scoped_query.to_sql).to include('created_at')
-          expect(scoped_query.to_sql).to include('>')
-        end
+        expect { model_class.with_cost_analysis }.not_to raise_error
       end
     end
   end

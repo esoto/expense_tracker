@@ -26,10 +26,10 @@ RSpec.describe Budget, type: :model, unit: true do
       active: true)
   end
 
-    describe "associations" do
-      it { is_expected.to belong_to(:email_account) }
-      it { is_expected.to belong_to(:category).optional }
-    end
+  describe "associations" do
+    it { is_expected.to belong_to(:email_account) }
+    it { is_expected.to belong_to(:category).optional }
+  end
 
   describe "validations" do
     subject { build(:budget) }
@@ -43,27 +43,32 @@ RSpec.describe Budget, type: :model, unit: true do
     it { is_expected.to validate_presence_of(:currency).on(:update) }
     it { is_expected.to validate_inclusion_of(:currency).in_array(%w[CRC USD EUR]).on(:update) }
 
-    describe 'thresholds_order' do
-      it 'validates warning_threshold is less than critical_threshold' do
-        budget = build(:budget, warning_threshold: 80, critical_threshold: 90)
-        expect(budget).to be_valid
-      end
+    describe 'custom validations' do
+      it 'validates threshold order and date relationships' do
+        validation_tests = [
+          # [warning_threshold, critical_threshold, start_date_offset, end_date_offset, should_be_valid]
+          [80, 90, 0, 1, true],   # Valid thresholds and dates
+          [90, 90, 0, 1, false],  # Invalid: warning >= critical
+          [70, 80, 0, -1, false], # Invalid: end_date before start_date
+          [70, 80, 0, 1, true]    # Valid: proper thresholds and dates
+        ]
 
-      it 'invalidates if warning_threshold is greater than or equal to critical_threshold' do
-        budget = build(:budget, warning_threshold: 90, critical_threshold: 90)
-        expect(budget).to be_invalid
-      end
-    end
-
-    describe 'end_date_after_start_date' do
-      it 'validates end_date is after start_date' do
-        budget = build(:budget, start_date: Date.current, end_date: Date.current + 1.day)
-        expect(budget).to be_valid
-      end
-
-      it 'invalidates if end_date is before start_date' do
-        budget = build(:budget, start_date: Date.current, end_date: Date.current - 1.day)
-        expect(budget).to be_invalid
+        validation_tests.each do |warning, critical, start_offset, end_offset, should_be_valid|
+          start_date = Date.current + start_offset.days
+          end_date = Date.current + end_offset.days
+          
+          budget = build(:budget, 
+            warning_threshold: warning, 
+            critical_threshold: critical,
+            start_date: start_date,
+            end_date: end_date)
+          
+          if should_be_valid
+            expect(budget).to be_valid
+          else
+            expect(budget).to be_invalid
+          end
+        end
       end
     end
 
@@ -141,17 +146,25 @@ RSpec.describe Budget, type: :model, unit: true do
   end
 
   describe "scopes" do
-    describe ".active" do
-      it "returns active budgets" do
-        query = described_class.active
-        expect(query.to_sql).to include('WHERE "budgets"."active" = TRUE')
+    context "status-based scopes" do
+      it "filters by active/inactive status" do
+        expect(described_class.active.to_sql).to include('"budgets"."active" = TRUE')
+        expect(described_class.inactive.to_sql).to include('"budgets"."active" = FALSE')
       end
     end
 
-    describe ".inactive" do
-      it "returns inactive budgets" do
-        query = described_class.inactive
-        expect(query.to_sql).to include('WHERE "budgets"."active" = FALSE')
+    context "category-based scopes" do
+      it "filters by category relationship" do
+        expect(described_class.for_category(5).to_sql).to include('"budgets"."category_id" = 5')
+        expect(described_class.general.to_sql).to include('"budgets"."category_id" IS NULL')
+      end
+    end
+
+    context "spending threshold scopes" do
+      it "filters by spending vs budget thresholds" do
+        expect(described_class.exceeded.to_sql).to include("current_spend > amount")
+        expect(described_class.warning.to_sql).to include("current_spend >= (amount * warning_threshold / 100.0)")
+        expect(described_class.critical.to_sql).to include("current_spend >= (amount * critical_threshold / 100.0)")
       end
     end
 
@@ -165,40 +178,6 @@ RSpec.describe Budget, type: :model, unit: true do
       end
     end
 
-    describe ".for_category" do
-      it "returns budgets for specific category" do
-        query = described_class.for_category(5)
-        expect(query.to_sql).to include('"budgets"."category_id" = 5')
-      end
-    end
-
-    describe ".general" do
-      it "returns budgets without category" do
-        query = described_class.general
-        expect(query.to_sql).to include('"budgets"."category_id" IS NULL')
-      end
-    end
-
-    describe ".exceeded" do
-      it "returns budgets where spending exceeds amount" do
-        query = described_class.exceeded
-        expect(query.to_sql).to include("current_spend > amount")
-      end
-    end
-
-    describe ".warning" do
-      it "returns budgets at warning threshold" do
-        query = described_class.warning
-        expect(query.to_sql).to include("current_spend >= (amount * warning_threshold / 100.0)")
-      end
-    end
-
-    describe ".critical" do
-      it "returns budgets at critical threshold" do
-        query = described_class.critical
-        expect(query.to_sql).to include("current_spend >= (amount * critical_threshold / 100.0)")
-      end
-    end
   end
 
   describe "callbacks" do

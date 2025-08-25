@@ -64,8 +64,13 @@ RSpec.configure do |config|
     end
 
     config.around(:each) do |example|
-      DatabaseCleaner.cleaning do
+      # Skip DatabaseCleaner for unit tests to avoid transaction conflicts
+      if example.metadata[:unit]
         example.run
+      else
+        DatabaseCleaner.cleaning do
+          example.run
+        end
       end
     end
 
@@ -86,8 +91,13 @@ RSpec.configure do |config|
     end
 
     config.around(:each) do |example|
-      DatabaseCleaner.cleaning do
+      # Skip DatabaseCleaner for unit tests to avoid transaction conflicts
+      if example.metadata[:unit]
         example.run
+      else
+        DatabaseCleaner.cleaning do
+          example.run
+        end
       end
     end
   end

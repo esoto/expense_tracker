@@ -3,8 +3,8 @@
 require "rails_helper"
 
 RSpec.describe Expense, type: :model, unit: true do
-  # Test QuerySecurity concern
-  it_behaves_like "QuerySecurity concern"
+  # Test QuerySecurity concern - moved to query_security_unit_spec.rb to avoid loading issues
+  # it_behaves_like "QuerySecurity concern"
   # Use build_stubbed for true unit testing
   let(:email_account) { build_stubbed(:email_account, id: 1, bank_name: "BCR") }
   let(:category) { build_stubbed(:category, id: 1, name: "Food") }
@@ -64,41 +64,8 @@ RSpec.describe Expense, type: :model, unit: true do
   end
 
   describe "enums" do
-    describe "currency enum" do
-      it "defines correct currency values" do
-        expect(described_class.currencies).to eq({
-          "crc" => 0,
-          "usd" => 1,
-          "eur" => 2
-        })
-      end
-
-      it "provides currency check methods" do
-        expense.currency = :crc
-        expect(expense.crc?).to be true
-        expect(expense.usd?).to be false
-        expect(expense.eur?).to be false
-      end
-    end
-
-    describe "status enum" do
-      it "defines correct status values" do
-        expect(described_class.statuses).to eq({
-          "pending" => 0,
-          "processed" => 1,
-          "failed" => 2,
-          "duplicate" => 3
-        })
-      end
-
-      it "provides status check methods" do
-        expense.status = :processed
-        expect(expense.pending?).to be false
-        expect(expense.processed?).to be true
-        expect(expense.failed?).to be false
-        expect(expense.duplicate?).to be false
-      end
-    end
+    it { should define_enum_for(:currency).with_values(crc: 0, usd: 1, eur: 2) }
+    it { should define_enum_for(:status).with_values(pending: 0, processed: 1, failed: 2, duplicate: 3) }
   end
 
   describe "callbacks" do
@@ -198,41 +165,32 @@ RSpec.describe Expense, type: :model, unit: true do
       end
     end
 
-    describe ".this_month" do
-      it "returns expenses for current month" do
-        allow(Date).to receive(:current).and_return(Date.new(2025, 1, 15))
-        query = described_class.this_month
-        expect(query.to_sql).to include("transaction_date")
-      end
-    end
+    context "date-based scopes" do
+      before { allow(Date).to receive(:current).and_return(Date.new(2025, 1, 15)) }
 
-    describe ".this_year" do
-      it "returns expenses for current year" do
-        allow(Date).to receive(:current).and_return(Date.new(2025, 1, 15))
-        query = described_class.this_year
-        expect(query.to_sql).to include("transaction_date")
+      it "filters by time periods using transaction_date" do
+        %i[this_month this_year].each do |scope|
+          query = described_class.send(scope)
+          expect(query.to_sql).to include("transaction_date")
+        end
       end
     end
   end
 
   describe "instance methods" do
     describe "#formatted_amount" do
-      it "formats CRC currency correctly" do
-        expense.currency = :crc
-        expense.amount = 25000
-        expect(expense.formatted_amount).to eq("₡25000.0")
-      end
+      it "formats currencies correctly" do
+        currency_tests = [
+          [:crc, 25000, "₡25000.0"],
+          [:usd, 100.50, "$100.5"], 
+          [:eur, 75.25, "€75.25"]
+        ]
 
-      it "formats USD currency correctly" do
-        expense.currency = :usd
-        expense.amount = 100.50
-        expect(expense.formatted_amount).to eq("$100.5")
-      end
-
-      it "formats EUR currency correctly" do
-        expense.currency = :eur
-        expense.amount = 75.25
-        expect(expense.formatted_amount).to eq("€75.25")
+        currency_tests.each do |currency, amount, expected|
+          expense.currency = currency
+          expense.amount = amount
+          expect(expense.formatted_amount).to eq(expected)
+        end
       end
 
       it "rounds to 2 decimal places" do
@@ -300,19 +258,17 @@ RSpec.describe Expense, type: :model, unit: true do
     end
 
     describe "#parsed_email_data" do
-      it "parses valid JSON" do
-        expense.parsed_data = '{"key": "value"}'
-        expect(expense.parsed_email_data).to eq({ "key" => "value" })
-      end
+      it "handles JSON parsing with fallbacks" do
+        test_cases = [
+          ['{"key": "value"}', { "key" => "value" }],
+          ["invalid json", {}],
+          [nil, {}]
+        ]
 
-      it "returns empty hash for invalid JSON" do
-        expense.parsed_data = "invalid json"
-        expect(expense.parsed_email_data).to eq({})
-      end
-
-      it "returns empty hash for nil" do
-        expense.parsed_data = nil
-        expect(expense.parsed_email_data).to eq({})
+        test_cases.each do |input, expected|
+          expense.parsed_data = input
+          expect(expense.parsed_email_data).to eq(expected)
+        end
       end
     end
 
@@ -324,68 +280,56 @@ RSpec.describe Expense, type: :model, unit: true do
     end
 
     describe "status check methods" do
-      it "#duplicate? returns true for duplicate status" do
-        expense.status = :duplicate
-        expect(expense.duplicate?).to be true
-        expect(expense.processed?).to be false
-      end
+      it "provides accurate status predicates" do
+        status_tests = [
+          [:duplicate, :duplicate?],
+          [:processed, :processed?],
+          [:pending, :pending?],
+          [:failed, :failed?]
+        ]
 
-      it "#processed? returns true for processed status" do
-        expense.status = :processed
-        expect(expense.processed?).to be true
-        expect(expense.pending?).to be false
-      end
-
-      it "#pending? returns true for pending status" do
-        expense.status = :pending
-        expect(expense.pending?).to be true
-        expect(expense.failed?).to be false
-      end
-
-      it "#failed? returns true for failed status" do
-        expense.status = :failed
-        expect(expense.failed?).to be true
-        expect(expense.duplicate?).to be false
+        status_tests.each do |status, predicate_method|
+          expense.status = status
+          expect(expense.send(predicate_method)).to be true
+          
+          # Test that other status methods return false
+          other_methods = status_tests.map(&:last) - [predicate_method]
+          other_methods.each do |other_method|
+            expect(expense.send(other_method)).to be false
+          end
+        end
       end
     end
 
     describe "ML confidence methods" do
       describe "#confidence_level" do
-        it "returns :none for nil confidence" do
-          expense.ml_confidence = nil
-          expect(expense.confidence_level).to eq(:none)
-        end
+        it "categorizes confidence levels correctly" do
+          confidence_tests = [
+            [nil, :none],
+            [0.85, :high],
+            [0.70, :medium], 
+            [0.50, :low],
+            [0.30, :very_low]
+          ]
 
-        it "returns :high for >= 0.85" do
-          expense.ml_confidence = 0.85
-          expect(expense.confidence_level).to eq(:high)
-        end
-
-        it "returns :medium for >= 0.70" do
-          expense.ml_confidence = 0.70
-          expect(expense.confidence_level).to eq(:medium)
-        end
-
-        it "returns :low for >= 0.50" do
-          expense.ml_confidence = 0.50
-          expect(expense.confidence_level).to eq(:low)
-        end
-
-        it "returns :very_low for < 0.50" do
-          expense.ml_confidence = 0.30
-          expect(expense.confidence_level).to eq(:very_low)
+          confidence_tests.each do |confidence, expected_level|
+            expense.ml_confidence = confidence
+            expect(expense.confidence_level).to eq(expected_level)
+          end
         end
       end
 
       describe "#confidence_percentage" do
-        it "returns 0 for nil confidence" do
-          expense.ml_confidence = nil
-          expect(expense.confidence_percentage).to eq(0)
-        end
+        it "converts confidence to percentage" do
+          percentage_tests = [
+            [nil, 0],
+            [0.856, 86]
+          ]
 
-        it "converts to percentage and rounds" do
-          expense.ml_confidence = 0.856
-          expect(expense.confidence_percentage).to eq(86)
+          percentage_tests.each do |confidence, expected_percentage|
+            expense.ml_confidence = confidence
+            expect(expense.confidence_percentage).to eq(expected_percentage)
+          end
         end
       end
 

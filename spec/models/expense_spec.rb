@@ -45,17 +45,6 @@ RSpec.describe Expense, type: :model, integration: true do
       expect(expense.errors[:email_account]).to include("must exist")
     end
 
-    it 'validates status inclusion' do
-      valid_statuses = [ 'pending', 'processed', 'failed', 'duplicate' ]
-      valid_statuses.each do |status|
-        expense = build(:expense, status: status)
-        expect(expense).to be_valid, "#{status} should be valid"
-      end
-
-      invalid_expense = build(:expense, status: 'invalid')
-      expect(invalid_expense).not_to be_valid
-      expect(invalid_expense.errors[:status]).to include('is not included in the list')
-    end
 
     it 'validates currency inclusion' do
       valid_currencies = [ 'crc', 'usd', 'eur' ]

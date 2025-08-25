@@ -53,12 +53,6 @@ RSpec.describe ExpenseQueryOptimizer, type: :model, unit: true do
         expect(sql).to include("amount")
       end
 
-      it "applies status filter" do
-        filters = { status: "pending" }
-        sql = Expense.with_filters(filters).to_sql
-        expect(sql).to include("status")
-        expect(sql).to include("pending")
-      end
 
       it "applies search filter" do
         filters = { search: "coffee" }

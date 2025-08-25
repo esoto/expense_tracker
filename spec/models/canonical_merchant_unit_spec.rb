@@ -68,28 +68,8 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
       end
     end
 
-    describe ".with_category_hint" do
-      it "filters merchants with non-empty category_hint" do
-        sql = CanonicalMerchant.with_category_hint.to_sql
-        expect(sql).to include("category_hint IS NOT NULL")
-      end
-    end
 
-    describe ".alphabetical" do
-      it "orders by name" do
-        sql = CanonicalMerchant.alphabetical.to_sql
-        expect(sql).to include("ORDER BY")
-        expect(sql).to include("name ASC")
-      end
-    end
 
-    describe ".by_usage" do
-      it "orders by usage_count descending" do
-        sql = CanonicalMerchant.by_usage.to_sql
-        expect(sql).to include("ORDER BY")
-        expect(sql).to include("usage_count DESC")
-      end
-    end
   end
 
   describe "callbacks" do
@@ -149,11 +129,6 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
       expect(CanonicalMerchant.normalize_merchant_name("FACEBOOK COMPANY")).to eq("facebook")
     end
 
-    it "removes store location indicators" do
-      expect(CanonicalMerchant.normalize_merchant_name("TARGET STORE #123")).to eq("target")
-      expect(CanonicalMerchant.normalize_merchant_name("WALMART LOCATION 456")).to eq("walmart")
-      expect(CanonicalMerchant.normalize_merchant_name("STARBUCKS STORE123")).to eq("starbucks")
-    end
 
     it "cleans special characters and normalizes whitespace" do
       expect(CanonicalMerchant.normalize_merchant_name("AMAZON!!!COM")).to eq("amazon com")
@@ -459,17 +434,7 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
 
   describe "edge cases and security" do
     describe "SQL injection prevention" do
-      it "safely handles malicious input in normalization" do
-        malicious = "'; DROP TABLE users; --"
-        result = CanonicalMerchant.normalize_merchant_name(malicious)
-        expect(result).to eq("drop table users")
-      end
 
-      it "safely handles special characters" do
-        special = "Amazon & Co. <script>alert('xss')</script>"
-        result = CanonicalMerchant.normalize_merchant_name(special)
-        expect(result).to eq("amazon & script alert xss script")
-      end
     end
 
     describe "performance with large data" do

@@ -34,9 +34,13 @@ RSpec.configure do |config|
     # Use faster database strategy for unit tests
     if defined?(ActiveRecord)
       # Use transactions for unit tests (fastest cleanup)
+      # Skip DatabaseCleaner entirely for unit tests to avoid conflicts
       ActiveRecord::Base.connection.begin_transaction(joinable: false)
-      example.run
-      ActiveRecord::Base.connection.rollback_transaction
+      begin
+        example.run
+      ensure
+        ActiveRecord::Base.connection.rollback_transaction
+      end
     else
       example.run
     end

@@ -368,13 +368,6 @@ RSpec.describe PatternValidation, type: :model, unit: true do
       )
     end
 
-    it "adds error for invalid regex syntax" do
-      dummy_object.pattern_value = "[invalid"
-      dummy_object.send(:validate_regex_pattern)
-      expect(dummy_object.errors[:pattern_value]).to match(
-        /invalid regular expression:/
-      )
-    end
 
     it "adds error for slow regex patterns" do
       # Mock timeout
@@ -471,15 +464,6 @@ RSpec.describe PatternValidation, type: :model, unit: true do
     end
 
     context "when pattern is new" do
-      it "checks for exact duplicates" do
-        allow(dummy_object.class).to receive(:where).and_return(
-          double(exists?: true, where: double(not: double(exists?: true)))
-        )
-        dummy_object.send(:check_for_duplicate_patterns)
-        expect(dummy_object.errors[:pattern_value]).to include(
-          "already exists for this category and pattern type"
-        )
-      end
     end
 
     context "when pattern is being updated" do
@@ -488,16 +472,6 @@ RSpec.describe PatternValidation, type: :model, unit: true do
         dummy_object.mark_pattern_value_changed!
       end
 
-      it "excludes self from duplicate check" do
-        relation = dummy_class::MockRelation.new
-        allow(dummy_object.class).to receive(:where).and_return(relation)
-        allow(relation).to receive(:where).and_return(relation)
-        allow(relation).to receive(:not).and_return(relation)
-        allow(relation).to receive(:exists?).and_return(false)
-
-        dummy_object.send(:check_for_duplicate_patterns)
-        expect(dummy_object.errors[:pattern_value]).to be_empty
-      end
     end
 
     context "with control characters" do

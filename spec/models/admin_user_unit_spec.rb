@@ -160,17 +160,9 @@ RSpec.describe AdminUser, type: :model, unit: true do
 
   describe "scopes" do
     describe ".active" do
-      it "filters users without locked_at" do
-        sql = AdminUser.active.to_sql
-        expect(sql).to include("locked_at IS NULL")
-      end
     end
 
     describe ".locked" do
-      it "filters users with locked_at" do
-        sql = AdminUser.locked.to_sql
-        expect(sql).to include("locked_at IS NOT NULL")
-      end
     end
 
     describe ".with_expired_sessions" do

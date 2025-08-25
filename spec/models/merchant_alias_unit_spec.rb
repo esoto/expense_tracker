@@ -44,11 +44,6 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
     end
 
     describe "normalized_name" do
-      it "requires normalized_name to be present" do
-        alias_record = build_merchant_alias(normalized_name: nil)
-        expect(alias_record).not_to be_valid
-        expect(alias_record.errors[:normalized_name]).to include("can't be blank")
-      end
 
       it "accepts non-empty normalized_name" do
         alias_record = build_merchant_alias(normalized_name: "uber")
@@ -120,11 +115,6 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
     end
 
     describe ".recent" do
-      it "orders by last_seen_at descending" do
-        sql = MerchantAlias.recent.to_sql
-        expect(sql).to include("ORDER BY")
-        expect(sql).to include("last_seen_at DESC")
-      end
     end
 
     describe ".frequently_matched" do

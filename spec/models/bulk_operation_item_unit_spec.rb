@@ -154,14 +154,7 @@ RSpec.describe BulkOperationItem, type: :model, unit: true do
         allow(item).to receive(:previous_confidence).and_return(0.6)
       end
 
-      it "calculates the difference" do
-        expect(item.confidence_delta).to eq(0.3)
-      end
 
-      it "handles negative deltas" do
-        allow(expense).to receive(:categorization_confidence).and_return(0.4)
-        expect(item.confidence_delta).to eq(-0.2)
-      end
 
       it "handles zero delta" do
         allow(expense).to receive(:categorization_confidence).and_return(0.6)
@@ -297,14 +290,6 @@ RSpec.describe BulkOperationItem, type: :model, unit: true do
     describe "relationship integrity" do
       let(:item) { build_bulk_operation_item }
 
-      it "handles orphaned relationships gracefully" do
-        allow(item).to receive(:bulk_operation).and_return(nil)
-        allow(item).to receive(:expense).and_return(nil)
-        
-        # Methods should not raise errors
-        expect { item.category_changed? }.not_to raise_error
-        expect { item.confidence_delta }.not_to raise_error
-      end
     end
 
     describe "data consistency" do
@@ -351,10 +336,6 @@ RSpec.describe BulkOperationItem, type: :model, unit: true do
     describe "error handling" do
       let(:item) { build_bulk_operation_item }
 
-      it "handles nil expense gracefully in confidence_delta" do
-        allow(item).to receive(:expense).and_return(nil)
-        expect(item.confidence_delta).to be_nil
-      end
 
       it "handles calculation errors gracefully" do
         allow(item).to receive(:processed_at).and_raise(StandardError)

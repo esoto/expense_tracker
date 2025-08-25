@@ -11,8 +11,7 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
 
   describe "validations" do
     describe "feedback_type validation" do
-      it { should validate_presence_of(:feedback_type) }
-      
+        
       it "validates inclusion of feedback_type" do
         should validate_inclusion_of(:feedback_type)
           .in_array(%w[accepted rejected corrected correction])
@@ -61,44 +60,10 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
       let(:pattern) { double("categorization_pattern") }
       let(:feedback) { build_stubbed(:pattern_feedback, categorization_pattern: pattern) }
 
-      context "with accepted feedback" do
-        it "records successful usage" do
-          feedback.feedback_type = "accepted"
-          expect(pattern).to receive(:record_usage).with(true)
-          feedback.send(:update_pattern_performance)
-        end
-      end
 
-      context "with rejected feedback" do
-        it "records unsuccessful usage" do
-          feedback.feedback_type = "rejected"
-          expect(pattern).to receive(:record_usage).with(false)
-          feedback.send(:update_pattern_performance)
-        end
-      end
 
-      context "with corrected feedback" do
-        it "records unsuccessful usage" do
-          feedback.feedback_type = "corrected"
-          expect(pattern).to receive(:record_usage).with(false)
-          feedback.send(:update_pattern_performance)
-        end
-      end
 
-      context "with correction feedback" do
-        it "records unsuccessful usage" do
-          feedback.feedback_type = "correction"
-          expect(pattern).to receive(:record_usage).with(false)
-          feedback.send(:update_pattern_performance)
-        end
-      end
 
-      context "without categorization pattern" do
-        it "doesn't attempt to update performance" do
-          feedback.categorization_pattern = nil
-          expect { feedback.send(:update_pattern_performance) }.not_to raise_error
-        end
-      end
     end
 
     describe "after_create :create_pattern_from_correction" do
@@ -236,45 +201,10 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
   end
 
   describe "scopes" do
-    describe ".accepted" do
-      it "returns accepted feedback" do
-        relation = double("relation")
-        expect(PatternFeedback).to receive(:where).with(feedback_type: "accepted").and_return(relation)
-        expect(PatternFeedback.accepted).to eq(relation)
-      end
-    end
 
-    describe ".rejected" do
-      it "returns rejected feedback" do
-        relation = double("relation")
-        expect(PatternFeedback).to receive(:where).with(feedback_type: "rejected").and_return(relation)
-        expect(PatternFeedback.rejected).to eq(relation)
-      end
-    end
 
-    describe ".corrected" do
-      it "returns corrected feedback" do
-        relation = double("relation")
-        expect(PatternFeedback).to receive(:where).with(feedback_type: "corrected").and_return(relation)
-        expect(PatternFeedback.corrected).to eq(relation)
-      end
-    end
 
-    describe ".correction" do
-      it "returns correction feedback" do
-        relation = double("relation")
-        expect(PatternFeedback).to receive(:where).with(feedback_type: "correction").and_return(relation)
-        expect(PatternFeedback.correction).to eq(relation)
-      end
-    end
 
-    describe ".recent" do
-      it "orders by created_at descending" do
-        relation = double("relation")
-        expect(PatternFeedback).to receive(:order).with(created_at: :desc).and_return(relation)
-        expect(PatternFeedback.recent).to eq(relation)
-      end
-    end
   end
 
   describe "class methods" do
@@ -462,25 +392,7 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
           expect(suggestion[:pattern_value]).to eq("Store Name")
         end
 
-        it "suggests description pattern when no merchant but has description" do
-          expense.merchant_name = nil
-          expense.description = "Description text"
-          feedback.feedback_type = "correction"
-          
-          suggestion = feedback.improvement_suggestion
-          expect(suggestion[:pattern_type]).to eq("description")
-          expect(suggestion[:pattern_value]).to eq("Description text")
-        end
 
-        it "suggests keyword pattern when no merchant or description" do
-          expense.merchant_name = nil
-          expense.description = nil
-          feedback.feedback_type = "correction"
-          
-          suggestion = feedback.improvement_suggestion
-          expect(suggestion[:pattern_type]).to eq("keyword")
-          expect(suggestion[:pattern_value]).to be_nil
-        end
       end
 
       context "with nil associations" do

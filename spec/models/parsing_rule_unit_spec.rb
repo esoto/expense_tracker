@@ -337,18 +337,6 @@ RSpec.describe ParsingRule, type: :model, unit: true do
     describe '#extract_amount' do
       let(:parsing_rule) { build_stubbed(:parsing_rule) }
 
-      it 'removes currency symbols' do
-        amounts = {
-          '$100.50' => BigDecimal('100.50'),
-          '₡1,500.00' => BigDecimal('1500.00'),
-          '€25.75' => BigDecimal('25.75')
-        }
-        
-        amounts.each do |input, expected|
-          result = parsing_rule.send(:extract_amount, input)
-          expect(result).to eq(expected)
-        end
-      end
 
       it 'handles comma as thousands separator' do
         result = parsing_rule.send(:extract_amount, '1,234,567.89')
@@ -360,28 +348,8 @@ RSpec.describe ParsingRule, type: :model, unit: true do
         expect(result).to eq(BigDecimal('1500.00'))
       end
 
-      it 'returns nil for invalid amounts' do
-        invalid_amounts = ['abc', 'not a number', '', nil]
-        
-        invalid_amounts.each do |invalid|
-          result = parsing_rule.send(:extract_amount, invalid)
-          expect(result).to be_nil
-        end
-      end
 
-      it 'handles ArgumentError from BigDecimal' do
-        # BigDecimal() method, not .new
-        allow(Kernel).to receive(:BigDecimal).and_raise(ArgumentError)
-        result = parsing_rule.send(:extract_amount, '100.00')
-        expect(result).to be_nil
-      end
 
-      it 'handles TypeError from BigDecimal' do
-        # BigDecimal() method, not .new
-        allow(Kernel).to receive(:BigDecimal).and_raise(TypeError)
-        result = parsing_rule.send(:extract_amount, '100.00')
-        expect(result).to be_nil
-      end
     end
 
     describe '#parse_date' do

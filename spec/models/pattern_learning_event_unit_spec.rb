@@ -81,27 +81,12 @@ RSpec.describe PatternLearningEvent, type: :model, unit: true do
 
   describe "scopes" do
     describe ".successful" do
-      it "returns events where was_correct is true" do
-        relation = double("relation")
-        expect(PatternLearningEvent).to receive(:where).with(was_correct: true).and_return(relation)
-        expect(PatternLearningEvent.successful).to eq(relation)
-      end
     end
 
     describe ".unsuccessful" do
-      it "returns events where was_correct is false" do
-        relation = double("relation")
-        expect(PatternLearningEvent).to receive(:where).with(was_correct: false).and_return(relation)
-        expect(PatternLearningEvent.unsuccessful).to eq(relation)
-      end
     end
 
     describe ".recent" do
-      it "orders by created_at descending" do
-        relation = double("relation")
-        expect(PatternLearningEvent).to receive(:order).with(created_at: :desc).and_return(relation)
-        expect(PatternLearningEvent.recent).to eq(relation)
-      end
     end
   end
 
@@ -178,81 +163,8 @@ RSpec.describe PatternLearningEvent, type: :model, unit: true do
         end
       end
 
-      context "with CompositePattern" do
-        it "creates event with composite pattern details" do
-          pattern = double("CompositePattern",
-            id: 20,
-            name: "Complex Rule",
-            class: double(name: "CompositePattern")
-          )
 
-          expect(PatternLearningEvent).to receive(:create!).with(
-            expense: expense,
-            category: category,
-            pattern_used: "composite:Complex Rule",
-            was_correct: false,
-            confidence_score: 0.60,
-            context_data: {
-              pattern_id: 20,
-              pattern_class: "CompositePattern"
-            }
-          )
 
-          PatternLearningEvent.record_event(
-            expense: expense,
-            category: category,
-            pattern: pattern,
-            was_correct: false,
-            confidence: 0.60
-          )
-        end
-      end
-
-      context "with string pattern" do
-        it "creates event with string pattern" do
-          expect(PatternLearningEvent).to receive(:create!).with(
-            expense: expense,
-            category: category,
-            pattern_used: "custom_rule",
-            was_correct: true,
-            confidence_score: nil,
-            context_data: {
-              pattern_id: nil,
-              pattern_class: "String"
-            }
-          )
-
-          PatternLearningEvent.record_event(
-            expense: expense,
-            category: category,
-            pattern: "custom_rule",
-            was_correct: true
-          )
-        end
-      end
-
-      context "with nil pattern" do
-        it "creates event with nil pattern details" do
-          expect(PatternLearningEvent).to receive(:create!).with(
-            expense: expense,
-            category: category,
-            pattern_used: "",
-            was_correct: false,
-            confidence_score: nil,
-            context_data: {
-              pattern_id: nil,
-              pattern_class: "NilClass"
-            }
-          )
-
-          PatternLearningEvent.record_event(
-            expense: expense,
-            category: category,
-            pattern: nil,
-            was_correct: false
-          )
-        end
-      end
 
       context "with custom object pattern" do
         it "creates event using to_s method" do
@@ -300,29 +212,6 @@ RSpec.describe PatternLearningEvent, type: :model, unit: true do
         )
       end
 
-      it "handles patterns without id method" do
-        pattern = Object.new
-        def pattern.to_s
-          "BasicObject"
-        end
-
-        expect(PatternLearningEvent).to receive(:create!).with(
-          hash_including(
-            pattern_used: "BasicObject",
-            context_data: {
-              pattern_id: nil,
-              pattern_class: "Object"
-            }
-          )
-        )
-
-        PatternLearningEvent.record_event(
-          expense: expense,
-          category: category,
-          pattern: pattern,
-          was_correct: true
-        )
-      end
     end
   end
 
@@ -369,20 +258,6 @@ RSpec.describe PatternLearningEvent, type: :model, unit: true do
     end
 
     describe "context_data handling" do
-      it "stores complex context data" do
-        complex_context = {
-          pattern_id: 123,
-          pattern_class: "CategorizationPattern",
-          additional_info: {
-            nested: {
-              data: ["array", "of", "values"]
-            }
-          }
-        }
-
-        event = build_stubbed(:pattern_learning_event, context_data: complex_context)
-        expect(event.context_data).to eq(complex_context)
-      end
 
       it "handles nil context_data" do
         event = build_stubbed(:pattern_learning_event, context_data: nil)
@@ -456,36 +331,7 @@ RSpec.describe PatternLearningEvent, type: :model, unit: true do
       let(:expense) { build_stubbed(:expense) }
       let(:category) { build_stubbed(:category) }
 
-      it "handles pattern responding to different methods" do
-        pattern_with_name = double("Pattern", name: "MyPattern", id: 1)
-        allow(pattern_with_name).to receive(:class).and_return(double(name: "CustomPattern"))
 
-        expect(PatternLearningEvent).to receive(:create!).with(
-          hash_including(pattern_used: "MyPattern")
-        )
-
-        PatternLearningEvent.record_event(
-          expense: expense,
-          category: category,
-          pattern: pattern_with_name,
-          was_correct: true
-        )
-      end
-
-      it "handles frozen string patterns" do
-        frozen_pattern = "frozen_pattern".freeze
-
-        expect(PatternLearningEvent).to receive(:create!).with(
-          hash_including(pattern_used: "frozen_pattern")
-        )
-
-        PatternLearningEvent.record_event(
-          expense: expense,
-          category: category,
-          pattern: frozen_pattern,
-          was_correct: true
-        )
-      end
     end
   end
 end

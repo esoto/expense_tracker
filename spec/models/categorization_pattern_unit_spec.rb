@@ -713,75 +713,64 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
     describe "#matches_text_pattern?" do
       let(:pattern) { build_categorization_pattern(pattern_value: "test") }
 
-      it "performs case-insensitive substring matching" do
-        expect(pattern.send(:matches_text_pattern?, "Test String")).to be true
-        expect(pattern.send(:matches_text_pattern?, "testing")).to be true
-        expect(pattern.send(:matches_text_pattern?, "other")).to be false
-      end
+      it "handles text matching and edge cases" do
+        text_tests = [
+          ["Test String", true],
+          ["testing", true], 
+          ["other", false],
+          [nil, false],
+          [123, false]
+        ]
 
-      it "handles nil text" do
-        expect(pattern.send(:matches_text_pattern?, nil)).to be false
-      end
-
-      it "handles non-string objects without downcase method" do
-        expect(pattern.send(:matches_text_pattern?, 123)).to be false
+        text_tests.each do |input, expected|
+          expect(pattern.send(:matches_text_pattern?, input)).to be expected
+        end
       end
     end
 
     describe "#matches_regex_pattern?" do
       let(:pattern) { build_categorization_pattern(pattern_value: "^test.*") }
 
-      it "matches text with valid regex" do
-        expect(pattern.send(:matches_regex_pattern?, "test string")).to be true
-        expect(pattern.send(:matches_regex_pattern?, "other")).to be false
-      end
+      it "handles regex matching and edge cases" do
+        regex_tests = [
+          ["test string", true],
+          ["other", false],
+          [nil, false],
+          [123, false]
+        ]
 
-      it "handles nil text" do
-        expect(pattern.send(:matches_regex_pattern?, nil)).to be false
+        regex_tests.each do |input, expected|
+          expect(pattern.send(:matches_regex_pattern?, input)).to be expected
+        end
       end
 
       it "handles invalid regex gracefully" do
         allow(pattern).to receive(:pattern_value).and_return("[invalid")
         expect(pattern.send(:matches_regex_pattern?, "test")).to be false
       end
-
-      it "handles non-string objects without match? method" do
-        expect(pattern.send(:matches_regex_pattern?, 123)).to be false
-      end
     end
 
     describe "#matches_amount_range?" do
-      let(:pattern) { build_categorization_pattern(pattern_value: "10.00-50.00") }
+      it "handles amount range matching with various inputs" do
+        amount_tests = [
+          # [pattern_value, input, expected]
+          ["10.00-50.00", 25.0, true],
+          ["10.00-50.00", 10.0, true], 
+          ["10.00-50.00", 50.0, true],
+          ["10.00-50.00", 5.0, false],
+          ["10.00-50.00", 60.0, false],
+          ["10.00-50.00", "25.0", true],
+          ["10.00-50.00", "5.0", false],
+          ["-100--50", -75.0, true],
+          ["-100--50", -25.0, false],
+          ["invalid", 25.0, false],
+          ["10.00-50.00", "not_a_number", false]
+        ]
 
-      it "matches numeric values within range" do
-        expect(pattern.send(:matches_amount_range?, 25.0)).to be true
-        expect(pattern.send(:matches_amount_range?, 10.0)).to be true
-        expect(pattern.send(:matches_amount_range?, 50.0)).to be true
-      end
-
-      it "does not match values outside range" do
-        expect(pattern.send(:matches_amount_range?, 5.0)).to be false
-        expect(pattern.send(:matches_amount_range?, 60.0)).to be false
-      end
-
-      it "handles string numeric values" do
-        expect(pattern.send(:matches_amount_range?, "25.0")).to be true
-        expect(pattern.send(:matches_amount_range?, "5.0")).to be false
-      end
-
-      it "handles negative ranges" do
-        pattern = build_categorization_pattern(pattern_value: "-100--50")
-        expect(pattern.send(:matches_amount_range?, -75.0)).to be true
-        expect(pattern.send(:matches_amount_range?, -25.0)).to be false
-      end
-
-      it "returns false for invalid range format" do
-        pattern = build_categorization_pattern(pattern_value: "invalid")
-        expect(pattern.send(:matches_amount_range?, 25.0)).to be false
-      end
-
-      it "returns false for non-numeric values" do
-        expect(pattern.send(:matches_amount_range?, "not_a_number")).to be false
+        amount_tests.each do |pattern_value, input, expected|
+          pattern = build_categorization_pattern(pattern_value: pattern_value)
+          expect(pattern.send(:matches_amount_range?, input)).to be expected
+        end
       end
     end
 

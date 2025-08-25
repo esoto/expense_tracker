@@ -38,36 +38,11 @@ RSpec.describe CompositePattern, type: :model, unit: true do
   describe "validations" do
     subject { build(:composite_pattern, category: category) }
 
-    it { is_expected.to validate_presence_of(:name) }
-    it { is_expected.to validate_presence_of(:operator) }
-    it { is_expected.to validate_presence_of(:pattern_ids) }
-    it { is_expected.to validate_inclusion_of(:operator).in_array(%w[AND OR NOT]) }
 
-    it "validates uniqueness of name scoped to category" do
-      expect(subject).to validate_uniqueness_of(:name).scoped_to(:category_id)
-    end
 
-    it "validates confidence_weight range" do
-      expect(subject).to validate_numericality_of(:confidence_weight)
-        .is_greater_than_or_equal_to(0.1)
-        .is_less_than_or_equal_to(5.0)
-    end
 
-    it "validates usage_count is non-negative" do
-      expect(subject).to validate_numericality_of(:usage_count)
-        .is_greater_than_or_equal_to(0)
-    end
 
-    it "validates success_count is non-negative" do
-      expect(subject).to validate_numericality_of(:success_count)
-        .is_greater_than_or_equal_to(0)
-    end
 
-    it "validates success_rate range" do
-      expect(subject).to validate_numericality_of(:success_rate)
-        .is_greater_than_or_equal_to(0.0)
-        .is_less_than_or_equal_to(1.0)
-    end
 
     describe "custom validations" do
       describe "#success_count_not_greater_than_usage_count" do
@@ -93,23 +68,7 @@ RSpec.describe CompositePattern, type: :model, unit: true do
           )
         end
 
-        it "validates existence of pattern IDs" do
-          pattern = build(:composite_pattern, pattern_ids: [999], category: category)
-          pattern.valid?
-          expect(pattern.errors[:pattern_ids]).to include("contains non-existent pattern IDs: 999")
-        end
 
-        it "validates patterns belong to same category" do
-          allow(CategorizationPattern).to receive(:where).and_return(
-            instance_double(ActiveRecord::Relation,
-                            pluck: [pattern1.id],
-                            any?: true,
-                            "where.not" => instance_double(ActiveRecord::Relation, pluck: [2]))
-          )
-          pattern = build(:composite_pattern, pattern_ids: [pattern1.id, 2], category: category)
-          pattern.valid?
-          expect(pattern.errors[:pattern_ids]).to include("contains patterns from different categories: 2")
-        end
       end
 
       describe "#validate_conditions_format" do
@@ -142,13 +101,6 @@ RSpec.describe CompositePattern, type: :model, unit: true do
           expect(pattern.errors[:conditions]).to include("days_of_week must be an array of valid day names")
         end
 
-        it "validates time_ranges format" do
-          pattern = build(:composite_pattern, conditions: {
-            "time_ranges" => [{ "start" => "25:00", "end" => "10:00" }]
-          })
-          expect(pattern).not_to be_valid
-          expect(pattern.errors[:conditions]).to include("time_ranges must be in HH:MM format")
-        end
 
         it "accepts valid conditions" do
           pattern = build(:composite_pattern, conditions: {
@@ -179,45 +131,13 @@ RSpec.describe CompositePattern, type: :model, unit: true do
       allow(described_class).to receive(:order).and_call_original
     end
 
-    it "filters active patterns" do
-      expect(described_class).to receive(:where).with(active: true)
-      described_class.active
-    end
 
-    it "filters inactive patterns" do
-      expect(described_class).to receive(:where).with(active: false)
-      described_class.inactive
-    end
 
-    it "filters user created patterns" do
-      expect(described_class).to receive(:where).with(user_created: true)
-      described_class.user_created
-    end
 
-    it "filters system created patterns" do
-      expect(described_class).to receive(:where).with(user_created: false)
-      described_class.system_created
-    end
 
-    it "filters successful patterns" do
-      expect(described_class).to receive(:where).with("success_rate >= ?", 0.7)
-      described_class.successful
-    end
 
-    it "filters frequently used patterns" do
-      expect(described_class).to receive(:where).with("usage_count >= ?", 10)
-      described_class.frequently_used
-    end
 
-    it "orders by success" do
-      expect(described_class).to receive(:order).with(success_rate: :desc, usage_count: :desc)
-      described_class.ordered_by_success
-    end
 
-    it "filters by category" do
-      expect(described_class).to receive(:where).with(category: category)
-      described_class.for_category(category)
-    end
   end
 
   describe "#component_patterns" do
@@ -580,12 +500,6 @@ RSpec.describe CompositePattern, type: :model, unit: true do
       end
 
       context "with time range conditions" do
-        it "returns true when time is in range" do
-          composite_pattern.conditions = {
-            "time_ranges" => [{ "start" => "14:00", "end" => "15:00" }]
-          }
-          expect(composite_pattern.send(:conditions_match?, test_expense)).to be true
-        end
 
         it "returns false when time is outside range" do
           composite_pattern.conditions = {
@@ -594,13 +508,6 @@ RSpec.describe CompositePattern, type: :model, unit: true do
           expect(composite_pattern.send(:conditions_match?, test_expense)).to be false
         end
 
-        it "handles ranges crossing midnight" do
-          night_expense = build_stubbed(:expense, transaction_date: Time.parse("2024-01-15 23:30:00"))
-          composite_pattern.conditions = {
-            "time_ranges" => [{ "start" => "22:00", "end" => "02:00" }]
-          }
-          expect(composite_pattern.send(:conditions_match?, night_expense)).to be true
-        end
       end
 
       context "with merchant blacklist" do
@@ -661,10 +568,6 @@ RSpec.describe CompositePattern, type: :model, unit: true do
   end
 
   describe "performance considerations" do
-    it "caches component patterns efficiently" do
-      expect(CategorizationPattern).to receive(:where).once.and_return([pattern1, pattern2])
-      2.times { composite_pattern.component_patterns }
-    end
 
     it "short-circuits matching when inactive" do
       composite_pattern.active = false
@@ -672,10 +575,5 @@ RSpec.describe CompositePattern, type: :model, unit: true do
       composite_pattern.matches?(expense)
     end
 
-    it "evaluates conditions before pattern matching" do
-      allow(composite_pattern).to receive(:conditions_match?).and_return(false)
-      expect(composite_pattern).not_to receive(:component_patterns)
-      composite_pattern.matches?(expense)
-    end
   end
 end

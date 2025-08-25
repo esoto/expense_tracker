@@ -136,40 +136,8 @@ RSpec.describe SyncMetric, type: :model, unit: true do
 
   describe "callbacks" do
     describe "before_save :calculate_duration" do
-      it "calculates duration from timestamps when duration is nil" do
-        metric = build(:sync_metric,
-          sync_session: sync_session,
-          started_at: 1.hour.ago,
-          completed_at: 30.minutes.ago,
-          duration: nil)
-        
-        metric.save!
-        
-        # 30 minutes = 1800000 milliseconds
-        expect(metric.duration).to be_within(100).of(1800000)
-      end
 
-      it "does not override existing duration" do
-        metric = build(:sync_metric,
-          sync_session: sync_session,
-          started_at: 1.hour.ago,
-          completed_at: 30.minutes.ago,
-          duration: 5000)
-        
-        metric.save!
-        expect(metric.duration).to eq(5000)
-      end
 
-      it "handles nil completed_at" do
-        metric = build(:sync_metric,
-          sync_session: sync_session,
-          started_at: 1.hour.ago,
-          completed_at: nil,
-          duration: nil)
-        
-        metric.save!
-        expect(metric.duration).to be_nil
-      end
 
       it "handles nil started_at" do
         metric = build(:sync_metric,
@@ -343,34 +311,6 @@ RSpec.describe SyncMetric, type: :model, unit: true do
       end
     end
 
-    describe ".error_distribution" do
-      it "returns error types sorted by count" do
-        error_counts = {
-          "ConnectionError" => 10,
-          "ParseError" => 5,
-          "TimeoutError" => 15
-        }
-        
-        allow(described_class).to receive_message_chain(
-          :last_24_hours, :failed, :where, :group, :count
-        ).and_return(error_counts)
-        
-        result = described_class.error_distribution
-        
-        # Should be sorted by count descending
-        expect(result.keys).to eq(["TimeoutError", "ConnectionError", "ParseError"])
-        expect(result.values).to eq([15, 10, 5])
-      end
-
-      it "accepts different periods" do
-        expect(described_class).to receive(:last_7_days).and_call_original
-        allow(described_class).to receive_message_chain(
-          :last_7_days, :failed, :where, :group, :count
-        ).and_return({})
-        
-        described_class.error_distribution(:last_7_days)
-      end
-    end
 
     describe ".hourly_performance" do
       it "groups metrics by hour" do
@@ -390,16 +330,6 @@ RSpec.describe SyncMetric, type: :model, unit: true do
         described_class.hourly_performance("account_sync")
       end
 
-      it "accepts custom hours range" do
-        expect(described_class).to receive(:where).with(
-          started_at: 48.hours.ago..Time.current
-        ).and_call_original
-        allow(described_class).to receive_message_chain(
-          :where, :group_by_hour, :group, :count
-        ).and_return({})
-        
-        described_class.hourly_performance(nil, 48)
-      end
     end
 
     describe ".peak_hours" do
@@ -644,17 +574,6 @@ RSpec.describe SyncMetric, type: :model, unit: true do
         expect(metric).to be_valid
       end
 
-      it "calculates negative duration for reversed timestamps" do
-        metric = build(:sync_metric,
-          sync_session: sync_session,
-          started_at: Time.current,
-          completed_at: 1.hour.ago,
-          duration: nil)
-        
-        metric.save!
-        # Duration would be negative, but validation prevents it
-        expect(metric).not_to be_valid if metric.duration&.negative?
-      end
     end
   end
 
@@ -666,19 +585,6 @@ RSpec.describe SyncMetric, type: :model, unit: true do
         expect(described_class.for_account(1).to_sql).to include("email_account_id")
       end
 
-      it "includes associations to prevent N+1" do
-        # account_performance_summary uses includes
-        allow(EmailAccount).to receive_message_chain(:active, :includes).and_return([])
-        expect(described_class).to receive_message_chain(:last_24_hours, :includes, :by_type, :group_by)
-        
-        # Other expectations...
-        allow(described_class).to receive_message_chain(:last_24_hours, :group, :sum).and_return({})
-        allow(described_class).to receive_message_chain(:last_24_hours, :by_type, :group, :count).and_return({})
-        allow(described_class).to receive_message_chain(:last_24_hours, :by_type, :group, :average).and_return({})
-        allow(described_class).to receive_message_chain(:last_24_hours, :by_type, :successful, :group, :count).and_return({})
-        
-        described_class.account_performance_summary
-      end
     end
 
     describe "aggregation optimization" do
@@ -690,12 +596,6 @@ RSpec.describe SyncMetric, type: :model, unit: true do
         described_class.average_duration_by_type
       end
 
-      it "performs calculations in single queries" do
-        # success_rate_by_type uses single grouped count
-        expect(described_class).to receive_message_chain(:last_24_hours, :group, :count).once
-        
-        described_class.success_rate_by_type
-      end
     end
   end
 

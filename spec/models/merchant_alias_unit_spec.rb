@@ -44,7 +44,6 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
     end
 
     describe "normalized_name" do
-
       it "accepts non-empty normalized_name" do
         alias_record = build_merchant_alias(normalized_name: "uber")
         expect(alias_record).to be_valid
@@ -138,21 +137,21 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
       it "sets normalized_name from raw_name when blank" do
         alias_record = MerchantAlias.new(raw_name: "AMAZON *PRIME")
         allow(CanonicalMerchant).to receive(:normalize_merchant_name).with("AMAZON *PRIME").and_return("amazon prime")
-        
+
         alias_record.send(:set_normalized_name)
         expect(alias_record.normalized_name).to eq("amazon prime")
       end
 
       it "preserves existing normalized_name" do
         alias_record = MerchantAlias.new(raw_name: "AMAZON", normalized_name: "custom_name")
-        
+
         alias_record.send(:set_normalized_name)
         expect(alias_record.normalized_name).to eq("custom_name")
       end
 
       it "handles nil raw_name" do
         alias_record = MerchantAlias.new(raw_name: nil)
-        
+
         alias_record.send(:set_normalized_name)
         expect(alias_record.normalized_name).to be_nil
       end
@@ -162,17 +161,17 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
       it "updates canonical merchant usage" do
         merchant = build_stubbed(:canonical_merchant)
         alias_record = build_merchant_alias(canonical_merchant: merchant)
-        
+
         allow(merchant).to receive(:record_usage)
         alias_record.send(:update_canonical_usage)
-        
+
         expect(merchant).to have_received(:record_usage)
       end
 
       it "handles nil canonical_merchant" do
         alias_record = build_merchant_alias
         allow(alias_record).to receive(:canonical_merchant).and_return(nil)
-        
+
         expect { alias_record.send(:update_canonical_usage) }.not_to raise_error
       end
     end
@@ -187,7 +186,7 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
     it "finds exact match by raw_name" do
       exact_match = build_merchant_alias(raw_name: "AMAZON.COM")
       allow(MerchantAlias).to receive(:find_by).with(raw_name: "AMAZON.COM").and_return(exact_match)
-      
+
       result = MerchantAlias.find_best_match("AMAZON.COM")
       expect(result).to eq(exact_match)
     end
@@ -197,7 +196,7 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
       allow(MerchantAlias).to receive(:find_by).with(raw_name: "AMAZON").and_return(nil)
       allow(CanonicalMerchant).to receive(:normalize_merchant_name).with("AMAZON").and_return("amazon")
       allow(MerchantAlias).to receive(:find_by).with(normalized_name: "amazon").and_return(normalized_match)
-      
+
       result = MerchantAlias.find_best_match("AMAZON")
       expect(result).to eq(normalized_match)
     end
@@ -206,7 +205,7 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
       allow(MerchantAlias).to receive(:find_by).and_return(nil)
       allow(CanonicalMerchant).to receive(:normalize_merchant_name).and_return("test")
       allow(MerchantAlias).to receive(:fuzzy_match).with("TEST").and_return("fuzzy_result")
-      
+
       result = MerchantAlias.find_best_match("TEST")
       expect(result).to eq("fuzzy_result")
     end
@@ -283,7 +282,7 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
 
       it "creates new alias with correct attributes" do
         result = MerchantAlias.record_alias("AMAZON", canonical_merchant, confidence: 0.9)
-        
+
         expect(new_alias.normalized_name).to eq("amazon")
         expect(new_alias.confidence).to eq(0.9)
         expect(new_alias.match_count).to eq(1)
@@ -330,7 +329,7 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
       it "increases confidence after many matches" do
         alias_record.match_count = 11
         alias_record.confidence = 0.8
-        
+
         alias_record.record_match
         expect(alias_record.confidence).to be_within(0.01).of(0.84)
       end
@@ -338,7 +337,7 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
       it "caps confidence at 0.95" do
         alias_record.match_count = 11
         alias_record.confidence = 0.94
-        
+
         alias_record.record_match
         expect(alias_record.confidence).to eq(0.95)
       end
@@ -346,7 +345,7 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
       it "doesn't increase confidence with few matches" do
         alias_record.match_count = 5
         alias_record.confidence = 0.7
-        
+
         alias_record.record_match
         expect(alias_record.confidence).to eq(0.7)
       end
@@ -354,7 +353,7 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
       it "doesn't increase confidence above 0.95" do
         alias_record.match_count = 11
         alias_record.confidence = 0.96
-        
+
         alias_record.record_match
         expect(alias_record.confidence).to eq(0.96)
       end
@@ -365,10 +364,10 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
     it "returns true for confidence >= 0.8" do
       alias_record = build_merchant_alias(confidence: 0.8)
       expect(alias_record.high_confidence?).to be true
-      
+
       alias_record.confidence = 0.9
       expect(alias_record.high_confidence?).to be true
-      
+
       alias_record.confidence = 1.0
       expect(alias_record.high_confidence?).to be true
     end
@@ -376,10 +375,10 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
     it "returns false for confidence < 0.8" do
       alias_record = build_merchant_alias(confidence: 0.79)
       expect(alias_record.high_confidence?).to be false
-      
+
       alias_record.confidence = 0.5
       expect(alias_record.high_confidence?).to be false
-      
+
       alias_record.confidence = 0.0
       expect(alias_record.high_confidence?).to be false
     end
@@ -395,7 +394,7 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
 
     it "calculates similarity using CanonicalMerchant method" do
       allow(CanonicalMerchant).to receive(:calculate_similarity_confidence).with("amazon", "amazn").and_return(0.85)
-      
+
       expect(alias_record.similarity_to("amazn")).to eq(0.85)
     end
   end
@@ -404,7 +403,7 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
     it "returns true for high confidence with sufficient matches" do
       alias_record = build_merchant_alias(confidence: 0.8, match_count: 3)
       expect(alias_record.trustworthy?).to be true
-      
+
       alias_record.confidence = 0.9
       alias_record.match_count = 10
       expect(alias_record.trustworthy?).to be true
@@ -464,7 +463,7 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
       it "updates last_seen_at to more recent" do
         alias1.last_seen_at = 2.days.ago
         alias2.last_seen_at = 1.day.ago
-        
+
         alias1.merge_with(alias2)
         expect(alias1.last_seen_at).to eq(alias2.last_seen_at)
       end
@@ -473,7 +472,7 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
         original = 1.day.ago
         alias1.last_seen_at = original
         alias2.last_seen_at = nil
-        
+
         alias1.merge_with(alias2)
         expect(alias1.last_seen_at).to eq(original)
       end
@@ -505,7 +504,7 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
       it "maintains consistency between raw and normalized names" do
         alias_record = MerchantAlias.new(raw_name: "PAYPAL *AMAZON")
         allow(CanonicalMerchant).to receive(:normalize_merchant_name).with("PAYPAL *AMAZON").and_return("amazon")
-        
+
         alias_record.send(:set_normalized_name)
         expect(alias_record.normalized_name).to eq("amazon")
       end
@@ -516,11 +515,11 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
         # High confidence but low matches - not trustworthy
         alias1 = build_merchant_alias(confidence: 0.95, match_count: 1)
         expect(alias1.trustworthy?).to be false
-        
+
         # Many matches but low confidence - not trustworthy
         alias2 = build_merchant_alias(confidence: 0.6, match_count: 100)
         expect(alias2.trustworthy?).to be false
-        
+
         # Both criteria met - trustworthy
         alias3 = build_merchant_alias(confidence: 0.85, match_count: 5)
         expect(alias3.trustworthy?).to be true

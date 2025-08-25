@@ -15,7 +15,7 @@ RSpec.describe CompositePattern, type: :model, unit: true do
                   category: category,
                   name: "Ride Share",
                   operator: "OR",
-                  pattern_ids: [pattern1.id, pattern2.id],
+                  pattern_ids: [ pattern1.id, pattern2.id ],
                   confidence_weight: 1.5,
                   usage_count: 10,
                   success_count: 8,
@@ -62,13 +62,11 @@ RSpec.describe CompositePattern, type: :model, unit: true do
         before do
           allow(CategorizationPattern).to receive(:where).and_return(
             instance_double(ActiveRecord::Relation,
-                            pluck: [pattern1.id],
+                            pluck: [ pattern1.id ],
                             any?: true,
                             "where.not" => instance_double(ActiveRecord::Relation, pluck: []))
           )
         end
-
-
       end
 
       describe "#validate_conditions_format" do
@@ -96,7 +94,7 @@ RSpec.describe CompositePattern, type: :model, unit: true do
         end
 
         it "validates days_of_week format" do
-          pattern = build(:composite_pattern, conditions: { "days_of_week" => ["invalid_day"] })
+          pattern = build(:composite_pattern, conditions: { "days_of_week" => [ "invalid_day" ] })
           expect(pattern).not_to be_valid
           expect(pattern.errors[:conditions]).to include("days_of_week must be an array of valid day names")
         end
@@ -106,9 +104,9 @@ RSpec.describe CompositePattern, type: :model, unit: true do
           pattern = build(:composite_pattern, conditions: {
             "min_amount" => 10,
             "max_amount" => 100,
-            "days_of_week" => ["monday", "friday"],
-            "time_ranges" => [{ "start" => "09:00", "end" => "17:00" }],
-            "merchant_blacklist" => ["BadMerchant"]
+            "days_of_week" => [ "monday", "friday" ],
+            "time_ranges" => [ { "start" => "09:00", "end" => "17:00" } ],
+            "merchant_blacklist" => [ "BadMerchant" ]
           })
           expect(pattern).to be_valid
         end
@@ -130,25 +128,17 @@ RSpec.describe CompositePattern, type: :model, unit: true do
       allow(described_class).to receive(:where).and_call_original
       allow(described_class).to receive(:order).and_call_original
     end
-
-
-
-
-
-
-
-
   end
 
   describe "#component_patterns" do
     context "with pattern_ids" do
       before do
-        allow(CategorizationPattern).to receive(:where).with(id: [pattern1.id, pattern2.id])
-          .and_return([pattern1, pattern2])
+        allow(CategorizationPattern).to receive(:where).with(id: [ pattern1.id, pattern2.id ])
+          .and_return([ pattern1, pattern2 ])
       end
 
       it "returns the component patterns" do
-        expect(composite_pattern.component_patterns).to eq([pattern1, pattern2])
+        expect(composite_pattern.component_patterns).to eq([ pattern1, pattern2 ])
       end
     end
 
@@ -162,7 +152,7 @@ RSpec.describe CompositePattern, type: :model, unit: true do
 
   describe "#matches?" do
     before do
-      allow(composite_pattern).to receive(:component_patterns).and_return([pattern1, pattern2])
+      allow(composite_pattern).to receive(:component_patterns).and_return([ pattern1, pattern2 ])
       allow(composite_pattern).to receive(:conditions_match?).and_return(true)
       allow(pattern1).to receive(:matches?).with(expense).and_return(true)
       allow(pattern2).to receive(:matches?).with(expense).and_return(false)
@@ -271,7 +261,7 @@ RSpec.describe CompositePattern, type: :model, unit: true do
 
   describe "#effective_confidence" do
     before do
-      allow(composite_pattern).to receive(:component_patterns).and_return([pattern1, pattern2])
+      allow(composite_pattern).to receive(:component_patterns).and_return([ pattern1, pattern2 ])
       allow(pattern1).to receive(:effective_confidence).and_return(0.8)
       allow(pattern2).to receive(:effective_confidence).and_return(0.6)
     end
@@ -281,7 +271,7 @@ RSpec.describe CompositePattern, type: :model, unit: true do
         composite_pattern.confidence_weight = 2.0
         composite_pattern.usage_count = 10
         composite_pattern.success_rate = 0.8
-        
+
         # Base: 2.0
         # Avg component: 0.7
         # Adjusted: 2.0 * (0.7 + 0.7 * 0.3) = 2.0 * 0.91 = 1.82
@@ -292,7 +282,7 @@ RSpec.describe CompositePattern, type: :model, unit: true do
       it "applies lower confidence for patterns with little data" do
         composite_pattern.usage_count = 3
         composite_pattern.confidence_weight = 1.5
-        
+
         # Base: 1.5
         # Avg component: 0.7
         # Adjusted: 1.5 * (0.7 + 0.7 * 0.3) = 1.5 * 0.91 = 1.365
@@ -335,23 +325,23 @@ RSpec.describe CompositePattern, type: :model, unit: true do
   describe "#add_pattern" do
     context "with CategorizationPattern object" do
       it "adds pattern ID to pattern_ids" do
-        composite_pattern.pattern_ids = [pattern1.id]
-        expect(composite_pattern).to receive(:update!).with(pattern_ids: [pattern1.id, pattern2.id])
+        composite_pattern.pattern_ids = [ pattern1.id ]
+        expect(composite_pattern).to receive(:update!).with(pattern_ids: [ pattern1.id, pattern2.id ])
         composite_pattern.add_pattern(pattern2)
       end
     end
 
     context "with pattern ID" do
       it "adds pattern ID to pattern_ids" do
-        composite_pattern.pattern_ids = [pattern1.id]
-        expect(composite_pattern).to receive(:update!).with(pattern_ids: [pattern1.id, 3])
+        composite_pattern.pattern_ids = [ pattern1.id ]
+        expect(composite_pattern).to receive(:update!).with(pattern_ids: [ pattern1.id, 3 ])
         composite_pattern.add_pattern(3)
       end
     end
 
     context "when pattern already exists" do
       it "does not duplicate pattern ID" do
-        composite_pattern.pattern_ids = [pattern1.id, pattern2.id]
+        composite_pattern.pattern_ids = [ pattern1.id, pattern2.id ]
         expect(composite_pattern).not_to receive(:update!)
         composite_pattern.add_pattern(pattern1)
       end
@@ -361,23 +351,23 @@ RSpec.describe CompositePattern, type: :model, unit: true do
   describe "#remove_pattern" do
     context "with CategorizationPattern object" do
       it "removes pattern ID from pattern_ids" do
-        composite_pattern.pattern_ids = [pattern1.id, pattern2.id]
-        expect(composite_pattern).to receive(:update!).with(pattern_ids: [pattern2.id])
+        composite_pattern.pattern_ids = [ pattern1.id, pattern2.id ]
+        expect(composite_pattern).to receive(:update!).with(pattern_ids: [ pattern2.id ])
         composite_pattern.remove_pattern(pattern1)
       end
     end
 
     context "with pattern ID" do
       it "removes pattern ID from pattern_ids" do
-        composite_pattern.pattern_ids = [1, 2, 3]
-        expect(composite_pattern).to receive(:update!).with(pattern_ids: [1, 3])
+        composite_pattern.pattern_ids = [ 1, 2, 3 ]
+        expect(composite_pattern).to receive(:update!).with(pattern_ids: [ 1, 3 ])
         composite_pattern.remove_pattern(2)
       end
     end
 
     context "when pattern doesn't exist" do
       it "does not update pattern_ids" do
-        composite_pattern.pattern_ids = [pattern1.id]
+        composite_pattern.pattern_ids = [ pattern1.id ]
         expect(composite_pattern).not_to receive(:update!)
         composite_pattern.remove_pattern(pattern2)
       end
@@ -386,7 +376,7 @@ RSpec.describe CompositePattern, type: :model, unit: true do
 
   describe "#description" do
     before do
-      allow(composite_pattern).to receive(:component_patterns).and_return([pattern1, pattern2])
+      allow(composite_pattern).to receive(:component_patterns).and_return([ pattern1, pattern2 ])
     end
 
     context "with AND operator" do
@@ -437,7 +427,7 @@ RSpec.describe CompositePattern, type: :model, unit: true do
       it "invalidates cache after commit" do
         cache_instance = instance_double("Categorization::PatternCache")
         stub_const("Categorization::PatternCache", class_double("Categorization::PatternCache", instance: cache_instance))
-        
+
         expect(cache_instance).to receive(:invalidate).with(composite_pattern)
         composite_pattern.run_callbacks(:commit) { true }
       end
@@ -445,10 +435,10 @@ RSpec.describe CompositePattern, type: :model, unit: true do
       it "logs error if cache invalidation fails" do
         cache_instance = instance_double("Categorization::PatternCache")
         stub_const("Categorization::PatternCache", class_double("Categorization::PatternCache", instance: cache_instance))
-        
+
         allow(cache_instance).to receive(:invalidate).and_raise(StandardError, "Cache error")
         expect(Rails.logger).to receive(:error).with(/Cache invalidation failed: Cache error/)
-        
+
         composite_pattern.run_callbacks(:commit) { true }
       end
     end
@@ -489,40 +479,38 @@ RSpec.describe CompositePattern, type: :model, unit: true do
 
       context "with day of week conditions" do
         it "returns true when day matches" do
-          composite_pattern.conditions = { "days_of_week" => ["monday"] }
+          composite_pattern.conditions = { "days_of_week" => [ "monday" ] }
           expect(composite_pattern.send(:conditions_match?, test_expense)).to be true
         end
 
         it "returns false when day doesn't match" do
-          composite_pattern.conditions = { "days_of_week" => ["sunday"] }
+          composite_pattern.conditions = { "days_of_week" => [ "sunday" ] }
           expect(composite_pattern.send(:conditions_match?, test_expense)).to be false
         end
       end
 
       context "with time range conditions" do
-
         it "returns false when time is outside range" do
           composite_pattern.conditions = {
-            "time_ranges" => [{ "start" => "09:00", "end" => "12:00" }]
+            "time_ranges" => [ { "start" => "09:00", "end" => "12:00" } ]
           }
           expect(composite_pattern.send(:conditions_match?, test_expense)).to be false
         end
-
       end
 
       context "with merchant blacklist" do
         it "returns false when merchant is blacklisted" do
-          composite_pattern.conditions = { "merchant_blacklist" => ["Test Merchant"] }
+          composite_pattern.conditions = { "merchant_blacklist" => [ "Test Merchant" ] }
           expect(composite_pattern.send(:conditions_match?, test_expense)).to be false
         end
 
         it "returns true when merchant is not blacklisted" do
-          composite_pattern.conditions = { "merchant_blacklist" => ["Other Merchant"] }
+          composite_pattern.conditions = { "merchant_blacklist" => [ "Other Merchant" ] }
           expect(composite_pattern.send(:conditions_match?, test_expense)).to be true
         end
 
         it "handles case-insensitive matching" do
-          composite_pattern.conditions = { "merchant_blacklist" => ["test merchant"] }
+          composite_pattern.conditions = { "merchant_blacklist" => [ "test merchant" ] }
           expect(composite_pattern.send(:conditions_match?, test_expense)).to be false
         end
       end
@@ -568,12 +556,10 @@ RSpec.describe CompositePattern, type: :model, unit: true do
   end
 
   describe "performance considerations" do
-
     it "short-circuits matching when inactive" do
       composite_pattern.active = false
       expect(composite_pattern).not_to receive(:component_patterns)
       composite_pattern.matches?(expense)
     end
-
   end
 end

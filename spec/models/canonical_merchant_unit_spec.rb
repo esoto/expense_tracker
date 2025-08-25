@@ -30,13 +30,13 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
 
       it "requires name to be unique (case insensitive)" do
         merchant = build_canonical_merchant(name: "Amazon")
-        
+
         # Mock uniqueness validation
         allow(merchant).to receive(:errors).and_return(ActiveModel::Errors.new(merchant))
         relation = double("relation")
         allow(CanonicalMerchant).to receive(:where).and_return(relation)
         allow(relation).to receive(:exists?).and_return(false)
-        
+
         expect(merchant).to be_valid
       end
     end
@@ -67,9 +67,6 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
         expect(sql).to include("usage_count >= 10")
       end
     end
-
-
-
   end
 
   describe "callbacks" do
@@ -78,7 +75,7 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
         merchant = build_canonical_merchant(name: "AMAZON.COM *PRIME")
         allow(merchant).to receive(:name_changed?).and_return(true)
         allow(CanonicalMerchant).to receive(:normalize_merchant_name).with("AMAZON.COM *PRIME").and_return("amazon prime")
-        
+
         merchant.send(:normalize_name)
         expect(CanonicalMerchant).to have_received(:normalize_merchant_name)
       end
@@ -87,7 +84,7 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
         merchant = build_canonical_merchant(name: "amazon")
         allow(merchant).to receive(:name_changed?).and_return(false)
         allow(CanonicalMerchant).to receive(:normalize_merchant_name)
-        
+
         merchant.send(:normalize_name)
         expect(CanonicalMerchant).not_to have_received(:normalize_merchant_name)
       end
@@ -213,7 +210,7 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
 
       it "falls back to exact match" do
         allow(CanonicalMerchant).to receive(:find_by).with("LOWER(name) = ?", "amazon").and_return(build_canonical_merchant)
-        
+
         result = CanonicalMerchant.find_similar_canonical("amazon")
         expect(result).not_to be_nil
       end
@@ -249,10 +246,10 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
       it "uses character-based similarity" do
         # "abc" and "abc" have all characters in common
         expect(CanonicalMerchant.calculate_similarity_confidence("abc", "abc")).to eq(1.0)
-        
+
         # "abc" and "def" have no characters in common
         expect(CanonicalMerchant.calculate_similarity_confidence("abc", "def")).to eq(0.0)
-        
+
         # "abc" and "ab" have 2 characters in common out of 3
         expect(CanonicalMerchant.calculate_similarity_confidence("abc", "ab")).to be_within(0.1).of(0.67)
       end
@@ -271,9 +268,9 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
     it "increments usage_count" do
       allow(merchant).to receive(:increment!).with(:usage_count)
       allow(merchant).to receive(:touch).with(:updated_at)
-      
+
       merchant.record_usage
-      
+
       expect(merchant).to have_received(:increment!).with(:usage_count)
       expect(merchant).to have_received(:touch).with(:updated_at)
     end
@@ -289,13 +286,13 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
 
     it "returns unique raw names from aliases" do
       allow(aliases).to receive(:pluck).with(:raw_name).and_return([ "AMAZON", "AMAZON.COM", "AMAZON", "AMZN" ])
-      
+
       expect(merchant.all_raw_names).to eq([ "AMAZON", "AMAZON.COM", "AMZN" ])
     end
 
     it "returns empty array when no aliases" do
       allow(aliases).to receive(:pluck).with(:raw_name).and_return([])
-      
+
       expect(merchant.all_raw_names).to eq([])
     end
   end
@@ -313,7 +310,7 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
       allow(aliases).to receive(:order).with("COUNT(*) DESC").and_return(aliases)
       allow(aliases).to receive(:limit).with(1).and_return(aliases)
       allow(aliases).to receive(:pluck).with(:raw_name).and_return([ "AMAZON.COM" ])
-      
+
       expect(merchant.most_common_raw_name).to eq("AMAZON.COM")
     end
 
@@ -322,7 +319,7 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
       allow(aliases).to receive(:order).with("COUNT(*) DESC").and_return(aliases)
       allow(aliases).to receive(:limit).with(1).and_return(aliases)
       allow(aliases).to receive(:pluck).with(:raw_name).and_return([])
-      
+
       expect(merchant.most_common_raw_name).to eq("amazon")
     end
   end
@@ -363,7 +360,7 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
       it "merges metadata" do
         merchant1.metadata = { "key1" => "value1" }
         merchant2.metadata = { "key2" => "value2" }
-        
+
         merchant1.merge_with(merchant2)
         expect(merchant1.metadata).to eq({ "key1" => "value1", "key2" => "value2" })
       end
@@ -371,7 +368,7 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
       it "keeps better display name" do
         merchant1.display_name = nil
         merchant2.display_name = "Amazon Prime"
-        
+
         merchant1.merge_with(merchant2)
         expect(merchant1.display_name).to eq("Amazon Prime")
       end
@@ -379,7 +376,7 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
       it "keeps category hint when not present" do
         merchant1.category_hint = nil
         merchant2.category_hint = "E-commerce"
-        
+
         merchant1.merge_with(merchant2)
         expect(merchant1.category_hint).to eq("E-commerce")
       end
@@ -387,7 +384,7 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
       it "preserves existing category hint" do
         merchant1.category_hint = "Shopping"
         merchant2.category_hint = "E-commerce"
-        
+
         merchant1.merge_with(merchant2)
         expect(merchant1.category_hint).to eq("Shopping")
       end
@@ -410,13 +407,13 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
       it "finds category by hint name" do
         category = build_stubbed(:category, name: "Shopping")
         allow(Category).to receive(:find_by).with(name: "Shopping").and_return(category)
-        
+
         expect(merchant.suggest_category).to eq(category)
       end
 
       it "returns nil when category not found" do
         allow(Category).to receive(:find_by).with(name: "Shopping").and_return(nil)
-        
+
         expect(merchant.suggest_category).to be_nil
       end
     end
@@ -432,9 +429,250 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
     end
   end
 
+  describe ".find_or_create_from_raw" do
+    context "with blank input" do
+      it "returns nil for nil input" do
+        expect(CanonicalMerchant.find_or_create_from_raw(nil)).to be_nil
+      end
+
+      it "returns nil for empty string" do
+        expect(CanonicalMerchant.find_or_create_from_raw("")).to be_nil
+      end
+
+      it "returns nil for whitespace-only string" do
+        expect(CanonicalMerchant.find_or_create_from_raw("   ")).to be_nil
+      end
+    end
+
+    context "when exact raw name alias exists" do
+      let(:existing_canonical) { build_stubbed(:canonical_merchant, id: 1, name: "amazon") }
+      let(:existing_alias) { double("merchant_alias", canonical_merchant: existing_canonical) }
+
+      before do
+        allow(CanonicalMerchant).to receive(:normalize_merchant_name).with("AMAZON.COM").and_return("amazon")
+        allow(MerchantAlias).to receive(:find_by).with(raw_name: "AMAZON.COM").and_return(existing_alias)
+      end
+
+      it "returns the canonical merchant from the alias" do
+        result = CanonicalMerchant.find_or_create_from_raw("AMAZON.COM")
+        expect(result).to eq(existing_canonical)
+      end
+
+      it "doesn't call further lookup methods" do
+        expect(MerchantAlias).not_to receive(:find_by).with(normalized_name: "amazon")
+        CanonicalMerchant.find_or_create_from_raw("AMAZON.COM")
+      end
+    end
+
+    context "when normalized name alias exists" do
+      let(:existing_canonical) { build_stubbed(:canonical_merchant, id: 1, name: "amazon") }
+      let(:existing_alias) { double("merchant_alias", canonical_merchant: existing_canonical) }
+
+      before do
+        allow(CanonicalMerchant).to receive(:normalize_merchant_name).with("AMAZON PRIME").and_return("amazon prime")
+        allow(MerchantAlias).to receive(:find_by).with(raw_name: "AMAZON PRIME").and_return(nil)
+        allow(MerchantAlias).to receive(:find_by).with(normalized_name: "amazon prime").and_return(existing_alias)
+      end
+
+      it "returns the canonical merchant from the normalized alias" do
+        result = CanonicalMerchant.find_or_create_from_raw("AMAZON PRIME")
+        expect(result).to eq(existing_canonical)
+      end
+
+      it "calls normalization" do
+        expect(CanonicalMerchant).to receive(:normalize_merchant_name).with("AMAZON PRIME")
+        CanonicalMerchant.find_or_create_from_raw("AMAZON PRIME")
+      end
+    end
+
+    context "when similar canonical merchant exists" do
+      let(:similar_canonical) { build_stubbed(:canonical_merchant, id: 2, name: "uber", display_name: "Uber") }
+
+      before do
+        allow(CanonicalMerchant).to receive(:normalize_merchant_name).with("UBER *TRIP").and_return("uber trip")
+        allow(MerchantAlias).to receive(:find_by).with(raw_name: "UBER *TRIP").and_return(nil)
+        allow(MerchantAlias).to receive(:find_by).with(normalized_name: "uber trip").and_return(nil)
+        allow(CanonicalMerchant).to receive(:find_similar_canonical).with("uber trip").and_return(similar_canonical)
+        allow(CanonicalMerchant).to receive(:calculate_similarity_confidence).with("uber trip", "uber").and_return(0.85)
+      end
+
+      it "returns the similar canonical merchant" do
+        allow(MerchantAlias).to receive(:create!).and_return(double("alias"))
+
+        result = CanonicalMerchant.find_or_create_from_raw("UBER *TRIP")
+        expect(result).to eq(similar_canonical)
+      end
+
+      it "creates an alias with calculated confidence" do
+        expect(MerchantAlias).to receive(:create!).with(
+          raw_name: "UBER *TRIP",
+          normalized_name: "uber trip",
+          canonical_merchant: similar_canonical,
+          confidence: 0.85
+        )
+
+        CanonicalMerchant.find_or_create_from_raw("UBER *TRIP")
+      end
+
+      it "calculates similarity confidence correctly" do
+        allow(MerchantAlias).to receive(:create!)
+        expect(CanonicalMerchant).to receive(:calculate_similarity_confidence).with("uber trip", "uber")
+
+        CanonicalMerchant.find_or_create_from_raw("UBER *TRIP")
+      end
+    end
+
+    context "when no existing merchant found" do
+      let(:new_canonical) { build_stubbed(:canonical_merchant, id: 3, name: "new merchant", display_name: "New Merchant") }
+
+      before do
+        allow(CanonicalMerchant).to receive(:normalize_merchant_name).with("NEW MERCHANT INC").and_return("new merchant")
+        allow(MerchantAlias).to receive(:find_by).with(raw_name: "NEW MERCHANT INC").and_return(nil)
+        allow(MerchantAlias).to receive(:find_by).with(normalized_name: "new merchant").and_return(nil)
+        allow(CanonicalMerchant).to receive(:find_similar_canonical).with("new merchant").and_return(nil)
+        allow(CanonicalMerchant).to receive(:beautify_merchant_name).with("new merchant").and_return("New Merchant")
+        allow(CanonicalMerchant).to receive(:create!).and_return(new_canonical)
+      end
+
+      it "creates a new canonical merchant" do
+        allow(MerchantAlias).to receive(:create!)
+
+        expect(CanonicalMerchant).to receive(:create!).with(
+          name: "new merchant",
+          display_name: "New Merchant"
+        )
+
+        result = CanonicalMerchant.find_or_create_from_raw("NEW MERCHANT INC")
+        expect(result).to eq(new_canonical)
+      end
+
+      it "creates an alias with 100% confidence" do
+        allow(CanonicalMerchant).to receive(:create!).and_return(new_canonical)
+
+        expect(MerchantAlias).to receive(:create!).with(
+          raw_name: "NEW MERCHANT INC",
+          normalized_name: "new merchant",
+          canonical_merchant: new_canonical,
+          confidence: 1.0
+        )
+
+        CanonicalMerchant.find_or_create_from_raw("NEW MERCHANT INC")
+      end
+
+      it "beautifies the merchant name for display" do
+        allow(MerchantAlias).to receive(:create!)
+        expect(CanonicalMerchant).to receive(:beautify_merchant_name).with("new merchant")
+
+        CanonicalMerchant.find_or_create_from_raw("NEW MERCHANT INC")
+      end
+    end
+
+    context "integration scenarios" do
+      it "handles complex merchant name with multiple normalizations" do
+        raw_name = "PAYPAL *AMAZON.COM STORE #1234"
+        normalized = "amazon"
+        beautified = "Amazon"
+
+        allow(CanonicalMerchant).to receive(:normalize_merchant_name).with(raw_name).and_return(normalized)
+        allow(MerchantAlias).to receive(:find_by).and_return(nil)
+        allow(CanonicalMerchant).to receive(:find_similar_canonical).and_return(nil)
+        allow(CanonicalMerchant).to receive(:beautify_merchant_name).with(normalized).and_return(beautified)
+
+        new_canonical = build_stubbed(:canonical_merchant, name: normalized, display_name: beautified)
+        allow(CanonicalMerchant).to receive(:create!).and_return(new_canonical)
+        allow(MerchantAlias).to receive(:create!)
+
+        result = CanonicalMerchant.find_or_create_from_raw(raw_name)
+
+        expect(result).to eq(new_canonical)
+        expect(CanonicalMerchant).to have_received(:normalize_merchant_name).with(raw_name)
+      end
+
+      it "handles Unicode characters correctly" do
+        raw_name = "Café José's"
+        normalized = "cafe jose's"
+
+        allow(CanonicalMerchant).to receive(:normalize_merchant_name).with(raw_name).and_return(normalized)
+        allow(MerchantAlias).to receive(:find_by).and_return(nil)
+        allow(CanonicalMerchant).to receive(:find_similar_canonical).and_return(nil)
+        allow(CanonicalMerchant).to receive(:beautify_merchant_name).and_return("Cafe Jose's")
+
+        new_canonical = build_stubbed(:canonical_merchant, name: normalized)
+        allow(CanonicalMerchant).to receive(:create!).and_return(new_canonical)
+        allow(MerchantAlias).to receive(:create!)
+
+        result = CanonicalMerchant.find_or_create_from_raw(raw_name)
+        expect(result).to eq(new_canonical)
+      end
+    end
+
+    context "error handling" do
+      it "handles MerchantAlias creation failure gracefully" do
+        allow(CanonicalMerchant).to receive(:normalize_merchant_name).and_return("test")
+        allow(MerchantAlias).to receive(:find_by).and_return(nil)
+        
+        similar_canonical = build_stubbed(:canonical_merchant, name: "test")
+        allow(CanonicalMerchant).to receive(:find_similar_canonical).and_return(similar_canonical)
+        allow(CanonicalMerchant).to receive(:calculate_similarity_confidence).and_return(0.8)
+
+        # Simulate alias creation failure
+        allow(MerchantAlias).to receive(:create!).and_raise(ActiveRecord::RecordInvalid.new(MerchantAlias.new))
+
+        expect {
+          CanonicalMerchant.find_or_create_from_raw("TEST MERCHANT")
+        }.to raise_error(ActiveRecord::RecordInvalid)
+      end
+
+      it "handles CanonicalMerchant creation failure gracefully" do
+        allow(CanonicalMerchant).to receive(:normalize_merchant_name).and_return("test")
+        allow(MerchantAlias).to receive(:find_by).and_return(nil)
+        allow(CanonicalMerchant).to receive(:find_similar_canonical).and_return(nil)
+        allow(CanonicalMerchant).to receive(:beautify_merchant_name).and_return("Test")
+
+        # Simulate canonical creation failure
+        allow(CanonicalMerchant).to receive(:create!).and_raise(ActiveRecord::RecordInvalid.new(CanonicalMerchant.new))
+
+        expect {
+          CanonicalMerchant.find_or_create_from_raw("TEST MERCHANT")
+        }.to raise_error(ActiveRecord::RecordInvalid)
+      end
+    end
+
+    context "performance considerations" do
+      it "stops searching after finding exact raw name match" do
+        existing_canonical = build_stubbed(:canonical_merchant, name: "amazon")
+        existing_alias = double("alias", canonical_merchant: existing_canonical)
+
+        allow(CanonicalMerchant).to receive(:normalize_merchant_name)
+        allow(MerchantAlias).to receive(:find_by).with(raw_name: "AMAZON").and_return(existing_alias)
+
+        # These should not be called since we found exact match
+        expect(MerchantAlias).not_to receive(:find_by).with(normalized_name: anything)
+        expect(CanonicalMerchant).not_to receive(:find_similar_canonical)
+
+        result = CanonicalMerchant.find_or_create_from_raw("AMAZON")
+        expect(result).to eq(existing_canonical)
+      end
+
+      it "optimizes by checking normalized name before fuzzy search" do
+        existing_canonical = build_stubbed(:canonical_merchant, name: "amazon")
+        existing_alias = double("alias", canonical_merchant: existing_canonical)
+
+        allow(CanonicalMerchant).to receive(:normalize_merchant_name).and_return("amazon prime")
+        allow(MerchantAlias).to receive(:find_by).with(raw_name: anything).and_return(nil)
+        allow(MerchantAlias).to receive(:find_by).with(normalized_name: "amazon prime").and_return(existing_alias)
+
+        # Should not call expensive fuzzy search
+        expect(CanonicalMerchant).not_to receive(:find_similar_canonical)
+
+        result = CanonicalMerchant.find_or_create_from_raw("AMAZON PRIME")
+        expect(result).to eq(existing_canonical)
+      end
+    end
+  end
+
   describe "edge cases and security" do
     describe "SQL injection prevention" do
-
     end
 
     describe "performance with large data" do
@@ -449,7 +687,7 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
         aliases = double("aliases")
         allow(merchant).to receive(:merchant_aliases).and_return(aliases)
         allow(aliases).to receive(:pluck).and_return(Array.new(1000) { |i| "ALIAS_#{i}" })
-        
+
         expect(merchant.all_raw_names.length).to eq(1000)
       end
     end

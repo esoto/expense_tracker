@@ -191,7 +191,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
       it "generates session token" do
         user = build_admin_user(session_token: nil, session_expires_at: nil)
         allow(SecureRandom).to receive(:urlsafe_base64).with(32).and_return("test_token")
-        
+
         freeze_time do
           user.send(:generate_session_token)
           expect(user.session_token).to eq("test_token")
@@ -442,7 +442,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
 
     it "generates new token and sets expiration" do
       allow(SecureRandom).to receive(:urlsafe_base64).with(32).and_return("new_token")
-      
+
       freeze_time do
         expect(user).to receive(:update!).with(
           session_token: "new_token",
@@ -607,7 +607,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
       it "enforces lock duration" do
         user = build_admin_user(locked_at: 10.minutes.ago)
         expect(user.unlock_eligible?).to be false
-        
+
         user.locked_at = 31.minutes.ago
         expect(user.unlock_eligible?).to be true
       end

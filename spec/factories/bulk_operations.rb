@@ -7,17 +7,17 @@ FactoryBot.define do
     total_amount { 0.0 }
     status { :pending }
     metadata { {} }
-    
+
     trait :completed do
       status { :completed }
       completed_at { Time.current }
     end
-    
+
     trait :failed do
       status { :failed }
       error_message { "Something went wrong" }
     end
-    
+
     trait :with_items do
       after(:create) do |bulk_operation|
         create_list(:bulk_operation_item, 3, bulk_operation: bulk_operation)

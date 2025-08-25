@@ -44,21 +44,21 @@ RSpec.describe BulkOperationItem, type: :model, unit: true do
     describe "expense_id uniqueness" do
       let(:bulk_operation) { build_stubbed(:bulk_operation, id: 1) }
       let(:expense) { build_stubbed(:expense, id: 1) }
-      
+
       it "validates uniqueness of expense_id scoped to bulk_operation_id" do
         item = build_bulk_operation_item(
           bulk_operation: bulk_operation,
           expense: expense
         )
-        
+
         # Mock the uniqueness validation
         allow(item).to receive(:errors).and_return(ActiveModel::Errors.new(item))
-        
+
         # Create a double for the relation
         relation = double("relation")
         allow(BulkOperationItem).to receive(:where).and_return(relation)
         allow(relation).to receive(:exists?).and_return(false)
-        
+
         expect(item).to be_valid
       end
     end
@@ -289,7 +289,6 @@ RSpec.describe BulkOperationItem, type: :model, unit: true do
 
     describe "relationship integrity" do
       let(:item) { build_bulk_operation_item }
-
     end
 
     describe "data consistency" do
@@ -298,7 +297,7 @@ RSpec.describe BulkOperationItem, type: :model, unit: true do
           previous_category_id: 1,
           new_category_id: 2
         )
-        
+
         # Verify the item correctly tracks category changes
         expect(item.previous_category_id).to eq(1)
         expect(item.new_category_id).to eq(2)
@@ -311,7 +310,7 @@ RSpec.describe BulkOperationItem, type: :model, unit: true do
           expense: expense,
           previous_confidence: 0.000001
         )
-        
+
         expect(item.confidence_delta).to be_within(0.000001).of(0.999998)
       end
     end
@@ -327,7 +326,7 @@ RSpec.describe BulkOperationItem, type: :model, unit: true do
             processed_at: Time.current + i.seconds
           )
         end
-        
+
         # All items should be valid
         expect(items).to all(be_valid)
       end

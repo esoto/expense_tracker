@@ -57,10 +57,10 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
       it "validates uniqueness when present" do
         # Mock the validation to avoid database interaction in unit tests
         store = build_stubbed(:failed_broadcast_store, sidekiq_job_id: "unique_job_123")
-        
+
         # Mock the uniqueness check to simulate no duplicate exists
         allow(FailedBroadcastStore).to receive(:exists?).with(sidekiq_job_id: "unique_job_123").and_return(false)
-        
+
         expect(store).to be_valid
       end
 
@@ -124,11 +124,11 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
       it "returns unrecovered broadcasts below max retry attempts" do
         unrecovered = double("unrecovered_relation")
         final_relation = double("final_relation")
-        
+
         expect(FailedBroadcastStore).to receive(:unrecovered).and_return(unrecovered)
         expect(FailedBroadcastStore).to receive(:max_retry_attempts).and_return(3)
         expect(unrecovered).to receive(:where).with("retry_count < ?", 3).and_return(final_relation)
-        
+
         expect(FailedBroadcastStore.ready_for_retry).to eq(final_relation)
       end
     end
@@ -164,7 +164,7 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
     describe ".create_from_job_failure!" do
       it "creates record from job data and error" do
         job = {
-          "args" => ["ChannelName", 123, "Expense", { "data" => "value" }, "high"],
+          "args" => [ "ChannelName", 123, "Expense", { "data" => "value" }, "high" ],
           "retry_count" => 2,
           "jid" => "job_123"
         }
@@ -172,7 +172,7 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
 
         expect(FailedBroadcastStore).to receive(:classify_error).with(error).and_return("record_not_found")
         expect(Time).to receive(:current).and_return(Time.new(2024, 1, 1))
-        
+
         expect(FailedBroadcastStore).to receive(:create!).with(
           channel_name: "ChannelName",
           target_type: "Expense",
@@ -195,7 +195,7 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
 
         expect(FailedBroadcastStore).to receive(:classify_error).and_return("unknown")
         expect(Time).to receive(:current).and_return(Time.new(2024, 1, 1))
-        
+
         expect(FailedBroadcastStore).to receive(:create!).with(hash_including(
           data: {},
           priority: "medium",
@@ -239,39 +239,39 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
         time_period = 24.hours
         start_time = Time.new(2024, 1, 1, 0, 0, 0)
         current_time = Time.new(2024, 1, 2, 0, 0, 0)
-        
+
         allow(Time).to receive(:current).and_return(current_time)
-        
+
         # Mock the 3 different queries based on actual implementation
         total_query = double("total_query")
         recovered_query = double("recovered_query")
         pending_query = double("pending_query")
         error_group_query = double("error_group_query")
         priority_group_query = double("priority_group_query")
-        
+
         # Mock the where calls that actually happen in the implementation - there are 3 separate calls
         expect(FailedBroadcastStore).to receive(:where).with("failed_at >= ?", start_time).and_return(total_query).exactly(3).times
-        
+
         # First call: total_failures count
         expect(total_query).to receive(:count).and_return(10).ordered
-        
+
         # Second call: by_error_type grouping
         expect(total_query).to receive(:group).with(:error_type).and_return(error_group_query).ordered
         expect(error_group_query).to receive(:count).and_return({ "connection_timeout" => 5, "unknown" => 5 }).ordered
-        
+
         # Third call: by_priority grouping
         expect(total_query).to receive(:group).with(:priority).and_return(priority_group_query).ordered
         expect(priority_group_query).to receive(:count).and_return({ "high" => 6, "medium" => 4 }).ordered
-        
+
         # Separate queries for recovered and pending
         expect(FailedBroadcastStore).to receive(:where).with("failed_at >= ? AND recovered_at IS NOT NULL", start_time).and_return(recovered_query)
         expect(recovered_query).to receive(:count).and_return(3)
-        
+
         expect(FailedBroadcastStore).to receive(:where).with("failed_at >= ? AND recovered_at IS NULL", start_time).and_return(pending_query)
         expect(pending_query).to receive(:count).and_return(7)
-        
+
         stats = FailedBroadcastStore.recovery_stats(time_period: time_period)
-        
+
         expect(stats).to eq({
           total_failures: 10,
           recovered: 3,
@@ -287,16 +287,16 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
         older_than = 1.week
         cutoff_time = Time.new(2024, 1, 1)
         current_time = Time.new(2024, 1, 8)
-        
+
         allow(Time).to receive(:current).and_return(current_time)
-        
+
         recovered_scope = double("recovered_scope")
         old_records = double("old_records")
-        
+
         expect(FailedBroadcastStore).to receive(:recovered).and_return(recovered_scope)
         expect(recovered_scope).to receive(:where).with("recovered_at < ?", cutoff_time).and_return(old_records)
         expect(old_records).to receive(:delete_all).and_return(5)
-        
+
         result = FailedBroadcastStore.cleanup_old_records(older_than: older_than)
         expect(result).to eq(5)
       end
@@ -307,9 +307,9 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
     describe "#can_retry?" do
       context "when not recovered and below max retries" do
         it "returns true" do
-          store = build_stubbed(:failed_broadcast_store, 
-            recovered_at: nil, 
-            retry_count: 2, 
+          store = build_stubbed(:failed_broadcast_store,
+            recovered_at: nil,
+            retry_count: 2,
             priority: "medium"
           )
           allow(FailedBroadcastStore).to receive(:max_retry_attempts).with("medium").and_return(3)
@@ -319,9 +319,9 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
 
       context "when recovered" do
         it "returns false" do
-          store = build_stubbed(:failed_broadcast_store, 
-            recovered_at: Time.current, 
-            retry_count: 0, 
+          store = build_stubbed(:failed_broadcast_store,
+            recovered_at: Time.current,
+            retry_count: 0,
             priority: "medium"
           )
           expect(store.can_retry?).to be false
@@ -330,9 +330,9 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
 
       context "when at max retry attempts" do
         it "returns false" do
-          store = build_stubbed(:failed_broadcast_store, 
-            recovered_at: nil, 
-            retry_count: 3, 
+          store = build_stubbed(:failed_broadcast_store,
+            recovered_at: nil,
+            retry_count: 3,
             priority: "medium"
           )
           allow(FailedBroadcastStore).to receive(:max_retry_attempts).with("medium").and_return(3)
@@ -346,12 +346,12 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
         store = build_stubbed(:failed_broadcast_store)
         current_time = Time.new(2024, 1, 1)
         allow(Time).to receive(:current).and_return(current_time)
-        
+
         expect(store).to receive(:update!).with(
           recovered_at: current_time,
           recovery_notes: "Manual recovery"
         )
-        
+
         store.mark_recovered!(notes: "Manual recovery")
       end
 
@@ -359,12 +359,12 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
         store = build_stubbed(:failed_broadcast_store)
         current_time = Time.new(2024, 1, 1)
         allow(Time).to receive(:current).and_return(current_time)
-        
+
         expect(store).to receive(:update!).with(
           recovered_at: current_time,
           recovery_notes: nil
         )
-        
+
         store.mark_recovered!
       end
     end
@@ -373,21 +373,21 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
       it "finds the target object when it exists" do
         store = build_stubbed(:failed_broadcast_store, target_type: "Expense", target_id: 123)
         expense = double("expense")
-        
+
         expect(Expense).to receive(:find).with(123).and_return(expense)
         expect(store.target_object).to eq(expense)
       end
 
       it "returns nil when target doesn't exist" do
         store = build_stubbed(:failed_broadcast_store, target_type: "Expense", target_id: 999)
-        
+
         expect(Expense).to receive(:find).with(999).and_raise(ActiveRecord::RecordNotFound)
         expect(store.target_object).to be_nil
       end
 
       it "returns nil for invalid target type" do
         store = build_stubbed(:failed_broadcast_store, target_type: "InvalidModel", target_id: 123)
-        
+
         expect { "InvalidModel".constantize }.to raise_error(NameError)
         expect(store.target_object).to be_nil
       end
@@ -409,7 +409,7 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
 
     describe "#error_description" do
       it "describes record_not_found errors" do
-        store = build_stubbed(:failed_broadcast_store, 
+        store = build_stubbed(:failed_broadcast_store,
           error_type: "record_not_found",
           target_type: "Expense",
           target_id: 123
@@ -434,7 +434,7 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
 
       it "truncates long error messages for unknown types" do
         long_message = "A" * 200
-        store = build_stubbed(:failed_broadcast_store, 
+        store = build_stubbed(:failed_broadcast_store,
           error_type: "unknown",
           error_message: long_message
         )
@@ -447,10 +447,10 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
       it "calculates time since failure" do
         failed_time = Time.new(2024, 1, 1, 10, 0, 0)
         current_time = Time.new(2024, 1, 1, 12, 30, 0)
-        
+
         store = build_stubbed(:failed_broadcast_store, failed_at: failed_time)
         allow(Time).to receive(:current).and_return(current_time)
-        
+
         expect(store.age).to eq(2.5.hours)
       end
     end
@@ -458,7 +458,7 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
     describe "#stale?" do
       context "when older than a week and recovered" do
         it "returns true" do
-          store = build_stubbed(:failed_broadcast_store, 
+          store = build_stubbed(:failed_broadcast_store,
             failed_at: 2.weeks.ago,
             recovered_at: 1.week.ago
           )
@@ -491,7 +491,7 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
     end
 
     describe "#retry_broadcast!" do
-      let(:store) { build_stubbed(:failed_broadcast_store, 
+      let(:store) { build_stubbed(:failed_broadcast_store,
         channel_name: "TestChannel",
         target_type: "Expense",
         target_id: 123,
@@ -511,12 +511,12 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
         it "updates error type and returns false" do
           allow(store).to receive(:can_retry?).and_return(true)
           expect(Expense).to receive(:find).with(123).and_raise(ActiveRecord::RecordNotFound.new("Not found"))
-          
+
           expect(store).to receive(:update!).with(
             error_type: "record_not_found",
             error_message: match(/Target no longer exists/)
           )
-          
+
           expect(store.retry_broadcast!).to be false
         end
       end
@@ -527,18 +527,18 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
           target = double("expense")
           expect(Expense).to receive(:find).with(123).and_return(target)
           expect(store).to receive(:increment!).with(:retry_count)
-          
+
           error = StandardError.new("Broadcast failed")
           expect(BroadcastReliabilityService).to receive(:broadcast_with_retry).and_raise(error)
           expect(FailedBroadcastStore).to receive(:classify_error).with(error).and_return("unknown")
-          
+
           expect(store).to receive(:update!).with(
             error_type: "unknown",
             error_message: "Broadcast failed"
           )
-          
+
           expect(Rails.logger).to receive(:error).with(match(/Retry error/))
-          
+
           expect(store.retry_broadcast!).to be false
         end
       end
@@ -550,7 +550,7 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
       it "handles complex nested data" do
         complex_data = {
           "nested" => {
-            "array" => [1, 2, 3],
+            "array" => [ 1, 2, 3 ],
             "hash" => { "key" => "value" }
           }
         }
@@ -567,14 +567,14 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
     describe "concurrent retry handling" do
       it "prevents duplicate retries" do
         store = build_stubbed(:failed_broadcast_store, retry_count: 2)
-        
+
         # Mock the update! method to prevent database access
         allow(store).to receive(:update!)
         allow(store).to receive(:increment!)
-        
+
         # Simulate that the retry count check fails after first call
         allow(store).to receive(:can_retry?).and_return(true, false)
-        
+
         # The second call should return false due to can_retry? returning false
         expect(store.retry_broadcast!).to be false
       end

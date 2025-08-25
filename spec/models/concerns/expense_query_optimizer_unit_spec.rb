@@ -291,12 +291,12 @@ RSpec.describe ExpenseQueryOptimizer, type: :model, unit: true do
         sql_spy = double("relation")
         allow(sql_spy).to receive(:group).and_return(sql_spy)
         allow(sql_spy).to receive(:pluck).and_return([
-          [Date.current.beginning_of_month, 30, 1500.0]
+          [ Date.current.beginning_of_month, 30, 1500.0 ]
         ])
         allow(Expense).to receive(:not_deleted).and_return(sql_spy)
 
         result = Expense.aggregate_by_period(period: :month)
-        
+
         expect(result).to be_an(Array)
         expect(result.first).to include(:period, :count, :total)
       end
@@ -305,12 +305,12 @@ RSpec.describe ExpenseQueryOptimizer, type: :model, unit: true do
         sql_spy = double("relation")
         allow(sql_spy).to receive(:group).and_return(sql_spy)
         allow(sql_spy).to receive(:pluck).and_return([
-          [Date.current.beginning_of_year, 365, 18000.0]
+          [ Date.current.beginning_of_year, 365, 18000.0 ]
         ])
         allow(Expense).to receive(:not_deleted).and_return(sql_spy)
 
         result = Expense.aggregate_by_period(period: :year)
-        
+
         expect(result).to be_an(Array)
         expect(result.first).to include(:period, :count, :total)
       end
@@ -319,12 +319,12 @@ RSpec.describe ExpenseQueryOptimizer, type: :model, unit: true do
         sql_spy = double("relation")
         allow(sql_spy).to receive(:group).and_return(sql_spy)
         allow(sql_spy).to receive(:pluck).and_return([
-          [Date.current.beginning_of_month, 20, 1000.0]
+          [ Date.current.beginning_of_month, 20, 1000.0 ]
         ])
         allow(Expense).to receive(:not_deleted).and_return(sql_spy)
 
         result = Expense.aggregate_by_period(period: :invalid)
-        
+
         expect(result).to be_an(Array)
         expect(result.first).to include(:period, :count, :total)
       end
@@ -332,12 +332,12 @@ RSpec.describe ExpenseQueryOptimizer, type: :model, unit: true do
       it "applies date range filter when provided" do
         start_date = Date.current.beginning_of_month
         end_date = Date.current.end_of_month
-        
+
         sql_spy = double("relation")
         allow(sql_spy).to receive(:by_date_range).with(start_date, end_date).and_return(sql_spy)
         allow(sql_spy).to receive(:group).and_return(sql_spy)
         allow(sql_spy).to receive(:pluck).and_return([
-          [Date.current.beginning_of_month, 15, 750.0]
+          [ Date.current.beginning_of_month, 15, 750.0 ]
         ])
         allow(Expense).to receive(:not_deleted).and_return(sql_spy)
 
@@ -346,7 +346,7 @@ RSpec.describe ExpenseQueryOptimizer, type: :model, unit: true do
           start_date: start_date,
           end_date: end_date
         )
-        
+
         expect(sql_spy).to have_received(:by_date_range).with(start_date, end_date)
         expect(result).to be_an(Array)
       end
@@ -355,12 +355,12 @@ RSpec.describe ExpenseQueryOptimizer, type: :model, unit: true do
         sql_spy = double("relation")
         allow(sql_spy).to receive(:group).and_return(sql_spy)
         allow(sql_spy).to receive(:pluck).and_return([
-          [Date.current, 10, 500.50]
+          [ Date.current, 10, 500.50 ]
         ])
         allow(Expense).to receive(:not_deleted).and_return(sql_spy)
 
         result = Expense.aggregate_by_period(period: :day)
-        
+
         expect(result).to be_an(Array)
         expect(result.first[:period]).to eq(Date.current)
         expect(result.first[:count]).to eq(10)
@@ -374,7 +374,7 @@ RSpec.describe ExpenseQueryOptimizer, type: :model, unit: true do
         allow(Expense).to receive(:not_deleted).and_return(sql_spy)
 
         result = Expense.aggregate_by_period(period: :day)
-        
+
         expect(result).to be_an(Array)
         expect(result).to be_empty
       end
@@ -391,7 +391,7 @@ RSpec.describe ExpenseQueryOptimizer, type: :model, unit: true do
         allow(Expense).to receive(:not_deleted).and_return(sql_spy)
 
         result = Expense.aggregate_by_category
-        
+
         expect(result).to be_an(Array)
         expect(result.first).to include(:category_id, :count, :total, :average)
         expect(result.first[:category_id]).to eq(1)
@@ -403,7 +403,7 @@ RSpec.describe ExpenseQueryOptimizer, type: :model, unit: true do
       it "applies date range filter when provided" do
         start_date = Date.current.beginning_of_month
         end_date = Date.current.end_of_month
-        
+
         sql_spy = double("relation")
         allow(sql_spy).to receive(:by_date_range).with(start_date, end_date).and_return(sql_spy)
         allow(sql_spy).to receive(:group).with(:category_id).and_return(sql_spy)
@@ -411,7 +411,7 @@ RSpec.describe ExpenseQueryOptimizer, type: :model, unit: true do
         allow(Expense).to receive(:not_deleted).and_return(sql_spy)
 
         Expense.aggregate_by_category(start_date: start_date, end_date: end_date)
-        
+
         expect(sql_spy).to have_received(:by_date_range).with(start_date, end_date)
       end
     end

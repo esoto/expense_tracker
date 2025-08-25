@@ -8,7 +8,7 @@ RSpec.shared_examples "standard associations" do |associations|
       when :belongs_to
         details.each do |association_config|
           assoc_name, opts = association_config
-          
+
           if opts.is_a?(Symbol)
             it { should belong_to(assoc_name).send(opts) }
           elsif opts.is_a?(Hash)
@@ -17,7 +17,7 @@ RSpec.shared_examples "standard associations" do |associations|
               case key
               when :class_name
                 matcher = matcher.class_name(value)
-              when :with_foreign_key  
+              when :with_foreign_key
                 matcher = matcher.with_foreign_key(value)
               when :optional
                 matcher = matcher.optional if value
@@ -77,7 +77,7 @@ RSpec.shared_examples "enum field" do |field, expected_values|
   it "defines correct #{field} values" do
     expect(described_class.send(field.to_s.pluralize)).to eq(expected_values)
   end
-  
+
   expected_values.each_key do |value|
     it "responds to #{value}? predicate method" do
       expect(described_class.new).to respond_to("#{value}?")

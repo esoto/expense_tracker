@@ -332,22 +332,22 @@ RSpec.describe QuerySecurity, unit: true do
         Rails.application.config.class_eval do
           attr_accessor :enable_query_rate_limiting
         end
-        
+
         Rails.application.config.enable_query_rate_limiting = true
-        
+
         begin
           store = test_class.rate_limit_store
           identifier = test_class.request_identifier
           key = test_class.rate_limit_key(identifier)
-          
+
           # Test under limit scenario - executes lines 47-52
           store.setex(key, 60, 50)
           expect(test_class.rate_limit_exceeded?).to be false
-          
+
           # Test over limit scenario - executes lines 47-52
-          store.setex(key, 60, 150) 
+          store.setex(key, 60, 150)
           expect(test_class.rate_limit_exceeded?).to be true
-          
+
         ensure
           Rails.application.config.enable_query_rate_limiting = nil
           Rails.application.config.class_eval do
@@ -363,26 +363,26 @@ RSpec.describe QuerySecurity, unit: true do
         Rails.application.config.class_eval do
           attr_accessor :enable_query_rate_limiting
         end
-        
+
         Rails.application.config.enable_query_rate_limiting = true
-        
+
         begin
           store = test_class.rate_limit_store
           identifier = test_class.request_identifier
           key = test_class.rate_limit_key(identifier)
-          
+
           # Clear any existing data
           store.instance_variable_get(:@store).clear
           store.instance_variable_get(:@expires).clear
-          
+
           # Test creating new counter - executes lines 54-65
           test_class.increment_rate_limit
           expect(store.get(key)).to eq(1)
-          
+
           # Test incrementing existing counter
           test_class.increment_rate_limit
           expect(store.get(key)).to eq(2)
-          
+
         ensure
           Rails.application.config.enable_query_rate_limiting = nil
           Rails.application.config.class_eval do

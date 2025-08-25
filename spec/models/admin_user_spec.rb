@@ -13,7 +13,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
       end
 
       it 'validates email format' do
-        invalid_emails = ['invalid', 'invalid@', '@example.com', 'user@', 'user space@example.com']
+        invalid_emails = [ 'invalid', 'invalid@', '@example.com', 'user@', 'user space@example.com' ]
         invalid_emails.each do |invalid_email|
           admin_user = build(:admin_user, email: invalid_email)
           expect(admin_user).not_to be_valid
@@ -22,7 +22,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
       end
 
       it 'accepts valid email formats' do
-        valid_emails = ['user@example.com', 'user.name@example.co.uk', 'user+tag@example.org']
+        valid_emails = [ 'user@example.com', 'user.name@example.co.uk', 'user+tag@example.org' ]
         valid_emails.each do |valid_email|
           admin_user = build(:admin_user, email: valid_email)
           expect(admin_user).to be_valid
@@ -158,10 +158,10 @@ RSpec.describe AdminUser, type: :model, unit: true do
       it 'sets session expiration on create' do
         freeze_time = Time.current
         allow(Time).to receive(:current).and_return(freeze_time)
-        
+
         admin_user = build(:admin_user)
         admin_user.save
-        
+
         expected_expiration = freeze_time + AdminUser::SESSION_DURATION
         expect(admin_user.session_expires_at).to be_within(1.second).of(expected_expiration)
       end
@@ -173,7 +173,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
       it 'returns users without locked_at' do
         active_user = create(:admin_user, locked_at: nil)
         locked_user = create(:admin_user, locked_at: Time.current)
-        
+
         result = AdminUser.active
         expect(result).to include(active_user)
         expect(result).not_to include(locked_user)
@@ -184,7 +184,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
       it 'returns users with locked_at' do
         active_user = create(:admin_user, locked_at: nil)
         locked_user = create(:admin_user, locked_at: Time.current)
-        
+
         result = AdminUser.locked
         expect(result).not_to include(active_user)
         expect(result).to include(locked_user)
@@ -196,14 +196,14 @@ RSpec.describe AdminUser, type: :model, unit: true do
         # Mock the scope to return a relation
         expired_users_relation = double("ActiveRecord::Relation")
         allow(AdminUser).to receive(:with_expired_sessions).and_return(expired_users_relation)
-        
+
         # Mock the expected behavior
         expired_user = build_stubbed(:admin_user, session_expires_at: 1.hour.ago)
         valid_user = build_stubbed(:admin_user, session_expires_at: 1.hour.from_now)
-        
+
         allow(expired_users_relation).to receive(:include?).with(expired_user).and_return(true)
         allow(expired_users_relation).to receive(:include?).with(valid_user).and_return(false)
-        
+
         result = AdminUser.with_expired_sessions
         expect(result).to include(expired_user)
         expect(result).not_to include(valid_user)
@@ -237,7 +237,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
         it 'updates last_login_at' do
           freeze_time = Time.current
           allow(Time).to receive(:current).and_return(freeze_time)
-          
+
           AdminUser.authenticate(email, password)
           expect(user.reload.last_login_at).to be_within(1.second).of(freeze_time)
         end
@@ -305,10 +305,10 @@ RSpec.describe AdminUser, type: :model, unit: true do
         it 'extends session on activity' do
           freeze_time = Time.current
           allow(Time).to receive(:current).and_return(freeze_time)
-          
+
           user.update(session_expires_at: 30.minutes.from_now)
           AdminUser.find_by_valid_session(user.session_token)
-          
+
           expected_expiration = freeze_time + AdminUser::SESSION_DURATION
           expect(user.reload.session_expires_at).to be_within(1.second).of(expected_expiration)
         end
@@ -318,7 +318,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
         it 'returns nil for blank token' do
           result = AdminUser.find_by_valid_session(nil)
           expect(result).to be_nil
-          
+
           result = AdminUser.find_by_valid_session('')
           expect(result).to be_nil
         end
@@ -390,7 +390,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
       it 'clears locked_at and failed_login_attempts' do
         admin_user = create(:admin_user, locked_at: Time.current, failed_login_attempts: 5)
         admin_user.unlock_account!
-        
+
         admin_user.reload
         expect(admin_user.locked_at).to be_nil
         expect(admin_user.failed_login_attempts).to eq(0)
@@ -401,10 +401,10 @@ RSpec.describe AdminUser, type: :model, unit: true do
       it 'sets locked_at and clears session' do
         freeze_time = Time.current
         allow(Time).to receive(:current).and_return(freeze_time)
-        
+
         admin_user = create(:admin_user, session_token: 'token', session_expires_at: 1.hour.from_now)
         admin_user.lock_account!
-        
+
         admin_user.reload
         expect(admin_user.locked_at).to be_within(1.second).of(freeze_time)
         expect(admin_user.session_token).to be_nil
@@ -416,12 +416,12 @@ RSpec.describe AdminUser, type: :model, unit: true do
       it 'updates login tracking fields' do
         freeze_time = Time.current
         allow(Time).to receive(:current).and_return(freeze_time)
-        
+
         admin_user = create(:admin_user, failed_login_attempts: 3, locked_at: 1.hour.ago)
         old_token = admin_user.session_token
-        
+
         admin_user.handle_successful_login
-        
+
         admin_user.reload
         expect(admin_user.last_login_at).to be_within(1.second).of(freeze_time)
         expect(admin_user.failed_login_attempts).to eq(0)
@@ -448,12 +448,12 @@ RSpec.describe AdminUser, type: :model, unit: true do
       it 'generates new token and sets expiration' do
         freeze_time = Time.current
         allow(Time).to receive(:current).and_return(freeze_time)
-        
+
         admin_user = create(:admin_user)
         old_token = admin_user.session_token
-        
+
         admin_user.regenerate_session_token
-        
+
         admin_user.reload
         expect(admin_user.session_token).not_to eq(old_token)
         expect(admin_user.session_token).to be_present
@@ -466,10 +466,10 @@ RSpec.describe AdminUser, type: :model, unit: true do
       it 'extends session expiration when token present' do
         freeze_time = Time.current
         allow(Time).to receive(:current).and_return(freeze_time)
-        
+
         admin_user = create(:admin_user, session_token: 'token', session_expires_at: 30.minutes.from_now)
         admin_user.extend_session
-        
+
         expected_expiration = freeze_time + AdminUser::SESSION_DURATION
         expect(admin_user.reload.session_expires_at).to be_within(1.second).of(expected_expiration)
       end
@@ -503,7 +503,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
       it 'clears session token and expiration' do
         admin_user = create(:admin_user, session_token: 'token', session_expires_at: 1.hour.from_now)
         admin_user.invalidate_session!
-        
+
         admin_user.reload
         expect(admin_user.session_token).to be_nil
         expect(admin_user.session_expires_at).to be_nil
@@ -513,7 +513,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
     describe 'permission methods' do
       describe '#can_manage_patterns?' do
         it 'returns true for admin, super_admin, and moderator' do
-          [:admin, :super_admin, :moderator].each do |role|
+          [ :admin, :super_admin, :moderator ].each do |role|
             admin_user = build_stubbed(:admin_user, role: role)
             expect(admin_user.can_manage_patterns?).to be true
           end
@@ -527,14 +527,14 @@ RSpec.describe AdminUser, type: :model, unit: true do
 
       describe '#can_edit_patterns?' do
         it 'returns true for admin and super_admin' do
-          [:admin, :super_admin].each do |role|
+          [ :admin, :super_admin ].each do |role|
             admin_user = build_stubbed(:admin_user, role: role)
             expect(admin_user.can_edit_patterns?).to be true
           end
         end
 
         it 'returns false for moderator and read_only' do
-          [:moderator, :read_only].each do |role|
+          [ :moderator, :read_only ].each do |role|
             admin_user = build_stubbed(:admin_user, role: role)
             expect(admin_user.can_edit_patterns?).to be false
           end
@@ -543,14 +543,14 @@ RSpec.describe AdminUser, type: :model, unit: true do
 
       describe '#can_delete_patterns?' do
         it 'returns true for admin and super_admin' do
-          [:admin, :super_admin].each do |role|
+          [ :admin, :super_admin ].each do |role|
             admin_user = build_stubbed(:admin_user, role: role)
             expect(admin_user.can_delete_patterns?).to be true
           end
         end
 
         it 'returns false for moderator and read_only' do
-          [:moderator, :read_only].each do |role|
+          [ :moderator, :read_only ].each do |role|
             admin_user = build_stubbed(:admin_user, role: role)
             expect(admin_user.can_delete_patterns?).to be false
           end
@@ -564,7 +564,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
         end
 
         it 'returns false for other roles' do
-          [:admin, :moderator, :read_only].each do |role|
+          [ :admin, :moderator, :read_only ].each do |role|
             admin_user = build_stubbed(:admin_user, role: role)
             expect(admin_user.can_import_patterns?).to be false
           end
@@ -573,7 +573,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
 
       describe '#can_access_statistics?' do
         it 'returns true for all except read_only' do
-          [:admin, :super_admin, :moderator].each do |role|
+          [ :admin, :super_admin, :moderator ].each do |role|
             admin_user = build_stubbed(:admin_user, role: role)
             expect(admin_user.can_access_statistics?).to be true
           end
@@ -600,7 +600,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
     describe 'concurrent login attempts' do
       it 'handles race condition in failed login counting' do
         user = create(:admin_user, failed_login_attempts: 4)
-        
+
         # Simulate concurrent failed login attempts
         threads = 2.times.map do
           Thread.new do
@@ -609,7 +609,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
           end
         end
         threads.each(&:join)
-        
+
         user.reload
         # Should be locked even with race condition
         expect(user.locked_at).to be_present
@@ -625,7 +625,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
           'Valid+Pass123&',
           'Valid(Pass)123@'
         ]
-        
+
         special_passwords.each do |password|
           admin_user = build(:admin_user, password: password, password_confirmation: password)
           expect(admin_user).to be_valid, "Password '#{password}' should be valid"

@@ -122,7 +122,7 @@ RSpec.describe BulkOperation, type: :model, unit: true do
     describe ".successful" do
       it "includes completed and partially_completed statuses" do
         expect(BulkOperation.successful.to_sql).to include("status")
-        expect(BulkOperation.successful.where_values_hash["status"]).to eq([:completed, :partially_completed])
+        expect(BulkOperation.successful.where_values_hash["status"]).to eq([ :completed, :partially_completed ])
       end
     end
 
@@ -247,7 +247,7 @@ RSpec.describe BulkOperation, type: :model, unit: true do
       allow(operation).to receive(:transaction).and_yield
       allow(operation).to receive(:update!).and_return(true)
       allow(BulkOperation).to receive(:create!).and_return(true)
-      
+
       # Mock Current.user_id
       current_class = Class.new do
         def self.user_id
@@ -255,16 +255,16 @@ RSpec.describe BulkOperation, type: :model, unit: true do
         end
       end
       stub_const("Current", current_class)
-      
+
       # Setup items
       allow(item1).to receive(:expense).and_return(expense1)
       allow(item1).to receive(:previous_category_id).and_return(1)
       allow(item1).to receive(:update!).and_return(true)
-      
+
       allow(item2).to receive(:expense).and_return(expense2)
       allow(item2).to receive(:previous_category_id).and_return(2)
       allow(item2).to receive(:update!).and_return(true)
-      
+
       # Setup expenses
       allow(expense1).to receive(:update!).and_return(true)
       allow(expense2).to receive(:update!).and_return(true)
@@ -284,14 +284,14 @@ RSpec.describe BulkOperation, type: :model, unit: true do
           categorization_confidence: nil,
           categorization_method: nil
         )
-        
+
         operation.undo!
       end
 
       it "marks items as undone" do
         expect(item1).to receive(:update!).with(status: "undone")
         expect(item2).to receive(:update!).with(status: "undone")
-        
+
         operation.undo!
       end
 
@@ -301,7 +301,7 @@ RSpec.describe BulkOperation, type: :model, unit: true do
           expect(args[:undone_at]).to be_a(Time)
           expect(args[:metadata]).to eq({ "undone_by" => 200 })
         end
-        
+
         operation.undo!
       end
 
@@ -311,10 +311,10 @@ RSpec.describe BulkOperation, type: :model, unit: true do
           expect(args[:user_id]).to eq("100")
           expect(args[:expense_count]).to eq(5)
           expect(args[:total_amount]).to eq(500.00)
-          expect(args[:metadata]).to include(:original_operation_id => 1)
+          expect(args[:metadata]).to include(original_operation_id: 1)
           expect(args[:metadata]).to have_key(:undone_at)
         end
-        
+
         operation.undo!
       end
 
@@ -332,7 +332,7 @@ RSpec.describe BulkOperation, type: :model, unit: true do
         expect(expense1).not_to receive(:update!)
         expect(operation).not_to receive(:update!)
         expect(BulkOperation).not_to receive(:create!)
-        
+
         expect(operation.undo!).to be false
       end
     end
@@ -397,7 +397,7 @@ RSpec.describe BulkOperation, type: :model, unit: true do
       it "calculates duration in seconds" do
         allow(operation).to receive(:created_at).and_return(Time.parse("2024-01-01 10:00:00"))
         allow(operation).to receive(:completed_at).and_return(Time.parse("2024-01-01 10:05:30"))
-        
+
         expect(operation.duration_seconds).to eq(330)
       end
     end
@@ -416,10 +416,10 @@ RSpec.describe BulkOperation, type: :model, unit: true do
     context "with confidence values" do
       before do
         items = double("items")
-        joined_items = double("joined_items") 
+        joined_items = double("joined_items")
         where_chain = double("where_chain")
         final_chain = double("final_chain")
-        
+
         allow(operation).to receive(:bulk_operation_items).and_return(items)
         allow(items).to receive(:joins).with(:expense).and_return(joined_items)
         allow(joined_items).to receive(:where).and_return(where_chain)
@@ -435,10 +435,10 @@ RSpec.describe BulkOperation, type: :model, unit: true do
     context "with no confidence values" do
       before do
         items = double("items")
-        joined_items = double("joined_items") 
+        joined_items = double("joined_items")
         where_chain = double("where_chain")
         final_chain = double("final_chain")
-        
+
         allow(operation).to receive(:bulk_operation_items).and_return(items)
         allow(items).to receive(:joins).with(:expense).and_return(joined_items)
         allow(joined_items).to receive(:where).and_return(where_chain)
@@ -517,7 +517,7 @@ RSpec.describe BulkOperation, type: :model, unit: true do
 
     it "returns comprehensive summary hash" do
       summary = operation.summary
-      
+
       expect(summary).to include(
         operation: "Categorization",
         status: "Completed",
@@ -562,7 +562,7 @@ RSpec.describe BulkOperation, type: :model, unit: true do
         operation = build_bulk_operation(status: :completed, id: 1)
         allow(operation).to receive(:undoable?).and_return(true, false)
         allow(operation).to receive(:transaction).and_yield
-        
+
         # First call succeeds
         expect(operation.undo!).to be false # Second check returns false
       end

@@ -320,7 +320,7 @@ RSpec.describe ConflictResolution, type: :model, unit: true do
       context "for merged action" do
         it "includes changed fields count" do
           resolution = build_stubbed(:conflict_resolution, action: "merged")
-          allow(resolution).to receive(:changed_fields).and_return([{}, {}, {}])
+          allow(resolution).to receive(:changed_fields).and_return([ {}, {}, {} ])
           expect(resolution.summary).to eq("Se fusionaron los gastos, combinando 3 campos")
         end
       end
@@ -328,7 +328,7 @@ RSpec.describe ConflictResolution, type: :model, unit: true do
       context "for custom action" do
         it "includes changed fields count" do
           resolution = build_stubbed(:conflict_resolution, action: "custom")
-          allow(resolution).to receive(:changed_fields).and_return([{}, {}])
+          allow(resolution).to receive(:changed_fields).and_return([ {}, {} ])
           expect(resolution.summary).to eq("Se aplicó una resolución personalizada con 2 cambios")
         end
       end
@@ -355,10 +355,10 @@ RSpec.describe ConflictResolution, type: :model, unit: true do
       it "prevents circular references" do
         resolution1 = build_stubbed(:conflict_resolution, id: 1)
         resolution2 = build_stubbed(:conflict_resolution, id: 2, undone_by_resolution: resolution1)
-        
+
         # Attempting to set resolution1's undone_by to resolution2 would create a cycle
         resolution1.undone_by_resolution = resolution2
-        
+
         # The model should handle this gracefully (validation or logic to prevent)
         expect { resolution1.valid? }.not_to raise_error
       end

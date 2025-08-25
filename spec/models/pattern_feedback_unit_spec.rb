@@ -11,7 +11,6 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
 
   describe "validations" do
     describe "feedback_type validation" do
-        
       it "validates inclusion of feedback_type" do
         should validate_inclusion_of(:feedback_type)
           .in_array(%w[accepted rejected corrected correction])
@@ -59,17 +58,12 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
     describe "after_create :update_pattern_performance" do
       let(:pattern) { double("categorization_pattern") }
       let(:feedback) { build_stubbed(:pattern_feedback, categorization_pattern: pattern) }
-
-
-
-
-
     end
 
     describe "after_create :create_pattern_from_correction" do
       let(:category) { build_stubbed(:category, id: 1) }
       let(:expense) { build_stubbed(:expense, id: 2, merchant_name: "Test Store", description: "Test purchase") }
-      let(:feedback) { build_stubbed(:pattern_feedback, 
+      let(:feedback) { build_stubbed(:pattern_feedback,
         id: 3,
         feedback_type: "correction",
         category: category,
@@ -125,7 +119,7 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
 
         it "doesn't create pattern if it already exists" do
           existing_pattern = double("existing_pattern")
-          
+
           allow(feedback).to receive(:improvement_suggestion).and_return({
             pattern_type: "merchant",
             pattern_value: "Existing Store"
@@ -167,44 +161,40 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
       it "invalidates pattern analytics cache" do
         feedback = build_stubbed(:pattern_feedback)
         cache = double("cache")
-        
+
         allow(Rails).to receive(:cache).and_return(cache)
         expect(cache).to receive(:respond_to?).with(:delete_matched).and_return(true)
         expect(cache).to receive(:delete_matched).with("pattern_analytics/*")
-        
+
         feedback.send(:invalidate_analytics_cache)
       end
 
       it "handles cache without delete_matched method" do
         feedback = build_stubbed(:pattern_feedback)
         cache = double("cache")
-        
+
         allow(Rails).to receive(:cache).and_return(cache)
         expect(cache).to receive(:respond_to?).with(:delete_matched).and_return(false)
         expect(cache).not_to receive(:delete_matched)
-        
+
         feedback.send(:invalidate_analytics_cache)
       end
 
       it "handles cache invalidation errors gracefully" do
         feedback = build_stubbed(:pattern_feedback)
         cache = double("cache")
-        
+
         allow(Rails).to receive(:cache).and_return(cache)
         expect(cache).to receive(:respond_to?).with(:delete_matched).and_return(true)
         expect(cache).to receive(:delete_matched).and_raise(StandardError.new("Cache error"))
         expect(Rails.logger).to receive(:error).with(match(/Analytics cache invalidation failed/))
-        
+
         expect { feedback.send(:invalidate_analytics_cache) }.not_to raise_error
       end
     end
   end
 
   describe "scopes" do
-
-
-
-
   end
 
   describe "class methods" do
@@ -309,18 +299,18 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
     end
 
     describe "#improvement_suggestion" do
-      let(:expense) { build_stubbed(:expense, 
+      let(:expense) { build_stubbed(:expense,
         merchant_name: "Test Store",
         description: "Purchase at store",
         amount: 100,
         transaction_date: Time.current
       ) }
       let(:category) { build_stubbed(:category, id: 1) }
-      let(:pattern) { build_stubbed(:categorization_pattern, 
+      let(:pattern) { build_stubbed(:categorization_pattern,
         pattern_type: "merchant",
         pattern_value: "old_store"
       ) }
-      let(:feedback) { build_stubbed(:pattern_feedback, 
+      let(:feedback) { build_stubbed(:pattern_feedback,
         expense: expense,
         category: category,
         categorization_pattern: pattern
@@ -331,7 +321,7 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
 
         it "suggests creating new merchant pattern" do
           suggestion = feedback.improvement_suggestion
-          
+
           expect(suggestion[:suggested_action]).to eq("create_new_pattern")
           expect(suggestion[:category_id]).to eq(1)
           expect(suggestion[:pattern_type]).to eq("merchant")
@@ -341,7 +331,7 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
 
         it "includes context information" do
           suggestion = feedback.improvement_suggestion
-          
+
           expect(suggestion[:context]).to include(
             expense_merchant: "Test Store",
             expense_amount: 100,
@@ -357,7 +347,7 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
 
         it "suggests adjusting pattern" do
           suggestion = feedback.improvement_suggestion
-          
+
           expect(suggestion[:suggested_action]).to eq("adjust_pattern")
           expect(suggestion[:confidence_adjustment]).to eq(-0.1)
         end
@@ -368,7 +358,7 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
 
         it "suggests adjusting pattern" do
           suggestion = feedback.improvement_suggestion
-          
+
           expect(suggestion[:suggested_action]).to eq("adjust_pattern")
           expect(suggestion[:confidence_adjustment]).to eq(-0.1)
         end
@@ -386,20 +376,18 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
         it "suggests merchant pattern when merchant name exists" do
           expense.merchant_name = "Store Name"
           feedback.feedback_type = "correction"
-          
+
           suggestion = feedback.improvement_suggestion
           expect(suggestion[:pattern_type]).to eq("merchant")
           expect(suggestion[:pattern_value]).to eq("Store Name")
         end
-
-
       end
 
       context "with nil associations" do
         it "handles nil expense" do
           feedback.expense = nil
           feedback.feedback_type = "correction"
-          
+
           suggestion = feedback.improvement_suggestion
           expect(suggestion[:pattern_value]).to be_nil
           expect(suggestion[:context][:expense_merchant]).to be_nil
@@ -408,7 +396,7 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
         it "handles nil category" do
           feedback.category = nil
           feedback.feedback_type = "correction"
-          
+
           suggestion = feedback.improvement_suggestion
           expect(suggestion[:category_id]).to be_nil
         end
@@ -416,7 +404,7 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
         it "handles nil pattern" do
           feedback.categorization_pattern = nil
           feedback.feedback_type = "correction"
-          
+
           suggestion = feedback.improvement_suggestion
           expect(suggestion[:context][:original_pattern_type]).to be_nil
           expect(suggestion[:context][:original_pattern_value]).to be_nil
@@ -443,7 +431,7 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
     describe "pattern creation edge cases" do
       let(:category) { build_stubbed(:category) }
       let(:expense) { build_stubbed(:expense, merchant_name: "Test") }
-      let(:feedback) { build_stubbed(:pattern_feedback, 
+      let(:feedback) { build_stubbed(:pattern_feedback,
         feedback_type: "correction",
         category: category,
         expense: expense

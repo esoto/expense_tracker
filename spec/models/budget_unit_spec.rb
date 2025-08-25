@@ -47,22 +47,22 @@ RSpec.describe Budget, type: :model, unit: true do
       it 'validates threshold order and date relationships' do
         validation_tests = [
           # [warning_threshold, critical_threshold, start_date_offset, end_date_offset, should_be_valid]
-          [80, 90, 0, 1, true],   # Valid thresholds and dates
-          [90, 90, 0, 1, false],  # Invalid: warning >= critical
-          [70, 80, 0, -1, false], # Invalid: end_date before start_date
-          [70, 80, 0, 1, true]    # Valid: proper thresholds and dates
+          [ 80, 90, 0, 1, true ],   # Valid thresholds and dates
+          [ 90, 90, 0, 1, false ],  # Invalid: warning >= critical
+          [ 70, 80, 0, -1, false ], # Invalid: end_date before start_date
+          [ 70, 80, 0, 1, true ]    # Valid: proper thresholds and dates
         ]
 
         validation_tests.each do |warning, critical, start_offset, end_offset, should_be_valid|
           start_date = Date.current + start_offset.days
           end_date = Date.current + end_offset.days
-          
-          budget = build(:budget, 
-            warning_threshold: warning, 
+
+          budget = build(:budget,
+            warning_threshold: warning,
             critical_threshold: critical,
             start_date: start_date,
             end_date: end_date)
-          
+
           if should_be_valid
             expect(budget).to be_valid
           else
@@ -177,7 +177,6 @@ RSpec.describe Budget, type: :model, unit: true do
         expect(query.to_sql).to include('end_date IS NULL OR end_date >=')
       end
     end
-
   end
 
   describe "callbacks" do
@@ -233,7 +232,7 @@ RSpec.describe Budget, type: :model, unit: true do
       let(:test_date) { Date.new(2025, 1, 15) }
 
       it "returns budgets containing the date for valid periods" do
-        [:daily, :weekly, :monthly, :yearly].each do |period|
+        [ :daily, :weekly, :monthly, :yearly ].each do |period|
           query = described_class.for_period_containing(test_date, period)
           expect(query.to_sql).to include("start_date <=")
           expect(query.to_sql).to include("end_date IS NULL OR end_date >=")
@@ -255,12 +254,12 @@ RSpec.describe Budget, type: :model, unit: true do
 
       it "returns correct ranges for different periods" do
         expected_ranges = {
-          daily: [Date.new(2025, 1, 15).beginning_of_day, Date.new(2025, 1, 15).end_of_day],
-          weekly: [Date.new(2025, 1, 13), Date.new(2025, 1, 19)], # Monday to Sunday
-          monthly: [Date.new(2025, 1, 1), Date.new(2025, 1, 31)],
-          yearly: [Date.new(2025, 1, 1), Date.new(2025, 12, 31)]
+          daily: [ Date.new(2025, 1, 15).beginning_of_day, Date.new(2025, 1, 15).end_of_day ],
+          weekly: [ Date.new(2025, 1, 13), Date.new(2025, 1, 19) ], # Monday to Sunday
+          monthly: [ Date.new(2025, 1, 1), Date.new(2025, 1, 31) ],
+          yearly: [ Date.new(2025, 1, 1), Date.new(2025, 12, 31) ]
         }
-        
+
         expected_ranges.each do |period, (expected_start, expected_end)|
           budget.period = period
           range = budget.current_period_range
@@ -342,7 +341,7 @@ RSpec.describe Budget, type: :model, unit: true do
       context "currency mapping" do
         it "maps currencies to expense enum values correctly" do
           allow(Expense).to receive(:currencies).and_return({ crc: 0, usd: 1, eur: 2 })
-          
+
           { "CRC" => 0, "USD" => 1, "EUR" => 2 }.each do |currency, enum_value|
             budget.currency = currency
             expect(expenses_relation).to receive(:where).with(currency: enum_value)
@@ -467,11 +466,11 @@ RSpec.describe Budget, type: :model, unit: true do
       it "returns correct colors for each status" do
         status_colors = {
           exceeded: "rose-600",
-          critical: "rose-500", 
+          critical: "rose-500",
           warning: "amber-600",
           good: "emerald-600"
         }
-        
+
         status_colors.each do |status, expected_color|
           allow(budget).to receive(:status).and_return(status)
           expect(budget.status_color).to eq(expected_color)
@@ -484,10 +483,10 @@ RSpec.describe Budget, type: :model, unit: true do
         status_messages = {
           exceeded: "Presupuesto excedido",
           critical: "Cerca del límite",
-          warning: "Atención requerida", 
+          warning: "Atención requerida",
           good: "Dentro del presupuesto"
         }
-        
+
         status_messages.each do |status, expected_message|
           allow(budget).to receive(:status).and_return(status)
           expect(budget.status_message).to eq(expected_message)
@@ -573,11 +572,11 @@ RSpec.describe Budget, type: :model, unit: true do
     describe "#formatted_amount" do
       it "formats amounts correctly for different currencies" do
         currency_formats = {
-          ["CRC", 150_000] => "₡150.000",
-          ["USD", 1500.50] => "$1.501", 
-          ["EUR", 2000.75] => "€2.001"
+          [ "CRC", 150_000 ] => "₡150.000",
+          [ "USD", 1500.50 ] => "$1.501",
+          [ "EUR", 2000.75 ] => "€2.001"
         }
-        
+
         currency_formats.each do |(currency, amount), expected_format|
           budget.currency = currency
           budget.amount = amount
@@ -610,7 +609,7 @@ RSpec.describe Budget, type: :model, unit: true do
           "EUR" => "€",
           "GBP" => "GBP" # Unknown currency returns code
         }
-        
+
         currency_symbols.each do |currency, expected_symbol|
           budget.currency = currency
           expect(budget.currency_symbol).to eq(expected_symbol)
@@ -667,14 +666,14 @@ RSpec.describe Budget, type: :model, unit: true do
       describe "#currency_to_expense_currency" do
         it "maps currencies to expense enum values with fallback to CRC" do
           allow(Expense).to receive(:currencies).and_return({ crc: 0, usd: 1, eur: 2 })
-          
+
           currency_mappings = {
             "CRC" => 0,
-            "USD" => 1, 
+            "USD" => 1,
             "EUR" => 2,
             "GBP" => 0 # Unknown currency defaults to CRC
           }
-          
+
           currency_mappings.each do |currency, expected_value|
             budget.currency = currency
             expect(budget.send(:currency_to_expense_currency)).to eq(expected_value)

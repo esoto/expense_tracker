@@ -13,7 +13,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
       end
 
       it 'accepts any non-empty bank_name' do
-        bank_names = ['BAC', 'BCR', 'Scotiabank', 'Custom Bank', '123']
+        bank_names = [ 'BAC', 'BCR', 'Scotiabank', 'Custom Bank', '123' ]
         bank_names.each do |bank_name|
           parsing_rule = build(:parsing_rule, bank_name: bank_name)
           expect(parsing_rule).to be_valid, "Bank name '#{bank_name}' should be valid"
@@ -83,7 +83,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
 
     context 'active validation' do
       it 'validates active as boolean' do
-        [true, false].each do |value|
+        [ true, false ].each do |value|
           parsing_rule = build(:parsing_rule, active: value)
           expect(parsing_rule).to be_valid
         end
@@ -214,7 +214,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
       it 'extracts available fields when some patterns match' do
         partial_content = "Monto: 100.00\nOther text here"
         result = parsing_rule.parse_email(partial_content)
-        
+
         expect(result[:amount]).to eq(BigDecimal('100.00'))
         expect(result[:transaction_date]).to be_nil
         expect(result[:merchant_name]).to be_nil
@@ -225,7 +225,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
       it 'uses first capture group when present' do
         parsing_rule.amount_pattern = 'Total: \\$([\\d.]+) USD'
         content = 'Total: $50.25 USD'
-        
+
         result = parsing_rule.parse_email(content)
         expect(result[:amount]).to eq(BigDecimal('50.25'))
       end
@@ -233,7 +233,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
       it 'uses full match when no capture group' do
         parsing_rule.amount_pattern = '\\d+\\.\\d{2}'
         content = 'Amount is 75.50 dollars'
-        
+
         result = parsing_rule.parse_email(content)
         expect(result[:amount]).to eq(BigDecimal('75.50'))
       end
@@ -243,10 +243,10 @@ RSpec.describe ParsingRule, type: :model, unit: true do
       it 'skips extraction for nil patterns' do
         parsing_rule.merchant_pattern = nil
         parsing_rule.description_pattern = nil
-        
+
         content = "Comercio: Store\nTipo: COMPRA\nMonto: 100.00"
         result = parsing_rule.parse_email(content)
-        
+
         expect(result[:amount]).to eq(BigDecimal('100.00'))
         expect(result[:merchant_name]).to be_nil
         expect(result[:description]).to be_nil
@@ -257,7 +257,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
       it 'handles multiline flag in patterns' do
         parsing_rule.description_pattern = 'Notes:(.+)End'
         content = "Notes:\nLine 1\nLine 2\nEnd"
-        
+
         result = parsing_rule.parse_email(content)
         # Multiline flag is set with Regexp::MULTILINE
         expect(result[:description]).to include('Line')
@@ -279,7 +279,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
 
     it 'tests all patterns and returns results' do
       results = parsing_rule.test_patterns(test_content)
-      
+
       expect(results[:amount][:matched]).to be true
       expect(results[:date][:matched]).to be true
       expect(results[:merchant][:matched]).to be true
@@ -289,7 +289,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
     it 'returns match details for successful matches' do
       results = parsing_rule.test_patterns(test_content)
       amount_result = results[:amount]
-      
+
       expect(amount_result[:full_match]).to eq('100.00')
       expect(amount_result[:captured_group]).to be_nil  # No capture group
       expect(amount_result[:position]).to be_a(Integer)
@@ -298,7 +298,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
     it 'returns captured group when present' do
       results = parsing_rule.test_patterns(test_content)
       desc_result = results[:description]
-      
+
       expect(desc_result[:full_match]).to eq('Type: Purchase')
       expect(desc_result[:captured_group]).to eq('Purchase')
     end
@@ -306,21 +306,21 @@ RSpec.describe ParsingRule, type: :model, unit: true do
     it 'returns nil for blank patterns' do
       parsing_rule.merchant_pattern = ''
       results = parsing_rule.test_patterns(test_content)
-      
+
       expect(results[:merchant]).to be_nil
     end
 
     it 'returns nil for nil patterns' do
       parsing_rule.merchant_pattern = nil
       results = parsing_rule.test_patterns(test_content)
-      
+
       expect(results[:merchant]).to be_nil
     end
 
     it 'handles invalid regex gracefully' do
       parsing_rule.amount_pattern = '[invalid('
       results = parsing_rule.test_patterns(test_content)
-      
+
       expect(results[:amount][:error]).to be_present
       expect(results[:amount][:matched]).to be_nil
     end
@@ -328,7 +328,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
     it 'returns nil for non-matching patterns' do
       parsing_rule.amount_pattern = 'NOMATCH'
       results = parsing_rule.test_patterns(test_content)
-      
+
       expect(results[:amount]).to be_nil
     end
   end
@@ -347,9 +347,6 @@ RSpec.describe ParsingRule, type: :model, unit: true do
         result = parsing_rule.send(:extract_amount, '1 500.00')
         expect(result).to eq(BigDecimal('1500.00'))
       end
-
-
-
     end
 
     describe '#parse_date' do
@@ -371,7 +368,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
             'Nov 11, 2025' => Date.new(2025, 11, 11),
             'Dic 25, 2025' => Date.new(2025, 12, 25)
           }
-          
+
           spanish_months.each do |input, expected|
             result = parsing_rule.send(:parse_date, input)
             expect(result).to eq(expected), "Failed to parse '#{input}'"
@@ -390,7 +387,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
             'Aug 1, 2025' => Date.new(2025, 8, 1),
             'Aug 1, 2025, 14:16' => Date.new(2025, 8, 1)
           }
-          
+
           formats.each do |input, expected|
             result = parsing_rule.send(:parse_date, input)
             expect(result).to eq(expected), "Failed to parse '#{input}'"
@@ -402,21 +399,21 @@ RSpec.describe ParsingRule, type: :model, unit: true do
         it 'uses Chronic as fallback for natural language dates' do
           tomorrow = Date.tomorrow
           allow(Chronic).to receive(:parse).with('tomorrow').and_return(tomorrow.to_time)
-          
+
           result = parsing_rule.send(:parse_date, 'tomorrow')
           expect(result).to eq(tomorrow)
         end
 
         it 'returns nil when Chronic returns nil' do
           allow(Chronic).to receive(:parse).and_return(nil)
-          
+
           result = parsing_rule.send(:parse_date, 'invalid')
           expect(result).to be_nil
         end
 
         it 'handles Chronic parse errors' do
           allow(Chronic).to receive(:parse).and_raise(StandardError)
-          
+
           result = parsing_rule.send(:parse_date, 'error')
           expect(result).to be_nil
         end
@@ -441,7 +438,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
         it 'handles general exceptions' do
           allow(Date).to receive(:strptime).and_raise(StandardError)
           allow(Chronic).to receive(:parse).and_raise(StandardError)
-          
+
           result = parsing_rule.send(:parse_date, 'error date')
           expect(result).to be_nil
         end
@@ -453,7 +450,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
 
       it 'returns match details for successful match' do
         result = parsing_rule.send(:test_pattern, '\\d+', 'abc 123 def')
-        
+
         expect(result[:matched]).to be true
         expect(result[:full_match]).to eq('123')
         expect(result[:position]).to eq(4)
@@ -461,7 +458,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
 
       it 'returns captured group when present' do
         result = parsing_rule.send(:test_pattern, 'value: (\\d+)', 'value: 42')
-        
+
         expect(result[:captured_group]).to eq('42')
         expect(result[:full_match]).to eq('value: 42')
       end
@@ -483,14 +480,14 @@ RSpec.describe ParsingRule, type: :model, unit: true do
 
       it 'returns error for invalid regex' do
         result = parsing_rule.send(:test_pattern, '[invalid(', 'test')
-        
+
         expect(result[:error]).to be_present
         expect(result[:matched]).to be_nil
       end
 
       it 'uses case-insensitive matching' do
         result = parsing_rule.send(:test_pattern, 'TEST', 'test value')
-        
+
         expect(result[:matched]).to be true
         expect(result[:full_match]).to eq('test')
       end
@@ -503,7 +500,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
         parsing_rule = build_stubbed(:parsing_rule,
           amount_pattern: '(?:Monto|Amount|Total):[\\s]*(?:CRC|USD)?[\\s]*([\\d,]+(?:\\.\\d{2})?)'
         )
-        
+
         content = 'Monto: CRC 1,500.00'
         result = parsing_rule.parse_email(content)
         expect(result[:amount]).to eq(BigDecimal('1500.00'))
@@ -513,7 +510,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
         parsing_rule = build_stubbed(:parsing_rule,
           merchant_pattern: '(?<=Comercio: ).*?(?=\\n|$)'
         )
-        
+
         content = "Comercio: Test Store\nNext line"
         result = parsing_rule.parse_email(content)
         expect(result[:merchant_name]).to eq('Test Store')
@@ -524,7 +521,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
       it 'handles very long email content' do
         parsing_rule = build_stubbed(:parsing_rule, amount_pattern: '\\d+\\.\\d{2}')
         long_content = 'x' * 10000 + ' 100.00 ' + 'y' * 10000
-        
+
         result = parsing_rule.parse_email(long_content)
         expect(result[:amount]).to eq(BigDecimal('100.00'))
       end
@@ -534,10 +531,10 @@ RSpec.describe ParsingRule, type: :model, unit: true do
         parsing_rule = build_stubbed(:parsing_rule,
           description_pattern: '(a+)+b'
         )
-        
+
         # This could hang with catastrophic backtracking
         content = 'a' * 30 + 'c'
-        
+
         # Should complete without hanging
         Timeout.timeout(1) do
           result = parsing_rule.parse_email(content)
@@ -550,7 +547,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
       it 'handles UTF-8 content' do
         parsing_rule = build_stubbed(:parsing_rule, merchant_pattern: 'Tienda: (.+)')
         content = "Tienda: Café José's ñ"
-        
+
         result = parsing_rule.parse_email(content)
         expect(result[:merchant_name]).to eq("Café José's ñ")
       end
@@ -559,7 +556,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
         parsing_rule = build_stubbed(:parsing_rule,
           amount_pattern: '[€₡$]([\\d,]+\\.\\d{2})'
         )
-        
+
         content = '€100.00'
         result = parsing_rule.parse_email(content)
         expect(result[:amount]).to eq(BigDecimal('100.00'))

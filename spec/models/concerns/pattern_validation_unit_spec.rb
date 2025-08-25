@@ -16,16 +16,16 @@ RSpec.describe PatternValidation, type: :model, unit: true do
       attribute :pattern_value, :string
       attribute :category_id, :integer
       attribute :id, :integer
-      
+
       attr_accessor :metadata
-      
+
       def initialize(attrs = {})
         super
         @metadata = {}
       end
 
       define_callbacks :validation
-      
+
       # Mock ActiveRecord methods
       def self.where(*)
         MockRelation.new
@@ -46,7 +46,7 @@ RSpec.describe PatternValidation, type: :model, unit: true do
       def mark_pattern_value_changed!
         @pattern_value_changed = true
       end
-      
+
       def valid?
         run_callbacks :validation do
           super
@@ -471,7 +471,6 @@ RSpec.describe PatternValidation, type: :model, unit: true do
         dummy_object.id = 1
         dummy_object.mark_pattern_value_changed!
       end
-
     end
 
     context "with control characters" do
@@ -504,7 +503,7 @@ RSpec.describe PatternValidation, type: :model, unit: true do
       similar_relation = double(
         any?: true,
         count: 2,
-        pluck: ["starbuck", "star bucks"]
+        pluck: [ "starbuck", "star bucks" ]
       )
       allow(dummy_object.class).to receive(:where).and_return(similar_relation)
       allow(similar_relation).to receive(:where).and_return(similar_relation)
@@ -512,14 +511,14 @@ RSpec.describe PatternValidation, type: :model, unit: true do
       allow(similar_relation).to receive(:limit).and_return(similar_relation)
 
       dummy_object.send(:check_for_similar_patterns)
-      expect(dummy_object.metadata["similar_patterns"]).to eq(["starbuck", "star bucks"])
+      expect(dummy_object.metadata["similar_patterns"]).to eq([ "starbuck", "star bucks" ])
     end
 
     it "sets high similarity warning for many similar patterns" do
       similar_relation = double(
         any?: true,
         count: 3,
-        pluck: ["starbuck", "star bucks", "starbuks"]
+        pluck: [ "starbuck", "star bucks", "starbuks" ]
       )
       allow(dummy_object.class).to receive(:where).and_return(similar_relation)
       allow(similar_relation).to receive(:where).and_return(similar_relation)
@@ -535,7 +534,7 @@ RSpec.describe PatternValidation, type: :model, unit: true do
     it "runs normalize_pattern_value before validation" do
       dummy_object.pattern_type = "merchant"
       dummy_object.pattern_value = "  STARBUCKS  "
-      
+
       # Simulate validation callbacks
       dummy_object.send(:normalize_pattern_value)
       expect(dummy_object.pattern_value).to eq("starbucks")

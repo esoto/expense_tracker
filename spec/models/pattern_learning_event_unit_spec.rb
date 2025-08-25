@@ -95,34 +95,34 @@ RSpec.describe PatternLearningEvent, type: :model, unit: true do
       it "invalidates pattern analytics cache" do
         event = build_stubbed(:pattern_learning_event)
         cache = double("cache")
-        
+
         allow(Rails).to receive(:cache).and_return(cache)
         expect(cache).to receive(:respond_to?).with(:delete_matched).and_return(true)
         expect(cache).to receive(:delete_matched).with("pattern_analytics/*")
-        
+
         event.send(:invalidate_analytics_cache)
       end
 
       it "handles cache without delete_matched method" do
         event = build_stubbed(:pattern_learning_event)
         cache = double("cache")
-        
+
         allow(Rails).to receive(:cache).and_return(cache)
         expect(cache).to receive(:respond_to?).with(:delete_matched).and_return(false)
         expect(cache).not_to receive(:delete_matched)
-        
+
         event.send(:invalidate_analytics_cache)
       end
 
       it "handles cache invalidation errors gracefully" do
         event = build_stubbed(:pattern_learning_event)
         cache = double("cache")
-        
+
         allow(Rails).to receive(:cache).and_return(cache)
         expect(cache).to receive(:respond_to?).with(:delete_matched).and_return(true)
         expect(cache).to receive(:delete_matched).and_raise(StandardError.new("Cache error"))
         expect(Rails.logger).to receive(:error).with(match(/Analytics cache invalidation failed/))
-        
+
         expect { event.send(:invalidate_analytics_cache) }.not_to raise_error
       end
     end
@@ -135,7 +135,7 @@ RSpec.describe PatternLearningEvent, type: :model, unit: true do
 
       context "with CategorizationPattern" do
         it "creates event with pattern details" do
-          pattern = build_stubbed(:categorization_pattern, 
+          pattern = build_stubbed(:categorization_pattern,
             id: 10,
             pattern_type: "merchant",
             pattern_value: "Store Name"
@@ -211,7 +211,6 @@ RSpec.describe PatternLearningEvent, type: :model, unit: true do
           confidence: nil
         )
       end
-
     end
   end
 
@@ -258,7 +257,6 @@ RSpec.describe PatternLearningEvent, type: :model, unit: true do
     end
 
     describe "context_data handling" do
-
       it "handles nil context_data" do
         event = build_stubbed(:pattern_learning_event, context_data: nil)
         expect(event).to be_valid
@@ -289,13 +287,13 @@ RSpec.describe PatternLearningEvent, type: :model, unit: true do
         category1 = build_stubbed(:category, id: 1)
         category2 = build_stubbed(:category, id: 2)
 
-        event1 = build_stubbed(:pattern_learning_event, 
-          expense: expense, 
+        event1 = build_stubbed(:pattern_learning_event,
+          expense: expense,
           category: category1,
           pattern_used: "pattern1"
         )
-        event2 = build_stubbed(:pattern_learning_event, 
-          expense: expense, 
+        event2 = build_stubbed(:pattern_learning_event,
+          expense: expense,
           category: category2,
           pattern_used: "pattern2"
         )
@@ -330,8 +328,6 @@ RSpec.describe PatternLearningEvent, type: :model, unit: true do
     describe "pattern type variations" do
       let(:expense) { build_stubbed(:expense) }
       let(:category) { build_stubbed(:category) }
-
-
     end
   end
 end

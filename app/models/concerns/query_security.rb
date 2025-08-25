@@ -193,7 +193,7 @@ module QuerySecurity
         sql = scope.to_sql
         where_match = sql.match(/WHERE\s+(.+?)(?:\s+ORDER\s+BY|\s+GROUP\s+BY|\s+LIMIT|\s*$)/i)
         return 0 unless where_match
-        
+
         # Simple heuristic: count AND/OR operators + 1
         conditions = where_match[1]
         conditions.scan(/\s+AND\s+|\s+OR\s+/i).size + 1

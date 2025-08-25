@@ -181,9 +181,9 @@ RSpec.describe Expense, type: :model, unit: true do
     describe "#formatted_amount" do
       it "formats currencies correctly" do
         currency_tests = [
-          [:crc, 25000, "₡25000.0"],
-          [:usd, 100.50, "$100.5"], 
-          [:eur, 75.25, "€75.25"]
+          [ :crc, 25000, "₡25000.0" ],
+          [ :usd, 100.50, "$100.5" ],
+          [ :eur, 75.25, "€75.25" ]
         ]
 
         currency_tests.each do |currency, amount, expected|
@@ -260,9 +260,9 @@ RSpec.describe Expense, type: :model, unit: true do
     describe "#parsed_email_data" do
       it "handles JSON parsing with fallbacks" do
         test_cases = [
-          ['{"key": "value"}', { "key" => "value" }],
-          ["invalid json", {}],
-          [nil, {}]
+          [ '{"key": "value"}', { "key" => "value" } ],
+          [ "invalid json", {} ],
+          [ nil, {} ]
         ]
 
         test_cases.each do |input, expected|
@@ -282,18 +282,18 @@ RSpec.describe Expense, type: :model, unit: true do
     describe "status check methods" do
       it "provides accurate status predicates" do
         status_tests = [
-          [:duplicate, :duplicate?],
-          [:processed, :processed?],
-          [:pending, :pending?],
-          [:failed, :failed?]
+          [ :duplicate, :duplicate? ],
+          [ :processed, :processed? ],
+          [ :pending, :pending? ],
+          [ :failed, :failed? ]
         ]
 
         status_tests.each do |status, predicate_method|
           expense.status = status
           expect(expense.send(predicate_method)).to be true
-          
+
           # Test that other status methods return false
-          other_methods = status_tests.map(&:last) - [predicate_method]
+          other_methods = status_tests.map(&:last) - [ predicate_method ]
           other_methods.each do |other_method|
             expect(expense.send(other_method)).to be false
           end
@@ -305,11 +305,11 @@ RSpec.describe Expense, type: :model, unit: true do
       describe "#confidence_level" do
         it "categorizes confidence levels correctly" do
           confidence_tests = [
-            [nil, :none],
-            [0.85, :high],
-            [0.70, :medium], 
-            [0.50, :low],
-            [0.30, :very_low]
+            [ nil, :none ],
+            [ 0.85, :high ],
+            [ 0.70, :medium ],
+            [ 0.50, :low ],
+            [ 0.30, :very_low ]
           ]
 
           confidence_tests.each do |confidence, expected_level|
@@ -322,8 +322,8 @@ RSpec.describe Expense, type: :model, unit: true do
       describe "#confidence_percentage" do
         it "converts confidence to percentage" do
           percentage_tests = [
-            [nil, 0],
-            [0.856, 86]
+            [ nil, 0 ],
+            [ 0.856, 86 ]
           ]
 
           percentage_tests.each do |confidence, expected_percentage|

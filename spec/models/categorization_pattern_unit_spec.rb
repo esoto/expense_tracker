@@ -72,7 +72,7 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
           else
             "amazon"
           end
-          
+
           pattern = build_categorization_pattern(pattern_type: type, pattern_value: pattern_value)
           expect(pattern).to be_valid
         end
@@ -93,13 +93,13 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
           pattern_type: "merchant",
           pattern_value: "amazon"
         )
-        
+
         # Mock uniqueness validation
         allow(pattern).to receive(:errors).and_return(ActiveModel::Errors.new(pattern))
         relation = double("relation")
         allow(CategorizationPattern).to receive(:where).and_return(relation)
         allow(relation).to receive(:exists?).and_return(false)
-        
+
         expect(pattern).to be_valid
       end
     end
@@ -553,7 +553,7 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
         pattern = build_categorization_pattern(pattern_type: "merchant", pattern_value: "amazon")
         expense = build_stubbed(:expense)
         allow(expense).to receive(:attributes).and_return({ "merchant_name" => "Amazon.com" })
-        
+
         expect(pattern.matches?(expense: expense)).to be true
       end
 
@@ -577,7 +577,7 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
         allow(duck_typed_object).to receive(:respond_to?).with(:merchant_name).and_return(true)
         allow(duck_typed_object).to receive(:respond_to?).with(:description).and_return(false)
         allow(duck_typed_object).to receive(:merchant_name).and_return("Amazon.com")
-        
+
         expect(pattern.matches?(duck_typed_object)).to be true
       end
 
@@ -587,7 +587,7 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
         allow(duck_typed_object).to receive(:respond_to?).with(:description).and_return(true)
         allow(duck_typed_object).to receive(:description).and_return("grocery store")
         allow(duck_typed_object).to receive(:description?).and_return(true)
-        
+
         expect(desc_pattern.matches?(duck_typed_object)).to be true
       end
     end
@@ -715,11 +715,11 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
 
       it "handles text matching and edge cases" do
         text_tests = [
-          ["Test String", true],
-          ["testing", true], 
-          ["other", false],
-          [nil, false],
-          [123, false]
+          [ "Test String", true ],
+          [ "testing", true ],
+          [ "other", false ],
+          [ nil, false ],
+          [ 123, false ]
         ]
 
         text_tests.each do |input, expected|
@@ -733,10 +733,10 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
 
       it "handles regex matching and edge cases" do
         regex_tests = [
-          ["test string", true],
-          ["other", false],
-          [nil, false],
-          [123, false]
+          [ "test string", true ],
+          [ "other", false ],
+          [ nil, false ],
+          [ 123, false ]
         ]
 
         regex_tests.each do |input, expected|
@@ -754,17 +754,17 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
       it "handles amount range matching with various inputs" do
         amount_tests = [
           # [pattern_value, input, expected]
-          ["10.00-50.00", 25.0, true],
-          ["10.00-50.00", 10.0, true], 
-          ["10.00-50.00", 50.0, true],
-          ["10.00-50.00", 5.0, false],
-          ["10.00-50.00", 60.0, false],
-          ["10.00-50.00", "25.0", true],
-          ["10.00-50.00", "5.0", false],
-          ["-100--50", -75.0, true],
-          ["-100--50", -25.0, false],
-          ["invalid", 25.0, false],
-          ["10.00-50.00", "not_a_number", false]
+          [ "10.00-50.00", 25.0, true ],
+          [ "10.00-50.00", 10.0, true ],
+          [ "10.00-50.00", 50.0, true ],
+          [ "10.00-50.00", 5.0, false ],
+          [ "10.00-50.00", 60.0, false ],
+          [ "10.00-50.00", "25.0", true ],
+          [ "10.00-50.00", "5.0", false ],
+          [ "-100--50", -75.0, true ],
+          [ "-100--50", -25.0, false ],
+          [ "invalid", 25.0, false ],
+          [ "10.00-50.00", "not_a_number", false ]
         ]
 
         amount_tests.each do |pattern_value, input, expected|
@@ -886,7 +886,7 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
       it "handles cache invalidation errors gracefully" do
         allow(Rails.logger).to receive(:error)
         allow(Rails.cache).to receive(:delete_matched).and_raise(StandardError.new("Cache error"))
-        
+
         expect { pattern.send(:invalidate_cache) }.not_to raise_error
         expect(Rails.logger).to have_received(:error).with(/Cache invalidation failed/)
       end
@@ -899,7 +899,7 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
         cache_double = double("cache")
         allow(Rails).to receive(:cache).and_return(cache_double)
         allow(cache_double).to receive(:respond_to?).with(:delete_matched).and_return(false)
-        
+
         expect { pattern.send(:invalidate_cache) }.not_to raise_error
       end
     end

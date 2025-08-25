@@ -257,7 +257,7 @@ RSpec.shared_examples "QuerySecurity concern" do
 end
 
 # Test the MemoryRateLimitStore independently
-RSpec.describe QuerySecurity::MemoryRateLimitStore do
+RSpec.describe QuerySecurity::MemoryRateLimitStore, unit: true do
   let(:store) { QuerySecurity::MemoryRateLimitStore.new }
 
   describe "#get" do
@@ -311,6 +311,143 @@ RSpec.describe QuerySecurity::MemoryRateLimitStore do
       store.setex("expired", 0.001, "value")
       sleep 0.002
       expect(store.exists?("expired")).to be false
+    end
+  end
+end
+
+# Comprehensive tests for QuerySecurity concern methods
+RSpec.describe QuerySecurity, unit: true do
+  # Create a test class that includes the concern for isolated testing
+  let(:test_class) do
+    Class.new(ActiveRecord::Base) do
+      self.table_name = "expenses" # Use existing table for testing
+      include QuerySecurity
+    end
+  end
+
+  describe "rate limiting functionality" do
+    describe ".rate_limit_exceeded?" do
+      it "executes rate limiting when properly configured" do
+        # Set up actual Rails configuration to enable rate limiting
+        Rails.application.config.class_eval do
+          attr_accessor :enable_query_rate_limiting
+        end
+        
+        Rails.application.config.enable_query_rate_limiting = true
+        
+        begin
+          store = test_class.rate_limit_store
+          identifier = test_class.request_identifier
+          key = test_class.rate_limit_key(identifier)
+          
+          # Test under limit scenario - executes lines 47-52
+          store.setex(key, 60, 50)
+          expect(test_class.rate_limit_exceeded?).to be false
+          
+          # Test over limit scenario - executes lines 47-52
+          store.setex(key, 60, 150) 
+          expect(test_class.rate_limit_exceeded?).to be true
+          
+        ensure
+          Rails.application.config.enable_query_rate_limiting = nil
+          Rails.application.config.class_eval do
+            remove_method :enable_query_rate_limiting if method_defined?(:enable_query_rate_limiting)
+            remove_method :enable_query_rate_limiting= if method_defined?(:enable_query_rate_limiting=)
+          end
+        end
+      end
+    end
+
+    describe ".increment_rate_limit" do
+      it "executes increment rate limiting when properly configured" do
+        Rails.application.config.class_eval do
+          attr_accessor :enable_query_rate_limiting
+        end
+        
+        Rails.application.config.enable_query_rate_limiting = true
+        
+        begin
+          store = test_class.rate_limit_store
+          identifier = test_class.request_identifier
+          key = test_class.rate_limit_key(identifier)
+          
+          # Clear any existing data
+          store.instance_variable_get(:@store).clear
+          store.instance_variable_get(:@expires).clear
+          
+          # Test creating new counter - executes lines 54-65
+          test_class.increment_rate_limit
+          expect(store.get(key)).to eq(1)
+          
+          # Test incrementing existing counter
+          test_class.increment_rate_limit
+          expect(store.get(key)).to eq(2)
+          
+        ensure
+          Rails.application.config.enable_query_rate_limiting = nil
+          Rails.application.config.class_eval do
+            remove_method :enable_query_rate_limiting if method_defined?(:enable_query_rate_limiting)
+            remove_method :enable_query_rate_limiting= if method_defined?(:enable_query_rate_limiting=)
+          end
+        end
+      end
+    end
+
+    describe ".request_identifier" do
+      it "uses Thread-local request_id when available" do
+        Thread.current[:request_id] = "test_thread"
+        expect(test_class.request_identifier).to eq("test_thread")
+        Thread.current[:request_id] = nil # Clean up
+      end
+
+      it "returns 'unknown' as fallback" do
+        Thread.current[:request_id] = nil
+        expect(test_class.request_identifier).to eq("unknown")
+      end
+    end
+  end
+
+  describe "query cost estimation" do
+    describe ".estimate_query_cost" do
+      it "handles database errors gracefully" do
+        invalid_scope = double("scope", to_sql: "INVALID SQL SYNTAX", respond_to?: true)
+        allow(Rails.logger).to receive(:debug)
+        cost = test_class.estimate_query_cost(invalid_scope)
+        expect(cost).to eq(0)
+      end
+    end
+  end
+
+  describe "query complexity analysis" do
+    describe ".analyze_query_complexity" do
+      it "logs warning for high complexity queries when score exceeds threshold" do
+        complex_scope = double("scope",
+          joins_values: Array.new(15, "table"), # 15 joins = 150 points
+          left_outer_joins_values: [],
+          where_clause: double(predicates: []),
+          to_sql: "SELECT * FROM table"
+        )
+
+        expect(Rails.logger).to receive(:warn).with(/High complexity query detected/)
+        test_class.analyze_query_complexity(complex_scope)
+      end
+    end
+  end
+
+  describe "edge cases and error handling" do
+    describe "advanced injection scenarios" do
+      it "handles Unicode characters safely in sanitize_like_query" do
+        unicode_input = "café_münü%ñoño"
+        result = test_class.sanitize_like_query(unicode_input)
+        expect(result).to eq("café\\_münü\\%ñoño")
+      end
+
+      it "handles malformed JSON in validate_cursor" do
+        bad_cursor = Base64.strict_encode64("{ invalid json")
+        expect {
+          test_class.validate_cursor(bad_cursor)
+        }.to raise_error(ArgumentError, "Invalid cursor format")
+      end
     end
   end
 end

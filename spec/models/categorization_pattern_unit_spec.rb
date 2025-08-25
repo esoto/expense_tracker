@@ -61,7 +61,19 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
 
       it "accepts valid pattern types" do
         CategorizationPattern::PATTERN_TYPES.each do |type|
-          pattern = build_categorization_pattern(pattern_type: type)
+          # Use appropriate pattern_value for each type
+          pattern_value = case type
+          when "amount_range"
+            "10.00-50.00"
+          when "time"
+            "morning"
+          when "regex"
+            "^test$"
+          else
+            "amazon"
+          end
+          
+          pattern = build_categorization_pattern(pattern_type: type, pattern_value: pattern_value)
           expect(pattern).to be_valid
         end
       end
@@ -259,25 +271,25 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
   describe "scopes" do
     describe ".active" do
       it "filters active patterns" do
-        expect(CategorizationPattern.active.to_sql).to include("active = TRUE")
+        expect(CategorizationPattern.active.to_sql).to include('"active" = TRUE')
       end
     end
 
     describe ".inactive" do
       it "filters inactive patterns" do
-        expect(CategorizationPattern.inactive.to_sql).to include("active = FALSE")
+        expect(CategorizationPattern.inactive.to_sql).to include('"active" = FALSE')
       end
     end
 
     describe ".user_created" do
       it "filters user created patterns" do
-        expect(CategorizationPattern.user_created.to_sql).to include("user_created = TRUE")
+        expect(CategorizationPattern.user_created.to_sql).to include('"user_created" = TRUE')
       end
     end
 
     describe ".system_created" do
       it "filters system created patterns" do
-        expect(CategorizationPattern.system_created.to_sql).to include("user_created = FALSE")
+        expect(CategorizationPattern.system_created.to_sql).to include('"user_created" = FALSE')
       end
     end
 
@@ -351,7 +363,7 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
       before { @was_successful = true }
 
       it "increments both usage and success counts" do
-        expect(CategorizationPattern).to receive(:update_counters).with(1, usage_count: 1, success_count: 1)
+        expect(CategorizationPattern).to receive(:update_counters).with(1, { usage_count: 1, success_count: 1 })
         pattern.record_usage(true)
       end
 
@@ -365,7 +377,7 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
       before { @was_successful = false }
 
       it "only increments usage count" do
-        expect(CategorizationPattern).to receive(:update_counters).with(1, usage_count: 1)
+        expect(CategorizationPattern).to receive(:update_counters).with(1, { usage_count: 1 })
         pattern.record_usage(false)
       end
 
@@ -394,6 +406,34 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
 
       it "handles nil text" do
         expect(pattern.matches?(nil)).to be false
+      end
+    end
+
+    context "keyword pattern" do
+      let(:pattern) { build_categorization_pattern(pattern_type: "keyword", pattern_value: "grocery") }
+
+      it "matches description field" do
+        expect(pattern.matches?("grocery store")).to be true
+      end
+
+      it "matches merchant name field" do
+        expect(pattern.matches?("SuperMarket Grocery")).to be true
+      end
+
+      it "handles blank text" do
+        expect(pattern.matches?("")).to be false
+      end
+    end
+
+    context "description pattern" do
+      let(:pattern) { build_categorization_pattern(pattern_type: "description", pattern_value: "payment") }
+
+      it "matches description text" do
+        expect(pattern.matches?("Monthly payment")).to be true
+      end
+
+      it "does not match when description is blank" do
+        expect(pattern.matches?("")).to be false
       end
     end
 
@@ -453,6 +493,114 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
 
       it "extracts text from expense object" do
         expect(pattern.matches?(expense)).to be true
+      end
+
+      it "handles expense with keyword pattern" do
+        keyword_pattern = build_categorization_pattern(pattern_type: "keyword", pattern_value: "grocery")
+        allow(expense).to receive(:attributes).and_return({
+          "description" => "grocery shopping",
+          "merchant_name" => "Store"
+        })
+        expect(keyword_pattern.matches?(expense)).to be true
+      end
+
+      it "handles expense with description pattern" do
+        desc_pattern = build_categorization_pattern(pattern_type: "description", pattern_value: "subscription")
+        allow(expense).to receive(:attributes).and_return({
+          "description" => "Monthly subscription fee",
+          "merchant_name" => "Netflix"
+        })
+        expect(desc_pattern.matches?(expense)).to be true
+      end
+
+      it "handles expense with regex pattern" do
+        regex_pattern = build_categorization_pattern(pattern_type: "regex", pattern_value: "^UBER.*")
+        allow(expense).to receive(:attributes).and_return({
+          "description" => "UBER TRIP",
+          "merchant_name" => "Uber"
+        })
+        expect(regex_pattern.matches?(expense)).to be true
+      end
+
+      it "handles expense with amount_range pattern" do
+        amount_pattern = build_categorization_pattern(pattern_type: "amount_range", pattern_value: "10.00-50.00")
+        allow(expense).to receive(:amount).and_return(25.0)
+        expect(amount_pattern.matches?(expense)).to be true
+      end
+
+      it "handles expense with time pattern" do
+        time_pattern = build_categorization_pattern(pattern_type: "time", pattern_value: "morning")
+        allow(expense).to receive(:transaction_date).and_return(DateTime.parse("2024-01-01 08:00:00"))
+        expect(time_pattern.matches?(expense)).to be true
+      end
+
+      it "falls back to read_attribute when attributes fail" do
+        allow(expense).to receive(:attributes).and_raise(StandardError)
+        allow(expense).to receive(:read_attribute).with(:merchant_name).and_return("Amazon.com")
+        expect(pattern.matches?(expense)).to be true
+      end
+
+      it "falls back to method when both attributes and read_attribute fail" do
+        allow(expense).to receive(:attributes).and_raise(StandardError)
+        allow(expense).to receive(:read_attribute).and_raise(StandardError)
+        allow(expense).to receive(:merchant_name).and_return("Amazon.com")
+        expect(pattern.matches?(expense)).to be true
+      end
+    end
+
+    context "with hash input" do
+      it "handles hash with expense key" do
+        pattern = build_categorization_pattern(pattern_type: "merchant", pattern_value: "amazon")
+        expense = build_stubbed(:expense)
+        allow(expense).to receive(:attributes).and_return({ "merchant_name" => "Amazon.com" })
+        
+        expect(pattern.matches?(expense: expense)).to be true
+      end
+
+      it "handles hash with merchant_name" do
+        pattern = build_categorization_pattern(pattern_type: "merchant", pattern_value: "amazon")
+        expect(pattern.matches?(merchant_name: "Amazon Prime")).to be true
+      end
+
+      it "handles hash with description" do
+        pattern = build_categorization_pattern(pattern_type: "description", pattern_value: "payment")
+        expect(pattern.matches?(description: "Monthly payment")).to be true
+      end
+    end
+
+    context "with duck-typed object" do
+      let(:pattern) { build_categorization_pattern(pattern_type: "merchant", pattern_value: "amazon") }
+      let(:duck_typed_object) { double("object") }
+
+      it "uses merchant_name method when available" do
+        allow(duck_typed_object).to receive(:respond_to?).and_return(false)
+        allow(duck_typed_object).to receive(:respond_to?).with(:merchant_name).and_return(true)
+        allow(duck_typed_object).to receive(:respond_to?).with(:description).and_return(false)
+        allow(duck_typed_object).to receive(:merchant_name).and_return("Amazon.com")
+        
+        expect(pattern.matches?(duck_typed_object)).to be true
+      end
+
+      it "uses description method when available" do
+        desc_pattern = build_categorization_pattern(pattern_type: "keyword", pattern_value: "grocery")
+        allow(duck_typed_object).to receive(:respond_to?).and_return(false)
+        allow(duck_typed_object).to receive(:respond_to?).with(:description).and_return(true)
+        allow(duck_typed_object).to receive(:description).and_return("grocery store")
+        allow(duck_typed_object).to receive(:description?).and_return(true)
+        
+        expect(desc_pattern.matches?(duck_typed_object)).to be true
+      end
+    end
+
+    context "unsupported pattern type" do
+      let(:pattern) { build_categorization_pattern(pattern_type: "merchant", pattern_value: "amazon") }
+
+      before do
+        allow(pattern).to receive(:pattern_type).and_return("unsupported_type")
+      end
+
+      it "returns false for unsupported pattern types" do
+        expect(pattern.matches?("any text")).to be false
       end
     end
   end
@@ -574,6 +722,144 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
       it "handles nil text" do
         expect(pattern.send(:matches_text_pattern?, nil)).to be false
       end
+
+      it "handles non-string objects without downcase method" do
+        expect(pattern.send(:matches_text_pattern?, 123)).to be false
+      end
+    end
+
+    describe "#matches_regex_pattern?" do
+      let(:pattern) { build_categorization_pattern(pattern_value: "^test.*") }
+
+      it "matches text with valid regex" do
+        expect(pattern.send(:matches_regex_pattern?, "test string")).to be true
+        expect(pattern.send(:matches_regex_pattern?, "other")).to be false
+      end
+
+      it "handles nil text" do
+        expect(pattern.send(:matches_regex_pattern?, nil)).to be false
+      end
+
+      it "handles invalid regex gracefully" do
+        allow(pattern).to receive(:pattern_value).and_return("[invalid")
+        expect(pattern.send(:matches_regex_pattern?, "test")).to be false
+      end
+
+      it "handles non-string objects without match? method" do
+        expect(pattern.send(:matches_regex_pattern?, 123)).to be false
+      end
+    end
+
+    describe "#matches_amount_range?" do
+      let(:pattern) { build_categorization_pattern(pattern_value: "10.00-50.00") }
+
+      it "matches numeric values within range" do
+        expect(pattern.send(:matches_amount_range?, 25.0)).to be true
+        expect(pattern.send(:matches_amount_range?, 10.0)).to be true
+        expect(pattern.send(:matches_amount_range?, 50.0)).to be true
+      end
+
+      it "does not match values outside range" do
+        expect(pattern.send(:matches_amount_range?, 5.0)).to be false
+        expect(pattern.send(:matches_amount_range?, 60.0)).to be false
+      end
+
+      it "handles string numeric values" do
+        expect(pattern.send(:matches_amount_range?, "25.0")).to be true
+        expect(pattern.send(:matches_amount_range?, "5.0")).to be false
+      end
+
+      it "handles negative ranges" do
+        pattern = build_categorization_pattern(pattern_value: "-100--50")
+        expect(pattern.send(:matches_amount_range?, -75.0)).to be true
+        expect(pattern.send(:matches_amount_range?, -25.0)).to be false
+      end
+
+      it "returns false for invalid range format" do
+        pattern = build_categorization_pattern(pattern_value: "invalid")
+        expect(pattern.send(:matches_amount_range?, 25.0)).to be false
+      end
+
+      it "returns false for non-numeric values" do
+        expect(pattern.send(:matches_amount_range?, "not_a_number")).to be false
+      end
+    end
+
+    describe "#matches_time_pattern?" do
+      let(:pattern) { build_categorization_pattern(pattern_value: "morning") }
+
+      it "handles blank input" do
+        expect(pattern.send(:matches_time_pattern?, nil)).to be false
+        expect(pattern.send(:matches_time_pattern?, "")).to be false
+      end
+
+      it "matches time keywords correctly" do
+        morning_time = DateTime.parse("2024-01-01 08:00:00")
+        expect(pattern.send(:matches_time_pattern?, morning_time)).to be true
+
+        afternoon_pattern = build_categorization_pattern(pattern_value: "afternoon")
+        afternoon_time = DateTime.parse("2024-01-01 14:00:00")
+        expect(afternoon_pattern.send(:matches_time_pattern?, afternoon_time)).to be true
+
+        evening_pattern = build_categorization_pattern(pattern_value: "evening")
+        evening_time = DateTime.parse("2024-01-01 19:00:00")
+        expect(evening_pattern.send(:matches_time_pattern?, evening_time)).to be true
+
+        night_pattern = build_categorization_pattern(pattern_value: "night")
+        night_time = DateTime.parse("2024-01-01 23:00:00")
+        expect(night_pattern.send(:matches_time_pattern?, night_time)).to be true
+      end
+
+      it "handles weekend and weekday patterns" do
+        weekend_pattern = build_categorization_pattern(pattern_value: "weekend")
+        saturday = DateTime.parse("2024-01-06 12:00:00") # Saturday
+        sunday = DateTime.parse("2024-01-07 12:00:00") # Sunday
+        monday = DateTime.parse("2024-01-01 12:00:00") # Monday
+
+        expect(weekend_pattern.send(:matches_time_pattern?, saturday)).to be true
+        expect(weekend_pattern.send(:matches_time_pattern?, sunday)).to be true
+        expect(weekend_pattern.send(:matches_time_pattern?, monday)).to be false
+
+        weekday_pattern = build_categorization_pattern(pattern_value: "weekday")
+        expect(weekday_pattern.send(:matches_time_pattern?, monday)).to be true
+        expect(weekday_pattern.send(:matches_time_pattern?, saturday)).to be false
+      end
+
+      it "returns false when parse_datetime fails" do
+        expect(pattern.send(:matches_time_pattern?, "invalid_date")).to be false
+      end
+    end
+
+    describe "#matches_time_range?" do
+      let(:pattern) { build_categorization_pattern(pattern_value: "09:00-17:00") }
+
+      it "matches times within range" do
+        datetime = DateTime.parse("2024-01-01 12:00:00")
+        expect(pattern.send(:matches_time_range?, datetime)).to be true
+      end
+
+      it "handles time ranges crossing midnight" do
+        pattern = build_categorization_pattern(pattern_value: "22:00-06:00")
+        late_night = DateTime.parse("2024-01-01 23:00:00")
+        early_morning = DateTime.parse("2024-01-01 05:00:00")
+        midday = DateTime.parse("2024-01-01 12:00:00")
+
+        expect(pattern.send(:matches_time_range?, late_night)).to be true
+        expect(pattern.send(:matches_time_range?, early_morning)).to be true
+        expect(pattern.send(:matches_time_range?, midday)).to be false
+      end
+
+      it "returns false for invalid pattern value" do
+        pattern = build_categorization_pattern(pattern_value: "invalid")
+        datetime = DateTime.parse("2024-01-01 12:00:00")
+        expect(pattern.send(:matches_time_range?, datetime)).to be false
+      end
+
+      it "handles parsing errors gracefully" do
+        datetime = DateTime.parse("2024-01-01 12:00:00")
+        allow(pattern).to receive(:pattern_value).and_return("25:70-30:80") # Invalid hour/minute values
+        expect(pattern.send(:matches_time_range?, datetime)).to be false
+      end
     end
 
     describe "#parse_datetime" do
@@ -602,6 +888,30 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
       it "returns nil for invalid input" do
         expect(pattern.send(:parse_datetime, "invalid")).to be_nil
         expect(pattern.send(:parse_datetime, 123)).to be_nil
+      end
+    end
+
+    describe "#invalidate_cache" do
+      let(:pattern) { build_categorization_pattern }
+
+      it "handles cache invalidation errors gracefully" do
+        allow(Rails.logger).to receive(:error)
+        allow(Rails.cache).to receive(:delete_matched).and_raise(StandardError.new("Cache error"))
+        
+        expect { pattern.send(:invalidate_cache) }.not_to raise_error
+        expect(Rails.logger).to have_received(:error).with(/Cache invalidation failed/)
+      end
+
+      it "skips pattern cache when not defined" do
+        expect { pattern.send(:invalidate_cache) }.not_to raise_error
+      end
+
+      it "skips Rails cache operations when delete_matched not available" do
+        cache_double = double("cache")
+        allow(Rails).to receive(:cache).and_return(cache_double)
+        allow(cache_double).to receive(:respond_to?).with(:delete_matched).and_return(false)
+        
+        expect { pattern.send(:invalidate_cache) }.not_to raise_error
       end
     end
   end

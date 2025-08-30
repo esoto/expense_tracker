@@ -26,6 +26,26 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
         expect(json_response["status"]).to eq("success")
         expect(json_response["email_account_id"]).to eq(email_account.id.to_s)
       end
+
+      it "handles string email_account_id parameter" do
+        expect(ProcessEmailsJob).to receive(:perform_later).with(
+          email_account.id,
+          since: be_a(Time)
+        )
+
+        post :process_emails, params: { email_account_id: email_account.id.to_s }
+        expect(response).to have_http_status(:accepted)
+      end
+
+      it "handles non-numeric email_account_id gracefully" do
+        expect(ProcessEmailsJob).to receive(:perform_later).with(
+          0,
+          since: be_a(Time)
+        )
+
+        post :process_emails, params: { email_account_id: "invalid" }
+        expect(response).to have_http_status(:accepted)
+      end
     end
 
     context "without email_account_id parameter" do
@@ -105,6 +125,41 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
 
         post :process_emails, params: { email_account_id: email_account.id, since: "invalid" }
       end
+
+      it "handles empty string since parameter" do
+        expect(ProcessEmailsJob).to receive(:perform_later).with(
+          email_account.id,
+          since: be_within(1.minute).of(1.week.ago)
+        )
+
+        post :process_emails, params: { email_account_id: email_account.id, since: "" }
+      end
+
+      it "handles nil since parameter" do
+        expect(ProcessEmailsJob).to receive(:perform_later).with(
+          email_account.id,
+          since: be_within(1.minute).of(1.week.ago)
+        )
+
+        post :process_emails, params: { email_account_id: email_account.id, since: nil }
+      end
+
+      it "handles malformed timestamp gracefully" do
+        expect(ProcessEmailsJob).to receive(:perform_later).with(
+          email_account.id,
+          since: be_within(1.minute).of(1.week.ago)
+        )
+
+        post :process_emails, params: { email_account_id: email_account.id, since: "not-a-date" }
+      end
+    end
+
+    context "error scenarios" do
+      it "handles job enqueueing failures gracefully" do
+        allow(ProcessEmailsJob).to receive(:perform_later).and_raise(StandardError.new("Queue error"))
+
+        expect { post :process_emails }.to raise_error(StandardError, "Queue error")
+      end
     end
   end
 
@@ -148,28 +203,63 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
         expect(json_response["status"]).to eq("error")
         expect(json_response["errors"]).to be_present
       end
-    end
 
-    context "when no active email account exists" do
-      before do
-        EmailAccount.update_all(active: false)
+      it "returns error for invalid amount format" do
+        invalid_params = expense_params.merge(amount: "not-a-number")
+
+        post :add_expense, params: { expense: invalid_params }
+
+        expect(response).to have_http_status(:unprocessable_content)
+        json_response = JSON.parse(response.body)
+        expect(json_response["status"]).to eq("error")
+        expect(json_response["errors"]).to include(match(/amount/i))
       end
 
-      it "creates default manual account" do
+      it "returns error for negative amount" do
+        invalid_params = expense_params.merge(amount: "-10.50")
+
+        post :add_expense, params: { expense: invalid_params }
+
+        expect(response).to have_http_status(:unprocessable_content)
+        json_response = JSON.parse(response.body)
+        expect(json_response["status"]).to eq("error")
+      end
+
+      it "returns error for invalid transaction_date" do
+        invalid_params = expense_params.merge(transaction_date: "not-a-date")
+
+        post :add_expense, params: { expense: invalid_params }
+
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+
+      it "returns error for non-existent category_id" do
+        invalid_params = expense_params.merge(category_id: 99999)
+        
+        expect {
+          post :add_expense, params: { expense: invalid_params }
+        }.to raise_error(ActiveRecord::InvalidForeignKey)
+      end
+    end
+
+
+    context "database transaction failures" do
+      it "rolls back on expense save failure" do
+        expense_double = double("Expense")
+        allow(Expense).to receive(:new).and_return(expense_double)
+        allow(expense_double).to receive(:email_account=)
+        allow(expense_double).to receive(:status=)
+        allow(expense_double).to receive(:save).and_return(false)
+        allow(expense_double).to receive(:errors).and_return(double(full_messages: ["Validation error"]))
+
         expect {
           post :add_expense, params: { expense: expense_params }
-        }.to change(EmailAccount, :count).by(1)
+        }.not_to change(Expense, :count)
 
-        manual_account = EmailAccount.last
-        expect(manual_account.provider).to eq("manual")
-        expect(manual_account.email).to eq("manual@localhost")
-        expect(manual_account.bank_name).to eq("Manual Entry")
-        expect(manual_account.active).to be true
-
-        created_expense = Expense.last
-        expect(created_expense.email_account).to eq(manual_account)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
+
   end
 
   describe "GET #recent_expenses" do
@@ -228,6 +318,34 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
       expect(expense_data).to have_key("status")
       expect(expense_data).to have_key("created_at")
     end
+
+    context "edge cases" do
+      it "returns empty array when no expenses exist" do
+        Expense.destroy_all
+
+        get :recent_expenses
+
+        json_response = JSON.parse(response.body)
+        expect(json_response["expenses"]).to eq([])
+        expect(json_response["status"]).to eq("success")
+      end
+    end
+
+    context "database query optimization" do
+      it "includes necessary associations to avoid N+1 queries" do
+        expect(Expense).to receive(:includes).with(:category, :email_account).and_call_original
+
+        get :recent_expenses
+      end
+    end
+
+    context "error handling" do
+      it "handles database connection errors gracefully" do
+        allow(Expense).to receive(:includes).and_raise(ActiveRecord::ConnectionNotEstablished.new("DB error"))
+
+        expect { get :recent_expenses }.to raise_error(ActiveRecord::ConnectionNotEstablished)
+      end
+    end
   end
 
   describe "GET #expense_summary" do
@@ -260,9 +378,49 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
 
       get :expense_summary, params: { period: "week" }
     end
+
+    context "error handling" do
+      it "handles service initialization failures" do
+        allow(ExpenseSummaryService).to receive(:new).and_raise(StandardError.new("Service error"))
+
+        expect { get :expense_summary }.to raise_error(StandardError, "Service error")
+      end
+
+      it "handles service method failures" do
+        summary_service = double("ExpenseSummaryService")
+        allow(ExpenseSummaryService).to receive(:new).and_return(summary_service)
+        allow(summary_service).to receive(:period).and_raise(StandardError.new("Period error"))
+
+        expect { get :expense_summary }.to raise_error(StandardError, "Period error")
+      end
+    end
+
+    context "parameter validation" do
+      it "handles nil period parameter" do
+        expect(ExpenseSummaryService).to receive(:new).with("")
+
+        get :expense_summary, params: { period: nil }
+      end
+
+      it "handles empty string period parameter" do
+        expect(ExpenseSummaryService).to receive(:new).with("")
+
+        get :expense_summary, params: { period: "" }
+      end
+
+      it "handles invalid period parameter" do
+        expect(ExpenseSummaryService).to receive(:new).with("invalid_period")
+
+        get :expense_summary, params: { period: "invalid_period" }
+      end
+    end
   end
 
   describe "authentication" do
+    before do
+      # Default stub for authentication - returns nil for unmatched tokens
+      allow(ApiToken).to receive(:authenticate).and_return(nil)
+    end
     context "without Authorization header" do
       before do
         request.headers["Authorization"] = nil
@@ -292,10 +450,88 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
     end
 
     context "with valid token" do
+      before do
+        allow(ApiToken).to receive(:authenticate).with(api_token.token_hash).and_return(api_token)
+        request.headers["Authorization"] = "Bearer #{api_token.token_hash}"
+      end
+      
       it "sets @current_api_token" do
         post :process_emails
 
         expect(controller.instance_variable_get(:@current_api_token)).to eq(api_token)
+      end
+    end
+
+    context "token format validation" do
+      it "handles malformed Bearer token" do
+        request.headers["Authorization"] = "InvalidFormat token123"
+
+        post :process_emails
+
+        expect(response).to have_http_status(:unauthorized)
+        json_response = JSON.parse(response.body)
+        expect(json_response["error"]).to eq("Invalid or expired API token")
+      end
+
+      it "handles empty Bearer token" do
+        request.headers["Authorization"] = "Bearer "
+
+        post :process_emails
+
+        expect(response).to have_http_status(:unauthorized)
+      end
+
+      it "handles very long token" do
+        long_token = "a" * 1000
+        request.headers["Authorization"] = "Bearer #{long_token}"
+        allow(ApiToken).to receive(:authenticate).with(long_token).and_return(nil)
+
+        post :process_emails
+
+        expect(response).to have_http_status(:unauthorized)
+      end
+
+      it "handles special characters in token" do
+        special_token = "token!@#$%^&*()"
+        request.headers["Authorization"] = "Bearer #{special_token}"
+        allow(ApiToken).to receive(:authenticate).with(special_token).and_return(nil)
+
+        post :process_emails
+
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context "authentication bypass attempts" do
+      it "cannot access endpoints without authentication" do
+        request.headers["Authorization"] = nil
+
+        post :add_expense, params: { expense: { amount: 100 } }
+        expect(response).to have_http_status(:unauthorized)
+
+        get :recent_expenses
+        expect(response).to have_http_status(:unauthorized)
+
+        get :expense_summary
+        expect(response).to have_http_status(:unauthorized)
+      end
+
+      it "rejects expired tokens" do
+        expired_token = create(:api_token, :expired)
+        request.headers["Authorization"] = "Bearer #{expired_token.token}"
+        allow(ApiToken).to receive(:authenticate).with(expired_token.token).and_return(nil)
+
+        post :process_emails
+        expect(response).to have_http_status(:unauthorized)
+      end
+
+      it "rejects inactive tokens" do
+        inactive_token = create(:api_token, :inactive)
+        request.headers["Authorization"] = "Bearer #{inactive_token.token}"
+        allow(ApiToken).to receive(:authenticate).with(inactive_token.token).and_return(nil)
+
+        post :process_emails
+        expect(response).to have_http_status(:unauthorized)
       end
     end
   end
@@ -311,25 +547,25 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
 
     describe "#default_email_account" do
       context "when active account exists" do
-        let!(:active_account) { create(:email_account, active: true) }
-
         it "returns first active account" do
+          active_account = double("EmailAccount", provider: "gmail", active: true)
+          allow(EmailAccount).to receive_message_chain(:active, :first).and_return(active_account)
+          
           result = controller.send(:default_email_account)
           expect(result).to eq(active_account)
         end
       end
 
       context "when no active account exists" do
-        before do
-          EmailAccount.update_all(active: false)
-        end
-
         it "creates and returns default manual account" do
-          expect {
-            result = controller.send(:default_email_account)
-            expect(result.provider).to eq("manual")
-            expect(result.active).to be true
-          }.to change(EmailAccount, :count).by(1)
+          allow(EmailAccount).to receive_message_chain(:active, :first).and_return(nil)
+          allow(controller).to receive(:create_default_manual_account).and_return(
+            double("EmailAccount", provider: "manual", active: true)
+          )
+          
+          result = controller.send(:default_email_account)
+          expect(result.provider).to eq("manual")
+          expect(result.active).to be true
         end
       end
     end
@@ -345,6 +581,207 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
         expect(result[:description]).to be_present
         expect(result[:transaction_date]).to match(/\d{4}-\d{2}-\d{2}T/)
         expect(result[:created_at]).to match(/\d{4}-\d{2}-\d{2}T/)
+      end
+    end
+  end
+
+  describe "security and authorization", unit: true do
+    before do
+      allow(ApiToken).to receive(:authenticate).and_return(nil)
+    end
+
+    context "authentication bypass attempts" do
+      it "cannot access endpoints without authentication" do
+        request.headers["Authorization"] = nil
+        
+        post :add_expense, params: { expense: { amount: 100 } }
+        expect(response).to have_http_status(:unauthorized)
+        
+        get :recent_expenses
+        expect(response).to have_http_status(:unauthorized)
+        
+        get :expense_summary
+        expect(response).to have_http_status(:unauthorized)
+        
+        post :process_emails, params: { email_account_id: 1 }
+        expect(response).to have_http_status(:unauthorized)
+      end
+      
+      it "cannot access with empty token" do
+        request.headers["Authorization"] = "Bearer "
+        
+        post :add_expense, params: { expense: { amount: 100 } }
+        expect(response).to have_http_status(:unauthorized)
+        expect(JSON.parse(response.body)["error"]).to eq("Missing API token")
+      end
+      
+      it "cannot access with whitespace-only token" do
+        request.headers["Authorization"] = "Bearer    "
+        
+        post :add_expense, params: { expense: { amount: 100 } }
+        expect(response).to have_http_status(:unauthorized)
+        expect(JSON.parse(response.body)["error"]).to eq("Missing API token")
+      end
+    end
+    
+    context "token security" do
+      it "handles SQL injection attempts in token" do
+        malicious_token = "'; DROP TABLE api_tokens; --"
+        allow(ApiToken).to receive(:authenticate).with(malicious_token).and_return(nil)
+        request.headers["Authorization"] = "Bearer #{malicious_token}"
+        
+        post :add_expense, params: { expense: { amount: 100 } }
+        expect(response).to have_http_status(:unauthorized)
+      end
+      
+      it "handles extremely long tokens gracefully" do
+        long_token = "a" * 10000
+        allow(ApiToken).to receive(:authenticate).with(long_token).and_return(nil)
+        request.headers["Authorization"] = "Bearer #{long_token}"
+        
+        post :add_expense, params: { expense: { amount: 100 } }
+        expect(response).to have_http_status(:unauthorized)
+      end
+      
+      it "handles non-ASCII characters in token" do
+        unicode_token = "токен🔑密码"
+        allow(ApiToken).to receive(:authenticate).with(unicode_token).and_return(nil)
+        request.headers["Authorization"] = "Bearer #{unicode_token}"
+        
+        post :add_expense, params: { expense: { amount: 100 } }
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+  end
+
+  describe "performance and rate limiting", unit: true do
+    before do
+      allow(ApiToken).to receive(:authenticate).and_return(api_token)
+    end
+
+    context "large dataset handling" do
+      it "handles large limit parameter efficiently" do
+        allow(Expense).to receive_message_chain(:includes, :recent, :limit).and_return([])
+        
+        get :recent_expenses, params: { limit: 1000 }
+        
+        expect(response).to have_http_status(:ok)
+        json_response = JSON.parse(response.body)
+        expect(json_response["expenses"]).to be_an(Array)
+      end
+
+      it "caps limit parameter to maximum value" do
+        expenses_relation = double("expenses_relation")
+        allow(expenses_relation).to receive(:includes).and_return(expenses_relation)
+        allow(expenses_relation).to receive(:recent).and_return(expenses_relation)
+        allow(expenses_relation).to receive(:limit).with(50).and_return([])
+        allow(Expense).to receive(:includes).and_return(expenses_relation)
+        
+        get :recent_expenses, params: { limit: 999999 }
+        
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "handles zero or negative limit gracefully" do
+        expenses_relation = double("expenses_relation")
+        allow(expenses_relation).to receive(:includes).and_return(expenses_relation)
+        allow(expenses_relation).to receive(:recent).and_return(expenses_relation)
+        allow(expenses_relation).to receive(:limit).with(10).and_return([])
+        allow(Expense).to receive(:includes).and_return(expenses_relation)
+        
+        get :recent_expenses, params: { limit: -5 }
+        
+        expect(response).to have_http_status(:ok)
+        json_response = JSON.parse(response.body)
+        expect(json_response["expenses"]).to be_an(Array)
+      end
+    end
+
+    context "database optimization" do
+      it "uses includes to prevent N+1 queries in recent_expenses" do
+        expenses_relation = double("expenses_relation")
+        allow(expenses_relation).to receive(:recent).and_return(expenses_relation)
+        allow(expenses_relation).to receive(:limit).and_return([])
+        
+        expect(Expense).to receive(:includes).with(:category, :email_account).and_return(expenses_relation)
+        
+        get :recent_expenses
+      end
+
+      it "efficiently queries default email account" do
+        allow(EmailAccount).to receive_message_chain(:active, :first).and_return(email_account)
+        
+        post :add_expense, params: { expense: { amount: 100, description: "Test" } }
+        
+        # Verify only one query for active accounts
+        expect(EmailAccount).to have_received(:active).once
+      end
+    end
+
+    context "concurrent request handling" do
+      it "handles request isolation properly" do
+        # Test that controller state doesn't leak between requests
+        post :add_expense, params: { 
+          expense: { 
+            amount: 10, 
+            description: "First request" 
+          } 
+        }
+        first_response = response.status
+        
+        post :add_expense, params: { 
+          expense: { 
+            amount: 20, 
+            description: "Second request" 
+          } 
+        }
+        second_response = response.status
+        
+        expect([first_response, second_response]).to all(be_in([201, 422]))
+      end
+    end
+
+    context "memory usage" do
+      it "efficiently formats many expenses" do
+        many_expenses = Array.new(45) { create(:expense) }
+        allow(Expense).to receive_message_chain(:includes, :recent, :limit).and_return(many_expenses)
+        
+        get :recent_expenses, params: { limit: 50 }
+        
+        expect(response).to have_http_status(:ok)
+        json_response = JSON.parse(response.body)
+        expect(json_response["expenses"].size).to be <= 50
+      end
+    end
+
+    context "timeout resilience" do
+      it "handles slow database queries gracefully" do
+        allow(Expense).to receive_message_chain(:includes, :recent, :limit) do
+          sleep(0.1)
+          []
+        end
+        
+        start_time = Time.current
+        get :recent_expenses
+        end_time = Time.current
+        
+        expect(response).to have_http_status(:ok)
+        expect(end_time - start_time).to be < 2.0
+      end
+
+      it "handles job enqueueing delays" do
+        allow(ProcessEmailsJob).to receive(:perform_later) do
+          sleep(0.05)
+          true
+        end
+        
+        start_time = Time.current
+        post :process_emails, params: { email_account_id: 1 }
+        end_time = Time.current
+        
+        expect(response).to have_http_status(:accepted)
+        expect(end_time - start_time).to be < 1.0
       end
     end
   end

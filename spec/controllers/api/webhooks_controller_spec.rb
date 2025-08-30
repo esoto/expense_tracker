@@ -785,4 +785,276 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
       end
     end
   end
+
+  # Unit tests for the overridden authenticate_api_token method
+  describe "Authentication Unit Tests", unit: true do
+    describe "#authenticate_api_token (overridden method)" do
+      let(:test_api_token) { create(:api_token, name: "webhooks-test-token") }
+
+      # Override the global authentication setup for these unit tests
+      before do
+        # Clear the global authentication setup
+        request.headers["Authorization"] = nil
+        allow(ApiToken).to receive(:authenticate).and_call_original
+      end
+
+      context "with valid Bearer token" do
+        before do
+          request.headers["Authorization"] = "Bearer #{test_api_token.token}"
+          allow(ApiToken).to receive(:authenticate).with(test_api_token.token).and_return(test_api_token)
+        end
+
+        it "sets @current_api_token instance variable" do
+          controller.send(:authenticate_api_token)
+          expect(controller.instance_variable_get(:@current_api_token)).to eq(test_api_token)
+        end
+
+        it "calls ApiToken.authenticate with extracted token" do
+          controller.send(:authenticate_api_token)
+          expect(ApiToken).to have_received(:authenticate).with(test_api_token.token)
+        end
+
+        it "does not render unauthorized response" do
+          expect(controller).not_to receive(:render)
+          controller.send(:authenticate_api_token)
+        end
+      end
+
+      context "without Authorization header" do
+        it "renders unauthorized JSON response with missing token message" do
+          expect(controller).to receive(:render).with(
+            json: { error: "Missing API token" },
+            status: :unauthorized
+          )
+          result = controller.send(:authenticate_api_token)
+          expect(result).to be_nil
+        end
+
+        it "does not call ApiToken.authenticate due to early return" do
+          allow(controller).to receive(:render)
+          expect(ApiToken).not_to receive(:authenticate)
+          controller.send(:authenticate_api_token)
+        end
+      end
+
+      context "with empty Authorization header" do
+        before do
+          request.headers["Authorization"] = ""
+        end
+
+        it "renders unauthorized JSON response" do
+          expect(controller).to receive(:render).with(
+            json: { error: "Missing API token" },
+            status: :unauthorized
+          )
+          controller.send(:authenticate_api_token)
+        end
+      end
+
+      context "with Authorization header without Bearer prefix" do
+        before do
+          request.headers["Authorization"] = "token_without_bearer"
+          allow(ApiToken).to receive(:authenticate).with("token_without_bearer").and_return(nil)
+        end
+
+        it "extracts token correctly and attempts authentication" do
+          allow(controller).to receive(:render)
+          controller.send(:authenticate_api_token)
+          expect(ApiToken).to have_received(:authenticate).with("token_without_bearer")
+        end
+
+        it "renders unauthorized response when token is invalid" do
+          expect(controller).to receive(:render).with(
+            json: { error: "Invalid or expired API token" },
+            status: :unauthorized
+          )
+          controller.send(:authenticate_api_token)
+        end
+      end
+
+      context "with invalid Bearer token" do
+        before do
+          request.headers["Authorization"] = "Bearer invalid_token_123"
+          allow(ApiToken).to receive(:authenticate).with("invalid_token_123").and_return(nil)
+        end
+
+        it "calls ApiToken.authenticate with invalid token" do
+          allow(controller).to receive(:render)
+          controller.send(:authenticate_api_token)
+          expect(ApiToken).to have_received(:authenticate).with("invalid_token_123")
+        end
+
+        it "renders unauthorized JSON response" do
+          expect(controller).to receive(:render).with(
+            json: { error: "Invalid or expired API token" },
+            status: :unauthorized
+          )
+          controller.send(:authenticate_api_token)
+        end
+
+        it "returns nil" do
+          allow(controller).to receive(:render)
+          result = controller.send(:authenticate_api_token)
+          expect(result).to be_nil
+        end
+
+        it "does not set @current_api_token" do
+          allow(controller).to receive(:render)
+          controller.send(:authenticate_api_token)
+          expect(controller.instance_variable_get(:@current_api_token)).to be_nil
+        end
+      end
+
+      context "with expired token" do
+        let(:expired_token) { create(:api_token, expires_at: 1.day.from_now) }
+
+        before do
+          # Manually expire the token after creation
+          expired_token.update_column(:expires_at, 1.day.ago)
+          request.headers["Authorization"] = "Bearer #{expired_token.token}"
+          allow(ApiToken).to receive(:authenticate).with(expired_token.token).and_return(nil)
+        end
+
+        it "renders unauthorized response for expired token" do
+          expect(controller).to receive(:render).with(
+            json: { error: "Invalid or expired API token" },
+            status: :unauthorized
+          )
+          controller.send(:authenticate_api_token)
+        end
+      end
+
+      context "with malformed Authorization header" do
+        before do
+          request.headers["Authorization"] = "Malformed header format"
+          allow(ApiToken).to receive(:authenticate).with("Malformed header format").and_return(nil)
+        end
+
+        it "attempts to authenticate with malformed header content" do
+          allow(controller).to receive(:render)
+          controller.send(:authenticate_api_token)
+          expect(ApiToken).to have_received(:authenticate).with("Malformed header format")
+        end
+
+        it "renders unauthorized response" do
+          expect(controller).to receive(:render).with(
+            json: { error: "Invalid or expired API token" },
+            status: :unauthorized
+          )
+          controller.send(:authenticate_api_token)
+        end
+      end
+
+      context "security edge cases" do
+        it "handles extremely long tokens" do
+          long_token = "a" * 10000
+          request.headers["Authorization"] = "Bearer #{long_token}"
+          allow(ApiToken).to receive(:authenticate).with(long_token).and_return(nil)
+          allow(controller).to receive(:render)
+          
+          controller.send(:authenticate_api_token)
+          
+          expect(ApiToken).to have_received(:authenticate).with(long_token)
+        end
+
+        it "handles tokens with special characters" do
+          special_token = "token-with-special@#$%^&*()characters"
+          request.headers["Authorization"] = "Bearer #{special_token}"
+          allow(ApiToken).to receive(:authenticate).with(special_token).and_return(nil)
+          allow(controller).to receive(:render)
+          
+          controller.send(:authenticate_api_token)
+          
+          expect(ApiToken).to have_received(:authenticate).with(special_token)
+        end
+
+        it "handles SQL injection attempts in token" do
+          malicious_token = "'; DROP TABLE api_tokens; --"
+          request.headers["Authorization"] = "Bearer #{malicious_token}"
+          allow(ApiToken).to receive(:authenticate).with(malicious_token).and_return(nil)
+          allow(controller).to receive(:render)
+          
+          controller.send(:authenticate_api_token)
+          
+          expect(ApiToken).to have_received(:authenticate).with(malicious_token)
+        end
+
+        it "handles Unicode characters in token" do
+          unicode_token = "token_with_unicode_🔑_characters"
+          request.headers["Authorization"] = "Bearer #{unicode_token}"
+          allow(ApiToken).to receive(:authenticate).with(unicode_token).and_return(nil)
+          allow(controller).to receive(:render)
+          
+          controller.send(:authenticate_api_token)
+          
+          expect(ApiToken).to have_received(:authenticate).with(unicode_token)
+        end
+      end
+
+      context "method behavior differences from BaseController" do
+        it "renders JSON response directly (no render_unauthorized helper)" do
+          # The webhooks controller renders JSON directly instead of using BaseController's helper
+          expect(controller).to receive(:render).with(
+            json: { error: "Missing API token" },
+            status: :unauthorized
+          )
+          
+          controller.send(:authenticate_api_token)
+        end
+
+        it "uses different JSON structure than BaseController" do
+          request.headers["Authorization"] = "Bearer invalid"
+          allow(ApiToken).to receive(:authenticate).with("invalid").and_return(nil)
+          
+          expect(controller).to receive(:render).with(
+            json: { error: "Invalid or expired API token" },
+            status: :unauthorized
+          )
+          
+          controller.send(:authenticate_api_token)
+        end
+
+        it "returns nil on authentication failure (different from BaseController)" do
+          request.headers["Authorization"] = "Bearer invalid"
+          allow(ApiToken).to receive(:authenticate).with("invalid").and_return(nil)
+          allow(controller).to receive(:render)
+          
+          result = controller.send(:authenticate_api_token)
+          
+          expect(result).to be_nil
+        end
+      end
+
+      context "integration with ApiToken model" do
+        it "properly handles ApiToken.authenticate returning truthy value" do
+          valid_token_obj = test_api_token
+          request.headers["Authorization"] = "Bearer #{valid_token_obj.token}"
+          allow(ApiToken).to receive(:authenticate).with(valid_token_obj.token).and_return(valid_token_obj)
+          
+          controller.send(:authenticate_api_token)
+          
+          expect(controller.instance_variable_get(:@current_api_token)).to eq(valid_token_obj)
+        end
+
+        it "properly handles ApiToken.authenticate returning falsy value" do
+          request.headers["Authorization"] = "Bearer falsy_token"
+          allow(ApiToken).to receive(:authenticate).with("falsy_token").and_return(false)
+          allow(controller).to receive(:render)
+          
+          controller.send(:authenticate_api_token)
+          
+          expect(controller.instance_variable_get(:@current_api_token)).to be_falsy
+        end
+
+        it "properly handles ApiToken.authenticate raising an exception" do
+          request.headers["Authorization"] = "Bearer error_token"
+          allow(ApiToken).to receive(:authenticate).with("error_token").and_raise(StandardError.new("DB error"))
+          
+          expect {
+            controller.send(:authenticate_api_token)
+          }.to raise_error(StandardError, "DB error")
+        end
+      end
+    end
+  end
 end

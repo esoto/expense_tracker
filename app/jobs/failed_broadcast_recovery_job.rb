@@ -57,10 +57,15 @@ class FailedBroadcastRecoveryJob < ApplicationJob
         Rails.logger.error "[FAILED_BROADCAST_RECOVERY] Error recovering broadcast #{failed_broadcast.id}: #{e.message}"
 
         # Update the failed broadcast with the new error
-        failed_broadcast.update!(
-          error_type: FailedBroadcastStore.classify_error(e),
-          error_message: e.message
-        )
+        begin
+          failed_broadcast.update!(
+            error_type: FailedBroadcastStore.classify_error(e),
+            error_message: e.message
+          )
+        rescue StandardError => update_error
+          # Log the update error but continue processing
+          Rails.logger.error "[FAILED_BROADCAST_RECOVERY] Failed to update error info for broadcast #{failed_broadcast.id}: #{update_error.message}"
+        end
       end
 
       # Small delay to avoid overwhelming the system
@@ -89,5 +94,7 @@ class FailedBroadcastRecoveryJob < ApplicationJob
       },
       expires_in: 24.hours
     )
+  rescue StandardError => e
+    Rails.logger.error "[FAILED_BROADCAST_RECOVERY] Failed to record metrics: #{e.message}"
   end
 end

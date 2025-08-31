@@ -296,20 +296,15 @@ RSpec.describe Categorization::ErrorHandling, type: :unit do
 
     describe ".recover_from_cache_failure" do
       before do
-        cache_warmer = Class.new do
-          def self.warm_critical_paths; end
-        end
-        stub_const("Categorization::ErrorHandling::CacheWarmer", cache_warmer)
-        allow(cache_warmer).to receive(:warm_critical_paths)
         allow(cache).to receive(:clear)
       end
 
-      it "clears cache and warms critical paths" do
+      it "clears cache and returns degraded status" do
         result = error_recovery.recover_from_cache_failure
 
         expect(logger).to have_received(:error).with(/Cache failure detected/)
         expect(cache).to have_received(:clear)
-        expect(Categorization::ErrorHandling::CacheWarmer).to have_received(:warm_critical_paths)
+        # Cache warming is now handled by PatternCacheWarmerJob
         expect(result).to eq({
           status: :degraded,
           message: "Operating without cache"

@@ -115,8 +115,8 @@ module Categorization
         # Clear corrupted cache
         Rails.cache.clear
 
-        # Rebuild critical cache entries
-        CacheWarmer.warm_critical_paths
+        # Rebuild critical cache entries (handled by PatternCacheWarmerJob)
+        # CacheWarmer functionality moved to PatternCacheWarmerJob
 
         # Return degraded service indicator
         { status: :degraded, message: "Operating without cache" }

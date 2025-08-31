@@ -12,10 +12,10 @@ RSpec.describe Admin::CompositePatternsController, type: :controller, unit: true
     controller.class.skip_before_action :set_security_headers, raise: false
     controller.class.skip_after_action :log_admin_activity, raise: false
     allow(controller).to receive(:log_admin_action)
-    
+
     # Mock admin authentication to allow access
-    admin_user = double("admin_user", 
-      session_expired?: false, 
+    admin_user = double("admin_user",
+      session_expired?: false,
       extend_session: nil,
       invalidate_session!: nil,
       id: 1,
@@ -26,7 +26,7 @@ RSpec.describe Admin::CompositePatternsController, type: :controller, unit: true
   end
 
   describe "GET #index", unit: true do
-    let(:composite_patterns) { [composite_pattern] }
+    let(:composite_patterns) { [ composite_pattern ] }
 
     before do
       # Mock the pagination chain properly
@@ -37,9 +37,9 @@ RSpec.describe Admin::CompositePatternsController, type: :controller, unit: true
 
     it "loads composite patterns with pagination" do
       expect(CompositePattern).to receive(:includes).with(:category)
-      
+
       get :index
-      
+
       expect(assigns(:composite_patterns)).to eq(composite_patterns)
     end
 
@@ -64,8 +64,8 @@ RSpec.describe Admin::CompositePatternsController, type: :controller, unit: true
       before do
         allow(CompositePattern).to receive(:new).and_return(new_composite_pattern)
         allow(new_composite_pattern).to receive(:id).and_return(123) # Ensure the pattern has an ID after save
-        allow(Category).to receive(:order).and_return([category])
-        allow(CategorizationPattern).to receive_message_chain(:active, :includes, :order).and_return([categorization_pattern])
+        allow(Category).to receive(:order).and_return([ category ])
+        allow(CategorizationPattern).to receive_message_chain(:active, :includes, :order).and_return([ categorization_pattern ])
       end
 
       context "with valid parameters" do
@@ -80,13 +80,13 @@ RSpec.describe Admin::CompositePatternsController, type: :controller, unit: true
           expect(new_composite_pattern).to receive(:usage_count=).with(0)
           expect(new_composite_pattern).to receive(:success_count=).with(0)
           expect(new_composite_pattern).to receive(:success_rate=).with(0.0)
-          
+
           post :create, params: { composite_pattern: composite_pattern_params }
         end
 
         it "saves the composite pattern" do
           expect(new_composite_pattern).to receive(:save).and_return(true)
-          
+
           post :create, params: { composite_pattern: composite_pattern_params }
         end
 
@@ -104,7 +104,7 @@ RSpec.describe Admin::CompositePatternsController, type: :controller, unit: true
 
         it "does not save the composite pattern" do
           expect(new_composite_pattern).to receive(:save).and_return(false)
-          
+
           post :create, params: { composite_pattern: composite_pattern_params }
         end
       end
@@ -115,8 +115,8 @@ RSpec.describe Admin::CompositePatternsController, type: :controller, unit: true
 
       before do
         allow(CompositePattern).to receive(:find).and_return(composite_pattern)
-        allow(Category).to receive(:order).and_return([category])
-        allow(CategorizationPattern).to receive_message_chain(:active, :includes, :order).and_return([categorization_pattern])
+        allow(Category).to receive(:order).and_return([ category ])
+        allow(CategorizationPattern).to receive_message_chain(:active, :includes, :order).and_return([ categorization_pattern ])
       end
 
       context "with valid parameters" do
@@ -127,7 +127,7 @@ RSpec.describe Admin::CompositePatternsController, type: :controller, unit: true
 
         it "updates the composite pattern" do
           expect(composite_pattern).to receive(:update)
-          
+
           patch :update, params: { id: composite_pattern.id, composite_pattern: update_params }
         end
 
@@ -145,7 +145,7 @@ RSpec.describe Admin::CompositePatternsController, type: :controller, unit: true
 
         it "does not update the composite pattern" do
           expect(composite_pattern).to receive(:update).and_return(false)
-          
+
           patch :update, params: { id: composite_pattern.id, composite_pattern: update_params }
         end
       end
@@ -161,7 +161,7 @@ RSpec.describe Admin::CompositePatternsController, type: :controller, unit: true
       it "finds and destroys the composite pattern" do
         expect(CompositePattern).to receive(:find).with(composite_pattern.id.to_s)
         expect(composite_pattern).to receive(:destroy)
-        
+
         delete :destroy, params: { id: composite_pattern.id }
       end
 
@@ -182,7 +182,7 @@ RSpec.describe Admin::CompositePatternsController, type: :controller, unit: true
 
       it "toggles the active state" do
         expect(composite_pattern).to receive(:update!).with(active: false) # !true = false
-        
+
         post :toggle_active, params: { id: composite_pattern.id }
       end
     end
@@ -192,34 +192,34 @@ RSpec.describe Admin::CompositePatternsController, type: :controller, unit: true
     describe "#set_composite_pattern" do
       it "finds composite pattern by ID" do
         expect(CompositePattern).to receive(:find).with("123").and_return(composite_pattern)
-        
+
         controller.params = ActionController::Parameters.new(id: "123")
         controller.send(:set_composite_pattern)
-        
+
         expect(controller.instance_variable_get(:@composite_pattern)).to eq(composite_pattern)
       end
     end
 
     describe "#load_resources" do
       before do
-        allow(Category).to receive(:order).and_return([category])
-        allow(CategorizationPattern).to receive_message_chain(:active, :includes, :order).and_return([categorization_pattern])
+        allow(Category).to receive(:order).and_return([ category ])
+        allow(CategorizationPattern).to receive_message_chain(:active, :includes, :order).and_return([ categorization_pattern ])
       end
 
       it "loads categories ordered by name" do
         expect(Category).to receive(:order).with(:name)
-        
+
         controller.send(:load_resources)
-        
-        expect(controller.instance_variable_get(:@categories)).to eq([category])
+
+        expect(controller.instance_variable_get(:@categories)).to eq([ category ])
       end
 
       it "loads active categorization patterns" do
         expect(CategorizationPattern).to receive(:active)
-        
+
         controller.send(:load_resources)
-        
-        expect(controller.instance_variable_get(:@available_patterns)).to eq([categorization_pattern])
+
+        expect(controller.instance_variable_get(:@available_patterns)).to eq([ categorization_pattern ])
       end
     end
 
@@ -232,7 +232,7 @@ RSpec.describe Admin::CompositePatternsController, type: :controller, unit: true
             category_id: "1",
             confidence_weight: "0.8",
             active: "true",
-            pattern_ids: ["1", "2"],
+            pattern_ids: [ "1", "2" ],
             conditions: { min_amount: "10" },
             unpermitted: "value"
           }
@@ -241,7 +241,7 @@ RSpec.describe Admin::CompositePatternsController, type: :controller, unit: true
         permitted_params = controller.send(:composite_pattern_params)
 
         expect(permitted_params.keys).to contain_exactly(
-          "name", "operator", "category_id", "confidence_weight", 
+          "name", "operator", "category_id", "confidence_weight",
           "active", "pattern_ids", "conditions"
         )
         expect(permitted_params["unpermitted"]).to be_nil
@@ -252,8 +252,8 @@ RSpec.describe Admin::CompositePatternsController, type: :controller, unit: true
   describe "model method calls", unit: true do
     it "calls CompositePattern.new with correct default parameters for new action" do
       allow(CompositePattern).to receive(:new).and_return(composite_pattern)
-      allow(Category).to receive(:order).and_return([category])
-      allow(CategorizationPattern).to receive_message_chain(:active, :includes, :order).and_return([categorization_pattern])
+      allow(Category).to receive(:order).and_return([ category ])
+      allow(CategorizationPattern).to receive_message_chain(:active, :includes, :order).and_return([ categorization_pattern ])
 
       expect(CompositePattern).to receive(:new).with(
         operator: "AND",
@@ -276,16 +276,16 @@ RSpec.describe Admin::CompositePatternsController, type: :controller, unit: true
 
     it "calls find method for show action" do
       expect(CompositePattern).to receive(:find).with("123").and_return(composite_pattern)
-      
+
       controller.params = ActionController::Parameters.new(id: "123")
       controller.send(:set_composite_pattern)
     end
 
     it "calls component_patterns association" do
       allow(CompositePattern).to receive(:find).and_return(composite_pattern)
-      
+
       expect(composite_pattern).to receive(:component_patterns).and_return(double(includes: []))
-      
+
       controller.instance_variable_set(:@composite_pattern, composite_pattern)
       controller.instance_eval do
         @component_patterns = @composite_pattern.component_patterns.includes(:category)

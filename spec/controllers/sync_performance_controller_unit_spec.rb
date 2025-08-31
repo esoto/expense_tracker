@@ -12,7 +12,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
     allow(grouped_data_mock).to receive(:average).with(:duration).and_return({ Time.current.hour => 1500.0 })
     allow(grouped_data_mock).to receive(:sum).with(:emails_processed).and_return({ Time.current.hour => 25 })
     allow(grouped_data_mock).to receive(:successful).and_return(double(count: { Time.current.hour => 45 }))
-    
+
     # Mock metrics chain for account metrics - this is the key missing piece
     account_metrics_mock = double("account_metrics")
     allow(account_metrics_mock).to receive(:count).and_return(5)
@@ -21,7 +21,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
     allow(account_metrics_mock).to receive(:maximum).with(:started_at).and_return(Time.current)
     allow(account_metrics_mock).to receive(:successful).and_return(double(count: 4))
     allow(account_metrics_mock).to receive(:failed).and_return(double(count: 1))
-    
+
     allow(SyncMetric).to receive_message_chain(:in_period, :by_type, :count).and_return(10)
     allow(SyncMetric).to receive_message_chain(:in_period, :count).and_return(50)
     allow(SyncMetric).to receive_message_chain(:in_period, :average).and_return(1500.0)
@@ -29,7 +29,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
     allow(SyncMetric).to receive_message_chain(:in_period, :failed, :count).and_return(5)
     # Mock for error analysis
     failed_metrics_mock = double("failed_metrics")
-    allow(failed_metrics_mock).to receive(:group).with(:error_type).and_return(double(count: double(sort_by: [["connection_error", 3], ["parse_error", 2]])))
+    allow(failed_metrics_mock).to receive(:group).with(:error_type).and_return(double(count: double(sort_by: [ [ "connection_error", 3 ], [ "parse_error", 2 ] ])))
     allow(SyncMetric).to receive_message_chain(:in_period, :failed).and_return(failed_metrics_mock)
     allow(SyncMetric).to receive_message_chain(:in_period, :failed, :joins, :group, :count).and_return({ "Banco Nacional" => 2, "BAC" => 3 })
     allow(SyncMetric).to receive_message_chain(:in_period, :failed, :recent, :limit).and_return([])
@@ -39,7 +39,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
     allow(SyncMetric).to receive_message_chain(:in_period, :group_by_day_of_week, :count).and_return({ "Monday" => 10, "Tuesday" => 8 })
     allow(SyncMetric).to receive_message_chain(:in_period, :successful, :count).and_return(45)
     allow(SyncMetric).to receive_message_chain(:in_period, :for_account, :by_type).and_return(account_metrics_mock)
-    
+
     # Mock for current metrics (last_5_minutes)
     current_metrics_mock = double("current_metrics")
     allow(current_metrics_mock).to receive(:count).and_return(3)
@@ -52,7 +52,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
     allow(SyncSession).to receive_message_chain(:active, :count).and_return(2)
     allow(SyncSession).to receive_message_chain(:recent, :first, :created_at).and_return(1.hour.ago)
 
-    allow(EmailAccount).to receive(:active).and_return([email_account])
+    allow(EmailAccount).to receive(:active).and_return([ email_account ])
     allow(email_account).to receive(:id).and_return(1)
     allow(email_account).to receive(:bank_name).and_return("Banco Nacional")
     allow(email_account).to receive(:email).and_return("test@example.com")
@@ -62,7 +62,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
       def self.where(conditions)
         self
       end
-      
+
       def self.count
         3
       end
@@ -88,10 +88,10 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
     allow(csv_mock).to receive(:<<).and_return(csv_mock)
     allow(CSV).to receive(:generate).with(headers: true).and_yield(csv_mock)
 
-    # Mock render methods - handle all render calls  
+    # Mock render methods - handle all render calls
     allow(controller).to receive(:render).and_return(nil)
     allow(controller).to receive(:send_data).and_return(nil)
-    
+
     # Mock private methods to avoid complex ActiveRecord mocking
     allow(controller).to receive(:load_metrics_summary).and_return({
       total_syncs: 10,
@@ -103,14 +103,14 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
       active_sessions: 2,
       last_sync: 1.hour.ago
     })
-    
+
     allow(controller).to receive(:load_performance_data).and_return({
       timeline: { Time.current.hour => 5 },
       duration_trend: { Time.current.hour => 1500.0 },
       emails_trend: { Time.current.hour => 25 },
       success_rate_trend: { Time.current.hour => 90.0 }
     })
-    
+
     allow(controller).to receive(:load_account_metrics).and_return([
       {
         id: 1,
@@ -124,23 +124,23 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
         errors: 1
       }
     ])
-    
+
     allow(controller).to receive(:load_error_analysis).and_return({
       total_errors: 5,
       error_rate: 10.0,
-      error_types: [["connection_error", 3], ["parse_error", 2]],
+      error_types: [ [ "connection_error", 3 ], [ "parse_error", 2 ] ],
       affected_accounts: { "Test Bank" => 2 },
       error_timeline: { Time.current.hour => 2 },
       recent_errors: []
     })
-    
+
     allow(controller).to receive(:load_peak_times).and_return({
       hourly: { 9 => 5, 14 => 8, 18 => 3 },
       daily: { "Monday" => 10, "Tuesday" => 8 },
-      peak_hours: [{ hour: "2 pm", count: 8 }],
+      peak_hours: [ { hour: "2 pm", count: 8 } ],
       queue_depth: []
     })
-    
+
     allow(controller).to receive(:load_current_metrics).and_return({
       current_operations: 3,
       success_rate: 66.7,
@@ -149,7 +149,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
       active_jobs: 3,
       queue_depth: 5
     })
-    
+
     # Mock the dashboard_json method called by index action for JSON format
     allow(controller).to receive(:dashboard_json).and_return({
       summary: { total_syncs: 10 },
@@ -164,14 +164,14 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
   describe "GET #index", unit: true do
     it "sets up date range correctly" do
       get :index, params: { period: "last_24_hours" }
-      
+
       expect(assigns(:start_date)).to be_within(1.minute).of(24.hours.ago)
       expect(assigns(:end_date)).to be_within(1.minute).of(Time.current)
     end
 
     it "loads metrics summary" do
       get :index
-      
+
       summary = assigns(:metrics_summary)
       expect(summary).to be_a(Hash)
       expect(summary).to have_key(:total_syncs)
@@ -182,7 +182,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
 
     it "loads performance data" do
       get :index
-      
+
       performance = assigns(:performance_data)
       expect(performance).to be_a(Hash)
       expect(performance).to have_key(:timeline)
@@ -192,7 +192,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
 
     it "loads account metrics" do
       get :index
-      
+
       accounts = assigns(:account_metrics)
       expect(accounts).to be_an(Array)
       expect(accounts.first).to have_key(:bank_name) if accounts.any?
@@ -200,7 +200,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
 
     it "loads error analysis" do
       get :index
-      
+
       errors = assigns(:error_analysis)
       expect(errors).to be_a(Hash)
       expect(errors).to have_key(:total_errors)
@@ -210,7 +210,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
 
     it "loads peak times" do
       get :index
-      
+
       peak_times = assigns(:peak_times)
       expect(peak_times).to be_a(Hash)
       expect(peak_times).to have_key(:hourly)
@@ -253,7 +253,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
         anything,
         hash_including(filename: /rendimiento_sincronizacion_.*\.csv/)
       )
-      
+
       get :export, format: :csv
     end
 
@@ -268,7 +268,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
       csv_mock = double("csv")
       expect(csv_mock).to receive(:<<).at_least(:once)
       allow(CSV).to receive(:generate).with(headers: true).and_yield(csv_mock)
-      
+
       get :export, format: :csv
     end
   end
@@ -276,7 +276,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
   describe "GET #realtime", unit: true do
     it "loads current metrics" do
       get :realtime, format: :turbo_stream
-      
+
       metrics = assigns(:current_metrics)
       expect(metrics).to be_a(Hash)
       expect(metrics).to have_key(:current_operations)
@@ -300,7 +300,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
       it "sets last_hour period correctly" do
         controller.params = ActionController::Parameters.new(period: "last_hour")
         controller.send(:set_date_range)
-        
+
         expect(assigns(:start_date)).to be_within(1.minute).of(1.hour.ago)
         expect(assigns(:end_date)).to be_within(1.minute).of(Time.current)
       end
@@ -308,7 +308,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
       it "sets last_7_days period correctly" do
         controller.params = ActionController::Parameters.new(period: "last_7_days")
         controller.send(:set_date_range)
-        
+
         expect(assigns(:start_date)).to be_within(1.hour).of(7.days.ago.beginning_of_day)
         expect(assigns(:end_date)).to be_within(1.minute).of(Time.current)
       end
@@ -316,7 +316,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
       it "sets last_30_days period correctly" do
         controller.params = ActionController::Parameters.new(period: "last_30_days")
         controller.send(:set_date_range)
-        
+
         expect(assigns(:start_date)).to be_within(1.hour).of(30.days.ago.beginning_of_day)
         expect(assigns(:end_date)).to be_within(1.minute).of(Time.current)
       end
@@ -328,7 +328,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
           end_date: "2023-01-31"
         )
         controller.send(:set_date_range)
-        
+
         expect(assigns(:start_date)).to eq("2023-01-01".to_datetime)
         expect(assigns(:end_date)).to eq("2023-01-31".to_datetime)
       end
@@ -336,7 +336,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
       it "defaults to last_24_hours for unknown period" do
         controller.params = ActionController::Parameters.new(period: "unknown")
         controller.send(:set_date_range)
-        
+
         expect(assigns(:start_date)).to be_within(1.minute).of(24.hours.ago)
         expect(assigns(:end_date)).to be_within(1.minute).of(Time.current)
       end
@@ -352,7 +352,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
         metrics = double("metrics")
         allow(metrics).to receive(:count).and_return(100)
         allow(metrics).to receive(:successful).and_return(double(count: 85))
-        
+
         rate = controller.send(:calculate_success_rate, metrics)
         expect(rate).to eq(85.0)
       end
@@ -360,7 +360,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
       it "returns 100% for zero total" do
         metrics = double("metrics")
         allow(metrics).to receive(:count).and_return(0)
-        
+
         rate = controller.send(:calculate_success_rate, metrics)
         expect(rate).to eq(100.0)
       end
@@ -370,7 +370,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
       before do
         controller.instance_variable_set(:@start_date, 24.hours.ago)
         controller.instance_variable_set(:@end_date, Time.current)
-        
+
         allow(SyncMetric).to receive_message_chain(:in_period, :count).and_return(100)
         allow(SyncMetric).to receive_message_chain(:in_period, :failed, :count).and_return(15)
       end
@@ -382,7 +382,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
 
       it "returns 0% for zero total" do
         allow(SyncMetric).to receive_message_chain(:in_period, :count).and_return(0)
-        
+
         rate = controller.send(:calculate_error_rate)
         expect(rate).to eq(0.0)
       end
@@ -393,7 +393,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
         metrics = double("metrics")
         allow(metrics).to receive(:sum).with(:duration).and_return(10000) # 10 seconds
         allow(metrics).to receive(:sum).with(:emails_processed).and_return(50)
-        
+
         rate = controller.send(:calculate_processing_rate, metrics)
         expect(rate).to eq(5.0) # 50 emails / 10 seconds
       end
@@ -402,7 +402,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
         metrics = double("metrics")
         allow(metrics).to receive(:sum).with(:duration).and_return(0)
         allow(metrics).to receive(:sum).with(:emails_processed).and_return(50)
-        
+
         rate = controller.send(:calculate_processing_rate, metrics)
         expect(rate).to eq(0.0)
       end
@@ -470,7 +470,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
 
       it "creates dashboard JSON structure" do
         result = controller.send(:dashboard_json)
-        
+
         expect(result).to have_key(:summary)
         expect(result).to have_key(:performance)
         expect(result).to have_key(:accounts)
@@ -483,7 +483,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
     describe "default methods" do
       it "provides default metrics summary" do
         result = controller.send(:default_metrics_summary)
-        
+
         expect(result).to be_a(Hash)
         expect(result[:total_syncs]).to eq(0)
         expect(result[:success_rate]).to eq(0.0)
@@ -492,7 +492,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
 
       it "provides default performance data" do
         result = controller.send(:default_performance_data)
-        
+
         expect(result).to be_a(Hash)
         expect(result[:timeline]).to eq({})
         expect(result[:duration_trend]).to eq({})
@@ -500,7 +500,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
 
       it "provides default error analysis" do
         result = controller.send(:default_error_analysis)
-        
+
         expect(result).to be_a(Hash)
         expect(result[:total_errors]).to eq(0)
         expect(result[:error_rate]).to eq(0.0)
@@ -509,7 +509,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
 
       it "provides default peak times" do
         result = controller.send(:default_peak_times)
-        
+
         expect(result).to be_a(Hash)
         expect(result[:hourly]).to eq({})
         expect(result[:daily]).to eq({})
@@ -523,9 +523,9 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
         allow(metrics).to receive(:group_by_hour_of_day).and_return(
           double(count: { 9 => 10, 14 => 15, 18 => 5, 22 => 8, 6 => 3 })
         )
-        
+
         result = controller.send(:identify_peak_hours, metrics)
-        
+
         expect(result).to be_an(Array)
         expect(result.size).to eq(5)
         expect(result.first[:count]).to eq(15) # Highest count first
@@ -545,9 +545,9 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
 
       it "handles errors gracefully in load_metrics_summary" do
         expect(Rails.logger).to receive(:error).at_least(:once)
-        
+
         get :index
-        
+
         summary = assigns(:metrics_summary)
         expect(summary[:total_syncs]).to eq(0)
         expect(summary[:success_rate]).to eq(0.0)
@@ -555,18 +555,18 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
 
       it "handles errors gracefully in load_performance_data" do
         expect(Rails.logger).to receive(:error).at_least(:once)
-        
+
         get :index
-        
+
         performance = assigns(:performance_data)
         expect(performance[:timeline]).to eq({})
       end
 
       it "handles errors gracefully in load_error_analysis" do
         expect(Rails.logger).to receive(:error).at_least(:once)
-        
+
         get :index
-        
+
         errors = assigns(:error_analysis)
         expect(errors[:total_errors]).to eq(0)
       end
@@ -581,9 +581,9 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
 
       it "handles account loading errors gracefully" do
         expect(Rails.logger).to receive(:error).with(/Error loading account metrics/)
-        
+
         get :index
-        
+
         accounts = assigns(:account_metrics)
         expect(accounts).to eq([])
       end
@@ -598,7 +598,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
     it "has before_action callbacks" do
       before_callbacks = controller.class._process_action_callbacks.select { |c| c.kind == :before }
       callback_filters = before_callbacks.map(&:filter)
-      
+
       expect(callback_filters).to include(:set_date_range)
     end
   end
@@ -606,7 +606,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
   describe "caching and performance", unit: true do
     it "includes comprehensive metrics in summary" do
       get :index
-      
+
       summary = assigns(:metrics_summary)
       expect(summary).to have_key(:total_syncs)
       expect(summary).to have_key(:total_operations)
@@ -620,7 +620,7 @@ RSpec.describe SyncPerformanceController, type: :controller, unit: true do
 
     it "groups performance data appropriately" do
       get :index
-      
+
       performance = assigns(:performance_data)
       expect(performance).to have_key(:timeline)
       expect(performance).to have_key(:duration_trend)

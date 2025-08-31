@@ -5,7 +5,7 @@
 RSpec.shared_context "controller with concern" do |concern|
   controller(ApplicationController) do
     include concern
-    
+
     def index
       render json: { message: 'success' }
     end
@@ -36,7 +36,7 @@ RSpec.shared_examples "authentication concern" do
   describe "#user_signed_in?" do
     context "when user is signed in" do
       let(:user) { build_stubbed(:admin_user) }
-      
+
       before { allow(controller).to receive(:current_user).and_return(user) }
 
       it "returns true" do
@@ -83,7 +83,7 @@ end
 RSpec.shared_examples "rate limiting concern" do |action_name|
   describe "rate limiting" do
     let(:config) { { limit: 5, period: 1.minute, by: :ip } }
-    
+
     before do
       allow(controller.class).to receive(:rate_limits).and_return({ action_name => config })
       allow(controller).to receive(:request).and_return(double(remote_ip: "127.0.0.1"))
@@ -130,7 +130,7 @@ end
 RSpec.shared_examples "caching concern" do
   describe "caching methods" do
     let(:request) { double("request", get?: true, head?: false) }
-    
+
     before { allow(controller).to receive(:request).and_return(request) }
 
     describe "#set_cache_headers" do
@@ -154,7 +154,7 @@ RSpec.shared_examples "caching concern" do
     describe "#disable_cache" do
       let(:headers) { {} }
       let(:response) { double("response", headers: headers) }
-      
+
       before { allow(controller).to receive(:response).and_return(response) }
 
       it "sets no-cache headers" do
@@ -178,7 +178,7 @@ RSpec.shared_examples "error handling concern" do
     end
 
     describe "#handle_validation_error" do
-      let(:record) { double("record", errors: double(full_messages: ["Error message"])) }
+      let(:record) { double("record", errors: double(full_messages: [ "Error message" ])) }
       let(:exception) { ActiveRecord::RecordInvalid.new(record) }
 
       it "handles validation errors" do
@@ -191,7 +191,7 @@ RSpec.shared_examples "error handling concern" do
       let(:exception) { StandardError.new("Test error") }
 
       before do
-        allow(exception).to receive(:backtrace).and_return(["line1", "line2"])
+        allow(exception).to receive(:backtrace).and_return([ "line1", "line2" ])
         allow(controller).to receive(:controller_name).and_return("test")
       end
 
@@ -232,7 +232,7 @@ RSpec.shared_examples "api configuration concern" do
     describe "#paginate_with_limits" do
       let(:collection) { double("collection") }
       let(:params) { {} }
-      
+
       before { allow(controller).to receive(:params).and_return(params) }
 
       it "applies default page size when none specified" do
@@ -263,13 +263,13 @@ RSpec.shared_examples "security headers concern" do
   describe "security headers" do
     let(:headers) { {} }
     let(:response) { double("response", headers: headers) }
-    
+
     before { allow(controller).to receive(:response).and_return(response) }
 
     describe "#set_security_headers" do
       it "sets all required security headers" do
         controller.send(:set_security_headers)
-        
+
         expect(headers["X-Frame-Options"]).to eq("DENY")
         expect(headers["X-Content-Type-Options"]).to eq("nosniff")
         expect(headers["X-XSS-Protection"]).to eq("1; mode=block")
@@ -302,7 +302,7 @@ RSpec.shared_examples "audit logging concern" do
     describe "#log_admin_action" do
       let(:user) { build_stubbed(:admin_user, id: 123, email: "admin@example.com") }
       let(:request) { double("request", remote_ip: "127.0.0.1", user_agent: "Test Agent") }
-      
+
       before do
         allow(controller).to receive(:current_admin_user).and_return(user)
         allow(controller).to receive(:request).and_return(request)
@@ -330,7 +330,7 @@ RSpec.shared_examples "audit logging concern" do
     describe "#log_user_action" do
       let(:user) { build_stubbed(:admin_user, id: 456) }
       let(:request) { double("request", remote_ip: "192.168.1.1") }
-      
+
       before do
         allow(controller).to receive(:current_user).and_return(user)
         allow(controller).to receive(:request).and_return(request)

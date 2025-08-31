@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "expense_collection_adapter"
+
 module Services
   module Categorization
     # BulkCategorizationService consolidates all bulk categorization operations
@@ -9,9 +11,11 @@ module Services
       include ActiveModel::Model
 
       attr_accessor :expenses, :category_id, :user, :options
+      attr_reader :expense_adapter
 
       def initialize(expenses: [], category_id: nil, user: nil, options: {})
         @expenses = expenses
+        @expense_adapter = ExpenseCollectionAdapter.new(expenses)
         @category_id = category_id
         @user = user
         @options = options
@@ -19,7 +23,7 @@ module Services
 
       # Preview categorization changes before applying
       def preview
-        return { expenses: [], summary: empty_summary } if expenses.empty?
+        return { expenses: [], summary: empty_summary } if expense_adapter.empty?
 
         affected_expenses = filter_changeable_expenses
 
@@ -36,11 +40,11 @@ module Services
 
       # Apply categorization to selected expenses
       def apply!
-        return { success: false, errors: [ "No expenses selected" ] } if expenses.empty?
+        return { success: false, errors: [ "No expenses selected" ] } if expense_adapter.empty?
         return { success: false, errors: [ "Category not found" ] } unless valid_category?
 
         ApplicationRecord.transaction do
-          results = expenses.map do |expense|
+          results = expense_adapter.map do |expense|
             apply_to_expense(expense)
           end
 
@@ -56,7 +60,7 @@ module Services
             updated_count: success_count,
             failed_count: results.count { |r| !r[:success] },
             errors: results.reject { |r| r[:success] }.map { |r| r[:error] },
-            undo_token: @bulk_operation&.token
+            undo_operation_id: @bulk_operation&.id
           }
         end
       rescue StandardError => e
@@ -64,22 +68,22 @@ module Services
       end
 
       # Undo a bulk categorization
-      def undo!(token)
-        operation = BulkOperation.find_by(token: token, operation_type: "categorization")
+      def undo!(operation_id)
+        operation = BulkOperation.find_by(id: operation_id, operation_type: "categorization")
 
         return { success: false, errors: [ "Operation not found" ] } unless operation
-        return { success: false, errors: [ "Operation already undone" ] } if operation.undone?
+        return { success: false, errors: [ "Operation already undone" ] } if operation.undone_at.present?
 
         ApplicationRecord.transaction do
           restored_count = 0
 
-          operation.affected_records.each do |record|
-            expense = Expense.find(record["expense_id"])
-            expense.update!(category_id: record["previous_category_id"])
+          operation.bulk_operation_items.each do |item|
+            expense = item.expense
+            expense.update!(category_id: item.previous_category_id)
             restored_count += 1
           end
 
-          operation.update!(undone: true, undone_at: Time.current)
+          operation.update!(undone_at: Time.current, status: :undone)
 
           { success: true, restored_count: restored_count }
         end
@@ -123,14 +127,16 @@ module Services
       def suggest_categories
         suggestions = {}
 
-        expenses.each do |expense|
+        expense_adapter.each do |expense|
           next if expense.category_id.present?
 
           # Use pattern matching for suggestions
           suggested_category = find_best_category_match(expense)
 
-          if suggested_category
-            suggestions[expense.id] = {
+          if suggested_category && suggested_category[:category].present?
+            # Use object_id for non-persisted expenses to avoid nil keys
+            key = expense.id || expense.object_id
+            suggestions[key] = {
               expense: expense,
               suggested_category: suggested_category[:category],
               confidence: suggested_category[:confidence],
@@ -144,13 +150,13 @@ module Services
 
       # Auto-categorize based on rules and patterns
       def auto_categorize!
-        return { success: false, errors: [ "No expenses to categorize" ] } if expenses.empty?
+        return { success: false, errors: [ "No expenses to categorize" ] } if expense_adapter.empty?
 
         categorized_count = 0
         failed_count = 0
 
         ApplicationRecord.transaction do
-          expenses.each do |expense|
+          expense_adapter.each do |expense|
             next if expense.category_id.present? && !options[:override_existing]
 
             result = auto_categorize_expense(expense)
@@ -166,7 +172,7 @@ module Services
             success: true,
             categorized_count: categorized_count,
             failed_count: failed_count,
-            total_processed: expenses.count
+            total_processed: expense_adapter.count
           }
         end
       rescue StandardError => e
@@ -177,7 +183,7 @@ module Services
       def batch_process(batch_size: 100)
         results = []
 
-        expenses.in_batches(of: batch_size) do |batch|
+        expense_adapter.in_batches(batch_size: batch_size) do |batch|
           batch_result = process_batch(batch)
           results << batch_result
 
@@ -189,7 +195,7 @@ module Services
 
       # Simple categorize all method for bulk operations controller
       def categorize_all
-        return { success: false, errors: [ "No expenses selected" ] } if expenses.empty?
+        return { success: false, errors: [ "No expenses selected" ] } if expense_adapter.empty?
         return { success: false, errors: [ "No category provided" ] } unless @category_id || @category
 
         category = @category || Category.find_by(id: @category_id)
@@ -198,7 +204,7 @@ module Services
         success_count = 0
         failures = []
 
-        expenses.find_each do |expense|
+        expense_adapter.each do |expense|
           if expense.update(category_id: category.id)
             success_count += 1
           else
@@ -218,9 +224,9 @@ module Services
       private
 
       def filter_changeable_expenses
-        expenses.select do |expense|
+        expense_adapter.select do |expense|
           expense.category_id != category_id && !expense.locked?
-        end
+        end.to_a
       end
 
       def preview_change(expense)
@@ -228,7 +234,7 @@ module Services
           id: expense.id,
           description: expense.description,
           amount: expense.amount,
-          date: expense.date,
+          date: expense.transaction_date,
           current_category: expense.category&.name,
           new_category: Category.find(category_id)&.name,
           will_change: expense.category_id != category_id
@@ -236,7 +242,7 @@ module Services
       end
 
       def group_by_current_category(expenses)
-        expenses.group_by { |e| e.category&.name || "Uncategorized" }
+        expense_adapter.group_by { |e| e.category&.name || "Uncategorized" }
                 .transform_values { |group| {
                   count: group.count,
                   amount: group.sum(&:amount)
@@ -279,42 +285,53 @@ module Services
       def store_bulk_operation(results)
         @bulk_operation = BulkOperation.create!(
           operation_type: "categorization",
-          user: user,
-          affected_count: results.count,
-          affected_records: results.map { |r| {
-            expense_id: r[:expense_id],
-            previous_category_id: r[:previous_category_id]
-          }},
-          token: SecureRandom.hex(16)
+          user_id: user&.id,
+          target_category_id: category_id,
+          expense_count: results.count,
+          total_amount: results.sum { |r| Expense.find(r[:expense_id]).amount },
+          status: :completed,
+          completed_at: Time.current,
+          metadata: { results: results }
         )
+
+        # Create bulk operation items for each affected expense
+        results.each do |result|
+          @bulk_operation.bulk_operation_items.create!(
+            expense_id: result[:expense_id],
+            previous_category_id: result[:previous_category_id],
+            new_category_id: category_id,
+            status: :completed,
+            processed_at: Time.current
+          )
+        end
       end
 
       def export_to_csv
         CSV.generate(headers: true) do |csv|
           csv << [ "ID", "Date", "Description", "Amount", "Current Category", "Merchant" ]
 
-          expenses.each do |expense|
+          expense_adapter.each do |expense|
             csv << [
               expense.id,
-              expense.date,
+              expense.transaction_date,
               expense.description,
               expense.amount,
               expense.category&.name,
-              expense.merchant
+              expense.merchant_name
             ]
           end
         end
       end
 
       def export_to_json
-        expenses.map do |expense|
+        expense_adapter.map do |expense|
           {
             id: expense.id,
-            date: expense.date,
+            date: expense.transaction_date,
             description: expense.description,
             amount: expense.amount,
             category: expense.category&.name,
-            merchant: expense.merchant
+            merchant: expense.merchant_name
           }
         end.to_json
       end
@@ -325,19 +342,19 @@ module Services
       end
 
       def group_by_merchant
-        expenses.group_by(&:merchant)
+        expense_adapter.group_by(&:merchant_name)
                 .transform_values { |group| {
                   expenses: group,
                   count: group.count,
                   total_amount: group.sum(&:amount),
-                  date_range: [ group.min_by(&:date).date, group.max_by(&:date).date ]
+                  date_range: [ group.min_by(&:transaction_date).transaction_date, group.max_by(&:transaction_date).transaction_date ]
                 }}
                 .sort_by { |_, v| -v[:count] }
                 .to_h
       end
 
       def group_by_date
-        expenses.group_by { |e| e.date.beginning_of_month }
+        expense_adapter.group_by { |e| e.transaction_date.beginning_of_month }
                 .transform_values { |group| {
                   expenses: group,
                   count: group.count,
@@ -359,7 +376,7 @@ module Services
         result = {}
 
         ranges.each do |range|
-          matching = expenses.select { |e| e.amount >= range[:min] && e.amount < range[:max] }
+          matching = expense_adapter.select { |e| e.amount >= range[:min] && e.amount < range[:max] }.to_a
           next if matching.empty?
 
           result[range[:label]] = {
@@ -373,7 +390,7 @@ module Services
       end
 
       def group_by_category
-        expenses.group_by { |e| e.category&.name || "Uncategorized" }
+        expense_adapter.group_by { |e| e.category&.name || "Uncategorized" }
                 .transform_values { |group| {
                   expenses: group,
                   count: group.count,
@@ -387,7 +404,7 @@ module Services
         groups = []
         processed = Set.new
 
-        expenses.each do |expense|
+        expense_adapter.each do |expense|
           next if processed.include?(expense.id)
 
           similar = find_similar_expenses(expense)
@@ -407,11 +424,11 @@ module Services
       end
 
       def find_similar_expenses(expense)
-        expenses.select do |e|
+        expense_adapter.select do |e|
           e.id != expense.id &&
           similar_description?(expense.description, e.description) &&
           (expense.amount - e.amount).abs < expense.amount * 0.1
-        end
+        end.to_a
       end
 
       def similar_description?(desc1, desc2)
@@ -429,30 +446,50 @@ module Services
       end
 
       def find_best_category_match(expense)
-        # Use existing categorization patterns
-        pattern_match = CategorizationPattern.matching(expense.description).first
+        # Skip if expense doesn't have required attributes
+        return nil unless expense.respond_to?(:description) && expense.respond_to?(:merchant_name)
 
-        if pattern_match
+        # Try to find matching patterns for this expense
+        patterns = CategorizationPattern.active.with_category rescue []
+
+        matching_pattern = patterns.find do |pattern|
+          case pattern.pattern_type
+          when "merchant"
+            expense.merchant_name&.downcase&.include?(pattern.pattern_value.downcase)
+          when "keyword", "description"
+            expense.description&.downcase&.include?(pattern.pattern_value.downcase)
+          else
+            false
+          end
+        end
+
+        if matching_pattern
           {
-            category: pattern_match.category,
-            confidence: pattern_match.confidence_score || 0.8,
-            reason: "Pattern match: #{pattern_match.pattern}"
+            category: matching_pattern.category,
+            confidence: matching_pattern.confidence_weight || 0.8,
+            reason: "Pattern match: #{matching_pattern.pattern_value}"
           }
-        else
-          # Fallback to finding similar categorized expenses
+        elsif expense.respond_to?(:persisted?) && expense.persisted? && expense.description?
+          # Fallback to finding similar categorized expenses - only for persisted records
+          first_word = expense.description.split.first
+          return nil unless first_word.present?
+
+          # Only search for similar expenses if this expense is persisted
           similar = Expense.where.not(category_id: nil)
-                           .where("description ILIKE ?", "%#{expense.description.split.first}%")
+                           .where("description ILIKE ?", "%#{first_word}%")
                            .group(:category_id)
                            .count
                            .max_by { |_, count| count }
 
-          if similar
-            category = Category.find(similar[0])
-            {
-              category: category,
-              confidence: 0.6,
-              reason: "Similar expenses in #{category.name}"
-            }
+          if similar && similar[1] > 0  # Only if we found actual matches
+            category = Category.find_by(id: similar[0])
+            if category
+              {
+                category: category,
+                confidence: 0.6,
+                reason: "Similar expenses in #{category.name}"
+              }
+            end
           end
         end
       end

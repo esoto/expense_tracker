@@ -12,10 +12,10 @@ RSpec.describe Admin::PatternTestingController, type: :controller, unit: true do
     controller.class.skip_after_action :log_admin_activity, raise: false
     allow(controller).to receive(:log_admin_action)
     allow(controller).to receive(:require_pattern_management_permission).and_return(true)
-    
+
     # Mock admin authentication to allow access
-    admin_user = double("admin_user", 
-      session_expired?: false, 
+    admin_user = double("admin_user",
+      session_expired?: false,
       extend_session: nil,
       invalidate_session!: nil,
       id: 1,
@@ -23,7 +23,7 @@ RSpec.describe Admin::PatternTestingController, type: :controller, unit: true do
     )
     allow(controller).to receive(:current_admin_user).and_return(admin_user)
     allow(controller).to receive(:admin_signed_in?).and_return(true)
-    
+
     # Mock OpenStruct for controller use
     openstruct_class = Class.new do
       def initialize(attributes = {})
@@ -43,21 +43,21 @@ RSpec.describe Admin::PatternTestingController, type: :controller, unit: true do
         @params = params
         @valid = true
       end
-      
+
       def test
         @valid
       end
-      
+
       def categories_with_confidence
-        [{ category: "Food", confidence: 0.8 }]
+        [ { category: "Food", confidence: 0.8 } ]
       end
-      
+
       def test_expense
         Struct.new(:description, :amount).new("Test expense", 10.0)
       end
-      
+
       def errors
-        double("errors", full_messages: ["Test error"])
+        double("errors", full_messages: [ "Test error" ])
       end
     end
     patterns_module.const_set("PatternTester", tester_class)
@@ -92,23 +92,23 @@ RSpec.describe Admin::PatternTestingController, type: :controller, unit: true do
               "transaction_date" => "2023-12-01"
             )
           ).and_call_original
-          
+
           post :test_pattern, params: test_params
         end
 
         it "calls test method on pattern tester" do
           tester = double("tester", test: true, categories_with_confidence: [], test_expense: double("expense"))
           allow(Patterns::PatternTester).to receive(:new).and_return(tester)
-          
+
           expect(tester).to receive(:test)
-          
+
           post :test_pattern, params: test_params
         end
 
         it "assigns matching patterns and test expense" do
           post :test_pattern, params: test_params
-          
-          expect(assigns(:matching_patterns)).to eq([{ category: "Food", confidence: 0.8 }])
+
+          expect(assigns(:matching_patterns)).to eq([ { category: "Food", confidence: 0.8 } ])
           expect(assigns(:test_expense)).to be_present
         end
       end
@@ -119,13 +119,13 @@ RSpec.describe Admin::PatternTestingController, type: :controller, unit: true do
             def initialize(params)
               @params = params
             end
-            
+
             def test
               false
             end
-            
+
             def errors
-              double("errors", full_messages: ["Invalid expense data"])
+              double("errors", full_messages: [ "Invalid expense data" ])
             end
           end
           Patterns.send(:remove_const, "PatternTester") if Patterns.const_defined?("PatternTester")
@@ -159,13 +159,13 @@ RSpec.describe Admin::PatternTestingController, type: :controller, unit: true do
 
       it "finds the pattern by ID" do
         expect(CategorizationPattern).to receive(:find).with(categorization_pattern.id.to_s)
-        
+
         post :test_single, params: test_params
       end
 
       it "processes test_single request successfully" do
         post :test_single, params: test_params
-        
+
         expect(assigns(:pattern)).to eq(categorization_pattern)
         expect(assigns(:match_result)).to be_truthy
       end
@@ -174,16 +174,16 @@ RSpec.describe Admin::PatternTestingController, type: :controller, unit: true do
 
   describe "model method calls", unit: true do
     it "calls CategorizationPattern.active for test action" do
-      allow(CategorizationPattern).to receive_message_chain(:active, :includes).and_return([categorization_pattern])
-      
+      allow(CategorizationPattern).to receive_message_chain(:active, :includes).and_return([ categorization_pattern ])
+
       expect(CategorizationPattern).to receive(:active)
-      
+
       # Directly call the controller logic without triggering render
       controller.instance_eval do
         @patterns = CategorizationPattern.active.includes(:category)
       end
-      
-      expect(controller.instance_variable_get(:@patterns)).to eq([categorization_pattern])
+
+      expect(controller.instance_variable_get(:@patterns)).to eq([ categorization_pattern ])
     end
   end
 
@@ -209,13 +209,13 @@ RSpec.describe Admin::PatternTestingController, type: :controller, unit: true do
 
     describe "#render_test_error" do
       it "calls turbo stream replace" do
-        errors = ["Test error message"]
-        
+        errors = [ "Test error message" ]
+
         allow(controller).to receive(:turbo_stream).and_return(double(replace: nil))
         allow(controller).to receive(:render)
-        
+
         expect(controller).to receive(:turbo_stream)
-        
+
         controller.send(:render_test_error, errors)
       end
     end
@@ -233,7 +233,7 @@ RSpec.describe Admin::PatternTestingController, type: :controller, unit: true do
     it "has require_pattern_management_permission callback except for test action" do
       callbacks = controller.class._process_action_callbacks.select { |c| c.kind == :before }
       permission_callback = callbacks.find { |cb| cb.filter == :require_pattern_management_permission }
-      
+
       expect(permission_callback).to be_present
       # The callback excludes the test action
     end

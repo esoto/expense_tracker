@@ -5,17 +5,17 @@ require "rails_helper"
 RSpec.describe Expense, type: :model, unit: true do
   # Test QuerySecurity concern - moved to query_security_unit_spec.rb to avoid loading issues
   # it_behaves_like "QuerySecurity concern"
-  # Use build_stubbed for true unit testing
-  let(:email_account) { build_stubbed(:email_account, id: 1, bank_name: "BCR") }
-  let(:category) { build_stubbed(:category, id: 1, name: "Food") }
-  let(:ml_category) { build_stubbed(:category, id: 2, name: "Transport") }
+  # Use build for true unit testing
+  let(:email_account) { build(:email_account, id: 1, bank_name: "BCR") }
+  let(:category) { build(:category, id: 1, name: "Food") }
+  let(:ml_category) { build(:category, id: 2, name: "Transport") }
 
   # For tests that need real database records
-  let(:real_email_account) { create(:email_account, email: "test@example.com", bank_name: "BCR") }
+  let(:real_email_account) { create(:email_account, email: "test_#{SecureRandom.hex(4)}@example.com", bank_name: "BCR") }
   let(:real_category) { create(:category, name: "Food") }
   let(:real_ml_category) { create(:category, name: "Transport") }
   let(:expense) do
-    build_stubbed(:expense,
+    build(:expense,
       id: 1,
       email_account: email_account,
       category: category,

@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :email_account do
-    sequence(:email) { |n| "user#{n}@example.com" }
+    sequence(:email) { |n| "user#{n}_#{Time.current.to_i}@example.com" }
     provider { "gmail" }
     bank_name { "BAC" }
     encrypted_password { "test_password" }
@@ -9,12 +9,12 @@ FactoryBot.define do
 
     trait :gmail do
       provider { "gmail" }
-      email { "test@gmail.com" }
+      sequence(:email) { |n| "test#{n}@gmail.com" }
     end
 
     trait :outlook do
       provider { "outlook" }
-      email { "test@outlook.com" }
+      sequence(:email) { |n| "test#{n}@outlook.com" }
     end
 
     trait :custom do

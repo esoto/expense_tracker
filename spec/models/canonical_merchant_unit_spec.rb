@@ -610,7 +610,7 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
       it "handles MerchantAlias creation failure gracefully" do
         allow(CanonicalMerchant).to receive(:normalize_merchant_name).and_return("test")
         allow(MerchantAlias).to receive(:find_by).and_return(nil)
-        
+
         similar_canonical = build_stubbed(:canonical_merchant, name: "test")
         allow(CanonicalMerchant).to receive(:find_similar_canonical).and_return(similar_canonical)
         allow(CanonicalMerchant).to receive(:calculate_similarity_confidence).and_return(0.8)

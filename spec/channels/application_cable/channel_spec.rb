@@ -17,10 +17,10 @@ RSpec.describe ApplicationCable::Channel, type: :channel, unit: true do
     it "can be instantiated with connection and identifier" do
       connection = double("Connection")
       identifier = "test_channel"
-      
+
       allow(connection).to receive(:identifiers).and_return([])
       allow(connection).to receive(:logger).and_return(Rails.logger)
-      
+
       expect { ApplicationCable::Channel.new(connection, identifier) }.not_to raise_error
     end
   end
@@ -36,8 +36,8 @@ RSpec.describe ApplicationCable::Channel, type: :channel, unit: true do
     end
 
     it "inherits ActionCable streaming capabilities" do
-      streaming_methods = [:stream_from, :stop_all_streams]
-      
+      streaming_methods = [ :stream_from, :stop_all_streams ]
+
       streaming_methods.each do |method|
         expect(ApplicationCable::Channel.instance_methods).to include(method)
       end
@@ -85,7 +85,7 @@ RSpec.describe ApplicationCable::Channel, type: :channel, unit: true do
     it "serves as proper base class for other channels" do
       # Verify it can serve as a parent class
       test_channel_class = Class.new(ApplicationCable::Channel)
-      
+
       expect(test_channel_class.superclass).to eq(ApplicationCable::Channel)
       expect(test_channel_class.ancestors).to include(ActionCable::Channel::Base)
     end
@@ -129,7 +129,7 @@ RSpec.describe ApplicationCable::Channel, type: :channel, unit: true do
 
       connection = double("Connection", identifiers: [], logger: Rails.logger)
       allow(connection).to receive(:server).and_return(double("Server"))
-      
+
       instance = concrete_channel.new(connection, "concrete_channel")
       expect(instance).to respond_to(:subscribed)
     end

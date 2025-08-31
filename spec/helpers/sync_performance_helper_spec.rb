@@ -166,7 +166,7 @@ RSpec.describe SyncPerformanceHelper, type: :helper, unit: true do
     it "returns time ago for recent timestamps (within 24 hours)" do
       recent_time = 2.hours.ago
       result = helper.format_timestamp(recent_time)
-      
+
       expect(result).to include("atrás")
       expect(result).to include("hours") # time_ago_in_words returns English
     end
@@ -174,7 +174,7 @@ RSpec.describe SyncPerformanceHelper, type: :helper, unit: true do
     it "returns formatted date for older timestamps (beyond 24 hours)" do
       old_time = 3.days.ago
       result = helper.format_timestamp(old_time)
-      
+
       expect(result).to match(/\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}/)
       expect(result).not_to include("atrás")
     end
@@ -182,14 +182,14 @@ RSpec.describe SyncPerformanceHelper, type: :helper, unit: true do
     it "handles edge case of exactly 24 hours ago" do
       exactly_24h = 24.hours.ago - 1.second
       result = helper.format_timestamp(exactly_24h)
-      
+
       expect(result).to match(/\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}/)
     end
 
     it "handles very recent timestamps" do
       very_recent = 5.minutes.ago
       result = helper.format_timestamp(very_recent)
-      
+
       expect(result).to include("atrás")
       expect(result).to include("minutes") # time_ago_in_words returns English
     end
@@ -265,14 +265,14 @@ RSpec.describe SyncPerformanceHelper, type: :helper, unit: true do
   describe "#chart_color_scheme", unit: true do
     it "returns hash with expected color keys" do
       colors = helper.chart_color_scheme
-      
+
       expect(colors).to be_a(Hash)
       expect(colors.keys).to contain_exactly(:primary, :success, :warning, :error, :neutral)
     end
 
     it "returns RGB color values" do
       colors = helper.chart_color_scheme
-      
+
       expect(colors[:primary]).to eq("rgb(15, 118, 110)")
       expect(colors[:success]).to eq("rgb(16, 185, 129)")
       expect(colors[:warning]).to eq("rgb(217, 119, 6)")
@@ -282,7 +282,7 @@ RSpec.describe SyncPerformanceHelper, type: :helper, unit: true do
 
     it "uses consistent color scheme with Tailwind CSS colors" do
       colors = helper.chart_color_scheme
-      
+
       # Verify these match the expected Tailwind colors
       expect(colors[:primary]).to include("15, 118, 110") # teal-700
       expect(colors[:success]).to include("16, 185, 129") # emerald-500
@@ -307,7 +307,7 @@ RSpec.describe SyncPerformanceHelper, type: :helper, unit: true do
 
     it "returns upward trend for significant improvement (>5%)" do
       result = helper.performance_trend_icon(110, 100)
-      
+
       expect(result).to include("text-emerald-600")
       expect(result).to include("+10.0%")
       expect(result).to include("svg")
@@ -316,7 +316,7 @@ RSpec.describe SyncPerformanceHelper, type: :helper, unit: true do
 
     it "returns downward trend for significant decline (<-5%)" do
       result = helper.performance_trend_icon(85, 100)
-      
+
       expect(result).to include("text-rose-600")
       expect(result).to include("-15.0%")
       expect(result).to include("svg")
@@ -325,7 +325,7 @@ RSpec.describe SyncPerformanceHelper, type: :helper, unit: true do
 
     it "returns neutral trend for small changes (-5% to 5%)" do
       result = helper.performance_trend_icon(103, 100)
-      
+
       expect(result).to include("text-slate-500")
       expect(result).to include("3.0%")
       expect(result).to include("svg")
@@ -336,7 +336,7 @@ RSpec.describe SyncPerformanceHelper, type: :helper, unit: true do
       # Exactly +5% (should be neutral)
       result_up = helper.performance_trend_icon(105, 100)
       expect(result_up).to include("text-slate-500")
-      
+
       # Exactly -5% (should be neutral)
       result_down = helper.performance_trend_icon(95, 100)
       expect(result_down).to include("text-slate-500")
@@ -345,7 +345,7 @@ RSpec.describe SyncPerformanceHelper, type: :helper, unit: true do
     it "calculates percentage change correctly" do
       result = helper.performance_trend_icon(120.5, 100)
       expect(result).to include("+20.5%")
-      
+
       result = helper.performance_trend_icon(87.25, 100)
       expect(result).to include("-12.75%")
     end
@@ -354,16 +354,16 @@ RSpec.describe SyncPerformanceHelper, type: :helper, unit: true do
   describe "#queue_depth_status", unit: true do
     it "returns empty status for depth 0" do
       result = helper.queue_depth_status(0)
-      
+
       expect(result[:label]).to eq("Vacía")
       expect(result[:color]).to eq("text-emerald-600")
       expect(result[:bg]).to eq("bg-emerald-100")
     end
 
     it "returns normal status for depth 1-10" do
-      [1, 5, 10].each do |depth|
+      [ 1, 5, 10 ].each do |depth|
         result = helper.queue_depth_status(depth)
-        
+
         expect(result[:label]).to eq("Normal")
         expect(result[:color]).to eq("text-teal-600")
         expect(result[:bg]).to eq("bg-teal-100")
@@ -371,9 +371,9 @@ RSpec.describe SyncPerformanceHelper, type: :helper, unit: true do
     end
 
     it "returns moderate status for depth 11-50" do
-      [11, 25, 50].each do |depth|
+      [ 11, 25, 50 ].each do |depth|
         result = helper.queue_depth_status(depth)
-        
+
         expect(result[:label]).to eq("Moderada")
         expect(result[:color]).to eq("text-amber-600")
         expect(result[:bg]).to eq("bg-amber-100")
@@ -381,9 +381,9 @@ RSpec.describe SyncPerformanceHelper, type: :helper, unit: true do
     end
 
     it "returns high status for depth above 50" do
-      [51, 100, 1000].each do |depth|
+      [ 51, 100, 1000 ].each do |depth|
         result = helper.queue_depth_status(depth)
-        
+
         expect(result[:label]).to eq("Alta")
         expect(result[:color]).to eq("text-rose-600")
         expect(result[:bg]).to eq("bg-rose-100")
@@ -392,7 +392,7 @@ RSpec.describe SyncPerformanceHelper, type: :helper, unit: true do
 
     it "returns hash with expected keys" do
       result = helper.queue_depth_status(25)
-      
+
       expect(result.keys).to contain_exactly(:label, :color, :bg)
       expect(result[:label]).to be_a(String)
       expect(result[:color]).to be_a(String)
@@ -406,18 +406,18 @@ RSpec.describe SyncPerformanceHelper, type: :helper, unit: true do
       rate_95 = 95
       rate_85 = 85
       rate_70 = 70
-      
+
       # Success rate methods should use consistent colors
       expect(helper.success_rate_color(rate_95)).to include("emerald")
       expect(helper.success_rate_bg(rate_95)).to include("emerald")
       expect(helper.success_rate_icon_color(rate_95)).to include("emerald")
       expect(helper.success_rate_badge(rate_95)).to include("emerald")
-      
+
       expect(helper.success_rate_color(rate_85)).to include("amber")
       expect(helper.success_rate_bg(rate_85)).to include("amber")
       expect(helper.success_rate_icon_color(rate_85)).to include("amber")
       expect(helper.success_rate_badge(rate_85)).to include("amber")
-      
+
       expect(helper.success_rate_color(rate_70)).to include("rose")
       expect(helper.success_rate_bg(rate_70)).to include("rose")
       expect(helper.success_rate_icon_color(rate_70)).to include("rose")
@@ -427,7 +427,7 @@ RSpec.describe SyncPerformanceHelper, type: :helper, unit: true do
     it "follows the financial confidence color palette" do
       # Verify colors match the expected palette from CLAUDE.md
       colors = helper.chart_color_scheme
-      
+
       expect(colors[:primary]).to include("15, 118, 110") # teal-700
       expect(colors[:success]).to include("16, 185, 129") # emerald-500
       expect(colors[:warning]).to include("217, 119, 6")  # amber-600
@@ -441,7 +441,7 @@ RSpec.describe SyncPerformanceHelper, type: :helper, unit: true do
       expect(helper.period_label("last_24_hours")).to eq("Últimas 24 horas")
       expect(helper.period_label("last_7_days")).to eq("Últimos 7 días")
       expect(helper.period_label("last_30_days")).to eq("Últimos 30 días")
-      
+
       expect(helper.queue_depth_status(0)[:label]).to eq("Vacía")
       expect(helper.queue_depth_status(25)[:label]).to eq("Moderada")
       expect(helper.queue_depth_status(100)[:label]).to eq("Alta")
@@ -450,7 +450,7 @@ RSpec.describe SyncPerformanceHelper, type: :helper, unit: true do
     it "uses 'atrás' suffix for recent timestamps" do
       recent = 1.hour.ago
       result = helper.format_timestamp(recent)
-      
+
       expect(result).to include("atrás")
     end
   end

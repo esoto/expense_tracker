@@ -204,11 +204,17 @@ RSpec.describe Categorization::PatternLearner do
       end
 
       it "creates patterns for each unique merchant" do
+        # Clear existing patterns to avoid conflicts
+        CategorizationPattern.where(
+          pattern_type: "merchant",
+          pattern_value: [ "uber", "lyft", "yellow cab" ]
+        ).destroy_all
+
         expect {
           learner.batch_learn(corrections)
         }.to change(CategorizationPattern, :count).by_at_least(3)
 
-        %w[uber lyft yellow\ cab].each do |merchant|
+        [ "uber", "lyft", "yellow cab" ].each do |merchant|
           pattern = CategorizationPattern.find_by(
             pattern_type: "merchant",
             pattern_value: merchant

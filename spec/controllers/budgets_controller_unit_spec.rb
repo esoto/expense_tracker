@@ -23,7 +23,7 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
       allow(budget).to receive(:historical_adherence).and_return([])
       allow(controller).to receive(:days_remaining_in_period).and_return(0)
       allow(controller).to receive(:calculate_daily_average_needed).and_return(0)
-      
+
       expect(controller).to receive(:set_budget).and_call_original
       get :show, params: { id: budget.id }
     end
@@ -31,12 +31,12 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
 
   describe "GET #index", unit: true do
     let(:budgets_relation) { double("budgets_relation") }
-    let(:budgets) { [budget] }
+    let(:budgets) { [ budget ] }
 
     before do
       allow(email_account).to receive(:budgets).and_return(budgets_relation)
       allow(budgets_relation).to receive_message_chain(:includes, :order).and_return(budgets)
-      allow(budgets).to receive(:group_by).and_return({ monthly: [budget] })
+      allow(budgets).to receive(:group_by).and_return({ monthly: [ budget ] })
       allow(controller).to receive(:calculate_overall_budget_health).and_return({ status: :good })
     end
 
@@ -44,20 +44,20 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
       expect(email_account).to receive(:budgets).and_return(budgets_relation)
       expect(budgets_relation).to receive(:includes).with(:category).and_return(budgets_relation)
       expect(budgets_relation).to receive(:order).with(active: :desc, period: :asc, created_at: :desc).and_return(budgets)
-      
+
       get :index
     end
 
     it "groups budgets by period" do
       expect(budgets).to receive(:group_by)
-      
+
       get :index
-      expect(assigns(:budgets_by_period)).to eq({ monthly: [budget] })
+      expect(assigns(:budgets_by_period)).to eq({ monthly: [ budget ] })
     end
 
     it "calculates overall budget health" do
       expect(controller).to receive(:calculate_overall_budget_health)
-      
+
       get :index
       expect(assigns(:overall_health)).to eq({ status: :good })
     end
@@ -81,14 +81,14 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
 
     it "sets budget from params" do
       expect(email_account).to receive_message_chain(:budgets, :find).with(budget.id.to_s).and_return(budget)
-      
+
       get :show, params: { id: budget.id }
       expect(assigns(:budget)).to eq(budget)
     end
 
     it "calculates budget statistics" do
       get :show, params: { id: budget.id }
-      
+
       stats = assigns(:budget_stats)
       expect(stats).to include(
         current_spend: 5000,
@@ -109,7 +109,7 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
   describe "GET #new", unit: true do
     let(:budgets_relation) { double("budgets_relation") }
     let(:new_budget) { build_stubbed(:budget) }
-    let(:categories) { [category] }
+    let(:categories) { [ category ] }
 
     before do
       allow(email_account).to receive(:budgets).and_return(budgets_relation)
@@ -125,14 +125,14 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
         warning_threshold: 70,
         critical_threshold: 90
       ).and_return(new_budget)
-      
+
       get :new
       expect(assigns(:budget)).to eq(new_budget)
     end
 
     it "loads categories for select options" do
       expect(Category).to receive_message_chain(:all, :order).with(:name).and_return(categories)
-      
+
       get :new
       expect(assigns(:categories)).to eq(categories)
     end
@@ -144,7 +144,7 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
   end
 
   describe "GET #edit", unit: true do
-    let(:categories) { [category] }
+    let(:categories) { [ category ] }
 
     before do
       allow(email_account).to receive_message_chain(:budgets, :find).and_return(budget)
@@ -153,14 +153,14 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
 
     it "sets budget from params" do
       expect(email_account).to receive_message_chain(:budgets, :find).with(budget.id.to_s)
-      
+
       get :edit, params: { id: budget.id }
       expect(assigns(:budget)).to eq(budget)
     end
 
     it "loads categories for select options" do
       expect(Category).to receive_message_chain(:all, :order).with(:name)
-      
+
       get :edit, params: { id: budget.id }
       expect(assigns(:categories)).to eq(categories)
     end
@@ -189,32 +189,32 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
 
       it "builds budget with permitted params" do
         expect(budgets_relation).to receive(:build)
-        
+
         post :create, params: { budget: budget_params }
       end
 
       it "saves the budget" do
         expect(new_budget).to receive(:save).and_return(true)
-        
+
         post :create, params: { budget: budget_params }
       end
 
       it "calculates initial spend" do
         expect(new_budget).to receive(:calculate_current_spend!)
-        
+
         post :create, params: { budget: budget_params }
       end
 
       it "redirects to dashboard with success message" do
         post :create, params: { budget: budget_params }
-        
+
         expect(response).to redirect_to(dashboard_expenses_path)
         expect(flash[:notice]).to eq("Presupuesto creado exitosamente.")
       end
     end
 
     context "with invalid parameters" do
-      let(:categories) { [category] }
+      let(:categories) { [ category ] }
 
       before do
         allow(new_budget).to receive(:save).and_return(false)
@@ -223,20 +223,20 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
 
       it "does not save the budget" do
         expect(new_budget).to receive(:save).and_return(false)
-        
+
         post :create, params: { budget: budget_params }
       end
 
       it "loads categories for form" do
         expect(Category).to receive_message_chain(:all, :order).with(:name)
-        
+
         post :create, params: { budget: budget_params }
         expect(assigns(:categories)).to eq(categories)
       end
 
       it "renders new template with unprocessable content status" do
         post :create, params: { budget: budget_params }
-        
+
         expect(response).to render_template(:new)
         expect(response).to have_http_status(:unprocessable_content)
       end
@@ -245,7 +245,7 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
 
   describe "PATCH #update", unit: true do
     let(:budget_params) { { name: "Updated Budget", amount: 15000 } }
-    let(:categories) { [category] }
+    let(:categories) { [ category ] }
 
     before do
       allow(email_account).to receive_message_chain(:budgets, :find).and_return(budget)
@@ -259,19 +259,19 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
 
       it "updates budget with permitted params" do
         expect(budget).to receive(:update)
-        
+
         patch :update, params: { id: budget.id, budget: budget_params }
       end
 
       it "recalculates spend after update" do
         expect(budget).to receive(:calculate_current_spend!)
-        
+
         patch :update, params: { id: budget.id, budget: budget_params }
       end
 
       it "redirects to dashboard with success message" do
         patch :update, params: { id: budget.id, budget: budget_params }
-        
+
         expect(response).to redirect_to(dashboard_expenses_path)
         expect(flash[:notice]).to eq("Presupuesto actualizado exitosamente.")
       end
@@ -285,20 +285,20 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
 
       it "does not update the budget" do
         expect(budget).to receive(:update).and_return(false)
-        
+
         patch :update, params: { id: budget.id, budget: budget_params }
       end
 
       it "loads categories for form" do
         expect(Category).to receive_message_chain(:all, :order).with(:name)
-        
+
         patch :update, params: { id: budget.id, budget: budget_params }
         expect(assigns(:categories)).to eq(categories)
       end
 
       it "renders edit template with unprocessable content status" do
         patch :update, params: { id: budget.id, budget: budget_params }
-        
+
         expect(response).to render_template(:edit)
         expect(response).to have_http_status(:unprocessable_content)
       end
@@ -313,13 +313,13 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
 
     it "destroys the budget" do
       expect(budget).to receive(:destroy)
-      
+
       delete :destroy, params: { id: budget.id }
     end
 
     it "redirects to budgets path with success message" do
       delete :destroy, params: { id: budget.id }
-      
+
       expect(response).to redirect_to(budgets_path)
       expect(flash[:notice]).to eq("Presupuesto eliminado exitosamente.")
     end
@@ -341,13 +341,13 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
 
       it "duplicates the budget for next period" do
         expect(original_budget).to receive(:duplicate_for_next_period)
-        
+
         post :duplicate, params: { id: original_budget.id }
       end
 
       it "redirects to edit new budget with success message" do
         post :duplicate, params: { id: original_budget.id }
-        
+
         expect(response).to redirect_to(edit_budget_path(duplicated_budget))
         expect(flash[:notice]).to eq("Presupuesto duplicado exitosamente. Puedes ajustar los valores según necesites.")
       end
@@ -361,7 +361,7 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
 
       it "redirects to budgets path with error message" do
         post :duplicate, params: { id: original_budget.id }
-        
+
         expect(response).to redirect_to(budgets_path)
         expect(flash[:alert]).to eq("No se pudo duplicar el presupuesto.")
       end
@@ -378,13 +378,13 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
 
     it "deactivates the budget" do
       expect(budget_to_deactivate).to receive(:deactivate!)
-      
+
       post :deactivate, params: { id: budget_to_deactivate.id }
     end
 
     it "redirects to budgets path with success message" do
       post :deactivate, params: { id: budget_to_deactivate.id }
-      
+
       expect(response).to redirect_to(budgets_path)
       expect(flash[:notice]).to eq("Presupuesto desactivado exitosamente.")
     end
@@ -413,7 +413,7 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
 
     it "calculates suggested budget amount" do
       expect(controller).to receive(:calculate_suggested_budget_amount).with("weekly")
-      
+
       get :quick_set, params: { period: "weekly" }
       expect(assigns(:suggested_amount)).to eq(50000)
     end
@@ -427,7 +427,7 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
         warning_threshold: 70,
         critical_threshold: 90
       ))
-      
+
       get :quick_set
     end
 
@@ -465,7 +465,7 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
 
       it "permits only allowed parameters" do
         permitted_params = controller.send(:budget_params)
-        
+
         expect(permitted_params).to include("name", "amount", "period")
         expect(permitted_params).not_to include("unauthorized_param")
       end
@@ -501,7 +501,7 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
     it "scopes all budgets to email account" do
       allow(email_account).to receive_message_chain(:budgets, :includes, :order).and_return([])
       allow(controller).to receive(:calculate_overall_budget_health).and_return({})
-      
+
       get :index
       expect(email_account).to have_received(:budgets)
     end

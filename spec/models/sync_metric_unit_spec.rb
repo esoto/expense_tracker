@@ -584,8 +584,10 @@ RSpec.describe SyncMetric, type: :model, unit: true do
     describe "aggregation optimization" do
       it "uses database aggregation functions" do
         # average_duration_by_type uses database AVG
-        expect(described_class).to receive_message_chain(:last_24_hours, :group, :average)
-        allow(described_class).to receive_message_chain(:last_24_hours, :group, :average, :transform_values).and_return({})
+        double_result = double("AverageResult")
+        allow(double_result).to receive(:transform_values).and_return({})
+
+        expect(described_class).to receive_message_chain(:last_24_hours, :group, :average).and_return(double_result)
 
         described_class.average_duration_by_type
       end

@@ -10,18 +10,18 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
   before do
     # Skip the authenticate_user! before_action for unit tests
     controller.class.skip_before_action :authenticate_user!, raise: false
-    
+
     # Mock the non-existent service classes
     services_categorization = Module.new
     stub_const("Services::Categorization", services_categorization)
-    
+
     bulk_processor_class = Class.new
     services_categorization.const_set("BulkProcessor", bulk_processor_class)
     allow(bulk_processor_class).to receive(:new).and_return(bulk_processor)
   end
 
   describe "POST #categorize", unit: true do
-    let(:expense_ids) { [expense.id] }
+    let(:expense_ids) { [ expense.id ] }
     let(:category_id) { category.id }
     let(:result) { { success: true, message: "Categorized successfully", count: 1 } }
 
@@ -50,8 +50,8 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
         options: hash_including(confidence_threshold: 0.9)
       )
 
-      post :categorize, params: { 
-        expense_ids: expense_ids, 
+      post :categorize, params: {
+        expense_ids: expense_ids,
         category_id: category_id,
         confidence_threshold: "0.9"
       }, format: :json
@@ -64,8 +64,8 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
         options: hash_including(apply_learning: true)
       )
 
-      post :categorize, params: { 
-        expense_ids: expense_ids, 
+      post :categorize, params: {
+        expense_ids: expense_ids,
         category_id: category_id,
         apply_learning: "true"
       }, format: :json
@@ -78,8 +78,8 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
         options: hash_including(update_patterns: true)
       )
 
-      post :categorize, params: { 
-        expense_ids: expense_ids, 
+      post :categorize, params: {
+        expense_ids: expense_ids,
         category_id: category_id,
         update_patterns: "true"
       }, format: :json
@@ -97,8 +97,8 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
   end
 
   describe "POST #suggest", unit: true do
-    let(:expense_ids) { [expense.id] }
-    let(:suggestions) { [{ category: "Food", confidence: 0.9 }, { category: "Transport", confidence: 0.7 }] }
+    let(:expense_ids) { [ expense.id ] }
+    let(:suggestions) { [ { category: "Food", confidence: 0.9 }, { category: "Transport", confidence: 0.7 } ] }
 
     before do
       allow(bulk_processor).to receive(:suggest).and_return(suggestions)
@@ -146,7 +146,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
   end
 
   describe "POST #preview", unit: true do
-    let(:expense_ids) { [expense.id] }
+    let(:expense_ids) { [ expense.id ] }
     let(:category_id) { category.id }
     let(:preview_data) { { affected_expenses: 1, estimated_impact: "positive", warnings: [] } }
 
@@ -193,7 +193,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
 
       post :auto_categorize, params: {
         date_from: "2023-01-01",
-        date_to: "2023-12-31", 
+        date_to: "2023-12-31",
         confidence_threshold: "0.8"
       }, format: :json
     end
@@ -233,7 +233,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
   end
 
   describe "GET #export", unit: true do
-    let(:expense_ids) { [expense.id] }
+    let(:expense_ids) { [ expense.id ] }
     let(:csv_data) { "ID,Description,Amount\n1,Test Expense,100.00" }
     let(:bulk_exporter) { double("Services::Categorization::BulkExporter") }
 
@@ -258,7 +258,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
         expect(response).to have_http_status(:success)
         expect(response.content_type).to include("text/csv")
         expect(response.body).to eq(csv_data)
-        
+
         expected_date = Date.current.strftime('%Y%m%d')
         expect(response.headers["Content-Disposition"]).to include("bulk_categorizations_#{expected_date}.csv")
       end
@@ -320,9 +320,9 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
     describe "#categorization_options" do
       it "returns default options when no parameters provided" do
         controller.params = ActionController::Parameters.new({})
-        
+
         options = controller.send(:categorization_options)
-        
+
         expect(options).to eq({
           confidence_threshold: 0.7,
           apply_learning: false,
@@ -336,9 +336,9 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
           apply_learning: "true",
           update_patterns: "false"
         })
-        
+
         options = controller.send(:categorization_options)
-        
+
         expect(options).to eq({
           confidence_threshold: 0.9,
           apply_learning: true,
@@ -350,9 +350,9 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
     describe "#suggestion_options" do
       it "returns default options when no parameters provided" do
         controller.params = ActionController::Parameters.new({})
-        
+
         options = controller.send(:suggestion_options)
-        
+
         expect(options).to eq({
           max_suggestions: 3,
           include_confidence: false
@@ -364,9 +364,9 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
           max_suggestions: "5",
           include_confidence: "true"
         })
-        
+
         options = controller.send(:suggestion_options)
-        
+
         expect(options).to eq({
           max_suggestions: 5,
           include_confidence: true
@@ -385,9 +385,9 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
           confidence_threshold: "0.8",
           unpermitted_param: "should_not_be_included"
         })
-        
+
         permitted_params = controller.send(:auto_categorize_params)
-        
+
         expect(permitted_params.keys).to contain_exactly(
           "date_from", "date_to", "merchant_filter", "amount_range",
           "uncategorized_only", "confidence_threshold"
@@ -414,7 +414,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
 
       it "does not rescue the error (lets Rails handle it)" do
         expect {
-          post :categorize, params: { expense_ids: [expense.id], category_id: category.id }
+          post :categorize, params: { expense_ids: [ expense.id ], category_id: category.id }
         }.to raise_error(StandardError, "Service error")
       end
     end

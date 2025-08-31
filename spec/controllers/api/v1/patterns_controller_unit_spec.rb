@@ -9,36 +9,36 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
     allow(controller).to receive(:authenticate_api_token).and_return(true)
     allow(controller).to receive(:set_default_headers).and_return(true)
     allow(controller).to receive(:log_request).and_return(true)
-    
+
     # Mock serializer classes
     serializer_module = Module.new
     api_module = Module.new
     v1_module = Module.new
     api_module.const_set("V1", v1_module)
     serializer_module.const_set("Api", api_module)
-    
+
     pattern_serializer_class = Class.new do
       def self.collection(patterns, options = {})
         patterns.map { |p| { id: p.id, pattern_type: p.pattern_type } }
       end
-      
+
       def initialize(pattern, options = {})
         @pattern = pattern
         @options = options
       end
-      
+
       def as_json
         { id: @pattern.id, pattern_type: @pattern.pattern_type }
       end
     end
     v1_module.const_set("PatternSerializer", pattern_serializer_class)
     stub_const("Api::V1::PatternSerializer", pattern_serializer_class)
-    
+
     # Mock render methods
     allow(controller).to receive(:render).and_return(nil)
     allow(controller).to receive(:render_success).and_return(nil)
     allow(controller).to receive(:render_error).and_return(nil)
-    
+
     # Mock caching methods
     allow(controller).to receive(:handle_conditional_get)
     allow(controller).to receive(:fresh_when)
@@ -47,7 +47,7 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
 
   describe "GET #index", unit: true do
     let(:mock_patterns) { double("patterns", current_page: 1, total_pages: 1, total_count: 1, limit_value: 10, next_page: nil, prev_page: nil, map: []) }
-    
+
     before do
       allow(CategorizationPattern).to receive(:includes).and_return(mock_patterns)
       allow(mock_patterns).to receive(:where).and_return(mock_patterns)
@@ -69,8 +69,8 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
 
     context "with parameters" do
       it "handles filter and sort parameters" do
-        get :index, params: { 
-          pattern_type: "merchant", 
+        get :index, params: {
+          pattern_type: "merchant",
           category_id: category.id,
           active: true,
           sort_by: "success_rate",
@@ -139,7 +139,7 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
       it "sets default confidence_weight if not provided" do
         allow(categorization_pattern).to receive(:confidence_weight).and_return(nil)
         allow(categorization_pattern).to receive(:confidence_weight=)
-        
+
         post :create, params: valid_params
         expect(categorization_pattern).to have_received(:confidence_weight=).with(1.0)
       end
@@ -162,13 +162,13 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
       before do
         allow(CategorizationPattern).to receive(:new).and_return(categorization_pattern)
         allow(categorization_pattern).to receive(:save).and_return(false)
-        allow(categorization_pattern).to receive(:errors).and_return(double("errors", full_messages: ["Pattern value can't be blank"]))
+        allow(categorization_pattern).to receive(:errors).and_return(double("errors", full_messages: [ "Pattern value can't be blank" ]))
       end
 
       it "renders error response with validation errors" do
         expect(controller).to receive(:render_error).with(
           "Failed to create pattern",
-          ["Pattern value can't be blank"]
+          [ "Pattern value can't be blank" ]
         )
         post :create, params: valid_params
       end
@@ -221,13 +221,13 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
     context "with invalid parameters" do
       before do
         allow(categorization_pattern).to receive(:update).and_return(false)
-        allow(categorization_pattern).to receive(:errors).and_return(double("errors", full_messages: ["Pattern value can't be blank"]))
+        allow(categorization_pattern).to receive(:errors).and_return(double("errors", full_messages: [ "Pattern value can't be blank" ]))
       end
 
       it "renders error response with validation errors" do
         expect(controller).to receive(:render_error).with(
           "Failed to update pattern",
-          ["Pattern value can't be blank"]
+          [ "Pattern value can't be blank" ]
         )
         patch :update, params: update_params
       end
@@ -263,13 +263,13 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
     context "when deactivation fails" do
       before do
         allow(categorization_pattern).to receive(:update).and_return(false)
-        allow(categorization_pattern).to receive(:errors).and_return(double("errors", full_messages: ["Update failed"]))
+        allow(categorization_pattern).to receive(:errors).and_return(double("errors", full_messages: [ "Update failed" ]))
       end
 
       it "renders error response with failure details" do
         expect(controller).to receive(:render_error).with(
           "Failed to deactivate pattern",
-          ["Update failed"]
+          [ "Update failed" ]
         )
         delete :destroy, params: { id: categorization_pattern.id }
       end
@@ -281,7 +281,7 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
       it "finds and assigns pattern by ID" do
         allow(CategorizationPattern).to receive(:find).with("123").and_return(categorization_pattern)
         controller.params = ActionController::Parameters.new(id: "123")
-        
+
         controller.send(:set_pattern)
         expect(assigns(:pattern)).to eq(categorization_pattern)
       end
@@ -304,7 +304,7 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
         permitted_params = controller.send(:pattern_params)
 
         expect(permitted_params.keys).to contain_exactly(
-          "pattern_type", "pattern_value", "category_id", 
+          "pattern_type", "pattern_value", "category_id",
           "confidence_weight", "active", "metadata"
         )
         expect(permitted_params["unpermitted"]).to be_nil
@@ -363,42 +363,42 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
 
       it "filters by pattern_type when provided" do
         controller.params = ActionController::Parameters.new(pattern_type: "merchant")
-        
+
         expect(base_patterns).to receive(:where).with(pattern_type: "merchant").and_return(base_patterns)
         controller.send(:filter_patterns, base_patterns)
       end
 
       it "filters by category_id when provided" do
         controller.params = ActionController::Parameters.new(category_id: "1")
-        
+
         expect(base_patterns).to receive(:where).with(category_id: "1").and_return(base_patterns)
         controller.send(:filter_patterns, base_patterns)
       end
 
       it "filters by active status when provided" do
         controller.params = ActionController::Parameters.new(active: "true")
-        
+
         expect(base_patterns).to receive(:where).with(active: "true").and_return(base_patterns)
         controller.send(:filter_patterns, base_patterns)
       end
 
       it "filters by minimum success rate when provided" do
         controller.params = ActionController::Parameters.new(min_success_rate: "0.5")
-        
+
         expect(base_patterns).to receive(:where).with("success_rate >= ?", 0.5).and_return(base_patterns)
         controller.send(:filter_patterns, base_patterns)
       end
 
       it "filters by minimum usage count when provided" do
         controller.params = ActionController::Parameters.new(min_usage_count: "10")
-        
+
         expect(base_patterns).to receive(:where).with("usage_count >= ?", 10).and_return(base_patterns)
         controller.send(:filter_patterns, base_patterns)
       end
 
       it "returns unfiltered patterns when no filters provided" do
         controller.params = ActionController::Parameters.new({})
-        
+
         result = controller.send(:filter_patterns, base_patterns)
         expect(result).to eq(base_patterns)
       end
@@ -409,35 +409,35 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
 
       it "sorts by success_rate when specified" do
         controller.params = ActionController::Parameters.new(sort_by: "success_rate", sort_direction: "desc")
-        
+
         expect(patterns).to receive(:order).with(success_rate: "desc")
         controller.send(:sort_patterns, patterns)
       end
 
       it "sorts by usage_count when specified" do
         controller.params = ActionController::Parameters.new(sort_by: "usage_count", sort_direction: "asc")
-        
+
         expect(patterns).to receive(:order).with(usage_count: "asc")
         controller.send(:sort_patterns, patterns)
       end
 
       it "sorts by created_at when specified" do
         controller.params = ActionController::Parameters.new(sort_by: "created_at")
-        
+
         expect(patterns).to receive(:order).with(created_at: "desc") # Default direction
         controller.send(:sort_patterns, patterns)
       end
 
       it "sorts by pattern_type when specified" do
         controller.params = ActionController::Parameters.new(sort_by: "pattern_type")
-        
+
         expect(patterns).to receive(:order).with(pattern_type: "desc")
         controller.send(:sort_patterns, patterns)
       end
 
       it "uses default ordering when no sort specified" do
         controller.params = ActionController::Parameters.new({})
-        
+
         expect(patterns).to receive(:ordered_by_success)
         controller.send(:sort_patterns, patterns)
       end
@@ -446,28 +446,28 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
     describe "#sort_direction" do
       it "returns asc when specified" do
         controller.params = ActionController::Parameters.new(sort_direction: "asc")
-        
+
         result = controller.send(:sort_direction)
         expect(result).to eq("asc")
       end
 
       it "returns desc when specified" do
         controller.params = ActionController::Parameters.new(sort_direction: "desc")
-        
+
         result = controller.send(:sort_direction)
         expect(result).to eq("desc")
       end
 
       it "returns desc as default for invalid values" do
         controller.params = ActionController::Parameters.new(sort_direction: "invalid")
-        
+
         result = controller.send(:sort_direction)
         expect(result).to eq("desc")
       end
 
       it "returns desc as default when not specified" do
         controller.params = ActionController::Parameters.new({})
-        
+
         result = controller.send(:sort_direction)
         expect(result).to eq("desc")
       end
@@ -476,18 +476,18 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
 
   describe "serialization methods", unit: true do
     describe "#serialize_patterns" do
-      let(:patterns) { [categorization_pattern] }
+      let(:patterns) { [ categorization_pattern ] }
 
       it "calls PatternSerializer collection method" do
         controller.params = ActionController::Parameters.new({})
-        
+
         expect(Api::V1::PatternSerializer).to receive(:collection).with(patterns, include_metadata: false)
         controller.send(:serialize_patterns, patterns)
       end
 
       it "includes metadata when requested" do
         controller.params = ActionController::Parameters.new(include_metadata: "true")
-        
+
         expect(Api::V1::PatternSerializer).to receive(:collection).with(patterns, include_metadata: true)
         controller.send(:serialize_patterns, patterns)
       end
@@ -498,7 +498,7 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
         serializer_instance = double("serializer", as_json: { id: 1 })
         expect(Api::V1::PatternSerializer).to receive(:new).with(categorization_pattern, include_metadata: true).and_return(serializer_instance)
         expect(serializer_instance).to receive(:as_json)
-        
+
         controller.send(:serialize_pattern, categorization_pattern)
       end
     end
@@ -519,7 +519,7 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
     describe "#pagination_meta" do
       it "returns pagination metadata hash" do
         result = controller.send(:pagination_meta, paginated_collection)
-        
+
         expect(result).to eq({
           current_page: 1,
           total_pages: 5,

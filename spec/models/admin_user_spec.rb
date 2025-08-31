@@ -601,19 +601,19 @@ RSpec.describe AdminUser, type: :model, unit: true do
       it 'handles race condition in failed login counting' do
         # Use a more deterministic approach without actual threading
         user = create(:admin_user, failed_login_attempts: 4)
-        
+
         # Test the race condition behavior by simulating what would happen
         # if two processes tried to increment at the same time
         initial_attempts = user.failed_login_attempts
-        
+
         # Simulate the race condition scenario
         user.handle_failed_login
-        
+
         # Verify the locking behavior works correctly
         user.reload
         expect(user.failed_login_attempts).to eq(initial_attempts + 1)
         expect(user.locked_at).to be_present, "User should be locked after reaching max failed attempts"
-        
+
         # Test that further login attempts are properly handled on locked account
         expect { user.handle_failed_login }.not_to raise_error
         user.reload

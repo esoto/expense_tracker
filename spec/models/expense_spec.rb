@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Expense, type: :model, integration: true do
-  let(:email_account) { create(:email_account, email: 'test@example.com', provider: 'gmail', bank_name: 'BAC', encrypted_password: 'pass') }
+  let(:email_account) { create(:email_account, email: "test_#{SecureRandom.hex(4)}@example.com", provider: 'gmail', bank_name: 'BAC', encrypted_password: 'pass') }
   let(:category) { create(:category, name: 'Test Category') }
 
   describe 'validations', integration: true do

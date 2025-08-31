@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_22_224054) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -180,6 +180,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_22_224054) do
     t.index ["category_id", "pattern_type", "pattern_value"], name: "idx_patterns_unique_lookup", unique: true
     t.index ["category_id", "success_rate"], name: "index_categorization_patterns_on_category_id_and_success_rate"
     t.index ["category_id"], name: "index_categorization_patterns_on_category_id"
+    t.index ["created_at", "updated_at"], name: "idx_patterns_activity"
     t.index ["created_at"], name: "idx_patterns_created_at"
     t.index ["pattern_type", "active", "confidence_weight"], name: "idx_patterns_type_active_confidence"
     t.index ["pattern_type", "active", "success_rate"], name: "idx_patterns_lookup"
@@ -327,6 +328,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_22_224054) do
     t.index ["merchant_normalized"], name: "index_expenses_merchant_similarity", opclass: :gist_trgm_ops, where: "(merchant_normalized IS NOT NULL)", using: :gist
     t.index ["status"], name: "index_expenses_on_status"
     t.index ["transaction_date", "category_id", "amount"], name: "idx_expenses_analytics", where: "(deleted_at IS NULL)", comment: "Covering index for date-based analytics"
+    t.index ["updated_at", "category_id"], name: "idx_expenses_dashboard_metrics"
+    t.index ["updated_at"], name: "idx_expenses_updated_at"
   end
 
   create_table "failed_broadcast_stores", force: :cascade do |t|
@@ -496,6 +499,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_22_224054) do
     t.datetime "updated_at", null: false
     t.index ["active_job_id"], name: "index_solid_queue_jobs_on_active_job_id"
     t.index ["class_name"], name: "index_solid_queue_jobs_on_class_name"
+    t.index ["finished_at"], name: "idx_solid_queue_jobs_unfinished", where: "(finished_at IS NULL)"
     t.index ["finished_at"], name: "index_solid_queue_jobs_on_finished_at"
     t.index ["queue_name", "finished_at"], name: "index_solid_queue_jobs_for_filtering"
     t.index ["scheduled_at", "finished_at"], name: "index_solid_queue_jobs_for_alerting"

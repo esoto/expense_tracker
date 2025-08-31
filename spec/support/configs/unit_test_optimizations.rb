@@ -31,18 +31,21 @@ RSpec.configure do |config|
   end
 
   config.around(:each, :unit) do |example|
-    # Use faster database strategy for unit tests
-    if defined?(ActiveRecord)
-      # Use transactions for unit tests (fastest cleanup)
-      # Skip DatabaseCleaner entirely for unit tests to avoid conflicts
-      ActiveRecord::Base.connection.begin_transaction(joinable: false)
-      begin
-        example.run
-      ensure
-        ActiveRecord::Base.connection.rollback_transaction
-      end
-    else
+    # Use Rails' built-in transactional fixtures for unit tests
+    # This is much faster and avoids manual transaction management conflicts
+    if defined?(ActiveRecord) && RSpec.configuration.use_transactional_fixtures
+      # Let Rails handle the transaction - don't manually manage it
       example.run
+    else
+      # Only manually manage transactions if transactional fixtures are disabled
+      if defined?(ActiveRecord)
+        ActiveRecord::Base.transaction(requires_new: true, joinable: false) do
+          example.run
+          raise ActiveRecord::Rollback
+        end
+      else
+        example.run
+      end
     end
   end
 

@@ -4,7 +4,7 @@ RSpec.describe EmailAccountsController, type: :controller, unit: true do
   let(:email_account) { create(:email_account) }
   let(:valid_attributes) {
     {
-      email: "test@example.com",
+      email: "test_#{SecureRandom.hex(4)}@example.com",
       bank_name: "BAC",
       provider: "gmail",
       imap_server: "imap.gmail.com",

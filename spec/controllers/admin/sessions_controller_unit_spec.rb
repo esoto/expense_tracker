@@ -7,7 +7,7 @@ RSpec.describe Admin::SessionsController, type: :controller, unit: true do
     # Mock Rails.cache for rate limiting
     allow(Rails.cache).to receive(:read).and_return(0)
     allow(Rails.cache).to receive(:write).and_return(true)
-    
+
     # Mock render methods to avoid template issues
     allow(controller).to receive(:render).and_return(nil)
     allow(controller).to receive(:redirect_to).and_return(nil)
@@ -238,7 +238,7 @@ RSpec.describe Admin::SessionsController, type: :controller, unit: true do
       it "resets session and sets admin session data" do
         expect(controller).to receive(:reset_session)
         controller.send(:set_admin_session, admin_user)
-        
+
         expect(session[:admin_session_token]).to eq("new_session_token")
         expect(session[:admin_user_id]).to eq(123)
       end

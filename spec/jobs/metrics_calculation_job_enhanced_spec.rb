@@ -8,7 +8,7 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job, integratio
   let(:current_date) { Date.parse('2025-08-10') }
   let(:job) { MetricsCalculationJob.new }
   let!(:email_account) { create(:email_account) }
-  let!(:other_email_account) { create(:email_account, email: 'other@example.com') }
+  let!(:other_email_account) { create(:email_account, email: "other_#{SecureRandom.hex(4)}@example.com") }
 
   before do
     # Clear cache before each test

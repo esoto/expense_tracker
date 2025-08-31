@@ -254,7 +254,6 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
 
       get :trends, format: :json
     end
-
   end
 
   describe "GET #heatmap" do

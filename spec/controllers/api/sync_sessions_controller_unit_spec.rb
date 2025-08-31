@@ -92,21 +92,21 @@ RSpec.describe Api::SyncSessionsController, type: :controller, unit: true do
     describe "#set_sync_session" do
       it "finds and sets sync session" do
         allow(SyncSession).to receive(:find_by).with(id: "123").and_return(sync_session)
-        
+
         controller.params = ActionController::Parameters.new(id: "123")
         controller.send(:set_sync_session)
-        
+
         expect(assigns(:sync_session)).to eq(sync_session)
       end
 
       it "renders error when sync session not found" do
         allow(SyncSession).to receive(:find_by).and_return(nil)
-        
+
         expect(controller).to receive(:render).with(
           json: { error: "Sync session not found" },
           status: :not_found
         )
-        
+
         controller.params = ActionController::Parameters.new(id: "999")
         controller.send(:set_sync_session)
       end
@@ -269,7 +269,7 @@ RSpec.describe Api::SyncSessionsController, type: :controller, unit: true do
       before do
         allow(sync_session).to receive(:reload).and_return(sync_session)
         allow(sync_session).to receive(:sync_session_accounts).and_return(
-          double("relation", includes: [sync_session_account])
+          double("relation", includes: [ sync_session_account ])
         )
         allow(sync_session_account).to receive(:email_account_id).and_return(1)
         allow(sync_session_account).to receive(:id).and_return(10)
@@ -337,7 +337,7 @@ RSpec.describe Api::SyncSessionsController, type: :controller, unit: true do
       it "formats time remaining" do
         allow(sync_session).to receive(:estimated_time_remaining).and_return(90)
         expect(controller).to receive(:format_time_remaining).with(90)
-        
+
         controller.send(:build_status_response)
       end
     end
@@ -411,23 +411,22 @@ RSpec.describe Api::SyncSessionsController, type: :controller, unit: true do
     it "has before_action callbacks" do
       before_callbacks = controller.class._process_action_callbacks.select { |c| c.kind == :before }
       callback_filters = before_callbacks.map(&:filter)
-      
+
       expect(callback_filters).to include(:set_sync_session)
     end
-
   end
 
   describe "authentication and security", unit: true do
     it "supports multiple authentication methods" do
       # Token-based auth, session-based auth, IP-based auth
-      expect(controller.send(:can_access_sync_session?)).to be_in([true, false])
+      expect(controller.send(:can_access_sync_session?)).to be_in([ true, false ])
     end
 
     it "validates session token when present" do
       allow(sync_session).to receive(:session_token?).and_return(true)
       allow(sync_session).to receive(:session_token).and_return("secret")
       allow(request).to receive(:headers).and_return({ "X-Sync-Token" => "wrong" })
-      
+
       result = controller.send(:can_access_sync_session?)
       expect(result).to be false
     end
@@ -437,7 +436,7 @@ RSpec.describe Api::SyncSessionsController, type: :controller, unit: true do
       allow(sync_session).to receive(:session_token?).and_return(false)
       allow(session).to receive(:[]).with(:sync_session_id).and_return(nil)
       allow(sync_session).to receive(:created_at).and_return(25.hours.ago)
-      
+
       result = controller.send(:can_access_sync_session?)
       expect(result).to be false
     end
@@ -454,7 +453,7 @@ RSpec.describe Api::SyncSessionsController, type: :controller, unit: true do
           json: { error: "Sync session not found" },
           status: :not_found
         )
-        
+
         get :status, params: { id: 999 }, format: :json
       end
     end
@@ -470,7 +469,7 @@ RSpec.describe Api::SyncSessionsController, type: :controller, unit: true do
           json: { error: "Unauthorized" },
           status: :unauthorized
         )
-        
+
         get :status, params: { id: sync_session.id }, format: :json
       end
     end
@@ -488,7 +487,7 @@ RSpec.describe Api::SyncSessionsController, type: :controller, unit: true do
       })
 
       get :status, params: { id: sync_session.id }, format: :json
-      
+
       # Should build comprehensive status including progress, accounts, etc.
     end
 

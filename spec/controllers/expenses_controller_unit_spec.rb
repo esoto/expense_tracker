@@ -11,10 +11,10 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
     controller.class.skip_before_action :authenticate_user!, raise: false
     controller.class.skip_before_action :authorize_expense!, raise: false
     controller.class.skip_before_action :authorize_bulk_operation!, raise: false
-    
+
     # Mock current user methods
     allow(controller).to receive(:current_user_for_bulk_operations).and_return(current_user_id)
-    allow(controller).to receive(:current_user_email_accounts).and_return([email_account])
+    allow(controller).to receive(:current_user_email_accounts).and_return([ email_account ])
     allow(controller).to receive(:can_modify_expense?).and_return(true)
   end
 
@@ -23,7 +23,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
     let(:service_result) do
       double("ServiceResult", {
         success?: true,
-        expenses: [expense],
+        expenses: [ expense ],
         total_count: 1,
         performance_metrics: { query_time: 50 },
         metadata: {
@@ -44,7 +44,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
 
     it "creates filter service with account IDs and filter params" do
       expect(ExpenseFilterService).to receive(:new).with(
-        hash_including(account_ids: [email_account.id])
+        hash_including(account_ids: [ email_account.id ])
       )
 
       get :index
@@ -52,7 +52,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
 
     it "calls the filter service" do
       expect(filter_service).to receive(:call)
-      
+
       get :index
     end
 
@@ -60,7 +60,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
       it "assigns expenses and metadata from service result" do
         get :index
 
-        expect(assigns(:expenses)).to eq([expense])
+        expect(assigns(:expenses)).to eq([ expense ])
         expect(assigns(:total_count)).to eq(1)
         expect(assigns(:performance_metrics)).to eq({ query_time: 50 })
         expect(assigns(:filters_applied)).to eq({})
@@ -70,20 +70,20 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
 
       it "calculates summary from result" do
         expect(controller).to receive(:calculate_summary_from_result).with(service_result)
-        
+
         get :index
       end
 
       it "builds filter description" do
         expect(controller).to receive(:build_filter_description).and_return("All expenses")
-        
+
         get :index
         expect(assigns(:filter_description)).to eq("All expenses")
       end
 
       it "sets scroll target when provided" do
         get :index, params: { scroll_to: "expense_123" }
-        
+
         expect(assigns(:scroll_to)).to eq("expense_123")
       end
     end
@@ -286,12 +286,12 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
     let(:dashboard_data) do
       {
         totals: { total_expenses: 1000, expense_count: 50, current_month_total: 300, last_month_total: 250 },
-        recent_expenses: [expense],
+        recent_expenses: [ expense ],
         category_breakdown: { totals: {}, sorted: [] },
         monthly_trend: [],
         bank_breakdown: {},
         top_merchants: [],
-        email_accounts: [email_account],
+        email_accounts: [ email_account ],
         sync_info: {},
         sync_sessions: { active_session: nil, last_completed: nil }
       }
@@ -307,7 +307,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
     it "calculates metrics using MetricsCalculator" do
       expect(MetricsCalculator).to receive(:batch_calculate).with(
         email_account: email_account,
-        periods: [:year, :month, :week, :day],
+        periods: [ :year, :month, :week, :day ],
         reference_date: Date.current
       )
 
@@ -330,7 +330,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
       expect(assigns(:expense_count)).to eq(50)
       expect(assigns(:current_month_total)).to eq(300)
       expect(assigns(:last_month_total)).to eq(250)
-      expect(assigns(:recent_expenses)).to eq([expense])
+      expect(assigns(:recent_expenses)).to eq([ expense ])
     end
 
     it "renders dashboard template" do
@@ -416,7 +416,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
   describe "POST #bulk_categorize", unit: true do
     let(:bulk_params) do
       {
-        expense_ids: [expense.id],
+        expense_ids: [ expense.id ],
         category_id: category.id
       }
     end
@@ -431,7 +431,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
         def initialize(expense_ids:, category_id:, user:, options:)
           # Mock constructor that accepts the parameters
         end
-        
+
         def call
           # Mock call method
         end
@@ -444,7 +444,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
 
     it "uses the bulk categorization service" do
       expect(BulkOperations::CategorizationService).to receive(:new).with(
-        expense_ids: [expense.id.to_s],
+        expense_ids: [ expense.id.to_s ],
         category_id: category.id.to_s,
         user: current_user_id, # Controller returns current_user_id from before block
         options: { broadcast_updates: true, track_ml_corrections: true }
@@ -482,7 +482,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
 
       it "calls can_modify_expense? to check permissions" do
         expect(controller).to receive(:can_modify_expense?).with(expense).and_return(true)
-        
+
         controller.send(:authorize_expense!)
       end
     end
@@ -537,10 +537,10 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
 
     describe "#current_user_expenses" do
       it "returns expenses scoped to user's email accounts" do
-        allow(controller).to receive(:current_user_email_accounts).and_return([email_account])
-        
+        allow(controller).to receive(:current_user_email_accounts).and_return([ email_account ])
+
         result = controller.send(:current_user_expenses)
-        
+
         expect(result).to be_a(ActiveRecord::Relation)
         expect(result.to_sql).to include("email_account_id")
       end
@@ -553,10 +553,10 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
       end
 
       it "returns true for expenses belonging to user's accounts" do
-        allow(controller).to receive(:current_user_email_accounts).and_return([email_account])
-        
+        allow(controller).to receive(:current_user_email_accounts).and_return([ email_account ])
+
         result = controller.send(:can_modify_expense?, expense)
-        
+
         expect(result).to be_truthy
       end
 
@@ -564,9 +564,9 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
         other_account = create(:email_account, email: "other@example.com")
         other_expense = build(:expense, email_account: other_account)
         allow(controller).to receive(:current_user_email_accounts).and_return([])
-        
+
         result = controller.send(:can_modify_expense?, other_expense)
-        
+
         expect(result).to be_falsy
       end
     end
@@ -574,18 +574,18 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
     describe "#build_filter_description" do
       it "returns nil when no filters are applied" do
         controller.params = ActionController::Parameters.new({})
-        
+
         description = controller.send(:build_filter_description)
-        
+
         expect(description).to be_nil
       end
-      
+
       it "returns period description when active_period is set" do
         controller.params = ActionController::Parameters.new(period: "month")
         controller.instance_variable_set(:@active_period, "month")
-        
+
         description = controller.send(:build_filter_description)
-        
+
         expect(description).to eq("Gastos de este mes")
       end
     end
@@ -596,7 +596,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
       it "redirects with error message instead of raising" do
         # The controller's set_expense method catches RecordNotFound and redirects
         get :show, params: { id: 99999 }
-        
+
         expect(response).to redirect_to(expenses_path)
         expect(flash[:alert]).to eq("Gasto no encontrado o no tienes permiso para verlo.")
       end

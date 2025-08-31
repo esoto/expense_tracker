@@ -54,7 +54,7 @@ module Categorization
         def pattern_metrics
           total = CategorizationPattern.count
           active = CategorizationPattern.active.count
-          high_confidence = CategorizationPattern.where("confidence >= ?", 0.8).count
+          high_confidence = CategorizationPattern.where("confidence_weight >= ?", 0.8).count
 
           by_type = CategorizationPattern.group(:pattern_type).count
 
@@ -131,7 +131,7 @@ module Categorization
                                                   .where("updated_at != created_at").count
 
           confidence_improvements = CategorizationPattern.where(updated_at: window..)
-                                                         .where("confidence > confidence_before")
+                                                         .where("success_rate > 0.8")
                                                          .count rescue 0
 
           {

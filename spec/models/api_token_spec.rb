@@ -262,9 +262,10 @@ RSpec.describe ApiToken, type: :model, integration: true do
 
     it 'handles token creation when token_digest already exists' do
       token = build(:api_token)
-      token.token_digest = 'existing_digest'
+      unique_digest = "existing_digest_#{SecureRandom.hex(8)}"
+      token.token_digest = unique_digest
       token.save!
-      expect(token.token_digest).to eq('existing_digest')
+      expect(token.token_digest).to eq(unique_digest)
     end
 
     it 'handles very long token strings in authenticate' do

@@ -281,15 +281,15 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
         # We need to check the actual state after the toggle
         allow(pattern).to receive(:update!).and_return(true)
         controller.instance_variable_set(:@pattern, pattern)
-        
+
         # Mock respond_to to avoid routing issues
         allow(controller).to receive(:respond_to).and_yield(double(
           html: double(call: nil),
           turbo_stream: double(call: nil)
         ))
-        
+
         controller.toggle_active
-        
+
         expect(pattern).to have_received(:update!).with(active: !pattern.active)
         expect(controller).to have_received(:log_admin_action).with(
           "pattern_toggled",
@@ -299,17 +299,17 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
       end
     end
 
-    describe "#test (internal method coverage)" do  
+    describe "#test (internal method coverage)" do
       it "sets instance variables for test expense and patterns" do
         test_expense = OpenStruct.new(description: "test")
-        patterns = [pattern]
-        
+        patterns = [ pattern ]
+
         allow(controller).to receive(:build_test_expense).and_return(test_expense)
         allow(CategorizationPattern).to receive_message_chain(:active, :includes).and_return(patterns)
         allow(controller).to receive(:load_categories).and_return(true)
-        
+
         controller.test
-        
+
         expect(controller.instance_variable_get(:@test_expense)).to eq(test_expense)
         expect(controller.instance_variable_get(:@patterns)).to eq(patterns)
         expect(controller).to have_received(:build_test_expense)
@@ -319,7 +319,7 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
 
     describe "#test_pattern (internal method coverage)" do
       let(:pattern_tester) { double("PatternTester") }
-      
+
       before do
         allow(Patterns::PatternTester).to receive(:new).and_return(pattern_tester)
         allow(controller).to receive(:test_pattern_params).and_return({ description: "test" })
@@ -327,9 +327,9 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
 
       it "creates PatternTester with params and executes test when successful" do
         allow(pattern_tester).to receive(:test).and_return(true)
-        allow(pattern_tester).to receive(:categories_with_confidence).and_return([{ category: "Food" }])
+        allow(pattern_tester).to receive(:categories_with_confidence).and_return([ { category: "Food" } ])
         allow(pattern_tester).to receive(:test_expense).and_return(OpenStruct.new)
-        
+
         # Mock respond_to to avoid format issues
         allow(controller).to receive(:respond_to).and_yield(double(
           turbo_stream: double(call: nil),
@@ -346,8 +346,8 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
 
       it "handles test failure" do
         allow(pattern_tester).to receive(:test).and_return(false)
-        allow(pattern_tester).to receive(:errors).and_return(double(full_messages: ["Error"]))
-        
+        allow(pattern_tester).to receive(:errors).and_return(double(full_messages: [ "Error" ]))
+
         # Mock respond_to for error case
         allow(controller).to receive(:respond_to).and_yield(double(
           turbo_stream: double(call: nil),
@@ -373,8 +373,8 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
         allow(controller).to receive(:sanitize_test_input).with(test_text).and_return(test_text)
         allow(pattern).to receive(:matches?).with(test_text).and_return(true)
         allow(controller).to receive(:params).and_return(ActionController::Parameters.new(test_text: test_text))
-        
-        # Mock respond_to 
+
+        # Mock respond_to
         allow(controller).to receive(:respond_to).and_yield(double(
           turbo_stream: double(call: nil),
           json: double(call: nil)
@@ -390,7 +390,7 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
       it "handles empty test text" do
         allow(controller).to receive(:params).and_return(ActionController::Parameters.new(test_text: ""))
         allow(controller).to receive(:sanitize_test_input).with("").and_return(nil)
-        
+
         # Mock respond_to for error case
         allow(controller).to receive(:respond_to).and_yield(double(
           turbo_stream: double(call: nil),
@@ -427,7 +427,6 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
         expect(controller).to receive(:require_pattern_delete_permission)
         delete :destroy, params: { id: pattern.id }
       end
-
     end
 
 
@@ -480,7 +479,6 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
         created_pattern = CategorizationPattern.last
         expect(created_pattern.pattern_value.length).to be <= 255
       end
-
     end
 
     context "SQL injection prevention" do
@@ -494,7 +492,7 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
       end
 
       it "safely handles filter parameters" do
-        get :index, params: { 
+        get :index, params: {
           filter_type: "'; DROP TABLE categories; --",
           filter_category: "99999' OR '1'='1",
           filter_status: "<script>alert('xss')</script>"
@@ -552,7 +550,7 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
         }
 
         post :create, params: invalid_params
-        
+
         expect(response).to have_http_status(:unprocessable_content)
       end
 
@@ -616,10 +614,10 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
       it "handles validation errors on update" do
         allow(pattern).to receive(:update).and_return(false)
         allow(pattern).to receive(:errors).and_return(
-          double(any?: true, full_messages: ["Pattern value can't be blank"])
+          double(any?: true, full_messages: [ "Pattern value can't be blank" ])
         )
 
-        patch :update, params: { 
+        patch :update, params: {
           id: pattern.id,
           categorization_pattern: { pattern_value: "" }
         }
@@ -635,7 +633,6 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
           get :index, format: :xml
         }.to raise_error(ActionController::UnknownFormat)
       end
-
     end
 
 
@@ -656,14 +653,12 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
 
         expect(response).to have_http_status(:ok)
       end
-
-
     end
 
     context "concurrent access" do
       it "handles concurrent pattern updates" do
         original_updated_at = pattern.updated_at
-        
+
         # Simulate another user updating the pattern
         pattern.update_column(:updated_at, 1.minute.from_now)
 
@@ -795,7 +790,7 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
       it "handles invalid regex syntax" do
         result = controller.send(:validate_safe_regex, "[invalid")
         expect(result).to be false
-        
+
         result2 = controller.send(:validate_safe_regex, "(?P<invalid)")
         expect(result2).to be false
       end
@@ -812,7 +807,7 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
 
       it "handles timeout scenarios" do
         allow(Timeout).to receive(:timeout).and_raise(Timeout::Error)
-        
+
         result = controller.send(:validate_safe_regex, "valid_pattern")
         expect(result).to be false
       end
@@ -833,9 +828,9 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
 
       it "handles patterns with no usage" do
         unused_pattern = create(:categorization_pattern, usage_count: 0)
-        
+
         result = controller.send(:calculate_performance_metrics, unused_pattern)
-        
+
         expect(result[:total_uses]).to eq(0)
         expect(result[:successful_uses]).to eq(0)
       end
@@ -843,24 +838,24 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
 
     describe "#calculate_average_daily_uses" do
       it "calculates average for old patterns" do
-        old_pattern = create(:categorization_pattern, 
-                           created_at: 60.days.ago, 
+        old_pattern = create(:categorization_pattern,
+                           created_at: 60.days.ago,
                            usage_count: 120)
-        
+
         result = controller.send(:calculate_average_daily_uses, old_pattern)
         expect(result).to be > 0
       end
 
       it "returns 0 for new patterns" do
         new_pattern = create(:categorization_pattern, created_at: 1.day.ago)
-        
+
         result = controller.send(:calculate_average_daily_uses, new_pattern)
         expect(result).to eq(0)
       end
 
       it "handles division by zero" do
         pattern_today = create(:categorization_pattern, created_at: Time.current)
-        
+
         result = controller.send(:calculate_average_daily_uses, pattern_today)
         expect(result).to eq(0)
       end
@@ -869,21 +864,21 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
     describe "#calculate_trend" do
       it "identifies increasing trends" do
         allow(pattern).to receive_message_chain(:pattern_feedbacks, :where, :count).and_return(10, 5)
-        
+
         result = controller.send(:calculate_trend, pattern)
         expect(result).to eq("increasing")
       end
 
       it "identifies decreasing trends" do
         allow(pattern).to receive_message_chain(:pattern_feedbacks, :where, :count).and_return(5, 10)
-        
+
         result = controller.send(:calculate_trend, pattern)
         expect(result).to eq("decreasing")
       end
 
       it "identifies stable trends" do
         allow(pattern).to receive_message_chain(:pattern_feedbacks, :where, :count).and_return(8, 8)
-        
+
         result = controller.send(:calculate_trend, pattern)
         expect(result).to eq("stable")
       end
@@ -899,14 +894,14 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
 
       it "applies category filter" do
         allow(controller).to receive(:params).and_return({ filter_category: category.id.to_s })
-        
+
         filtered_scope = controller.send(:apply_filters, base_scope)
         expect(filtered_scope).to be_a(ActiveRecord::Relation)
       end
 
       it "applies status filter" do
         allow(controller).to receive(:params).and_return({ filter_status: "active" })
-        
+
         filtered_scope = controller.send(:apply_filters, base_scope)
         expect(filtered_scope).to be_a(ActiveRecord::Relation)
       end
@@ -961,7 +956,7 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
 
       it "applies search to pattern_value and category name" do
         allow(controller).to receive(:params).and_return({ search: "starbucks" })
-        
+
         result = controller.send(:apply_search, scope)
         expect(result).to be_a(ActiveRecord::Relation)
       end
@@ -970,7 +965,7 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
         malicious_search = "'; DROP TABLE patterns; --"
         allow(controller).to receive(:params).and_return({ search: malicious_search })
         expect(ActiveRecord::Base).to receive(:sanitize_sql_like).with(malicious_search)
-        
+
         controller.send(:apply_search, scope)
       end
     end
@@ -1026,10 +1021,9 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
         expect(result).to be_a(ActiveRecord::Relation)
       end
     end
-
   end
 
-  # Tests for additional pattern management actions  
+  # Tests for additional pattern management actions
   # Note: These methods exist in the patterns_controller but are routed to pattern_management_controller
   # We test them here as internal methods for complete code coverage
   describe "Pattern Management Actions (Internal Method Coverage)" do
@@ -1093,7 +1087,7 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
       context "with import failure" do
         before do
           allow(importer).to receive(:import).and_return(false)
-          allow(importer).to receive(:import_errors).and_return(["Invalid CSV format"])
+          allow(importer).to receive(:import_errors).and_return([ "Invalid CSV format" ])
           allow(controller).to receive(:params).and_return(ActionController::Parameters.new(file: csv_file))
         end
 
@@ -1119,7 +1113,7 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
     end
 
     describe "#export (internal method coverage)" do
-      let(:patterns) { [double("pattern1"), double("pattern2")] }
+      let(:patterns) { [ double("pattern1"), double("pattern2") ] }
       let(:csv_data) { "pattern_type,pattern_value,category_name\nmerchant,Test,Food" }
 
       before do

@@ -428,7 +428,7 @@ RSpec.describe ApplicationCable::Connection, type: :channel, unit: true do
             end.ordered
 
             result = connection_helper.test_find_verified_session_logic(session_data, "10.0.0.1")
-            
+
             expect(result[:session_id]).to match(/\A[0-9a-f]{32}\z/)
             expect(result[:sync_session_id]).to be_nil
             expect(result[:ip_address]).to eq("10.0.0.1")
@@ -453,7 +453,7 @@ RSpec.describe ApplicationCable::Connection, type: :channel, unit: true do
             expect(Rails.logger).to receive(:info)
 
             result = connection_helper.test_find_verified_session_logic(session_data, "1.2.3.4")
-            
+
             expect(result[:sync_session_id]).to eq("sync_123")
             expect(result[:session_id]).to eq("main_session")
           end

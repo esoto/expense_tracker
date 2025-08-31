@@ -58,16 +58,13 @@ RSpec.configure do |config|
     # Disable transactional fixtures for accurate measurements
     config.use_transactional_fixtures = false
 
-    # Use database cleaner
-    config.before(:suite) do
-      DatabaseCleaner.strategy = :truncation
-    end
+    # Use database cleaner only if it's available and we're not running unit tests
+    if defined?(DatabaseCleaner)
+      config.before(:suite) do
+        DatabaseCleaner.strategy = :truncation
+      end
 
-    config.around(:each) do |example|
-      # Skip DatabaseCleaner for unit tests to avoid transaction conflicts
-      if example.metadata[:unit]
-        example.run
-      else
+      config.around(:each, :performance) do |example|
         DatabaseCleaner.cleaning do
           example.run
         end
@@ -86,15 +83,12 @@ RSpec.configure do |config|
     # Configure Capybara
     config.use_transactional_fixtures = false
 
-    config.before(:suite) do
-      DatabaseCleaner.strategy = :truncation
-    end
+    if defined?(DatabaseCleaner)
+      config.before(:suite) do
+        DatabaseCleaner.strategy = :truncation
+      end
 
-    config.around(:each) do |example|
-      # Skip DatabaseCleaner for unit tests to avoid transaction conflicts
-      if example.metadata[:unit]
-        example.run
-      else
+      config.around(:each, :system) do |example|
         DatabaseCleaner.cleaning do
           example.run
         end

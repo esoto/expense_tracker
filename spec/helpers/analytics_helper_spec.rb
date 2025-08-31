@@ -93,7 +93,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
   describe "#metric_card", unit: true do
     it "renders basic metric card with title and value" do
       result = helper.metric_card(title: "Test Metric", value: "123")
-      
+
       expect(result).to include("Test Metric")
       expect(result).to include("123")
       expect(result).to include("bg-white rounded-lg shadow-sm")
@@ -102,7 +102,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
 
     it "includes subtitle when provided" do
       result = helper.metric_card(title: "Test", value: "123", subtitle: "Last updated")
-      
+
       expect(result).to include("Last updated")
       expect(result).to include("text-xs text-slate-500")
     end
@@ -110,13 +110,13 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
     it "includes trend when provided" do
       trend = helper.trend_arrow(120, 100)
       result = helper.metric_card(title: "Test", value: "123", trend: trend)
-      
+
       expect(result).to include("↑ 20.0%")
     end
 
     it "uses custom color" do
       result = helper.metric_card(title: "Test", value: "123", color: "emerald")
-      
+
       expect(result).to include("text-emerald-700")
     end
   end
@@ -124,7 +124,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
   describe "#progress_bar", unit: true do
     it "renders progress bar with correct percentage" do
       result = helper.progress_bar(75, max: 100)
-      
+
       expect(result).to include("width: 75%")
       expect(result).to include("bg-teal-600")
       expect(result).to include("bg-slate-200 rounded-full")
@@ -132,31 +132,31 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
 
     it "handles custom max value" do
       result = helper.progress_bar(50, max: 200)
-      
+
       expect(result).to include("width: 25%")
     end
 
     it "handles zero max value" do
       result = helper.progress_bar(50, max: 0)
-      
+
       expect(result).to include("width: 0%")
     end
 
     it "uses custom color" do
       result = helper.progress_bar(75, color: "emerald")
-      
+
       expect(result).to include("bg-emerald-600")
     end
 
     it "uses custom height" do
       result = helper.progress_bar(75, height: "h-4")
-      
+
       expect(result).to include("h-4")
     end
 
     it "handles values exceeding max" do
       result = helper.progress_bar(150, max: 100)
-      
+
       expect(result).to include("width: 150%")
     end
   end
@@ -195,7 +195,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
   describe "#chart_colors", unit: true do
     it "returns an array of color hex codes" do
       colors = helper.chart_colors
-      
+
       expect(colors).to be_an(Array)
       expect(colors.length).to eq(8)
       expect(colors.first).to eq("#0F766E")
@@ -204,7 +204,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
 
     it "includes expected color palette" do
       colors = helper.chart_colors
-      
+
       expect(colors).to include("#0F766E") # teal
       expect(colors).to include("#D97706") # amber
       expect(colors).to include("#FB7185") # rose
@@ -248,7 +248,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
   describe "#analytics_status_badge", unit: true do
     it "renders active status with emerald color" do
       result = helper.analytics_status_badge("active")
-      
+
       expect(result).to include("Active")
       expect(result).to include("bg-emerald-100")
       expect(result).to include("text-emerald-700")
@@ -256,7 +256,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
 
     it "renders processing status with amber color" do
       result = helper.analytics_status_badge("processing")
-      
+
       expect(result).to include("Processing")
       expect(result).to include("bg-amber-100")
       expect(result).to include("text-amber-700")
@@ -264,7 +264,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
 
     it "renders error status with rose color" do
       result = helper.analytics_status_badge("error")
-      
+
       expect(result).to include("Error")
       expect(result).to include("bg-rose-100")
       expect(result).to include("text-rose-700")
@@ -272,7 +272,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
 
     it "renders idle status with slate color" do
       result = helper.analytics_status_badge("idle")
-      
+
       expect(result).to include("Idle")
       expect(result).to include("bg-slate-100")
       expect(result).to include("text-slate-700")
@@ -280,7 +280,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
 
     it "handles unknown status with default slate color" do
       result = helper.analytics_status_badge("unknown")
-      
+
       expect(result).to include("Unknown")
       expect(result).to include("bg-slate-100")
       expect(result).to include("text-slate-700")
@@ -288,7 +288,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
 
     it "handles symbol status" do
       result = helper.analytics_status_badge(:active)
-      
+
       expect(result).to include("Active")
       expect(result).to include("bg-emerald-100")
     end
@@ -297,7 +297,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
   describe "#stat_card", unit: true do
     it "renders basic stat card" do
       result = helper.stat_card(label: "Total Users", value: "1,234")
-      
+
       expect(result).to include("Total Users")
       expect(result).to include("1,234")
       expect(result).to include("bg-white rounded-lg")
@@ -307,14 +307,14 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
 
     it "includes change information when provided" do
       result = helper.stat_card(label: "Revenue", value: "$10K", change: "+15%")
-      
+
       expect(result).to include("+15%")
       expect(result).to include("text-sm")
     end
 
     it "includes icon when provided" do
       result = helper.stat_card(label: "Users", value: "100", icon: "👤")
-      
+
       expect(result).to include("👤")
       expect(result).to include("text-slate-400")
     end
@@ -322,18 +322,18 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
 
   describe "#data_table", unit: true do
     it "renders empty message for no data" do
-      result = helper.data_table(headers: ["Name", "Value"], rows: [])
-      
+      result = helper.data_table(headers: [ "Name", "Value" ], rows: [])
+
       expect(result).to include("No data available")
       expect(result).to include("text-center py-8 text-slate-500")
     end
 
     it "renders table with headers and rows" do
-      headers = ["Name", "Value"]
-      rows = [["John", "100"], ["Jane", "200"]]
-      
+      headers = [ "Name", "Value" ]
+      rows = [ [ "John", "100" ], [ "Jane", "200" ] ]
+
       result = helper.data_table(headers: headers, rows: rows)
-      
+
       expect(result).to include("Name")
       expect(result).to include("Value")
       expect(result).to include("John")
@@ -345,7 +345,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
 
     it "uses custom empty message" do
       result = helper.data_table(headers: [], rows: [], empty_message: "Custom empty message")
-      
+
       expect(result).to include("Custom empty message")
     end
   end
@@ -357,9 +357,9 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
     end
 
     it "renders SVG sparkline for valid data" do
-      data = [10, 20, 15, 25, 30]
+      data = [ 10, 20, 15, 25, 30 ]
       result = helper.sparkline(data)
-      
+
       expect(result).to include("<svg")
       expect(result).to include("<polyline")
       expect(result).to include("width=\"100\"")
@@ -368,24 +368,24 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
     end
 
     it "uses custom dimensions and color" do
-      data = [10, 20, 15]
+      data = [ 10, 20, 15 ]
       result = helper.sparkline(data, width: 200, height: 60, color: "#FF0000")
-      
+
       expect(result).to include("width=\"200\"")
       expect(result).to include("height=\"60\"")
       expect(result).to include("stroke=\"#FF0000\"")
     end
 
     it "handles single data point" do
-      result = helper.sparkline([50])
-      
+      result = helper.sparkline([ 50 ])
+
       expect(result).to include("<svg")
       expect(result).to include("<polyline")
     end
 
     it "handles all same values" do
-      result = helper.sparkline([10, 10, 10])
-      
+      result = helper.sparkline([ 10, 10, 10 ])
+
       expect(result).to include("<svg")
       expect(result).to include("<polyline")
     end
@@ -398,28 +398,28 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
 
     it "formats high confidence with emerald color" do
       result = helper.format_confidence(0.9)
-      
+
       expect(result).to include("90%")
       expect(result).to include("text-emerald-600")
     end
 
     it "formats medium confidence with teal color" do
       result = helper.format_confidence(0.7)
-      
+
       expect(result).to include("70%")
       expect(result).to include("text-teal-600")
     end
 
     it "formats low confidence with amber color" do
       result = helper.format_confidence(0.5)
-      
+
       expect(result).to include("50%")
       expect(result).to include("text-amber-600")
     end
 
     it "formats very low confidence with rose color" do
       result = helper.format_confidence(0.2)
-      
+
       expect(result).to include("20%")
       expect(result).to include("text-rose-600")
     end
@@ -433,7 +433,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
   describe "#activity_indicator", unit: true do
     it "returns 'Never' for nil activity" do
       result = helper.activity_indicator(nil)
-      
+
       expect(result).to include("Never")
       expect(result).to include("text-slate-400")
     end
@@ -441,7 +441,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
     it "shows active indicator for recent activity" do
       recent_time = 30.minutes.ago
       result = helper.activity_indicator(recent_time)
-      
+
       expect(result).to include("Active")
       expect(result).to include("text-emerald-600")
       expect(result).to include("bg-emerald-500")
@@ -451,7 +451,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
     it "shows normal indicator for activity within a day" do
       recent_time = 2.hours.ago
       result = helper.activity_indicator(recent_time)
-      
+
       expect(result).to include("text-slate-600")
       expect(result).not_to include("Active")
     end
@@ -459,7 +459,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
     it "shows muted indicator for old activity" do
       old_time = 3.days.ago
       result = helper.activity_indicator(old_time)
-      
+
       expect(result).to include("text-slate-400")
     end
   end
@@ -494,19 +494,19 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
 
     it "handles zero max value" do
       result = helper.heatmap_cell(50, max_value: 0)
-      
+
       expect(result).to include("bg-slate-100")
     end
 
     it "includes tooltip with occurrence count" do
       result = helper.heatmap_cell(25, max_value: 100)
-      
+
       expect(result).to include("title=\"25 occurrences\"")
     end
 
     it "handles float values" do
       result = helper.heatmap_cell(75.5, max_value: 100)
-      
+
       expect(result).to include("75.5")
     end
   end

@@ -8,11 +8,11 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
     # Mock service classes to avoid actual implementation calls
     allow(SyncSessionCreator).to receive(:new).and_return(double(call: double(success?: true, sync_session: sync_session)))
     allow(SyncSessionRetryService).to receive(:new).and_return(double(call: double(success?: true, sync_session: sync_session)))
-    allow(SyncSessionPerformanceOptimizer).to receive(:preload_for_index).and_return([sync_session])
+    allow(SyncSessionPerformanceOptimizer).to receive(:preload_for_index).and_return([ sync_session ])
     allow(SyncSessionPerformanceOptimizer).to receive(:preload_for_show).and_return([])
     allow(SyncSessionPerformanceOptimizer).to receive(:cache_key_for_status).and_return("sync_status_#{sync_session.id}")
     allow(SyncSessionPerformanceOptimizer).to receive(:calculate_metrics).and_return({})
-    
+
     # Mock render and redirect methods to avoid template issues
     allow(controller).to receive(:render).and_return(nil)
     allow(controller).to receive(:redirect_to).and_return(nil)
@@ -20,14 +20,14 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
 
   describe "GET #index", unit: true do
     let(:active_session) { sync_session }
-    let(:recent_sessions) { [sync_session] }
+    let(:recent_sessions) { [ sync_session ] }
 
     before do
       allow(SyncSession).to receive_message_chain(:active, :includes).and_return(double(first: active_session))
       preload_chain = double("preload_chain")
       allow(SyncSessionPerformanceOptimizer).to receive(:preload_for_index).and_return(preload_chain)
       allow(preload_chain).to receive(:limit).with(10).and_return(recent_sessions)
-      allow(EmailAccount).to receive_message_chain(:active, :order).and_return([email_account])
+      allow(EmailAccount).to receive_message_chain(:active, :order).and_return([ email_account ])
       allow(EmailAccount).to receive_message_chain(:active, :count).and_return(1)
       allow(SyncSession).to receive(:where).and_return(double(count: 5))
       allow(SyncSession).to receive_message_chain(:completed, :where, :sum).and_return(50)
@@ -46,7 +46,7 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
 
     it "loads email accounts" do
       get :index
-      expect(assigns(:email_accounts)).to eq([email_account])
+      expect(assigns(:email_accounts)).to eq([ email_account ])
     end
 
     it "calculates dashboard statistics" do
@@ -95,7 +95,7 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
           hash_including("email_account_id" => email_account.id.to_s, "since" => "2023-01-01"),
           hash_including(:ip_address, :user_agent, :session_id, :source)
         )
-        
+
         post :create, params: valid_params
       end
 
@@ -265,10 +265,10 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
     describe "#set_sync_session" do
       it "finds sync session by ID" do
         expect(SyncSession).to receive(:find).with("123").and_return(sync_session)
-        
+
         controller.params = ActionController::Parameters.new(id: "123")
         controller.send(:set_sync_session)
-        
+
         expect(controller.instance_variable_get(:@sync_session)).to eq(sync_session)
       end
     end
@@ -328,7 +328,7 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
 
       it "returns request information hash" do
         result = controller.send(:request_info)
-        
+
         expect(result).to include(
           ip_address: "127.0.0.1",
           user_agent: "Test Agent",
@@ -342,28 +342,28 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
       let(:session_account) { double("session_account", email_account: email_account) }
 
       before do
-        allow(sync_session).to receive_message_chain(:sync_session_accounts, :includes).and_return([session_account])
+        allow(sync_session).to receive_message_chain(:sync_session_accounts, :includes).and_return([ session_account ])
         allow(sync_session).to receive(:status).and_return("running")
         allow(sync_session).to receive(:progress_percentage).and_return(50)
         allow(sync_session).to receive(:processed_emails).and_return(100)
         allow(sync_session).to receive(:total_emails).and_return(200)
         allow(sync_session).to receive(:detected_expenses).and_return(25)
         allow(sync_session).to receive(:estimated_time_remaining).and_return(300)
-        
+
         allow(session_account).to receive(:id).and_return(1)
         allow(session_account).to receive(:status).and_return("running")
         allow(session_account).to receive(:progress_percentage).and_return(45)
         allow(session_account).to receive(:processed_emails).and_return(50)
         allow(session_account).to receive(:total_emails).and_return(100)
         allow(session_account).to receive(:detected_expenses).and_return(10)
-        
+
         allow(email_account).to receive(:email).and_return("test@bank.com")
         allow(email_account).to receive(:bank_name).and_return("Test Bank")
       end
 
       it "builds complete status response" do
         result = controller.send(:build_status_response, sync_session)
-        
+
         expect(result).to include(
           status: "running",
           progress_percentage: 50,
@@ -430,14 +430,14 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
     it "sets sync session before show, cancel, and retry actions" do
       callbacks = controller.class._process_action_callbacks.select { |c| c.kind == :before }
       set_session_callback = callbacks.find { |cb| cb.filter == :set_sync_session }
-      
+
       expect(set_session_callback).to be_present
     end
 
     it "authorizes sync session owner before show, cancel, and retry actions" do
       callbacks = controller.class._process_action_callbacks.select { |c| c.kind == :before }
       authorize_callback = callbacks.find { |cb| cb.filter == :authorize_sync_session_owner! }
-      
+
       expect(authorize_callback).to be_present
     end
   end

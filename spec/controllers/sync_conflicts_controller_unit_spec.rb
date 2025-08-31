@@ -13,23 +13,23 @@ RSpec.describe SyncConflictsController, type: :controller, unit: true do
         @conflict = conflict
         @errors = []
       end
-      
+
       def resolve(action, options)
         true
       end
-      
+
       def bulk_resolve(conflict_ids, action, options)
         { resolved_count: conflict_ids.size, failed_count: 0, failed_conflicts: [] }
       end
-      
+
       def undo_resolution
         true
       end
-      
+
       def preview_merge(merge_fields)
         { merged_amount: 100.0, merged_description: "Test merge" }
       end
-      
+
       def errors
         @errors
       end
@@ -51,9 +51,9 @@ RSpec.describe SyncConflictsController, type: :controller, unit: true do
         allow(conflicts_relation).to receive(:by_priority).and_return(conflicts_relation)
         allow(conflicts_relation).to receive(:page).and_return(conflicts_relation)
         allow(conflicts_relation).to receive(:total_count).and_return(1)
-        
+
         allow(SyncConflict).to receive(:includes).and_return(conflicts_relation)
-        
+
         # Create base_scope relation for stats calculation
         base_scope_relation = double("base_scope_relation")
         allow(base_scope_relation).to receive(:where).and_return(base_scope_relation)
@@ -61,7 +61,7 @@ RSpec.describe SyncConflictsController, type: :controller, unit: true do
         allow(base_scope_relation).to receive(:resolved).and_return(base_scope_relation)
         allow(base_scope_relation).to receive(:group).and_return(base_scope_relation)
         allow(base_scope_relation).to receive(:count).and_return(5, 3, { "duplicate" => 4, "merge" => 4 })
-        
+
         allow(SyncConflict).to receive(:all).and_return(base_scope_relation)
       end
 
@@ -93,7 +93,7 @@ RSpec.describe SyncConflictsController, type: :controller, unit: true do
     context "with sync_session_id" do
       before do
         allow(SyncSession).to receive(:find).and_return(sync_session)
-        
+
         session_conflicts_relation = double("session_conflicts_relation")
         allow(session_conflicts_relation).to receive(:includes).and_return(session_conflicts_relation)
         allow(session_conflicts_relation).to receive(:where).and_return(session_conflicts_relation)
@@ -104,7 +104,7 @@ RSpec.describe SyncConflictsController, type: :controller, unit: true do
         allow(session_conflicts_relation).to receive(:resolved).and_return(session_conflicts_relation)
         allow(session_conflicts_relation).to receive(:group).and_return(session_conflicts_relation)
         allow(session_conflicts_relation).to receive(:count).and_return(2, 1, { "duplicate" => 2, "merge" => 1 })
-        
+
         allow(sync_session).to receive(:sync_conflicts).and_return(session_conflicts_relation)
       end
 
@@ -130,7 +130,7 @@ RSpec.describe SyncConflictsController, type: :controller, unit: true do
       allow(SyncConflict).to receive(:find).and_return(sync_conflict)
       allow(sync_conflict).to receive(:existing_expense).and_return(existing_expense)
       allow(sync_conflict).to receive(:new_expense).and_return(new_expense)
-      allow(sync_conflict).to receive(:field_differences).and_return({ amount: ["10.0", "20.0"] })
+      allow(sync_conflict).to receive(:field_differences).and_return({ amount: [ "10.0", "20.0" ] })
       allow(sync_conflict).to receive_message_chain(:conflict_resolutions, :recent, :limit).and_return([])
     end
 
@@ -141,11 +141,11 @@ RSpec.describe SyncConflictsController, type: :controller, unit: true do
 
     it "loads related expenses and data" do
       get :show, params: { id: sync_conflict.id }
-      
+
       expect(assigns(:sync_conflict)).to eq(sync_conflict)
       expect(assigns(:existing_expense)).to eq(existing_expense)
       expect(assigns(:new_expense)).to eq(new_expense)
-      expect(assigns(:differences)).to eq({ amount: ["10.0", "20.0"] })
+      expect(assigns(:differences)).to eq({ amount: [ "10.0", "20.0" ] })
     end
 
     it "responds to different formats" do
@@ -189,13 +189,13 @@ RSpec.describe SyncConflictsController, type: :controller, unit: true do
           def initialize(conflict)
             @conflict = conflict
           end
-          
+
           def resolve(action, options)
             false
           end
-          
+
           def errors
-            ["Resolution failed"]
+            [ "Resolution failed" ]
           end
         end
         stub_const("ConflictResolutionService", failed_service)
@@ -210,7 +210,7 @@ RSpec.describe SyncConflictsController, type: :controller, unit: true do
   end
 
   describe "POST #bulk_resolve", unit: true do
-    let(:conflict_ids) { [sync_conflict.id, "2", "3"] }
+    let(:conflict_ids) { [ sync_conflict.id, "2", "3" ] }
     let(:bulk_params) { { conflict_ids: conflict_ids, action_type: "keep_existing" } }
 
     before do
@@ -276,13 +276,13 @@ RSpec.describe SyncConflictsController, type: :controller, unit: true do
           def initialize(conflict)
             @conflict = conflict
           end
-          
+
           def undo_resolution
             false
           end
-          
+
           def errors
-            ["Undo failed"]
+            [ "Undo failed" ]
           end
         end
         stub_const("ConflictResolutionService", failed_service)
@@ -389,7 +389,7 @@ RSpec.describe SyncConflictsController, type: :controller, unit: true do
 
       it "calculates changes between existing expense and preview" do
         changes = controller.send(:calculate_merge_changes, preview)
-        
+
         expect(changes).to eq({
           "amount" => { from: "10.0", to: "20.0" },
           "description" => { from: "Original description", to: "Updated description" }
@@ -417,7 +417,7 @@ RSpec.describe SyncConflictsController, type: :controller, unit: true do
     it "has before_action callbacks" do
       before_callbacks = controller.class._process_action_callbacks.select { |c| c.kind == :before }
       callback_filters = before_callbacks.map(&:filter)
-      
+
       expect(callback_filters).to include(:set_sync_conflict)
       expect(callback_filters).to include(:set_sync_session)
     end

@@ -11,10 +11,10 @@ RSpec.describe Admin::PatternManagementController, type: :controller, unit: true
     controller.class.skip_after_action :log_admin_activity, raise: false
     allow(controller).to receive(:log_admin_action)
     allow(controller).to receive(:require_pattern_management_permission).and_return(true)
-    
+
     # Mock admin authentication to allow access
-    admin_user = double("admin_user", 
-      session_expired?: false, 
+    admin_user = double("admin_user",
+      session_expired?: false,
       extend_session: nil,
       invalidate_session!: nil,
       id: 1,
@@ -28,28 +28,28 @@ RSpec.describe Admin::PatternManagementController, type: :controller, unit: true
     categorization_module = Module.new
     services_module.const_set("Categorization", categorization_module)
     stub_const("Services", services_module)
-    
+
     importer_class = Class.new do
       def import(file)
         { success: true, imported_count: 5 }
       end
     end
     categorization_module.const_set("PatternImporter", importer_class)
-    
+
     exporter_class = Class.new do
       def export_to_csv
         "pattern,category\ntest,food"
       end
     end
     categorization_module.const_set("PatternExporter", exporter_class)
-    
+
     analytics_class = Class.new do
       def generate_statistics
         { total_patterns: 10, active_patterns: 8 }
       end
-      
+
       def performance_over_time
-        [{ date: "2023-01-01", success_rate: 0.8 }]
+        [ { date: "2023-01-01", success_rate: 0.8 } ]
       end
     end
     categorization_module.const_set("PatternAnalytics", analytics_class)
@@ -58,7 +58,7 @@ RSpec.describe Admin::PatternManagementController, type: :controller, unit: true
   describe "POST #import", unit: true do
     context "with valid file" do
       let(:file) { double("file", original_filename: "test.csv") }
-      
+
       before do
         allow(controller).to receive(:redirect_to)
       end
@@ -67,7 +67,7 @@ RSpec.describe Admin::PatternManagementController, type: :controller, unit: true
         importer = double("importer")
         expect(Services::Categorization::PatternImporter).to receive(:new).and_return(importer)
         expect(importer).to receive(:import).and_return({ success: true, imported_count: 5 })
-        
+
         post :import, params: { file: file }
       end
 
@@ -84,7 +84,7 @@ RSpec.describe Admin::PatternManagementController, type: :controller, unit: true
 
     context "with failed import" do
       let(:file) { double("file", original_filename: "invalid.csv") }
-      
+
       before do
         importer_class = Class.new do
           def import(file)
@@ -123,7 +123,7 @@ RSpec.describe Admin::PatternManagementController, type: :controller, unit: true
       exporter = double("exporter", export_to_csv: "test,data")
       expect(Services::Categorization::PatternExporter).to receive(:new).and_return(exporter)
       expect(exporter).to receive(:export_to_csv)
-      
+
       get :export, format: :csv
     end
 
@@ -135,7 +135,7 @@ RSpec.describe Admin::PatternManagementController, type: :controller, unit: true
           type: "text/csv"
         )
       )
-      
+
       get :export, format: :csv
     end
   end
@@ -145,7 +145,7 @@ RSpec.describe Admin::PatternManagementController, type: :controller, unit: true
       analytics = double("analytics", generate_statistics: { total_patterns: 10 })
       expect(Services::Categorization::PatternAnalytics).to receive(:new).and_return(analytics)
       expect(analytics).to receive(:generate_statistics)
-      
+
       get :statistics, format: :json
     end
 
@@ -163,21 +163,21 @@ RSpec.describe Admin::PatternManagementController, type: :controller, unit: true
 
   describe "GET #performance", unit: true do
     it "calls pattern analytics service for performance data" do
-      analytics = double("analytics", performance_over_time: [{ date: "2023-01-01" }])
+      analytics = double("analytics", performance_over_time: [ { date: "2023-01-01" } ])
       expect(Services::Categorization::PatternAnalytics).to receive(:new).and_return(analytics)
       expect(analytics).to receive(:performance_over_time)
-      
+
       get :performance, format: :json
     end
 
     it "assigns performance data" do
       get :performance, format: :json
-      expect(assigns(:performance_data)).to eq([{ date: "2023-01-01", success_rate: 0.8 }])
+      expect(assigns(:performance_data)).to eq([ { date: "2023-01-01", success_rate: 0.8 } ])
     end
 
     it "renders JSON response" do
       allow(controller).to receive(:render)
-      expect(controller).to receive(:render).with(json: [{ date: "2023-01-01", success_rate: 0.8 }])
+      expect(controller).to receive(:render).with(json: [ { date: "2023-01-01", success_rate: 0.8 } ])
       get :performance, format: :json
     end
   end

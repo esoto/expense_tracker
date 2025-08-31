@@ -12,10 +12,10 @@ RSpec.describe Admin::BaseController, type: :controller, unit: true do
     # Skip authentication concerns for unit testing
     allow(controller.class).to receive(:before_action)
     allow(controller.class).to receive(:after_action)
-    
+
     # Mock the AdminAuthentication concern methods
     allow(controller).to receive(:log_admin_action)
-    
+
     # Add the test route
     routes.draw do
       get "test_action" => "admin/base#test_action"
@@ -51,7 +51,7 @@ RSpec.describe Admin::BaseController, type: :controller, unit: true do
       # The admin base controller includes authentication which causes redirect
       # This is the expected behavior for an admin controller
       get :test_action
-      
+
       expect(response).to have_http_status(:found) # 302 redirect due to authentication
     end
   end
@@ -108,9 +108,9 @@ RSpec.describe Admin::BaseController, type: :controller, unit: true do
 
       it "handles empty parameters" do
         controller.params = ActionController::Parameters.new({})
-        
+
         result = controller.send(:filtered_params)
-        
+
         expect(result).to eq({})
       end
 
@@ -157,7 +157,7 @@ RSpec.describe Admin::BaseController, type: :controller, unit: true do
       })
 
       filtered = controller.send(:filtered_params)
-      
+
       expect(filtered.keys).to contain_exactly("safe_param")
       expect(filtered["safe_param"]).to eq("safe_value")
     end

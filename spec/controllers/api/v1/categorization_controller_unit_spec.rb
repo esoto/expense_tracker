@@ -10,7 +10,7 @@ RSpec.describe Api::V1::CategorizationController, type: :controller, unit: true 
     controller.class.skip_before_action :authenticate_api_token, raise: false
     controller.class.skip_before_action :set_default_headers, raise: false
     controller.class.skip_before_action :log_request, raise: false
-    
+
     # Mock the categorization service initialization
     categorization_module = Module.new
     stub_const("Categorization", categorization_module)
@@ -21,7 +21,7 @@ RSpec.describe Api::V1::CategorizationController, type: :controller, unit: true 
 
   describe "POST #suggest", unit: true do
     let(:valid_params) { { merchant_name: "Starbucks", description: "Coffee", amount: "15.50" } }
-    let(:suggestions) { [{ category: category, confidence: 0.95 }] }
+    let(:suggestions) { [ { category: category, confidence: 0.95 } ] }
 
     before do
       allow(categorization_service).to receive(:suggest_categories).and_return(suggestions)
@@ -30,13 +30,13 @@ RSpec.describe Api::V1::CategorizationController, type: :controller, unit: true 
 
     it "calls categorization service with expense data" do
       expect(categorization_service).to receive(:suggest_categories)
-      
+
       post :suggest, params: valid_params, format: :json
     end
 
     it "responds with success when given valid parameters" do
       post :suggest, params: valid_params, format: :json
-      
+
       expect(response).to have_http_status(:success)
     end
   end
@@ -57,16 +57,16 @@ RSpec.describe Api::V1::CategorizationController, type: :controller, unit: true 
     it "processes feedback successfully" do
       expect(PatternFeedback).to receive(:record_feedback)
       expect(categorization_service).to receive(:learn_from_feedback)
-      
+
       post :feedback, params: valid_params, format: :json
-      
+
       expect(response).to have_http_status(:success)
     end
   end
 
   describe "POST #batch_suggest", unit: true do
     let(:valid_params) do
-      { expenses: [{ merchant_name: "Starbucks" }, { merchant_name: "Shell" }] }
+      { expenses: [ { merchant_name: "Starbucks" }, { merchant_name: "Shell" } ] }
     end
     let(:batch_results) { [] }
 
@@ -76,17 +76,17 @@ RSpec.describe Api::V1::CategorizationController, type: :controller, unit: true 
 
     it "processes batch suggestions successfully" do
       expect(categorization_service).to receive(:categorize_batch)
-      
+
       post :batch_suggest, params: valid_params, format: :json
-      
+
       expect(response).to have_http_status(:success)
     end
 
     it "rejects large batches" do
       large_batch = { expenses: Array.new(101) { { merchant_name: "Test" } } }
-      
+
       post :batch_suggest, params: large_batch, format: :json
-      
+
       expect(response).to have_http_status(:bad_request)
     end
   end
@@ -109,7 +109,7 @@ RSpec.describe Api::V1::CategorizationController, type: :controller, unit: true 
 
     it "returns statistics successfully" do
       get :statistics, format: :json
-      
+
       expect(response).to have_http_status(:success)
       json_response = JSON.parse(response.body)
       expect(json_response["status"]).to eq("success")
@@ -132,9 +132,9 @@ RSpec.describe Api::V1::CategorizationController, type: :controller, unit: true 
     describe "#build_expense_data" do
       it "creates expense struct with provided data" do
         params = { merchant_name: "Test", amount: "25.99" }
-        
+
         result = controller.send(:build_expense_data, params)
-        
+
         expect(result.merchant_name).to eq("Test")
         expect(result.amount).to eq(BigDecimal("25.99"))
       end

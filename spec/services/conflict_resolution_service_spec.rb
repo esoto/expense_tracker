@@ -136,7 +136,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
         service.resolve("keep_existing")
       end
 
-      it "fails when new_expense is missing due to model bug" do
+      it "handles missing new_expense gracefully" do
         conflict_without_new = create(:sync_conflict,
           existing_expense: existing_expense,
           new_expense: nil,
@@ -145,11 +145,11 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
         )
         test_service = described_class.new(conflict_without_new)
         
-        # Fails due to bug in SyncConflict#apply_resolution
+        # Service handles nil new_expense gracefully by skipping the update
         result = test_service.resolve("keep_existing")
-        expect(result).to be_falsey
-        expect(test_service.errors.first).to match(/Resolution failed/)
-        expect(conflict_without_new.reload.status).to eq("pending")
+        expect(result).to be_truthy
+        expect(test_service.errors).to be_empty
+        expect(conflict_without_new.reload.status).to eq("resolved")
       end
 
       it "wraps resolution in transaction" do
@@ -198,7 +198,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
         service.resolve("keep_new", { resolved_by: "system_auto" })
       end
 
-      it "fails when new_expense is missing due to model bug" do
+      it "handles missing new_expense gracefully" do
         conflict_without_new = create(:sync_conflict,
           existing_expense: existing_expense,
           new_expense: nil,
@@ -207,11 +207,12 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
         )
         test_service = described_class.new(conflict_without_new)
         
-        # Fails due to bug in SyncConflict#apply_resolution trying to update nil
+        # Service handles nil new_expense gracefully by skipping the new_expense update
         result = test_service.resolve("keep_new")
-        expect(result).to be_falsey
-        expect(test_service.errors.first).to match(/Resolution failed/)
-        expect(existing_expense.reload.status).to eq("processed") # unchanged
+        expect(result).to be_truthy
+        expect(test_service.errors).to be_empty
+        expect(existing_expense.reload.status).to eq("duplicate") # existing_expense is still updated
+        expect(conflict_without_new.reload.status).to eq("resolved")
       end
 
       it "rolls back transaction on error" do
@@ -255,7 +256,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
         expect(sync_conflict.resolution_action).to eq("keep_both")
       end
 
-      it "fails when new_expense is missing due to model bug" do
+      it "handles missing new_expense gracefully" do
         conflict_without_new = create(:sync_conflict,
           existing_expense: existing_expense,
           new_expense: nil,
@@ -264,11 +265,12 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
         )
         test_service = described_class.new(conflict_without_new)
         
-        # Fails due to bug in SyncConflict#apply_resolution trying to update nil
+        # Service handles nil new_expense gracefully by skipping the new_expense update
         result = test_service.resolve("keep_both")
-        expect(result).to be_falsey
-        expect(test_service.errors.first).to match(/Resolution failed/)
-        expect(existing_expense.reload.status).to eq("processed") # unchanged
+        expect(result).to be_truthy
+        expect(test_service.errors).to be_empty
+        expect(existing_expense.reload.status).to eq("processed") # existing_expense is still updated
+        expect(conflict_without_new.reload.status).to eq("resolved")
       end
 
       it "logs resolution correctly" do

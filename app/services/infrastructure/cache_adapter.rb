@@ -21,7 +21,7 @@ module Infrastructure
       # @return [Hash] Hash of key => value pairs
       def fetch_multi(*keys)
         return {} if keys.empty?
-        
+
         Rails.cache.read_multi(*keys)
       end
 
@@ -68,10 +68,10 @@ module Infrastructure
 
         # Access the internal hash for MemoryStore
         cache_data = Rails.cache.instance_variable_get(:@data) || {}
-        
+
         # Convert pattern to regex
         regex_pattern = pattern_to_regex(pattern)
-        
+
         # Find matching keys that actually have values
         matching_keys = []
         cache_data.each do |key, entry|
@@ -107,20 +107,20 @@ module Infrastructure
       # Redis-specific key matching
       def redis_matching_keys(pattern)
         redis = Rails.cache.redis
-        
+
         # Convert our pattern format to Redis SCAN pattern
-        redis_pattern = pattern.gsub('*', '*')
-        
+        redis_pattern = pattern.gsub("*", "*")
+
         keys = []
         cursor = "0"
-        
+
         # Use SCAN to avoid blocking on large keysets
         loop do
           cursor, batch = redis.scan(cursor, match: redis_pattern, count: 100)
           keys.concat(batch)
           break if cursor == "0"
         end
-        
+
         keys
       rescue => e
         Rails.logger.error "CacheAdapter: Redis key matching failed: #{e.message}"
@@ -130,7 +130,7 @@ module Infrastructure
       # Convert a simple wildcard pattern to regex
       def pattern_to_regex(pattern)
         # Escape special regex characters except *
-        escaped = Regexp.escape(pattern).gsub('\*', '.*')
+        escaped = Regexp.escape(pattern).gsub('\*', ".*")
         Regexp.new("^#{escaped}$")
       end
     end

@@ -102,20 +102,20 @@ module Infrastructure
               pattern = "#{CACHE_PREFIX}:*:#{date}"
               keys = Infrastructure::CacheAdapter.matching_keys(pattern)
               cache_data = Infrastructure::CacheAdapter.fetch_multi(*keys)
-              
+
               cache_data.each do |key, cached|
                 next unless cached && cached.is_a?(Hash)
-                
+
                 # Ensure we have the required keys with defaults
                 success_count = cached[:success_count] || 0
                 failure_count = cached[:failure_count] || 0
                 total_duration = cached[:total_duration] || 0
-                
+
                 # Parse channel name safely
                 parts = key.to_s.split(":")
                 next unless parts.length >= 2
                 channel = parts[1]
-                
+
                 metrics[:total_broadcasts] += success_count + failure_count
                 metrics[:success_count] += success_count
                 metrics[:failure_count] += failure_count
@@ -219,19 +219,19 @@ module Infrastructure
           def exponential_backoff(attempt = 1)
             (2**attempt + rand(0..1000) / 1000.0).seconds
           end
-          
+
           def determine_error_type(error)
             case error
             when ActiveRecord::RecordNotFound
-              'record_not_found'
+              "record_not_found"
             when Timeout::Error
-              'connection_timeout'
+              "connection_timeout"
             when ArgumentError
-              'validation_error'
+              "validation_error"
             when NoMethodError
-              'serialization_error'
+              "serialization_error"
             else
-              'unknown'
+              "unknown"
             end
           end
 
@@ -263,11 +263,11 @@ module Infrastructure
           def allowed?(target, priority)
             return true unless enabled?
             return true if target.nil? # Handle nil target gracefully
-            
+
             # Handle targets without id method
-            target_id = target.respond_to?(:id) ? target.id : 'unknown'
+            target_id = target.respond_to?(:id) ? target.id : "unknown"
             target_class = target.class.name
-            
+
             limit = LIMITS[priority] || LIMITS[:medium]
             key = "rate_limit:#{target_class}:#{target_id}"
 
@@ -296,7 +296,7 @@ module Infrastructure
 
         class << self
           attr_accessor :flags
-          
+
           def enabled?(feature)
             @flags[feature] != false
           end
@@ -308,7 +308,7 @@ module Infrastructure
           def disable!(feature)
             @flags[feature] = false
           end
-          
+
           def reset!
             @flags = {
               broadcasting: true,
@@ -342,7 +342,7 @@ module Infrastructure
             rescue SystemStackError, JSON::NestingError
               raise ArgumentError, "Data contains circular references or is too deeply nested"
             end
-            
+
             max_size = 64.kilobytes
 
             if size > max_size
@@ -352,8 +352,8 @@ module Infrastructure
 
           def validate_channel_exists!(channel)
             # Skip channel validation in test environment or for test channels
-            return if Rails.env.test? && channel.include?('Test')
-            
+            return if Rails.env.test? && channel.include?("Test")
+
             begin
               channel.constantize
             rescue NameError
@@ -366,7 +366,7 @@ module Infrastructure
       # Reliability wrapper for critical broadcasts
       module ReliabilityWrapper
         MAX_RETRIES = 3
-        
+
         class << self
           def execute(channel, target, data)
             attempts = 0

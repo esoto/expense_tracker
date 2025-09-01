@@ -242,9 +242,7 @@ RSpec.describe Categorization::Orchestrator, type: :service, integration: true d
 
         # Simulate slow pattern matching - this method is always called
         allow(orchestrator).to receive(:find_pattern_matches).and_wrap_original do |original, *args|
-          # Use time mocking instead of real sleep for faster tests
-          new_time = Time.current + 0.030.seconds
-          allow(Time).to receive(:current).and_return(new_time)
+          sleep 0.030 # Real sleep needed for performance measurement test
           original.call(*args)
         end
 

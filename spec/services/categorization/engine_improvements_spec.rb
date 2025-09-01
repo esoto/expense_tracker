@@ -536,7 +536,7 @@ RSpec.describe Categorization::EngineImprovements, type: :service, unit: true do
 end
 
 RSpec.describe Categorization::CategorizationJob, type: :job, unit: true do
-  let(:expense) { build(:expense, id: 123) }
+  let(:expense) { instance_double("Expense", id: 123) }
   let(:category) { build(:category, name: "Food") }
   let(:engine) { instance_double("Categorization::Engine") }
   let(:result) do
@@ -553,6 +553,7 @@ RSpec.describe Categorization::CategorizationJob, type: :job, unit: true do
       allow(Expense).to receive(:find).with(123).and_return(expense)
       allow(Categorization::Engine).to receive(:new).and_return(engine)
       allow(engine).to receive(:categorize).and_return(result)
+      allow(expense).to receive(:update!).and_return(true)
     end
 
     context "with successful high-confidence categorization" do

@@ -8,6 +8,12 @@ RSpec.describe "Categorization::Orchestrator Performance", type: :service, perfo
   describe "Performance benchmarks", performance: true do
     let(:orchestrator) { Categorization::OrchestratorFactory.create_production }
 
+    # Helper method to simulate time passing without actual sleep
+    def travel(duration)
+      new_time = Time.current + duration
+      allow(Time).to receive(:current).and_return(new_time)
+    end
+
     # Create comprehensive test data
     before(:all) do
       DatabaseCleaner.strategy = :truncation
@@ -192,7 +198,7 @@ RSpec.describe "Categorization::Orchestrator Performance", type: :service, perfo
 
         # Force garbage collection
         GC.start
-        sleep 0.1
+        travel(0.1.seconds)
 
         final_memory = GetProcessMem.new.mb
         memory_increase = final_memory - initial_memory
@@ -216,7 +222,7 @@ RSpec.describe "Categorization::Orchestrator Performance", type: :service, perfo
         end
 
         GC.start
-        sleep 0.1
+        travel(0.1.seconds)
 
         final_memory = GetProcessMem.new.mb
         memory_increase = final_memory - initial_memory

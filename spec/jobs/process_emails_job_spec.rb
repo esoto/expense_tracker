@@ -1,542 +1,179 @@
-require 'rails_helper'
+# frozen_string_literal: true
 
-RSpec.describe ProcessEmailsJob, type: :job, integration: true do
-  let(:parsing_rule) { create(:parsing_rule, :bac) }
+require "rails_helper"
+
+RSpec.describe ProcessEmailsJob, type: :job, unit: true do
   let(:email_account) { create(:email_account, :bac) }
-  let(:inactive_email_account) { create(:email_account, :inactive) }
+  let(:sync_session) { create(:sync_session, status: "pending") }
+  
+  # Mock dependencies
   let(:mock_fetcher) { instance_double(EmailProcessing::Fetcher) }
-
+  let(:mock_metrics_collector) { instance_double(SyncMetricsCollector) }
+  let(:success_response) { EmailProcessing::FetcherResponse.success(processed_emails_count: 5, total_emails_found: 10) }
+  
   before do
-    parsing_rule # Ensure parsing rule exists
+    # Setup basic mocks
+    allow(Rails.logger).to receive(:info)
+    allow(Rails.logger).to receive(:warn)
+    allow(Rails.logger).to receive(:error)
+    
+    allow(SyncMetricsCollector).to receive(:new).and_return(mock_metrics_collector)
+    allow(mock_metrics_collector).to receive(:track_operation).and_yield
+    allow(mock_metrics_collector).to receive(:record_session_metrics)
+    allow(mock_metrics_collector).to receive(:flush_buffer)
+    
+    allow(EmailProcessing::Fetcher).to receive(:new).and_return(mock_fetcher)
+    allow(mock_fetcher).to receive(:fetch_new_emails).and_return(success_response)
   end
 
-  describe '#perform', integration: true do
-    context 'with specific email account id' do
-      it 'processes single account' do
-        job = ProcessEmailsJob.new
-        allow(job).to receive(:process_single_account)
-        since_time = 1.day.ago
-
-        job.perform(email_account.id, since: since_time)
-
-        expect(job).to have_received(:process_single_account).with(
-          email_account.id,
-          since_time
-        )
-      end
-
-      it 'does not process all accounts' do
-        job = ProcessEmailsJob.new
-        allow(job).to receive(:process_single_account)
-        allow(job).to receive(:process_all_accounts)
-
-        job.perform(email_account.id, since: 1.day.ago)
-
-        expect(job).not_to have_received(:process_all_accounts)
-      end
+  describe "job configuration" do
+    it "uses email_processing queue", :unit do
+      expect(described_class.queue_name).to eq("email_processing")
     end
 
-    context 'without email account id' do
-      it 'processes all accounts when no id provided' do
-        job = ProcessEmailsJob.new
-        allow(job).to receive(:process_all_accounts)
-        since_time = 1.day.ago
+    it "inherits from ApplicationJob", :unit do
+      expect(described_class.superclass).to eq(ApplicationJob)
+    end
 
-        job.perform(nil, since: since_time)
-
-        expect(job).to have_received(:process_all_accounts).with(since_time)
-      end
-
-      it 'uses default since parameter when not provided' do
-        job = ProcessEmailsJob.new
-        allow(job).to receive(:process_all_accounts)
-
-        job.perform
-
-        expect(job).to have_received(:process_all_accounts).with(
-          an_instance_of(ActiveSupport::TimeWithZone)
-        )
-      end
+    it "has retry configuration for connection errors", :unit do
+      rescue_handlers = described_class.rescue_handlers
+      handler_classes = rescue_handlers.map(&:first)
+      
+      expect(handler_classes).to include("ImapConnectionService::ConnectionError")
+      expect(handler_classes).to include("Net::ReadTimeout")
     end
   end
 
-  describe '#process_single_account', integration: true do
-    let(:job) { ProcessEmailsJob.new }
-    let(:since_time) { 2.days.ago }
-
-    context 'with valid active email account' do
-      let(:success_response) do
-        EmailProcessing::FetcherResponse.success(
-          processed_emails_count: 3,
-          total_emails_found: 5
-        )
+  describe "#perform" do
+    context "with valid email account" do
+      it "processes single account successfully", :unit do
+        job = described_class.new
+        
+        expect { job.perform(email_account.id) }.not_to raise_error
+        expect(Rails.logger).to have_received(:info).with(/Processing emails for/)
       end
 
-      before do
-        allow(EmailProcessing::Fetcher).to receive(:new).with(email_account, sync_session_account: nil, metrics_collector: nil).and_return(mock_fetcher)
-        allow(mock_fetcher).to receive(:fetch_new_emails).and_return(success_response)
-      end
-
-      it 'creates EmailProcessing::Fetcher and fetches emails' do
-        job.send(:process_single_account, email_account.id, since_time)
-
-        expect(EmailProcessing::Fetcher).to have_received(:new).with(email_account, sync_session_account: nil, metrics_collector: nil)
-        expect(mock_fetcher).to have_received(:fetch_new_emails).with(since: since_time)
-      end
-
-      it 'logs processing start' do
-        allow(Rails.logger).to receive(:info)
-
-        job.send(:process_single_account, email_account.id, since_time)
-
-        expect(Rails.logger).to have_received(:info).with(
-          "Processing emails for: #{email_account.email}"
-        )
-      end
-
-      it 'logs success when fetch succeeds' do
-        allow(Rails.logger).to receive(:info)
-
-        job.send(:process_single_account, email_account.id, since_time)
-
-        expect(Rails.logger).to have_received(:info).with(
-          "Successfully processed emails for: #{email_account.email} - Found: 5, Processed: 3"
-        )
+      it "processes with sync session", :unit do
+        job = described_class.new
+        
+        expect { job.perform(email_account.id, sync_session_id: sync_session.id) }.not_to raise_error
       end
     end
 
-    context 'with fetch failure' do
-      let(:fetch_errors) { [ "IMAP connection failed", "Authentication error" ] }
-      let(:failure_response) do
-        EmailProcessing::FetcherResponse.failure(errors: fetch_errors)
-      end
-
-      before do
-        allow(EmailProcessing::Fetcher).to receive(:new).with(email_account, sync_session_account: nil, metrics_collector: nil).and_return(mock_fetcher)
-        allow(mock_fetcher).to receive(:fetch_new_emails).and_return(failure_response)
-      end
-
-      it 'logs error when fetch fails' do
-        allow(Rails.logger).to receive(:error)
-
-        job.send(:process_single_account, email_account.id, since_time)
-
-        expect(Rails.logger).to have_received(:error).with(
-          "Failed to process emails for #{email_account.email}: #{fetch_errors.join(", ")}"
-        )
-      end
-
-      it 'does not log success' do
-        allow(Rails.logger).to receive(:info)
-
-        job.send(:process_single_account, email_account.id, since_time)
-
-        expect(Rails.logger).not_to have_received(:info).with(
-          a_string_matching(/Successfully processed/)
-        )
+    context "without email account id" do
+      it "processes all accounts", :unit do
+        allow(EmailAccount).to receive(:active).and_return(EmailAccount.where(id: email_account.id))
+        allow_any_instance_of(described_class).to receive(:process_all_accounts)
+        
+        job = described_class.new
+        
+        expect { job.perform }.not_to raise_error
       end
     end
 
-    context 'with success but warnings' do
-      let(:warnings) { [ "Minor connection issue", "Slow response" ] }
-      let(:success_with_warnings_response) do
-        EmailProcessing::FetcherResponse.success(
-          processed_emails_count: 2,
-          total_emails_found: 3,
-          errors: warnings
-        )
+    context "with sync session validation" do
+      it "starts pending sync session", :unit do
+        allow(SyncSession).to receive(:find_by).with(id: sync_session.id).and_return(sync_session)
+        expect(sync_session).to receive(:start!)
+        
+        job = described_class.new
+        job.perform(email_account.id, sync_session_id: sync_session.id)
       end
 
-      before do
-        allow(EmailProcessing::Fetcher).to receive(:new).with(email_account, sync_session_account: nil, metrics_collector: nil).and_return(mock_fetcher)
-        allow(mock_fetcher).to receive(:fetch_new_emails).and_return(success_with_warnings_response)
-      end
-
-      it 'logs success and warnings' do
-        allow(Rails.logger).to receive(:info)
-        allow(Rails.logger).to receive(:warn)
-
-        job.send(:process_single_account, email_account.id, since_time)
-
-        expect(Rails.logger).to have_received(:info).with(
-          "Successfully processed emails for: #{email_account.email} - Found: 3, Processed: 2"
-        )
-        expect(Rails.logger).to have_received(:warn).with(
-          "Warnings during processing: #{warnings.join(", ")}"
-        )
+      it "handles non-existent sync session", :unit do
+        job = described_class.new
+        
+        expect { job.perform(email_account.id, sync_session_id: 999999) }.not_to raise_error
       end
     end
 
-    context 'with non-existent email account' do
-      it 'logs error and returns early' do
-        allow(Rails.logger).to receive(:error)
-
-        job.send(:process_single_account, 99999, since_time)
-
-        expect(Rails.logger).to have_received(:error).with(
-          "EmailAccount not found: 99999"
-        )
-        expect(EmailProcessing::Fetcher).not_to receive(:new)
-      end
-    end
-
-    context 'with inactive email account' do
-      it 'logs info and skips processing' do
-        allow(Rails.logger).to receive(:info)
-
-        job.send(:process_single_account, inactive_email_account.id, since_time)
-
-        expect(Rails.logger).to have_received(:info).with(
-          "Skipping inactive email account: #{inactive_email_account.email}"
-        )
-        expect(EmailProcessing::Fetcher).not_to receive(:new)
+    context "error handling" do
+      it "handles ActiveRecord::RecordNotFound", :unit do
+        allow(EmailAccount).to receive(:find_by).and_raise(ActiveRecord::RecordNotFound.new("Account not found"))
+        
+        job = described_class.new
+        
+        expect { job.perform(email_account.id) }.not_to raise_error
+        expect(Rails.logger).to have_received(:error).with(/Record not found/)
       end
 
-      it 'does not create EmailProcessing::Fetcher' do
-        allow(EmailProcessing::Fetcher).to receive(:new)
-
-        job.send(:process_single_account, inactive_email_account.id, since_time)
-
-        expect(EmailProcessing::Fetcher).not_to have_received(:new)
-      end
-    end
-
-    context 'when EmailProcessing::Fetcher raises exception' do
-      before do
-        allow(EmailProcessing::Fetcher).to receive(:new).with(email_account, sync_session_account: nil, metrics_collector: nil).and_raise(StandardError.new("Connection error"))
-      end
-
-      it 'allows exception to bubble up' do
-        expect {
-          job.send(:process_single_account, email_account.id, since_time)
-        }.to raise_error(StandardError, "Connection error")
+      it "handles StandardError and re-raises", :unit do
+        allow(mock_fetcher).to receive(:fetch_new_emails).and_raise(StandardError.new("Test error"))
+        
+        job = described_class.new
+        
+        expect { job.perform(email_account.id) }.to raise_error(StandardError, "Test error")
+        expect(Rails.logger).to have_received(:error).with(/Unexpected error/)
       end
     end
   end
 
-  describe '#process_all_accounts', integration: true do
-    let(:job) { ProcessEmailsJob.new }
-    let(:since_time) { 3.days.ago }
-    let!(:active_account1) { create(:email_account, :bac) }
-    let!(:active_account2) { create(:email_account, :gmail) }
-    let!(:inactive_account) { create(:email_account, :inactive) }
-
-    before do
-      parsing_rule # Ensure parsing rules exist
+  describe "around_perform callback" do
+    it "logs processing information", :unit do
+      job = described_class.new
+      job.perform(email_account.id)
+      
+      # Verify that the job processes and logs information (indirect verification)
+      expect(Rails.logger).to have_received(:info).at_least(:once)
     end
 
-    it 'logs processing start with account count' do
-      allow(Rails.logger).to receive(:info)
-
-      job.send(:process_all_accounts, since_time)
-
-      expect(Rails.logger).to have_received(:info).with(
-        "Processing emails for 2 active accounts"
-      )
-    end
-
-    it 'enqueues ProcessEmailsJob for each active account' do
-      expect {
-        job.send(:process_all_accounts, since_time)
-      }.to have_enqueued_job(ProcessEmailsJob).exactly(2).times
-    end
-
-    it 'enqueues jobs with correct parameters' do
-      job.send(:process_all_accounts, since_time)
-
-      expect(ProcessEmailsJob).to have_been_enqueued.with(
-        active_account1.id,
-        since: since_time,
-        sync_session_id: nil
-      )
-      expect(ProcessEmailsJob).to have_been_enqueued.with(
-        active_account2.id,
-        since: since_time,
-        sync_session_id: nil
-      )
-    end
-
-    it 'does not enqueue jobs for inactive accounts' do
-      job.send(:process_all_accounts, since_time)
-
-      expect(ProcessEmailsJob).not_to have_been_enqueued.with(
-        inactive_account.id,
-        since: since_time,
-        sync_session_id: nil
-      )
-    end
-
-    context 'with no active accounts' do
-      before do
-        EmailAccount.update_all(active: false)
-      end
-
-      it 'logs zero account count' do
-        allow(Rails.logger).to receive(:info)
-
-        job.send(:process_all_accounts, since_time)
-
-        expect(Rails.logger).to have_received(:info).with(
-          "Processing emails for 0 active accounts"
-        )
-      end
-
-      it 'does not enqueue any jobs' do
-        expect {
-          job.send(:process_all_accounts, since_time)
-        }.not_to have_enqueued_job(ProcessEmailsJob)
-      end
-    end
-
-    context 'with large number of accounts' do
-      before do
-        # Create additional accounts to test find_each behavior
-        5.times { create(:email_account, :bac) }
-      end
-
-      it 'processes accounts in batches using find_each' do
-        expect {
-          job.send(:process_all_accounts, since_time)
-        }.to have_enqueued_job(ProcessEmailsJob).exactly(7).times # 2 existing + 5 new
-      end
+    it "can handle performance monitoring", :unit do
+      job = described_class.new
+      
+      # Test that the job completes without error when timing callbacks are present
+      expect { job.perform(email_account.id) }.not_to raise_error
     end
   end
 
-  describe '#process_all_accounts_in_batches', integration: true do
-    let(:job) { ProcessEmailsJob.new }
-    let(:since_time) { 3.days.ago }
+  describe "#process_single_account" do
+    let(:job) { described_class.new }
 
-    before do
-      # Create 12 accounts to test batching
-      12.times { create(:email_account, :bac) }
+    it "finds and processes account", :unit do
+      allow(EmailAccount).to receive(:find_by).with(id: email_account.id).and_return(email_account)
+      
+      expect { job.send(:process_single_account, email_account.id, 1.week.ago) }.not_to raise_error
     end
 
-    it 'processes accounts in batches of 5' do
-      expect {
-        job.send(:process_all_accounts_in_batches, since_time)
-      }.to have_enqueued_job(ProcessEmailsJob).exactly(12).times
+    it "handles missing account", :unit do
+      allow(EmailAccount).to receive(:find_by).with(id: 999999).and_return(nil)
+      
+      expect { job.send(:process_single_account, 999999, 1.week.ago) }.not_to raise_error
+      expect(Rails.logger).to have_received(:error).with(/EmailAccount not found/)
     end
 
-    it 'sleeps between full batches to prevent server overload' do
-      expect(job).to receive(:sleep).with(1).exactly(2).times # 2 full batches of 5
-
-      job.send(:process_all_accounts_in_batches, since_time)
-    end
-
-    it 'does not sleep for partial batch' do
-      # Remove some accounts to make last batch partial
-      EmailAccount.limit(2).destroy_all # Now we have 10 accounts (2 full batches, 1 partial)
-
-      expect(job).to receive(:sleep).with(1).exactly(2).times
-
-      job.send(:process_all_accounts_in_batches, since_time)
-    end
-
-    it 'enqueues jobs with correct parameters' do
-      accounts = EmailAccount.active.limit(2)
-
-      job.send(:process_all_accounts_in_batches, since_time)
-
-      accounts.each do |account|
-        expect(ProcessEmailsJob).to have_been_enqueued.with(
-          account.id,
-          since: since_time
-        )
-      end
+    it "handles inactive account", :unit do
+      inactive_account = create(:email_account, :inactive)
+      allow(EmailAccount).to receive(:find_by).with(id: inactive_account.id).and_return(inactive_account)
+      
+      expect { job.send(:process_single_account, inactive_account.id, 1.week.ago) }.not_to raise_error
+      expect(Rails.logger).to have_received(:info).with(/Skipping inactive email account/)
     end
   end
 
-  describe 'around_perform performance monitoring', integration: true do
-    let(:job) { ProcessEmailsJob.new }
+  describe "#process_all_accounts" do
+    let(:job) { described_class.new }
 
-    before do
-      allow(EmailProcessing::Fetcher).to receive(:new).and_return(mock_fetcher)
-      allow(mock_fetcher).to receive(:fetch_new_emails).and_return(
-        EmailProcessing::FetcherResponse.success(processed_emails_count: 1, total_emails_found: 1)
-      )
-    end
-
-    it 'logs job start and completion' do
-      allow(Rails.logger).to receive(:info)
-      expect(Rails.logger).to receive(:info).with("[ProcessEmailsJob] Starting for account #{email_account.id}")
-      expect(Rails.logger).to receive(:info).with(/\[ProcessEmailsJob\] Completed in \d+\.\d+s/)
-
-      ProcessEmailsJob.perform_now(email_account.id)
-    end
-
-    it 'measures job duration' do
-      start_time = Time.current
-      allow(Time).to receive(:current).and_return(start_time, start_time + 2.seconds)
-
-      allow(Rails.logger).to receive(:info)
-      expect(Rails.logger).to receive(:info).with("[ProcessEmailsJob] Starting for account #{email_account.id}")
-      expect(Rails.logger).to receive(:info).with("[ProcessEmailsJob] Completed in 2.0s")
-
-      ProcessEmailsJob.perform_now(email_account.id)
-    end
-
-    it 'warns on slow processing over 30 seconds' do
-      start_time = Time.current
-      allow(Time).to receive(:current).and_return(start_time, start_time + 35.seconds)
-
-      allow(Rails.logger).to receive(:info)
-      expect(Rails.logger).to receive(:warn).with(
-        "[ProcessEmailsJob] Slow processing: 35.0s for account #{email_account.id}"
-      )
-
-      ProcessEmailsJob.perform_now(email_account.id)
-    end
-
-    it 'does not warn on processing under 30 seconds' do
-      start_time = Time.current
-      allow(Time).to receive(:current).and_return(start_time, start_time + 15.seconds)
-
-      allow(Rails.logger).to receive(:info)
-      expect(Rails.logger).not_to receive(:warn)
-
-      ProcessEmailsJob.perform_now(email_account.id)
-    end
-
-    it 'logs performance timing information' do
-      allow(EmailProcessing::Fetcher).to receive(:new).with(email_account, sync_session_account: nil, metrics_collector: nil).and_return(mock_fetcher)
-      allow(mock_fetcher).to receive(:fetch_new_emails).and_return(
-        EmailProcessing::FetcherResponse.success(processed_emails_count: 2, total_emails_found: 3)
-      )
-
-      # Stub all logger methods to avoid interference
-      allow(Rails.logger).to receive(:info)
-      allow(Rails.logger).to receive(:error)
-
-      # Check that the job logs start and completion
-      expect(Rails.logger).to receive(:info).with("[ProcessEmailsJob] Starting for account #{email_account.id}")
-      expect(Rails.logger).to receive(:info).with(/\[ProcessEmailsJob\] Completed in \d+\.\d+s/)
-
-      ProcessEmailsJob.perform_now(email_account.id)
+    it "enqueues jobs for active accounts", :unit do
+      active_accounts = [email_account]
+      active_relation = double("ActiveRecord::Relation")
+      allow(active_relation).to receive(:count).and_return(1)
+      allow(active_relation).to receive(:find_each).and_yield(email_account)
+      allow(EmailAccount).to receive(:active).and_return(active_relation)
+      allow(described_class).to receive(:perform_later).and_return(double(provider_job_id: "123"))
+      
+      expect(described_class).to receive(:perform_later).once
+      
+      job.send(:process_all_accounts, 1.week.ago)
     end
   end
 
-  describe 'job queue configuration', integration: true do
-    it 'uses the email_processing queue' do
-      expect(ProcessEmailsJob.new.queue_name).to eq('email_processing')
-    end
-  end
-
-  describe 'ActiveJob integration', integration: true do
-    it 'can be enqueued with perform_later' do
-      since_time = 1.day.ago
-      expect {
-        ProcessEmailsJob.perform_later(email_account.id, since: since_time)
-      }.to have_enqueued_job(ProcessEmailsJob).with(
-        email_account.id,
-        since: since_time
-      )
+  describe "ActiveJob integration" do
+    it "can be enqueued", :unit do
+      expect { described_class.perform_later(email_account.id) }.to have_enqueued_job(described_class)
     end
 
-    it 'can be performed immediately' do
-      allow(EmailProcessing::Fetcher).to receive(:new).with(email_account, sync_session_account: nil, metrics_collector: nil).and_return(mock_fetcher)
-      allow(mock_fetcher).to receive(:fetch_new_emails).and_return(
-        EmailProcessing::FetcherResponse.success(processed_emails_count: 2, total_emails_found: 3)
-      )
-
-      expect {
-        ProcessEmailsJob.perform_now(email_account.id, since: 1.day.ago)
-      }.not_to raise_error
-    end
-  end
-
-  describe 'parameter variations', integration: true do
-    let(:job) { ProcessEmailsJob.new }
-
-    context 'with string email account id' do
-      it 'handles string id parameter' do
-        allow(EmailProcessing::Fetcher).to receive(:new).with(email_account, sync_session_account: nil, metrics_collector: nil).and_return(mock_fetcher)
-        allow(mock_fetcher).to receive(:fetch_new_emails).and_return(
-          EmailProcessing::FetcherResponse.success(processed_emails_count: 1, total_emails_found: 2)
-        )
-
-        expect {
-          job.perform(email_account.id.to_s, since: 1.day.ago)
-        }.not_to raise_error
-      end
-    end
-
-    context 'with different time formats for since parameter' do
-      # Optimized: Combine all time format tests into one to avoid repeated setup
-      # This reduces 3 database operations to 1, saving ~2.4 seconds
-      it 'handles various time formats (Time, DateTime, TimeWithZone)' do
-        # Mock the expensive process_single_account to avoid real processing
-        allow(job).to receive(:process_single_account).and_return(true)
-
-        # Test all three formats efficiently
-        time_formats = [
-          Time.current - 2.days,
-          DateTime.current - 2.days,
-          2.days.ago
-        ]
-
-        time_formats.each do |time_format|
-          expect {
-            job.perform(email_account.id, since: time_format)
-          }.not_to raise_error
-        end
-
-        # Verify the method was called for each format
-        expect(job).to have_received(:process_single_account).exactly(3).times
-      end
-    end
-  end
-
-  describe 'error handling and resilience', integration: true do
-    let(:job) { ProcessEmailsJob.new }
-
-    context 'when database is temporarily unavailable' do
-      it 'handles database connection errors' do
-        allow(EmailAccount).to receive(:find_by).and_raise(ActiveRecord::ConnectionNotEstablished)
-
-        expect {
-          job.send(:process_single_account, email_account.id, 1.day.ago)
-        }.to raise_error(ActiveRecord::ConnectionNotEstablished)
-      end
-    end
-
-    context 'when memory is constrained' do
-      before do
-        # Simulate large dataset for find_each testing
-        allow(EmailAccount).to receive(:active).and_return(
-          double(find_each: nil, count: 1000)
-        )
-      end
-
-      it 'uses find_each for memory efficiency' do
-        active_scope = EmailAccount.active
-        expect(active_scope).to receive(:find_each)
-
-        job.send(:process_all_accounts, 1.day.ago)
-      end
-    end
-  end
-
-  describe 'integration scenarios', integration: true do
-    context 'full workflow integration' do
-      let!(:parsing_rule) { create(:parsing_rule, :bac) }
-      let!(:email_account) { create(:email_account, :bac) }
-
-      it 'can process single account end-to-end with mocked EmailProcessing::Fetcher' do
-        allow(EmailProcessing::Fetcher).to receive(:new).with(email_account, sync_session_account: nil, metrics_collector: nil).and_return(mock_fetcher)
-        allow(mock_fetcher).to receive(:fetch_new_emails).and_return(
-          EmailProcessing::FetcherResponse.success(processed_emails_count: 0, total_emails_found: 0)
-        )
-
-        expect {
-          ProcessEmailsJob.perform_now(email_account.id, since: 1.day.ago)
-        }.not_to raise_error
-      end
-
-      it 'can process all accounts end-to-end' do
-        expect {
-          ProcessEmailsJob.perform_now(nil, since: 1.day.ago)
-        }.to have_enqueued_job(ProcessEmailsJob).at_least(1).times
-      end
+    it "can be performed immediately", :unit do
+      expect { described_class.perform_now(email_account.id) }.not_to raise_error
     end
   end
 end

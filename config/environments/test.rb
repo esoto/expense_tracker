@@ -25,6 +25,9 @@ Rails.application.configure do
   config.consider_all_requests_local = true
   config.cache_store = :memory_store, { size: 32.megabytes }
 
+  # ActiveJob configuration for testing
+  config.active_job.queue_adapter = :test
+
   # Render exception templates for rescuable exceptions and raise for other exceptions.
   config.action_dispatch.show_exceptions = :rescuable
 

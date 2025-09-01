@@ -17,7 +17,7 @@ RSpec.describe EmailAccount, type: :model, unit: true do
   describe 'validations' do
     it { should validate_presence_of(:email) }
     it { should validate_uniqueness_of(:email) }
-    it { should allow_value('test@example.com').for(:email) }
+    it { should allow_value("unique_#{SecureRandom.hex(4)}@example.com").for(:email) }
     it { should_not allow_value('invalid-email').for(:email) }
     it { should validate_presence_of(:provider) }
     it { should validate_inclusion_of(:provider).in_array([ "gmail", "outlook", "yahoo", "custom", "manual" ]) }

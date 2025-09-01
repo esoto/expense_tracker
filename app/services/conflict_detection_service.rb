@@ -86,7 +86,8 @@ class ConflictDetectionService
         Rails.logger.info "[ConflictDetection] Auto-resolved duplicate conflict ##{conflict.id}"
       rescue => e
         Rails.logger.error "[ConflictDetection] Failed to auto-resolve conflict ##{conflict.id}: #{e.message}"
-        add_error("Failed to auto-resolve conflict ##{conflict.id}")
+        Rails.logger.error "[ConflictDetection] Backtrace: #{e.backtrace.first(5).join("\n")}"
+        add_error("Failed to auto-resolve conflict ##{conflict.id}: #{e.message}")
       end
     end
 

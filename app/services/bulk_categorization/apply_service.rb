@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 
+require 'ostruct'
+
 module BulkCategorization
+  # Custom error for already categorized expenses
+  class AlreadyCategorizedError < StandardError; end
+
   # Service to apply categorization to multiple expenses at once
   # Handles validation, database updates, pattern learning, and audit logging
   class ApplyService
@@ -17,7 +22,7 @@ module BulkCategorization
       @user_id = user_id
       @options = default_options.merge(options)
       @results = []
-      @errors = []
+      @processing_errors = []
     end
 
     def call
@@ -33,6 +38,9 @@ module BulkCategorization
 
         success_result
       end
+    rescue AlreadyCategorizedError => e
+      # Don't track this as an error since it's a validation failure
+      failure_result(e.message)
     rescue ActiveRecord::RecordInvalid => e
       ErrorTrackingService.track_bulk_operation_error("categorization", e, {
         expense_count: expense_ids.count,
@@ -82,7 +90,8 @@ module BulkCategorization
 
       if already_categorized.any? && !options[:allow_recategorization]
         expense_list = already_categorized.map(&:display_description).join(", ")
-        raise ActiveRecord::RecordInvalid, "Some expenses are already categorized: #{expense_list}"
+        # Raise a custom error with the categorization message
+        raise AlreadyCategorizedError, "Some expenses are already categorized: #{expense_list}"
       end
     end
 
@@ -111,12 +120,12 @@ module BulkCategorization
         if result[:success]
           track_success(expense, result)
         else
-          @errors << result[:error]
+          @processing_errors << result[:error]
         end
       end
 
-      if @errors.any?
-        Rails.logger.warn "BulkCategorization: #{@errors.count} errors during categorization"
+      if @processing_errors.any?
+        Rails.logger.warn "BulkCategorization: #{@processing_errors.count} errors during categorization"
       end
     end
 
@@ -224,7 +233,7 @@ module BulkCategorization
         locals: {
           completed: @results.count { |r| r[:success] },
           total: @expenses.count,
-          errors: @errors.count
+          errors: @processing_errors.count
         }
       )
     end
@@ -237,7 +246,7 @@ module BulkCategorization
         message: "Successfully categorized #{completed_count} expense#{'s' if completed_count != 1}",
         bulk_operation: @bulk_operation,
         results: @results,
-        errors: @errors,
+        errors: @processing_errors,
         expense_count: completed_count,
         updated_group: nil, # Will be set by controller if needed
         remaining_groups: [] # Will be set by controller if needed
@@ -250,7 +259,7 @@ module BulkCategorization
         message: message,
         bulk_operation: nil,
         results: @results,
-        errors: @errors + [ message ],
+        errors: @processing_errors + [ message ],
         expense_count: 0
       )
     end

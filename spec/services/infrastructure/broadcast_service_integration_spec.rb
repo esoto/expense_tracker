@@ -103,8 +103,11 @@ RSpec.describe Infrastructure::BroadcastService, unit: true do
       end
       
       it 'retries high priority broadcasts on transient errors' do
+        # Mock sleep to prevent real delays during exponential backoff
+        allow_any_instance_of(Object).to receive(:sleep)
+
         allow(@broadcast_recorder).to receive(:broadcast).and_raise(StandardError, "Temporary error")
-        
+
         expect {
           described_class.broadcast(channel, target, data, priority: :high)
         }.to have_enqueued_job(Infrastructure::BroadcastService::RetryJob)
@@ -112,16 +115,19 @@ RSpec.describe Infrastructure::BroadcastService, unit: true do
       end
       
       it 'triggers circuit breaker after threshold errors' do
+        # Mock sleep to prevent real delays during exponential backoff
+        allow_any_instance_of(Object).to receive(:sleep)
+
         allow(@broadcast_recorder).to receive(:broadcast).and_raise(StandardError, "Error")
-        
+
         # Trigger 5 errors to open circuit
         5.times do
           described_class.broadcast(channel, target, data, priority: :high)
         end
-        
+
         # Circuit should be open
         expect(Rails.cache.read("circuit_breaker:#{channel}")).to be true
-        
+
         # High priority broadcasts should not retry when circuit is open
         expect {
           described_class.broadcast(channel, target, data, priority: :high)

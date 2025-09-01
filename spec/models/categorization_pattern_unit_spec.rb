@@ -6,6 +6,7 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
   # Helper method to build a stubbed instance
   def build_categorization_pattern(attributes = {})
     default_attributes = {
+      category_id: 1,  # Add missing category_id for stubbed instances
       pattern_type: "merchant",
       pattern_value: "amazon",
       confidence_weight: 1.0,

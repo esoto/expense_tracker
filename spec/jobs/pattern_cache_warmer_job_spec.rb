@@ -330,6 +330,15 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
 
     before do
       allow(cache).to receive(:metrics).and_return(cache_metrics)
+      
+      # Mock PerformanceConfig to ensure consistent behavior across test runs
+      # Force the job to use the 80.0 default for these specific tests
+      if defined?(Services::Infrastructure::PerformanceConfig)
+        allow(Services::Infrastructure::PerformanceConfig).to receive(:threshold_for)
+          .with(:cache, :hit_rate, :target).and_return(80.0)
+        allow(Services::Infrastructure::PerformanceConfig).to receive(:threshold_for)
+          .with(:cache, :memory_entries, :warning).and_return(10_000)
+      end
     end
 
     context 'with low hit rate' do

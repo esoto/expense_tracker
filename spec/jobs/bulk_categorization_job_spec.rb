@@ -5,13 +5,13 @@ require 'rails_helper'
 RSpec.describe BulkCategorizationJob, type: :job, unit: true do
   subject(:job) { described_class.new }
 
-  let(:expense_ids) { [1, 2, 3, 4, 5] }
+  let(:expense_ids) { [ 1, 2, 3, 4, 5 ] }
   let(:category_id) { 10 }
   let(:user_id) { 20 }
   let(:options) { { force: true } }
   let(:category) { double('Category', id: category_id, name: 'Test Category') }
   let(:successful_result) { double('Result', success?: true) }
-  let(:failed_result) { double('Result', success?: false, message: 'Service failed', errors: ['Error 1']) }
+  let(:failed_result) { double('Result', success?: false, message: 'Service failed', errors: [ 'Error 1' ]) }
 
   before do
     # Mock external dependencies
@@ -106,7 +106,7 @@ RSpec.describe BulkCategorizationJob, type: :job, unit: true do
           'failed_bulk_categorization_test-uuid-123',
           {
             expense_ids: expense_ids,
-            errors: ['Error 1'],
+            errors: [ 'Error 1' ],
             timestamp: Time.current
           },
           expires_in: 7.days
@@ -181,8 +181,8 @@ RSpec.describe BulkCategorizationJob, type: :job, unit: true do
   end
 
   describe '#process_batch' do
-    let(:batch_ids) { [1, 2, 3] }
-    
+    let(:batch_ids) { [ 1, 2, 3 ] }
+
     context 'with successful service call' do
       it 'calls BulkCategorization::ApplyService with correct parameters' do
         service_double = double('Service', call: successful_result)
@@ -223,7 +223,7 @@ RSpec.describe BulkCategorizationJob, type: :job, unit: true do
           'failed_bulk_categorization_test-uuid-123',
           {
             expense_ids: batch_ids,
-            errors: ['Error 1'],
+            errors: [ 'Error 1' ],
             timestamp: Time.current
           },
           expires_in: 7.days
@@ -267,7 +267,7 @@ RSpec.describe BulkCategorizationJob, type: :job, unit: true do
   describe '#handle_job_error' do
     let(:test_error) do
       error = StandardError.new('Connection timeout')
-      error.set_backtrace(['line1', 'line2', 'line3', 'line4', 'line5', 'line6'])
+      error.set_backtrace([ 'line1', 'line2', 'line3', 'line4', 'line5', 'line6' ])
       error
     end
 
@@ -282,7 +282,7 @@ RSpec.describe BulkCategorizationJob, type: :job, unit: true do
           user_id: user_id,
           expense_count: expense_ids.count,
           category_id: category_id,
-          backtrace: ['line1', 'line2', 'line3', 'line4', 'line5'],
+          backtrace: [ 'line1', 'line2', 'line3', 'line4', 'line5' ],
           timestamp: '2025-08-30T12:00:00Z'
         }.to_json
       )
@@ -305,8 +305,8 @@ RSpec.describe BulkCategorizationJob, type: :job, unit: true do
   end
 
   describe '#track_failed_batch' do
-    let(:batch_ids) { [1, 2, 3] }
-    let(:result) { double('Result', errors: ['Error 1', 'Error 2']) }
+    let(:batch_ids) { [ 1, 2, 3 ] }
+    let(:result) { double('Result', errors: [ 'Error 1', 'Error 2' ]) }
 
     it 'stores failed batch data in cache' do
       job.send(:track_failed_batch, batch_ids, result)
@@ -315,7 +315,7 @@ RSpec.describe BulkCategorizationJob, type: :job, unit: true do
         'failed_bulk_categorization_test-uuid-123',
         {
           expense_ids: batch_ids,
-          errors: ['Error 1', 'Error 2'],
+          errors: [ 'Error 1', 'Error 2' ],
           timestamp: Time.current
         },
         expires_in: 7.days

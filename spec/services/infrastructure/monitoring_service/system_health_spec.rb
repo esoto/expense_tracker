@@ -95,12 +95,12 @@ RSpec.describe Infrastructure::MonitoringService::SystemHealth, type: :service, 
         # Mock the Redis connection properly
         redis_mock = double("Redis")
         allow(redis_mock).to receive(:ping).and_return("PONG")
-        
+
         cache_mock = double("Cache")
         allow(cache_mock).to receive(:redis).and_return(redis_mock)
         allow(cache_mock).to receive(:clear) # Add clear method for test cleanup
         allow(Rails).to receive(:cache).and_return(cache_mock)
-        
+
         allow(described_class).to receive(:measure_redis_response_time).and_return(3.8)
 
         result = described_class.send(:check_redis)
@@ -116,7 +116,7 @@ RSpec.describe Infrastructure::MonitoringService::SystemHealth, type: :service, 
       it "returns unhealthy status with error message" do
         redis_mock = double("Redis")
         allow(redis_mock).to receive(:ping).and_raise(Redis::CannotConnectError.new("Redis unavailable"))
-        
+
         cache_mock = double("Cache")
         allow(cache_mock).to receive(:redis).and_return(redis_mock)
         allow(cache_mock).to receive(:clear) # Add clear method for test cleanup
@@ -135,7 +135,7 @@ RSpec.describe Infrastructure::MonitoringService::SystemHealth, type: :service, 
       it "returns unhealthy status with error message" do
         redis_mock = double("Redis")
         allow(redis_mock).to receive(:ping).and_raise(Redis::TimeoutError.new("Redis timeout"))
-        
+
         cache_mock = double("Cache")
         allow(cache_mock).to receive(:redis).and_return(redis_mock)
         allow(cache_mock).to receive(:clear) # Add clear method for test cleanup
@@ -497,7 +497,7 @@ RSpec.describe Infrastructure::MonitoringService::SystemHealth, type: :service, 
   describe ".measure_db_response_time" do
     it "measures database response time in milliseconds" do
       connection = mock_database_connection(active: true)
-      
+
       # Mock Time.current to control time measurement
       start_time = current_time
       end_time = current_time + 0.015 # 15ms
@@ -511,7 +511,7 @@ RSpec.describe Infrastructure::MonitoringService::SystemHealth, type: :service, 
 
     it "handles very fast responses" do
       connection = mock_database_connection(active: true)
-      
+
       # Mock Time.current to control time measurement (1ms response)
       start_time = current_time
       end_time = current_time + 0.001
@@ -529,12 +529,12 @@ RSpec.describe Infrastructure::MonitoringService::SystemHealth, type: :service, 
       # Mock the Redis connection properly
       redis_mock = double("Redis")
       allow(redis_mock).to receive(:ping).and_return("PONG")
-      
+
       cache_mock = double("Cache")
       allow(cache_mock).to receive(:redis).and_return(redis_mock)
       allow(cache_mock).to receive(:clear) # Add clear method for test cleanup
       allow(Rails).to receive(:cache).and_return(cache_mock)
-      
+
       # Mock Time.current to control time measurement
       start_time = current_time
       end_time = current_time + 0.0025 # 2.5ms
@@ -550,12 +550,12 @@ RSpec.describe Infrastructure::MonitoringService::SystemHealth, type: :service, 
       # Mock the Redis connection properly
       redis_mock = double("Redis")
       allow(redis_mock).to receive(:ping).and_return("PONG")
-      
+
       cache_mock = double("Cache")
       allow(cache_mock).to receive(:redis).and_return(redis_mock)
       allow(cache_mock).to receive(:clear) # Add clear method for test cleanup
       allow(Rails).to receive(:cache).and_return(cache_mock)
-      
+
       # Mock Time.current to control time measurement (100ms response)
       start_time = current_time
       end_time = current_time + 0.1

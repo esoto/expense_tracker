@@ -20,12 +20,12 @@ module PerformanceBudget
     def enforce!(example, type = :unit)
       return unless enforce_budgets?
       return unless example.execution_result
-      
+
       execution_time = example.execution_result.run_time
       return unless execution_time
-      
+
       budget = budget_for(example, type)
-      
+
       if execution_time > budget
         warn_or_fail(example, execution_time, budget, type)
       end
@@ -46,7 +46,7 @@ module PerformanceBudget
 
     def warn_or_fail(example, execution_time, budget, type)
       message = format_violation_message(example, execution_time, budget, type)
-      
+
       if strict_mode?
         example.pending(message)
         raise RSpec::Expectations::ExpectationNotMetError, message
@@ -61,7 +61,7 @@ module PerformanceBudget
 
     def format_violation_message(example, execution_time, budget, type)
       test_name = example.full_description
-      
+
       <<~MESSAGE
         Test exceeded performance budget!
         Test: #{test_name}
@@ -80,17 +80,17 @@ RSpec.configure do |config|
     # Determine test type from metadata
     type = if example.metadata[:type]
              example.metadata[:type]
-           elsif example.metadata[:unit]
+    elsif example.metadata[:unit]
              :unit
-           elsif example.metadata[:contract]
+    elsif example.metadata[:contract]
              :contract
-           elsif example.metadata[:integration]
+    elsif example.metadata[:integration]
              :integration
-           elsif example.metadata[:system]
+    elsif example.metadata[:system]
              :system
-           else
+    else
              :unit # Default to unit test budget
-           end
+    end
 
     # Run the test
     example.run

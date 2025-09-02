@@ -84,7 +84,7 @@ module EmailProcessingTestHelper
     def attr
       {
         "UID" => @uid,
-        "FLAGS" => [:Seen],
+        "FLAGS" => [ :Seen ],
         "RFC822" => @email_data[:raw_content] || generate_mock_email_content
       }
     end
@@ -106,15 +106,15 @@ module EmailProcessingTestHelper
         date: 1.day.ago,
         body: <<~EMAIL.strip,
           Estimado cliente,
-          
+
           Su transacción ha sido aprobada:
-          
+
           Tarjeta: ****1234
           Comercio: SUPERMERCADO MAS X MENOS
           Monto: ₡25,500.00
           Fecha: 15/08/2025 14:30:00
           Autorización: 123456
-          
+
           Gracias por usar BAC Credomatic.
         EMAIL
         raw_content: nil
@@ -128,14 +128,14 @@ module EmailProcessingTestHelper
         date: 2.days.ago,
         body: <<~EMAIL.strip,
           Hola,
-          
+
           Se realizó una compra con su tarjeta BCR:
-          
+
           Tarjeta terminada en: 5678
           Establecimiento: AUTO MERCADO ESCAZU
           Importe: $45.20
           Fecha y hora: 14/08/2025 16:45
-          
+
           Si no reconoce esta transacción, contacte al BCR.
         EMAIL
         raw_content: nil
@@ -149,15 +149,15 @@ module EmailProcessingTestHelper
         date: 3.days.ago,
         body: <<~EMAIL.strip,
           Dear Customer,
-          
+
           A purchase was made with your Scotiabank card:
-          
+
           Card ending in: 9012
           Merchant: WALMART SUPERCENTER
           Amount: $89.75
           Date: Aug 13, 2025, 19:22
           Reference: TXN789012
-          
+
           Thank you for banking with Scotiabank.
         EMAIL
         raw_content: nil
@@ -171,11 +171,11 @@ module EmailProcessingTestHelper
         date: 1.day.ago,
         body: <<~EMAIL.strip,
           ¡Aprovecha nuestras ofertas especiales!
-          
+
           - 50% descuento en seguros
           - Préstamos con tasa preferencial
           - Nuevas tarjetas de crédito
-          
+
           ¡No te pierdas estas oportunidades!
         EMAIL
         raw_content: nil
@@ -189,12 +189,12 @@ module EmailProcessingTestHelper
         date: 1.day.ago,
         body: <<~EMAIL.strip,
           Welcome to our financial newsletter!
-          
+
           This week's tips:
           1. Save 10% of your income
           2. Review your budget monthly
           3. Consider investment options
-          
+
           Happy saving!
         EMAIL
         raw_content: nil
@@ -211,10 +211,9 @@ module EmailProcessingTestHelper
         "Content-Type: text/plain; charset=UTF-8",
         ""
       ].join("\r\n")
-      
+
       headers + email_data[:body]
     end
-
   end
 
   # Test utilities
@@ -225,11 +224,11 @@ module EmailProcessingTestHelper
   def setup_imap_mock_with_emails(mock_imap, email_fixtures)
     # Configure search results - use various search criteria patterns
     message_ids = (1..email_fixtures.length).to_a
-    
+
     # The real service builds criteria as arrays, so we need to match this format
     # Set a default response for any search criteria to return our message IDs
     allow(mock_imap).to receive(:search).and_return(message_ids)
-    
+
     # Configure fetch results
     fetch_data = {}
     email_fixtures.each_with_index do |fixture, index|
@@ -245,20 +244,20 @@ module EmailProcessingTestHelper
   def stub_processing_dependencies
     # Stub MonitoringService
     allow(Infrastructure::MonitoringService::ErrorTracker).to receive(:report)
-    
+
     # Stub categorization engine
     mock_engine = double("categorization_engine")
     allow(Categorization::Engine).to receive(:create).and_return(mock_engine)
     allow(mock_engine).to receive(:categorize).and_return(
       double(successful?: true, confidence: 0.8, method: "pattern", category: nil)
     )
-    
+
     mock_engine
   end
 
   def create_processed_email(email_account, message_id)
-    FactoryBot.create(:processed_email, 
-      email_account: email_account, 
+    FactoryBot.create(:processed_email,
+      email_account: email_account,
       message_id: message_id,
       processed_at: 1.hour.ago
     )
@@ -268,21 +267,21 @@ module EmailProcessingTestHelper
   def create_isolated_email_account(traits = [], **attributes)
     # Ensure unique email to prevent conflicts
     unique_email = "test_#{SecureRandom.hex(8)}@#{SecureRandom.hex(4)}.com"
-    
+
     # Set minimal default attributes - let traits handle the rest
     default_attributes = {
       email: unique_email
     }
-    
+
     # Only add defaults if not overridden by traits or explicit attributes
     default_attributes[:provider] = "gmail" unless attributes.key?(:provider)
     default_attributes[:bank_name] = "BAC" unless attributes.key?(:bank_name)
-    
+
     # Only set active: true if :inactive trait is NOT present and active is not explicitly set
     if !traits.include?(:inactive) && !attributes.key?(:active)
       default_attributes[:active] = true
     end
-    
+
     # Create with attributes that won't override trait behavior
     final_attributes = attributes.merge(default_attributes.except(*attributes.keys))
     FactoryBot.create(:email_account, *traits, **final_attributes)
@@ -292,7 +291,7 @@ module EmailProcessingTestHelper
   def create_isolated_parsing_rule(bank_name, **attributes)
     # Clean existing rules for this bank to prevent conflicts
     ParsingRule.where(bank_name: bank_name).delete_all
-    
+
     FactoryBot.create(:parsing_rule, bank_name: bank_name, **attributes)
   end
 

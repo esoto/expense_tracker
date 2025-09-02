@@ -39,14 +39,14 @@ RSpec.describe FailedBroadcastRecoveryJob, type: :job, unit: true do
     allow(FailedBroadcastStore).to receive(:ready_for_retry).and_return(scope_mock)
     allow(scope_mock).to receive(:recent_failures).and_return(scope_mock)
     allow(scope_mock).to receive(:limit).with(50).and_return(scope_mock)
-    
+
     # Default to empty collection
     allow(scope_mock).to receive(:count).and_return(0)
     allow(scope_mock).to receive(:find_each)
-    
+
     # Mock cache writes
     allow(cache_mock).to receive(:write)
-    
+
     # Mock sleep to speed up tests
     allow(job).to receive(:sleep)
   end
@@ -96,12 +96,12 @@ RSpec.describe FailedBroadcastRecoveryJob, type: :job, unit: true do
     context 'when broadcasts are successfully recovered' do
       let(:broadcast1) { instance_double(FailedBroadcastStore, id: 1, channel_name: 'TestChannel', target_type: 'User', target_id: 1) }
       let(:broadcast2) { instance_double(FailedBroadcastStore, id: 2, channel_name: 'TestChannel', target_type: 'User', target_id: 2) }
-      let(:broadcasts) { [broadcast1, broadcast2] }
+      let(:broadcasts) { [ broadcast1, broadcast2 ] }
 
       before do
         allow(scope_mock).to receive(:count).and_return(2)
         allow(scope_mock).to receive(:find_each).and_yield(broadcast1).and_yield(broadcast2)
-        
+
         # Mock successful recovery
         broadcasts.each do |broadcast|
           allow(broadcast).to receive(:target_exists?).and_return(true)
@@ -145,7 +145,7 @@ RSpec.describe FailedBroadcastRecoveryJob, type: :job, unit: true do
       before do
         allow(scope_mock).to receive(:count).and_return(1)
         allow(scope_mock).to receive(:find_each).and_yield(broadcast)
-        
+
         # Target doesn't exist
         allow(broadcast).to receive(:target_exists?).and_return(false)
         allow(broadcast).to receive(:update!)
@@ -187,7 +187,7 @@ RSpec.describe FailedBroadcastRecoveryJob, type: :job, unit: true do
       before do
         allow(scope_mock).to receive(:count).and_return(1)
         allow(scope_mock).to receive(:find_each).and_yield(broadcast)
-        
+
         allow(broadcast).to receive(:target_exists?).and_return(true)
         allow(broadcast).to receive(:retry_broadcast!).with(manual: false).and_return(false)
         allow(broadcast).to receive(:update!)
@@ -219,7 +219,7 @@ RSpec.describe FailedBroadcastRecoveryJob, type: :job, unit: true do
       before do
         allow(scope_mock).to receive(:count).and_return(1)
         allow(scope_mock).to receive(:find_each).and_yield(broadcast)
-        
+
         allow(broadcast).to receive(:target_exists?).and_return(true)
         allow(broadcast).to receive(:retry_broadcast!).and_raise(error)
         allow(broadcast).to receive(:update!)
@@ -273,19 +273,19 @@ RSpec.describe FailedBroadcastRecoveryJob, type: :job, unit: true do
           .and_yield(skip_broadcast)
           .and_yield(fail_broadcast)
           .and_yield(error_broadcast)
-        
+
         # Success case
         allow(success_broadcast).to receive(:target_exists?).and_return(true)
         allow(success_broadcast).to receive(:retry_broadcast!).with(manual: false).and_return(true)
-        
+
         # Skip case
         allow(skip_broadcast).to receive(:target_exists?).and_return(false)
         allow(skip_broadcast).to receive(:update!)
-        
+
         # Failure case
         allow(fail_broadcast).to receive(:target_exists?).and_return(true)
         allow(fail_broadcast).to receive(:retry_broadcast!).with(manual: false).and_return(false)
-        
+
         # Error case
         allow(error_broadcast).to receive(:target_exists?).and_return(true)
         allow(error_broadcast).to receive(:retry_broadcast!).and_raise(StandardError, 'Unexpected error')
@@ -317,12 +317,12 @@ RSpec.describe FailedBroadcastRecoveryJob, type: :job, unit: true do
 
       before do
         allow(scope_mock).to receive(:count).and_return(11)
-        
+
         # Set up find_each to yield all broadcasts
         allow(scope_mock).to receive(:find_each) do |&block|
           broadcasts.each(&block)
         end
-        
+
         # All broadcasts succeed
         broadcasts.each do |broadcast|
           allow(broadcast).to receive(:target_exists?).and_return(true)
@@ -398,13 +398,13 @@ RSpec.describe FailedBroadcastRecoveryJob, type: :job, unit: true do
       before do
         allow(scope_mock).to receive(:count).and_return(2)
         allow(scope_mock).to receive(:find_each).and_yield(error_broadcast).and_yield(success_broadcast)
-        
+
         # First broadcast throws error during retry
         allow(error_broadcast).to receive(:target_exists?).and_return(true)
         allow(error_broadcast).to receive(:retry_broadcast!).and_raise(RuntimeError, 'Unexpected error')
         allow(error_broadcast).to receive(:update!)
         allow(FailedBroadcastStore).to receive(:classify_error).and_return('unknown')
-        
+
         # Second broadcast processes normally
         allow(success_broadcast).to receive(:target_exists?).and_return(true)
         allow(success_broadcast).to receive(:retry_broadcast!).with(manual: false).and_return(true)
@@ -412,17 +412,17 @@ RSpec.describe FailedBroadcastRecoveryJob, type: :job, unit: true do
 
       it 'continues processing remaining broadcasts after errors' do
         result = job.perform
-        
+
         # First broadcast fails due to error, second succeeds
         expect(result[:attempted]).to eq(2)
         expect(result[:successful]).to eq(1)
         expect(result[:failed]).to eq(1)
         expect(result[:skipped]).to eq(0)
-        
+
         # Error should be logged for the failed one
         expect(Rails.logger).to have_received(:error)
           .with('[FAILED_BROADCAST_RECOVERY] Error recovering broadcast 1: Unexpected error')
-          
+
         # Success should be logged for the second one
         expect(Rails.logger).to have_received(:info)
           .with('[FAILED_BROADCAST_RECOVERY] Successfully recovered: TestChannel -> User#1000')
@@ -435,7 +435,7 @@ RSpec.describe FailedBroadcastRecoveryJob, type: :job, unit: true do
       before do
         allow(scope_mock).to receive(:count).and_return(1)
         allow(scope_mock).to receive(:find_each).and_yield(broadcast)
-        
+
         allow(broadcast).to receive(:target_exists?).and_raise(NameError, 'uninitialized constant')
         allow(broadcast).to receive(:update!)
         allow(FailedBroadcastStore).to receive(:classify_error).and_return('unknown')
@@ -486,20 +486,20 @@ RSpec.describe FailedBroadcastRecoveryJob, type: :job, unit: true do
 
     context 'with connection errors' do
       [
-        ['Connection refused', Redis::CannotConnectError, 'connection_timeout'],
-        ['Net::ReadTimeout with "Connection timeout"', Net::ReadTimeout, 'connection_timeout'],
-        ['Connection refused - Socket error', Errno::ECONNREFUSED, 'connection_timeout']
+        [ 'Connection refused', Redis::CannotConnectError, 'connection_timeout' ],
+        [ 'Net::ReadTimeout with "Connection timeout"', Net::ReadTimeout, 'connection_timeout' ],
+        [ 'Connection refused - Socket error', Errno::ECONNREFUSED, 'connection_timeout' ]
       ].each do |expected_message, error_class, expected_type|
         it "classifies #{error_class} as #{expected_type}" do
           # Create the error with appropriate message based on the class
           error = if error_class == Net::ReadTimeout
                     error_class.new('Connection timeout')
-                  elsif error_class == Errno::ECONNREFUSED
+          elsif error_class == Errno::ECONNREFUSED
                     error_class.new('Socket error')
-                  else
+          else
                     error_class.new('Connection refused')
-                  end
-          
+          end
+
           allow(broadcast).to receive(:retry_broadcast!).and_raise(error)
           allow(FailedBroadcastStore).to receive(:classify_error).with(error).and_return(expected_type)
 
@@ -749,10 +749,10 @@ RSpec.describe FailedBroadcastRecoveryJob, type: :job, unit: true do
         # First allow normal behavior for find_each
         allow(scope_mock).to receive(:count).and_return(0)
         allow(scope_mock).to receive(:find_each)
-        
+
         # Then mock cache write to fail
         allow(cache_mock).to receive(:write).and_raise(Redis::CannotConnectError, 'Cache unavailable')
-        
+
         # The job should log the error
         allow(Rails.logger).to receive(:error)
       end
@@ -775,7 +775,7 @@ RSpec.describe FailedBroadcastRecoveryJob, type: :job, unit: true do
 
       it 'logs the cache write failure' do
         job.perform
-        
+
         expect(Rails.logger).to have_received(:error)
           .with('[FAILED_BROADCAST_RECOVERY] Failed to record metrics: Cache unavailable')
       end

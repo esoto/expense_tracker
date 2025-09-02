@@ -63,7 +63,7 @@ module PerformanceMonitor
           test_type: test_type,
           severity: :error
         }
-        
+
         # Log error to console (disabled for cleaner output)
         # puts format_slow_test_message(example, duration, threshold, :error)
       elsif duration > warning_threshold
@@ -76,7 +76,7 @@ module PerformanceMonitor
           test_type: test_type,
           severity: :warning
         }
-        
+
         # Log warning to console (only in verbose mode)
         if ENV['VERBOSE_PERFORMANCE']
           puts format_slow_test_message(example, duration, warning_threshold, :warning)
@@ -102,11 +102,11 @@ module PerformanceMonitor
       if @slow_tests.any?
         puts "\nSlow Tests (sorted by duration):"
         puts "-" * 80
-        
+
         @slow_tests.sort_by { |t| -t[:duration] }.each_with_index do |test, index|
           severity_color = test[:severity] == :error ? "\e[31m" : "\e[33m"
           reset_color = "\e[0m"
-          
+
           puts "#{severity_color}#{index + 1}. [#{test[:test_type].to_s.upcase}] #{test[:description]}#{reset_color}"
           puts "   Duration: #{format_duration(test[:duration])} (threshold: #{format_duration(test[:threshold])})"
           puts "   Location: #{test[:location]}"
@@ -117,12 +117,12 @@ module PerformanceMonitor
       # Performance grades
       grade = calculate_performance_grade
       puts "\nPerformance Grade: #{grade[:letter]} (#{grade[:description]})"
-      
+
       if grade[:recommendations].any?
         puts "\nRecommendations:"
         grade[:recommendations].each { |rec| puts "  • #{rec}" }
       end
-      
+
       puts "=" * 80
     end
 
@@ -130,12 +130,12 @@ module PerformanceMonitor
 
     def determine_test_type(example)
       metadata = example.metadata
-      
+
       # Check explicit metadata
       return :unit if metadata[:unit]
       return :integration if metadata[:integration]
       return :system if metadata[:system] || metadata[:type] == :system
-      
+
       # Infer from type
       case metadata[:type]
       when :model, :service, :job
@@ -173,7 +173,7 @@ module PerformanceMonitor
       severity_text = severity == :error ? "SLOW TEST" : "WARNING"
       severity_color = severity == :error ? "\e[31m" : "\e[33m"
       reset_color = "\e[0m"
-      
+
       "#{severity_color}[#{severity_text}] #{example.full_description} - #{format_duration(duration)} (max: #{format_duration(threshold)})#{reset_color}"
     end
 
@@ -192,7 +192,7 @@ module PerformanceMonitor
     def calculate_performance_grade
       slow_ratio = @performance_report[:slow_tests].to_f / @performance_report[:total_tests]
       warn_ratio = @performance_report[:warned_tests].to_f / @performance_report[:total_tests]
-      
+
       grade = if slow_ratio == 0 && warn_ratio < 0.05
         { letter: "A+", description: "Excellent - All tests are blazing fast!" }
       elsif slow_ratio < 0.01 && warn_ratio < 0.1
@@ -206,22 +206,22 @@ module PerformanceMonitor
       else
         { letter: "F", description: "Critical - Immediate optimization required" }
       end
-      
+
       # Add recommendations
       grade[:recommendations] = []
-      
+
       if @slow_tests.any? { |t| t[:test_type] == :unit && t[:duration] > 0.05 }
         grade[:recommendations] << "Unit tests should not use real sleep/IO - use mocks/stubs"
       end
-      
+
       if @slow_tests.any? { |t| t[:duration] > 5.0 }
         grade[:recommendations] << "Tests over 5s should be refactored or split"
       end
-      
+
       if @performance_report[:total_time] > 60
         grade[:recommendations] << "Consider parallelizing test suite execution"
       end
-      
+
       grade
     end
   end
@@ -235,7 +235,7 @@ RSpec.configure do |config|
   # Record test performance
   config.around(:each) do |example|
     start_time = Time.current
-    
+
     begin
       example.run
     ensure
@@ -243,12 +243,12 @@ RSpec.configure do |config|
       PerformanceMonitor.record_test(example, duration) unless example.pending?
     end
   end
-  
+
   # Print summary after suite
   config.after(:suite) do
     PerformanceMonitor.print_summary
   end
-  
+
   # Reset before suite
   config.before(:suite) do
     PerformanceMonitor.reset!

@@ -60,7 +60,7 @@ module IntegrationTestFixes
 
     def categorize(expense)
       @categorization_calls << expense
-      
+
       if @should_fail
         raise StandardError, "Categorization engine error"
       end
@@ -99,7 +99,7 @@ module IntegrationTestFixes
 
       # Ensure only one active rule per bank
       ParsingRule.where(bank_name: bank_name).where.not(id: ParsingRule.where(bank_name: bank_name).first&.id).destroy_all
-      
+
       # Create or activate the rule for this bank
       rule = ParsingRule.find_or_create_by(bank_name: bank_name) do |r|
         r.pattern_type = "transaction"
@@ -134,7 +134,7 @@ module IntegrationTestFixes
     def self.create_date_ranged_fixtures(count: 5, start_date: 2.weeks.ago, end_date: Date.current)
       fixtures = []
       date_interval = (end_date - start_date) / count
-      
+
       count.times do |i|
         email_date = start_date + (date_interval * i)
         fixtures << create_email_fixture(
@@ -144,7 +144,7 @@ module IntegrationTestFixes
           merchant: "Merchant #{i + 1}"
         )
       end
-      
+
       fixtures
     end
 
@@ -164,12 +164,12 @@ module IntegrationTestFixes
         To: user@example.com
         Subject: #{subject}
         Date: #{date.rfc2822}
-        
+
         Transaction notification:
         Merchant: #{merchant}
         Amount: $#{amount}
         Date: #{date.strftime('%Y-%m-%d')}
-        
+
         Thank you for using our services.
       EMAIL
     end
@@ -199,7 +199,7 @@ module IntegrationTestFixes
     def self.simulate_partial_batch_failure(mock_imap, success_count: 2, failure_count: 1)
       total_emails = success_count + failure_count
       email_fixtures = []
-      
+
       # Create successful emails
       success_count.times do |i|
         email_fixtures << EmailFixtureManager.create_email_fixture(
@@ -209,7 +209,7 @@ module IntegrationTestFixes
           merchant: "Success Merchant #{i + 1}"
         )
       end
-      
+
       # Create emails that will cause failures
       failure_count.times do |i|
         email_fixtures << {
@@ -217,14 +217,14 @@ module IntegrationTestFixes
           should_fail: true
         }
       end
-      
+
       setup_mock_imap_with_mixed_results(mock_imap, email_fixtures)
     end
 
     def self.setup_mock_imap_with_mixed_results(mock_imap, fixtures)
       message_ids = (1..fixtures.length).to_a
       allow(mock_imap).to receive(:search).and_return(message_ids)
-      
+
       fetch_data = {}
       fixtures.each_with_index do |fixture, index|
         uid = index + 1
@@ -235,7 +235,7 @@ module IntegrationTestFixes
           fetch_data[uid] = { raw_content: fixture[:raw_content] }
         end
       end
-      
+
       mock_imap.configure_fetch_results(message_ids, fetch_data)
     end
   end
@@ -246,14 +246,14 @@ module IntegrationTestFixes
       # Create proper test doubles for monitoring
       error_tracker = class_double("Infrastructure::MonitoringService::ErrorTracker").as_stubbed_const
       allow(error_tracker).to receive(:report)
-      
+
       metrics_tracker = class_double("Infrastructure::MonitoringService::MetricsTracker").as_stubbed_const
       allow(metrics_tracker).to receive(:record)
       allow(metrics_tracker).to receive(:increment)
-      
+
       health_checker = class_double("Infrastructure::MonitoringService::HealthChecker").as_stubbed_const
       allow(health_checker).to receive(:check)
-      
+
       {
         error_tracker: error_tracker,
         metrics_tracker: metrics_tracker,

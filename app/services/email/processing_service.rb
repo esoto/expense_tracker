@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'set'
+require "set"
 
 module Email
   # ProcessingService consolidates email fetching, parsing, and processing
@@ -439,7 +439,6 @@ module Email
       end
 
       def mark_email_processed(email)
-
         ProcessedEmail.create!(
           message_id: email[:message_id],
           email_account: email_account,
@@ -530,7 +529,7 @@ module Email
         def parse_with_regex
           expenses = []
           text = email_data[:text_body] || email_data[:body] || ""
-          
+
           # Ensure text is UTF-8 to avoid encoding issues with regex
           if text.respond_to?(:force_encoding)
             text = text.dup
@@ -560,27 +559,27 @@ module Email
               amount_text = match[0]
               # Skip if the amount text contains negative indicators
               next if amount_text.to_s =~ /^[-−]/  # Matches dash or minus sign at start
-              
+
               # Skip if this looks like an authorization/reference number (6+ digits without decimals)
               next if amount_text =~ /^\d{6,}$/ && !amount_text.include?(".")
-              
+
               # Skip if the surrounding context suggests this is not a transaction amount
               amount_index = text.index(amount_text)
               if amount_index
                 # Look at broader context around the amount
-                context_start = [amount_index - 50, 0].max
-                context_end = [amount_index + amount_text.length + 50, text.length].min
+                context_start = [ amount_index - 50, 0 ].max
+                context_end = [ amount_index + amount_text.length + 50, text.length ].min
                 context = text[context_start...context_end]
-                
+
                 # Skip if this is likely a reference number or authorization code
                 next if context&.match?(/(?:autorizaci[oó]n|authorization|reference|ref|código|code|número|number|tarjeta.*\*{4}|card.*\*{4})/i)
                 # Skip refunds
                 next if context&.match?(/refund|reembolso|devoluci[oó]n|-[₡\$][\d,]+|fee.*\$0\.00/i)
               end
-              
+
               amount = parse_amount(amount_text)
               next unless amount > 0
-              
+
               # Skip if we've already found this amount (avoid duplicates)
               amount_key = amount.to_f.round(2)
               next if found_amounts.include?(amount_key)
@@ -604,24 +603,24 @@ module Email
           # Return all valid expenses found
           expenses
         end
-        
+
         def detect_currency_from_text(text, amount_index = nil)
           # Check around the amount for currency indicators
           if amount_index
-            context_start = [amount_index - 30, 0].max
-            context_end = [amount_index + 30, text.length].min
+            context_start = [ amount_index - 30, 0 ].max
+            context_end = [ amount_index + 30, text.length ].min
             context = text[context_start...context_end]
-            
+
             return "crc" if context =~ /₡|colones|CRC/i
             return "usd" if context =~ /\$|USD|dollars?/i
             return "eur" if context =~ /€|EUR|euros?/i
           end
-          
+
           # Check the entire text as fallback
           return "crc" if text =~ /₡|colones|CRC/i
           return "usd" if text =~ /\$|USD|dollars?/i
           return "eur" if text =~ /€|EUR|euros?/i
-          
+
           # Default based on email account bank
           case email_account.bank_name
           when "BAC", "BCR", "Banco Nacional"

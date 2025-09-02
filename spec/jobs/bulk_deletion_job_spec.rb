@@ -18,10 +18,10 @@ RSpec.describe BulkDeletionJob, type: :job, unit: true do
     # Stub constants for unit test environment
     user_class = double('UserClass')
     stub_const('User', user_class)
-    
+
     deletion_service_class = double('DeletionServiceClass')
     stub_const('BulkOperations::DeletionService', deletion_service_class)
-    
+
     # Mock inherited behavior from BaseJob
     allow(User).to receive(:find_by).with(id: user.id).and_return(user)
     allow(job).to receive(:track_progress)
@@ -53,7 +53,7 @@ RSpec.describe BulkDeletionJob, type: :job, unit: true do
         allow(BulkOperations::DeletionService).to receive(:new)
           .with(expense_ids: expense_ids[100...120], user: user, options: merged_options)
           .and_return(batch3_service)
-        
+
         # Mock the main service call at the end
         allow(BulkOperations::DeletionService).to receive(:new)
           .with(expense_ids: expense_ids, user: user, options: merged_options)
@@ -79,7 +79,7 @@ RSpec.describe BulkDeletionJob, type: :job, unit: true do
 
       it 'calls sleep to throttle large jobs' do
         job.perform(expense_ids: expense_ids, user_id: user.id, options: options)
-        
+
         expect(job).to have_received(:sleep).with(0.1).exactly(3).times
       end
     end
@@ -89,7 +89,7 @@ RSpec.describe BulkDeletionJob, type: :job, unit: true do
 
       it 'processes all expenses in a single batch without sleep' do
         single_batch_service = double('SingleBatchService', call: { success: true })
-        
+
         allow(BulkOperations::DeletionService).to receive(:new)
           .with(expense_ids: expense_ids, user: user, options: merged_options)
           .and_return(single_batch_service)
@@ -106,7 +106,7 @@ RSpec.describe BulkDeletionJob, type: :job, unit: true do
 
       it 'completes successfully without processing batches' do
         empty_service = double('EmptyService', call: { success: true, message: 'No expenses to delete' })
-        
+
         allow(BulkOperations::DeletionService).to receive(:new)
           .with(expense_ids: [], user: user, options: merged_options)
           .and_return(empty_service)
@@ -151,8 +151,8 @@ RSpec.describe BulkDeletionJob, type: :job, unit: true do
   end
 
   describe '#execute_operation' do
-    let(:expense_ids) { [1, 2, 3] }
-    
+    let(:expense_ids) { [ 1, 2, 3 ] }
+
     before do
       job.instance_variable_set(:@expense_ids, expense_ids)
       job.instance_variable_set(:@user, user)
@@ -190,7 +190,7 @@ RSpec.describe BulkDeletionJob, type: :job, unit: true do
 
       it 'calls sleep after each batch for large jobs' do
         allow(BulkOperations::DeletionService).to receive(:new).and_return(batch_service, main_service)
-        
+
         job.send(:execute_operation)
 
         expect(job).to have_received(:sleep).with(0.1).exactly(3).times

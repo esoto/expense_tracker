@@ -19,7 +19,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
   let(:email_account) { create(:email_account) }
   let(:sync_session) { create(:sync_session) }
   let(:category) { create(:category) }
-  
+
   let(:existing_expense) do
     create(:expense,
       amount: 100.00,
@@ -31,7 +31,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
       email_account: email_account
     )
   end
-  
+
   let(:new_expense) do
     create(:expense,
       amount: 100.00,
@@ -43,7 +43,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
       email_account: email_account
     )
   end
-  
+
   let(:sync_conflict) do
     create(:sync_conflict,
       existing_expense: existing_expense,
@@ -54,7 +54,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
       similarity_score: 95.0
     )
   end
-  
+
   let(:service) { described_class.new(sync_conflict) }
 
   describe "#initialize" do
@@ -90,10 +90,10 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
             status: :pending
           )
           test_service = described_class.new(conflict)
-          
+
           # For merged action, provide merge_fields
           options = action == "merged" ? { merge_fields: { description: "new" } } : {}
-          
+
           expect(test_service.resolve(action, options)).to be_truthy
         end
       end
@@ -114,7 +114,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
       it "resolves the conflict with keep_existing action" do
         service.resolve("keep_existing", { resolved_by: "user@example.com" })
         sync_conflict.reload
-        
+
         expect(sync_conflict.status).to eq("resolved")
         expect(sync_conflict.resolution_action).to eq("keep_existing")
         expect(sync_conflict.resolved_by).to eq("user@example.com")
@@ -132,7 +132,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
         expect(Rails.cache).to receive(:increment).with("conflict_resolutions:keep_existing:count")
         expect(Rails.cache).to receive(:increment).with("conflict_resolutions:total:count")
         expect(Rails.cache).to receive(:increment).with("conflict_resolutions:manual:count")
-        
+
         service.resolve("keep_existing")
       end
 
@@ -144,7 +144,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
           status: :pending
         )
         test_service = described_class.new(conflict_without_new)
-        
+
         # Service handles nil new_expense gracefully by skipping the update
         result = test_service.resolve("keep_existing")
         expect(result).to be_truthy
@@ -154,11 +154,11 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
 
       it "wraps resolution in transaction" do
         allow(sync_conflict).to receive(:resolve!).and_raise(ActiveRecord::RecordInvalid)
-        
+
         expect {
           service.resolve("keep_existing")
         }.not_to change { new_expense.reload.status }
-        
+
         expect(service.errors).to include(match(/Resolution failed/))
       end
     end
@@ -184,7 +184,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
       it "resolves the conflict with keep_new action" do
         service.resolve("keep_new", { resolved_by: "system_auto" })
         sync_conflict.reload
-        
+
         expect(sync_conflict.status).to eq("resolved")
         expect(sync_conflict.resolution_action).to eq("keep_new")
         expect(sync_conflict.resolved_by).to eq("system_auto")
@@ -194,7 +194,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
         expect(Rails.cache).to receive(:increment).with("conflict_resolutions:keep_new:count")
         expect(Rails.cache).to receive(:increment).with("conflict_resolutions:total:count")
         expect(Rails.cache).to receive(:increment).with("conflict_resolutions:auto:count")
-        
+
         service.resolve("keep_new", { resolved_by: "system_auto" })
       end
 
@@ -206,7 +206,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
           status: :pending
         )
         test_service = described_class.new(conflict_without_new)
-        
+
         # Service handles nil new_expense gracefully by skipping the new_expense update
         result = test_service.resolve("keep_new")
         expect(result).to be_truthy
@@ -218,13 +218,13 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
       it "rolls back transaction on error" do
         # Mock sync_conflict.resolve! to raise error after expense updates
         allow(sync_conflict).to receive(:resolve!).and_raise(ActiveRecord::RecordInvalid.new(sync_conflict))
-        
+
         initial_existing_status = existing_expense.status
         initial_new_status = new_expense.status
-        
+
         result = service.resolve("keep_new")
         expect(result).to be_falsey
-        
+
         # Statuses should be rolled back
         expect(existing_expense.reload.status).to eq(initial_existing_status)
         expect(new_expense.reload.status).to eq(initial_new_status)
@@ -244,14 +244,14 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
         expect {
           service.resolve("keep_both")
         }.to change { new_expense.reload.status }.from("pending").to("processed")
-        
+
         expect(new_expense.notes).to eq("Mantenido como gasto separado")
       end
 
       it "resolves the conflict with keep_both action" do
         service.resolve("keep_both")
         sync_conflict.reload
-        
+
         expect(sync_conflict.status).to eq("resolved")
         expect(sync_conflict.resolution_action).to eq("keep_both")
       end
@@ -264,7 +264,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
           status: :pending
         )
         test_service = described_class.new(conflict_without_new)
-        
+
         # Service handles nil new_expense gracefully by skipping the new_expense update
         result = test_service.resolve("keep_both")
         expect(result).to be_truthy
@@ -294,9 +294,9 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
         original_amount = existing_expense.amount
         new_description = new_expense.description
         new_merchant = new_expense.merchant_name
-        
+
         service.resolve("merged", { merge_fields: merge_fields })
-        
+
         existing_expense.reload
         expect(existing_expense.description).to eq(new_description)
         expect(existing_expense.merchant_name).to eq(new_merchant)
@@ -305,7 +305,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
 
       it "marks new expense as duplicate with merge note" do
         service.resolve("merged", { merge_fields: merge_fields })
-        
+
         new_expense.reload
         expect(new_expense.status).to eq("duplicate")
         expect(new_expense.notes).to eq("Fusionado con gasto ##{existing_expense.id}")
@@ -313,7 +313,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
 
       it "stores merge_fields in resolution_data" do
         service.resolve("merged", { merge_fields: merge_fields })
-        
+
         sync_conflict.reload
         # Resolution data is stored with string keys
         expected_data = {
@@ -334,29 +334,29 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
           status: :pending
         )
         test_service = described_class.new(conflict_without_new)
-        
+
         # The service has a bug where it returns true even when merge fails
         # This test documents the actual behavior
         result = test_service.resolve("merged", { merge_fields: merge_fields })
         expect(result).to be_truthy # Bug: should be falsey
-        
+
         # However, the conflict should remain unresolved
         expect(conflict_without_new.reload.status).to eq("pending")
       end
 
       it "ignores invalid merge fields" do
         invalid_merge = { invalid_field: "new", description: "new" }
-        
+
         service.resolve("merged", { merge_fields: invalid_merge })
         existing_expense.reload
-        
+
         expect(existing_expense.description).to eq(new_expense.description)
         # invalid_field should be ignored, no error raised
       end
 
       it "handles empty merge_fields" do
         service.resolve("merged", { merge_fields: {} })
-        
+
         # Should still mark as resolved even with no fields to merge
         expect(sync_conflict.reload.status).to eq("resolved")
         expect(new_expense.reload.status).to eq("duplicate")
@@ -366,7 +366,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
         expect(Rails.cache).to receive(:increment).with("conflict_resolutions:merged:count")
         expect(Rails.cache).to receive(:increment).with("conflict_resolutions:total:count")
         expect(Rails.cache).to receive(:increment).with("conflict_resolutions:manual:count")
-        
+
         service.resolve("merged", { merge_fields: merge_fields })
       end
     end
@@ -381,7 +381,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
 
       it "applies custom updates to existing expense" do
         result = service.resolve("custom", { custom_data: { existing_expense: { description: "Custom existing description" } } })
-        
+
         expect(result).to be_truthy
         existing_expense.reload
         expect(existing_expense.description).to eq("Custom existing description")
@@ -389,7 +389,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
 
       it "applies custom updates to new expense" do
         result = service.resolve("custom", { custom_data: { new_expense: { description: "Custom new description" } } })
-        
+
         expect(result).to be_truthy
         new_expense.reload
         expect(new_expense.description).to eq("Custom new description")
@@ -403,9 +403,9 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
 
       it "handles partial custom_data" do
         partial_data = { existing_expense: { description: "Only existing updated" } }
-        
+
         result = service.resolve("custom", { custom_data: partial_data })
-        
+
         expect(result).to be_truthy
         expect(existing_expense.reload.description).to eq("Only existing updated")
         expect(new_expense.reload.description).to eq("New purchase") # unchanged
@@ -419,7 +419,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
           status: :pending
         )
         test_service = described_class.new(conflict_without_new)
-        
+
         result = test_service.resolve("custom", { custom_data: custom_data })
         expect(result).to be_truthy
         expect(existing_expense.reload.description).to eq("Custom existing description")
@@ -429,7 +429,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
         # Use simpler custom data that works
         simple_data = { existing_expense: { description: "Updated" } }
         result = service.resolve("custom", { custom_data: simple_data })
-        
+
         expect(result).to be_truthy
         # Resolution data is stored with string keys
         expect(sync_conflict.reload.resolution_data).to eq({ "existing_expense" => { "description" => "Updated" } })
@@ -437,7 +437,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
 
       it "rolls back on validation error" do
         invalid_data = { existing_expense: { amount: -100 } }
-        
+
         result = service.resolve("custom", { custom_data: invalid_data })
         expect(result).to be_falsey
         expect(service.errors.first).to match(/Resolution failed/)
@@ -448,11 +448,11 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
     context "error handling" do
       it "catches and logs exceptions" do
         allow(sync_conflict).to receive(:resolve!).and_raise(StandardError, "Test error")
-        
+
         expect(Rails.logger).to receive(:error).with(
           "[ConflictResolution] Failed to resolve conflict ##{sync_conflict.id}: Test error"
         )
-        
+
         result = service.resolve("keep_existing")
         expect(result).to be_falsey
         expect(service.errors).to include("Resolution failed: Test error")
@@ -460,10 +460,10 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
 
       it "maintains transaction integrity on error" do
         allow(new_expense).to receive(:update!).and_raise(ActiveRecord::RecordInvalid)
-        
+
         original_status = sync_conflict.status
         result = service.resolve("keep_existing")
-        
+
         expect(result).to be_falsey
         expect(sync_conflict.reload.status).to eq(original_status)
       end
@@ -474,12 +474,12 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
     let(:conflict1) { create(:sync_conflict, existing_expense: existing_expense, new_expense: new_expense, sync_session: sync_session, status: :pending) }
     let(:conflict2) { create(:sync_conflict, existing_expense: create(:expense), new_expense: create(:expense), sync_session: sync_session, status: :pending) }
     let(:conflict3) { create(:sync_conflict, existing_expense: create(:expense), new_expense: create(:expense), sync_session: sync_session, status: :resolved) }
-    
-    let(:conflict_ids) { [conflict1.id, conflict2.id, conflict3.id] }
+
+    let(:conflict_ids) { [ conflict1.id, conflict2.id, conflict3.id ] }
 
     it "resolves only pending conflicts" do
       result = service.bulk_resolve(conflict_ids, "keep_existing")
-      
+
       expect(result[:resolved_count]).to eq(2)
       expect(conflict1.reload.status).to eq("resolved")
       expect(conflict2.reload.status).to eq("resolved")
@@ -488,7 +488,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
 
     it "returns summary of bulk resolution" do
       result = service.bulk_resolve(conflict_ids, "keep_existing")
-      
+
       expect(result).to include(
         resolved_count: 2,
         failed_count: 0,
@@ -507,9 +507,9 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
           true
         end
       end
-      
-      result = service.bulk_resolve([conflict1.id, conflict2.id], "keep_existing")
-      
+
+      result = service.bulk_resolve([ conflict1.id, conflict2.id ], "keep_existing")
+
       expect(result[:resolved_count]).to eq(1)
       expect(result[:failed_count]).to eq(1)
       expect(result[:failed_conflicts]).to have(1).item
@@ -524,13 +524,13 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
         sync_session: sync_session,
         status: :pending
       )
-      
+
       # Mock a validation error during resolution
       allow_any_instance_of(SyncConflict).to receive(:resolve!)
         .and_raise(ActiveRecord::RecordInvalid.new(existing_expense))
-      
-      result = service.bulk_resolve([invalid_conflict.id], "keep_existing")
-      
+
+      result = service.bulk_resolve([ invalid_conflict.id ], "keep_existing")
+
       expect(result[:failed_count]).to eq(1)
       expect(result[:failed_conflicts]).to have(1).item
       expect(result[:failed_conflicts].first[:id]).to eq(invalid_conflict.id)
@@ -540,7 +540,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
 
     it "handles empty conflict_ids array" do
       result = service.bulk_resolve([], "keep_existing")
-      
+
       expect(result).to eq(
         resolved_count: 0,
         failed_count: 0,
@@ -549,8 +549,8 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
     end
 
     it "filters non-existent conflict IDs" do
-      result = service.bulk_resolve([999999], "keep_existing")
-      
+      result = service.bulk_resolve([ 999999 ], "keep_existing")
+
       expect(result[:resolved_count]).to eq(0)
       expect(result[:failed_count]).to eq(0)
     end
@@ -558,11 +558,11 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
     it "passes options to individual resolutions" do
       # Use custom action which works
       result = service.bulk_resolve(
-        [conflict1.id],
+        [ conflict1.id ],
         "custom",
         { custom_data: { existing_expense: { description: "Bulk updated" } }, resolved_by: "bulk_user" }
       )
-      
+
       expect(result[:resolved_count]).to eq(1)
       expect(conflict1.reload.resolved_by).to eq("bulk_user")
     end
@@ -584,7 +584,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
       it "clears resolution data" do
         service.undo_resolution
         sync_conflict.reload
-        
+
         expect(sync_conflict.resolution_action).to be_nil
         expect(sync_conflict.resolved_at).to be_nil
         expect(sync_conflict.resolution_data).to eq({})
@@ -614,7 +614,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
 
       it "catches and logs undo errors" do
         allow(sync_conflict).to receive(:undo_last_resolution!).and_raise(StandardError, "Undo failed")
-        
+
         result = service.undo_resolution
         expect(result).to be_falsey
         expect(service.errors).to include("Failed to undo resolution: Undo failed")
@@ -633,7 +633,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
 
     it "returns merged attributes preview" do
       preview = service.preview_merge(merge_fields)
-      
+
       expect(preview["description"]).to eq(new_expense.description)
       expect(preview["amount"]).to eq(new_expense.amount)
       expect(preview["merchant_name"]).to eq(existing_expense.merchant_name)
@@ -641,7 +641,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
 
     it "preserves non-merged fields from existing expense" do
       preview = service.preview_merge(merge_fields)
-      
+
       expect(preview["transaction_date"]).to eq(existing_expense.transaction_date)
       expect(preview["category_id"]).to eq(existing_expense.category_id)
       expect(preview["email_account_id"]).to eq(existing_expense.email_account_id)
@@ -654,14 +654,14 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
         sync_session: sync_session
       )
       test_service = described_class.new(conflict_without_new)
-      
+
       expect(test_service.preview_merge(merge_fields)).to be_nil
     end
 
     it "ignores invalid field names" do
       invalid_fields = { "nonexistent_field" => "new", "description" => "new" }
       preview = service.preview_merge(invalid_fields)
-      
+
       expect(preview["description"]).to eq(new_expense.description)
       # Should not raise error for nonexistent_field
     end
@@ -672,9 +672,9 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
         "amount" => "existing",
         "merchant_name" => "other"
       }
-      
+
       preview = service.preview_merge(mixed_fields)
-      
+
       expect(preview["description"]).to eq(new_expense.description)
       expect(preview["amount"]).to eq(existing_expense.amount) # kept existing
       expect(preview["merchant_name"]).to eq(existing_expense.merchant_name) # kept existing
@@ -683,7 +683,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
     it "returns a copy of attributes, not reference" do
       preview = service.preview_merge(merge_fields)
       preview["description"] = "Modified"
-      
+
       expect(existing_expense.reload.description).not_to eq("Modified")
     end
   end
@@ -693,7 +693,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
       expect(Rails.cache).to receive(:increment).with("conflict_resolutions:keep_existing:count")
       expect(Rails.cache).to receive(:increment).with("conflict_resolutions:total:count")
       expect(Rails.cache).to receive(:increment).with("conflict_resolutions:manual:count")
-      
+
       service.resolve("keep_existing", { resolved_by: "user@example.com" })
     end
 
@@ -701,7 +701,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
       expect(Rails.cache).to receive(:increment).with("conflict_resolutions:keep_new:count")
       expect(Rails.cache).to receive(:increment).with("conflict_resolutions:total:count")
       expect(Rails.cache).to receive(:increment).with("conflict_resolutions:auto:count")
-      
+
       service.resolve("keep_new", { resolved_by: "system_auto" })
     end
 
@@ -714,11 +714,11 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
           status: :pending
         )
         test_service = described_class.new(conflict)
-        
+
         expect(Rails.cache).to receive(:increment).with("conflict_resolutions:#{action}:count")
         expect(Rails.cache).to receive(:increment).with("conflict_resolutions:total:count")
         expect(Rails.cache).to receive(:increment).with("conflict_resolutions:manual:count")
-        
+
         options = action == "merged" ? { merge_fields: { description: "new" } } : {}
         test_service.resolve(action, options)
       end
@@ -729,7 +729,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
     it "handles conflicts with very long descriptions" do
       long_description = "A" * 1000
       existing_expense.update!(description: long_description)
-      
+
       # Use custom action which works
       result = service.resolve("custom", { custom_data: { existing_expense: { description: long_description + "B" } } })
       expect(result).to be_truthy
@@ -738,19 +738,19 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
     it "handles concurrent resolution attempts" do
       # Simulate concurrent resolution by marking as resolved after check
       allow(sync_conflict).to receive(:status_resolved?).and_return(false, true)
-      
+
       result = service.resolve("keep_existing")
       # Should handle gracefully even if status changes during resolution
-      expect([true, false]).to include(result)
+      expect([ true, false ]).to include(result)
     end
 
     it "preserves expense associations during resolution" do
       # Use custom action which works
       service.resolve("custom", { custom_data: { existing_expense: { description: "Updated" } } })
-      
+
       existing_expense.reload
       new_expense.reload
-      
+
       expect(existing_expense.category).to eq(category)
       expect(existing_expense.email_account).to eq(email_account)
       expect(new_expense.category).to eq(category)
@@ -760,7 +760,7 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
     it "handles resolution with nil resolved_by" do
       # Use custom action which works
       result = service.resolve("custom", { resolved_by: nil })
-      
+
       expect(result).to be_truthy
       expect(sync_conflict.reload.resolved_by).to be_nil
     end
@@ -774,10 +774,10 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
           status: :pending
         )
       end
-      
+
       # Use custom action which works
       result = service.bulk_resolve(conflicts.map(&:id), "custom", {})
-      
+
       expect(result[:resolved_count]).to eq(5)
       conflicts.each do |conflict|
         expect(conflict.reload.status).to eq("resolved")
@@ -787,10 +787,10 @@ RSpec.describe ConflictResolutionService, type: :service, unit: true do
     it "handles invalid UTF-8 in descriptions" do
       invalid_utf8 = "Test \xFF description"
       custom_data = { existing_expense: { notes: invalid_utf8.force_encoding("UTF-8") } }
-      
+
       # Should handle gracefully
       result = service.resolve("custom", { custom_data: custom_data })
-      expect([true, false]).to include(result)
+      expect([ true, false ]).to include(result)
     end
   end
 end

@@ -119,7 +119,7 @@ module MonitoringServiceTestHelper
       connection = double("ActiveRecord::ConnectionAdapters::PostgreSQLAdapter")
       allow(connection).to receive(:active?).and_return(active)
       allow(connection).to receive(:execute).with("SELECT 1")
-      
+
       allow(ActiveRecord::Base).to receive(:connection).and_return(connection)
       connection
     end
@@ -132,11 +132,11 @@ module MonitoringServiceTestHelper
       else
         allow(redis_mock).to receive(:ping).and_raise(Redis::CannotConnectError)
       end
-      
+
       cache_mock = double("Cache")
       allow(cache_mock).to receive(:redis).and_return(redis_mock)
       allow(Rails).to receive(:cache).and_return(cache_mock) unless Rails.cache.is_a?(ActiveSupport::Cache::MemoryStore)
-      
+
       redis_mock
     end
 
@@ -144,18 +144,18 @@ module MonitoringServiceTestHelper
     def mock_action_cable(status: "running")
       pubsub = double("ActionCable::SubscriptionAdapter::Redis")
       redis_connection = double("Redis")
-      
+
       if status == "running"
         allow(redis_connection).to receive(:ping).and_return("PONG")
       else
         allow(redis_connection).to receive(:ping).and_raise(StandardError)
       end
-      
+
       allow(pubsub).to receive(:redis_connection_for_subscriptions).and_return(redis_connection)
-      
+
       server = double("ActionCable::Server::Base")
       allow(server).to receive(:pubsub).and_return(pubsub)
-      
+
       allow(ActionCable).to receive(:server).and_return(server)
     end
 

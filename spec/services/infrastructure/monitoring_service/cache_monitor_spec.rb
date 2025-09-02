@@ -273,7 +273,7 @@ RSpec.describe Infrastructure::MonitoringService::CacheMonitor, type: :service, 
 
       allow(cache_monitor).to receive(:check_pattern_cache_health).and_return(pattern_health)
       allow(cache_monitor).to receive(:check_rails_cache_health).and_return(rails_health)
-      allow(cache_monitor).to receive(:generate_cache_recommendations).and_return(["Consider cache tuning"])
+      allow(cache_monitor).to receive(:generate_cache_recommendations).and_return([ "Consider cache tuning" ])
 
       result = cache_monitor.cache_health_status
 
@@ -286,7 +286,7 @@ RSpec.describe Infrastructure::MonitoringService::CacheMonitor, type: :service, 
 
       allow(cache_monitor).to receive(:check_pattern_cache_health).and_return(pattern_health)
       allow(cache_monitor).to receive(:check_rails_cache_health).and_return(rails_health)
-      allow(cache_monitor).to receive(:generate_cache_recommendations).and_return(["Critical: Fix Rails cache"])
+      allow(cache_monitor).to receive(:generate_cache_recommendations).and_return([ "Critical: Fix Rails cache" ])
 
       result = cache_monitor.cache_health_status
 
@@ -414,7 +414,7 @@ RSpec.describe Infrastructure::MonitoringService::CacheMonitor, type: :service, 
           hit_rate: 70.0,
           memory_entries: 800
         })
-        allow(cache_monitor).to receive(:identify_pattern_cache_issues).and_return(["Low hit rate"])
+        allow(cache_monitor).to receive(:identify_pattern_cache_issues).and_return([ "Low hit rate" ])
 
         result = cache_monitor.send(:check_pattern_cache_health)
 
@@ -426,7 +426,7 @@ RSpec.describe Infrastructure::MonitoringService::CacheMonitor, type: :service, 
           hit_rate: 45.0,
           memory_entries: 300
         })
-        allow(cache_monitor).to receive(:identify_pattern_cache_issues).and_return(["Low hit rate (45.0%)"])
+        allow(cache_monitor).to receive(:identify_pattern_cache_issues).and_return([ "Low hit rate (45.0%)" ])
 
         result = cache_monitor.send(:check_pattern_cache_health)
 

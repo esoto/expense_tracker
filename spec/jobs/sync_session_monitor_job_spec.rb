@@ -177,7 +177,7 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
           allow(account1).to receive(:failed?).and_return(false)
           allow(account2).to receive(:completed?).and_return(true)
           allow(account2).to receive(:failed?).and_return(false)
-          allow(sync_session).to receive(:sync_session_accounts).and_return([account1, account2])
+          allow(sync_session).to receive(:sync_session_accounts).and_return([ account1, account2 ])
         end
 
         it 'marks sync session as completed', unit: true do
@@ -214,15 +214,15 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
           allow(account1).to receive(:failed?).and_return(true)
           allow(account2).to receive(:completed?).and_return(false)
           allow(account2).to receive(:failed?).and_return(true)
-          
+
           # Setup accounts collection to behave like ActiveRecord relation
           allow(sync_session).to receive(:sync_session_accounts).and_return(accounts_collection)
           allow(accounts_collection).to receive(:all?) do |&block|
-            [account1, account2].all?(&block)
+            [ account1, account2 ].all?(&block)
           end
           allow(accounts_collection).to receive(:empty?).and_return(false)
           allow(accounts_collection).to receive_message_chain(:where, :not).with(no_args).with(last_error: nil).and_return(accounts_relation)
-          allow(accounts_relation).to receive(:pluck).with(:last_error).and_return(['Error 1', 'Error 2'])
+          allow(accounts_relation).to receive(:pluck).with(:last_error).and_return([ 'Error 1', 'Error 2' ])
         end
 
         it 'marks sync session as failed', unit: true do
@@ -231,7 +231,7 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
         end
 
         it 'aggregates error messages from all failed accounts', unit: true do
-          expect(accounts_relation).to receive(:pluck).with(:last_error).and_return(['Connection timeout', 'Auth failed'])
+          expect(accounts_relation).to receive(:pluck).with(:last_error).and_return([ 'Connection timeout', 'Auth failed' ])
           expect(sync_session).to receive(:fail!).with('Connection timeout; Auth failed')
           subject.perform(sync_session_id)
         end
@@ -265,11 +265,11 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
           allow(account1).to receive(:failed?).and_return(true)
           allow(account2).to receive(:completed?).and_return(false)
           allow(account2).to receive(:failed?).and_return(true)
-          
+
           # Setup accounts collection to behave like ActiveRecord relation
           allow(sync_session).to receive(:sync_session_accounts).and_return(accounts_collection)
           allow(accounts_collection).to receive(:all?) do |&block|
-            [account1, account2].all?(&block)
+            [ account1, account2 ].all?(&block)
           end
           allow(accounts_collection).to receive(:empty?).and_return(false)
           allow(accounts_collection).to receive_message_chain(:where, :not).with(no_args).with(last_error: nil).and_return(accounts_relation)
@@ -290,7 +290,7 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
           allow(account1).to receive(:failed?).and_return(false)
           allow(account2).to receive(:completed?).and_return(false)
           allow(account2).to receive(:failed?).and_return(false)
-          allow(sync_session).to receive(:sync_session_accounts).and_return([account1, account2])
+          allow(sync_session).to receive(:sync_session_accounts).and_return([ account1, account2 ])
         end
 
         it 'does not mark sync session as completed', unit: true do
@@ -323,7 +323,7 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
           allow(account2).to receive(:failed?).and_return(true)
           allow(account3).to receive(:completed?).and_return(true)
           allow(account3).to receive(:failed?).and_return(false)
-          allow(sync_session).to receive(:sync_session_accounts).and_return([account1, account2, account3])
+          allow(sync_session).to receive(:sync_session_accounts).and_return([ account1, account2, account3 ])
         end
 
         it 'marks sync session as completed for partial success', unit: true do
@@ -356,7 +356,7 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
         before do
           allow(account1).to receive(:completed?).and_return(false)
           allow(account1).to receive(:failed?).and_return(false)
-          allow(sync_session).to receive(:sync_session_accounts).and_return([account1])
+          allow(sync_session).to receive(:sync_session_accounts).and_return([ account1 ])
           allow(described_class).to receive(:set).with(wait: 5.seconds).and_return(job_double)
           allow(job_double).to receive(:perform_later).with(sync_session_id)
         end
@@ -377,13 +377,13 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
         it 'checks failed status even when account is completed', unit: true do
           allow(account1).to receive(:completed?).and_return(true)
           allow(account1).to receive(:failed?).and_return(false)
-          allow(sync_session).to receive(:sync_session_accounts).and_return([account1])
+          allow(sync_session).to receive(:sync_session_accounts).and_return([ account1 ])
           allow(sync_session).to receive(:complete!)
-          
+
           # Even when completed, it still checks failed to determine if ALL failed
           expect(account1).to receive(:completed?).at_least(:once).and_return(true)
           expect(account1).to receive(:failed?).at_least(:once).and_return(false)
-          
+
           subject.perform(sync_session_id)
         end
       end
@@ -472,16 +472,16 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
           allow(sync_session).to receive(:running?).and_return(true)
           allow(account1).to receive(:completed?).and_return(false)
           allow(account1).to receive(:failed?).and_return(true)
-          
+
           # Setup accounts collection to behave like ActiveRecord relation
           allow(sync_session).to receive(:sync_session_accounts).and_return(accounts_collection)
           allow(accounts_collection).to receive(:all?) do |&block|
-            [account1].all?(&block)
+            [ account1 ].all?(&block)
           end
           allow(accounts_collection).to receive(:empty?).and_return(false)
           allow(accounts_collection).to receive_message_chain(:where, :not).with(no_args).with(last_error: nil).and_return(accounts_relation)
-          allow(accounts_relation).to receive(:pluck).with(:last_error).and_return(['Error'])
-          
+          allow(accounts_relation).to receive(:pluck).with(:last_error).and_return([ 'Error' ])
+
           # First call to fail! raises error, second call in rescue should not raise
           call_count = 0
           allow(sync_session).to receive(:fail!) do |msg|
@@ -529,7 +529,7 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
           allow(sync_session).to receive(:running?).and_return(true)
           allow(account1).to receive(:completed?).and_return(false)
           allow(account1).to receive(:failed?).and_return(false)
-          allow(sync_session).to receive(:sync_session_accounts).and_return([account1])
+          allow(sync_session).to receive(:sync_session_accounts).and_return([ account1 ])
           allow(described_class).to receive(:set).with(wait: 5.seconds).and_raise(StandardError, 'Queue error')
           allow(sync_session).to receive(:fail!)
         end

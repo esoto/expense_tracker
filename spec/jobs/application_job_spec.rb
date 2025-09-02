@@ -60,7 +60,7 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
 
     it 'has retry_on handlers configured' do
       expect(ApplicationJob.rescue_handlers).not_to be_empty
-      
+
       handler_classes = ApplicationJob.rescue_handlers.map(&:first)
       expect(handler_classes).to include('StandardError')
       expect(handler_classes).to include('ActiveRecord::Deadlocked')
@@ -122,16 +122,16 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
     it 'has handlers in the correct precedence order' do
       # More specific handlers should come before more general ones
       handler_classes = ApplicationJob.rescue_handlers.map(&:first)
-      
+
       # In Rails, handlers are processed in reverse order (last defined is checked first)
       # So StandardError (defined first) will be at a higher index than Deadlocked (defined second)
       deadlock_index = handler_classes.index('ActiveRecord::Deadlocked')
       standard_index = handler_classes.index('StandardError')
-      
+
       # Both handlers should exist
       expect(deadlock_index).not_to be_nil
       expect(standard_index).not_to be_nil
-      
+
       # The order in the array represents the order they'll be checked
       # ActiveJob checks handlers from last to first, so more specific should be defined after general
       expect(handler_classes).to include('StandardError', 'ActiveRecord::Deadlocked', 'ActiveJob::DeserializationError')
@@ -162,7 +162,7 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
 
       it 'is configured to retry on StandardError' do
         job = job_with_standard_error.new
-        
+
         # The job should have retry_on configuration from ApplicationJob
         expect(ApplicationJob.rescue_handlers.map(&:first)).to include('StandardError')
       end
@@ -176,7 +176,7 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
 
         # ArgumentError is a StandardError subclass, so it should be handled
         expect(ApplicationJob.rescue_handlers.map(&:first)).to include('StandardError')
-        
+
         # Verify ArgumentError is indeed a StandardError
         expect(ArgumentError.ancestors).to include(StandardError)
       end
@@ -233,7 +233,7 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
         def self.name
           'TestNamedJob'
         end
-        
+
         def perform
           "performed"
         end
@@ -249,11 +249,11 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
     it 'has all three error handlers configured' do
       handlers = ApplicationJob.rescue_handlers
       handler_classes = handlers.map(&:first)
-      
+
       expect(handler_classes).to include('StandardError')
       expect(handler_classes).to include('ActiveRecord::Deadlocked')
       expect(handler_classes).to include('ActiveJob::DeserializationError')
-      
+
       # Verify we have exactly these three handlers
       expect(handlers.size).to be >= 3
     end
@@ -268,23 +268,23 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
       # Child job should inherit all handlers from ApplicationJob
       parent_handlers = ApplicationJob.rescue_handlers.map(&:first)
       child_handlers = child_job.rescue_handlers.map(&:first)
-      
+
       expect(child_handlers).to include(*parent_handlers)
     end
 
     it 'allows child jobs to add additional handlers' do
       child_with_custom_handler = Class.new(ApplicationJob) do
         class CustomError < StandardError; end
-        
+
         retry_on CustomError, wait: 1.second, attempts: 5
-        
+
         def perform
           "custom child job"
         end
       end
 
       handlers = child_with_custom_handler.rescue_handlers.map(&:first)
-      
+
       # Should have parent handlers plus the custom one
       expect(handlers).to include('StandardError')
       expect(handlers).to include('ActiveRecord::Deadlocked')
@@ -319,7 +319,7 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
 
       test_job.perform_later
       expect(enqueued_jobs).not_to be_empty
-      
+
       clear_enqueued_jobs
       expect(enqueued_jobs).to be_empty
     end
@@ -337,7 +337,7 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
 
       # Success case
       expect(db_job.new.perform(1)).to eq("Record 1 processed")
-      
+
       # Error case - would trigger retry_on StandardError
       expect { db_job.new.perform(-1) }.to raise_error(ArgumentError)
     end
@@ -363,17 +363,17 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
       end
 
       job = complex_job.new
-      
+
       # Success scenario
       expect(job.perform(:success)).to eq("Success")
-      
+
       # Unknown scenario
       expect(job.perform(:unknown)).to eq("Unknown scenario")
-      
+
       # Error scenarios would trigger respective handlers
       expect { job.perform(:deadlock) }.to raise_error(ActiveRecord::Deadlocked)
       expect { job.perform(:general_error) }.to raise_error(StandardError)
-      
+
       # DeserializationError would be handled by discard_on
       # In a real environment, this would be silently discarded
       expect { job.perform(:not_found) }.to raise_error(ActiveJob::DeserializationError)
@@ -407,7 +407,7 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
       # Define custom error classes outside the job class
       outer_error_class = Class.new(StandardError)
       inner_error_class = Class.new(StandardError)
-      
+
       nested_error_job = Class.new(ApplicationJob) do
         define_method :perform do |depth|
           raise inner_error_class, "Inner problem" if depth == 1
@@ -509,7 +509,7 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
       grandchild = Class.new(child)
 
       # All should have the same base handlers
-      [parent, child, grandchild].each do |klass|
+      [ parent, child, grandchild ].each do |klass|
         handlers = klass.rescue_handlers.map(&:first)
         expect(handlers).to include('StandardError')
         expect(handlers).to include('ActiveRecord::Deadlocked')
@@ -538,8 +538,8 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
       # Verify StandardError retry configuration
       standard_handler = ApplicationJob.rescue_handlers.find { |h| h.first == 'StandardError' }
       expect(standard_handler).not_to be_nil
-      
-      # Verify Deadlocked retry configuration  
+
+      # Verify Deadlocked retry configuration
       deadlock_handler = ApplicationJob.rescue_handlers.find { |h| h.first == 'ActiveRecord::Deadlocked' }
       expect(deadlock_handler).not_to be_nil
     end
@@ -553,10 +553,10 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
     it 'validates complete ApplicationJob functionality' do
       # Test that ApplicationJob serves as a proper base class
       expect(ApplicationJob.ancestors).to include(ActiveJob::Base)
-      
+
       # Test that it provides retry and discard functionality
       expect(ApplicationJob.rescue_handlers).not_to be_empty
-      
+
       # Test that child jobs inherit properly
       child = Class.new(ApplicationJob)
       expect(child.rescue_handlers).to eq(ApplicationJob.rescue_handlers)
@@ -567,18 +567,18 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
       job = ApplicationJob.new
       expect(job).to be_a(ApplicationJob)
       expect(job).to be_a(ActiveJob::Base)
-      
+
       # Verify the class has the expected configuration
       expect(ApplicationJob).to respond_to(:retry_on)
       expect(ApplicationJob).to respond_to(:discard_on)
-      
+
       # Ensure all lines are touched by creating a child class
       test_job = Class.new(ApplicationJob) do
         def perform
           "test"
         end
       end
-      
+
       instance = test_job.new
       expect(instance.perform).to eq("test")
     end
@@ -638,10 +638,10 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
     it 'verifies handler configuration through reflection' do
       # Use reflection to ensure all configuration is properly set
       handlers = ApplicationJob.rescue_handlers
-      
+
       # Should have at least 3 handlers
       expect(handlers.size).to be >= 3
-      
+
       # Each handler should have proper structure
       handlers.each do |handler|
         expect(handler).to be_an(Array)

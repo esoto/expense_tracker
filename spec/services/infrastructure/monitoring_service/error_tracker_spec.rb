@@ -9,7 +9,7 @@ RSpec.describe Infrastructure::MonitoringService::ErrorTracker, type: :service, 
   let(:test_error) { StandardError.new("Test error message") }
   let(:complex_error) { ArgumentError.new("Invalid argument provided") }
   let(:test_context) { { service: "TestService", operation: "test_operation", user_id: 123 } }
-  let(:backtrace) { ["line1.rb:1:in `method1'", "line2.rb:2:in `method2'", "line3.rb:3:in `method3'"] }
+  let(:backtrace) { [ "line1.rb:1:in `method1'", "line2.rb:2:in `method2'", "line3.rb:3:in `method3'" ] }
 
   before do
     setup_time_helpers
@@ -17,17 +17,17 @@ RSpec.describe Infrastructure::MonitoringService::ErrorTracker, type: :service, 
     setup_memory_cache
     allow(test_error).to receive(:backtrace).and_return(backtrace)
     allow(complex_error).to receive(:backtrace).and_return(backtrace)
-    
+
     # Force the ErrorTracker to use mocked components by stubbing all methods
     allow(described_class).to receive(:report).and_wrap_original do |method, error, context = {}|
       # Log the error
       Rails.logger.error "#{error.class}: #{error.message}"
       Rails.logger.error error.backtrace.join("\n") if error.backtrace
-      
+
       # Store error data
       current_time = Time.current
       key = "errors:#{current_time.to_i}"
-      
+
       data = {
         class: error.class.name,
         message: error.message,
@@ -35,30 +35,30 @@ RSpec.describe Infrastructure::MonitoringService::ErrorTracker, type: :service, 
         context: context,
         timestamp: current_time
       }
-      
+
       Rails.cache.write(key, data, expires_in: 24.hours)
-      
+
       # Send to external service if configured
       if described_class.send(:external_service_configured?)
         described_class.send(:send_to_external_service, error, context)
       end
     end
-    
+
     allow(described_class).to receive(:report_custom_error).and_wrap_original do |method, error_name, details, tags = {}|
       current_time = Time.current
       key = "custom_errors:#{error_name}:#{current_time.to_i}"
-      
+
       data = {
         error_name: error_name,
         details: details,
         tags: tags,
         timestamp: current_time
       }
-      
+
       Rails.cache.write(key, data, expires_in: 24.hours)
       Rails.logger.error "[CustomError] #{error_name}: #{details.inspect} (tags: #{tags.inspect})"
     end
-    
+
     allow(described_class).to receive(:send_to_external_service)
   end
 
@@ -73,7 +73,7 @@ RSpec.describe Infrastructure::MonitoringService::ErrorTracker, type: :service, 
 
       it "stores error data in cache with proper structure" do
         allow(@logger_mock).to receive(:error)
-        
+
         described_class.report(test_error, test_context)
 
         cache_key = "errors:#{current_time.to_i}"
@@ -119,9 +119,9 @@ RSpec.describe Infrastructure::MonitoringService::ErrorTracker, type: :service, 
     context "with empty context" do
       it "handles empty context gracefully" do
         allow(@logger_mock).to receive(:error)
-        
+
         expect { described_class.report(test_error, {}) }.not_to raise_error
-        
+
         cache_key = "errors:#{current_time.to_i}"
         stored_data = Rails.cache.read(cache_key)
         expect(stored_data[:context]).to eq({})
@@ -144,7 +144,7 @@ RSpec.describe Infrastructure::MonitoringService::ErrorTracker, type: :service, 
 
       it "stores nil backtrace correctly" do
         allow(@logger_mock).to receive(:error)
-        
+
         described_class.report(no_backtrace_error, test_context)
 
         cache_key = "errors:#{current_time.to_i}"
@@ -163,7 +163,7 @@ RSpec.describe Infrastructure::MonitoringService::ErrorTracker, type: :service, 
 
       it "truncates backtrace to first 10 lines" do
         allow(@logger_mock).to receive(:error)
-        
+
         described_class.report(long_backtrace_error, test_context)
 
         cache_key = "errors:#{current_time.to_i}"
@@ -209,7 +209,7 @@ RSpec.describe Infrastructure::MonitoringService::ErrorTracker, type: :service, 
 
     it "groups errors by class correctly sorted by count" do
       result = described_class.summary(time_window: 1.hour)
-      
+
       expect(result[:errors_by_class]).to eq({
         "StandardError" => 3,
         "ArgumentError" => 1,
@@ -219,7 +219,7 @@ RSpec.describe Infrastructure::MonitoringService::ErrorTracker, type: :service, 
 
     it "groups errors by context service correctly sorted by count" do
       result = described_class.summary(time_window: 1.hour)
-      
+
       expect(result[:errors_by_context]).to eq({
         "ServiceA" => 3,
         "ServiceB" => 1,
@@ -229,14 +229,14 @@ RSpec.describe Infrastructure::MonitoringService::ErrorTracker, type: :service, 
 
     it "returns top errors with proper formatting and sorting" do
       result = described_class.summary(time_window: 1.hour)
-      
+
       expected_top_errors = {
         "StandardError: Error 1" => 2,
         "StandardError: Error 2" => 1,
         "ArgumentError: Error 3" => 1,
         "RuntimeError: Error 4" => 1
       }
-      
+
       expect(result[:top_errors]).to eq(expected_top_errors)
     end
 
@@ -440,7 +440,7 @@ RSpec.describe Infrastructure::MonitoringService::ErrorTracker, type: :service, 
 
       it "groups errors by class and sorts by count descending" do
         result = described_class.send(:group_by_class, errors)
-        
+
         expect(result).to eq({
           "StandardError" => 3,
           "ArgumentError" => 1,
@@ -461,7 +461,7 @@ RSpec.describe Infrastructure::MonitoringService::ErrorTracker, type: :service, 
 
       it "groups errors by context service and sorts by count descending" do
         result = described_class.send(:group_by_context, errors)
-        
+
         expect(result).to eq({
           "ServiceA" => 3,
           "ServiceB" => 1
@@ -479,7 +479,7 @@ RSpec.describe Infrastructure::MonitoringService::ErrorTracker, type: :service, 
 
         it "handles missing service context gracefully" do
           result = described_class.send(:group_by_context, errors_with_missing_context)
-          
+
           expect(result).to include("ServiceA" => 2)
           expect(result).to have_key(nil)
         end
@@ -500,29 +500,29 @@ RSpec.describe Infrastructure::MonitoringService::ErrorTracker, type: :service, 
 
       it "returns top errors by frequency with default limit of 5" do
         result = described_class.send(:top_errors, errors)
-        
+
         expected = {
           "StandardError: Error A" => 2,
           "ArgumentError: Error B" => 2,
           "StandardError: Error C" => 1,
           "RuntimeError: Error D" => 1
         }
-        
+
         expect(result).to eq(expected)
         expect(result.keys.length).to be <= 5
       end
 
       it "respects custom limit parameter" do
         result = described_class.send(:top_errors, errors, 2)
-        
+
         expect(result.keys.length).to eq(2)
-        expect(result.values).to eq([2, 2]) # Top 2 by count
+        expect(result.values).to eq([ 2, 2 ]) # Top 2 by count
       end
 
       it "sorts by count descending" do
         result = described_class.send(:top_errors, errors)
         counts = result.values
-        
+
         expect(counts).to eq(counts.sort.reverse)
       end
     end
@@ -532,23 +532,23 @@ RSpec.describe Infrastructure::MonitoringService::ErrorTracker, type: :service, 
     context "when reporting multiple errors in sequence" do
       it "stores multiple errors with unique timestamps" do
         allow(@logger_mock).to receive(:error)
-        
+
         # Report first error
         described_class.report(test_error, test_context)
         first_key = "errors:#{current_time.to_i}"
-        
+
         # Advance time by 1 second
         future_time = current_time + 1.second
         allow(Time).to receive(:current).and_return(future_time)
-        
+
         # Report second error
         described_class.report(complex_error, test_context)
         second_key = "errors:#{future_time.to_i}"
-        
+
         # Verify both errors are stored separately
         first_error = Rails.cache.read(first_key)
         second_error = Rails.cache.read(second_key)
-        
+
         expect(first_error[:class]).to eq("StandardError")
         expect(second_error[:class]).to eq("ArgumentError")
         expect(first_error[:timestamp]).not_to eq(second_error[:timestamp])
@@ -561,7 +561,7 @@ RSpec.describe Infrastructure::MonitoringService::ErrorTracker, type: :service, 
         allow(described_class).to receive(:recent_errors).with(1.hour).and_return(Array.new(15) { {} })
         one_hour_rate = described_class.send(:calculate_error_rate, 1.hour)
         expect(one_hour_rate).to eq(0.25) # 15 errors / 60 minutes
-        
+
         # Mock 30 errors for 30 minute window (higher rate)
         allow(described_class).to receive(:recent_errors).with(30.minutes).and_return(Array.new(30) { {} })
         thirty_min_rate = described_class.send(:calculate_error_rate, 30.minutes)

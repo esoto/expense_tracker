@@ -27,8 +27,8 @@ RSpec.describe Email::SyncService, integration: true do
 
       it 'raises SyncError for inactive account' do
         inactive_account = create(:email_account, :inactive, email: "test_inactive_#{SecureRandom.hex(4)}@test.com")
-        
-        # Verify the account is actually inactive  
+
+        # Verify the account is actually inactive
         expect(inactive_account.active).to be false
 
         expect {
@@ -83,11 +83,11 @@ RSpec.describe Email::SyncService, integration: true do
   describe 'private methods', integration: true do
     describe '#sync_specific_account', integration: true do
       let(:email_account) { create(:email_account, :bac, email: "test_bac_#{SecureRandom.hex(4)}@test.com") }
-      
+
       around do |example|
         # Use a completely isolated database transaction for these tests
         EmailAccount.transaction do
-          # Deactivate all existing accounts  
+          # Deactivate all existing accounts
           EmailAccount.update_all(active: false)
           example.run
           raise ActiveRecord::Rollback # rollback the transaction after the test

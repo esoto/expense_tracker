@@ -151,10 +151,10 @@ RSpec.describe ConflictDetectionService, integration: true do
     # Create actual expenses for the conflicts
     let!(:existing_expense_for_high) { create(:expense, email_account: email_account) }
     let!(:new_expense_for_high) { create(:expense, email_account: email_account, status: :pending) }
-    
+
     let!(:existing_expense_for_low) { create(:expense, email_account: email_account) }
     let!(:new_expense_for_low) { create(:expense, email_account: email_account, status: :pending) }
-    
+
     let!(:high_confidence_conflict) do
       conflict = create(:sync_conflict,
         sync_session: sync_session,
@@ -189,7 +189,7 @@ RSpec.describe ConflictDetectionService, integration: true do
       expect(resolved_count).to eq(1)
       expect(high_confidence_conflict.reload.status).to eq('resolved')
       expect(low_confidence_conflict.reload.status).to eq('pending')
-      
+
       # Verify the new expense was marked as duplicate
       expect(new_expense_for_high.reload.status).to eq('duplicate')
       expect(new_expense_for_low.reload.status).to eq('pending')

@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
   let(:job) { described_class.new }
   let(:cache) { instance_double(Categorization::PatternCache) }
-  
+
   before do
     allow(Categorization::PatternCache).to receive(:instance).and_return(cache)
     allow(Rails.logger).to receive(:info)
@@ -87,9 +87,9 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
       it 'calculates accurate duration' do
         start_time = Time.parse('2024-01-01 10:00:00')
         end_time = Time.parse('2024-01-01 10:00:01.234')
-        
+
         allow(Time).to receive(:current).and_return(start_time, end_time)
-        
+
         result = job.perform
         expect(result[:duration]).to eq(1.234)
       end
@@ -97,9 +97,9 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
       it 'rounds duration to 3 decimal places' do
         start_time = Time.parse('2024-01-01 10:00:00')
         end_time = Time.parse('2024-01-01 10:00:01.2345678')
-        
+
         allow(Time).to receive(:current).and_return(start_time, end_time)
-        
+
         result = job.perform
         expect(result[:duration]).to eq(1.235)
       end
@@ -118,7 +118,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
         expect(cache).to receive(:warm_cache).ordered
         expect(job).to receive(:report_success).ordered
         expect(job).to receive(:check_cache_health).with(cache).ordered
-        
+
         job.perform
       end
 
@@ -279,14 +279,14 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
       it 'truncates backtrace to first 5 lines' do
         error_with_backtrace = StandardError.new("Error with backtrace")
         error_with_backtrace.set_backtrace(Array.new(10) { |i| "line #{i}" })
-        
+
         allow(cache).to receive(:warm_cache).and_raise(error_with_backtrace)
-        
+
         expect(job).to receive(:report_error) do |details|
           expect(details[:backtrace].size).to eq(5)
-          expect(details[:backtrace]).to eq(["line 0", "line 1", "line 2", "line 3", "line 4"])
+          expect(details[:backtrace]).to eq([ "line 0", "line 1", "line 2", "line 3", "line 4" ])
         end
-        
+
         expect { job.perform }.to raise_error(StandardError)
       end
 
@@ -330,7 +330,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
 
     before do
       allow(cache).to receive(:metrics).and_return(cache_metrics)
-      
+
       # Mock PerformanceConfig to ensure consistent behavior across test runs
       # Force the job to use the 80.0 default for these specific tests
       if defined?(Services::Infrastructure::PerformanceConfig)
@@ -627,7 +627,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
       it 'handles MonitoringService errors gracefully' do
         allow(Services::Infrastructure::MonitoringService).to receive(:record_metric)
           .and_raise(StandardError.new("Monitoring error"))
-        
+
         # The error is not caught, it propagates
         expect { job.send(:report_success, stats) }.to raise_error(StandardError, "Monitoring error")
       end
@@ -691,7 +691,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
     let(:error_details) do
       {
         error: "Connection timeout",
-        backtrace: ["line1", "line2"]
+        backtrace: [ "line1", "line2" ]
       }
     end
 
@@ -727,7 +727,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
       it 'handles MonitoringService errors gracefully' do
         allow(Services::Infrastructure::MonitoringService).to receive(:record_error)
           .and_raise(StandardError.new("Monitoring error"))
-        
+
         # The error is not caught, it propagates
         expect { job.send(:report_error, error_details) }.to raise_error(StandardError, "Monitoring error")
       end
@@ -771,7 +771,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
       let(:error_details) do
         {
           error: "Multiple failures",
-          backtrace: ["line1", "line2", "line3"],
+          backtrace: [ "line1", "line2", "line3" ],
           additional_info: { attempts: 3, last_attempt: "2024-01-01" }
         }
       end
@@ -782,7 +782,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
           'pattern_cache.warming_failed',
           hash_including(
             error: "Multiple failures",
-            backtrace: ["line1", "line2", "line3"],
+            backtrace: [ "line1", "line2", "line3" ],
             additional_info: { attempts: 3, last_attempt: "2024-01-01" }
           ),
           anything
@@ -1023,7 +1023,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
           it 'records metrics with custom threshold' do
             stub_const('Services::Infrastructure::MonitoringService', double(record_metric: true))
             allow(job).to receive(:job_id).and_return("test-job")
-            
+
             expect(Services::Infrastructure::MonitoringService).to receive(:record_metric).with(
               'pattern_cache.memory_cleanup',
               hash_including(threshold: 8000),
@@ -1167,7 +1167,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
       it 'includes timestamp in ISO8601 format' do
         frozen_time = Time.parse('2024-01-15 10:30:45 UTC')
         allow(Time).to receive(:current).and_return(frozen_time)
-        
+
         expect(server).to receive(:broadcast).with(
           'system_events',
           hash_including(
@@ -1181,7 +1181,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
       it 'broadcasts with all required fields' do
         frozen_time = Time.parse('2024-01-15 10:30:45 UTC')
         allow(Time).to receive(:current).and_return(frozen_time)
-        
+
         expect(server).to receive(:broadcast).with(
           'system_events',
           {

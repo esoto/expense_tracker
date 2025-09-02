@@ -191,7 +191,7 @@ RSpec.describe BulkCategorization::ApplyService, type: :service, unit: true do
           present?: true,
           merchant_name?: false,
           amount: 50.0,
-          errors: double(full_messages: ["Already categorized"])
+          errors: double(full_messages: [ "Already categorized" ])
         )
       end
       let(:expense2) do
@@ -209,7 +209,7 @@ RSpec.describe BulkCategorization::ApplyService, type: :service, unit: true do
         allow(expenses).to receive(:pluck).with(:id).and_return([ 1, 2 ])
         allow(expenses).to receive(:pluck).with(:id, :category_id).and_return([ [ 1, 5 ], [ 2, nil ] ])
         allow(expenses).to receive(:select) do |&block|
-          [expense1, expense2].select(&block)
+          [ expense1, expense2 ].select(&block)
         end
       end
 
@@ -238,7 +238,7 @@ RSpec.describe BulkCategorization::ApplyService, type: :service, unit: true do
           allow(expenses).to receive(:pluck).with(:id).and_return([ 1, 2 ])
           allow(expenses).to receive(:pluck).with(:id, :category_id).and_return([ [ 1, 5 ], [ 2, nil ] ])
           allow(expenses).to receive(:select) do |&block|
-          [expense1, expense2].select(&block)
+          [ expense1, expense2 ].select(&block)
         end
           # Categories are already set in the expense doubles above
           allow(expense1).to receive(:update!).and_return(true)
@@ -1115,4 +1115,3 @@ RSpec.describe BulkCategorization::ApplyService, type: :service, unit: true do
     end
   end
 end
-

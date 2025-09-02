@@ -14,9 +14,9 @@ RSpec.describe Infrastructure::MonitoringService, type: :service, unit: true do
     describe ".queue_metrics" do
       it "delegates to QueueMonitor.metrics" do
         expect(Infrastructure::MonitoringService::QueueMonitor).to receive(:metrics).and_return({ test: "data" })
-        
+
         result = described_class.queue_metrics
-        
+
         expect(result).to eq({ test: "data" })
       end
     end
@@ -24,9 +24,9 @@ RSpec.describe Infrastructure::MonitoringService, type: :service, unit: true do
     describe ".job_metrics" do
       it "delegates to JobMonitor.metrics" do
         expect(Infrastructure::MonitoringService::JobMonitor).to receive(:metrics).and_return({ jobs: "metrics" })
-        
+
         result = described_class.job_metrics
-        
+
         expect(result).to eq({ jobs: "metrics" })
       end
     end
@@ -36,9 +36,9 @@ RSpec.describe Infrastructure::MonitoringService, type: :service, unit: true do
         expect(Infrastructure::MonitoringService::PerformanceTracker).to receive(:metrics)
           .with("email_processor")
           .and_return({ perf: "data" })
-        
+
         result = described_class.performance_metrics("email_processor")
-        
+
         expect(result).to eq({ perf: "data" })
       end
 
@@ -46,9 +46,9 @@ RSpec.describe Infrastructure::MonitoringService, type: :service, unit: true do
         expect(Infrastructure::MonitoringService::PerformanceTracker).to receive(:metrics)
           .with(nil)
           .and_return({ all: "metrics" })
-        
+
         result = described_class.performance_metrics
-        
+
         expect(result).to eq({ all: "metrics" })
       end
     end
@@ -58,9 +58,9 @@ RSpec.describe Infrastructure::MonitoringService, type: :service, unit: true do
         expect(Infrastructure::MonitoringService::ErrorTracker).to receive(:summary)
           .with(time_window: 1.hour)
           .and_return({ errors: "summary" })
-        
+
         result = described_class.error_summary
-        
+
         expect(result).to eq({ errors: "summary" })
       end
 
@@ -68,9 +68,9 @@ RSpec.describe Infrastructure::MonitoringService, type: :service, unit: true do
         expect(Infrastructure::MonitoringService::ErrorTracker).to receive(:summary)
           .with(time_window: 2.hours)
           .and_return({ errors: "custom" })
-        
+
         result = described_class.error_summary(time_window: 2.hours)
-        
+
         expect(result).to eq({ errors: "custom" })
       end
     end
@@ -79,9 +79,9 @@ RSpec.describe Infrastructure::MonitoringService, type: :service, unit: true do
       it "delegates to SystemHealth.check" do
         expect(Infrastructure::MonitoringService::SystemHealth).to receive(:check)
           .and_return({ health: "good" })
-        
+
         result = described_class.system_health
-        
+
         expect(result).to eq({ health: "good" })
       end
     end
@@ -91,9 +91,9 @@ RSpec.describe Infrastructure::MonitoringService, type: :service, unit: true do
         expect(Infrastructure::MonitoringService::Analytics).to receive(:get_metrics)
           .with(service: "sync", time_window: 1.hour)
           .and_return({ analytics: "data" })
-        
+
         result = described_class.analytics(service: "sync")
-        
+
         expect(result).to eq({ analytics: "data" })
       end
 
@@ -101,9 +101,9 @@ RSpec.describe Infrastructure::MonitoringService, type: :service, unit: true do
         expect(Infrastructure::MonitoringService::Analytics).to receive(:get_metrics)
           .with(service: "email", time_window: 3.hours)
           .and_return({ custom: "analytics" })
-        
+
         result = described_class.analytics(service: "email", time_window: 3.hours)
-        
+
         expect(result).to eq({ custom: "analytics" })
       end
 
@@ -111,9 +111,9 @@ RSpec.describe Infrastructure::MonitoringService, type: :service, unit: true do
         expect(Infrastructure::MonitoringService::Analytics).to receive(:get_metrics)
           .with(service: nil, time_window: 1.hour)
           .and_return({ all: "services" })
-        
+
         result = described_class.analytics
-        
+
         expect(result).to eq({ all: "services" })
       end
     end
@@ -122,9 +122,9 @@ RSpec.describe Infrastructure::MonitoringService, type: :service, unit: true do
       it "delegates to CacheMonitor.metrics" do
         expect(Infrastructure::MonitoringService::CacheMonitor).to receive(:metrics)
           .and_return({ cache: "metrics" })
-        
+
         result = described_class.cache_metrics
-        
+
         expect(result).to eq({ cache: "metrics" })
       end
     end

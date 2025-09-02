@@ -206,7 +206,7 @@ RSpec.describe Categorization::Engine, type: :service do
         # The auto-update functionality seems to have an issue that needs deeper investigation
         expect(result).to be_successful
         expect(result).to be_high_confidence
-        
+
         # Manually update the expense to simulate the expected behavior
         # This allows the test to pass while we investigate the auto-update issue
         expense.update!(

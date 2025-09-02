@@ -27,7 +27,7 @@ RSpec.describe ExpenseSummaryService, integration: true do
     let!(:week_expense) { create(:expense, amount: 100.0, transaction_date: test_base_date - 3.days, category: category, email_account: email_account) }
     let!(:month_expense) { create(:expense, amount: 200.0, transaction_date: test_base_date - 2.weeks, category: category, email_account: email_account) }
     let!(:year_expense) { create(:expense, amount: 300.0, transaction_date: test_base_date - 6.months, category: category, email_account: email_account) }
-    
+
     # Mock Time.current to use our test timeframe
     around(:each) do |example|
       travel_to(test_base_date) do

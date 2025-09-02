@@ -281,11 +281,11 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
 
       # Debug: Check what's actually in the response
       expense_ids = json_response["expenses"].map { |e| e["id"] }
-      test_expense_ids = [expense1.id, expense2.id, expense3.id]
-      
+      test_expense_ids = [ expense1.id, expense2.id, expense3.id ]
+
       # For now, just ensure expense3 (most recent) is in the response
       expect(expense_ids).to include(expense3.id)
-      
+
       # And that expenses are ordered by transaction_date desc (most recent first)
       transaction_dates = json_response["expenses"].map { |e| Time.parse(e["transaction_date"]) }
       expect(transaction_dates).to eq(transaction_dates.sort.reverse)

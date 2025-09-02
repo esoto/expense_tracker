@@ -71,7 +71,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
         end
 
         context 'when parsing fails' do
-          let(:parser_errors) { ['Amount not found', 'Invalid date format'] }
+          let(:parser_errors) { [ 'Amount not found', 'Invalid date format' ] }
 
           before do
             allow(EmailProcessing::Parser).to receive(:new).with(email_account, email_data).and_return(parser)
@@ -138,7 +138,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
         end
 
         context 'when parsing fails' do
-          let(:parser_errors) { ['Parsing error'] }
+          let(:parser_errors) { [ 'Parsing error' ] }
 
           before do
             allow(EmailProcessing::Parser).to receive(:new).with(email_account, email_data).and_return(parser)
@@ -187,7 +187,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
         it 'handles nil email_data gracefully' do
           allow(EmailProcessing::Parser).to receive(:new).with(email_account, nil).and_return(parser)
           allow(parser).to receive(:parse_expense).and_return(nil)
-          allow(parser).to receive(:errors).and_return(['Invalid email data'])
+          allow(parser).to receive(:errors).and_return([ 'Invalid email data' ])
           allow(job).to receive(:save_failed_parsing)
 
           expect { job.perform(email_account_id, nil) }.not_to raise_error
@@ -198,7 +198,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
         it 'handles empty email_data gracefully' do
           allow(EmailProcessing::Parser).to receive(:new).with(email_account, {}).and_return(parser)
           allow(parser).to receive(:parse_expense).and_return(nil)
-          allow(parser).to receive(:errors).and_return(['Empty email data'])
+          allow(parser).to receive(:errors).and_return([ 'Empty email data' ])
           allow(job).to receive(:save_failed_parsing)
 
           expect { job.perform(email_account_id, {}) }.not_to raise_error
@@ -216,7 +216,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
   end
 
   describe '#save_failed_parsing' do
-    let(:errors) { ['Amount not found', 'Date format invalid', 'Currency mismatch'] }
+    let(:errors) { [ 'Amount not found', 'Date format invalid', 'Currency mismatch' ] }
     let(:failed_email_data) do
       {
         body: 'Failed email content',

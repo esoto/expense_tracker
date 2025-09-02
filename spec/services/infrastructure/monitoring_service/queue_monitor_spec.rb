@@ -44,7 +44,7 @@ RSpec.describe Infrastructure::MonitoringService::QueueMonitor, type: :service, 
     context "with pending jobs in multiple queues" do
       it "returns job counts grouped by queue name" do
         queue_counts = { "default" => 10, "urgent" => 5, "low" => 3 }
-        
+
         allow(@mocked_models[:job]).to receive_message_chain(:pending, :group, :count)
           .and_return(queue_counts)
 
@@ -122,7 +122,7 @@ RSpec.describe Infrastructure::MonitoringService::QueueMonitor, type: :service, 
         expect(@mocked_models[:job]).to receive(:where)
           .with(finished_at: one_hour_ago..current_time)
           .and_return(@mocked_models[:job])
-        
+
         allow(@mocked_models[:job]).to receive_message_chain(:group, :average).and_return({})
 
         queue_monitor.processing_times
@@ -148,7 +148,7 @@ RSpec.describe Infrastructure::MonitoringService::QueueMonitor, type: :service, 
       it "uses EXTRACT(EPOCH FROM ...) for time calculation" do
         expect(@mocked_models[:job]).to receive_message_chain(:finished, :where, :group)
           .and_return(@mocked_models[:job])
-        
+
         expect(@mocked_models[:job]).to receive(:average)
           .with("EXTRACT(EPOCH FROM (finished_at - created_at))")
           .and_return({ "default" => 5.5 })
@@ -166,7 +166,7 @@ RSpec.describe Infrastructure::MonitoringService::QueueMonitor, type: :service, 
         expect(@mocked_models[:failed]).to receive(:where)
           .with(created_at: one_hour_ago..current_time)
           .and_return(@mocked_models[:failed])
-        
+
         allow(@mocked_models[:failed]).to receive(:count).and_return(15)
 
         result = queue_monitor.failed_jobs_count
@@ -204,7 +204,7 @@ RSpec.describe Infrastructure::MonitoringService::QueueMonitor, type: :service, 
         expect(@mocked_models[:scheduled]).to receive(:where)
           .with(scheduled_at: current_time..(current_time + 1.hour))
           .and_return(@mocked_models[:scheduled])
-        
+
         allow(@mocked_models[:scheduled]).to receive(:count).and_return(8)
 
         result = queue_monitor.scheduled_jobs_count
@@ -242,10 +242,10 @@ RSpec.describe Infrastructure::MonitoringService::QueueMonitor, type: :service, 
         # Setup worker counts
         worker_scope = double("worker_scope")
         allow(worker_scope).to receive(:count).and_return(5)
-        
+
         dispatcher_scope = double("dispatcher_scope")
         allow(dispatcher_scope).to receive(:count).and_return(2)
-        
+
         supervisor_scope = double("supervisor_scope")
         allow(supervisor_scope).to receive(:count).and_return(1)
 
@@ -358,7 +358,7 @@ RSpec.describe Infrastructure::MonitoringService::QueueMonitor, type: :service, 
 
     it "combines multiple metrics efficiently" do
       call_count = 0
-      
+
       # Track database calls
       allow(@mocked_models[:job]).to receive(:pending) do
         call_count += 1

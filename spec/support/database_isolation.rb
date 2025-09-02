@@ -7,7 +7,7 @@ module DatabaseIsolation
   CLEANUP_ORDER = [
     # Models with dependencies on other models (delete first)
     'PatternFeedback',
-    'PatternLearningEvent', 
+    'PatternLearningEvent',
     'BulkOperationItem',
     'ConflictResolution',
     'SyncConflict',
@@ -16,7 +16,7 @@ module DatabaseIsolation
     'SyncSession',
     'Expense',
     'ProcessedEmail',
-    
+
     # Models with fewer dependencies (delete later)
     'EmailAccount',
     'Category',
@@ -38,9 +38,9 @@ module DatabaseIsolation
   # Uses DELETE instead of TRUNCATE for better performance with transactional fixtures
   def self.clean_database!
     return unless Rails.env.test?
-    
+
     ActiveRecord::Base.connection.execute('BEGIN')
-    
+
     begin
       CLEANUP_ORDER.each do |model_name|
         if model_exists?(model_name)
@@ -51,7 +51,7 @@ module DatabaseIsolation
         # Model doesn't exist, skip it
         Rails.logger.debug "Skipping cleanup for non-existent model: #{model_name}"
       end
-      
+
       ActiveRecord::Base.connection.execute('COMMIT')
     rescue StandardError => e
       ActiveRecord::Base.connection.execute('ROLLBACK')
@@ -62,16 +62,16 @@ module DatabaseIsolation
   # Clean only email-related data for focused email service tests
   def self.clean_email_data!
     return unless Rails.env.test?
-    
+
     # Use a more aggressive approach: disable foreign key checks temporarily
     connection = ActiveRecord::Base.connection
-    
+
     if connection.adapter_name == 'PostgreSQL'
       # For PostgreSQL, use TRUNCATE CASCADE for efficiency
       tables_to_clean = %w[pattern_feedbacks pattern_learning_events processed_emails expenses email_accounts parsing_rules]
-      
+
       existing_tables = tables_to_clean.select { |table| connection.table_exists?(table) }
-      
+
       if existing_tables.any?
         begin
           connection.execute("TRUNCATE TABLE #{existing_tables.join(', ')} RESTART IDENTITY CASCADE")
@@ -86,10 +86,10 @@ module DatabaseIsolation
     else
       # Fallback for other database adapters
       email_cleanup_order = [
-        'PatternFeedback', 'PatternLearningEvent', 'ProcessedEmail', 
+        'PatternFeedback', 'PatternLearningEvent', 'ProcessedEmail',
         'Expense', 'EmailAccount', 'ParsingRule'
       ]
-      
+
       email_cleanup_order.each do |model_name|
         if model_exists?(model_name)
           model_class = model_name.constantize
@@ -102,7 +102,7 @@ module DatabaseIsolation
   # Reset auto-incrementing sequences to prevent ID conflicts
   def self.reset_sequences!
     return unless Rails.env.test?
-    
+
     ActiveRecord::Base.connection.tables.each do |table|
       ActiveRecord::Base.connection.reset_pk_sequence!(table)
     end
@@ -128,7 +128,7 @@ module EmailServiceIsolation
     before do
       # Clear Rails cache to prevent cached data interference
       Rails.cache.clear
-      
+
       # Reset any stubbed/mocked services
       reset_service_mocks if respond_to?(:reset_service_mocks, true)
     end
@@ -139,7 +139,7 @@ module EmailServiceIsolation
   def reset_service_mocks
     # Reset monitoring service mocks
     allow(Infrastructure::MonitoringService::ErrorTracker).to receive(:report) if defined?(Infrastructure::MonitoringService::ErrorTracker)
-    
+
     # Reset any other commonly stubbed services
     if defined?(Categorization::Engine)
       allow(Categorization::Engine).to receive(:create).and_call_original
@@ -150,14 +150,14 @@ module EmailServiceIsolation
   def create_isolated_email_account(traits = [], **attributes)
     # Ensure unique email to prevent conflicts
     unique_email = "test_#{SecureRandom.hex(8)}@#{SecureRandom.hex(4)}.com"
-    
+
     default_attributes = {
       email: unique_email,
       provider: "gmail",
       bank_name: "BAC",
       active: true
     }
-    
+
     create(:email_account, *traits, **default_attributes.merge(attributes))
   end
 
@@ -165,7 +165,7 @@ module EmailServiceIsolation
   def create_isolated_parsing_rule(bank_name, **attributes)
     # Instead of deleting, just deactivate existing rules for this bank
     ParsingRule.where(bank_name: bank_name).update_all(active: false)
-    
+
     create(:parsing_rule, bank_name: bank_name, active: true, **attributes)
   end
 
@@ -173,9 +173,9 @@ module EmailServiceIsolation
   def with_clean_email_accounts(&block)
     # Store current count to verify cleanup
     initial_count = EmailAccount.count
-    
+
     yield
-    
+
     # Verify no email accounts leaked into other tests
     ensure
       # Clean up any accounts created during the test
@@ -194,7 +194,7 @@ module BankSpecificIsolation
   def create_exclusive_parsing_rule(bank_name, **attributes)
     # First, disable any existing rules for this bank
     ParsingRule.where(bank_name: bank_name).update_all(active: false)
-    
+
     # Create the new rule
     create(:parsing_rule, bank_name: bank_name, active: true, **attributes)
   end
@@ -203,10 +203,10 @@ module BankSpecificIsolation
   def with_bank_configuration(bank_name, &block)
     # Disable all rules except for specified bank
     ParsingRule.where.not(bank_name: bank_name).update_all(active: false)
-    
+
     # Ensure bank has active rule
     rule = create_exclusive_parsing_rule(bank_name)
-    
+
     yield rule
   ensure
     # Clean up after test

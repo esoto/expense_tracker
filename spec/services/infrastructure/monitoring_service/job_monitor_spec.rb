@@ -22,7 +22,7 @@ RSpec.describe Infrastructure::MonitoringService::JobMonitor, type: :service, un
       allow(job_monitor).to receive(:average_wait_time).and_return(2.5)
       allow(job_monitor).to receive(:average_execution_time).and_return(15.75)
       allow(job_monitor).to receive(:calculate_failure_rate).and_return(5.0)
-      
+
       result = job_monitor.metrics
 
       expect_metric_structure(result, [
@@ -180,7 +180,7 @@ RSpec.describe Infrastructure::MonitoringService::JobMonitor, type: :service, un
         result = job_monitor.jobs_by_class
 
         # Should be sorted by count descending
-        expect(result.keys).to eq(["ProcessEmailJob", "MetricsCalculationJob", "SyncSessionJob", "NotificationJob"])
+        expect(result.keys).to eq([ "ProcessEmailJob", "MetricsCalculationJob", "SyncSessionJob", "NotificationJob" ])
         expect(result["ProcessEmailJob"]).to eq(100)
         expect(result["NotificationJob"]).to eq(10)
       end
@@ -223,7 +223,7 @@ RSpec.describe Infrastructure::MonitoringService::JobMonitor, type: :service, un
         where_chain = double("where_chain")
         not_scope = double("not_scope")
         final_scope = double("final_scope")
-        
+
         allow(@mocked_models[:job]).to receive(:finished).and_return(jobs_scope)
         allow(jobs_scope).to receive(:where)
           .with(finished_at: one_hour_ago..current_time)
@@ -234,9 +234,9 @@ RSpec.describe Infrastructure::MonitoringService::JobMonitor, type: :service, un
 
         # Mock timestamp data: jobs waited 10s, 20s, 30s
         timestamp_data = [
-          [Time.current - 60, Time.current - 50], # 10 second wait
-          [Time.current - 50, Time.current - 30], # 20 second wait  
-          [Time.current - 40, Time.current - 10]  # 30 second wait
+          [ Time.current - 60, Time.current - 50 ], # 10 second wait
+          [ Time.current - 50, Time.current - 30 ], # 20 second wait
+          [ Time.current - 40, Time.current - 10 ]  # 30 second wait
         ]
         allow(final_scope).to receive(:pluck).with(:created_at, :claimed_at).and_return(timestamp_data)
 
@@ -253,7 +253,7 @@ RSpec.describe Infrastructure::MonitoringService::JobMonitor, type: :service, un
         where_chain = double("where_chain")
         not_scope = double("not_scope")
         final_scope = double("final_scope", empty?: true)
-        
+
         allow(@mocked_models[:job]).to receive(:finished).and_return(jobs_scope)
         allow(jobs_scope).to receive(:where).and_return(where_chain)
         allow(where_chain).to receive(:where).and_return(not_scope)
@@ -271,7 +271,7 @@ RSpec.describe Infrastructure::MonitoringService::JobMonitor, type: :service, un
         where_chain = double("where_chain")
         not_scope = double("not_scope")
         final_scope = double("final_scope")
-        
+
         allow(@mocked_models[:job]).to receive(:finished).and_return(jobs_scope)
         allow(jobs_scope).to receive(:where).and_return(where_chain)
         allow(where_chain).to receive(:where).and_return(not_scope)
@@ -280,8 +280,8 @@ RSpec.describe Infrastructure::MonitoringService::JobMonitor, type: :service, un
 
         # Some jobs never got claimed (nil claimed_at) - this will cause an error in the current implementation
         timestamp_data = [
-          [Time.current - 60, nil],
-          [Time.current - 50, Time.current - 30]
+          [ Time.current - 60, nil ],
+          [ Time.current - 50, Time.current - 30 ]
         ]
         allow(final_scope).to receive(:pluck).and_return(timestamp_data)
 
@@ -295,7 +295,7 @@ RSpec.describe Infrastructure::MonitoringService::JobMonitor, type: :service, un
         where_chain = double("where_chain")
         not_scope = double("not_scope")
         final_scope = double("final_scope")
-        
+
         allow(@mocked_models[:job]).to receive(:finished).and_return(jobs_scope)
         allow(jobs_scope).to receive(:where).and_return(where_chain)
         allow(where_chain).to receive(:where).and_return(not_scope)
@@ -304,8 +304,8 @@ RSpec.describe Infrastructure::MonitoringService::JobMonitor, type: :service, un
 
         # Wait times that create non-round average
         timestamp_data = [
-          [Time.current - 60, Time.current - 55.333], # 4.667 second wait
-          [Time.current - 50, Time.current - 45.111]  # 4.889 second wait
+          [ Time.current - 60, Time.current - 55.333 ], # 4.667 second wait
+          [ Time.current - 50, Time.current - 45.111 ]  # 4.889 second wait
         ]
         allow(final_scope).to receive(:pluck).and_return(timestamp_data)
 
@@ -330,9 +330,9 @@ RSpec.describe Infrastructure::MonitoringService::JobMonitor, type: :service, un
 
         # Mock execution time data: jobs took 5s, 10s, 15s
         timestamp_data = [
-          [Time.current - 50, Time.current - 45], # 5 second execution
-          [Time.current - 40, Time.current - 30], # 10 second execution
-          [Time.current - 25, Time.current - 10]  # 15 second execution
+          [ Time.current - 50, Time.current - 45 ], # 5 second execution
+          [ Time.current - 40, Time.current - 30 ], # 10 second execution
+          [ Time.current - 25, Time.current - 10 ]  # 15 second execution
         ]
         allow(jobs_scope).to receive(:pluck).with(:claimed_at, :finished_at).and_return(timestamp_data)
 
@@ -364,9 +364,9 @@ RSpec.describe Infrastructure::MonitoringService::JobMonitor, type: :service, un
 
         # Mix of valid and invalid timestamp pairs
         timestamp_data = [
-          [nil, Time.current],                     # Invalid - nil claimed_at
-          [Time.current - 30, nil],               # Invalid - nil finished_at
-          [Time.current - 20, Time.current - 10]  # Valid - 10 second execution
+          [ nil, Time.current ],                     # Invalid - nil claimed_at
+          [ Time.current - 30, nil ],               # Invalid - nil finished_at
+          [ Time.current - 20, Time.current - 10 ]  # Valid - 10 second execution
         ]
         allow(jobs_scope).to receive(:pluck).and_return(timestamp_data)
 
@@ -386,8 +386,8 @@ RSpec.describe Infrastructure::MonitoringService::JobMonitor, type: :service, un
 
         # All timestamp pairs are invalid
         timestamp_data = [
-          [nil, Time.current],
-          [Time.current - 30, nil]
+          [ nil, Time.current ],
+          [ Time.current - 30, nil ]
         ]
         allow(jobs_scope).to receive(:pluck).and_return(timestamp_data)
 
@@ -406,8 +406,8 @@ RSpec.describe Infrastructure::MonitoringService::JobMonitor, type: :service, un
 
         # Execution times that create non-round average
         timestamp_data = [
-          [Time.current - 30, Time.current - 25.333], # 4.667 second execution
-          [Time.current - 20, Time.current - 15.111]  # 4.889 second execution
+          [ Time.current - 30, Time.current - 25.333 ], # 4.667 second execution
+          [ Time.current - 20, Time.current - 15.111 ]  # 4.889 second execution
         ]
         allow(jobs_scope).to receive(:pluck).and_return(timestamp_data)
 
@@ -467,7 +467,7 @@ RSpec.describe Infrastructure::MonitoringService::JobMonitor, type: :service, un
 
     context "with precise failure rate calculations" do
       it "rounds result to 2 decimal places" do
-        # 7 failed out of 33 total = 21.212121...% 
+        # 7 failed out of 33 total = 21.212121...%
         allow(@mocked_models[:job]).to receive_message_chain(:where, :count).and_return(33)
         allow(@mocked_models[:failed]).to receive_message_chain(:where, :count).and_return(7)
 
@@ -519,7 +519,7 @@ RSpec.describe Infrastructure::MonitoringService::JobMonitor, type: :service, un
       where_chain = double("where_chain")
       not_scope = double("not_scope")
       final_scope = double("final_scope")
-      
+
       allow(@mocked_models[:job]).to receive(:finished).and_return(jobs_scope)
       allow(jobs_scope).to receive(:where).and_return(where_chain)
       allow(where_chain).to receive(:where).and_return(not_scope)
@@ -528,8 +528,8 @@ RSpec.describe Infrastructure::MonitoringService::JobMonitor, type: :service, un
 
       # Corrupt data that will cause calculation errors in the current implementation
       corrupt_data = [
-        ["not a timestamp", Time.current],
-        [Time.current, "not a timestamp"]
+        [ "not a timestamp", Time.current ],
+        [ Time.current, "not a timestamp" ]
       ]
       allow(final_scope).to receive(:pluck).and_return(corrupt_data)
 
@@ -590,7 +590,7 @@ RSpec.describe Infrastructure::MonitoringService::JobMonitor, type: :service, un
 
       # Very long execution time (1 hour)
       timestamp_data = [
-        [Time.current - 3600, Time.current]
+        [ Time.current - 3600, Time.current ]
       ]
       allow(jobs_scope).to receive(:pluck).and_return(timestamp_data)
 
@@ -615,7 +615,7 @@ RSpec.describe Infrastructure::MonitoringService::JobMonitor, type: :service, un
 
       expect(result.keys).to contain_exactly(
         "Email::ProcessorJob",
-        "Sync::Worker-Job", 
+        "Sync::Worker-Job",
         "Bulk.Operations::Job"
       )
     end

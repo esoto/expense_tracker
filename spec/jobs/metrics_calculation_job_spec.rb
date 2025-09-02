@@ -69,10 +69,10 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
       it "does not enqueue jobs for inactive accounts" do
         job.perform(email_account_id: nil)
-        
+
         # Check that we have the right number of enqueued jobs
         expect(enqueued_jobs.size).to eq(active_accounts.size)
-        
+
         # Verify each active account has a job enqueued
         active_accounts.each do |account|
           expect(described_class).to have_been_enqueued.with(email_account_id: account.id)
@@ -81,7 +81,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
       it "logs bulk processing mode" do
         job.perform(email_account_id: nil)
-        
+
         expect(Rails.logger).to have_received(:info)
           .with("MetricsCalculationJob called without email_account_id - enqueuing for all active accounts")
       end
@@ -89,7 +89,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
       it "returns early without further processing" do
         expect(job).not_to receive(:acquire_lock)
         expect(ExtendedCacheMetricsCalculator).not_to receive(:new)
-        
+
         job.perform(email_account_id: nil)
       end
     end
@@ -99,7 +99,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
         expect(EmailAccount).to receive(:find).with(email_account.id).and_return(email_account)
         allow(job).to receive(:acquire_lock).and_return(true)
         allow(job).to receive(:calculate_all_periods)
-        
+
         job.perform(email_account_id: email_account.id)
       end
 
@@ -107,7 +107,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
         expect(EmailAccount).to receive(:find).with(email_account.id.to_s).and_return(email_account)
         allow(job).to receive(:acquire_lock).and_return(true)
         allow(job).to receive(:calculate_all_periods)
-        
+
         job.perform(email_account_id: email_account.id.to_s)
       end
 
@@ -115,7 +115,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
         expect(EmailAccount).not_to receive(:find)
         allow(job).to receive(:acquire_lock).and_return(true)
         allow(job).to receive(:calculate_all_periods)
-        
+
         job.perform(email_account_id: email_account)
       end
 
@@ -123,7 +123,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
         # When email_account_id is nil, it should still trigger bulk mode
         allow(Rails.logger).to receive(:info)
         expect(described_class).to receive(:enqueue_for_all_accounts)
-        
+
         job.perform(email_account_id: nil, period: :month)
       end
 
@@ -150,9 +150,9 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
         it "acquires lock with correct parameters" do
           allow(job).to receive(:calculate_all_periods)
-          
+
           job.perform(email_account_id: email_account)
-          
+
           expect(Rails.cache).to have_received(:write).with(
             lock_key,
             anything,
@@ -163,19 +163,19 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
         it "releases lock in ensure block even on success" do
           allow(job).to receive(:calculate_all_periods)
-          
+
           job.perform(email_account_id: email_account)
-          
+
           expect(Rails.cache).to have_received(:delete).with(lock_key)
         end
 
         it "releases lock in ensure block even on failure" do
           allow(job).to receive(:calculate_all_periods).and_raise(StandardError, "Test error")
           allow(Rails.logger).to receive(:error)
-          
+
           expect { job.perform(email_account_id: email_account) }
             .to raise_error(StandardError, "Test error")
-          
+
           expect(Rails.cache).to have_received(:delete).with(lock_key)
         end
       end
@@ -194,20 +194,20 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
         it "skips processing when lock cannot be acquired" do
           expect(job).not_to receive(:calculate_all_periods)
           expect(ExtendedCacheMetricsCalculator).not_to receive(:new)
-          
+
           job.perform(email_account_id: email_account)
         end
 
         it "logs lock contention" do
           job.perform(email_account_id: email_account)
-          
+
           expect(Rails.logger).to have_received(:info)
             .with("MetricsCalculationJob skipped - another job is already processing account #{email_account.id}")
         end
 
         it "does not attempt to release lock" do
           expect(Rails.cache).not_to receive(:delete)
-          
+
           job.perform(email_account_id: email_account)
         end
       end
@@ -223,19 +223,19 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
       it "clears cache when force_refresh is true" do
         expect(MetricsCalculator).to receive(:clear_cache)
           .with(email_account: email_account)
-        
+
         job.perform(email_account_id: email_account, force_refresh: true)
       end
 
       it "does not clear cache when force_refresh is false" do
         expect(MetricsCalculator).not_to receive(:clear_cache)
-        
+
         job.perform(email_account_id: email_account, force_refresh: false)
       end
 
       it "does not clear cache when force_refresh is not provided" do
         expect(MetricsCalculator).not_to receive(:clear_cache)
-        
+
         job.perform(email_account_id: email_account)
       end
     end
@@ -266,7 +266,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
           period: :month,
           reference_date: reference_date
         )
-        
+
         expect(ExtendedCacheMetricsCalculator).to have_received(:new).with(
           email_account: email_account,
           period: :month,
@@ -282,7 +282,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
           period: :week,
           reference_date: reference_date
         )
-        
+
         expect(Rails.logger).to have_received(:info)
           .with("Calculating metrics for account #{email_account.id}, period: week, date: #{reference_date}")
       end
@@ -293,7 +293,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
           period: :day,
           reference_date: reference_date
         )
-        
+
         expect(Rails.logger).to have_received(:info)
           .with(/Metrics calculated.*42 transactions.*\$1234\.56/)
       end
@@ -317,7 +317,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
             period: :month,
             reference_date: reference_date
           )
-          
+
           expect(Rails.logger).to have_received(:error)
             .with(/Metrics calculation failed.*Database connection lost/)
         end
@@ -335,14 +335,14 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
       it "calculates all periods when period is not specified" do
         expect(job).to receive(:calculate_all_periods)
           .with(email_account, Date.current)
-        
+
         job.perform(email_account_id: email_account)
       end
 
       it "uses provided reference_date for all periods" do
         expect(job).to receive(:calculate_all_periods)
           .with(email_account, reference_date)
-        
+
         job.perform(
           email_account_id: email_account,
           reference_date: reference_date
@@ -352,7 +352,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
       it "defaults to current date when reference_date not provided" do
         expect(job).to receive(:calculate_all_periods)
           .with(email_account, Date.current)
-        
+
         job.perform(email_account_id: email_account)
       end
     end
@@ -365,8 +365,8 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
         allow(job).to receive(:release_lock)
         allow(job).to receive(:track_job_metrics)
         allow(ExtendedCacheMetricsCalculator).to receive(:new).and_return(calculator_double)
-        allow(calculator_double).to receive(:calculate).and_return({ 
-          metrics: { transaction_count: 10, total_amount: 100.0 } 
+        allow(calculator_double).to receive(:calculate).and_return({
+          metrics: { transaction_count: 10, total_amount: 100.0 }
         })
         allow(Rails.logger).to receive(:info)
         allow(Rails.logger).to receive(:warn)
@@ -386,21 +386,21 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
         it "logs successful completion with execution time" do
           job.perform(email_account_id: email_account, period: :month)
-          
+
           expect(Rails.logger).to have_received(:info)
             .with("MetricsCalculationJob completed in 5.0s for account #{email_account.id}")
         end
 
         it "tracks success metrics" do
           job.perform(email_account_id: email_account, period: :month)
-          
+
           expect(job).to have_received(:track_job_metrics)
             .with(email_account.id, fast_execution_time, :success)
         end
 
         it "does not track as slow job" do
           expect(job).not_to receive(:track_slow_job)
-          
+
           job.perform(email_account_id: email_account, period: :month)
         end
       end
@@ -421,21 +421,21 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
         it "logs performance warning" do
           job.perform(email_account_id: email_account, period: :month)
-          
+
           expect(Rails.logger).to have_received(:warn)
             .with("MetricsCalculationJob exceeded 30s target: 35.0s for account #{email_account.id}")
         end
 
         it "tracks slow job for analysis" do
           job.perform(email_account_id: email_account, period: :month)
-          
+
           expect(job).to have_received(:track_slow_job)
             .with(email_account, slow_execution_time)
         end
 
         it "still tracks success metrics" do
           job.perform(email_account_id: email_account, period: :month)
-          
+
           expect(job).to have_received(:track_job_metrics)
             .with(email_account.id, slow_execution_time, :success)
         end
@@ -465,7 +465,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
         it "logs error message and backtrace" do
           expect { job.perform(email_account_id: email_account) }
             .to raise_error(StandardError)
-          
+
           expect(Rails.logger).to have_received(:error)
             .with("MetricsCalculationJob failed: Database timeout")
           expect(Rails.logger).to have_received(:error).at_least(:once)
@@ -474,7 +474,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
         it "tracks failure metrics" do
           expect { job.perform(email_account_id: email_account) }
             .to raise_error(StandardError)
-          
+
           expect(job).to have_received(:track_job_metrics)
             .with(email_account.id, 0, :failure)
         end
@@ -482,7 +482,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
         it "ensures lock is released on error" do
           expect { job.perform(email_account_id: email_account) }
             .to raise_error(StandardError)
-          
+
           expect(job).to have_received(:release_lock)
             .with("metrics_calculation:#{email_account.id}")
         end
@@ -524,20 +524,20 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
     it "generates correct number of period-date combinations" do
       # Expected: 8 days + 5 weeks + 4 months + 2 years = 19 total
       job.perform(email_account_id: email_account)
-      
+
       expect(ExtendedCacheMetricsCalculator).to have_received(:new).exactly(19).times
     end
 
     it "logs pre-calculation summary" do
       job.perform(email_account_id: email_account)
-      
+
       expect(Rails.logger).to have_received(:info)
         .with("Pre-calculating 19 metric combinations for account #{email_account.id}")
     end
 
     it "creates calculator with correct cache hours" do
       job.perform(email_account_id: email_account)
-      
+
       expect(ExtendedCacheMetricsCalculator).to have_received(:new)
         .with(hash_including(cache_hours: 4))
         .at_least(:once)
@@ -550,7 +550,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
     it "generates correct day periods (current + past 7 days)" do
       periods = job.send(:generate_periods_and_dates, base_date)
       day_periods = periods.select { |p, _| p == :day }
-      
+
       expect(day_periods.size).to eq(8)
       expect(day_periods.map(&:last)).to match_array([
         base_date - 7.days,
@@ -567,7 +567,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
     it "generates correct week periods (current + past 4 weeks)" do
       periods = job.send(:generate_periods_and_dates, base_date)
       week_periods = periods.select { |p, _| p == :week }
-      
+
       expect(week_periods.size).to eq(5)
       expect(week_periods.map(&:last)).to match_array([
         base_date - 4.weeks,
@@ -581,7 +581,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
     it "generates correct month periods (current + past 3 months)" do
       periods = job.send(:generate_periods_and_dates, base_date)
       month_periods = periods.select { |p, _| p == :month }
-      
+
       expect(month_periods.size).to eq(4)
       expect(month_periods.map(&:last)).to match_array([
         base_date - 3.months,
@@ -594,7 +594,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
     it "generates correct year periods (current + previous year)" do
       periods = job.send(:generate_periods_and_dates, base_date)
       year_periods = periods.select { |p, _| p == :year }
-      
+
       expect(year_periods.size).to eq(2)
       expect(year_periods.map(&:last)).to match_array([
         base_date - 1.year,
@@ -606,7 +606,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
       end_of_month = Date.parse("2024-01-31")
       periods = job.send(:generate_periods_and_dates, end_of_month)
       month_periods = periods.select { |p, _| p == :month }
-      
+
       # Should handle month arithmetic correctly even at month boundaries
       expect(month_periods.map(&:last)).to include(
         Date.parse("2023-10-31"), # 3 months ago
@@ -620,7 +620,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
       leap_day = Date.parse("2024-02-29")
       periods = job.send(:generate_periods_and_dates, leap_day)
       year_periods = periods.select { |p, _| p == :year }
-      
+
       expect(year_periods.map(&:last)).to include(
         Date.parse("2023-02-28"), # Previous year (non-leap)
         Date.parse("2024-02-29")  # Current year (leap)
@@ -647,7 +647,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
     context "tracking successful execution" do
       it "increments success count" do
         job.send(:track_job_metrics, email_account.id, 10.5, :success)
-        
+
         expect(Rails.cache).to have_received(:write).with(
           metrics_key,
           hash_including(success_count: 6),
@@ -657,7 +657,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
       it "adds to total time" do
         job.send(:track_job_metrics, email_account.id, 10.5, :success)
-        
+
         expect(Rails.cache).to have_received(:write).with(
           metrics_key,
           hash_including(total_time: 60.5),
@@ -667,7 +667,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
       it "calculates correct average time" do
         job.send(:track_job_metrics, email_account.id, 10.5, :success)
-        
+
         expect(Rails.cache).to have_received(:write).with(
           metrics_key,
           hash_including(average_time: 60.5 / 6),
@@ -677,7 +677,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
       it "calculates correct success rate" do
         job.send(:track_job_metrics, email_account.id, 10.5, :success)
-        
+
         # (6 successes / 8 total) * 100 = 75%
         expect(Rails.cache).to have_received(:write).with(
           metrics_key,
@@ -690,7 +690,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
     context "tracking failed execution" do
       it "increments failure count" do
         job.send(:track_job_metrics, email_account.id, 0, :failure)
-        
+
         expect(Rails.cache).to have_received(:write).with(
           metrics_key,
           hash_including(failure_count: 3),
@@ -700,7 +700,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
       it "does not add to total time" do
         job.send(:track_job_metrics, email_account.id, 0, :failure)
-        
+
         expect(Rails.cache).to have_received(:write).with(
           metrics_key,
           hash_including(total_time: 50.0),
@@ -710,7 +710,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
       it "updates success rate correctly" do
         job.send(:track_job_metrics, email_account.id, 0, :failure)
-        
+
         # (5 successes / 8 total) * 100 = 62.5%
         expect(Rails.cache).to have_received(:write).with(
           metrics_key,
@@ -736,7 +736,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
       it "keeps only last 100 executions" do
         job.send(:track_job_metrics, email_account.id, 5.0, :success)
-        
+
         expect(Rails.cache).to have_received(:write).with(
           metrics_key,
           hash_including { |metrics| metrics[:executions].size == 100 },
@@ -746,7 +746,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
       it "adds new execution to history" do
         job.send(:track_job_metrics, email_account.id, 5.0, :success)
-        
+
         expect(Rails.cache).to have_received(:write).with(
           metrics_key,
           hash_including { |metrics|
@@ -767,9 +767,9 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
           total_time: 0.0
         }
         allow(Rails.cache).to receive(:fetch).and_return(empty_metrics)
-        
+
         job.send(:track_job_metrics, email_account.id, 10.0, :success)
-        
+
         expect(Rails.cache).to have_received(:write).with(
           metrics_key,
           hash_including(
@@ -782,9 +782,9 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
       it "handles nil cache response by initializing metrics" do
         allow(Rails.cache).to receive(:fetch).and_yield
-        
+
         job.send(:track_job_metrics, email_account.id, 10.0, :success)
-        
+
         expect(Rails.cache).to have_received(:write).with(
           metrics_key,
           hash_including(
@@ -812,7 +812,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
     it "adds slow job record with all required fields" do
       job.send(:track_slow_job, email_account, 45.seconds)
-      
+
       expect(Rails.cache).to have_received(:write).with(
         slow_jobs_key,
         array_including(
@@ -828,7 +828,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
     it "keeps only last 50 slow job records" do
       job.send(:track_slow_job, email_account, 45.seconds)
-      
+
       expect(Rails.cache).to have_received(:write).with(
         slow_jobs_key,
         an_instance_of(Array) { |arr| arr.size == 50 },
@@ -838,7 +838,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
     it "adds timestamp to slow job record" do
       job.send(:track_slow_job, email_account, 45.seconds)
-      
+
       expect(Rails.cache).to have_received(:write).with(
         slow_jobs_key,
         array_including(
@@ -853,12 +853,12 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
     it "handles empty slow jobs cache" do
       allow(Rails.cache).to receive(:fetch).and_yield
-      
+
       job.send(:track_slow_job, email_account, 45.seconds)
-      
+
       expect(Rails.cache).to have_received(:write).with(
         slow_jobs_key,
-        [hash_including(email_account_id: email_account.id)],
+        [ hash_including(email_account_id: email_account.id) ],
         expires_in: 7.days
       )
     end
@@ -867,7 +867,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
   describe ".enqueue_for_all_accounts" do
     let!(:active_accounts) { create_list(:email_account, 4, active: true) }
     let!(:inactive_accounts) { create_list(:email_account, 2, active: false) }
-    
+
     before do
       # Stub EmailAccount.active to return only our test accounts
       allow(EmailAccount).to receive(:active).and_return(
@@ -883,7 +883,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
     it "passes correct email_account_id to each job" do
       described_class.enqueue_for_all_accounts
-      
+
       # Verify each active account has a job enqueued with correct args
       active_accounts.each do |account|
         expect(described_class).to have_been_enqueued.with(email_account_id: account.id)
@@ -892,10 +892,10 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
     it "does not enqueue for inactive accounts" do
       described_class.enqueue_for_all_accounts
-      
+
       # Check exact number of jobs enqueued
       expect(enqueued_jobs.size).to eq(active_accounts.size)
-      
+
       # Verify inactive accounts don't have jobs
       inactive_accounts.each do |account|
         expect(described_class).not_to have_been_enqueued.with(email_account_id: account.id)
@@ -905,19 +905,19 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
     it "uses perform_later for background processing" do
       expect(described_class).to receive(:perform_later)
         .exactly(active_accounts.size).times
-      
+
       described_class.enqueue_for_all_accounts
     end
 
     it "handles large number of accounts efficiently with find_each" do
       # Create many accounts to test batching
       many_accounts = create_list(:email_account, 50, active: true)
-      
+
       # Stub EmailAccount.active to return our test accounts
       allow(EmailAccount).to receive(:active).and_return(
         EmailAccount.where(id: many_accounts.map(&:id))
       )
-      
+
       expect { described_class.enqueue_for_all_accounts }
         .to have_enqueued_job(described_class)
         .exactly(50).times
@@ -956,17 +956,17 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
           period: :month,
           reference_date: reference_date
         )
-        
+
         # Verify all steps executed in order
         expect(Rails.cache).to have_received(:write).with(
           "metrics_calculation:#{email_account.id}",
           anything,
           hash_including(expires_in: 5.minutes)
         ).ordered
-        
+
         expect(ExtendedCacheMetricsCalculator).to have_received(:new).ordered
         expect(calculator).to have_received(:calculate).ordered
-        
+
         expect(Rails.cache).to have_received(:delete).with(
           "metrics_calculation:#{email_account.id}"
         ).ordered
@@ -983,21 +983,21 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
           failure_count: 0,
           total_time: 0.0
         })
-        
+
         # Mock calculator for all period combinations
         calculator = instance_double(ExtendedCacheMetricsCalculator)
         allow(ExtendedCacheMetricsCalculator).to receive(:new).and_return(calculator)
         allow(calculator).to receive(:calculate).and_return({
           metrics: { transaction_count: 10, total_amount: 100.0 }
         })
-        
+
         allow(Rails.logger).to receive(:info)
         allow(Rails.logger).to receive(:debug)
       end
 
       it "processes all period combinations successfully" do
         job.perform(email_account_id: email_account)
-        
+
         # Should create 19 calculators (8 days + 5 weeks + 4 months + 2 years)
         expect(ExtendedCacheMetricsCalculator).to have_received(:new).exactly(19).times
       end
@@ -1012,10 +1012,10 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
       it "ensures cleanup even on catastrophic failure" do
         allow(job).to receive(:calculate_all_periods).and_raise(NoMemoryError, "Out of memory")
-        
+
         expect { job.perform(email_account_id: email_account) }
           .to raise_error(NoMemoryError)
-        
+
         # Lock should still be released
         expect(Rails.cache).to have_received(:delete)
           .with("metrics_calculation:#{email_account.id}")
@@ -1036,11 +1036,11 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
             unless_exist: true
           )
         ).and_return(true)
-        
+
         allow(job).to receive(:calculate_all_periods)
         allow(job).to receive(:track_job_metrics)
         allow(Rails.cache).to receive(:delete)
-        
+
         job.perform(email_account_id: email_account)
       end
 
@@ -1050,11 +1050,11 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
           .with(lock_key, anything, hash_including(unless_exist: true))
           .and_return(true)
           .once
-        
+
         allow(job).to receive(:calculate_all_periods)
         allow(job).to receive(:track_job_metrics)
         allow(Rails.cache).to receive(:delete)
-        
+
         job.perform(email_account_id: email_account)
       end
     end
@@ -1062,7 +1062,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
     context "metrics cache operations" do
       it "caches metrics with 24-hour expiration" do
         metrics_key = "job_metrics:metrics_calculation:#{email_account.id}"
-        
+
         allow(Rails.cache).to receive(:write).and_call_original
         allow(Rails.cache).to receive(:fetch).and_return({
           executions: [],
@@ -1070,13 +1070,13 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
           failure_count: 0,
           total_time: 0.0
         })
-        
+
         expect(Rails.cache).to receive(:write).with(
           metrics_key,
           anything,
           expires_in: 24.hours
         )
-        
+
         job.send(:track_job_metrics, email_account.id, 10.0, :success)
       end
     end
@@ -1084,15 +1084,15 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
     context "slow job cache operations" do
       it "caches slow jobs with 7-day expiration" do
         slow_jobs_key = "slow_jobs:metrics_calculation"
-        
+
         allow(Rails.cache).to receive(:fetch).and_return([])
-        
+
         expect(Rails.cache).to receive(:write).with(
           slow_jobs_key,
           anything,
           expires_in: 7.days
         )
-        
+
         job.send(:track_slow_job, email_account, 35.seconds)
       end
     end
@@ -1103,24 +1103,24 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
       it "handles end of year correctly" do
         end_of_year = Date.parse("2024-12-31")
         periods = job.send(:generate_periods_and_dates, end_of_year)
-        
+
         year_periods = periods.select { |p, _| p == :year }
         expect(year_periods).to include(
-          [:year, Date.parse("2023-12-31")],
-          [:year, Date.parse("2024-12-31")]
+          [ :year, Date.parse("2023-12-31") ],
+          [ :year, Date.parse("2024-12-31") ]
         )
       end
 
       it "handles beginning of year correctly" do
         beginning_of_year = Date.parse("2024-01-01")
         periods = job.send(:generate_periods_and_dates, beginning_of_year)
-        
+
         month_periods = periods.select { |p, _| p == :month }
         expect(month_periods).to include(
-          [:month, Date.parse("2023-10-01")],
-          [:month, Date.parse("2023-11-01")],
-          [:month, Date.parse("2023-12-01")],
-          [:month, Date.parse("2024-01-01")]
+          [ :month, Date.parse("2023-10-01") ],
+          [ :month, Date.parse("2023-11-01") ],
+          [ :month, Date.parse("2023-12-01") ],
+          [ :month, Date.parse("2024-01-01") ]
         )
       end
     end
@@ -1148,7 +1148,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
         allow(Rails.cache).to receive(:write).and_return(true)
         allow(Rails.cache).to receive(:delete)
         allow(Rails.cache).to receive(:fetch).and_return([])
-        
+
         expect { job.send(:track_slow_job, email_account, 35.seconds) }
           .not_to raise_error
       end
@@ -1156,19 +1156,19 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
       it "handles string period parameter" do
         calculator = instance_double(ExtendedCacheMetricsCalculator)
         allow(ExtendedCacheMetricsCalculator).to receive(:new).and_return(calculator)
-        allow(calculator).to receive(:calculate).and_return({ 
-          metrics: { transaction_count: 5, total_amount: 50.0 } 
+        allow(calculator).to receive(:calculate).and_return({
+          metrics: { transaction_count: 5, total_amount: 50.0 }
         })
         allow(job).to receive(:acquire_lock).and_return(true)
         allow(job).to receive(:release_lock)
         allow(job).to receive(:track_job_metrics)
-        
+
         job.perform(
           email_account_id: email_account,
           period: "month", # String instead of symbol
           reference_date: reference_date
         )
-        
+
         # The job passes the period as-is to ExtendedCacheMetricsCalculator
         expect(ExtendedCacheMetricsCalculator).to have_received(:new).with(
           hash_including(period: "month")

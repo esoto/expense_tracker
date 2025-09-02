@@ -10,14 +10,14 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
   before(:each) do
     # Comprehensive cleanup to ensure test isolation
     DatabaseIsolation.clean_email_data!
-    
+
     # Reset Rails cache to prevent cached data interference
     Rails.cache.clear
-    
+
     # Clear any global state that might affect tests
     ActiveRecord::Base.clear_cache!
   end
-  
+
   # Additional cleanup after each test to ensure no state leakage
   after(:each) do
     # Clean up any test-specific data that might have been created
@@ -34,10 +34,10 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
   let(:real_categorization_engine) do
     instance_double(Categorization::Engine).tap do |engine|
       allow(engine).to receive(:categorize).and_return(
-        double('CategorizationResult', 
-          successful?: true, 
-          confidence: 0.85, 
-          method: "ml_pattern", 
+        double('CategorizationResult',
+          successful?: true,
+          confidence: 0.85,
+          method: "ml_pattern",
           category: test_category
         )
       )
@@ -54,7 +54,7 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
   describe 'Phase 5: End-to-End Integration Testing' do
     context 'Complete Email Processing Workflow' do
       describe 'full process_new_emails workflow' do
-        let!(:bac_account) { create_isolated_email_account([:bac, :gmail]) }
+        let!(:bac_account) { create_isolated_email_account([ :bac, :gmail ]) }
         let(:processing_service) { described_class.new(bac_account, auto_categorize_options.merge(categorization_engine: real_categorization_engine)) }
         let(:email_fixtures) do
           [
@@ -215,7 +215,7 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
       describe 'EmailParser ↔ ParsingRule integration' do
         let!(:parser_test_account) { create(:email_account, :bac, :gmail) }
         let(:processing_service) { described_class.new(parser_test_account) }
-        
+
         before do
           # Ensure clean parsing rules state
           ParsingRule.destroy_all
@@ -236,7 +236,7 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
           # Clear state first
           Expense.where(email_account: parser_test_account).delete_all
           ProcessedEmail.where(email_account: parser_test_account).delete_all
-          
+
           # Make parsing rule inactive instead of deleting completely
           @bac_parsing_rule.update!(active: false)
 
@@ -252,7 +252,7 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
           expect(result[:success]).to be true
           expect(result[:metrics][:emails_found]).to eq(1)
           expect(result[:metrics][:emails_processed]).to eq(1)
-          
+
           # Test verifies the system handles cases where parsing rules are inactive
           # The processing should still complete successfully even if no expenses are extracted
           expect(result[:details][:errors]).to be_empty
@@ -285,15 +285,15 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
           # Clear state first
           Expense.where(email_account: categorization_test_account).delete_all
           ProcessedEmail.where(email_account: categorization_test_account).delete_all
-          
+
           # Ensure parsing rule exists for BAC
           ParsingRule.where(bank_name: 'BAC').update_all(active: false)
           create(:parsing_rule, :bac)
-          
+
           result = processing_service.process_new_emails(since: 1.week.ago)
 
           expect(result[:success]).to be true
-          
+
           # Get the newly created expense
           created_expense = Expense.where(email_account: categorization_test_account).last
           expect(created_expense).to be_present
@@ -307,14 +307,14 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
           # Clear state first
           Expense.where(email_account: categorization_test_account).delete_all
           ProcessedEmail.where(email_account: categorization_test_account).delete_all
-          
+
           # Ensure parsing rule exists for BAC
           ParsingRule.where(bank_name: 'BAC').update_all(active: false)
           create(:parsing_rule, :bac)
-          
+
           failing_engine = instance_double(Categorization::Engine)
           allow(failing_engine).to receive(:categorize).and_raise(StandardError.new("Categorization engine error"))
-          
+
           failing_service = described_class.new(categorization_test_account, auto_categorize_options.merge(categorization_engine: failing_engine))
           result = failing_service.process_new_emails(since: 1.week.ago)
 
@@ -329,11 +329,11 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
           # Ensure clean state for this test
           Expense.where(email_account: categorization_test_account).delete_all
           ProcessedEmail.where(email_account: categorization_test_account).delete_all
-          
+
           # Ensure parsing rule exists for BAC
           ParsingRule.where(bank_name: 'BAC').update_all(active: false)
           create(:parsing_rule, :bac)
-          
+
           # Low confidence categorization should not be applied
           low_confidence_engine = instance_double(Categorization::Engine)
           allow(low_confidence_engine).to receive(:categorize).and_return(
@@ -345,7 +345,7 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
               category: groceries_category
             )
           )
-          
+
           low_confidence_service = described_class.new(categorization_test_account, auto_categorize_options.merge(categorization_engine: low_confidence_engine))
           result = low_confidence_service.process_new_emails(since: 1.week.ago)
 
@@ -369,7 +369,7 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
         it 'reports errors to monitoring service with proper context' do
           # Reset monitoring service mock for clean expectations
           allow(Infrastructure::MonitoringService::ErrorTracker).to receive(:report)
-          
+
           # Force an error during processing
           error_mock = create_mock_imap
           allow(error_mock).to receive(:examine).and_raise(StandardError.new("IMAP search failed"))
@@ -470,12 +470,12 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
         let(:mixed_quality_fixtures) do
           [
             EmailProcessingTestHelper::EmailFixtures.bac_transaction_email,
-            { from: "corrupt@test.com", subject: "Corrupt Email", date: Time.current, 
-              body: "Amount: $100.00 processed successfully", 
+            { from: "corrupt@test.com", subject: "Corrupt Email", date: Time.current,
+              body: "Amount: $100.00 processed successfully",
               raw_content: "From: corrupt@test.com\r\nSubject: Corrupt Email\r\nDate: #{Time.current.rfc2822}\r\n\r\nAmount: $100.00 processed successfully" },
             EmailProcessingTestHelper::EmailFixtures.bcr_transaction_email,
-            { from: "another-corrupt@test.com", subject: "Another Corrupt", date: Time.current, 
-              body: "Amount: $50.00 charge processed", 
+            { from: "another-corrupt@test.com", subject: "Another Corrupt", date: Time.current,
+              body: "Amount: $50.00 charge processed",
               raw_content: "From: another-corrupt@test.com\r\nSubject: Another Corrupt\r\nDate: #{Time.current.rfc2822}\r\n\r\nAmount: $50.00 charge processed" }
           ]
         end
@@ -526,7 +526,7 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
 
         before do
           # Create parsing rules for all banks (deactivate existing)
-          ParsingRule.where(bank_name: ['BAC', 'BCR', 'Scotiabank']).update_all(active: false)
+          ParsingRule.where(bank_name: [ 'BAC', 'BCR', 'Scotiabank' ]).update_all(active: false)
           create(:parsing_rule, :bac)
           create(:parsing_rule, :bcr)
           create(:parsing_rule, :scotiabank)
@@ -536,7 +536,7 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
           # Clear any existing data to ensure clean test state
           Expense.delete_all
           ProcessedEmail.delete_all
-          
+
           all_bank_accounts.each_with_index do |account, index|
             # Create dedicated mock for each bank
             bank_mock = create_mock_imap
@@ -561,7 +561,7 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
           # Clear existing data
           Expense.delete_all
           ProcessedEmail.delete_all
-          
+
           # BAC uses colones (₡), BCR uses USD ($), Scotiabank uses USD ($)
           expected_amounts = [ 25_500.0, 45.20, 89.75 ]
           expected_currencies = [ "crc", "usd", "usd" ]
@@ -586,7 +586,7 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
           # Clear existing data
           Expense.delete_all
           ProcessedEmail.delete_all
-          
+
           all_bank_accounts.each_with_index do |account, index|
             # Create parsing rule specific to this bank
             ParsingRule.destroy_all
@@ -600,7 +600,7 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
             else
               create(:parsing_rule, bank_name: account.bank_name)
             end
-            
+
             # Create dedicated mock for each bank
             lang_mock = create_mock_imap
             stub_imap_connection(lang_mock)
@@ -655,13 +655,13 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
           # Clean state first
           Expense.delete_all
           ProcessedEmail.delete_all
-          
+
           # Create the parsing rule for Scotiabank
           ParsingRule.destroy_all
           create(:parsing_rule, :scotiabank)
           scotia_parse_account = create(:email_account, :scotiabank, :custom)
           processing_service = described_class.new(scotia_parse_account)
-          
+
           # Setup dedicated mock for this test
           scotia_mock = create_mock_imap
           stub_imap_connection(scotia_mock)
@@ -705,7 +705,7 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
           # Clear state first
           Expense.where(email_account: mixed_email_account).delete_all
           ProcessedEmail.where(email_account: mixed_email_account).delete_all
-          
+
           result = processing_service.process_new_emails(since: 1.week.ago)
 
           expect(result[:success]).to be true
@@ -728,7 +728,7 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
           # Clear state first
           Expense.where(email_account: mixed_email_account).delete_all
           ProcessedEmail.where(email_account: mixed_email_account).delete_all
-          
+
           result = processing_service.process_new_emails(since: 1.week.ago)
           expect(result[:success]).to be true
 
@@ -745,13 +745,13 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
 
       describe 'date range processing with historical emails' do
         let!(:date_range_account) { create_isolated_email_account([ :bac, :gmail ]) }
-        
+
         before do
           # Create parsing rule for BAC emails (deactivate existing)
           ParsingRule.where(bank_name: 'BAC').update_all(active: false)
           create(:parsing_rule, :bac)
         end
-        
+
         let(:processing_service) { described_class.new(date_range_account) }
         let(:historical_fixtures) do
           base_fixture = EmailProcessingTestHelper::EmailFixtures.bac_transaction_email
@@ -782,7 +782,7 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
           # Clear state first
           Expense.where(email_account: date_range_account).delete_all
           ProcessedEmail.where(email_account: date_range_account).delete_all
-          
+
           # Process only emails from the last week
           result = processing_service.process_new_emails(since: 1.week.ago)
 
@@ -797,7 +797,7 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
           # Clear state first
           Expense.where(email_account: date_range_account).delete_all
           ProcessedEmail.where(email_account: date_range_account).delete_all
-          
+
           result = processing_service.process_new_emails(since: 2.weeks.ago, until_date: 3.days.ago)
 
           expect(result[:success]).to be true
@@ -809,7 +809,7 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
 
       describe 'duplicate email handling across sessions' do
         let!(:duplicate_test_account) { create(:email_account, :bac, :gmail) }
-        
+
         before do
           # Create parsing rule for BAC emails
           ParsingRule.destroy_all
@@ -840,7 +840,7 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
           # Clear state first
           Expense.where(email_account: duplicate_test_account).delete_all
           ProcessedEmail.where(email_account: duplicate_test_account).delete_all
-          
+
           # First processing run
           result1 = processing_service.process_new_emails(since: 1.week.ago)
           expect(result1[:success]).to be true
@@ -863,7 +863,7 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
           # Clear state first
           Expense.where(email_account: duplicate_test_account).delete_all
           ProcessedEmail.where(email_account: duplicate_test_account).delete_all
-          
+
           result = processing_service.process_new_emails(since: 1.week.ago)
 
           expect(result[:success]).to be true
@@ -1007,7 +1007,7 @@ RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, un
           # Process multiple accounts with different email fixtures
           results = []
 
-          [account1, account2].each_with_index do |account, index|
+          [ account1, account2 ].each_with_index do |account, index|
             mock_imap = create_mock_imap
             stub_imap_connection(mock_imap)
             fixture = index == 0 ? EmailProcessingTestHelper::EmailFixtures.bac_transaction_email : EmailProcessingTestHelper::EmailFixtures.bcr_transaction_email

@@ -14,10 +14,10 @@ RSpec.describe BroadcastAnalyticsCleanupJob, type: :job, unit: true do
     allow(Rails.logger).to receive(:info)
     allow(Rails.logger).to receive(:error)
     allow(Rails.logger).to receive(:warn)
-    
+
     # Mock FailedBroadcastStore
     allow(FailedBroadcastStore).to receive(:cleanup_old_records).and_return(5)
-    
+
     # Mock Redis options
     allow(redis_mock).to receive(:options).and_return(namespace: 'test_namespace')
   end
@@ -36,7 +36,7 @@ RSpec.describe BroadcastAnalyticsCleanupJob, type: :job, unit: true do
         expect(FailedBroadcastStore).to have_received(:cleanup_old_records).with(older_than: 1.week)
         expect(job).to have_received(:cleanup_analytics_cache)
         expect(job).to have_received(:record_cleanup_metrics)
-        
+
         expect(result).to eq({
           failed_broadcasts_cleaned: 5,
           cache_keys_cleaned: 10,
@@ -98,7 +98,7 @@ RSpec.describe BroadcastAnalyticsCleanupJob, type: :job, unit: true do
         'test_namespace:broadcast_analytics:failure:2024-01-01-11'
       ]
     end
-    
+
     let(:recent_keys) do
       [
         "test_namespace:broadcast_analytics:success:#{1.day.ago.strftime('%Y-%m-%d-%H')}",
@@ -110,7 +110,7 @@ RSpec.describe BroadcastAnalyticsCleanupJob, type: :job, unit: true do
       before do
         allow(cache_mock).to receive(:respond_to?).with(:redis).and_return(true)
         allow(cache_mock).to receive(:delete)
-        
+
         # Mock different responses for different patterns
         allow(redis_mock).to receive(:keys).with('broadcast_analytics:success:*').and_return(old_keys.select { |k| k.include?('success') })
         allow(redis_mock).to receive(:keys).with('broadcast_analytics:failure:*').and_return(old_keys.select { |k| k.include?('failure') })
@@ -129,9 +129,9 @@ RSpec.describe BroadcastAnalyticsCleanupJob, type: :job, unit: true do
 
       it 'skips recent cache entries' do
         allow(redis_mock).to receive(:keys).and_return(recent_keys)
-        
+
         result = job.send(:cleanup_analytics_cache)
-        
+
         expect(cache_mock).not_to have_received(:delete)
         expect(result).to eq(0)
       end
@@ -175,17 +175,17 @@ RSpec.describe BroadcastAnalyticsCleanupJob, type: :job, unit: true do
     context 'with valid date patterns' do
       it 'returns true for old keys' do
         old_key = 'broadcast_analytics:success:2024-01-01-10'
-        
+
         result = job.send(:key_is_old?, old_key, cutoff_time)
-        
+
         expect(result).to be true
       end
 
       it 'returns false for recent keys' do
         recent_key = "broadcast_analytics:success:#{Time.current.strftime('%Y-%m-%d-%H')}"
-        
+
         result = job.send(:key_is_old?, recent_key, cutoff_time)
-        
+
         expect(result).to be false
       end
     end
@@ -193,17 +193,17 @@ RSpec.describe BroadcastAnalyticsCleanupJob, type: :job, unit: true do
     context 'with invalid date patterns' do
       it 'returns false for keys without date patterns' do
         invalid_key = 'broadcast_analytics:success:invalid'
-        
+
         result = job.send(:key_is_old?, invalid_key, cutoff_time)
-        
+
         expect(result).to be false
       end
 
       it 'returns true for keys with unparseable dates' do
         invalid_date_key = 'broadcast_analytics:success:9999-99-99-99'
-        
+
         result = job.send(:key_is_old?, invalid_date_key, cutoff_time)
-        
+
         expect(result).to be true
       end
     end
@@ -212,7 +212,7 @@ RSpec.describe BroadcastAnalyticsCleanupJob, type: :job, unit: true do
   describe '#cleanup_cache_pattern_fallback' do
     it 'returns 0 for the simplified implementation' do
       result = job.send(:cleanup_cache_pattern_fallback, 'pattern:*', 1.week.ago)
-      
+
       expect(result).to eq(0)
     end
   end

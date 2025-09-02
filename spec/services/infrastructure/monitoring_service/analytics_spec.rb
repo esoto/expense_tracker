@@ -26,10 +26,10 @@ RSpec.describe Infrastructure::MonitoringService::Analytics, type: :service, uni
       it "returns metrics for all services" do
         result = analytics.get_metrics(time_window: 1.hour)
 
-        expect_metric_structure(result, [:time_window, :timestamp, :services, :summary])
+        expect_metric_structure(result, [ :time_window, :timestamp, :services, :summary ])
         expect(result[:time_window]).to eq(1.hour)
         expect_timestamp(result[:timestamp])
-        
+
         expect(result[:services]).to have_key("sync")
         expect(result[:services]).to have_key("email_processing")
         expect(result[:services]).to have_key("categorization")
@@ -40,7 +40,7 @@ RSpec.describe Infrastructure::MonitoringService::Analytics, type: :service, uni
         result = analytics.get_metrics(time_window: 1.hour)
         summary = result[:summary]
 
-        expect_metric_structure(summary, [:total_operations, :success_rate, :busiest_service])
+        expect_metric_structure(summary, [ :total_operations, :success_rate, :busiest_service ])
         expect_numeric_metric(summary[:total_operations], min: 0)
         expect_percentage(summary[:success_rate])
         expect(summary[:busiest_service]).to be_a(String)
@@ -75,8 +75,8 @@ RSpec.describe Infrastructure::MonitoringService::Analytics, type: :service, uni
         sync_metrics = result[:services]["sync"]
 
         # Average duration should be based on completed sessions only
-        expected_duration = completed_sessions.map { |s| 
-          (s.completed_at - s.started_at).to_f 
+        expected_duration = completed_sessions.map { |s|
+          (s.completed_at - s.started_at).to_f
         }.sum / completed_sessions.count
 
         expect(sync_metrics[:average_duration]).to be_within(0.1).of(expected_duration)
@@ -84,7 +84,7 @@ RSpec.describe Infrastructure::MonitoringService::Analytics, type: :service, uni
 
       it "handles no completed sessions gracefully" do
         SyncSession.completed.destroy_all
-        
+
         result = analytics.get_metrics(service: "sync", time_window: 1.hour)
         sync_metrics = result[:services]["sync"]
 
@@ -104,7 +104,7 @@ RSpec.describe Infrastructure::MonitoringService::Analytics, type: :service, uni
         result = analytics.get_metrics(service: "email_processing", time_window: 1.hour)
         email_metrics = result[:services]["email_processing"]
 
-        expect_metric_structure(email_metrics, [:emails_fetched, :expenses_created])
+        expect_metric_structure(email_metrics, [ :emails_fetched, :expenses_created ])
         expect(email_metrics[:emails_fetched]).to eq(3)
         expect(email_metrics[:expenses_created]).to eq(2) # Expenses with raw_email_content
       end
@@ -113,7 +113,7 @@ RSpec.describe Infrastructure::MonitoringService::Analytics, type: :service, uni
     context "with specific service: categorization" do
       before do
         # Create categorized expenses
-        create_list(:expense, 3, 
+        create_list(:expense, 3,
           category: create(:category),
           auto_categorized: true,
           updated_at: current_time - 20.minutes
@@ -144,7 +144,7 @@ RSpec.describe Infrastructure::MonitoringService::Analytics, type: :service, uni
 
       it "excludes uncategorized expenses" do
         Expense.update_all(category_id: nil)
-        
+
         result = analytics.get_metrics(service: "categorization", time_window: 1.hour)
         cat_metrics = result[:services]["categorization"]
 
@@ -191,7 +191,7 @@ RSpec.describe Infrastructure::MonitoringService::Analytics, type: :service, uni
 
       it "filters by operation type correctly" do
         BulkOperation.update_all(operation_type: :recategorization)
-        
+
         result = analytics.get_metrics(service: "bulk_categorization", time_window: 1.hour)
         bulk_metrics = result[:services]["bulk_categorization"]
 
@@ -203,7 +203,7 @@ RSpec.describe Infrastructure::MonitoringService::Analytics, type: :service, uni
     context "with unknown service" do
       it "returns empty metrics" do
         result = analytics.get_metrics(service: "unknown_service", time_window: 1.hour)
-        
+
         expect(result[:services]["unknown_service"]).to eq({})
       end
     end
@@ -273,7 +273,7 @@ RSpec.describe Infrastructure::MonitoringService::Analytics, type: :service, uni
 
         # The busiest service should be the one with the highest sum of numeric metrics
         expect(summary[:busiest_service]).to be_a(String)
-        expect(["email_processing", "sync", "categorization", "bulk_categorization"]).to include(summary[:busiest_service])
+        expect([ "email_processing", "sync", "categorization", "bulk_categorization" ]).to include(summary[:busiest_service])
       end
 
       it "handles no operations gracefully" do

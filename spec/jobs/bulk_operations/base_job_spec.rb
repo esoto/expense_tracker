@@ -5,11 +5,11 @@ require 'rails_helper'
 # Stub User class for testing since BaseJob references it
 class User
   attr_accessor :id
-  
+
   def initialize(id)
     @id = id
   end
-  
+
   def self.find_by(id:)
     new(id) if id
   end
@@ -35,7 +35,7 @@ class FailingBulkJob < BulkOperations::BaseJob
     {
       success: false,
       message: 'Operation failed with validation errors',
-      errors: ['Validation error 1', 'Validation error 2']
+      errors: [ 'Validation error 1', 'Validation error 2' ]
     }
   end
 
@@ -59,7 +59,7 @@ class IncompleteJob < BulkOperations::BaseJob
 end
 
 RSpec.describe BulkOperations::BaseJob, type: :job, unit: true do
-  let(:expense_ids) { [1, 2, 3, 4, 5] }
+  let(:expense_ids) { [ 1, 2, 3, 4, 5 ] }
   let(:user_id) { 42 }
   let(:user) { User.new(user_id) }
   let(:options) { { batch_size: 10, force: true } }
@@ -253,7 +253,7 @@ RSpec.describe BulkOperations::BaseJob, type: :job, unit: true do
       expect(result).to eq({
         success: false,
         message: 'Operation failed with validation errors',
-        errors: ['Validation error 1', 'Validation error 2']
+        errors: [ 'Validation error 1', 'Validation error 2' ]
       })
 
       # Verify error progress tracking
@@ -277,7 +277,7 @@ RSpec.describe BulkOperations::BaseJob, type: :job, unit: true do
         {
           job_id: job_id,
           success: false,
-          errors: ['Validation error 1', 'Validation error 2'],
+          errors: [ 'Validation error 1', 'Validation error 2' ],
           message: 'Operation failed with validation errors'
         }
       )
@@ -461,7 +461,7 @@ RSpec.describe BulkOperations::BaseJob, type: :job, unit: true do
     it 'follows correct execution order' do
       successful_job.perform(expense_ids: expense_ids, user_id: user_id, options: options)
 
-      # Verify that progress tracking occurred  
+      # Verify that progress tracking occurred
       expect(rails_cache).to have_received(:write).at_least(:twice) # Initial and final progress
 
       # Verify broadcasts happened (without strict ordering due to test implementation)
@@ -544,7 +544,7 @@ RSpec.describe BulkOperations::BaseJob, type: :job, unit: true do
     it 'encapsulates internal helper methods as private' do
       # Check that methods are not public
       public_methods = job.public_methods
-      
+
       expect(public_methods).not_to include(:track_progress)
       expect(public_methods).not_to include(:broadcast_completion)
       expect(public_methods).not_to include(:broadcast_failure)
@@ -552,7 +552,7 @@ RSpec.describe BulkOperations::BaseJob, type: :job, unit: true do
       expect(public_methods).not_to include(:progress_cache_key)
       expect(public_methods).not_to include(:progress_channel)
       expect(public_methods).not_to include(:completion_channel)
-      
+
       # Verify they exist and are callable via send (meaning they're private)
       expect { job.send(:progress_cache_key) }.not_to raise_error
       expect { job.send(:progress_channel) }.not_to raise_error

@@ -32,7 +32,7 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
 
         it 'uses the most recent active sync session' do
           allow(active_sessions).to receive(:last).and_return(sync_session2)
-          
+
           expect(ConflictDetectionService).to receive(:new).with(
             sync_session2,
             metrics_collector: metrics_collector
@@ -58,7 +58,7 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
           allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(false)
 
           email_data = { body: 'Transaction $100', date: Time.current }
-          
+
           # Process twice to simulate session change
           processor.send(:detect_and_handle_conflict, email_data)
           processor.send(:detect_and_handle_conflict, email_data)
@@ -79,7 +79,7 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
           allow(conflict_detector).to receive(:detect_conflict_for_expense)
 
           result = processor.send(:detect_and_handle_conflict, email_data)
-          
+
           expect(conflict_detector).to have_received(:detect_conflict_for_expense).with(
             hash_including(
               amount: 100,
@@ -96,7 +96,7 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
           allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(false)
 
           result = processor.send(:detect_and_handle_conflict, email_data)
-          
+
           expect(result).to be false
         end
 
@@ -106,7 +106,7 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
           expect(ConflictDetectionService).not_to receive(:new)
 
           result = processor.send(:detect_and_handle_conflict, email_data)
-          
+
           # Should return false when no amount present
           expect(result).to be false
         end
@@ -124,7 +124,7 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
           allow(Rails.logger).to receive(:error)
 
           email_data = { body: 'Transaction', date: Time.current }
-          
+
           expect(Rails.logger).to receive(:error).with(
             '[EmailProcessing::Processor] Error detecting conflict: Session expired'
           )
@@ -151,8 +151,8 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
       end
 
       context 'with complex conflict scenarios' do
-        let(:email_data) { 
-          { 
+        let(:email_data) {
+          {
             body: 'Transaction: $50.00 at Store XYZ on 2024-01-15',
             date: Time.parse('2024-01-15 10:00:00')
           }
@@ -175,7 +175,7 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
           allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(true)
 
           result = processor.send(:detect_and_handle_conflict, email_data)
-          
+
           expect(result).to be true
           expect(conflict_detector).to have_received(:detect_conflict_for_expense).with(
             hash_including(
@@ -193,12 +193,12 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
           similar_expense_data = expense_data.merge(
             transaction_date: Time.parse('2024-01-15 10:01:00')
           )
-          
+
           allow(parsing_strategy).to receive(:parse_email).and_return(similar_expense_data)
           allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(true)
 
           result = processor.send(:detect_and_handle_conflict, email_data)
-          
+
           expect(result).to be true
         end
 
@@ -206,7 +206,7 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
           allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(false)
 
           result = processor.send(:detect_and_handle_conflict, email_data)
-          
+
           expect(result).to be false
         end
       end
@@ -234,13 +234,13 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
         it 'handles stale database connections' do
           stale_session = instance_double(SyncSession, id: 999)
           allow(SyncSession).to receive_message_chain(:active, :last).and_return(stale_session)
-          
+
           allow(ConflictDetectionService).to receive(:new)
             .and_raise(ActiveRecord::StaleObjectError, 'Stale session')
           allow(Rails.logger).to receive(:error)
 
           result = processor.send(:detect_and_handle_conflict, email_data)
-          
+
           expect(Rails.logger).to have_received(:error).with(
             a_string_including('[EmailProcessing::Processor] Error detecting conflict:')
           )
@@ -259,7 +259,7 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
           allow(parsing_strategy).to receive(:parse_email).and_return(nil)
 
           result = processor.send(:detect_and_handle_conflict, email_data)
-          
+
           expect(result).to be false
         end
 
@@ -305,7 +305,7 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
 
         it 'works without metrics collector' do
           processor_no_metrics = EmailProcessing::Processor.new(email_account)
-          
+
           allow(ConflictDetectionService).to receive(:new).with(
             sync_session,
             metrics_collector: nil
@@ -332,7 +332,7 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
           allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(false)
 
           result = processor.send(:detect_and_handle_conflict, email_data)
-          
+
           expect(conflict_detector).to have_received(:detect_conflict_for_expense).with(
             hash_including(raw_email_content: long_body)
           )
@@ -346,7 +346,7 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
           allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(false)
 
           result = processor.send(:detect_and_handle_conflict, email_data)
-          
+
           expect(conflict_detector).to have_received(:detect_conflict_for_expense).with(
             hash_including(raw_email_content: nil)
           )
@@ -361,7 +361,7 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
           allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(false)
 
           result = processor.send(:detect_and_handle_conflict, email_data)
-          
+
           expect(conflict_detector).to have_received(:detect_conflict_for_expense).with(
             hash_including(transaction_date: future_date)
           )

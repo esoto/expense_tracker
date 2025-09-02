@@ -4,7 +4,7 @@ require 'support/email_processing_processor_test_helper'
 
 RSpec.describe 'EmailProcessing::Processor - Error Handling', type: :service, unit: true do
   include EmailProcessingProcessorTestHelper
-  
+
   let(:email_account) { create(:email_account, :bac) }
   let(:metrics_collector) { instance_double(SyncMetricsCollector) }
   let(:processor) { EmailProcessing::Processor.new(email_account, metrics_collector: metrics_collector) }
@@ -15,7 +15,7 @@ RSpec.describe 'EmailProcessing::Processor - Error Handling', type: :service, un
   end
 
   describe 'IMAP connection errors' do
-    let(:message_ids) { [1, 2, 3] }
+    let(:message_ids) { [ 1, 2, 3 ] }
 
     context 'with network timeouts' do
       it 'handles connection timeout gracefully' do
@@ -165,7 +165,7 @@ RSpec.describe 'EmailProcessing::Processor - Error Handling', type: :service, un
   end
 
   describe 'partial failure handling' do
-    let(:message_ids) { [1, 2, 3, 4, 5] }
+    let(:message_ids) { [ 1, 2, 3, 4, 5 ] }
 
     context 'with intermittent failures' do
       it 'continues processing after individual message failure' do
@@ -200,13 +200,13 @@ RSpec.describe 'EmailProcessing::Processor - Error Handling', type: :service, un
 
       it 'handles errors during email data extraction' do
         envelope = create_envelope('BAC - Notificación de transacción')
-        
+
         allow(mock_imap_service).to receive(:fetch_envelope).and_return(envelope)
         allow(processor).to receive(:extract_email_data)
           .and_raise(StandardError, 'Extraction error')
         allow(Rails.logger).to receive(:error)
 
-        result = processor.process_emails([1], mock_imap_service)
+        result = processor.process_emails([ 1 ], mock_imap_service)
 
         expect(result[:processed_count]).to eq(0)
         expect(processor.errors.first).to include('Extraction error')
@@ -214,7 +214,7 @@ RSpec.describe 'EmailProcessing::Processor - Error Handling', type: :service, un
 
       it 'handles ProcessEmailJob queueing failures' do
         envelope = create_envelope('BAC - Notificación de transacción')
-        
+
         allow(mock_imap_service).to receive(:fetch_envelope).and_return(envelope)
         allow(processor).to receive(:extract_email_data).and_return({ body: 'test' })
         allow(processor).to receive(:detect_and_handle_conflict).and_return(false)
@@ -222,7 +222,7 @@ RSpec.describe 'EmailProcessing::Processor - Error Handling', type: :service, un
           .and_raise(ActiveJob::EnqueueError, 'Queue full')
         allow(Rails.logger).to receive(:error)
 
-        result = processor.process_emails([1], mock_imap_service)
+        result = processor.process_emails([ 1 ], mock_imap_service)
 
         expect(result[:processed_count]).to eq(0)
         expect(processor.errors.first).to include('Queue full')
@@ -265,7 +265,7 @@ RSpec.describe 'EmailProcessing::Processor - Error Handling', type: :service, un
         .and_raise(StandardError, 'Test error')
       allow(Rails.logger).to receive(:error)
 
-      processor.process_emails([1], mock_imap_service)
+      processor.process_emails([ 1 ], mock_imap_service)
 
       expect(Rails.logger).to have_received(:error).at_least(:once).with(
         a_string_including('Error processing email 1: Test error')
@@ -279,7 +279,7 @@ RSpec.describe 'EmailProcessing::Processor - Error Handling', type: :service, un
     context 'with fetch_body_part failures' do
       it 'handles body part fetch timeout' do
         body_structure = double('structure', multipart?: false)
-        
+
         allow(mock_imap_service).to receive(:fetch_body_structure).and_return(body_structure)
         allow(mock_imap_service).to receive(:fetch_text_body)
           .and_raise(Net::ReadTimeout, 'Body fetch timeout')
@@ -318,11 +318,11 @@ RSpec.describe 'EmailProcessing::Processor - Error Handling', type: :service, un
   end
 
   describe 'progress callback error handling' do
-    let(:message_ids) { [1, 2, 3] }
+    let(:message_ids) { [ 1, 2, 3 ] }
 
     it 'continues processing when progress callback raises error' do
       envelope = create_envelope('BAC - Notificación de transacción')
-      
+
       allow(mock_imap_service).to receive(:fetch_envelope).and_return(envelope)
       allow(processor).to receive(:extract_email_data).and_return({ body: 'test' })
       allow(ProcessEmailJob).to receive(:perform_later)
@@ -339,7 +339,7 @@ RSpec.describe 'EmailProcessing::Processor - Error Handling', type: :service, un
 
     it 'handles nil progress callback gracefully' do
       envelope = create_envelope('BAC - Notificación de transacción')
-      
+
       allow(mock_imap_service).to receive(:fetch_envelope).and_return(envelope)
       allow(processor).to receive(:extract_email_data).and_return({ body: 'test' })
       allow(ProcessEmailJob).to receive(:perform_later)
@@ -362,13 +362,13 @@ RSpec.describe 'EmailProcessing::Processor - Error Handling', type: :service, un
             { processed: false, expense_created: false }
           end
         end
-        
+
         # Make the actual processing fail
         allow(mock_imap_service).to receive(:fetch_envelope)
           .and_raise(StandardError, 'Processing error')
         allow(Rails.logger).to receive(:error)
 
-        result = processor.process_emails([1], mock_imap_service)
+        result = processor.process_emails([ 1 ], mock_imap_service)
 
         expect(result[:total_count]).to eq(1)
         expect(result[:processed_count]).to eq(0)
@@ -380,14 +380,14 @@ RSpec.describe 'EmailProcessing::Processor - Error Handling', type: :service, un
           block.call
           nil  # Return nil instead of the block's result
         end
-        
+
         envelope = create_envelope('BAC - Notificación de transacción')
         allow(mock_imap_service).to receive(:fetch_envelope).and_return(envelope)
         allow(processor).to receive(:extract_email_data).and_return({ body: 'test' })
         allow(ProcessEmailJob).to receive(:perform_later)
 
         # The processor should handle nil return and use default values
-        result = processor.process_emails([1], mock_imap_service)
+        result = processor.process_emails([ 1 ], mock_imap_service)
 
         expect(result[:total_count]).to eq(1)
         # Since track_operation returns nil, the processor treats it as not processed
@@ -402,14 +402,14 @@ RSpec.describe 'EmailProcessing::Processor - Error Handling', type: :service, un
       error = create_imap_no_response_error('First error')
       allow(mock_imap_service).to receive(:fetch_envelope).with(1)
         .and_raise(error)
-      
+
       # Second message: envelope ok, body extraction fails
       envelope2 = create_envelope('BAC - Notificación de transacción')
       allow(mock_imap_service).to receive(:fetch_envelope).with(2)
         .and_return(envelope2)
       allow(processor).to receive(:extract_email_data).with(2, envelope2, mock_imap_service)
         .and_raise(StandardError, 'Extraction error')
-      
+
       # Third message: processes successfully
       envelope3 = create_envelope('Cargo a su cuenta')
       allow(mock_imap_service).to receive(:fetch_envelope).with(3)
@@ -419,7 +419,7 @@ RSpec.describe 'EmailProcessing::Processor - Error Handling', type: :service, un
       allow(ProcessEmailJob).to receive(:perform_later)
       allow(Rails.logger).to receive(:error)
 
-      result = processor.process_emails([1, 2, 3], mock_imap_service)
+      result = processor.process_emails([ 1, 2, 3 ], mock_imap_service)
 
       expect(result[:processed_count]).to eq(1) # Only message 3 succeeded
       expect(result[:total_count]).to eq(3)

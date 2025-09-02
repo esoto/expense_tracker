@@ -10,7 +10,7 @@ RSpec.describe 'EmailProcessing::Processor - Metrics Tracking', type: :service, 
   let(:mock_imap_service) { create_mock_imap_service }
 
   describe 'comprehensive metrics integration' do
-    let(:message_ids) { [1, 2, 3, 4, 5] }
+    let(:message_ids) { [ 1, 2, 3, 4, 5 ] }
     let(:envelopes) do
       {
         1 => create_envelope('BAC - Notificación de transacción', 'bank@bac.co.cr'),
@@ -44,7 +44,7 @@ RSpec.describe 'EmailProcessing::Processor - Metrics Tracking', type: :service, 
         before do
           allow(processor).to receive(:extract_email_data) do |message_id, envelope, _|
             if envelope && envelope.subject.downcase.include?('transacción')
-              { 
+              {
                 message_id: message_id,
                 from: 'bank@bac.co.cr',
                 subject: envelope.subject,
@@ -60,7 +60,7 @@ RSpec.describe 'EmailProcessing::Processor - Metrics Tracking', type: :service, 
         end
 
         it 'tracks each email processing operation with correct parameters' do
-          expected_tracked_ids = [1, 3, 4] # Only transaction emails
+          expected_tracked_ids = [ 1, 3, 4 ] # Only transaction emails
 
           expected_tracked_ids.each do |message_id|
             expect(metrics_collector).to receive(:track_operation).with(
@@ -78,7 +78,7 @@ RSpec.describe 'EmailProcessing::Processor - Metrics Tracking', type: :service, 
             expect(operation).to eq(:parse_email)
             expect(account).to eq(email_account)
             expect(metadata).to have_key(:message_id)
-            expect(metadata[:message_id]).to be_in([1, 2, 3, 4, 5])
+            expect(metadata[:message_id]).to be_in([ 1, 2, 3, 4, 5 ])
             block.call if block
           end
 
@@ -94,9 +94,9 @@ RSpec.describe 'EmailProcessing::Processor - Metrics Tracking', type: :service, 
 
         it 'continues processing despite metrics errors' do
           allow(Rails.logger).to receive(:error)
-          
+
           expect {
-            processor.process_emails([1], mock_imap_service)
+            processor.process_emails([ 1 ], mock_imap_service)
           }.not_to raise_error
         end
       end
@@ -107,8 +107,8 @@ RSpec.describe 'EmailProcessing::Processor - Metrics Tracking', type: :service, 
       let(:conflict_detector) { instance_double(ConflictDetectionService) }
       let(:parsing_rule) { instance_double(ParsingRule) }
       let(:parsing_strategy) { instance_double(EmailProcessing::Strategies::Regex) }
-      let(:email_data) { 
-        { 
+      let(:email_data) {
+        {
           body: 'Transaction: $50.00 at Store ABC',
           date: Time.current,
           from: 'bank@bac.co.cr',
@@ -140,7 +140,7 @@ RSpec.describe 'EmailProcessing::Processor - Metrics Tracking', type: :service, 
 
       it 'tracks conflict detection operations through the service' do
         allow(ConflictDetectionService).to receive(:new).and_return(conflict_detector)
-        
+
         expect(conflict_detector).to receive(:detect_conflict_for_expense).with(
           hash_including(
             amount: 50.00,
@@ -159,10 +159,10 @@ RSpec.describe 'EmailProcessing::Processor - Metrics Tracking', type: :service, 
 
       before do
         large_message_set.each do |id|
-          envelope = id.even? ? 
+          envelope = id.even? ?
             create_envelope('BAC - Notificación de transacción', 'bank@bac.co.cr') :
             create_envelope('Regular email', 'info@example.com')
-          
+
           allow(mock_imap_service).to receive(:fetch_envelope).with(id).and_return(envelope)
         end
 
@@ -176,26 +176,26 @@ RSpec.describe 'EmailProcessing::Processor - Metrics Tracking', type: :service, 
         expect(metrics_collector).to receive(:track_operation).exactly(100).times.and_yield
 
         result = processor.process_emails(large_message_set, mock_imap_service)
-        
+
         expect(result[:processed_count]).to eq(50)
         expect(result[:total_count]).to eq(100)
       end
 
       it 'includes timing information in metrics (simulated)' do
         start_time = Time.current
-        
+
         allow(metrics_collector).to receive(:track_operation) do |op, account, metadata, &block|
           # Simulate timing measurement
           operation_start = Time.current
           result = block.call
           operation_duration = Time.current - operation_start
-          
+
           expect(operation_duration).to be < 1.0 # Each operation should be fast
           result
         end
 
-        processor.process_emails([1, 2, 3], mock_imap_service)
-        
+        processor.process_emails([ 1, 2, 3 ], mock_imap_service)
+
         total_duration = Time.current - start_time
         expect(total_duration).to be < 3.0 # Total should be reasonable
       end
@@ -219,8 +219,8 @@ RSpec.describe 'EmailProcessing::Processor - Metrics Tracking', type: :service, 
 
           allow(Rails.logger).to receive(:error)
 
-          result = processor.process_emails([1], mock_imap_service)
-          
+          result = processor.process_emails([ 1 ], mock_imap_service)
+
           expect(result[:processed_count]).to eq(0)
           expect(processor.errors).not_to be_empty
         end
@@ -242,7 +242,7 @@ RSpec.describe 'EmailProcessing::Processor - Metrics Tracking', type: :service, 
 
           allow(Rails.logger).to receive(:error)
 
-          processor.process_emails([1], mock_imap_service)
+          processor.process_emails([ 1 ], mock_imap_service)
           expect(processor.errors.first).to include('Invalid UTF-8')
         end
       end
@@ -283,7 +283,7 @@ RSpec.describe 'EmailProcessing::Processor - Metrics Tracking', type: :service, 
       envelope = double('envelope',
         subject: 'BAC - Notificación de transacción',
         date: Time.current,
-        from: [double('from', mailbox: 'bank', host: 'bac.co.cr')]
+        from: [ double('from', mailbox: 'bank', host: 'bac.co.cr') ]
       )
 
       allow(mock_imap_service).to receive(:fetch_envelope).and_return(envelope)
@@ -291,7 +291,7 @@ RSpec.describe 'EmailProcessing::Processor - Metrics Tracking', type: :service, 
       allow(ProcessEmailJob).to receive(:perform_later)
 
       expect {
-        processor_no_metrics.process_emails([1], mock_imap_service)
+        processor_no_metrics.process_emails([ 1 ], mock_imap_service)
       }.not_to raise_error
     end
 
@@ -299,15 +299,15 @@ RSpec.describe 'EmailProcessing::Processor - Metrics Tracking', type: :service, 
       envelope = double('envelope',
         subject: 'BAC - Notificación de transacción',
         date: Time.current,
-        from: [double('from', mailbox: 'bank', host: 'bac.co.cr')]
+        from: [ double('from', mailbox: 'bank', host: 'bac.co.cr') ]
       )
 
       allow(mock_imap_service).to receive(:fetch_envelope).and_return(envelope)
       allow(processor_no_metrics).to receive(:extract_email_data).and_return({ body: 'test' })
       allow(ProcessEmailJob).to receive(:perform_later)
 
-      result = processor_no_metrics.process_emails([1], mock_imap_service)
-      
+      result = processor_no_metrics.process_emails([ 1 ], mock_imap_service)
+
       expect(result[:processed_count]).to eq(1)
       expect(result[:total_count]).to eq(1)
     end

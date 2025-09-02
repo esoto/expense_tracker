@@ -23,7 +23,7 @@ module EmailProcessingProcessorTestHelper
     end
 
     def configure_body_part(message_id, part, content)
-      @body_parts[[message_id, part]] = content
+      @body_parts[[ message_id, part ]] = content
     end
 
     def configure_text_body(message_id, content)
@@ -39,7 +39,7 @@ module EmailProcessingProcessorTestHelper
     end
 
     def fetch_body_part(message_id, part)
-      @body_parts[[message_id, part]]
+      @body_parts[[ message_id, part ]]
     end
 
     def fetch_text_body(message_id)
@@ -58,7 +58,7 @@ module EmailProcessingProcessorTestHelper
     def initialize(subject:, date: Time.current, from: nil)
       @subject = subject
       @date = date
-      @from = from || [MockAddress.new("test", "example.com")]
+      @from = from || [ MockAddress.new("test", "example.com") ]
     end
   end
 
@@ -116,7 +116,7 @@ module EmailProcessingProcessorTestHelper
     MockEnvelope.new(
       subject: subject,
       date: 1.day.ago,
-      from: [MockAddress.new("notificacion", "bank.com")]
+      from: [ MockAddress.new("notificacion", "bank.com") ]
     )
   end
 
@@ -129,7 +129,7 @@ module EmailProcessingProcessorTestHelper
     MockEnvelope.new(
       subject: "Newsletter",
       date: 1.day.ago,
-      from: [MockAddress.new("news", "example.com")]
+      from: [ MockAddress.new("news", "example.com") ]
     )
   end
 
@@ -173,6 +173,6 @@ module EmailProcessingProcessorTestHelper
 end
 
 RSpec.configure do |config|
-  config.include EmailProcessingProcessorTestHelper, 
+  config.include EmailProcessingProcessorTestHelper,
     file_path: %r{spec/services/email_processing/processor}
 end

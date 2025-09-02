@@ -128,6 +128,31 @@ RSpec.describe EmailProcessing::Fetcher, type: :service, integration: true do
   end
 
   describe 'private methods', integration: true do
+    describe '#format_expense_message', integration: true do
+      it 'formats expense with Costa Rican currency' do
+        expense = instance_double(Expense, amount: 25750.99, merchant_name: 'Walmart')
+        message = fetcher.send(:format_expense_message, expense)
+        expect(message).to eq('₡25,750.99 en Walmart')
+      end
+
+      it 'handles nil expense' do
+        message = fetcher.send(:format_expense_message, nil)
+        expect(message).to eq('')
+      end
+
+      it 'handles expense with nil merchant' do
+        expense = instance_double(Expense, amount: 1000, merchant_name: nil)
+        message = fetcher.send(:format_expense_message, expense)
+        expect(message).to eq('₡1,000.00 en Comercio desconocido')
+      end
+
+      it 'handles expense with blank merchant' do
+        expense = instance_double(Expense, amount: 500.50, merchant_name: '   ')
+        message = fetcher.send(:format_expense_message, expense)
+        expect(message).to eq('₡500.50 en Comercio desconocido')
+      end
+    end
+
     describe '#valid_account?', integration: true do
       context 'with valid account' do
         it 'returns true' do
@@ -169,6 +194,8 @@ RSpec.describe EmailProcessing::Fetcher, type: :service, integration: true do
     describe '#search_and_process_emails', integration: true do
       let(:message_ids) { [ 1, 2 ] }
       let(:since_date) { 1.day.ago }
+      let(:sync_session) { create(:sync_session, :running) }
+      let(:sync_session_account) { create(:sync_session_account, sync_session: sync_session, email_account: email_account) }
 
       before do
         allow(mock_imap_service).to receive(:search_emails).and_return(message_ids)
@@ -187,6 +214,53 @@ RSpec.describe EmailProcessing::Fetcher, type: :service, integration: true do
       it 'does not log the number of emails found' do
         expect(Rails.logger).not_to receive(:info).with("[EmailProcessing::Fetcher] Found 2 emails for #{email_account.email}")
         fetcher.send(:search_and_process_emails, since_date)
+      end
+
+      context 'with sync_session_account and expense detection' do
+        let(:fetcher_with_sync) do
+          EmailProcessing::Fetcher.new(
+            email_account,
+            imap_service: mock_imap_service,
+            email_processor: mock_email_processor,
+            sync_session_account: sync_session_account
+          )
+        end
+
+        let(:expense) { instance_double(Expense, amount: 1500, merchant_name: 'Test Store') }
+
+        before do
+          stub_const('SyncStatusChannel', double('SyncStatusChannel'))
+          allow(SyncStatusChannel).to receive(:broadcast_activity)
+          allow(sync_session_account).to receive(:update!)
+          allow(sync_session_account).to receive(:update_progress)
+          
+          allow(mock_email_processor).to receive(:process_emails) do |ids, service, &block|
+            block&.call(1, 1, expense) if block
+            { processed_count: 1, total_count: 1 }
+          end
+        end
+
+        it 'broadcasts expense detection activity' do
+          expect(SyncStatusChannel).to receive(:broadcast_activity).with(
+            sync_session,
+            "expense_detected",
+            "Gasto detectado: ₡1,500.00 en Test Store"
+          )
+
+          fetcher_with_sync.send(:search_and_process_emails, since_date)
+        end
+
+        it 'handles broadcast errors gracefully' do
+          allow(sync_session_account).to receive(:update_progress)
+            .and_raise(StandardError, 'Update error')
+          
+          expect(Rails.logger).to receive(:error)
+            .with('[EmailProcessing::Fetcher] Failed to update progress: Update error')
+
+          # Should not raise error
+          result = fetcher_with_sync.send(:search_and_process_emails, since_date)
+          expect(result[:processed_emails_count]).to eq(1)
+        end
       end
     end
 

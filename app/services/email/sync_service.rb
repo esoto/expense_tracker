@@ -69,11 +69,11 @@ module Email
         return { success: false, error: "Session not failed" } unless session.failed?
 
         # Update retry count in metadata
-        retry_count = (session.metadata&.dig('retry_count') || 0) + 1
+        retry_count = (session.metadata&.dig("retry_count") || 0) + 1
 
         session.update!(
           status: "retrying",
-          metadata: (session.metadata || {}).merge('retry_count' => retry_count)
+          metadata: (session.metadata || {}).merge("retry_count" => retry_count)
         )
 
         # Re-run sync for failed accounts
@@ -135,7 +135,7 @@ module Email
                 expenses.each do |expense|
                   next if expense == keeper
                   begin
-                    expense.reload.update!(status: 'duplicate')
+                    expense.reload.update!(status: "duplicate")
                   rescue ActiveRecord::StaleObjectError
                     # Expense was modified concurrently, skip marking as duplicate
                     Rails.logger.warn "Skipped marking expense #{expense.id} as duplicate due to concurrent modification"

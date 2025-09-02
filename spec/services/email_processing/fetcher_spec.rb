@@ -233,7 +233,7 @@ RSpec.describe EmailProcessing::Fetcher, type: :service, integration: true do
           allow(SyncStatusChannel).to receive(:broadcast_activity)
           allow(sync_session_account).to receive(:update!)
           allow(sync_session_account).to receive(:update_progress)
-          
+
           allow(mock_email_processor).to receive(:process_emails) do |ids, service, &block|
             block&.call(1, 1, expense) if block
             { processed_count: 1, total_count: 1 }
@@ -253,7 +253,7 @@ RSpec.describe EmailProcessing::Fetcher, type: :service, integration: true do
         it 'handles broadcast errors gracefully' do
           allow(sync_session_account).to receive(:update_progress)
             .and_raise(StandardError, 'Update error')
-          
+
           expect(Rails.logger).to receive(:error)
             .with('[EmailProcessing::Fetcher] Failed to update progress: Update error')
 
@@ -291,3 +291,4 @@ RSpec.describe EmailProcessing::Fetcher, type: :service, integration: true do
     end
   end
 end
+

@@ -118,7 +118,7 @@ RSpec.describe Email::SyncService, 'Error Handling and Edge Cases', unit: true d
 
       it 'handles validation errors during update' do
         mock_record = SyncSession.new
-        allow(mock_record).to receive(:errors).and_return(double(full_messages: ['Validation failed']))
+        allow(mock_record).to receive(:errors).and_return(double(full_messages: [ 'Validation failed' ]))
         expect(mock_session).to receive(:update!).and_raise(
           ActiveRecord::RecordInvalid.new(mock_record)
         )
@@ -189,7 +189,7 @@ RSpec.describe Email::SyncService, 'Error Handling and Edge Cases', unit: true d
       it 'does not create orphaned sessions when job fails' do
         service_with_session = described_class.new(track_session: true)
         mock_session = instance_double(SyncSession, id: 30)
-        
+
         expect(SyncSession).to receive(:create!).and_return(mock_session)
         expect(mock_session).to receive_message_chain(:sync_session_accounts, :create!)
         expect(ProcessEmailsJob).to receive(:perform_later).and_raise(StandardError, 'Job failed')
@@ -291,7 +291,7 @@ RSpec.describe Email::SyncService, 'Error Handling and Edge Cases', unit: true d
         expense_relation = double('expense_relation')
         allow(Expense).to receive(:where).and_return(expense_relation)
         allow(expense_relation).to receive(:group_by) do |&block|
-          { [Date.today, BigDecimal('100')] => [expense1, expense2] }
+          { [ Date.today, BigDecimal('100') ] => [ expense1, expense2 ] }
         end
 
         conflicts = service.detect_conflicts
@@ -351,10 +351,10 @@ RSpec.describe Email::SyncService, 'Error Handling and Edge Cases', unit: true d
           failed?: true,
           metadata: { 'retry_count' => 999 }
         )
-        
+
         allow(SyncSession).to receive(:find).with(1).and_return(failed_session)
         allow(failed_session).to receive_message_chain(:sync_session_accounts, :failed).and_return([])
-        
+
         expect(failed_session).to receive(:update!).with(
           status: 'retrying',
           metadata: { 'retry_count' => 1000 }
@@ -388,7 +388,7 @@ RSpec.describe Email::SyncService, 'Error Handling and Edge Cases', unit: true d
 
       it 'handles very large time windows' do
         large_window = 365.days
-        
+
         sessions = double('sessions')
         allow(SyncSession).to receive(:where).and_return(sessions)
         allow(sessions).to receive(:count).and_return(50000)
@@ -409,10 +409,10 @@ RSpec.describe Email::SyncService, 'Error Handling and Edge Cases', unit: true d
     describe 'concurrent operation handling' do
       it 'handles multiple services operating on same session' do
         shared_session = instance_double(SyncSession, id: 100, status: 'running')
-        
+
         service1 = described_class.new
         service2 = described_class.new
-        
+
         service1.instance_variable_set(:@sync_session, shared_session)
         service2.instance_variable_set(:@sync_session, shared_session)
 
@@ -445,7 +445,7 @@ RSpec.describe Email::SyncService, 'Error Handling and Edge Cases', unit: true d
 
       it 'handles very large conflict arrays' do
         large_conflicts = Array.new(10000) do |i|
-          { type: 'duplicate', expenses: [i, i + 1], confidence: 0.8 }
+          { type: 'duplicate', expenses: [ i, i + 1 ], confidence: 0.8 }
         end
 
         allow(Expense).to receive(:find).and_raise(ActiveRecord::RecordNotFound)
@@ -465,10 +465,10 @@ RSpec.describe Email::SyncService, 'Error Handling and Edge Cases', unit: true d
       it 'handles multiple component failures gracefully' do
         # Session creation fails
         allow(SyncSession).to receive(:create!).and_raise(ActiveRecord::RecordInvalid.new(SyncSession.new))
-        
+
         # Job enqueueing would fail
         allow(ProcessEmailsJob).to receive(:perform_later).and_raise(StandardError, 'Queue error')
-        
+
         # Conflict detection would fail
         allow(service).to receive(:detect_conflicts).and_raise(StandardError, 'Detection error')
 
@@ -487,3 +487,4 @@ RSpec.describe Email::SyncService, 'Error Handling and Edge Cases', unit: true d
     end
   end
 end
+

@@ -30,7 +30,7 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
     allow(mock_imap_service).to receive(:errors).and_return([])
     allow(mock_email_processor).to receive(:errors).and_return([])
     allow(metrics_collector).to receive(:track_operation).and_yield
-    
+
     # Mock broadcasting
     stub_const('SyncStatusChannel', double('SyncStatusChannel'))
     allow(SyncStatusChannel).to receive(:broadcast_activity)
@@ -51,7 +51,7 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
 
       it 'calculates incremental detected expenses correctly' do
         progress_updates = []
-        
+
         allow(sync_session_account).to receive(:update!).with(total_emails: 10)
         allow(sync_session_account).to receive(:update_progress) do |processed, total, incremental|
           progress_updates << { processed: processed, total: total, incremental: incremental }
@@ -69,7 +69,7 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
           block&.call(8, 4, expenses[3])   # Email 8: 1 expense (4 total)
           block&.call(9, 4, nil)           # Email 9: no new expenses (4 total)
           block&.call(10, 5, expenses[4])  # Email 10: 1 expense (5 total)
-          
+
           { processed_count: 10, total_count: 10, detected_expenses_count: 5 }
         end
 
@@ -92,7 +92,7 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
     end
 
     context 'with batch expense detection' do
-      let(:message_ids) { [1, 2, 3] }
+      let(:message_ids) { [ 1, 2, 3 ] }
       let(:expense1) { instance_double(Expense, amount: 1000, merchant_name: 'Store A') }
       let(:expense2) { instance_double(Expense, amount: 2000, merchant_name: 'Store B') }
 
@@ -103,7 +103,7 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
 
       it 'handles multiple expenses detected in single email' do
         progress_updates = []
-        
+
         allow(sync_session_account).to receive(:update_progress) do |processed, total, incremental|
           progress_updates << incremental
         end
@@ -113,7 +113,7 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
           block&.call(1, 3, expense2)  # 3 expenses detected in first email
           block&.call(2, 3, nil)       # No new expenses
           block&.call(3, 5, expense1)  # 2 more expenses in third email
-          
+
           { processed_count: 3, total_count: 3, detected_expenses_count: 5 }
         end
 
@@ -129,7 +129,7 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
     end
 
     context 'with no expenses detected' do
-      let(:message_ids) { [1, 2, 3, 4, 5] }
+      let(:message_ids) { [ 1, 2, 3, 4, 5 ] }
 
       before do
         allow(mock_imap_service).to receive(:search_emails).and_return(message_ids)
@@ -138,7 +138,7 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
 
       it 'reports zero incremental for all emails' do
         progress_updates = []
-        
+
         allow(sync_session_account).to receive(:update_progress) do |processed, total, incremental|
           progress_updates << incremental
         end
@@ -146,20 +146,20 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
         allow(mock_email_processor).to receive(:process_emails) do |ids, service, &block|
           # No expenses detected in any email
           (1..5).each { |i| block&.call(i, 0, nil) }
-          
+
           { processed_count: 5, total_count: 5, detected_expenses_count: 0 }
         end
 
         fetcher.fetch_new_emails
 
-        expect(progress_updates).to eq([0, 0, 0, 0, 0])
+        expect(progress_updates).to eq([ 0, 0, 0, 0, 0 ])
         expect(SyncStatusChannel).not_to have_received(:broadcast_activity)
       end
     end
   end
 
   describe 'last_detected tracking', unit: true do
-    let(:message_ids) { [1, 2, 3] }
+    let(:message_ids) { [ 1, 2, 3 ] }
     let(:expense) { instance_double(Expense, amount: 1500, merchant_name: 'Test') }
 
     before do
@@ -183,7 +183,7 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
         block&.call(1, 2, expense)  # Jump to 2 expenses
         block&.call(2, 2, nil)      # Stay at 2
         block&.call(3, 4, expense)  # Jump to 4 expenses
-        
+
         { processed_count: 3, total_count: 3, detected_expenses_count: 4 }
       end
 
@@ -217,7 +217,7 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
 
   describe 'progress callback edge cases', unit: true do
     context 'when processor does not provide last_expense' do
-      let(:message_ids) { [1] }
+      let(:message_ids) { [ 1 ] }
 
       before do
         allow(mock_imap_service).to receive(:search_emails).and_return(message_ids)
@@ -234,13 +234,13 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
 
         # Should not broadcast when last_expense is nil even with incremental > 0
         expect(SyncStatusChannel).not_to receive(:broadcast_activity)
-        
+
         fetcher.fetch_new_emails
       end
     end
 
     context 'when detected count decreases (data inconsistency)' do
-      let(:message_ids) { [1, 2] }
+      let(:message_ids) { [ 1, 2 ] }
       let(:expense) { instance_double(Expense, amount: 1000, merchant_name: 'Store') }
 
       before do
@@ -250,7 +250,7 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
 
       it 'handles negative incremental gracefully' do
         progress_updates = []
-        
+
         allow(sync_session_account).to receive(:update_progress) do |processed, total, incremental|
           progress_updates << incremental
         end
@@ -259,7 +259,7 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
           # Simulate decreasing count (shouldn't happen but handle it)
           block&.call(1, 5, expense)  # 5 expenses
           block&.call(2, 3, nil)      # Down to 3 expenses (weird but possible)
-          
+
           { processed_count: 2, total_count: 2, detected_expenses_count: 3 }
         end
 
@@ -300,7 +300,7 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
               block&.call(index + 1, current_expenses, nil)
             end
           end
-          
+
           { processed_count: 1000, total_count: 1000, detected_expenses_count: 250 }
         end
 
@@ -308,7 +308,7 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
         expect(result.success?).to be true
         expect(result.processed_emails_count).to eq(1000)
         expect(result.total_emails_found).to eq(1000)
-        
+
         # Should have broadcasted 250 times (once per expense)
         expect(SyncStatusChannel).to have_received(:broadcast_activity).exactly(250).times
       end
@@ -326,7 +326,7 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
       )
     end
 
-    let(:message_ids) { [1, 2, 3] }
+    let(:message_ids) { [ 1, 2, 3 ] }
 
     before do
       allow(mock_imap_service).to receive(:search_emails).and_return(message_ids)
@@ -358,7 +358,7 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
   end
 
   describe 'progress calculation precision', unit: true do
-    let(:message_ids) { [1] }
+    let(:message_ids) { [ 1 ] }
     let(:expense) { instance_double(Expense, amount: 1234.56, merchant_name: 'Test') }
 
     before do
@@ -368,7 +368,7 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
 
     it 'maintains integer precision for incremental calculations' do
       incremental_value = nil
-      
+
       allow(sync_session_account).to receive(:update_progress) do |processed, total, incremental|
         incremental_value = incremental
       end
@@ -386,3 +386,4 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
     end
   end
 end
+

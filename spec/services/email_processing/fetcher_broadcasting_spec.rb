@@ -30,7 +30,7 @@ RSpec.describe EmailProcessing::Fetcher, 'broadcasting integration', type: :serv
   end
 
   describe 'ActionCable broadcasting', unit: true do
-    let(:message_ids) { [1, 2, 3, 4, 5] }
+    let(:message_ids) { [ 1, 2, 3, 4, 5 ] }
 
     before do
       allow(mock_imap_service).to receive(:search_emails).and_return(message_ids)
@@ -62,7 +62,7 @@ RSpec.describe EmailProcessing::Fetcher, 'broadcasting integration', type: :serv
       before do
         allow(sync_session_account).to receive(:update!).with(total_emails: 5)
         allow(sync_session_account).to receive(:update_progress)
-        
+
         allow(mock_email_processor).to receive(:process_emails) do |ids, service, &block|
           # Simulate processing with expenses detected
           block&.call(1, 0, nil)        # First email, no expenses
@@ -96,18 +96,18 @@ RSpec.describe EmailProcessing::Fetcher, 'broadcasting integration', type: :serv
         incremental_calls = []
         allow(sync_session_account).to receive(:update!).with(total_emails: 5)
         allow(sync_session_account).to receive(:update_progress) do |processed, total, incremental|
-          incremental_calls << [processed, total, incremental]
+          incremental_calls << [ processed, total, incremental ]
         end
 
         fetcher.fetch_new_emails
 
         # Verify incremental detected expense calculations
         expect(incremental_calls).to eq([
-          [1, 5, 0],  # No expenses detected yet (0 - 0 = 0)
-          [2, 5, 1],  # First expense detected (1 - 0 = 1)
-          [3, 5, 0],  # No new expenses (1 - 1 = 0)
-          [4, 5, 1],  # Second expense detected (2 - 1 = 1)
-          [5, 5, 0]   # No new expenses (2 - 2 = 0)
+          [ 1, 5, 0 ],  # No expenses detected yet (0 - 0 = 0)
+          [ 2, 5, 1 ],  # First expense detected (1 - 0 = 1)
+          [ 3, 5, 0 ],  # No new expenses (1 - 1 = 0)
+          [ 4, 5, 1 ],  # Second expense detected (2 - 1 = 1)
+          [ 5, 5, 0 ]   # No new expenses (2 - 2 = 0)
         ])
       end
 
@@ -136,10 +136,10 @@ RSpec.describe EmailProcessing::Fetcher, 'broadcasting integration', type: :serv
       end
 
       before do
-        allow(mock_imap_service).to receive(:search_emails).and_return([1])
+        allow(mock_imap_service).to receive(:search_emails).and_return([ 1 ])
         allow(sync_session_account).to receive(:update!).with(total_emails: 1)
         allow(sync_session_account).to receive(:update_progress)
-        
+
         allow(mock_email_processor).to receive(:process_emails) do |ids, service, &block|
           block&.call(1, 1, expense)
           { processed_count: 1, total_count: 1, detected_expenses_count: 1 }
@@ -279,7 +279,7 @@ RSpec.describe EmailProcessing::Fetcher, 'broadcasting integration', type: :serv
   end
 
   describe 'progress update error handling', unit: true do
-    let(:message_ids) { [1, 2] }
+    let(:message_ids) { [ 1, 2 ] }
 
     before do
       allow(mock_imap_service).to receive(:search_emails).and_return(message_ids)
@@ -290,7 +290,7 @@ RSpec.describe EmailProcessing::Fetcher, 'broadcasting integration', type: :serv
         allow(sync_session_account).to receive(:update!)
           .with(total_emails: 2)
           .and_raise(StandardError, 'Validation failed')
-        
+
         allow(mock_email_processor).to receive(:process_emails)
           .and_return({ processed_count: 0, total_count: 2 })
       end
@@ -305,7 +305,7 @@ RSpec.describe EmailProcessing::Fetcher, 'broadcasting integration', type: :serv
     context 'when update_progress fails during processing' do
       before do
         allow(sync_session_account).to receive(:update!).with(total_emails: 2)
-        
+
         call_count = 0
         allow(sync_session_account).to receive(:update_progress) do
           call_count += 1
@@ -336,11 +336,11 @@ RSpec.describe EmailProcessing::Fetcher, 'broadcasting integration', type: :serv
       let(:expense) { instance_double(Expense, amount: 100, merchant_name: 'Test') }
 
       before do
-        allow(mock_imap_service).to receive(:search_emails).and_return([1])
+        allow(mock_imap_service).to receive(:search_emails).and_return([ 1 ])
         allow(sync_session_account).to receive(:update!).with(total_emails: 1)
         allow(sync_session_account).to receive(:update_progress)
           .and_raise(StandardError, 'Update failed')
-        
+
         allow(mock_email_processor).to receive(:process_emails) do |ids, service, &block|
           block&.call(1, 1, expense)
           { processed_count: 1, total_count: 1, detected_expenses_count: 1 }
@@ -362,3 +362,4 @@ RSpec.describe EmailProcessing::Fetcher, 'broadcasting integration', type: :serv
     end
   end
 end
+

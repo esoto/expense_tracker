@@ -29,7 +29,7 @@ RSpec.describe Email::SyncService, 'Session Management', unit: true do
 
         it 'creates session before job enqueueing' do
           mock_accounts_relation = double('sync_session_accounts')
-          
+
           expect(SyncSession).to receive(:create!).ordered.with(
             status: 'pending',
             total_emails: 0,
@@ -57,7 +57,7 @@ RSpec.describe Email::SyncService, 'Session Management', unit: true do
 
         it 'does not create session when track_session is false' do
           service_without_tracking = described_class.new(track_session: false)
-          
+
           allow(EmailAccount).to receive(:find_by).with(id: 10).and_return(email_account)
           allow(email_account).to receive(:active?).and_return(true)
           allow(ProcessEmailsJob).to receive(:perform_later)
@@ -125,7 +125,7 @@ RSpec.describe Email::SyncService, 'Session Management', unit: true do
         it 'continues sync even if session creation fails' do
           allow(SyncSession).to receive(:create!).and_raise(StandardError, 'DB connection lost')
           allow(ProcessEmailsJob).to receive(:perform_later)
-          
+
           expect {
             service.sync_emails(email_account_id: 15)
           }.to raise_error(StandardError, 'DB connection lost')
@@ -190,7 +190,7 @@ RSpec.describe Email::SyncService, 'Session Management', unit: true do
 
         it 'triggers broadcast after update' do
           allow(mock_session).to receive(:update!)
-          
+
           expect(ActionCable).to receive_message_chain(:server, :broadcast).with(
             'sync_progress_200',
             hash_including(
@@ -302,7 +302,7 @@ RSpec.describe Email::SyncService, 'Session Management', unit: true do
 
       it 'increments retry count on each retry' do
         allow(failed_session).to receive_message_chain(:sync_session_accounts, :failed).and_return([])
-        
+
         expect(failed_session).to receive(:update!).with(
           status: 'retrying',
           metadata: { 'retry_count' => 3 }
@@ -313,7 +313,7 @@ RSpec.describe Email::SyncService, 'Session Management', unit: true do
 
       it 'only retries failed account sessions' do
         failed_accounts = account_sessions.select { |a| a.status == 'failed' }
-        
+
         allow(failed_session).to receive_message_chain(:sync_session_accounts, :failed)
           .and_return(failed_accounts)
         allow(failed_session).to receive(:update!)
@@ -393,3 +393,4 @@ RSpec.describe Email::SyncService, 'Session Management', unit: true do
     end
   end
 end
+

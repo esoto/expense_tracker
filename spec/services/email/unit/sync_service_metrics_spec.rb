@@ -135,7 +135,7 @@ RSpec.describe Email::SyncService, 'Metrics and Progress Tracking', unit: true d
 
       completed_sessions = double('completed_sessions')
       allow(SyncSession).to receive(:completed).and_return(completed_sessions)
-      allow(completed_sessions).to receive(:where).and_return([session1, session2])
+      allow(completed_sessions).to receive(:where).and_return([ session1, session2 ])
 
       # 5 minutes + 10 minutes = 15 minutes total, average = 7.5 minutes = 450 seconds
       result = service.send(:calculate_average_duration, time_window)
@@ -161,7 +161,7 @@ RSpec.describe Email::SyncService, 'Metrics and Progress Tracking', unit: true d
         completed_at: mock_time - 15.minutes
       )
 
-      allow(SyncSession).to receive_message_chain(:completed, :where).and_return([session1, session2])
+      allow(SyncSession).to receive_message_chain(:completed, :where).and_return([ session1, session2 ])
 
       # Only session2: 5 minutes = 300 seconds
       result = service.send(:calculate_average_duration, time_window)
@@ -179,7 +179,7 @@ RSpec.describe Email::SyncService, 'Metrics and Progress Tracking', unit: true d
         completed_at: mock_time - 10.minutes
       )
 
-      allow(SyncSession).to receive_message_chain(:completed, :where).and_return([session1, session2])
+      allow(SyncSession).to receive_message_chain(:completed, :where).and_return([ session1, session2 ])
 
       # Only session2: 5 minutes = 300 seconds
       result = service.send(:calculate_average_duration, time_window)
@@ -191,7 +191,7 @@ RSpec.describe Email::SyncService, 'Metrics and Progress Tracking', unit: true d
       session1 = instance_double(SyncSession, started_at: nil, completed_at: nil)
       session2 = instance_double(SyncSession, started_at: nil, completed_at: mock_time)
 
-      allow(SyncSession).to receive_message_chain(:completed, :where).and_return([session1, session2])
+      allow(SyncSession).to receive_message_chain(:completed, :where).and_return([ session1, session2 ])
 
       result = service.send(:calculate_average_duration, time_window)
 
@@ -412,11 +412,11 @@ RSpec.describe Email::SyncService, 'Metrics and Progress Tracking', unit: true d
 
     it 'tracks progress through complete sync lifecycle' do
       email_account = instance_double(EmailAccount, id: 1, email: 'test@example.com', active?: true)
-      
+
       # Setup
       allow(EmailAccount).to receive(:find_by).and_return(email_account)
       allow(ProcessEmailsJob).to receive(:perform_later)
-      
+
       # Session creation
       expect(SyncSession).to receive(:create!).and_return(mock_session)
       expect(mock_session).to receive_message_chain(:sync_session_accounts, :create!)
@@ -473,3 +473,4 @@ RSpec.describe Email::SyncService, 'Metrics and Progress Tracking', unit: true d
     end
   end
 end
+

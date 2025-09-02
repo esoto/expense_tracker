@@ -351,3 +351,4 @@ RSpec.describe EmailProcessing::Fetcher, 'metrics integration', type: :service, 
     end
   end
 end
+

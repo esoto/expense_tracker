@@ -67,9 +67,9 @@ RSpec.describe Email::SyncService, 'Conflict Detection and Resolution', unit: tr
       end
 
       it 'detects duplicates with same date and amount' do
-        expenses = [expense1, expense2]
+        expenses = [ expense1, expense2 ]
         expense_relation = double('expense_relation')
-        
+
         allow(Expense).to receive(:where).and_return(expense_relation)
         allow(expense_relation).to receive(:group_by) do |&block|
           grouped = {}
@@ -86,16 +86,16 @@ RSpec.describe Email::SyncService, 'Conflict Detection and Resolution', unit: tr
         expect(conflicts).to include(
           hash_including(
             type: 'duplicate',
-            expenses: [1, 2],
+            expenses: [ 1, 2 ],
             confidence: 0.8
           )
         )
       end
 
       it 'does not detect conflicts for different dates' do
-        expenses = [expense1, expense4]
+        expenses = [ expense1, expense4 ]
         expense_relation = double('expense_relation')
-        
+
         allow(Expense).to receive(:where).and_return(expense_relation)
         allow(expense_relation).to receive(:group_by) do |&block|
           grouped = {}
@@ -122,8 +122,8 @@ RSpec.describe Email::SyncService, 'Conflict Detection and Resolution', unit: tr
         )
         allow(expense_with_precision).to receive(:amount).and_return(BigDecimal('100.504999999'))
 
-        expenses = [expense1, expense_with_precision]
-        
+        expenses = [ expense1, expense_with_precision ]
+
         allow(Expense).to receive(:where).with(created_at: (mock_time - 1.hour)..mock_time)
           .and_return(expenses)
 
@@ -143,8 +143,8 @@ RSpec.describe Email::SyncService, 'Conflict Detection and Resolution', unit: tr
       end
 
       it 'only creates conflicts for groups with 2+ expenses' do
-        expenses = [expense1] # Single expense
-        
+        expenses = [ expense1 ] # Single expense
+
         allow(Expense).to receive(:where).with(created_at: (mock_time - 1.hour)..mock_time)
           .and_return(expenses)
 
@@ -238,15 +238,15 @@ RSpec.describe Email::SyncService, 'Conflict Detection and Resolution', unit: tr
 
     let(:conflicts) do
       [
-        { type: 'duplicate', expenses: [10, 11], confidence: 0.8 },
-        { type: 'duplicate', expenses: [11, 12], confidence: 0.9 }
+        { type: 'duplicate', expenses: [ 10, 11 ], confidence: 0.8 },
+        { type: 'duplicate', expenses: [ 11, 12 ], confidence: 0.9 }
       ]
     end
 
     context 'with keep_newest strategy' do
       it 'keeps the most recently created expense' do
-        allow(Expense).to receive(:find).with([10, 11]).and_return([expense1, expense2])
-        allow(Expense).to receive(:find).with([11, 12]).and_return([expense2, expense3])
+        allow(Expense).to receive(:find).with([ 10, 11 ]).and_return([ expense1, expense2 ])
+        allow(Expense).to receive(:find).with([ 11, 12 ]).and_return([ expense2, expense3 ])
 
         # First conflict: expense2 is newer than expense1
         expect(expense1).to receive(:reload).and_return(expense1)
@@ -267,7 +267,7 @@ RSpec.describe Email::SyncService, 'Conflict Detection and Resolution', unit: tr
       end
 
       it 'does not mark the keeper expense as duplicate' do
-        allow(Expense).to receive(:find).with([10, 11]).and_return([expense1, expense2])
+        allow(Expense).to receive(:find).with([ 10, 11 ]).and_return([ expense1, expense2 ])
 
         expect(expense1).to receive(:reload).and_return(expense1)
         expect(expense1).to receive(:update!).with(
@@ -275,21 +275,21 @@ RSpec.describe Email::SyncService, 'Conflict Detection and Resolution', unit: tr
         )
         expect(expense2).not_to receive(:update!)
 
-        service.resolve_conflicts([conflicts.first])
+        service.resolve_conflicts([ conflicts.first ])
       end
 
       it 'handles StaleObjectError gracefully' do
-        allow(Expense).to receive(:find).with([10, 11]).and_return([expense1, expense2])
+        allow(Expense).to receive(:find).with([ 10, 11 ]).and_return([ expense1, expense2 ])
 
         expect(expense1).to receive(:reload).and_raise(
           ActiveRecord::StaleObjectError.new(expense1, 'update')
         )
-        
+
         expect(Rails.logger).to receive(:warn).with(
           'Skipped marking expense 10 as duplicate due to concurrent modification'
         )
 
-        result = service.resolve_conflicts([conflicts.first])
+        result = service.resolve_conflicts([ conflicts.first ])
 
         expect(result[:resolved]).to eq(1) # Still counts as resolved
         expect(result[:total]).to eq(1)
@@ -299,12 +299,12 @@ RSpec.describe Email::SyncService, 'Conflict Detection and Resolution', unit: tr
     context 'with different conflict types' do
       it 'only processes duplicate type conflicts' do
         mixed_conflicts = [
-          { type: 'duplicate', expenses: [10, 11], confidence: 0.8 },
-          { type: 'mismatch', expenses: [12, 13], confidence: 0.7 },
-          { type: 'unknown', expenses: [14, 15], confidence: 0.9 }
+          { type: 'duplicate', expenses: [ 10, 11 ], confidence: 0.8 },
+          { type: 'mismatch', expenses: [ 12, 13 ], confidence: 0.7 },
+          { type: 'unknown', expenses: [ 14, 15 ], confidence: 0.9 }
         ]
 
-        allow(Expense).to receive(:find).with([10, 11]).and_return([expense1, expense2])
+        allow(Expense).to receive(:find).with([ 10, 11 ]).and_return([ expense1, expense2 ])
         allow(expense1).to receive(:reload).and_return(expense1)
         allow(expense1).to receive(:update!)
 
@@ -329,8 +329,8 @@ RSpec.describe Email::SyncService, 'Conflict Detection and Resolution', unit: tr
 
     context 'error handling' do
       it 'continues processing after individual conflict errors' do
-        allow(Expense).to receive(:find).with([10, 11]).and_raise(ActiveRecord::RecordNotFound)
-        allow(Expense).to receive(:find).with([11, 12]).and_return([expense2, expense3])
+        allow(Expense).to receive(:find).with([ 10, 11 ]).and_raise(ActiveRecord::RecordNotFound)
+        allow(Expense).to receive(:find).with([ 11, 12 ]).and_return([ expense2, expense3 ])
 
         expect(expense2).to receive(:reload).and_return(expense2)
         expect(expense2).to receive(:update!)
@@ -351,11 +351,11 @@ RSpec.describe Email::SyncService, 'Conflict Detection and Resolution', unit: tr
       it 'handles conflicts with missing expense IDs' do
         invalid_conflicts = [
           { type: 'duplicate', expenses: [], confidence: 0.8 },
-          { type: 'duplicate', expenses: [999], confidence: 0.9 }
+          { type: 'duplicate', expenses: [ 999 ], confidence: 0.9 }
         ]
 
         allow(Expense).to receive(:find).with([]).and_raise(ActiveRecord::RecordNotFound)
-        allow(Expense).to receive(:find).with([999]).and_raise(ActiveRecord::RecordNotFound)
+        allow(Expense).to receive(:find).with([ 999 ]).and_raise(ActiveRecord::RecordNotFound)
 
         result = service.resolve_conflicts(invalid_conflicts)
 
@@ -366,12 +366,12 @@ RSpec.describe Email::SyncService, 'Conflict Detection and Resolution', unit: tr
 
     context 'performance considerations' do
       it 'uses reload before update to prevent stale data' do
-        allow(Expense).to receive(:find).with([10, 11]).and_return([expense1, expense2])
+        allow(Expense).to receive(:find).with([ 10, 11 ]).and_return([ expense1, expense2 ])
 
         expect(expense1).to receive(:reload).ordered.and_return(expense1)
         expect(expense1).to receive(:update!).ordered
 
-        service.resolve_conflicts([conflicts.first])
+        service.resolve_conflicts([ conflicts.first ])
       end
 
       it 'processes conflicts sequentially to avoid deadlocks' do
@@ -379,10 +379,10 @@ RSpec.describe Email::SyncService, 'Conflict Detection and Resolution', unit: tr
 
         allow(Expense).to receive(:find) do |ids|
           call_order << ids
-          if ids == [10, 11]
-            [expense1, expense2]
+          if ids == [ 10, 11 ]
+            [ expense1, expense2 ]
           else
-            [expense2, expense3]
+            [ expense2, expense3 ]
           end
         end
 
@@ -393,7 +393,7 @@ RSpec.describe Email::SyncService, 'Conflict Detection and Resolution', unit: tr
 
         service.resolve_conflicts(conflicts)
 
-        expect(call_order).to eq([[10, 11], [11, 12]])
+        expect(call_order).to eq([ [ 10, 11 ], [ 11, 12 ] ])
       end
     end
   end
@@ -409,7 +409,7 @@ RSpec.describe Email::SyncService, 'Conflict Detection and Resolution', unit: tr
 
     it 'detects and resolves conflicts in sync_all flow' do
       conflicts = [
-        { type: 'duplicate', expenses: [1, 2], confidence: 0.85 }
+        { type: 'duplicate', expenses: [ 1, 2 ], confidence: 0.85 }
       ]
 
       expect(service).to receive(:detect_conflicts).and_return(conflicts)
@@ -422,7 +422,7 @@ RSpec.describe Email::SyncService, 'Conflict Detection and Resolution', unit: tr
 
     it 'detects but does not resolve when auto_resolve is false' do
       service = described_class.new(detect_conflicts: true, auto_resolve: false)
-      conflicts = [{ type: 'duplicate', expenses: [1, 2], confidence: 0.85 }]
+      conflicts = [ { type: 'duplicate', expenses: [ 1, 2 ], confidence: 0.85 } ]
 
       expect(service).to receive(:detect_conflicts).and_return(conflicts)
       expect(service).not_to receive(:resolve_conflicts)
@@ -450,3 +450,4 @@ RSpec.describe Email::SyncService, 'Conflict Detection and Resolution', unit: tr
     end
   end
 end
+

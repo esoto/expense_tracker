@@ -49,7 +49,7 @@ RSpec.describe Email::SyncService, unit: true do
       it 'includes session_id when track_session is enabled' do
         service = described_class.new(track_session: true)
         mock_session = instance_double(SyncSession, id: 99)
-        
+
         allow(SyncSession).to receive(:create!).and_return(mock_session)
         allow(mock_session).to receive_message_chain(:sync_session_accounts, :create!)
         allow(EmailAccount).to receive(:find_by).with(id: 1).and_return(active_account)
@@ -115,7 +115,7 @@ RSpec.describe Email::SyncService, unit: true do
 
       context 'with conflict detection enabled' do
         let(:options) { { detect_conflicts: true } }
-        let(:conflicts) { [{ type: 'duplicate', expenses: [1, 2], confidence: 0.8 }] }
+        let(:conflicts) { [ { type: 'duplicate', expenses: [ 1, 2 ], confidence: 0.8 } ] }
 
         before do
           allow(active_accounts).to receive(:count).and_return(2)
@@ -183,7 +183,7 @@ RSpec.describe Email::SyncService, unit: true do
     context 'with specific email account' do
       it 'creates session with account association' do
         mock_accounts = double('sync_session_accounts')
-        
+
         expect(SyncSession).to receive(:create!).with(
           status: 'pending',
           total_emails: 0,
@@ -302,7 +302,7 @@ RSpec.describe Email::SyncService, unit: true do
       before do
         allow(SyncSession).to receive(:find).with(30).and_return(failed_session)
         allow(failed_session).to receive_message_chain(:sync_session_accounts, :failed)
-          .and_return([failed_account_session])
+          .and_return([ failed_account_session ])
       end
 
       it 'updates session status and increments retry count' do
@@ -320,9 +320,9 @@ RSpec.describe Email::SyncService, unit: true do
 
       it 're-runs sync for all failed accounts' do
         failed_account2 = instance_double(SyncSessionAccount, email_account_id: 8)
-        
+
         allow(failed_session).to receive_message_chain(:sync_session_accounts, :failed)
-          .and_return([failed_account_session, failed_account2])
+          .and_return([ failed_account_session, failed_account2 ])
         allow(failed_session).to receive(:update!)
 
         expect(ProcessEmailsJob).to receive(:perform_later).with(5)
@@ -442,3 +442,4 @@ RSpec.describe Email::SyncService, unit: true do
     end
   end
 end
+

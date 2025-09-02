@@ -21,11 +21,11 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
       # Use a date that's definitely in the current week but not today
       week_date = if Date.current.wday == 0  # Sunday
                     Date.current - 1.day  # Saturday
-                  else
+      else
                     Date.current.beginning_of_week + 2.days  # Tuesday of current week
-                  end
+      end
       week_date = Date.current - 1.day if week_date == Date.current  # Ensure it's not today
-      
+
       @week_expense = create(:expense,
         email_account: email_account,
         category: category,
@@ -44,7 +44,7 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
       if month_date.month != Date.current.month
         month_date = Date.current.beginning_of_month + 7.days
       end
-      
+
       @month_expense = create(:expense,
         email_account: email_account,
         category: category,
@@ -67,7 +67,7 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
       if year_date.month == Date.current.month
         year_date = Date.current.beginning_of_year + 10.days  # Early January
       end
-      
+
       @year_expense = create(:expense,
         email_account: email_account,
         category: category,

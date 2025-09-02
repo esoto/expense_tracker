@@ -169,3 +169,4 @@ RSpec.describe EmailProcessing::Fetcher, 'sync session integration', integration
     end
   end
 end
+

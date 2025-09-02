@@ -450,4 +450,3 @@ RSpec.describe Email::SyncService, 'Conflict Detection and Resolution', unit: tr
     end
   end
 end
-

@@ -473,4 +473,3 @@ RSpec.describe Email::SyncService, 'Metrics and Progress Tracking', unit: true d
     end
   end
 end
-

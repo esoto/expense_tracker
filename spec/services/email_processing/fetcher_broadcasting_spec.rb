@@ -362,4 +362,3 @@ RSpec.describe EmailProcessing::Fetcher, 'broadcasting integration', type: :serv
     end
   end
 end
-

@@ -487,4 +487,3 @@ RSpec.describe Email::SyncService, 'Error Handling and Edge Cases', unit: true d
     end
   end
 end
-

@@ -393,4 +393,3 @@ RSpec.describe Email::SyncService, 'Session Management', unit: true do
     end
   end
 end
-

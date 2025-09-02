@@ -358,4 +358,3 @@ RSpec.describe EmailProcessing::Fetcher, 'error handling', type: :service, unit:
     end
   end
 end
-

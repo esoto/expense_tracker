@@ -442,4 +442,3 @@ RSpec.describe Email::SyncService, unit: true do
     end
   end
 end
-

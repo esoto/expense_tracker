@@ -291,4 +291,3 @@ RSpec.describe EmailProcessing::Fetcher, type: :service, integration: true do
     end
   end
 end
-

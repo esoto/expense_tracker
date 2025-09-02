@@ -160,4 +160,3 @@ RSpec.describe EmailProcessing::FetcherResponse, integration: true do
     end
   end
 end
-

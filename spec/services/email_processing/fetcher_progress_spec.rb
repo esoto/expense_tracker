@@ -386,4 +386,3 @@ RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, un
     end
   end
 end
-

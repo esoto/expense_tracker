@@ -14,10 +14,10 @@ FactoryBot.define do
 
     trait :bac do
       bank_name { "BAC" }
-      amount_pattern { '(?:Monto)[: ]*(?:USD|CRC)[: ]*([\\d,]+\\.\\d{2})' }
+      amount_pattern { '(?:Monto)[: ]*(?:₡|USD|CRC)?[: ]*([\\d,]+(?:\\.\\d{2})?)' }
       date_pattern { 'Fecha:\\s*(.+?)(?=\\n|$)' }
-      merchant_pattern { '(?:Comercio)[: ]*([A-Z0-9 .]+?)(?: *Ciudad| *Fecha| *VISA| *MASTER)' }
-      description_pattern { '(?:Tipo de Transacci[oó]n)[:\\s]*([A-Z]+)' }
+      merchant_pattern { '(?:Comercio)[: ]*([A-Z0-9 .]+?)(?:\\s*$|\\n| *Ciudad| *Fecha| *VISA| *MASTER)' }
+      description_pattern { '(?:Tipo de Transacci[oó]n|Descripci[oó]n)[:\\s]*(.+?)(?:\\s*$|\\n)' }
       email_pattern { '(?:transacci[oó]n|notificaci[oó]n).*(?:BAC|PTA)' }
     end
 
@@ -32,11 +32,11 @@ FactoryBot.define do
 
     trait :scotiabank do
       bank_name { "Scotiabank" }
-      amount_pattern { '(?:₡|CRC)[\\s]*(\\d{1,3}(?:[,.]\\d{3})*(?:[,.]\\d{2})?)' }
-      date_pattern { '(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})' }
-      merchant_pattern { '(?:merchant|comercio)[:\\s]+(.*?)(?:\\n|$)' }
+      amount_pattern { '(?:Amount|Monto)[:\\s]*(?:\\$|USD|₡|CRC)?[\\s]*(\\d{1,3}(?:[,.]\\d{3})*(?:[,.]\\d{2})?)' }
+      date_pattern { '(?:Date|Fecha)[:\\s]*([A-Za-z]+\\s+\\d{1,2},?\\s+\\d{4}|\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})' }
+      merchant_pattern { '(?:Merchant|merchant|comercio)[:\\s]+(.*?)(?:\\n|$)' }
       description_pattern { '(?:description|descripcion)[:\\s]+(.*?)(?:\\n|$)' }
-      email_pattern { '(?:transacci[oó]n|transaction).*Scotia' }
+      email_pattern { '(?:transacci[oó]n|transaction|alert|purchase).*Scotia' }
     end
 
     trait :banco_nacional do

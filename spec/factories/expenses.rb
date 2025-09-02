@@ -12,10 +12,10 @@ FactoryBot.define do
     bank_name { "BAC" }
 
     association :email_account
-    association :category, factory: :category
+    category { nil }  # Don't auto-assign category by default
 
-    trait :without_category do
-      category { nil }
+    trait :with_category do
+      association :category, factory: :category
     end
 
     trait :processed do

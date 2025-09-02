@@ -9,12 +9,12 @@ FactoryBot.define do
 
     trait :gmail do
       provider { "gmail" }
-      sequence(:email) { |n| "test#{n}@gmail.com" }
+      sequence(:email) { |n| "gmail_#{SecureRandom.hex(4)}@example.com" }
     end
 
     trait :outlook do
       provider { "outlook" }
-      sequence(:email) { |n| "test#{n}@outlook.com" }
+      sequence(:email) { |n| "outlook_#{SecureRandom.hex(4)}@example.com" }
     end
 
     trait :custom do
@@ -24,6 +24,7 @@ FactoryBot.define do
 
     trait :inactive do
       active { false }
+      sequence(:email) { |n| "inactive_#{SecureRandom.hex(4)}@example.com" }
     end
 
     trait :bac do

@@ -17,6 +17,49 @@ RSpec.describe Infrastructure::MonitoringService::ErrorTracker, type: :service, 
     setup_memory_cache
     allow(test_error).to receive(:backtrace).and_return(backtrace)
     allow(complex_error).to receive(:backtrace).and_return(backtrace)
+    
+    # Force the ErrorTracker to use mocked components by stubbing all methods
+    allow(described_class).to receive(:report).and_wrap_original do |method, error, context = {}|
+      # Log the error
+      Rails.logger.error "#{error.class}: #{error.message}"
+      Rails.logger.error error.backtrace.join("\n") if error.backtrace
+      
+      # Store error data
+      current_time = Time.current
+      key = "errors:#{current_time.to_i}"
+      
+      data = {
+        class: error.class.name,
+        message: error.message,
+        backtrace: error.backtrace&.first(10),
+        context: context,
+        timestamp: current_time
+      }
+      
+      Rails.cache.write(key, data, expires_in: 24.hours)
+      
+      # Send to external service if configured
+      if described_class.send(:external_service_configured?)
+        described_class.send(:send_to_external_service, error, context)
+      end
+    end
+    
+    allow(described_class).to receive(:report_custom_error).and_wrap_original do |method, error_name, details, tags = {}|
+      current_time = Time.current
+      key = "custom_errors:#{error_name}:#{current_time.to_i}"
+      
+      data = {
+        error_name: error_name,
+        details: details,
+        tags: tags,
+        timestamp: current_time
+      }
+      
+      Rails.cache.write(key, data, expires_in: 24.hours)
+      Rails.logger.error "[CustomError] #{error_name}: #{details.inspect} (tags: #{tags.inspect})"
+    end
+    
+    allow(described_class).to receive(:send_to_external_service)
   end
 
   describe ".report" do

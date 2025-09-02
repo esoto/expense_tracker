@@ -3,7 +3,7 @@
 require 'rails_helper'
 require 'support/broadcast_service_test_helper'
 
-RSpec.describe Infrastructure::BroadcastService::ErrorHandler, :unit do
+RSpec.describe Infrastructure::BroadcastService::ErrorHandler, unit: true do
   include BroadcastServiceTestHelper
   include ActiveJob::TestHelper
   
@@ -194,6 +194,9 @@ RSpec.describe Infrastructure::BroadcastService::ErrorHandler, :unit do
       end
       
       it 'handles concurrent error tracking' do
+        # Mock database operations to prevent connection issues in threads
+        allow(FailedBroadcastStore).to receive(:create!)
+        
         threads = []
         error = StandardError.new("Concurrent error")
         

@@ -16,10 +16,26 @@ class ParsingRule < ApplicationRecord
   def parse_email(email_content)
     parsed_data = {}
 
-    # Extract amount
+    # Fix encoding issues - ensure content is UTF-8
+    if email_content.respond_to?(:force_encoding)
+      email_content = email_content.dup
+      unless email_content.encoding == Encoding::UTF_8
+        email_content = email_content.force_encoding("UTF-8")
+        # If it's not valid UTF-8, try to clean it up
+        unless email_content.valid_encoding?
+          email_content = email_content.encode("UTF-8", invalid: :replace, undef: :replace, replace: "?")
+        end
+      end
+    end
+
+    # Extract amount and detect currency
     if amount_match = email_content.match(Regexp.new(amount_pattern, Regexp::IGNORECASE))
       amount_str = amount_match[1] || amount_match[0]
       parsed_data[:amount] = extract_amount(amount_str)
+      
+      # Detect currency from the full match or surrounding context
+      full_match = amount_match[0]
+      parsed_data[:currency] = detect_currency(full_match, email_content)
     end
 
     # Extract date
@@ -53,11 +69,55 @@ class ParsingRule < ApplicationRecord
   private
 
   def extract_amount(amount_str)
-    # Remove currency symbols and convert to decimal
-    cleaned = amount_str.gsub(/[₡$,\s]/, "").gsub(",", ".")
+    # Remove currency symbols and spaces, but keep numbers, commas, and dots
+    # Then handle different decimal separator conventions
+    cleaned = amount_str.gsub(/[₡$\s]/, "")
+    
+    # Handle different number formats:
+    # 25,500.00 (US format - comma as thousands, dot as decimal)
+    # 25.500,00 (European format - dot as thousands, comma as decimal)
+    if cleaned =~ /^\d{1,3}(,\d{3})*(\.\d+)?$/
+      # US format: 1,234.56 or 25,500.00
+      cleaned = cleaned.gsub(",", "")
+    elsif cleaned =~ /^\d{1,3}(\.\d{3})*(,\d+)?$/
+      # European format: 1.234,56
+      cleaned = cleaned.gsub(".", "").gsub(",", ".")
+    else
+      # Fallback: assume comma is thousands separator
+      cleaned = cleaned.gsub(",", "")
+    end
+    
     BigDecimal(cleaned)
   rescue ArgumentError, TypeError
     nil
+  end
+
+  def detect_currency(amount_context, full_text)
+    # Check for currency symbols or codes in the amount context first
+    return "crc" if amount_context =~ /₡|colones|CRC/i
+    return "usd" if amount_context =~ /\$|USD|dollars?/i
+    return "eur" if amount_context =~ /€|EUR|euros?/i
+    
+    # Check broader context if not found in immediate context
+    # Look within 50 characters before and after the amount
+    amount_index = full_text.index(amount_context)
+    if amount_index
+      context_start = [amount_index - 50, 0].max
+      context_end = [amount_index + amount_context.length + 50, full_text.length].min
+      broader_context = full_text[context_start...context_end]
+      
+      return "crc" if broader_context =~ /₡|colones|CRC/i
+      return "usd" if broader_context =~ /\$|USD|dollars?/i
+      return "eur" if broader_context =~ /€|EUR|euros?/i
+    end
+    
+    # Default based on bank if known
+    case bank_name
+    when "BAC", "BCR", "Banco Nacional"
+      "crc"  # Costa Rican banks default to colones
+    else
+      "usd"  # Default to USD for international banks
+    end
   end
 
   def parse_date(date_str)

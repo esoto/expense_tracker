@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'set'
+
 module Email
   # ProcessingService consolidates email fetching, parsing, and processing
   # into a single cohesive service. This replaces multiple separate services
@@ -175,6 +177,9 @@ module Email
 
         { success: true, expenses_created: expenses_created }
       rescue StandardError => e
+        Rails.logger.error "[EmailProcessing] Error processing email: #{e.message}"
+        Rails.logger.error "[EmailProcessing] Error class: #{e.class.name}"
+        Rails.logger.error "[EmailProcessing] Backtrace: #{e.backtrace.first(5).join(', ')}"
         { success: false, error: "Failed to process email: #{e.message}" }
       end
 
@@ -185,7 +190,12 @@ module Email
           authenticate_imap(imap)
           yield imap
         ensure
-          imap.disconnect if imap && !imap.disconnected?
+          begin
+            imap.disconnect if imap && !imap.disconnected?
+          rescue StandardError => e
+            # Log but don't reraise disconnect errors
+            Rails.logger.warn "Failed to disconnect IMAP connection: #{e.message}"
+          end
         end
       end
 
@@ -233,7 +243,7 @@ module Email
 
       def refresh_oauth_token
         # Would integrate with OAuth provider to refresh token
-        email_account.oauth_access_token
+        email_account.settings.dig("oauth", "access_token")
       end
 
       def detect_imap_server
@@ -429,6 +439,7 @@ module Email
       end
 
       def mark_email_processed(email)
+
         ProcessedEmail.create!(
           message_id: email[:message_id],
           email_account: email_account,
@@ -519,31 +530,105 @@ module Email
         def parse_with_regex
           expenses = []
           text = email_data[:text_body] || email_data[:body] || ""
+          
+          # Ensure text is UTF-8 to avoid encoding issues with regex
+          if text.respond_to?(:force_encoding)
+            text = text.dup
+            unless text.encoding == Encoding::UTF_8
+              text = text.force_encoding("UTF-8")
+              # If it's not valid UTF-8, try to clean it up
+              unless text.valid_encoding?
+                text = text.encode("UTF-8", invalid: :replace, undef: :replace, replace: "?")
+              end
+            end
+          end
 
-          # Common transaction patterns
+          # Transaction amount patterns
           patterns = [
-            /(?:amount|total|cargo)[:.\s]+\$?([\d,]+\.?\d*)/i,
-            /(?:compra|purchase|payment).*?\$?([\d,]+\.?\d*)/i,
-            /\$\s?([\d,]+\.?\d*)/
+            /(?:amount|total|cargo|monto|importe)[:.\s]+[₡\$]?([\d,]+\.?\d{0,2})/i,
+            /(?:compra|purchase|payment|charge).*?[₡\$]?([\d,]+\.?\d{0,2})/i,
+            /(?:processed\s+for|charged|debited)\s+[₡\$]?([\d,]+\.?\d{0,2})/i,  # "processed for $100.00"
+            /[₡\$]\s?([\d,]+\.?\d{0,2})(?:\s+(?:at|en|from|was|processed))/i,  # Currency followed by amount and context
+            /[₡\$]([\d,]+\.?\d{0,2})(?!\d)/i  # Simple currency + amount not followed by digits
           ]
+
+          # Track found amounts to avoid duplicates
+          found_amounts = Set.new
 
           patterns.each do |pattern|
             text.scan(pattern) do |match|
-              amount = parse_amount(match[0])
+              amount_text = match[0]
+              # Skip if the amount text contains negative indicators
+              next if amount_text.to_s =~ /^[-−]/  # Matches dash or minus sign at start
+              
+              # Skip if this looks like an authorization/reference number (6+ digits without decimals)
+              next if amount_text =~ /^\d{6,}$/ && !amount_text.include?(".")
+              
+              # Skip if the surrounding context suggests this is not a transaction amount
+              amount_index = text.index(amount_text)
+              if amount_index
+                # Look at broader context around the amount
+                context_start = [amount_index - 50, 0].max
+                context_end = [amount_index + amount_text.length + 50, text.length].min
+                context = text[context_start...context_end]
+                
+                # Skip if this is likely a reference number or authorization code
+                next if context&.match?(/(?:autorizaci[oó]n|authorization|reference|ref|código|code|número|number|tarjeta.*\*{4}|card.*\*{4})/i)
+                # Skip refunds
+                next if context&.match?(/refund|reembolso|devoluci[oó]n|-[₡\$][\d,]+|fee.*\$0\.00/i)
+              end
+              
+              amount = parse_amount(amount_text)
               next unless amount > 0
+              
+              # Skip if we've already found this amount (avoid duplicates)
+              amount_key = amount.to_f.round(2)
+              next if found_amounts.include?(amount_key)
+              found_amounts.add(amount_key)
+
+              # Detect currency from context
+              currency = detect_currency_from_text(text, amount_index)
 
               expenses << {
                 amount: amount,
-                description: extract_description_near_amount(text, match[0]),
+                description: extract_description_near_amount(text, amount_text),
                 date: extract_date(text),
                 merchant: extract_merchant(text),
-                raw_text: text[0..500],
+                currency: currency,
+                raw_text: text[0...500],
                 email_message_id: email_data[:message_id]
               }
             end
           end
 
+          # Return all valid expenses found
           expenses
+        end
+        
+        def detect_currency_from_text(text, amount_index = nil)
+          # Check around the amount for currency indicators
+          if amount_index
+            context_start = [amount_index - 30, 0].max
+            context_end = [amount_index + 30, text.length].min
+            context = text[context_start...context_end]
+            
+            return "crc" if context =~ /₡|colones|CRC/i
+            return "usd" if context =~ /\$|USD|dollars?/i
+            return "eur" if context =~ /€|EUR|euros?/i
+          end
+          
+          # Check the entire text as fallback
+          return "crc" if text =~ /₡|colones|CRC/i
+          return "usd" if text =~ /\$|USD|dollars?/i
+          return "eur" if text =~ /€|EUR|euros?/i
+          
+          # Default based on email account bank
+          case email_account.bank_name
+          when "BAC", "BCR", "Banco Nacional"
+            "crc"
+          else
+            "usd"
+          end
         end
 
         def parse_structured_data
@@ -556,8 +641,17 @@ module Email
 
         def apply_parsing_rule(rule)
           text = email_data[:html_body] || email_data[:text_body] || email_data[:body] || ""
-          # Fix encoding issues
-          text = text.force_encoding("UTF-8") if text.respond_to?(:force_encoding)
+          # Fix encoding issues - make a copy to avoid modifying frozen strings
+          if text.respond_to?(:force_encoding)
+            text = text.dup
+            unless text.encoding == Encoding::UTF_8
+              text = text.force_encoding("UTF-8")
+              # If it's not valid UTF-8, try to clean it up
+              unless text.valid_encoding?
+                text = text.encode("UTF-8", invalid: :replace, undef: :replace, replace: "?")
+              end
+            end
+          end
           parsed_data = rule.parse_email(text)
 
           return [] if parsed_data.empty? || !parsed_data[:amount]
@@ -567,13 +661,16 @@ module Email
             description: parsed_data[:description] || extract_description_near_amount(text, parsed_data[:amount].to_s),
             date: parsed_data[:transaction_date] || extract_date(text),
             merchant: parsed_data[:merchant_name] || extract_merchant(text),
-            raw_text: text[0..500],
+            currency: parsed_data[:currency],  # Pass the detected currency
+            raw_text: text[0...500],
             email_message_id: email_data[:message_id]
           } ]
         end
 
         def parse_amount(text)
-          text.to_s.gsub(/[^\d.]/, "").to_f
+          # Remove currency symbols and convert commas to dots for decimal parsing
+          cleaned = text.to_s.gsub(/[₡\$,\s]/, "").gsub(",", ".")
+          cleaned.to_f
         end
 
         def extract_description_near_amount(text, amount_text)
@@ -597,7 +694,8 @@ module Email
           date_patterns = [
             /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/,
             /(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/,
-            /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+\d{4}/i
+            /((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4})/i,
+            /(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4})/i
           ]
 
           date_patterns.each do |pattern|
@@ -617,14 +715,17 @@ module Email
         def extract_merchant(text)
           # Extract merchant name from common patterns
           merchant_patterns = [
-            /(?:merchant|comercio|establecimiento)[:.\s]+([^,\n]+)/i,
-            /(?:at|en)\s+([A-Z][A-Za-z\s&]+?)(?:\s+on|\s+el)/,
-            /^([A-Z][A-Z\s&]+?)\s+/
+            /(?:merchant|comercio|establecimiento)[:.\s]+([^,\n]+?)(?:\s+Amount|$)/i,
+            /(?:at|en)\s+([A-Z][A-Za-z\s&]+?)(?:\s+on|\s+el|\s+Amount)/i,
+            /^([A-Z][A-Za-z\s&]+?)(?:\s+charge|\s+Amount)/i
           ]
 
           merchant_patterns.each do |pattern|
             if match = text.match(pattern)
-              return match[1].strip.titleize
+              merchant_name = match[1].strip
+              # Clean up the merchant name - remove trailing words like "Amount"
+              merchant_name = merchant_name.gsub(/\s+Amount.*$/i, "")
+              return merchant_name.titleize
             end
           end
 

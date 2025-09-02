@@ -148,9 +148,9 @@ RSpec.describe Expense, type: :model, integration: true do
   end
 
   describe 'class methods', integration: true do
-    let!(:expense1) { create(:expense, amount: 100, transaction_date: Time.current, email_account: email_account, category: category) }
-    let!(:expense2) { create(:expense, amount: 200, transaction_date: Time.current, email_account: email_account, category: category) }
-    let!(:expense3) { create(:expense, amount: 150, transaction_date: 1.month.ago, email_account: email_account, category: category) }
+    let!(:expense1) { create(:expense, :with_category, amount: 100, transaction_date: Time.current, email_account: email_account, category: category) }
+    let!(:expense2) { create(:expense, :with_category, amount: 200, transaction_date: Time.current, email_account: email_account, category: category) }
+    let!(:expense3) { create(:expense, :with_category, amount: 150, transaction_date: 1.month.ago, email_account: email_account, category: category) }
 
     it 'calculates total amount for period' do
       start_date = 1.hour.ago
@@ -173,8 +173,8 @@ RSpec.describe Expense, type: :model, integration: true do
   end
 
   describe 'instance methods', integration: true do
-    let(:crc_expense) { create(:expense, amount: 95000, transaction_date: Time.current, email_account: email_account, currency: 'crc') }
-    let(:usd_expense) { create(:expense, amount: 20.50, transaction_date: Time.current, email_account: email_account, currency: 'usd') }
+    let(:crc_expense) { create(:expense, :with_category, amount: 95000, transaction_date: Time.current, email_account: email_account, currency: 'crc') }
+    let(:usd_expense) { create(:expense, :with_category, amount: 20.50, transaction_date: Time.current, email_account: email_account, currency: 'usd') }
 
     describe '#formatted_amount', integration: true do
       it 'formats CRC amounts with ₡ symbol' do

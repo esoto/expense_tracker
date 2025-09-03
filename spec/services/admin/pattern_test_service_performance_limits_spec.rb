@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Admin::PatternTestService, type: :unit do
+RSpec.describe Admin::PatternTestService, unit: true do
   describe "Performance Limits" do
     let(:service) { described_class.new(params) }
     let(:params) do
@@ -13,7 +13,7 @@ RSpec.describe Admin::PatternTestService, type: :unit do
         transaction_date: "2024-01-15"
       }
     end
-    
+
     let(:mock_category) { instance_double("Category", name: "Test Category", id: 1) }
     let(:mock_pattern) do
       instance_double("CategorizationPattern",
@@ -35,11 +35,11 @@ RSpec.describe Admin::PatternTestService, type: :unit do
     describe "Timeout Enforcement" do
       it "enforces 1 second timeout per pattern" do
         allow(mock_pattern).to receive(:matches?) { sleep(1.5) }
-        
+
         start_time = Time.current
         result = service.test_single_pattern(mock_pattern)
         duration = Time.current - start_time
-        
+
         expect(result).to be false
         expect(duration).to be < 1.5
       end
@@ -60,11 +60,11 @@ RSpec.describe Admin::PatternTestService, type: :unit do
           category: mock_category, pattern_type: "merchant",
           created_at: Time.current
         )
-        
+
         allow(pattern1).to receive(:matches?) { sleep(1.5) }
         allow(pattern2).to receive(:matches?).and_return(true)
-        allow(Rails.cache).to receive(:fetch).and_return([pattern1, pattern2])
-        
+        allow(Rails.cache).to receive(:fetch).and_return([ pattern1, pattern2 ])
+
         service.test_patterns
         expect(service.matching_patterns.size).to eq(1)
         expect(service.matching_patterns.first[:pattern]).to eq(pattern2)
@@ -72,15 +72,15 @@ RSpec.describe Admin::PatternTestService, type: :unit do
 
       it "logs timeout occurrences" do
         allow(mock_pattern).to receive(:matches?) { sleep(1.5) }
-        allow(Rails.cache).to receive(:fetch).and_return([mock_pattern])
-        
+        allow(Rails.cache).to receive(:fetch).and_return([ mock_pattern ])
+
         service.test_patterns
         expect(Rails.logger).to have_received(:warn).with(/Pattern 1 test timeout/)
       end
 
       it "adds timeout error for single pattern test" do
         allow(mock_pattern).to receive(:matches?) { sleep(1.5) }
-        
+
         service.test_single_pattern(mock_pattern)
         expect(service.errors[:base]).to include("Pattern test timed out - pattern may be too complex")
       end
@@ -93,13 +93,13 @@ RSpec.describe Admin::PatternTestService, type: :unit do
             created_at: Time.current
           ).tap { |p| allow(p).to receive(:matches?) { sleep(1.5) } }
         end
-        
+
         allow(Rails.cache).to receive(:fetch).and_return(patterns)
-        
+
         start_time = Time.current
         service.test_patterns
         duration = Time.current - start_time
-        
+
         # Should timeout each individually, not wait for all
         expect(duration).to be < 7.5 # Would be 7.5 if all waited full time
       end
@@ -113,7 +113,7 @@ RSpec.describe Admin::PatternTestService, type: :unit do
           end
           true
         end
-        
+
         result = service.test_single_pattern(mock_pattern)
         expect(result).to be false
       end
@@ -182,10 +182,10 @@ RSpec.describe Admin::PatternTestService, type: :unit do
         relation = instance_double("ActiveRecord::Relation")
         allow(relation).to receive(:includes).with(:category).and_return(relation)
         allow(relation).to receive(:to_a).and_return([])
-        
+
         expect(CategorizationPattern).to receive(:active).and_return(relation)
         expect(relation).to receive(:limit).with(100).and_return(relation)
-        
+
         service.test_patterns
       end
 
@@ -197,13 +197,13 @@ RSpec.describe Admin::PatternTestService, type: :unit do
             created_at: Time.current
           )
         end
-        
+
         # Simulate database returning limited results
         limited_patterns = patterns.take(100)
         allow(Rails.cache).to receive(:fetch).and_return(limited_patterns)
-        
+
         service.test_patterns
-        
+
         # Count how many were actually tested
         expect(limited_patterns.size).to eq(100)
       end
@@ -216,9 +216,9 @@ RSpec.describe Admin::PatternTestService, type: :unit do
             created_at: Time.current
           )
         end
-        
+
         allow(Rails.cache).to receive(:fetch).and_return(patterns)
-        
+
         service.test_patterns
         expect(service.matching_patterns.size).to eq(10)
       end
@@ -231,9 +231,9 @@ RSpec.describe Admin::PatternTestService, type: :unit do
             created_at: Time.current
           )
         end
-        
+
         allow(Rails.cache).to receive(:fetch).and_return(patterns)
-        
+
         expect { service.test_patterns }.not_to raise_error
         expect(service.matching_patterns.size).to eq(100)
       end
@@ -288,9 +288,9 @@ RSpec.describe Admin::PatternTestService, type: :unit do
             created_at: Time.current
           )
         end
-        
+
         allow(Rails.cache).to receive(:fetch).and_return(patterns)
-        
+
         service.test_patterns
         expect(service.matching_patterns).to be_empty # Non-matching patterns not stored
       end
@@ -298,17 +298,17 @@ RSpec.describe Admin::PatternTestService, type: :unit do
       it "clears test expense between runs" do
         service.test_patterns
         first_expense = service.test_expense
-        
+
         service.test_patterns
         second_expense = service.test_expense
-        
+
         expect(first_expense).not_to equal(second_expense)
       end
 
       it "does not leak memory with large inputs" do
         large_description = "a" * 1000
         large_merchant = "b" * 1000
-        
+
         100.times do
           temp_service = described_class.new(
             description: large_description,
@@ -316,7 +316,7 @@ RSpec.describe Admin::PatternTestService, type: :unit do
           )
           temp_service.test_patterns
         end
-        
+
         # If we get here without memory errors, test passes
         expect(true).to be true
       end
@@ -329,46 +329,20 @@ RSpec.describe Admin::PatternTestService, type: :unit do
             created_at: Time.current
           )
         end
-        
+
         allow(Rails.cache).to receive(:fetch).and_return(patterns)
-        
+
         # Force GC during test
         allow(mock_pattern).to receive(:matches?) do
           GC.start
           true
         end
-        
+
         expect { service.test_patterns }.not_to raise_error
       end
     end
 
-    describe "Cache TTL" do
-      it "uses 5 minute cache expiry" do
-        expect(Rails.cache).to receive(:fetch).with("active_patterns", expires_in: 5.minutes)
-        service.test_patterns
-      end
-
-      it "respects cache TTL configuration" do
-        # First call caches
-        allow(Rails.cache).to receive(:fetch).and_yield
-        expect(CategorizationPattern).to receive(:active).once.and_return(
-          instance_double("ActiveRecord::Relation", includes: self, limit: self, to_a: [])
-        )
-        
-        service.test_patterns
-      end
-
-      it "handles cache expiry gracefully" do
-        # Simulate expired cache
-        allow(Rails.cache).to receive(:fetch).and_yield
-        expect(CategorizationPattern).to receive(:active).and_return(
-          instance_double("ActiveRecord::Relation", includes: self, limit: self, to_a: [mock_pattern])
-        )
-        
-        service.test_patterns
-        expect(service.matching_patterns).not_to be_nil
-      end
-    end
+    # Cache TTL tests moved to cache_behavior_spec.rb
 
     describe "Date Range Limits" do
       it "rejects dates more than 10 years in past" do
@@ -403,19 +377,19 @@ RSpec.describe Admin::PatternTestService, type: :unit do
         # Create service and then set invalid data to bypass sanitization
         invalid_service = described_class.new(description: "test")
         invalid_service.description = "a" * 1001 # Exceeds MAX_INPUT_LENGTH
-        
+
         expect(Rails.cache).not_to receive(:fetch)
-        
+
         result = invalid_service.test_patterns
         expect(result).to be false
       end
 
       it "builds test expense only once per test run" do
-        allow(Rails.cache).to receive(:fetch).and_return([mock_pattern, mock_pattern])
-        
+        allow(Rails.cache).to receive(:fetch).and_return([ mock_pattern, mock_pattern ])
+
         # Should create OpenStruct only once
         expect(OpenStruct).to receive(:new).once.and_call_original
-        
+
         service.test_patterns
       end
 
@@ -427,21 +401,21 @@ RSpec.describe Admin::PatternTestService, type: :unit do
             created_at: Time.current
           )
         end
-        
+
         allow(Rails.cache).to receive(:fetch).and_return(patterns)
-        
+
         service.test_patterns
-        
+
         # Verify sorting happened (highest confidence first)
         confidences = service.matching_patterns.map { |m| m[:confidence] }
         expect(confidences).to eq(confidences.sort.reverse)
       end
 
       it "minimizes logger calls on success" do
-        allow(Rails.cache).to receive(:fetch).and_return([mock_pattern])
-        
+        allow(Rails.cache).to receive(:fetch).and_return([ mock_pattern ])
+
         service.test_patterns
-        
+
         expect(Rails.logger).not_to have_received(:error)
         expect(Rails.logger).not_to have_received(:warn)
       end

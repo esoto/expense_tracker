@@ -576,27 +576,41 @@ RSpec.describe Expense, type: :model, unit: true do
   end
 
   describe "edge cases and error conditions" do
+    # Use an expense without category for edge case tests that don't need category validation
+    let(:edge_case_expense) do
+      build(:expense,
+        email_account: email_account,
+        category: nil,  # No category for edge case tests
+        amount: 25000.0,
+        currency: :crc,
+        transaction_date: Date.current,
+        status: :processed,
+        merchant_name: "Super ABC",
+        merchant_normalized: "super abc",
+        description: "Purchase at Super ABC")
+    end
+
     describe "amount edge cases" do
       it "handles very large amounts" do
-        expense.amount = 999_999_999_999.99
-        expect(expense).to be_valid
+        edge_case_expense.amount = 999_999_999_999.99
+        expect(edge_case_expense).to be_valid
       end
 
       it "handles very small positive amounts" do
-        expense.amount = 0.01
-        expect(expense).to be_valid
+        edge_case_expense.amount = 0.01
+        expect(edge_case_expense).to be_valid
       end
     end
 
     describe "date edge cases" do
       it "handles far future dates" do
-        expense.transaction_date = Date.new(2100, 1, 1)
-        expect(expense).to be_valid
+        edge_case_expense.transaction_date = Date.new(2100, 1, 1)
+        expect(edge_case_expense).to be_valid
       end
 
       it "handles far past dates" do
-        expense.transaction_date = Date.new(1900, 1, 1)
-        expect(expense).to be_valid
+        edge_case_expense.transaction_date = Date.new(1900, 1, 1)
+        expect(edge_case_expense).to be_valid
       end
     end
 
@@ -680,16 +694,30 @@ RSpec.describe Expense, type: :model, unit: true do
 
   describe "security considerations" do
     describe "input sanitization" do
+      # Use an expense without category for security tests
+      let(:security_test_expense) do
+        build(:expense,
+          email_account: email_account,
+          category: nil,  # No category for security tests
+          amount: 25000.0,
+          currency: :crc,
+          transaction_date: Date.current,
+          status: :processed,
+          merchant_name: "Super ABC",
+          merchant_normalized: "super abc",
+          description: "Purchase at Super ABC")
+      end
+
       it "accepts but does not execute script tags in description" do
-        expense.description = "<script>alert('XSS')</script>"
-        expect(expense).to be_valid
-        expect(expense.description).to eq("<script>alert('XSS')</script>")
+        security_test_expense.description = "<script>alert('XSS')</script>"
+        expect(security_test_expense).to be_valid
+        expect(security_test_expense.description).to eq("<script>alert('XSS')</script>")
       end
 
       it "handles SQL injection attempts in merchant_name" do
-        expense.merchant_name = "'; DROP TABLE expenses; --"
-        expense.send(:normalize_merchant_name)
-        expect(expense.merchant_normalized).to eq("drop table expenses")
+        security_test_expense.merchant_name = "'; DROP TABLE expenses; --"
+        security_test_expense.send(:normalize_merchant_name)
+        expect(security_test_expense.merchant_normalized).to eq("drop table expenses")
       end
     end
 

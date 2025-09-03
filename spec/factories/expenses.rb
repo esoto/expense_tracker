@@ -18,6 +18,10 @@ FactoryBot.define do
       association :category, factory: :category
     end
 
+    trait :without_category do
+      category { nil }
+    end
+
     trait :processed do
       status { :processed }
     end

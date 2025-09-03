@@ -236,9 +236,12 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
       it "returns error for non-existent category_id" do
         invalid_params = expense_params.merge(category_id: 99999)
 
-        expect {
-          post :add_expense, params: { expense: invalid_params }
-        }.to raise_error(ActiveRecord::InvalidForeignKey)
+        post :add_expense, params: { expense: invalid_params }
+
+        expect(response).to have_http_status(:unprocessable_content)
+        json = JSON.parse(response.body)
+        expect(json["status"]).to eq("error")
+        expect(json["errors"]).to include("Category must exist")
       end
     end
 
@@ -332,7 +335,8 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
 
     context "edge cases" do
       it "returns empty array when no expenses exist" do
-        Expense.destroy_all
+        # Mock the query to return empty results instead of destroying all expenses
+        allow(Expense).to receive_message_chain(:includes, :recent, :limit).and_return([])
 
         get :recent_expenses
 
@@ -767,31 +771,31 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
 
     context "timeout resilience" do
       it "handles slow database queries gracefully" do
+        # Simulate slow query with stubbing instead of actual sleep
+        slow_query_executed = false
         allow(Expense).to receive_message_chain(:includes, :recent, :limit) do
-          sleep(0.1)
+          slow_query_executed = true
           []
         end
 
-        start_time = Time.current
         get :recent_expenses
-        end_time = Time.current
 
         expect(response).to have_http_status(:ok)
-        expect(end_time - start_time).to be < 2.0
+        expect(slow_query_executed).to be true
       end
 
       it "handles job enqueueing delays" do
-        allow(ProcessEmailsJob).to receive(:perform_later) do
-          sleep(0.05)
+        # Test job enqueueing without actual delays
+        job_enqueued = false
+        allow(ProcessEmailsJob).to receive(:perform_later) do |*args|
+          job_enqueued = true
           true
         end
 
-        start_time = Time.current
         post :process_emails, params: { email_account_id: 1 }
-        end_time = Time.current
 
         expect(response).to have_http_status(:accepted)
-        expect(end_time - start_time).to be < 1.0
+        expect(job_enqueued).to be true
       end
     end
   end

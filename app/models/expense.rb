@@ -19,6 +19,7 @@ class Expense < ApplicationRecord
   validates :transaction_date, presence: true
   validates :status, presence: true
   validates :currency, presence: true
+  validate :category_exists_if_provided
 
   # Callbacks
   before_save :normalize_merchant_name
@@ -163,6 +164,12 @@ class Expense < ApplicationRecord
   end
 
   private
+
+  def category_exists_if_provided
+    if category_id.present? && !Category.exists?(category_id)
+      errors.add(:category, "must exist")
+    end
+  end
 
   def clear_dashboard_cache
     DashboardService.clear_cache

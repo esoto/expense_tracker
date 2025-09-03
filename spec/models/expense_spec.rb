@@ -45,6 +45,20 @@ RSpec.describe Expense, type: :model, integration: true do
       expect(expense.errors[:email_account]).to include("must exist")
     end
 
+    it 'validates category exists when provided' do
+      # Valid category_id should pass
+      valid_expense = build(:expense, category_id: category.id, email_account: email_account)
+      expect(valid_expense).to be_valid
+
+      # Nil category_id should pass (optional association)
+      nil_category_expense = build(:expense, category_id: nil, email_account: email_account)
+      expect(nil_category_expense).to be_valid
+
+      # Non-existent category_id should fail
+      invalid_expense = build(:expense, category_id: 99999, email_account: email_account)
+      expect(invalid_expense).not_to be_valid
+      expect(invalid_expense.errors[:category]).to include("must exist")
+    end
 
     it 'validates currency inclusion' do
       valid_currencies = [ 'crc', 'usd', 'eur' ]

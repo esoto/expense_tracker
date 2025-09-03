@@ -338,4 +338,3 @@ RSpec.describe Admin::PatternTestService, unit: true do
     end
   end
 end
-

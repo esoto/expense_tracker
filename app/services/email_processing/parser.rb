@@ -132,7 +132,7 @@ module EmailProcessing
 
     def add_error(message)
       @errors << message
-      email_info = email_account&.email || 'unknown'
+      email_info = email_account&.email || "unknown"
       Rails.logger.error "[EmailProcessing::Parser] #{email_info}: #{message}"
     end
 
@@ -159,7 +159,7 @@ module EmailProcessing
         processed << final_line
         lines_processed += 1
         bytes_accumulated += final_line.bytesize
-        
+
         # Safety check: if we've accumulated way too much, stop
         break if bytes_accumulated > 100_000  # 100KB absolute max
       end

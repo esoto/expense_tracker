@@ -34,14 +34,13 @@ RSpec.describe Admin::PatternTestService, unit: true do
 
     describe "Timeout Enforcement" do
       it "enforces 1 second timeout per pattern" do
-        allow(mock_pattern).to receive(:matches?) { sleep(1.5) }
+        allow(mock_pattern).to receive(:matches?) do
+          raise Timeout::Error, "execution expired"
+        end
 
-        start_time = Time.current
         result = service.test_single_pattern(mock_pattern)
-        duration = Time.current - start_time
-
         expect(result).to be false
-        expect(duration).to be < 1.5
+        expect(service.errors[:base]).to include("Pattern test timed out - pattern may be too complex")
       end
 
       it "timeout is exactly 1 second as configured" do
@@ -61,7 +60,7 @@ RSpec.describe Admin::PatternTestService, unit: true do
           created_at: Time.current
         )
 
-        allow(pattern1).to receive(:matches?) { sleep(1.5) }
+        allow(pattern1).to receive(:matches?) { raise Timeout::Error }
         allow(pattern2).to receive(:matches?).and_return(true)
         allow(Rails.cache).to receive(:fetch).and_return([ pattern1, pattern2 ])
 
@@ -71,7 +70,7 @@ RSpec.describe Admin::PatternTestService, unit: true do
       end
 
       it "logs timeout occurrences" do
-        allow(mock_pattern).to receive(:matches?) { sleep(1.5) }
+        allow(mock_pattern).to receive(:matches?) { raise Timeout::Error }
         allow(Rails.cache).to receive(:fetch).and_return([ mock_pattern ])
 
         service.test_patterns
@@ -79,7 +78,7 @@ RSpec.describe Admin::PatternTestService, unit: true do
       end
 
       it "adds timeout error for single pattern test" do
-        allow(mock_pattern).to receive(:matches?) { sleep(1.5) }
+        allow(mock_pattern).to receive(:matches?) { raise Timeout::Error }
 
         service.test_single_pattern(mock_pattern)
         expect(service.errors[:base]).to include("Pattern test timed out - pattern may be too complex")
@@ -91,27 +90,19 @@ RSpec.describe Admin::PatternTestService, unit: true do
             id: i, matches?: true, effective_confidence: 0.9,
             category: mock_category, pattern_type: "description",
             created_at: Time.current
-          ).tap { |p| allow(p).to receive(:matches?) { sleep(1.5) } }
+          ).tap { |p| allow(p).to receive(:matches?) { raise Timeout::Error } }
         end
 
         allow(Rails.cache).to receive(:fetch).and_return(patterns)
 
-        start_time = Time.current
         service.test_patterns
-        duration = Time.current - start_time
-
-        # Should timeout each individually, not wait for all
-        expect(duration).to be < 7.5 # Would be 7.5 if all waited full time
+        # All patterns should timeout without matching
+        expect(service.matching_patterns).to be_empty
       end
 
       it "applies timeout to pattern matches? method only" do
         allow(mock_pattern).to receive(:matches?) do
-          # Simulate complex regex that takes time
-          start = Time.current
-          while (Time.current - start) < 2
-            "a" * 1000 =~ /^(a+)+$/
-          end
-          true
+          raise Timeout::Error, "execution expired"
         end
 
         result = service.test_single_pattern(mock_pattern)

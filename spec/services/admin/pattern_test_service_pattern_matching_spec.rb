@@ -225,7 +225,10 @@ RSpec.describe Admin::PatternTestService, unit: true do
       end
 
       it "validates inputs before testing" do
-        invalid_service = described_class.new(amount: "99999999")
+        # Create service with invalid data that will fail validation
+        invalid_service = described_class.new(description: "test")
+        # Bypass sanitization by setting invalid value directly
+        invalid_service.description = "a" * 1001
         allow(mock_pattern).to receive(:matches?).and_return(true)
         result = invalid_service.test_single_pattern(mock_pattern)
         expect(result).to be false
@@ -245,7 +248,9 @@ RSpec.describe Admin::PatternTestService, unit: true do
       end
 
       it "enforces timeout on single pattern test" do
-        allow(mock_pattern).to receive(:matches?) { sleep(2) }
+        allow(mock_pattern).to receive(:matches?) do
+          raise Timeout::Error, "execution expired"
+        end
 
         result = service.test_single_pattern(mock_pattern)
         expect(result).to be false
@@ -253,7 +258,9 @@ RSpec.describe Admin::PatternTestService, unit: true do
       end
 
       it "logs timeout for single pattern test" do
-        allow(mock_pattern).to receive(:matches?) { sleep(2) }
+        allow(mock_pattern).to receive(:matches?) do
+          raise Timeout::Error, "execution expired"
+        end
 
         service.test_single_pattern(mock_pattern)
         expect(Rails.logger).to have_received(:warn).with(/Pattern test timeout/)

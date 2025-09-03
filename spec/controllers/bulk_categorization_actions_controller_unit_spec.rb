@@ -99,37 +99,52 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
   describe "POST #suggest", unit: true do
     let(:expense_ids) { [ expense.id ] }
     let(:suggestions) { [ { category: "Food", confidence: 0.9 }, { category: "Transport", confidence: 0.7 } ] }
+    let(:bulk_categorization_service) { double("Categorization::BulkCategorizationService") }
 
     before do
-      allow(bulk_processor).to receive(:suggest).and_return(suggestions)
+      # Mock Expense.find to return expenses
+      allow(Expense).to receive(:find).with(expense_ids.map(&:to_s)).and_return([expense])
+      
+      # Define current_user method for testing since authentication is skipped
+      def controller.current_user
+        nil
+      end
+      
+      # Mock the real service for suggest action
+      allow(Categorization::BulkCategorizationService).to receive(:new).and_return(bulk_categorization_service)
+      allow(bulk_categorization_service).to receive(:suggest_categories).and_return(suggestions)
     end
 
     it "calls bulk processor with correct parameters" do
-      expect(bulk_processor).to receive(:suggest).with(
-        expense_ids: expense_ids.map(&:to_s),
+      expect(Categorization::BulkCategorizationService).to receive(:new).with(
+        expenses: [expense],
+        user: nil, # No user in unit tests
         options: {
           max_suggestions: 3,
           include_confidence: false
         }
-      )
+      ).and_return(bulk_categorization_service)
+      expect(bulk_categorization_service).to receive(:suggest_categories)
 
       post :suggest, params: { expense_ids: expense_ids }, format: :json
     end
 
     it "uses custom max suggestions when provided" do
-      expect(bulk_processor).to receive(:suggest).with(
-        expense_ids: expense_ids.map(&:to_s),
+      expect(Categorization::BulkCategorizationService).to receive(:new).with(
+        expenses: [expense],
+        user: nil,
         options: hash_including(max_suggestions: 5)
-      )
+      ).and_return(bulk_categorization_service)
 
       post :suggest, params: { expense_ids: expense_ids, max_suggestions: "5" }, format: :json
     end
 
     it "includes confidence when parameter is true" do
-      expect(bulk_processor).to receive(:suggest).with(
-        expense_ids: expense_ids.map(&:to_s),
+      expect(Categorization::BulkCategorizationService).to receive(:new).with(
+        expenses: [expense],
+        user: nil,
         options: hash_including(include_confidence: true)
-      )
+      ).and_return(bulk_categorization_service)
 
       post :suggest, params: { expense_ids: expense_ids, include_confidence: "true" }, format: :json
     end

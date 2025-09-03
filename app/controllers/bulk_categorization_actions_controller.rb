@@ -5,6 +5,8 @@ class BulkCategorizationActionsController < ApplicationController
   before_action :authenticate_user!
 
   def categorize
+    # FIXME: This action uses non-existent Services::Categorization::BulkProcessor
+    # Should use Services::Categorization::BulkCategorizationService instead
     result = Services::Categorization::BulkProcessor.new.categorize(
       expense_ids: params[:expense_ids],
       category_id: params[:category_id],
@@ -18,10 +20,13 @@ class BulkCategorizationActionsController < ApplicationController
   end
 
   def suggest
-    suggestions = Services::Categorization::BulkProcessor.new.suggest(
-      expense_ids: params[:expense_ids],
+    expenses = Expense.find(params[:expense_ids])
+    service = Categorization::BulkCategorizationService.new(
+      expenses: expenses,
+      user: current_user,
       options: suggestion_options
     )
+    suggestions = service.suggest_categories
 
     respond_to do |format|
       format.turbo_stream { render "bulk_categorizations/suggest" }
@@ -30,6 +35,8 @@ class BulkCategorizationActionsController < ApplicationController
   end
 
   def preview
+    # FIXME: This action uses non-existent Services::Categorization::BulkProcessor
+    # Should use Services::Categorization::BulkCategorizationService#preview instead
     preview_data = Services::Categorization::BulkProcessor.new.preview(
       expense_ids: params[:expense_ids],
       category_id: params[:category_id]
@@ -42,6 +49,8 @@ class BulkCategorizationActionsController < ApplicationController
   end
 
   def auto_categorize
+    # FIXME: This action uses non-existent Services::Categorization::BulkProcessor
+    # Should use Services::Categorization::BulkCategorizationService instead
     result = Services::Categorization::BulkProcessor.new.auto_categorize(
       filter_params: auto_categorize_params,
       options: { dry_run: params[:dry_run] }
@@ -67,6 +76,8 @@ class BulkCategorizationActionsController < ApplicationController
   end
 
   def undo
+    # FIXME: This action uses non-existent Services::Categorization::BulkProcessor
+    # Should use BulkCategorization::UndoService instead
     operation = BulkCategorizationOperation.find(params[:id])
     result = Services::Categorization::BulkProcessor.new.undo(operation)
 

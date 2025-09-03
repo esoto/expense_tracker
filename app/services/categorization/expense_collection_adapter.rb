@@ -1,8 +1,7 @@
 # frozen_string_literal: true
 
-module Services
-  module Categorization
-    class ExpenseCollectionAdapter
+module Categorization
+  class ExpenseCollectionAdapter
       def initialize(collection)
         @collection = collection
       end
@@ -84,6 +83,5 @@ module Services
       def activerecord_relation?
         @collection.is_a?(ActiveRecord::Relation)
       end
-    end
   end
 end

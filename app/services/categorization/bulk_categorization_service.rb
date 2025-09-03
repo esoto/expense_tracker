@@ -2,12 +2,11 @@
 
 require_relative "expense_collection_adapter"
 
-module Services
-  module Categorization
-    # BulkCategorizationService consolidates all bulk categorization operations
-    # including preview, apply, undo, export, grouping, and suggestions.
-    # This replaces 8 separate service files for better cohesion and maintainability.
-    class BulkCategorizationService
+module Categorization
+  # BulkCategorizationService consolidates all bulk categorization operations
+  # including preview, apply, undo, export, grouping, and suggestions.
+  # This replaces 8 separate service files for better cohesion and maintainability.
+  class BulkCategorizationService
       include ActiveModel::Model
 
       attr_accessor :expenses, :category_id, :user, :options
@@ -533,4 +532,3 @@ module Services
       end
     end
   end
-end

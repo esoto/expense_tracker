@@ -641,8 +641,8 @@ RSpec.describe AdminUser, type: :model, unit: true do
     describe 'session token uniqueness' do
       it 'generates unique tokens' do
         tokens = []
-        10.times do
-          user = create(:admin_user)
+        10.times do |i|
+          user = create(:admin_user, email: "test_user_#{i}@example.com")
           expect(tokens).not_to include(user.session_token)
           tokens << user.session_token
         end

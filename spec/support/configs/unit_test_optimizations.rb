@@ -86,9 +86,10 @@ RSpec.configure do |config|
     config.before(:suite) do
       next unless RSpec.configuration.inclusion_filter[:unit]
       # Setup parallel test database if needed
-      if ParallelTests.first_process?
-        puts "Setting up parallel unit test execution..."
-      end
+      # DISABLED: Causing socket errors with Ruby 3.4
+      # if ParallelTests.first_process?
+      #   puts "Setting up parallel unit test execution..."
+      # end
     end
   end
 end

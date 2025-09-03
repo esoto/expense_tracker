@@ -370,7 +370,7 @@ RSpec.describe SyncStatusChannel, type: :channel, unit: true do
       ))
     end
 
-    it "includes all required progress data" do
+    it "includes all required progress data", needs_broadcasting: true do
       allow(sync_session).to receive(:status).and_return("running")
       allow(sync_session).to receive(:progress_percentage).and_return(75)
       allow(sync_session).to receive(:detected_expenses).and_return(15)

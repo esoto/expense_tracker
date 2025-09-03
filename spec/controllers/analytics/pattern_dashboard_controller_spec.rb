@@ -1,9 +1,9 @@
 require "rails_helper"
 
 RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: true do
-  let(:admin_user) { create(:admin_user) }
-  let(:restricted_admin) { create(:admin_user, :read_only) }
-  let(:super_admin_user) { create(:admin_user, :super_admin) }
+  let(:admin_user) { create(:admin_user, email: "admin_#{SecureRandom.hex(4)}@example.com") }
+  let(:restricted_admin) { create(:admin_user, :read_only, email: "restricted_#{SecureRandom.hex(4)}@example.com") }
+  let(:super_admin_user) { create(:admin_user, :super_admin, email: "super_#{SecureRandom.hex(4)}@example.com") }
   let(:category) { create(:category) }
   let(:pattern) { create(:categorization_pattern) }
 

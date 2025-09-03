@@ -111,7 +111,7 @@ RSpec.describe BulkCategorization::UndoService, type: :service, unit: true do
         result = service.call
 
         expect(result).to be_a(OpenStruct)
-        expect(result.to_h.keys).to match_array([:success?, :message, :operation])
+        expect(result.to_h.keys).to match_array([ :success?, :message, :operation ])
         expect(result.success?).to be true
         expect(result.message).to be_a(String)
         expect(result.operation).to eq(bulk_operation)
@@ -123,7 +123,7 @@ RSpec.describe BulkCategorization::UndoService, type: :service, unit: true do
         result = service.call
 
         expect(result).to be_a(OpenStruct)
-        expect(result.to_h.keys).to match_array([:success?, :message, :operation])
+        expect(result.to_h.keys).to match_array([ :success?, :message, :operation ])
         expect(result.success?).to be false
         expect(result.message).to be_a(String)
         expect(result.operation).to eq(bulk_operation)

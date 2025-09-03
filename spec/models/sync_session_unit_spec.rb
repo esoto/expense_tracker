@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe SyncSession, type: :model, unit: true do
+RSpec.describe SyncSession, type: :model, unit: true, needs_broadcasting: true do
   # Use build_stubbed for true unit testing
   let(:sync_session) do
     build_stubbed(:sync_session,

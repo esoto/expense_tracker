@@ -245,6 +245,11 @@ RSpec.describe BroadcastAnalytics, type: :service, unit: true do
 
   describe '.get_metrics', unit: true do
     before do
+      # Clear any existing analytics data before each test
+      described_class.instance_variable_set(:@events, [])
+    end
+
+    let(:setup_test_data) do
       freeze_time do
         # Record some test data
         described_class.record_success(
@@ -267,6 +272,7 @@ RSpec.describe BroadcastAnalytics, type: :service, unit: true do
     end
 
     it 'calculates metrics for given time window' do
+      setup_test_data
       metrics = described_class.get_metrics(time_window: 1.hour)
 
       expect(metrics).to include(
@@ -280,6 +286,7 @@ RSpec.describe BroadcastAnalytics, type: :service, unit: true do
     end
 
     it 'caches metrics to avoid recalculation' do
+      setup_test_data
       # First call should calculate
       expect(described_class).to receive(:calculate_metrics).and_call_original
       first_result = described_class.get_metrics(time_window: 1.hour)
@@ -292,6 +299,7 @@ RSpec.describe BroadcastAnalytics, type: :service, unit: true do
     end
 
     it 'handles zero events gracefully' do
+      # Don't call setup_test_data - we want zero events
       Rails.cache.clear
 
       metrics = described_class.get_metrics(time_window: 1.hour)

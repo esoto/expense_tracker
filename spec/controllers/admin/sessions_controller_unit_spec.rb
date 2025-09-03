@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe Admin::SessionsController, type: :controller, unit: true do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:admin_user, email: "admin_#{SecureRandom.hex(4)}@example.com") }
 
   before do
     # Mock Rails.cache for rate limiting

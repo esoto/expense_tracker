@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe BulkCategorizationsController, type: :controller, unit: true do
-  let(:user) { create(:admin_user) }
+  let(:user) { create(:admin_user, email: "admin_#{SecureRandom.hex(4)}@example.com") }
   let(:category) { create(:category) }
   let!(:expense1) { create(:expense, category: nil) }
   let!(:expense2) { create(:expense, category: nil) }

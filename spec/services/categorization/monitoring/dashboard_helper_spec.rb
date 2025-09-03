@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
 require "rails_helper"
+require "support/shared_contexts/activerecord_stubs"
 
 RSpec.describe Categorization::Monitoring::DashboardHelper, type: :service, unit: true do
+  include_context "activerecord stubs"
   let(:fixed_time) { Time.zone.local(2024, 12, 15, 14, 30, 0) }
 
   # Mock objects
@@ -10,7 +12,7 @@ RSpec.describe Categorization::Monitoring::DashboardHelper, type: :service, unit
   let(:mock_metrics_collector) { instance_double(Categorization::Monitoring::MetricsCollector) }
   let(:mock_pattern_cache) { instance_double(Categorization::PatternCache) }
   let(:mock_performance_tracker) { instance_double(Categorization::PerformanceTracker) }
-  let(:mock_connection_pool) { double("ConnectionPool") }
+  let(:mock_connection_pool) { create_mock_connection_pool(size: 10, connections_count: 5, busy: 2) }
   let(:mock_connection) { double("Connection") }
   let(:mock_process_mem) { double("GetProcessMem") }
 
@@ -18,7 +20,23 @@ RSpec.describe Categorization::Monitoring::DashboardHelper, type: :service, unit
     # Freeze time for consistent testing
     travel_to(fixed_time)
 
-    # Mock Expense model enum to prevent initialization issues
+    # Use shared context helper to stub ActiveRecord models
+    stub_activerecord_model(Expense,
+      table_name: "expenses",
+      columns: [ "id", "category_id", "updated_at", "created_at" ]
+    )
+
+    stub_activerecord_model(CategorizationPattern,
+      table_name: "categorization_patterns",
+      columns: [ "id", "pattern_type", "confidence_weight", "created_at", "updated_at", "success_rate" ]
+    )
+
+    stub_activerecord_model(Category,
+      table_name: "categories",
+      columns: [ "id", "name", "created_at", "updated_at" ]
+    )
+
+    # Mock Expense enum separately as it's specific to the model
     allow(Expense).to receive(:defined_enums).and_return({ "currency" => { "crc" => 0, "usd" => 1, "eur" => 2 } })
 
     # Mock HealthCheck
@@ -40,14 +58,7 @@ RSpec.describe Categorization::Monitoring::DashboardHelper, type: :service, unit
       allow(Categorization::PerformanceTracker).to receive(:instance).and_return(mock_performance_tracker)
     end
 
-    # Mock ActiveRecord connection pool
-    mock_schema_cache = double("SchemaCache")
-    allow(mock_schema_cache).to receive(:columns_hash).and_return({})
-    allow(mock_schema_cache).to receive(:data_source_exists?).and_return(true)
-    allow(mock_connection_pool).to receive(:schema_cache).and_return(mock_schema_cache)
-    allow(mock_connection_pool).to receive(:size).and_return(10)
-    allow(mock_connection_pool).to receive(:connections).and_return([])
-    allow(mock_connection_pool).to receive(:with_connection).and_yield(mock_connection)
+    # Use shared context helper to mock connection pool
     allow(ActiveRecord::Base).to receive(:connection_pool).and_return(mock_connection_pool)
   end
 
@@ -152,18 +163,24 @@ RSpec.describe Categorization::Monitoring::DashboardHelper, type: :service, unit
   describe ".categorization_metrics" do
     context "with expenses in database" do
       before do
-        # PROPER WAY: Use receive_message_chain for ActiveRecord query chains
-        # This is more maintainable than creating multiple double objects
-        allow(Expense).to receive(:count).and_return(150)
-        allow(Expense).to receive_message_chain(:where, :not, :count).and_return(100)
+        # Mock ActiveRecord query chains without triggering SchemaCache
+        # Create a proper chain of mocks that doesn't interact with the database
+        expense_scope = double("ExpenseScope")
+        not_scope = double("NotScope")
 
-        # Mock recent queries using receive_message_chain
-        allow(Expense).to receive(:where).with(updated_at: (fixed_time - 1.hour)..).and_return(
-          double("recent_scope").tap do |scope|
-            allow(scope).to receive(:count).and_return(30)
-            allow(scope).to receive_message_chain(:where, :not, :count).and_return(20)
-          end
-        )
+        allow(Expense).to receive(:count).and_return(150)
+        allow(Expense).to receive(:where).and_return(expense_scope)
+        allow(expense_scope).to receive(:not).and_return(not_scope)
+        allow(not_scope).to receive(:count).and_return(100)
+
+        # Mock recent queries with proper scope chaining
+        recent_scope = double("RecentScope")
+        recent_not_scope = double("RecentNotScope")
+
+        allow(Expense).to receive(:where).with(updated_at: (fixed_time - 1.hour)..).and_return(recent_scope)
+        allow(recent_scope).to receive(:count).and_return(30)
+        allow(recent_scope).to receive(:where).and_return(recent_not_scope)
+        allow(recent_not_scope).to receive(:not).and_return(double(count: 20))
       end
 
       it "calculates correct metrics" do
@@ -185,17 +202,23 @@ RSpec.describe Categorization::Monitoring::DashboardHelper, type: :service, unit
 
     context "with no expenses" do
       before do
-        # Use receive_message_chain for cleaner mocking
-        allow(Expense).to receive(:count).and_return(0)
-        allow(Expense).to receive_message_chain(:where, :not, :count).and_return(0)
+        # Mock with proper scope chaining to avoid SchemaCache
+        expense_scope = double("ExpenseScope")
+        not_scope = double("NotScope")
 
-        # Mock recent queries
-        allow(Expense).to receive(:where).with(updated_at: anything).and_return(
-          double("recent_scope").tap do |scope|
-            allow(scope).to receive(:count).and_return(0)
-            allow(scope).to receive_message_chain(:where, :not, :count).and_return(0)
-          end
-        )
+        allow(Expense).to receive(:count).and_return(0)
+        allow(Expense).to receive(:where).and_return(expense_scope)
+        allow(expense_scope).to receive(:not).and_return(not_scope)
+        allow(not_scope).to receive(:count).and_return(0)
+
+        # Mock recent queries with proper scope chaining
+        recent_scope = double("RecentScope")
+        recent_not_scope = double("RecentNotScope")
+
+        allow(Expense).to receive(:where).with(updated_at: anything).and_return(recent_scope)
+        allow(recent_scope).to receive(:count).and_return(0)
+        allow(recent_scope).to receive(:where).and_return(recent_not_scope)
+        allow(recent_not_scope).to receive(:not).and_return(double(count: 0))
       end
 
       it "handles zero division gracefully" do
@@ -211,17 +234,23 @@ RSpec.describe Categorization::Monitoring::DashboardHelper, type: :service, unit
 
     context "with edge case numbers" do
       before do
-        # Use receive_message_chain for cleaner mocking
-        allow(Expense).to receive(:count).and_return(1_000_000)
-        allow(Expense).to receive_message_chain(:where, :not, :count).and_return(999_999)
+        # Mock with proper scope chaining to avoid SchemaCache
+        expense_scope = double("ExpenseScope")
+        not_scope = double("NotScope")
 
-        # Mock recent queries
-        allow(Expense).to receive(:where).with(updated_at: anything).and_return(
-          double("recent_scope").tap do |scope|
-            allow(scope).to receive(:count).and_return(1)
-            allow(scope).to receive_message_chain(:where, :not, :count).and_return(1)
-          end
-        )
+        allow(Expense).to receive(:count).and_return(1_000_000)
+        allow(Expense).to receive(:where).and_return(expense_scope)
+        allow(expense_scope).to receive(:not).and_return(not_scope)
+        allow(not_scope).to receive(:count).and_return(999_999)
+
+        # Mock recent queries with proper scope chaining
+        recent_scope = double("RecentScope")
+        recent_not_scope = double("RecentNotScope")
+
+        allow(Expense).to receive(:where).with(updated_at: anything).and_return(recent_scope)
+        allow(recent_scope).to receive(:count).and_return(1)
+        allow(recent_scope).to receive(:where).and_return(recent_not_scope)
+        allow(recent_not_scope).to receive(:not).and_return(double(count: 1))
       end
 
       it "handles large numbers correctly" do
@@ -858,12 +887,18 @@ RSpec.describe Categorization::Monitoring::DashboardHelper, type: :service, unit
         allow(mock_health_check).to receive(:check_all).and_return({ status: "ok" })
         allow(mock_metrics_collector).to receive(:snapshot).and_return({})
 
-        # Setup proper ActiveRecord mocks for concurrent access
-        # Use receive_message_chain for cleaner ActiveRecord query mocking
+        # Setup proper ActiveRecord mocks for concurrent access without SchemaCache
+        expense_scope = double("ExpenseScope")
+        not_scope = double("NotScope")
+        where_where_scope = double("WhereWhereScope")
+
         allow(Expense).to receive(:count).and_return(100)
-        allow(Expense).to receive_message_chain(:where, :not, :count).and_return(75)
-        allow(Expense).to receive_message_chain(:where, :count).and_return(30)
-        allow(Expense).to receive_message_chain(:where, :where, :not, :count).and_return(20)
+        allow(Expense).to receive(:where).and_return(expense_scope)
+        allow(expense_scope).to receive(:not).and_return(not_scope)
+        allow(not_scope).to receive(:count).and_return(75)
+        allow(expense_scope).to receive(:count).and_return(30)
+        allow(expense_scope).to receive(:where).and_return(where_where_scope)
+        allow(where_where_scope).to receive(:not).and_return(double(count: 20))
 
         # Mock the other component methods to avoid database calls
         allow(described_class).to receive(:pattern_metrics).and_return(

@@ -41,7 +41,7 @@ RSpec.describe RateLimiting, type: :controller, unit: true do
     Rails.cache.clear
   end
 
-  let!(:user) { create(:admin_user) }
+  let!(:user) { create(:admin_user, email: "admin_#{SecureRandom.hex(4)}@example.com") }
 
   # Use shared examples for standard rate limiting behavior
   it_behaves_like "rate limiting concern"

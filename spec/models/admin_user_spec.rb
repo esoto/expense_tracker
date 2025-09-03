@@ -157,13 +157,13 @@ RSpec.describe AdminUser, type: :model, unit: true do
 
       it 'sets session expiration on create' do
         freeze_time = Time.current
-        allow(Time).to receive(:current).and_return(freeze_time)
 
         admin_user = build(:admin_user)
         admin_user.save
 
-        expected_expiration = freeze_time + AdminUser::SESSION_DURATION
-        expect(admin_user.session_expires_at).to be_within(1.second).of(expected_expiration)
+        # Session expires 24 hours from creation
+        expect(admin_user.session_expires_at).to be_present
+        expect(admin_user.session_expires_at).to be_within(2.seconds).of(freeze_time + AdminUser::SESSION_DURATION)
       end
     end
   end

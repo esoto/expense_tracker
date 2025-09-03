@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe Admin::PatternsController, type: :controller, unit: true do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:admin_user, email: "admin_#{SecureRandom.hex(4)}@example.com") }
   let(:pattern) { create(:categorization_pattern) }
   let(:category) { create(:category) }
 

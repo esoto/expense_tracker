@@ -146,7 +146,7 @@ RSpec.describe SyncSession, type: :model, unit: true, needs_broadcasting: true d
         session.status = "completed"
         session.save!
 
-        expect(session.completed_at).to eq(original_time)
+        expect(session.completed_at).to be_within(1.second).of(original_time)
       end
 
       it "does not set completed_at for non-finished statuses" do

@@ -469,12 +469,12 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
       end
 
       it "keeps existing last_seen_at when other is nil" do
-        original = 1.day.ago
-        alias1.last_seen_at = original
+        original_last_seen_at = 1.day.ago
+        alias1.last_seen_at = original_last_seen_at
         alias2.last_seen_at = nil
 
         alias1.merge_with(alias2)
-        expect(alias1.last_seen_at).to eq(original)
+        expect(alias1.last_seen_at).to eq(original_last_seen_at)
       end
 
       it "destroys the other alias" do

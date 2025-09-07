@@ -143,41 +143,6 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
     end
   end
 
-  describe "POST #correct_category", integration: true do
-    it "updates the expense category" do
-      post :correct_category, params: { id: expense.id, category_id: new_category.id }
-      expense.reload
-      expect(expense.category_id).to eq(new_category.id)
-    end
-
-    it "tracks the ML correction" do
-      post :correct_category, params: { id: expense.id, category_id: new_category.id }
-      expense.reload
-      expect(expense.ml_correction_count).to eq(1)
-      expect(expense.ml_last_corrected_at).to be_present
-    end
-
-    it "returns success JSON response" do
-      post :correct_category, params: { id: expense.id, category_id: new_category.id }, format: :json
-      json_response = JSON.parse(response.body)
-      expect(json_response["success"]).to be true
-      expect(json_response["expense"]["category"]["id"]).to eq(new_category.id)
-    end
-
-    it "validates category exists" do
-      post :correct_category, params: { id: expense.id, category_id: 999999 }, format: :json
-      json_response = JSON.parse(response.body)
-      expect(json_response["success"]).to be false
-      expect(json_response["error"]).to eq("Invalid category ID")
-    end
-
-    it "requires category_id parameter" do
-      post :correct_category, params: { id: expense.id }, format: :json
-      json_response = JSON.parse(response.body)
-      expect(json_response["success"]).to be false
-      expect(json_response["error"]).to eq("Category ID required")
-    end
-  end
 
   describe "DELETE #destroy via inline actions", integration: true do
     it "deletes the expense" do

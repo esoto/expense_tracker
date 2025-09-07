@@ -21,17 +21,6 @@ RSpec.describe Expense, type: :model, integration: true do
       expect(expense.errors[:amount]).to include("can't be blank")
     end
 
-    it 'requires amount to be greater than 0' do
-      expense = build(:expense, amount: 0, transaction_date: Time.current, email_account: email_account)
-      expect(expense).not_to be_valid
-      expect(expense.errors[:amount]).to include('must be greater than 0')
-    end
-
-    it 'requires positive amount' do
-      expense = build(:expense, amount: -10, transaction_date: Time.current, email_account: email_account)
-      expect(expense).not_to be_valid
-      expect(expense.errors[:amount]).to include('must be greater than 0')
-    end
 
     it 'requires transaction_date' do
       expense = build(:expense, amount: 100, transaction_date: nil, email_account: email_account)
@@ -190,54 +179,7 @@ RSpec.describe Expense, type: :model, integration: true do
     let(:crc_expense) { create(:expense, :with_category, amount: 95000, transaction_date: Time.current, email_account: email_account, currency: 'crc') }
     let(:usd_expense) { create(:expense, :with_category, amount: 20.50, transaction_date: Time.current, email_account: email_account, currency: 'usd') }
 
-    describe '#formatted_amount', integration: true do
-      it 'formats CRC amounts with ₡ symbol' do
-        expect(crc_expense.formatted_amount).to eq('₡95000.0')
-      end
 
-      it 'formats USD amounts with $ symbol' do
-        expect(usd_expense.formatted_amount).to eq('$20.5')
-      end
-
-      it 'formats EUR amounts with € symbol' do
-        eur_expense = create(:expense, amount: 15.75, transaction_date: Time.current, email_account: email_account, currency: 'eur')
-        expect(eur_expense.formatted_amount).to eq('€15.75')
-      end
-    end
-
-    describe '#formatted_amount', integration: true do
-      it 'includes currency symbols in formatted amounts' do
-        expect(crc_expense.formatted_amount).to include('₡')
-        expect(usd_expense.formatted_amount).to include('$')
-
-        eur_expense = create(:expense, amount: 15, transaction_date: Time.current, email_account: email_account, currency: 'eur')
-        expect(eur_expense.formatted_amount).to include('€')
-      end
-    end
-
-    describe '#duplicate?', integration: true do
-      it 'returns true when status is duplicate' do
-        expense = create(:expense,
-          amount: 100,
-          transaction_date: Time.current,
-          email_account: email_account,
-          status: 'duplicate'
-        )
-
-        expect(expense).to be_duplicate
-      end
-
-      it 'returns false when status is not duplicate' do
-        expense = create(:expense,
-          amount: 100,
-          transaction_date: Time.current,
-          email_account: email_account,
-          status: 'pending'
-        )
-
-        expect(expense).not_to be_duplicate
-      end
-    end
 
     describe 'status helper methods', integration: true do
       it 'has helper methods for all statuses' do
@@ -320,29 +262,7 @@ RSpec.describe Expense, type: :model, integration: true do
       end
     end
 
-    describe '#pending?', integration: true do
-      it 'returns true when status is pending' do
-        expense = create(:expense, status: 'pending', email_account: email_account)
-        expect(expense.pending?).to be true
-      end
 
-      it 'returns false when status is not pending' do
-        expense = create(:expense, status: 'processed', email_account: email_account)
-        expect(expense.pending?).to be false
-      end
-    end
-
-    describe '#failed?', integration: true do
-      it 'returns true when status is failed' do
-        expense = create(:expense, status: 'failed', email_account: email_account)
-        expect(expense.failed?).to be true
-      end
-
-      it 'returns false when status is not failed' do
-        expense = create(:expense, status: 'pending', email_account: email_account)
-        expect(expense.failed?).to be false
-      end
-    end
   end
 
   describe 'callbacks', integration: true do

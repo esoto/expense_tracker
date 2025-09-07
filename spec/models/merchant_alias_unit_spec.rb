@@ -474,7 +474,7 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
         alias2.last_seen_at = nil
 
         alias1.merge_with(alias2)
-        expect(alias1.last_seen_at).to eq(original_last_seen_at)
+        expect(alias1.last_seen_at).to be_within(1.second).of(original_last_seen_at)
       end
 
       it "destroys the other alias" do

@@ -58,13 +58,7 @@ expenses.map { |expense| results_map[expense.id] }
 - Direct thread management with proper Rails wrapping
 - Implemented in `process_batch_parallel`
 
-### Layer 2: Concurrent Processor (Medium Batches)
-- Thread pool executor with bounded queue
-- Rate limiting capabilities
-- Graceful shutdown handling
-- Implemented in `ConcurrentProcessor` class
-
-### Layer 3: Background Jobs (Large Batches)
+### Layer 2: Background Jobs (Large Batches)
 - Uses Rails 8's Solid Queue
 - Asynchronous processing with job tracking
 - Automatic retry and error handling

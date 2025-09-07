@@ -12,8 +12,7 @@ puts
 tests = [
   { name: "Models", path: "spec/models", expected_time: 20 },
   { name: "Services", path: "spec/services", expected_time: 90 },
-  { name: "Controllers", path: "spec/controllers", expected_time: 45 },
-  { name: "ConcurrentProcessor", path: "spec/services/categorization/concurrent_processor_spec.rb", expected_time: 10 }
+  { name: "Controllers", path: "spec/controllers", expected_time: 45 }
 ]
 
 results = []

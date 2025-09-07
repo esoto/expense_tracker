@@ -88,7 +88,7 @@ if ENV['TEST_TIER'] == 'performance'
 
   # Merge policy for performance results
   merge_timeout 14400 # 4 hours (performance tests may be long-running)
-    command_name "performance-tests-#{Time.now.to_i}"
+  command_name "performance-tests-#{Time.now.to_i}"
   end
 
   puts "⚡ Performance Test Coverage: Tracking performance-critical code paths"

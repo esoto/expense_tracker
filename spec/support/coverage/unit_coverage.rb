@@ -62,12 +62,12 @@ if ENV['TEST_TIER'] == 'unit'
     SimpleCov::Formatter::SimpleFormatter
   ])
 
-    # Track branches for better coverage analysis
-    enable_coverage :branch
+  # Track branches for better coverage analysis
+  enable_coverage :branch
 
-    # Merge policy - only merge results from same tier
-    merge_timeout 3600 # 1 hour
-    command_name "unit-tests-#{Time.now.to_i}"
+  # Merge policy - only merge results from same tier
+  merge_timeout 3600 # 1 hour
+  command_name "unit-tests-#{Time.now.to_i}"
   end
 
   puts "📊 Unit Test Coverage: Tracking fast, focused test coverage"

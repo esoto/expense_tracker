@@ -416,7 +416,7 @@ RSpec.describe Api::HealthController, type: :controller, unit: true do
           double(in_use?: false)
         ])
         connection = double("Connection")
-      allow(pool).to receive(:with_connection).and_yield(connection)
+        allow(pool).to receive(:with_connection).and_yield(connection)
       end
 
       it "returns database pool statistics" do

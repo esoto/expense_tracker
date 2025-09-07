@@ -73,9 +73,9 @@ if ENV['TEST_TIER'] == 'integration'
   # Track branches for integration flows
   enable_coverage :branch
 
-    # Merge policy for integration results
-    merge_timeout 7200 # 2 hours (integration tests take longer)
-    command_name "integration-tests-#{Time.now.to_i}"
+  # Merge policy for integration results
+  merge_timeout 7200 # 2 hours (integration tests take longer)
+  command_name "integration-tests-#{Time.now.to_i}"
   end
 
   puts "🔗 Integration Test Coverage: Tracking service interactions and database operations"

@@ -7,218 +7,220 @@ module Categorization
   # including preview, apply, undo, export, grouping, and suggestions.
   # This replaces 8 separate service files for better cohesion and maintainability.
   class BulkCategorizationService
-      include ActiveModel::Model
+    TIME_SAVED_PER_CATEGORIZATION = 3 # seconds saved per manual categorization
 
-      attr_accessor :expenses, :category_id, :user, :options
-      attr_reader :expense_adapter
+    include ActiveModel::Model
 
-      def initialize(expenses: [], category_id: nil, user: nil, options: {})
-        @expenses = expenses
-        @expense_adapter = ExpenseCollectionAdapter.new(expenses)
-        @category_id = category_id
-        @user = user
-        @options = options
-      end
+    attr_accessor :expenses, :category_id, :user, :options
+    attr_reader :expense_adapter
 
-      # Preview categorization changes before applying
-      def preview
-        return { expenses: [], summary: empty_summary } if expense_adapter.empty?
+    def initialize(expenses: [], category_id: nil, user: nil, options: {})
+      @expenses = expenses
+      @expense_adapter = ExpenseCollectionAdapter.new(expenses)
+      @category_id = category_id
+      @user = user
+      @options = options
+    end
 
-        affected_expenses = filter_changeable_expenses
+    # Preview categorization changes before applying
+    def preview
+      return { expenses: [], summary: empty_summary } if expense_adapter.empty?
+
+      affected_expenses = filter_changeable_expenses
+
+      {
+        expenses: affected_expenses.map { |expense| preview_change(expense) },
+        summary: {
+          total_count: affected_expenses.count,
+          total_amount: affected_expenses.sum(&:amount),
+          by_current_category: group_by_current_category(affected_expenses),
+          estimated_time_saved: estimate_time_saved(affected_expenses.count)
+        }
+      }
+    end
+
+    # Apply categorization to selected expenses
+    def apply!
+      return { success: false, errors: [ "No expenses selected" ] } if expense_adapter.empty?
+      return { success: false, errors: [ "Category not found" ] } unless valid_category?
+
+      ApplicationRecord.transaction do
+        results = expense_adapter.map do |expense|
+          apply_to_expense(expense)
+        end
+
+        success_count = results.count { |r| r[:success] }
+
+        # Store for undo functionality
+        if success_count > 0
+          store_bulk_operation(results.select { |r| r[:success] })
+        end
 
         {
-          expenses: affected_expenses.map { |expense| preview_change(expense) },
-          summary: {
-            total_count: affected_expenses.count,
-            total_amount: affected_expenses.sum(&:amount),
-            by_current_category: group_by_current_category(affected_expenses),
-            estimated_time_saved: estimate_time_saved(affected_expenses.count)
-          }
+          success: true,
+          updated_count: success_count,
+          failed_count: results.count { |r| !r[:success] },
+          errors: results.reject { |r| r[:success] }.map { |r| r[:error] },
+          undo_operation_id: @bulk_operation&.id
         }
       end
+    rescue StandardError => e
+      { success: false, errors: [ e.message ] }
+    end
 
-      # Apply categorization to selected expenses
-      def apply!
-        return { success: false, errors: [ "No expenses selected" ] } if expense_adapter.empty?
-        return { success: false, errors: [ "Category not found" ] } unless valid_category?
+    # Undo a bulk categorization
+    def undo!(operation_id)
+      operation = BulkOperation.find_by(id: operation_id, operation_type: "categorization")
 
-        ApplicationRecord.transaction do
-          results = expense_adapter.map do |expense|
-            apply_to_expense(expense)
-          end
+      return { success: false, errors: [ "Operation not found" ] } unless operation
+      return { success: false, errors: [ "Operation already undone" ] } if operation.undone_at.present?
 
-          success_count = results.count { |r| r[:success] }
+      ApplicationRecord.transaction do
+        restored_count = 0
 
-          # Store for undo functionality
-          if success_count > 0
-            store_bulk_operation(results.select { |r| r[:success] })
-          end
+        operation.bulk_operation_items.each do |item|
+          expense = item.expense
+          expense.update!(category_id: item.previous_category_id)
+          restored_count += 1
+        end
 
-          {
-            success: true,
-            updated_count: success_count,
-            failed_count: results.count { |r| !r[:success] },
-            errors: results.reject { |r| r[:success] }.map { |r| r[:error] },
-            undo_operation_id: @bulk_operation&.id
+        operation.update!(undone_at: Time.current, status: :undone)
+
+        { success: true, restored_count: restored_count }
+      end
+    rescue StandardError => e
+      { success: false, errors: [ e.message ] }
+    end
+
+    # Export categorization results
+    def export(format: :csv)
+      case format
+      when :csv
+        export_to_csv
+      when :json
+        export_to_json
+      when :xlsx
+        export_to_xlsx
+      else
+        raise ArgumentError, "Unsupported export format: #{format}"
+      end
+    end
+
+    # Group expenses by various criteria
+    def group_expenses(by: :merchant)
+      case by
+      when :merchant
+        group_by_merchant
+      when :date
+        group_by_date
+      when :amount_range
+        group_by_amount_range
+      when :category
+        group_by_category
+      when :similarity
+        group_by_similarity
+      else
+        raise ArgumentError, "Unsupported grouping: #{by}"
+      end
+    end
+
+    # Suggest categories based on patterns
+    def suggest_categories
+      suggestions = {}
+
+      expense_adapter.each do |expense|
+        next if expense.category_id.present?
+
+        # Use pattern matching for suggestions
+        suggested_category = find_best_category_match(expense)
+
+        if suggested_category && suggested_category[:category].present?
+          # Use object_id for non-persisted expenses to avoid nil keys
+          key = expense.id || expense.object_id
+          suggestions[key] = {
+            expense: expense,
+            suggested_category: suggested_category[:category],
+            confidence: suggested_category[:confidence],
+            reason: suggested_category[:reason]
           }
         end
-      rescue StandardError => e
-        { success: false, errors: [ e.message ] }
       end
 
-      # Undo a bulk categorization
-      def undo!(operation_id)
-        operation = BulkOperation.find_by(id: operation_id, operation_type: "categorization")
+      suggestions
+    end
 
-        return { success: false, errors: [ "Operation not found" ] } unless operation
-        return { success: false, errors: [ "Operation already undone" ] } if operation.undone_at.present?
+    # Auto-categorize based on rules and patterns
+    def auto_categorize!
+      return { success: false, errors: [ "No expenses to categorize" ] } if expense_adapter.empty?
 
-        ApplicationRecord.transaction do
-          restored_count = 0
+      categorized_count = 0
+      failed_count = 0
 
-          operation.bulk_operation_items.each do |item|
-            expense = item.expense
-            expense.update!(category_id: item.previous_category_id)
-            restored_count += 1
-          end
-
-          operation.update!(undone_at: Time.current, status: :undone)
-
-          { success: true, restored_count: restored_count }
-        end
-      rescue StandardError => e
-        { success: false, errors: [ e.message ] }
-      end
-
-      # Export categorization results
-      def export(format: :csv)
-        case format
-        when :csv
-          export_to_csv
-        when :json
-          export_to_json
-        when :xlsx
-          export_to_xlsx
-        else
-          raise ArgumentError, "Unsupported export format: #{format}"
-        end
-      end
-
-      # Group expenses by various criteria
-      def group_expenses(by: :merchant)
-        case by
-        when :merchant
-          group_by_merchant
-        when :date
-          group_by_date
-        when :amount_range
-          group_by_amount_range
-        when :category
-          group_by_category
-        when :similarity
-          group_by_similarity
-        else
-          raise ArgumentError, "Unsupported grouping: #{by}"
-        end
-      end
-
-      # Suggest categories based on patterns
-      def suggest_categories
-        suggestions = {}
-
+      ApplicationRecord.transaction do
         expense_adapter.each do |expense|
-          next if expense.category_id.present?
+          next if expense.category_id.present? && !options[:override_existing]
 
-          # Use pattern matching for suggestions
-          suggested_category = find_best_category_match(expense)
+          result = auto_categorize_expense(expense)
 
-          if suggested_category && suggested_category[:category].present?
-            # Use object_id for non-persisted expenses to avoid nil keys
-            key = expense.id || expense.object_id
-            suggestions[key] = {
-              expense: expense,
-              suggested_category: suggested_category[:category],
-              confidence: suggested_category[:confidence],
-              reason: suggested_category[:reason]
-            }
-          end
-        end
-
-        suggestions
-      end
-
-      # Auto-categorize based on rules and patterns
-      def auto_categorize!
-        return { success: false, errors: [ "No expenses to categorize" ] } if expense_adapter.empty?
-
-        categorized_count = 0
-        failed_count = 0
-
-        ApplicationRecord.transaction do
-          expense_adapter.each do |expense|
-            next if expense.category_id.present? && !options[:override_existing]
-
-            result = auto_categorize_expense(expense)
-
-            if result[:success]
-              categorized_count += 1
-            else
-              failed_count += 1
-            end
-          end
-
-          {
-            success: true,
-            categorized_count: categorized_count,
-            failed_count: failed_count,
-            total_processed: expense_adapter.count
-          }
-        end
-      rescue StandardError => e
-        { success: false, errors: [ e.message ] }
-      end
-
-      # Batch process expenses in chunks
-      def batch_process(batch_size: 100)
-        results = []
-
-        expense_adapter.in_batches(batch_size: batch_size) do |batch|
-          batch_result = process_batch(batch)
-          results << batch_result
-
-          yield batch_result if block_given?
-        end
-
-        aggregate_results(results)
-      end
-
-      # Simple categorize all method for bulk operations controller
-      def categorize_all
-        return { success: false, errors: [ "No expenses selected" ] } if expense_adapter.empty?
-        return { success: false, errors: [ "No category provided" ] } unless @category_id || @category
-
-        category = @category || Category.find_by(id: @category_id)
-        return { success: false, errors: [ "Category not found" ] } unless category
-
-        success_count = 0
-        failures = []
-
-        expense_adapter.each do |expense|
-          if expense.update(category_id: category.id)
-            success_count += 1
+          if result[:success]
+            categorized_count += 1
           else
-            failures << {
-              id: expense.id,
-              error: expense.errors.full_messages.join(", ")
-            }
+            failed_count += 1
           end
         end
 
         {
-          success_count: success_count,
-          failures: failures
+          success: true,
+          categorized_count: categorized_count,
+          failed_count: failed_count,
+          total_processed: expense_adapter.count
         }
       end
+    rescue StandardError => e
+      { success: false, errors: [ e.message ] }
+    end
+
+    # Batch process expenses in chunks
+    def batch_process(batch_size: 100)
+      results = []
+
+      expense_adapter.in_batches(batch_size: batch_size) do |batch|
+        batch_result = process_batch(batch)
+        results << batch_result
+
+        yield batch_result if block_given?
+      end
+
+      aggregate_results(results)
+    end
+
+    # Simple categorize all method for bulk operations controller
+    def categorize_all
+      return { success: false, errors: [ "No expenses selected" ] } if expense_adapter.empty?
+      return { success: false, errors: [ "No category provided" ] } unless @category_id || @category
+
+      category = @category || Category.find_by(id: @category_id)
+      return { success: false, errors: [ "Category not found" ] } unless category
+
+      success_count = 0
+      failures = []
+
+      expense_adapter.each do |expense|
+        if expense.update(category_id: category.id)
+          success_count += 1
+        else
+          failures << {
+            id: expense.id,
+            error: expense.errors.full_messages.join(", ")
+          }
+        end
+      end
+
+      {
+        success_count: success_count,
+        failures: failures
+      }
+    end
 
       private
 
@@ -249,8 +251,7 @@ module Categorization
       end
 
       def estimate_time_saved(count)
-        # Assume 3 seconds saved per manual categorization
-        seconds = count * 3
+        seconds = count * TIME_SAVED_PER_CATEGORIZATION
 
         if seconds < 60
           "#{seconds} seconds"

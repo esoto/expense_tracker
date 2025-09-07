@@ -430,9 +430,9 @@ RSpec.describe SyncConflict, type: :model, unit: true do
             }
           end
 
-          it 'captures the current state of the conflict' do
-            expect(conflict.send(:capture_current_state)).to eq(expected_current_state)
-          end
+        it 'captures the current state of the conflict' do
+          expect(conflict.send(:capture_current_state)).to eq(expected_current_state)
+        end
         end
 
         describe '#apply_resolution' do

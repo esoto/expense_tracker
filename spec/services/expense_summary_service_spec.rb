@@ -116,6 +116,8 @@ RSpec.describe ExpenseSummaryService, integration: true do
     end
 
     before do
+      # Ensure clean state to prevent data pollution
+      Expense.destroy_all
       create(:expense, amount: 150.0, transaction_date: private_test_date - 2.weeks, category: category, email_account: email_account)
     end
 

@@ -54,9 +54,7 @@ RSpec.configure do |config|
     Rails.cache.clear if defined?(Rails) && Rails.respond_to?(:cache)
 
     # Reset any service state
-    if defined?(Categorization::CachedCategorizationService)
-      Categorization::CachedCategorizationService.instance_variable_set(:@cache, nil)
-    end
+    # (CachedCategorizationService removed - no longer needed)
 
     # Stub external services by default
     stub_external_services if respond_to?(:stub_external_services)

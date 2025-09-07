@@ -331,8 +331,8 @@ expect {
 ### Phase 3: Secondary Services (Week 2)
 - [ ] LearningResult - 10 tests
 - [ ] EngineV2 - 30 tests
-- [ ] EngineImprovements - 15 tests
-- [ ] ErrorHandling - 5 tests
+- [x] ~~EngineImprovements~~ - Removed (dead code)
+- [x] ~~ErrorHandling~~ - Removed (dead code)
 
 ### Phase 4: Monitoring & Utilities (Week 2-3)
 - [ ] monitoring/health_check - 10 tests

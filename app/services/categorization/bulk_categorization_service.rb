@@ -530,5 +530,5 @@ module Categorization
           estimated_time_saved: "0 seconds"
         }
       end
-    end
   end
+end

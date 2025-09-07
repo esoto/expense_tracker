@@ -600,7 +600,7 @@ RSpec.describe Categorization::ConcurrentProcessor, type: :service, unit: true d
         end
         expect(results.size).to eq(5)
       end
-      
+
       # Just verify processor remains healthy
       expect(processor.healthy?).to be true
     end
@@ -611,11 +611,11 @@ RSpec.describe Categorization::ConcurrentProcessor, type: :service, unit: true d
       # Just verify different thread counts work
       [ 1, 2 ].each do |thread_count|
         test_processor = described_class.new(max_threads: thread_count, logger: logger)
-        
+
         results = test_processor.process_batch(items) do |item|
           "processed_#{item}"
         end
-        
+
         expect(results.size).to eq(4)
         test_processor.shutdown
       end

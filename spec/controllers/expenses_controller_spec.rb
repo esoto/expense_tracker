@@ -7,7 +7,11 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
   describe "GET #index", integration: true do
     before do
       # Clean up any existing expenses and their dependencies to ensure test isolation
+      # Order matters due to foreign key constraints
       PatternLearningEvent.destroy_all if defined?(PatternLearningEvent)
+      ConflictResolution.where.not(undone_by_resolution_id: nil).update_all(undone_by_resolution_id: nil) if defined?(ConflictResolution)
+      ConflictResolution.destroy_all if defined?(ConflictResolution)
+      SyncConflict.destroy_all if defined?(SyncConflict)
       Expense.destroy_all
       # Create expenses for different periods
       @today_expense = create(:expense,

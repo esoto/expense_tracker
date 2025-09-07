@@ -261,8 +261,6 @@ RSpec.describe Expense, type: :model, integration: true do
         end
       end
     end
-
-
   end
 
   describe 'callbacks', integration: true do

@@ -3,8 +3,8 @@ FactoryBot.define do
     operation_type { :categorization }
     user_id { "user_123" }
     association :target_category, factory: :category
-    expense_count { 0 }
-    total_amount { 0.0 }
+    expense_count { 1 }  # Must be greater than 0 for validation
+    total_amount { 100.0 }
     status { :pending }
     metadata { {} }
 

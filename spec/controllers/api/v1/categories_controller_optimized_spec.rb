@@ -18,7 +18,7 @@ RSpec.describe Api::V1::CategoriesController, type: :controller, unit: true do
     shared_examples "returns categories response" do
       it "returns success status and JSON content type" do
         get :index, format: :json
-        
+
         expect(response).to have_http_status(:success)
         expect(response.content_type).to include("application/json")
       end
@@ -28,9 +28,9 @@ RSpec.describe Api::V1::CategoriesController, type: :controller, unit: true do
       before do
         # OPTIMIZATION 4: Stub the database query instead of creating records
         allow(Category).to receive(:all).and_return(
-          Category.where(id: [category1.id, category2.id])
+          Category.where(id: [ category1.id, category2.id ])
         )
-        allow(Category).to receive_message_chain(:all, :order).and_return([category1, category2])
+        allow(Category).to receive_message_chain(:all, :order).and_return([ category1, category2 ])
       end
 
       include_examples "returns categories response"
@@ -38,10 +38,10 @@ RSpec.describe Api::V1::CategoriesController, type: :controller, unit: true do
       it "returns categories with correct structure and ordering" do
         get :index, format: :json
         json_response = JSON.parse(response.body)
-        
+
         expect(json_response).to be_an(Array)
         expect(json_response.length).to eq(2)
-        
+
         # Verify structure and ordering in one pass
         expect(json_response[0]).to include(
           "id" => 1,
@@ -78,16 +78,16 @@ RSpec.describe Api::V1::CategoriesController, type: :controller, unit: true do
       before do
         allow(Category).to receive_message_chain(:all, :order)
           .with(:name)
-          .and_return([apple, banana, zebra])
+          .and_return([ apple, banana, zebra ])
       end
 
       it "maintains alphabetical ordering" do
         get :index, format: :json
-        
+
         json_response = JSON.parse(response.body)
         category_names = json_response.map { |c| c["name"] }
-        
-        expect(category_names).to eq(["Apple", "Banana", "Zebra"])
+
+        expect(category_names).to eq([ "Apple", "Banana", "Zebra" ])
       end
     end
 
@@ -95,12 +95,12 @@ RSpec.describe Api::V1::CategoriesController, type: :controller, unit: true do
       let(:nil_category) { build_stubbed(:category, id: 6, name: "Test", description: nil) }
 
       before do
-        allow(Category).to receive_message_chain(:all, :order).and_return([nil_category])
+        allow(Category).to receive_message_chain(:all, :order).and_return([ nil_category ])
       end
 
       it "handles nil description gracefully" do
         get :index, format: :json
-        
+
         json_response = JSON.parse(response.body)
         expect(json_response.first["description"]).to be_nil
       end
@@ -142,16 +142,16 @@ RSpec.describe Api::V1::CategoriesController, type: :controller, unit: true do
 
   describe "response format", unit: true do
     before do
-      allow(Category).to receive_message_chain(:all, :order).and_return([category1])
+      allow(Category).to receive_message_chain(:all, :order).and_return([ category1 ])
     end
 
     it "responds to multiple formats" do
       get :index, format: :html
-      
+
       expect(response).to have_http_status(:success)
       json_response = JSON.parse(response.body)
       expect(json_response).to be_an(Array)
-      
+
       get :index, format: :json
       expect(response.content_type).to include("application/json")
     end

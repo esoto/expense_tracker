@@ -26,8 +26,8 @@ RSpec.describe BulkCategorizationsController, type: :controller, unit: true do
       expect(controller.class.ancestors).to include(Authentication)
     end
 
-    it "includes RateLimiting concern" do
-      expect(controller.class.ancestors).to include(RateLimiting)
+    it "does not include RateLimiting concern (read-only actions)" do
+      expect(controller.class.ancestors).not_to include(RateLimiting)
     end
   end
 

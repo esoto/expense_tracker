@@ -5,6 +5,9 @@ class AdminUser < ApplicationRecord
   # Use Rails 8's built-in authentication generator patterns
   has_secure_password
 
+  # Associations
+  has_many :bulk_operations, foreign_key: :user_id, primary_key: :id
+
   # Constants
   MAX_FAILED_LOGIN_ATTEMPTS = 5
   LOCK_DURATION = 30.minutes

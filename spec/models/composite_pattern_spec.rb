@@ -146,7 +146,7 @@ RSpec.describe CompositePattern, type: :model, integration: true do
   end
 
   describe "#matches?", integration: true do
-    let(:email_account) { EmailAccount.create!(email: "test@example.com", provider: "gmail", bank_name: "Test Bank") }
+    let(:email_account) { EmailAccount.create!(email: "composite_pattern_test_#{SecureRandom.hex(4)}@example.com", provider: "gmail", bank_name: "Test Bank") }
     let(:expense) do
       Expense.new(
         email_account: email_account,

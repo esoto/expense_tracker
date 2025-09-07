@@ -212,26 +212,29 @@ module BroadcastServiceTestHelper
         ea.settings = { host: 'localhost', port: 993 }
       end
 
-      # Create with specified ID if provided, otherwise let DB auto-assign
       attributes = {
         amount: 100.0,
         transaction_date: Date.current,
         email_account_id: email_account.id,
         status: 'pending'
       }
-      attributes[:id] = id if id
 
-      # Clean up existing record with same ID if it exists
-      if id && exists?(id)
-        find(id).destroy
+      # If ID is specified and record exists, try to clean it up safely
+      if id
+        attributes[:id] = id
+        if exists?(id)
+          # Use destroy_all to avoid loading the record
+          where(id: id).destroy_all
+        end
       end
 
       create!(attributes)
     end
   end
 
+
   # Factory methods for test data
-  def create_test_target(id: 1)
+  def create_test_target(id: nil)
     # Create a proper ActiveRecord model that's ActiveJob serializable
     BroadcastTestRecord.create_for_test(id: id)
   end

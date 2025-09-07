@@ -4,7 +4,6 @@
 # Provides interface for users to categorize multiple uncategorized expenses at once
 class BulkCategorizationsController < ApplicationController
   include Authentication
-  include RateLimiting
 
   before_action :load_uncategorized_expenses, only: [ :index ]
   before_action :load_bulk_operation, only: [ :show ]
@@ -28,7 +27,7 @@ class BulkCategorizationsController < ApplicationController
       flash.now[:alert] = "Unable to group expenses. Showing ungrouped list."
       respond_to do |format|
         format.html { render :index }
-        format.json { render json: { error: "Unable to process expenses" }, status: :unprocessable_entity }
+        format.json { render json: { error: "Unable to process expenses" }, status: :unprocessable_content }
       end
     end
   end

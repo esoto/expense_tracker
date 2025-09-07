@@ -15,7 +15,7 @@ RSpec.describe Api::V1::CategoriesController, type: :controller, unit: true do
       # Stub Category.all.order(:name) chain
       category_relation = double("Category::ActiveRecord_Relation")
       allow(Category).to receive(:all).and_return(category_relation)
-      allow(category_relation).to receive(:order).with(:name).and_return([category1, category2])
+      allow(category_relation).to receive(:order).with(:name).and_return([ category1, category2 ])
     end
 
     it "returns all categories ordered by name" do
@@ -52,7 +52,7 @@ RSpec.describe Api::V1::CategoriesController, type: :controller, unit: true do
       category_names = json_response.map { |c| c["name"] }
 
       # Food should come before Transport alphabetically
-      expect(category_names).to eq(["Food", "Transport"])
+      expect(category_names).to eq([ "Food", "Transport" ])
     end
 
     it "includes all required fields for each category" do
@@ -92,11 +92,11 @@ RSpec.describe Api::V1::CategoriesController, type: :controller, unit: true do
       let(:apple) { build_stubbed(:category, id: 3, name: "Apple") }
       let(:banana) { build_stubbed(:category, id: 4, name: "Banana") }
       let(:zebra) { build_stubbed(:category, id: 5, name: "Zebra") }
-      
+
       before do
         category_relation = double("Category::ActiveRecord_Relation")
         allow(Category).to receive(:all).and_return(category_relation)
-        allow(category_relation).to receive(:order).with(:name).and_return([apple, banana, zebra])
+        allow(category_relation).to receive(:order).with(:name).and_return([ apple, banana, zebra ])
       end
 
       it "maintains alphabetical ordering" do
@@ -105,17 +105,17 @@ RSpec.describe Api::V1::CategoriesController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
         category_names = json_response.map { |c| c["name"] }
 
-        expect(category_names).to eq(["Apple", "Banana", "Zebra"])
+        expect(category_names).to eq([ "Apple", "Banana", "Zebra" ])
       end
     end
 
     context "with categories containing nil description" do
       let(:nil_desc_category) { build_stubbed(:category, id: 6, name: "Test", description: nil) }
-      
+
       before do
         category_relation = double("Category::ActiveRecord_Relation")
         allow(Category).to receive(:all).and_return(category_relation)
-        allow(category_relation).to receive(:order).with(:name).and_return([nil_desc_category])
+        allow(category_relation).to receive(:order).with(:name).and_return([ nil_desc_category ])
       end
 
       it "handles nil description gracefully" do

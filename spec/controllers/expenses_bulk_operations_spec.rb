@@ -36,7 +36,6 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
     end
 
     context "with invalid parameters" do
-
       it "returns error when category not found" do
         post :bulk_categorize, params: {
           expense_ids: expenses.map(&:id),

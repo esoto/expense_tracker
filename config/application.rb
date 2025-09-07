@@ -39,5 +39,9 @@ module ExpenseTracker
     config.i18n.default_locale = :es
     config.i18n.available_locales = [ :es, :en ]
     config.i18n.fallbacks = [ :en ]
+
+    # Security and Performance Configuration
+    config.x.bulk_operation_limit = 1000
+    config.x.rate_limit_enabled = true
   end
 end

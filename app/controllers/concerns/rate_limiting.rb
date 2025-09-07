@@ -1,123 +1,154 @@
 # frozen_string_literal: true
 
-# Rate limiting concern for controllers to prevent abuse
+# RateLimiting concern for preventing abuse of bulk operations
+# Implements per-user rate limiting with configurable limits per action
 module RateLimiting
   extend ActiveSupport::Concern
 
   included do
-    # Rate limit configuration
-    class_attribute :rate_limits, default: {}
-  end
-
-  class_methods do
-    # Define rate limit for specific actions
-    def rate_limit(action, limit: 10, period: 1.minute, by: :ip)
-      rate_limits[action] = { limit: limit, period: period, by: by }
-      before_action -> { check_rate_limit(action) }, only: action
-    end
+    before_action :check_bulk_operation_rate_limit!, only: [ :categorize, :auto_categorize ]
+    before_action :check_export_rate_limit!, only: [ :export ]
+    before_action :check_suggest_rate_limit!, only: [ :suggest ]
   end
 
   private
 
-  def check_rate_limit(action)
-    config = self.class.rate_limits[action]
+  # Rate limits for different operations
+  RATE_LIMITS = {
+    categorize: { limit: 10, window: 1.minute },
+    auto_categorize: { limit: 5, window: 1.minute },
+    export: { limit: 20, window: 1.hour },
+    suggest: { limit: 15, window: 1.minute }
+  }.freeze
+
+  def check_bulk_operation_rate_limit!
+    return if performed?
+    operation = action_name.to_sym
+    check_rate_limit!(operation)
+  end
+
+  def check_export_rate_limit!
+    return if performed?
+    check_rate_limit!(:export)
+  end
+
+  def check_suggest_rate_limit!
+    return if performed?
+    check_rate_limit!(:suggest)
+  end
+
+  def check_rate_limit!(operation)
+    config = RATE_LIMITS[operation]
     return unless config
 
-    key = rate_limit_key(action, config[:by])
-    count = increment_rate_limit_counter(key, config[:period])
+    key = rate_limit_key(operation)
+    current_count = rate_limit_store.get(key).to_i
 
-    if count > config[:limit]
-      handle_rate_limit_exceeded(action, config)
+    if current_count >= config[:limit]
+      Rails.logger.warn "Rate limit exceeded for user #{current_user.id}, operation: #{operation}"
+
+      respond_to do |format|
+        format.json do
+          render json: {
+            error: "Rate limit exceeded. Please try again later.",
+            limit: config[:limit],
+            window: format_window(config[:window])
+          }, status: :too_many_requests
+        end
+        format.turbo_stream do
+          render "shared/rate_limit_exceeded",
+                 locals: { message: "Too many requests. Please try again later." },
+                 status: :too_many_requests
+        end
+        format.html do
+          redirect_back(fallback_location: root_path,
+                       alert: "Too many requests. Please try again later.")
+        end
+      end
+      return
     end
+
+    # Increment rate limit counter
+    increment_rate_limit(key, config[:window])
   end
 
-  def rate_limit_key(action, by)
-    identifier = case by
-    when :ip
-                   request.remote_ip
-    when :user
-                   current_user&.id || "anonymous"
-    when :session
-                   session.id.to_s
+  def rate_limit_key(operation)
+    "rate_limit:bulk_operations:#{current_user.id}:#{operation}"
+  end
+
+  def increment_rate_limit(key, window)
+    store = rate_limit_store
+
+    if store.exists?(key)
+      store.incr(key)
     else
-                   "global"
-    end
-
-    "rate_limit:#{controller_name}:#{action}:#{identifier}"
-  end
-
-  def increment_rate_limit_counter(key, period)
-    Rails.cache.increment(key, 1, expires_in: period) || 1
-  end
-
-  def handle_rate_limit_exceeded(action, config)
-    log_rate_limit_violation(action, config)
-
-    respond_to do |format|
-      format.html do
-        flash[:alert] = rate_limit_message(config)
-        redirect_back(fallback_location: root_path)
-      end
-      format.json do
-        render json: {
-          error: "Rate limit exceeded",
-          retry_after: config[:period].to_i,
-          limit: config[:limit]
-        }, status: :too_many_requests
-      end
-      format.turbo_stream do
-        render turbo_stream: turbo_stream.prepend("notifications",
-          partial: "shared/notification",
-          locals: {
-            message: rate_limit_message(config),
-            type: :error
-          })
-      end
+      store.setex(key, window.to_i, 1)
     end
   end
 
-  def rate_limit_message(config)
-    "Too many requests. Please wait #{config[:period].inspect} before trying again. (Limit: #{config[:limit]} requests)"
-  end
-
-  def log_rate_limit_violation(action, config)
-    Rails.logger.warn(
-      {
-        event: "rate_limit_exceeded",
-        controller: controller_name,
-        action: action,
-        user_id: current_user&.id,
-        ip_address: request.remote_ip,
-        user_agent: request.user_agent,
-        limit: config[:limit],
-        period: config[:period].to_i,
-        timestamp: Time.current.iso8601
-      }.to_json
-    )
-  end
-
-  # Helper to check remaining rate limit
-  def rate_limit_remaining(action)
-    config = self.class.rate_limits[action]
-    return nil unless config
-
-    key = rate_limit_key(action, config[:by])
-    count = Rails.cache.read(key).to_i
-    [ config[:limit] - count, 0 ].max
-  end
-
-  # Reset rate limit for specific action (useful for admin override)
-  def reset_rate_limit(action, identifier = nil)
-    config = self.class.rate_limits[action]
-    return false unless config
-
-    key = if identifier
-            "rate_limit:#{controller_name}:#{action}:#{identifier}"
+  def rate_limit_store
+    # Use Redis if available, otherwise in-memory store for development
+    if Rails.cache.respond_to?(:redis)
+      Rails.cache.redis
     else
-            rate_limit_key(action, config[:by])
+      @rate_limit_store ||= MemoryRateLimitStore.new
+    end
+  end
+
+  def format_window(window)
+    if window < 1.hour
+      "#{window.to_i / 60} minutes"
+    else
+      "#{window.to_i / 3600} hours"
+    end
+  end
+
+  # Simple in-memory rate limit store for development/testing
+  class MemoryRateLimitStore
+    def initialize
+      @store = {}
+      @expires = {}
+      @mutex = Mutex.new
     end
 
-    Rails.cache.delete(key)
-    true
+    def get(key)
+      @mutex.synchronize do
+        cleanup_expired
+        @store[key] || 0
+      end
+    end
+
+    def setex(key, ttl, value)
+      @mutex.synchronize do
+        @store[key] = value
+        @expires[key] = Time.current + ttl.seconds
+        value
+      end
+    end
+
+    def incr(key)
+      @mutex.synchronize do
+        @store[key] = (@store[key] || 0) + 1
+      end
+    end
+
+    def exists?(key)
+      @mutex.synchronize do
+        cleanup_expired
+        @store.key?(key)
+      end
+    end
+
+    private
+
+    def cleanup_expired
+      now = Time.current
+      expired_keys = @expires.select { |_, expire_time| expire_time <= now }.keys
+
+      expired_keys.each do |key|
+        @store.delete(key)
+        @expires.delete(key)
+      end
+    end
   end
 end

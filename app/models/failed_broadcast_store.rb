@@ -25,6 +25,7 @@ class FailedBroadcastStore < ApplicationRecord
     job_death
     serialization_error
     validation_error
+    broadcast_failed
     unknown
   ].freeze
 

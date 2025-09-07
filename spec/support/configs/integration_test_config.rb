@@ -43,11 +43,11 @@ module IntegrationTestHelpers
   # Create predictable test data for integration tests
   def create_integration_email_account(provider: 'gmail', email: nil)
     email ||= case provider
-              when 'gmail' then 'test@gmail.com'
-              when 'outlook' then 'test@outlook.com'
-              when 'custom' then 'test@custom.com'
-              else "test@#{provider}.com"
-              end
+    when 'gmail' then 'test@gmail.com'
+    when 'outlook' then 'test@outlook.com'
+    when 'custom' then 'test@custom.com'
+    else "test@#{provider}.com"
+    end
 
     FactoryBot.create(:email_account, provider: provider, email: email, bank_name: 'BAC')
   end

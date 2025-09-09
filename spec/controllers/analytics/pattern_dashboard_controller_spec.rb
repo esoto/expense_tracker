@@ -7,6 +7,29 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
   let(:category) { create(:category) }
   let(:pattern) { create(:categorization_pattern) }
 
+  # Create a shared context for common mocking
+  RSpec.shared_context "analytics mocking" do
+    let(:mock_analyzer) do
+      double(
+        'PatternPerformanceAnalyzer',
+        overall_metrics: overall_metrics,
+        category_performance: category_performance,
+        pattern_type_analysis: pattern_type_analysis,
+        top_patterns: top_patterns,
+        bottom_patterns: bottom_patterns,
+        learning_metrics: learning_metrics,
+        recent_activity: recent_activity
+      )
+    end
+    let(:overall_metrics) { { total_patterns: 10, accuracy: 95.5, total_applications: 50 } }
+    let(:category_performance) { [ { category_id: 1, pattern_count: 5, accuracy: 92.1 } ] }
+    let(:pattern_type_analysis) { { merchant: 15, keyword: 10, amount: 5 } }
+    let(:top_patterns) { [ { id: 1, name: "Test Pattern", accuracy: 98.5 } ] }
+    let(:bottom_patterns) { [ { id: 2, name: "Low Pattern", accuracy: 65.2 } ] }
+    let(:learning_metrics) { { improvement_rate: 12.5, total_feedback: 25 } }
+    let(:recent_activity) { [ { pattern_id: 1, action: "applied", timestamp: 1.hour.ago } ] }
+  end
+
   before do
     # Authenticate admin user for most tests
     sign_in_as(admin_user)
@@ -40,25 +63,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
   end
 
   describe "GET #index" do
-    let(:mock_analyzer) do
-      double(
-        'PatternPerformanceAnalyzer',
-        overall_metrics: overall_metrics,
-        category_performance: category_performance,
-        pattern_type_analysis: pattern_type_analysis,
-        top_patterns: top_patterns,
-        bottom_patterns: bottom_patterns,
-        learning_metrics: learning_metrics,
-        recent_activity: recent_activity
-      )
-    end
-    let(:overall_metrics) { { total_patterns: 10, accuracy: 95.5, total_applications: 50 } }
-    let(:category_performance) { [ { category_id: 1, pattern_count: 5, accuracy: 92.1 } ] }
-    let(:pattern_type_analysis) { { merchant: 15, keyword: 10, amount: 5 } }
-    let(:top_patterns) { [ { id: 1, name: "Test Pattern", accuracy: 98.5 } ] }
-    let(:bottom_patterns) { [ { id: 2, name: "Low Pattern", accuracy: 65.2 } ] }
-    let(:learning_metrics) { { improvement_rate: 12.5, total_feedback: 25 } }
-    let(:recent_activity) { [ { pattern_id: 1, action: "applied", timestamp: 1.hour.ago } ] }
+    include_context "analytics mocking"
 
     before do
       allow(::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(mock_analyzer)
@@ -80,7 +85,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
       }
 
       expect(assigns(:analyzer)).to eq(mock_analyzer)
-      expect(::Analytics::PatternPerformanceAnalyzer).to have_received(:new).with(
+      expect(Analytics::PatternPerformanceAnalyzer).to have_received(:new).with(
         time_range: anything,
         category_id: category.id.to_s,
         pattern_type: "merchant"

@@ -11,6 +11,17 @@ RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
     allow(BroadcastAnalytics).to receive(:record_success)
     allow(BroadcastAnalytics).to receive(:record_failure)
     allow(BroadcastAnalytics).to receive(:record_queued)
+    
+    # Disable security validation by default for tests (individual tests can override)
+    allow(BroadcastFeatureFlags).to receive(:enabled?)
+      .with(:broadcast_validation)
+      .and_return(false)
+    allow(BroadcastFeatureFlags).to receive(:enabled?)
+      .with(:enhanced_rate_limiting)
+      .and_return(false)
+    
+    # Mock sleep to prevent actual delays in tests
+    allow(described_class).to receive(:sleep)
   end
 
   describe '.broadcast_with_retry', integration: true do

@@ -50,7 +50,8 @@ class BroadcastReliabilityService
       if attempt == 1
         # Use feature flag to control security validation
         if BroadcastFeatureFlags.enabled?(:broadcast_validation)
-          return false unless validate_broadcast_security(channel, target, data, priority, request_ip, user_id)
+          result = validate_broadcast_security(channel, target, data, priority, request_ip, user_id)
+          return false unless result
         end
       end
 
@@ -90,7 +91,7 @@ class BroadcastReliabilityService
           Rails.logger.warn "[BROADCAST] Retrying broadcast in #{delay}s - Attempt #{attempt}/#{priority_config[:max_retries]}: #{e.message}"
 
           sleep(delay)
-          broadcast_with_retry(
+          return broadcast_with_retry(
             channel: channel,
             target: target,
             data: data,

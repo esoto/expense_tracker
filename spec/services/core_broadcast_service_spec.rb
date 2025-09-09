@@ -13,7 +13,7 @@ RSpec.describe CoreBroadcastService, type: :service do
         target: sync_session,
         data: test_data
       )
-      
+
       expect(service.channel).to eq(SyncStatusChannel)
       expect(service.target).to eq(sync_session)
       expect(service.data).to eq(test_data)

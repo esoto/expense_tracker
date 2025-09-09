@@ -38,14 +38,14 @@ class BroadcastRetryOrchestrator
   # @return [Boolean] Success status
   def broadcast_with_retry(priority: :medium)
     validate_priority!(priority)
-    
+
     config = RETRY_CONFIGS[priority]
     attempt = 1
     start_time = Time.current
 
     begin
       broadcaster.broadcast
-      
+
       # Record success
       analytics.record_success(
         channel: broadcaster.channel.to_s,
@@ -55,7 +55,7 @@ class BroadcastRetryOrchestrator
         attempt: attempt,
         duration: (Time.current - start_time).to_f
       )
-      
+
       true
 
     rescue CoreBroadcastService::BroadcastError => e
@@ -73,7 +73,7 @@ class BroadcastRetryOrchestrator
       if attempt < config[:max_retries]
         delay = calculate_backoff_delay(config[:backoff_base], attempt)
         Rails.logger.warn "[BROADCAST_RETRY] Retrying in #{delay}s - Attempt #{attempt}/#{config[:max_retries]}: #{e.message}"
-        
+
         sleep(delay)
         attempt += 1
         start_time = Time.current
@@ -98,7 +98,7 @@ class BroadcastRetryOrchestrator
   # @param priority [Symbol] Priority to validate
   def validate_priority!(priority)
     return if RETRY_CONFIGS.key?(priority)
-    
+
     raise ArgumentError, "Invalid priority '#{priority}'. Valid priorities: #{RETRY_CONFIGS.keys.join(', ')}"
   end
 

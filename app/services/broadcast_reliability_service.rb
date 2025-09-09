@@ -116,7 +116,7 @@ class BroadcastReliabilityService
           false
         end
       end
-      
+
       result
     end
 

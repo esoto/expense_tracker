@@ -13,6 +13,7 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
         job_death
         serialization_error
         validation_error
+        broadcast_failed
         unknown
       ])
     end

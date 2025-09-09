@@ -2,11 +2,12 @@ require 'rails_helper'
 require_relative '../../../app/services/email/sync_service'
 
 RSpec.describe Email::SyncService, integration: true do
+  include EmailServiceIsolation
   let(:service) { described_class.new }
 
   describe '#sync_emails', integration: true do
     context 'with specific email account' do
-      let(:email_account) { create(:email_account, :bac) }
+      let(:email_account) { create(:email_account, :bac, email: "test_bac_#{SecureRandom.hex(4)}@test.com") }
 
       it 'syncs specific active account successfully' do
         expect(ProcessEmailsJob).to receive(:perform_later).with(email_account.id)
@@ -25,7 +26,10 @@ RSpec.describe Email::SyncService, integration: true do
       end
 
       it 'raises SyncError for inactive account' do
-        inactive_account = create(:email_account, :inactive)
+        inactive_account = create(:email_account, :inactive, email: "test_inactive_#{SecureRandom.hex(4)}@test.com")
+
+        # Verify the account is actually inactive
+        expect(inactive_account.active).to be false
 
         expect {
           service.sync_emails(email_account_id: inactive_account.id)
@@ -34,9 +38,19 @@ RSpec.describe Email::SyncService, integration: true do
     end
 
     context 'without email account (sync all)' do
+      around do |example|
+        # Use a completely isolated database transaction for these tests
+        EmailAccount.transaction do
+          # Deactivate all existing accounts
+          EmailAccount.update_all(active: false)
+          example.run
+          raise ActiveRecord::Rollback # rollback the transaction after the test
+        end
+      end
+
       it 'syncs all active accounts successfully' do
-        create(:email_account, :bac)
-        create(:email_account, :gmail)
+        create(:email_account, :bac, email: "test_bac_#{SecureRandom.hex(4)}@test.com")
+        create(:email_account, :gmail, email: "test_gmail_#{SecureRandom.hex(4)}@test.com")
 
         expect(ProcessEmailsJob).to receive(:perform_later).with(no_args)
 
@@ -48,7 +62,7 @@ RSpec.describe Email::SyncService, integration: true do
       end
 
       it 'handles plural correctly for single account' do
-        create(:email_account, :bac)
+        create(:email_account, :bac, email: "test_bac_#{SecureRandom.hex(4)}@test.com")
 
         expect(ProcessEmailsJob).to receive(:perform_later).with(no_args)
 
@@ -68,7 +82,17 @@ RSpec.describe Email::SyncService, integration: true do
 
   describe 'private methods', integration: true do
     describe '#sync_specific_account', integration: true do
-      let(:email_account) { create(:email_account, :bac) }
+      let(:email_account) { create(:email_account, :bac, email: "test_bac_#{SecureRandom.hex(4)}@test.com") }
+
+      around do |example|
+        # Use a completely isolated database transaction for these tests
+        EmailAccount.transaction do
+          # Deactivate all existing accounts
+          EmailAccount.update_all(active: false)
+          example.run
+          raise ActiveRecord::Rollback # rollback the transaction after the test
+        end
+      end
 
       it 'validates account existence' do
         expect {
@@ -77,7 +101,7 @@ RSpec.describe Email::SyncService, integration: true do
       end
 
       it 'validates account is active' do
-        inactive_account = create(:email_account, :inactive)
+        inactive_account = create(:email_account, :inactive, email: "test_inactive_#{SecureRandom.hex(4)}@test.com")
 
         expect {
           service.send(:sync_specific_account, inactive_account.id)
@@ -95,10 +119,20 @@ RSpec.describe Email::SyncService, integration: true do
     end
 
     describe '#sync_all_accounts', integration: true do
+      around do |example|
+        # Use a completely isolated database transaction for these tests
+        EmailAccount.transaction do
+          # Deactivate all existing accounts
+          EmailAccount.update_all(active: false)
+          example.run
+          raise ActiveRecord::Rollback # rollback the transaction after the test
+        end
+      end
+
       it 'counts active accounts correctly' do
-        create(:email_account, :bac)
-        create(:email_account, :gmail)
-        create(:email_account, :inactive)
+        create(:email_account, :bac, email: "test_bac_#{SecureRandom.hex(4)}@test.com")
+        create(:email_account, :gmail, email: "test_gmail_#{SecureRandom.hex(4)}@test.com")
+        create(:email_account, :inactive, email: "test_inactive_#{SecureRandom.hex(4)}@test.com")
 
         expect(ProcessEmailsJob).to receive(:perform_later).with(no_args)
 
@@ -115,7 +149,7 @@ RSpec.describe Email::SyncService, integration: true do
 
       context 'message pluralization' do
         it 'uses singular form for one account' do
-          create(:email_account)
+          create(:email_account, email: "test_#{SecureRandom.hex(4)}@test.com")
 
           result = service.send(:sync_all_accounts)
           expect(result[:message]).to include("1 cuenta de correo")
@@ -123,7 +157,7 @@ RSpec.describe Email::SyncService, integration: true do
         end
 
         it 'uses plural form for multiple accounts' do
-          2.times { create(:email_account) }
+          2.times { create(:email_account, email: "test_#{SecureRandom.hex(4)}@test.com") }
 
           result = service.send(:sync_all_accounts)
           expect(result[:message]).to include("2 cuentas de correo")

@@ -298,7 +298,7 @@ class ExpensesController < ApplicationController
 
     # Reset certain attributes for the duplicate
     duplicated_expense.transaction_date = Date.current
-    duplicated_expense.status = "pending"
+    duplicated_expense.status = :pending
     duplicated_expense.ml_confidence = nil
     duplicated_expense.ml_suggested_category_id = nil
     duplicated_expense.ml_confidence_explanation = nil

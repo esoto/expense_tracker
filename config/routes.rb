@@ -83,6 +83,13 @@ Rails.application.routes.draw do
         post "jobs/:id/clear", action: :clear_job, as: :clear_job
       end
     end
+
+    # Dashboard monitoring endpoints
+    namespace :monitoring do
+      get :metrics
+      get :health
+      get :strategy
+    end
   end
 
   # Admin routes

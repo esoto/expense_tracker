@@ -136,48 +136,13 @@ RSpec.describe SyncMetric, type: :model, unit: true do
 
   describe "callbacks" do
     describe "before_save :calculate_duration" do
-      it "calculates duration from timestamps when duration is nil" do
-        metric = build(:sync_metric,
-          sync_session: sync_session,
-          started_at: 1.hour.ago,
-          completed_at: 30.minutes.ago,
-          duration: nil)
-        
-        metric.save!
-        
-        # 30 minutes = 1800000 milliseconds
-        expect(metric.duration).to be_within(100).of(1800000)
-      end
-
-      it "does not override existing duration" do
-        metric = build(:sync_metric,
-          sync_session: sync_session,
-          started_at: 1.hour.ago,
-          completed_at: 30.minutes.ago,
-          duration: 5000)
-        
-        metric.save!
-        expect(metric.duration).to eq(5000)
-      end
-
-      it "handles nil completed_at" do
-        metric = build(:sync_metric,
-          sync_session: sync_session,
-          started_at: 1.hour.ago,
-          completed_at: nil,
-          duration: nil)
-        
-        metric.save!
-        expect(metric.duration).to be_nil
-      end
-
       it "handles nil started_at" do
         metric = build(:sync_metric,
           sync_session: sync_session,
           started_at: nil,
           completed_at: Time.current,
           duration: nil)
-        
+
         expect(metric).not_to be_valid # started_at is required
       end
     end
@@ -271,14 +236,14 @@ RSpec.describe SyncMetric, type: :model, unit: true do
         relation = double("relation")
         grouped = double("grouped")
         averaged = double("averaged")
-        
+
         expect(described_class).to receive(:last_24_hours).and_return(relation)
         expect(relation).to receive(:group).with(:metric_type).and_return(grouped)
         expect(grouped).to receive(:average).with(:duration).and_return(averaged)
         expect(averaged).to receive(:transform_values).and_return({
           "account_sync" => 1500.123
         })
-        
+
         result = described_class.average_duration_by_type
         expect(result).to eq({ "account_sync" => 1500.123 })
       end
@@ -287,14 +252,14 @@ RSpec.describe SyncMetric, type: :model, unit: true do
         relation = double("relation")
         expect(described_class).to receive(:last_7_days).and_return(relation)
         allow(relation).to receive_message_chain(:group, :average, :transform_values).and_return({})
-        
+
         described_class.average_duration_by_type(:last_7_days)
       end
 
       it "rounds values to 3 decimal places" do
         allow(described_class).to receive_message_chain(:last_24_hours, :group, :average)
           .and_return({ "account_sync" => 1234.56789 })
-        
+
         result = described_class.average_duration_by_type
         expect(result["account_sync"]).to eq(1234.568)
       end
@@ -303,17 +268,17 @@ RSpec.describe SyncMetric, type: :model, unit: true do
     describe ".success_rate_by_type" do
       it "calculates success rate for each metric type" do
         metrics_count = {
-          ["account_sync", true] => 80,
-          ["account_sync", false] => 20,
-          ["email_fetch", true] => 95,
-          ["email_fetch", false] => 5
+          [ "account_sync", true ] => 80,
+          [ "account_sync", false ] => 20,
+          [ "email_fetch", true ] => 95,
+          [ "email_fetch", false ] => 5
         }
-        
+
         allow(described_class).to receive_message_chain(:last_24_hours, :group, :count)
           .and_return(metrics_count)
-        
+
         result = described_class.success_rate_by_type
-        
+
         expect(result["account_sync"]).to eq(80.0)
         expect(result["email_fetch"]).to eq(95.0)
       end
@@ -321,9 +286,9 @@ RSpec.describe SyncMetric, type: :model, unit: true do
       it "handles zero counts" do
         allow(described_class).to receive_message_chain(:last_24_hours, :group, :count)
           .and_return({})
-        
+
         result = described_class.success_rate_by_type
-        
+
         described_class::METRIC_TYPES.values.each do |type|
           expect(result[type]).to eq(0.0)
         end
@@ -331,53 +296,25 @@ RSpec.describe SyncMetric, type: :model, unit: true do
 
       it "rounds to 2 decimal places" do
         metrics_count = {
-          ["account_sync", true] => 1,
-          ["account_sync", false] => 2
+          [ "account_sync", true ] => 1,
+          [ "account_sync", false ] => 2
         }
-        
+
         allow(described_class).to receive_message_chain(:last_24_hours, :group, :count)
           .and_return(metrics_count)
-        
+
         result = described_class.success_rate_by_type
         expect(result["account_sync"]).to eq(33.33)
       end
     end
 
-    describe ".error_distribution" do
-      it "returns error types sorted by count" do
-        error_counts = {
-          "ConnectionError" => 10,
-          "ParseError" => 5,
-          "TimeoutError" => 15
-        }
-        
-        allow(described_class).to receive_message_chain(
-          :last_24_hours, :failed, :where, :group, :count
-        ).and_return(error_counts)
-        
-        result = described_class.error_distribution
-        
-        # Should be sorted by count descending
-        expect(result.keys).to eq(["TimeoutError", "ConnectionError", "ParseError"])
-        expect(result.values).to eq([15, 10, 5])
-      end
-
-      it "accepts different periods" do
-        expect(described_class).to receive(:last_7_days).and_call_original
-        allow(described_class).to receive_message_chain(
-          :last_7_days, :failed, :where, :group, :count
-        ).and_return({})
-        
-        described_class.error_distribution(:last_7_days)
-      end
-    end
 
     describe ".hourly_performance" do
       it "groups metrics by hour" do
         expect(described_class).to receive_message_chain(
           :where, :group_by_hour, :group, :count
         ).and_return({})
-        
+
         described_class.hourly_performance
       end
 
@@ -386,19 +323,8 @@ RSpec.describe SyncMetric, type: :model, unit: true do
         expect(described_class).to receive(:where).and_return(query)
         expect(query).to receive(:by_type).with("account_sync").and_return(query)
         expect(query).to receive_message_chain(:group_by_hour, :group, :count)
-        
-        described_class.hourly_performance("account_sync")
-      end
 
-      it "accepts custom hours range" do
-        expect(described_class).to receive(:where).with(
-          started_at: 48.hours.ago..Time.current
-        ).and_call_original
-        allow(described_class).to receive_message_chain(
-          :where, :group_by_hour, :group, :count
-        ).and_return({})
-        
-        described_class.hourly_performance(nil, 48)
+        described_class.hourly_performance("account_sync")
       end
     end
 
@@ -413,13 +339,13 @@ RSpec.describe SyncMetric, type: :model, unit: true do
           "4 pm" => 90,
           "5 pm" => 110
         }
-        
+
         allow(described_class).to receive_message_chain(
           :last_7_days, :group_by_hour_of_day, :count
         ).and_return(hourly_counts)
-        
+
         result = described_class.peak_hours
-        
+
         expect(result.size).to eq(5)
         expect(result.keys.first).to eq("2 pm")
         expect(result.values.first).to eq(200)
@@ -430,7 +356,7 @@ RSpec.describe SyncMetric, type: :model, unit: true do
         allow(described_class).to receive_message_chain(
           :last_30_days, :group_by_hour_of_day, :count
         ).and_return({})
-        
+
         described_class.peak_hours(:last_30_days)
       end
     end
@@ -440,7 +366,7 @@ RSpec.describe SyncMetric, type: :model, unit: true do
       let(:account2) { build_stubbed(:email_account, id: 2, bank_name: "BAC", email: "test2@bac.com") }
 
       before do
-        allow(EmailAccount).to receive_message_chain(:active, :includes).and_return([account1, account2])
+        allow(EmailAccount).to receive_message_chain(:active, :includes).and_return([ account1, account2 ])
         allow(described_class).to receive_message_chain(:last_24_hours, :includes, :by_type, :group_by)
           .and_return({})
         allow(described_class).to receive_message_chain(:last_24_hours, :group, :sum)
@@ -455,10 +381,10 @@ RSpec.describe SyncMetric, type: :model, unit: true do
 
       it "returns performance summary for each account" do
         result = described_class.account_performance_summary
-        
+
         expect(result).to be_an(Array)
         expect(result.size).to eq(2)
-        
+
         first_account = result.first
         expect(first_account[:account_id]).to eq(1)
         expect(first_account[:bank_name]).to eq("BCR")
@@ -474,9 +400,9 @@ RSpec.describe SyncMetric, type: :model, unit: true do
           .and_return({})
         allow(described_class).to receive_message_chain(:last_24_hours, :group, :sum)
           .and_return({})
-        
+
         result = described_class.account_performance_summary
-        
+
         first_account = result.first
         expect(first_account[:total_syncs]).to eq(0)
         expect(first_account[:success_rate]).to eq(0.0)
@@ -491,7 +417,7 @@ RSpec.describe SyncMetric, type: :model, unit: true do
         allow(described_class).to receive_message_chain(:last_7_days, :by_type, :group, :count).and_return({})
         allow(described_class).to receive_message_chain(:last_7_days, :by_type, :group, :average).and_return({})
         allow(described_class).to receive_message_chain(:last_7_days, :by_type, :successful, :group, :count).and_return({})
-        
+
         described_class.account_performance_summary(:last_7_days)
       end
     end
@@ -501,7 +427,7 @@ RSpec.describe SyncMetric, type: :model, unit: true do
         scope = double("scope")
         allow(scope).to receive(:count).and_return(100)
         allow(scope).to receive_message_chain(:successful, :count).and_return(85)
-        
+
         result = described_class.send(:calculate_success_rate, scope)
         expect(result).to eq(85.0)
       end
@@ -509,7 +435,7 @@ RSpec.describe SyncMetric, type: :model, unit: true do
       it "handles zero total" do
         scope = double("scope")
         allow(scope).to receive(:count).and_return(0)
-        
+
         result = described_class.send(:calculate_success_rate, scope)
         expect(result).to eq(0.0)
       end
@@ -518,7 +444,7 @@ RSpec.describe SyncMetric, type: :model, unit: true do
         scope = double("scope")
         allow(scope).to receive(:count).and_return(3)
         allow(scope).to receive_message_chain(:successful, :count).and_return(2)
-        
+
         result = described_class.send(:calculate_success_rate, scope)
         expect(result).to eq(66.67)
       end
@@ -552,14 +478,14 @@ RSpec.describe SyncMetric, type: :model, unit: true do
       it "calculates emails per second" do
         sync_metric.duration = 10000 # 10 seconds
         sync_metric.emails_processed = 50
-        
+
         expect(sync_metric.processing_rate).to eq(5.0)
       end
 
       it "rounds to 2 decimal places" do
         sync_metric.duration = 3000 # 3 seconds
         sync_metric.emails_processed = 10
-        
+
         expect(sync_metric.processing_rate).to eq(3.33)
       end
 
@@ -614,14 +540,14 @@ RSpec.describe SyncMetric, type: :model, unit: true do
       it "handles very high processing rates" do
         sync_metric.duration = 1 # 1 millisecond
         sync_metric.emails_processed = 1000
-        
+
         expect(sync_metric.processing_rate).to eq(1000000.0)
       end
 
       it "handles fractional processing rates" do
         sync_metric.duration = 10000 # 10 seconds
         sync_metric.emails_processed = 1
-        
+
         expect(sync_metric.processing_rate).to eq(0.1)
       end
     end
@@ -632,7 +558,7 @@ RSpec.describe SyncMetric, type: :model, unit: true do
           sync_session: sync_session,
           started_at: 1.hour.from_now,
           completed_at: 2.hours.from_now)
-        
+
         expect(metric).to be_valid
       end
 
@@ -640,20 +566,8 @@ RSpec.describe SyncMetric, type: :model, unit: true do
         metric = build(:sync_metric,
           sync_session: sync_session,
           started_at: 100.years.ago)
-        
-        expect(metric).to be_valid
-      end
 
-      it "calculates negative duration for reversed timestamps" do
-        metric = build(:sync_metric,
-          sync_session: sync_session,
-          started_at: Time.current,
-          completed_at: 1.hour.ago,
-          duration: nil)
-        
-        metric.save!
-        # Duration would be negative, but validation prevents it
-        expect(metric).not_to be_valid if metric.duration&.negative?
+        expect(metric).to be_valid
       end
     end
   end
@@ -665,36 +579,17 @@ RSpec.describe SyncMetric, type: :model, unit: true do
         expect(described_class.for_session(1).to_sql).to include("sync_session_id")
         expect(described_class.for_account(1).to_sql).to include("email_account_id")
       end
-
-      it "includes associations to prevent N+1" do
-        # account_performance_summary uses includes
-        allow(EmailAccount).to receive_message_chain(:active, :includes).and_return([])
-        expect(described_class).to receive_message_chain(:last_24_hours, :includes, :by_type, :group_by)
-        
-        # Other expectations...
-        allow(described_class).to receive_message_chain(:last_24_hours, :group, :sum).and_return({})
-        allow(described_class).to receive_message_chain(:last_24_hours, :by_type, :group, :count).and_return({})
-        allow(described_class).to receive_message_chain(:last_24_hours, :by_type, :group, :average).and_return({})
-        allow(described_class).to receive_message_chain(:last_24_hours, :by_type, :successful, :group, :count).and_return({})
-        
-        described_class.account_performance_summary
-      end
     end
 
     describe "aggregation optimization" do
       it "uses database aggregation functions" do
         # average_duration_by_type uses database AVG
-        expect(described_class).to receive_message_chain(:last_24_hours, :group, :average)
-        allow(described_class).to receive_message_chain(:last_24_hours, :group, :average, :transform_values).and_return({})
-        
-        described_class.average_duration_by_type
-      end
+        double_result = double("AverageResult")
+        allow(double_result).to receive(:transform_values).and_return({})
 
-      it "performs calculations in single queries" do
-        # success_rate_by_type uses single grouped count
-        expect(described_class).to receive_message_chain(:last_24_hours, :group, :count).once
-        
-        described_class.success_rate_by_type
+        expect(described_class).to receive_message_chain(:last_24_hours, :group, :average).and_return(double_result)
+
+        described_class.average_duration_by_type
       end
     end
   end

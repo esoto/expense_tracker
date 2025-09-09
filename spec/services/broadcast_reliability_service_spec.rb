@@ -11,6 +11,17 @@ RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
     allow(BroadcastAnalytics).to receive(:record_success)
     allow(BroadcastAnalytics).to receive(:record_failure)
     allow(BroadcastAnalytics).to receive(:record_queued)
+
+    # Disable security validation by default for tests (individual tests can override)
+    allow(BroadcastFeatureFlags).to receive(:enabled?)
+      .with(:broadcast_validation)
+      .and_return(false)
+    allow(BroadcastFeatureFlags).to receive(:enabled?)
+      .with(:enhanced_rate_limiting)
+      .and_return(false)
+
+    # Mock sleep to prevent actual delays in tests
+    allow(Kernel).to receive(:sleep)
   end
 
   describe '.broadcast_with_retry', integration: true do
@@ -150,12 +161,13 @@ RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
     context 'with invalid priority' do
       it 'raises InvalidPriorityError' do
         expect {
-          described_class.broadcast_with_retry(
+          result = described_class.broadcast_with_retry(
             channel: SyncStatusChannel,
             target: sync_session,
             data: test_data,
             priority: :invalid
           )
+          puts "UNEXPECTED: Got result: #{result.inspect}" if result
         }.to raise_error(BroadcastReliabilityService::InvalidPriorityError)
       end
     end

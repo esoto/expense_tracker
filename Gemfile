@@ -127,7 +127,7 @@ group :test do
   # JSON response testing
   gem "json_spec"
 
-  # Database cleaning strategies
+  # Database cleaning for integration tests
   gem "database_cleaner-active_record"
 
   # ActionCable testing support

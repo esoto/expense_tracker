@@ -350,7 +350,7 @@ RSpec.describe CategoryGuesserService, integration: true do
       end
 
       it 'falls back to Other if Sin Categoría not found' do
-        Category.find_by(name: 'Sin Categoría').destroy
+        Category.find_by(name: 'Sin Categoría')&.destroy
         category = service.send(:find_default_category)
         expect(category.name).to eq('Other')
       end

@@ -22,9 +22,18 @@ RSpec.describe ExpenseSummaryService, integration: true do
   end
 
   describe '#summary', integration: true do
-    let!(:week_expense) { create(:expense, amount: 100.0, transaction_date: 3.days.ago, category: category, email_account: email_account) }
-    let!(:month_expense) { create(:expense, amount: 200.0, transaction_date: 2.weeks.ago, category: category, email_account: email_account) }
-    let!(:year_expense) { create(:expense, amount: 300.0, transaction_date: 6.months.ago, category: category, email_account: email_account) }
+    # Use a specific test timeframe to avoid conflicts with existing data
+    let(:test_base_date) { Date.new(2023, 6, 15) } # Use a specific past date for test isolation
+    let!(:week_expense) { create(:expense, amount: 100.0, transaction_date: test_base_date - 3.days, category: category, email_account: email_account) }
+    let!(:month_expense) { create(:expense, amount: 200.0, transaction_date: test_base_date - 2.weeks, category: category, email_account: email_account) }
+    let!(:year_expense) { create(:expense, amount: 300.0, transaction_date: test_base_date - 6.months, category: category, email_account: email_account) }
+
+    # Mock Time.current to use our test timeframe
+    around(:each) do |example|
+      travel_to(test_base_date) do
+        example.run
+      end
+    end
 
     context 'with week period' do
       let(:service) { described_class.new("week") }
@@ -96,11 +105,20 @@ RSpec.describe ExpenseSummaryService, integration: true do
 
   describe 'private methods', integration: true do
     let(:service) { described_class.new("month") }
+    let(:private_test_date) { Date.new(2023, 3, 15) } # Different test date to avoid conflicts
     let(:start_date) { 1.month.ago.beginning_of_day }
     let(:end_date) { Time.current.end_of_day }
 
+    around(:each) do |example|
+      travel_to(private_test_date) do
+        example.run
+      end
+    end
+
     before do
-      create(:expense, amount: 150.0, transaction_date: 2.weeks.ago, category: category, email_account: email_account)
+      # Ensure clean state to prevent data pollution
+      Expense.destroy_all
+      create(:expense, amount: 150.0, transaction_date: private_test_date - 2.weeks, category: category, email_account: email_account)
     end
 
     describe '#total_amount_for_period', integration: true do

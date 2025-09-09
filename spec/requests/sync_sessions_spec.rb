@@ -3,26 +3,29 @@ require 'rails_helper'
 RSpec.describe "SyncSessions", type: :request, integration: true do
   include ActiveSupport::Testing::TimeHelpers
   let!(:email_account1) { create(:email_account, :bac, active: true) }
-  let!(:email_account2) { create(:email_account, :gmail, active: true) }
-  let!(:inactive_account) { create(:email_account, active: false) }
+  let!(:email_account2) { create(:email_account, :gmail, active: true, email: "gmail_#{SecureRandom.hex(4)}@example.com") }
+  let!(:inactive_account) { create(:email_account, active: false, email: "inactive_#{SecureRandom.hex(4)}@example.com") }
 
   # Clean up before and after to ensure complete test isolation
   before(:each) do
     # Clean up any existing sync sessions to ensure test isolation
-    SyncSession.destroy_all
-    SyncSessionAccount.destroy_all
-    ConflictResolution.destroy_all if defined?(ConflictResolution)
-    SyncConflict.destroy_all if defined?(SyncConflict)
+    # Need to delete in proper order due to foreign key constraints
+    ConflictResolution.delete_all if defined?(ConflictResolution)
+    SyncConflict.delete_all if defined?(SyncConflict)
+    SyncMetric.delete_all if defined?(SyncMetric)
+    SyncSessionAccount.delete_all
+    SyncSession.delete_all
     # Allow all tests to pass validation by default
     allow_any_instance_of(SyncSessionValidator).to receive(:validate!).and_return(true)
   end
 
   after(:each) do
     # Clean up after each test to prevent pollution
-    SyncSession.destroy_all
-    SyncSessionAccount.destroy_all
-    ConflictResolution.destroy_all if defined?(ConflictResolution)
-    SyncConflict.destroy_all if defined?(SyncConflict)
+    ConflictResolution.delete_all if defined?(ConflictResolution)
+    SyncConflict.delete_all if defined?(SyncConflict)
+    SyncMetric.delete_all if defined?(SyncMetric)
+    SyncSessionAccount.delete_all
+    SyncSession.delete_all
   end
 
   describe 'GET /sync_sessions', integration: true do

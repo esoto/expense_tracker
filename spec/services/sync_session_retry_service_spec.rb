@@ -13,6 +13,11 @@ RSpec.describe SyncSessionRetryService, integration: true do
 
   describe '#call', integration: true do
     context 'with valid retry conditions' do
+      before do
+        # Ensure rate limiting is not active for these tests
+        allow_any_instance_of(SyncSessionValidator).to receive(:can_create_sync?).and_return(true)
+      end
+
       it 'creates a new sync session' do
         expect { service.call }.to change(SyncSession, :count).by(1)
       end
@@ -91,6 +96,8 @@ RSpec.describe SyncSessionRetryService, integration: true do
 
     context 'with unexpected errors' do
       before do
+        # Allow rate limiting to pass but cause error during session creation
+        allow_any_instance_of(SyncSessionValidator).to receive(:can_create_sync?).and_return(true)
         allow(SyncSession).to receive(:create!).and_raise(StandardError, "Unexpected error")
       end
 

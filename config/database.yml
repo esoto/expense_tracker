@@ -48,6 +48,16 @@ test:
   min_messages: WARNING
   # Use template0 to avoid encoding issues
   template: template0
+  # Performance optimizations for tests
+  pool: 10
+  statement_timeout: 15000  # 15 seconds for slow tests
+  lock_timeout: 8000        # 8 seconds for locks
+  connect_timeout: 3
+  checkout_timeout: 8
+  variables:
+    work_mem: '8MB'
+    maintenance_work_mem: '64MB'
+    synchronous_commit: 'off'  # Faster for tests
 
 # Store production database configuration securely
 production:

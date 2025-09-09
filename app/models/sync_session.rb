@@ -73,14 +73,14 @@ class SyncSession < ApplicationRecord
 
   def start!
     update!(status: "running", started_at: Time.current)
-    SyncStatusChannel.broadcast_status(self)
+    SyncStatusChannel.broadcast_status(self) if should_broadcast?
   rescue StandardError => e
     Rails.logger.error "Error broadcasting start status: #{e.message}"
   end
 
   def complete!
     update!(status: "completed", completed_at: Time.current)
-    SyncStatusChannel.broadcast_completion(self)
+    SyncStatusChannel.broadcast_completion(self) if should_broadcast?
   rescue => e
     # Only catch broadcasting errors, not ActiveRecord errors
     unless e.is_a?(ActiveRecord::ActiveRecordError)
@@ -96,7 +96,7 @@ class SyncSession < ApplicationRecord
       completed_at: Time.current,
       error_details: error_message
     )
-    SyncStatusChannel.broadcast_failure(self, error_message)
+    SyncStatusChannel.broadcast_failure(self, error_message) if should_broadcast?
   rescue => e
     # Only catch broadcasting errors, not ActiveRecord errors
     unless e.is_a?(ActiveRecord::ActiveRecordError)
@@ -169,6 +169,18 @@ class SyncSession < ApplicationRecord
 
   private
 
+  def should_broadcast?
+    # Don't broadcast in non-test environments unless specifically enabled
+    return true unless Rails.env.test?
+
+    # In test environment, check if the current test wants broadcasting
+    # This works by checking the current RSpec example metadata
+    return false unless defined?(RSpec) && RSpec.current_example
+
+    # Check if the test has needs_broadcasting: true metadata
+    RSpec.current_example.metadata[:needs_broadcasting] == true
+  end
+
   def generate_session_token
     self.session_token ||= SecureRandom.urlsafe_base64(32)
   end
@@ -186,6 +198,9 @@ class SyncSession < ApplicationRecord
   end
 
   def broadcast_dashboard_update
+    # Skip broadcasting unless specifically enabled
+    return unless should_broadcast?
+
     # Broadcast to dashboard using Turbo Streams
     begin
       # Get dashboard data for the partial

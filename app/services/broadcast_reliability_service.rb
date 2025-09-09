@@ -44,23 +44,33 @@ class BroadcastReliabilityService
     # @param user_id [String] Optional user ID for rate limiting
     # @return [Boolean] Success status
     def broadcast_with_retry(channel:, target:, data:, priority: :medium, attempt: 1, request_ip: nil, user_id: nil)
+      puts "[BROADCAST_DEBUG] Starting broadcast_with_retry with priority: #{priority}"
+      Rails.logger.debug "[BROADCAST_DEBUG] Starting broadcast_with_retry with priority: #{priority}"
       validate_priority!(priority)
+      puts "[BROADCAST_DEBUG] Priority validated"
+      Rails.logger.debug "[BROADCAST_DEBUG] Priority validated"
 
       # Security validation and rate limiting (only on first attempt)
       if attempt == 1
         # Use feature flag to control security validation
         if BroadcastFeatureFlags.enabled?(:broadcast_validation)
-          return false unless validate_broadcast_security(channel, target, data, priority, request_ip, user_id)
+          Rails.logger.debug "[BROADCAST_DEBUG] Security validation enabled"
+          result = validate_broadcast_security(channel, target, data, priority, request_ip, user_id)
+          return false unless result
+        else
+          Rails.logger.debug "[BROADCAST_DEBUG] Security validation disabled"
         end
       end
 
       priority_config = PRIORITIES[priority]
       start_time = Time.current
 
-      begin
+      result = begin
+        Rails.logger.debug "[BROADCAST_DEBUG] Performing broadcast"
         # Perform the actual broadcast
         perform_broadcast(channel, target, data)
 
+        Rails.logger.debug "[BROADCAST_DEBUG] Broadcast successful, recording analytics"
         # Log successful broadcast
         BroadcastAnalytics.record_success(
           channel: channel_name(channel),
@@ -71,6 +81,7 @@ class BroadcastReliabilityService
           duration: (Time.current - start_time).to_f
         )
 
+        Rails.logger.debug "[BROADCAST_DEBUG] Returning true"
         true
       rescue StandardError => e
         # Log the failure
@@ -90,7 +101,7 @@ class BroadcastReliabilityService
           Rails.logger.warn "[BROADCAST] Retrying broadcast in #{delay}s - Attempt #{attempt}/#{priority_config[:max_retries]}: #{e.message}"
 
           sleep(delay)
-          broadcast_with_retry(
+          return broadcast_with_retry(
             channel: channel,
             target: target,
             data: data,
@@ -105,6 +116,8 @@ class BroadcastReliabilityService
           false
         end
       end
+
+      result
     end
 
     # Queue a broadcast job for background processing
@@ -162,8 +175,10 @@ class BroadcastReliabilityService
     # @param priority [Symbol] Priority level to validate
     # @raise [InvalidPriorityError] if priority is invalid
     def validate_priority!(priority)
+      Rails.logger.debug "[BROADCAST_DEBUG] validate_priority! called with: #{priority.inspect}"
       return if PRIORITIES.key?(priority)
 
+      Rails.logger.debug "[BROADCAST_DEBUG] Invalid priority detected, raising error"
       raise InvalidPriorityError, "Invalid priority '#{priority}'. Valid priorities: #{PRIORITIES.keys.join(', ')}"
     end
 

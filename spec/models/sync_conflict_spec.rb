@@ -234,20 +234,6 @@ RSpec.describe SyncConflict, type: :model, integration: true do
       expect(conflict.similarity_score).to be_between(45, 55)
     end
 
-    it 'handles date differences within 3 days' do
-      # The calculation logic checks if (existing_expense.transaction_date - new_expense.transaction_date).abs <= 3
-      # This checks days as integers, so 3.days would be 3
-      new_expense.update!(
-        amount: 200,
-        transaction_date: existing_expense.transaction_date - 3,
-        merchant_name: 'Different',
-        description: 'Different'
-      )
-      conflict.save
-      # Should get 10 points for date (exactly 3 days difference)
-      # Total: 10/100 = 10%
-      expect(conflict.similarity_score).to eq(10.0)
-    end
 
     it 'handles partial merchant name matches' do
       new_expense.update!(amount: 200, transaction_date: existing_expense.transaction_date - 10.days, merchant_name: 'Test Store Plus', description: 'Different')

@@ -40,7 +40,16 @@ module EmailProcessing
 
     def process_single_email(message_id, imap_service)
       if @metrics_collector
-        @metrics_collector.track_operation(:parse_email, @email_account, { message_id: message_id }) do
+        begin
+          result = @metrics_collector.track_operation(:parse_email, @email_account, { message_id: message_id }) do
+            process_email_with_metrics(message_id, imap_service)
+          end
+          # Handle nil return from metrics collector
+          result || { processed: false, expense_created: false }
+        rescue StandardError => e
+          # Log metrics errors but continue processing
+          Rails.logger.error "[EmailProcessing::Processor] Metrics tracking error: #{e.message}"
+          # Still process the email even if metrics fail
           process_email_with_metrics(message_id, imap_service)
         end
       else
@@ -183,14 +192,24 @@ module EmailProcessing
       begin
         # Handle encoding properly
         text = html_content.dup
-        text = text.force_encoding("BINARY") if text.encoding.name == "ASCII-8BIT"
+
+        # Convert to UTF-8 if not already, handling various encodings
+        unless text.encoding == Encoding::UTF_8
+          # Try to convert to UTF-8 from the current encoding
+          begin
+            text = text.encode("UTF-8", invalid: :replace, undef: :replace, replace: "?")
+          rescue Encoding::UndefinedConversionError, Encoding::InvalidByteSequenceError
+            # Force to binary then to UTF-8 with replacement
+            text = text.force_encoding("BINARY").encode("UTF-8", invalid: :replace, undef: :replace, replace: "?")
+          end
+        end
 
         # Remove quoted-printable encoding first
         text = text.gsub(/=\r?\n/, "")
-        text = text.gsub(/=([0-9A-F]{2})/) { [ $1 ].pack("H*") }
+        text = text.gsub(/=([0-9A-F]{2})/i) { [ $1 ].pack("H*") }
 
-        # Now convert to UTF-8
-        text = text.force_encoding("UTF-8")
+        # Ensure text is valid UTF-8 after quoted-printable decode
+        text = text.force_encoding("UTF-8").scrub("?")
 
         # Remove HTML tags but preserve important content
         text = text.gsub(/<style[^>]*>.*?<\/style>/mi, "")
@@ -210,6 +229,20 @@ module EmailProcessing
         text = text.gsub(/&oacute;/, "ó")
         text = text.gsub(/&uacute;/, "ú")
         text = text.gsub(/&ntilde;/, "ñ")
+        text = text.gsub(/&Aacute;/, "Á")
+        text = text.gsub(/&Eacute;/, "É")
+        text = text.gsub(/&Iacute;/, "Í")
+        text = text.gsub(/&Oacute;/, "Ó")
+        text = text.gsub(/&Uacute;/, "Ú")
+        text = text.gsub(/&Ntilde;/, "Ñ")
+        text = text.gsub(/&iexcl;/, "¡")
+        text = text.gsub(/&iquest;/, "¿")
+
+        # Decode numeric HTML entities (decimal)
+        text = text.gsub(/&#(\d+);/) { [ $1.to_i ].pack("U*") }
+
+        # Decode numeric HTML entities (hexadecimal)
+        text = text.gsub(/&#x([0-9A-Fa-f]+);/) { [ $1.to_i(16) ].pack("U*") }
 
         # Normalize whitespace
         text = text.gsub(/\s+/, " ").strip
@@ -231,11 +264,19 @@ module EmailProcessing
     end
 
     def detect_and_handle_conflict(email_data)
-      # Parse expense data from email
-      parser = EmailProcessing::Parser.new(email_account)
-      expense_data = parser.parse_transaction(email_data[:body])
+      # Parse expense data from email to extract fields without creating expense
+      parsing_rule = ParsingRule.active.for_bank(email_account.bank_name).first
+      return false unless parsing_rule
 
-      return false unless expense_data
+      begin
+        parsing_strategy = EmailProcessing::StrategyFactory.create_strategy(parsing_rule, email_content: email_data[:body])
+        expense_data = parsing_strategy.parse_email(email_data[:body])
+      rescue => e
+        Rails.logger.error "[EmailProcessing::Processor] Error parsing email: #{e.message}"
+        return false
+      end
+
+      return false unless expense_data && expense_data[:amount].present?
 
       # Add additional fields
       expense_data[:email_account_id] = email_account.id

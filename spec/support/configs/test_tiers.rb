@@ -58,14 +58,16 @@ RSpec.configure do |config|
     # Disable transactional fixtures for accurate measurements
     config.use_transactional_fixtures = false
 
-    # Use database cleaner
-    config.before(:suite) do
-      DatabaseCleaner.strategy = :truncation
-    end
+    # Use database cleaner only if it's available and we're not running unit tests
+    if defined?(DatabaseCleaner)
+      config.before(:suite) do
+        DatabaseCleaner.strategy = :truncation
+      end
 
-    config.around(:each) do |example|
-      DatabaseCleaner.cleaning do
-        example.run
+      config.around(:each, :performance) do |example|
+        DatabaseCleaner.cleaning do
+          example.run
+        end
       end
     end
 
@@ -81,13 +83,15 @@ RSpec.configure do |config|
     # Configure Capybara
     config.use_transactional_fixtures = false
 
-    config.before(:suite) do
-      DatabaseCleaner.strategy = :truncation
-    end
+    if defined?(DatabaseCleaner)
+      config.before(:suite) do
+        DatabaseCleaner.strategy = :truncation
+      end
 
-    config.around(:each) do |example|
-      DatabaseCleaner.cleaning do
-        example.run
+      config.around(:each, :system) do |example|
+        DatabaseCleaner.cleaning do
+          example.run
+        end
       end
     end
   end
@@ -115,12 +119,7 @@ RSpec.configure do |config|
   # Profile slowest tests only for non-unit tests
   config.profile_examples = 10 unless config.files_to_run.any? { |f| f.include?('/unit/') }
 
-  # Use progress formatter for unit tests, documentation for others
-  config.formatter = if config.files_to_run.any? { |f| f.include?('/unit/') }
-                       'progress'
-  else
-                       'documentation'
-  end
+  # Formatter is configured in .rspec file
 
   # HOOKS
   # =====

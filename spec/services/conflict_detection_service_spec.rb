@@ -148,22 +148,39 @@ RSpec.describe ConflictDetectionService, integration: true do
   end
 
   describe '#auto_resolve_obvious_duplicates', integration: true do
+    # Create actual expenses for the conflicts
+    let!(:existing_expense_for_high) { create(:expense, email_account: email_account) }
+    let!(:new_expense_for_high) { create(:expense, email_account: email_account, status: :pending) }
+
+    let!(:existing_expense_for_low) { create(:expense, email_account: email_account) }
+    let!(:new_expense_for_low) { create(:expense, email_account: email_account, status: :pending) }
+
     let!(:high_confidence_conflict) do
-      create(:sync_conflict,
+      conflict = create(:sync_conflict,
         sync_session: sync_session,
+        existing_expense: existing_expense_for_high,
+        new_expense: new_expense_for_high,
         similarity_score: 98.0,
         conflict_type: 'duplicate',
         status: 'pending'
       )
+      # Force the score to ensure it's set correctly
+      conflict.update_column(:similarity_score, 98.0)
+      conflict
     end
 
     let!(:low_confidence_conflict) do
-      create(:sync_conflict,
+      conflict = create(:sync_conflict,
         sync_session: sync_session,
+        existing_expense: existing_expense_for_low,
+        new_expense: new_expense_for_low,
         similarity_score: 85.0,
         conflict_type: 'duplicate',
         status: 'pending'
       )
+      # Force the score to ensure it's set correctly
+      conflict.update_column(:similarity_score, 85.0)
+      conflict
     end
 
     it 'resolves only high-confidence duplicates' do
@@ -172,6 +189,10 @@ RSpec.describe ConflictDetectionService, integration: true do
       expect(resolved_count).to eq(1)
       expect(high_confidence_conflict.reload.status).to eq('resolved')
       expect(low_confidence_conflict.reload.status).to eq('pending')
+
+      # Verify the new expense was marked as duplicate
+      expect(new_expense_for_high.reload.status).to eq('duplicate')
+      expect(new_expense_for_low.reload.status).to eq('pending')
     end
 
     it 'uses keep_existing resolution action' do

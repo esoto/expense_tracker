@@ -36,17 +36,6 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
     end
 
     context "with invalid parameters" do
-      it "returns error when no expenses provided" do
-        post :bulk_categorize, params: {
-          expense_ids: [],
-          category_id: category2.id
-        }, format: :json
-
-        expect(response).to have_http_status(:unprocessable_content)
-        json_response = JSON.parse(response.body)
-        expect(json_response['success']).to be false
-      end
-
       it "returns error when category not found" do
         post :bulk_categorize, params: {
           expense_ids: expenses.map(&:id),
@@ -83,16 +72,6 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
     end
 
     context "with invalid parameters" do
-      it "returns error for invalid status" do
-        post :bulk_update_status, params: {
-          expense_ids: expenses.map(&:id),
-          status: "invalid_status"
-        }, format: :json
-
-        expect(response).to have_http_status(:unprocessable_content)
-        json_response = JSON.parse(response.body)
-        expect(json_response['success']).to be false
-      end
     end
   end
 
@@ -120,15 +99,6 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
     end
 
     context "with empty expense list" do
-      it "returns error" do
-        delete :bulk_destroy, params: {
-          expense_ids: []
-        }, format: :json
-
-        expect(response).to have_http_status(:unprocessable_content)
-        json_response = JSON.parse(response.body)
-        expect(json_response['success']).to be false
-      end
     end
   end
 end

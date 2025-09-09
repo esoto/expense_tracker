@@ -66,6 +66,8 @@ module EmailProcessing
         imap_service.search_emails(search_criteria)
       end
 
+      # Handle nil return from metrics collector
+      message_ids ||= []
       total_emails_found = message_ids.count
 
       # Update sync session with total emails
@@ -128,7 +130,8 @@ module EmailProcessing
         format: "%u%n"
       )
 
-      "#{amount} en #{expense.merchant || 'Comercio desconocido'}"
+      merchant = expense.merchant_name.presence || "Comercio desconocido"
+      "#{amount} en #{merchant}"
     end
   end
 end

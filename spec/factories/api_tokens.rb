@@ -9,6 +9,10 @@ FactoryBot.define do
       active { false }
     end
 
+    trait :active do
+      active { true }
+    end
+
     trait :permanent do
       expires_at { nil }
     end

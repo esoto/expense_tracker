@@ -32,7 +32,7 @@ RSpec.describe ApiToken, type: :model, unit: true do
         # Skip the callback
         api_token.instance_variable_set(:@skip_token_generation, true)
         allow(api_token).to receive(:generate_token_if_blank)
-        
+
         expect(api_token).not_to be_valid
         expect(api_token.errors[:token_digest]).to include("can't be blank")
       end
@@ -55,7 +55,7 @@ RSpec.describe ApiToken, type: :model, unit: true do
       end
 
       it 'accepts true and false for active' do
-        [true, false].each do |value|
+        [ true, false ].each do |value|
           api_token = build(:api_token, active: value)
           expect(api_token).to be_valid
         end
@@ -82,7 +82,7 @@ RSpec.describe ApiToken, type: :model, unit: true do
       it 'rejects exactly current time' do
         freeze_time = Time.current
         allow(Time).to receive(:current).and_return(freeze_time)
-        
+
         api_token = build(:api_token, expires_at: freeze_time)
         expect(api_token).not_to be_valid
         expect(api_token.errors[:expires_at]).to include("must be in the future")
@@ -125,12 +125,12 @@ RSpec.describe ApiToken, type: :model, unit: true do
       it 'generates token on create when token_digest is blank' do
         api_token = build(:api_token)
         api_token.token_digest = nil
-        
+
         expect(SecureRandom).to receive(:urlsafe_base64).with(ApiToken::TOKEN_LENGTH).and_return('generated_token')
         expect(BCrypt::Password).to receive(:create).with('generated_token').and_return('hashed_token')
-        
+
         api_token.save
-        
+
         expect(api_token.token).to eq('generated_token')
         expect(api_token.token_digest).to eq('hashed_token')
         expect(api_token.token_hash).to eq(Digest::SHA256.hexdigest('generated_token'))
@@ -139,9 +139,9 @@ RSpec.describe ApiToken, type: :model, unit: true do
       it 'does not generate token when token_digest is present' do
         api_token = build(:api_token)
         api_token.token_digest = 'existing_digest'
-        
+
         expect(SecureRandom).not_to receive(:urlsafe_base64)
-        
+
         api_token.save
         expect(api_token.token_digest).to eq('existing_digest')
       end
@@ -149,9 +149,9 @@ RSpec.describe ApiToken, type: :model, unit: true do
       it 'only runs on create' do
         api_token = create(:api_token)
         original_digest = api_token.token_digest
-        
+
         expect(SecureRandom).not_to receive(:urlsafe_base64)
-        
+
         api_token.update(name: 'Updated Name')
         expect(api_token.token_digest).to eq(original_digest)
       end
@@ -212,7 +212,7 @@ RSpec.describe ApiToken, type: :model, unit: true do
         it 'returns nil when BCrypt verification fails' do
           allow(ApiToken).to receive_message_chain(:valid, :find_by).and_return(api_token)
           allow(BCrypt::Password).to receive(:new).with(api_token.token_digest).and_return(BCrypt::Password.create('different_token'))
-          
+
           result = ApiToken.authenticate(token_string)
           expect(result).to be_nil
         end
@@ -261,10 +261,10 @@ RSpec.describe ApiToken, type: :model, unit: true do
       it 'uses current time for comparison' do
         freeze_time = Time.current
         allow(Time).to receive(:current).and_return(freeze_time)
-        
+
         api_token = build_stubbed(:api_token, expires_at: freeze_time - 1.second)
         expect(api_token.expired?).to be true
-        
+
         api_token.expires_at = freeze_time + 1.second
         expect(api_token.expired?).to be false
       end
@@ -301,7 +301,7 @@ RSpec.describe ApiToken, type: :model, unit: true do
       it 'updates last_used_at column' do
         freeze_time = Time.current
         allow(Time).to receive(:current).and_return(freeze_time)
-        
+
         api_token = create(:api_token)
         expect(api_token).to receive(:update_column).with(:last_used_at, freeze_time)
         api_token.touch_last_used!
@@ -311,7 +311,7 @@ RSpec.describe ApiToken, type: :model, unit: true do
         api_token = create(:api_token)
         # Make the token invalid
         api_token.name = nil
-        
+
         # Should still update despite invalid state
         expect { api_token.touch_last_used! }.not_to raise_error
       end
@@ -328,7 +328,7 @@ RSpec.describe ApiToken, type: :model, unit: true do
     it 'token is not persisted to database' do
       api_token = create(:api_token)
       original_token = api_token.token
-      
+
       reloaded = ApiToken.find(api_token.id)
       expect(reloaded.token).to be_nil
       expect(original_token).to be_present
@@ -339,10 +339,10 @@ RSpec.describe ApiToken, type: :model, unit: true do
     describe 'token generation uniqueness' do
       it 'handles collision in token generation' do
         api_token = build(:api_token)
-        
+
         # Simulate collision by returning same token twice, then different
         allow(SecureRandom).to receive(:urlsafe_base64).and_return('same_token', 'same_token', 'different_token')
-        
+
         api_token.save
         expect(api_token.token).to eq('same_token')
       end
@@ -352,7 +352,7 @@ RSpec.describe ApiToken, type: :model, unit: true do
       it 'handles BCrypt cost factor properly' do
         api_token = build(:api_token)
         api_token.save
-        
+
         password = BCrypt::Password.new(api_token.token_digest)
         expect(password.cost).to be >= BCrypt::Engine::MIN_COST
       end
@@ -363,7 +363,7 @@ RSpec.describe ApiToken, type: :model, unit: true do
         very_long_token = 'a' * 1000
         token_hash = Digest::SHA256.hexdigest(very_long_token)
         cache_key = "api_token:#{token_hash[0..ApiToken::CACHE_KEY_LENGTH]}"
-        
+
         expect(cache_key.length).to be < 250  # Memcached key length limit
       end
     end
@@ -372,21 +372,21 @@ RSpec.describe ApiToken, type: :model, unit: true do
       it 'handles race conditions in cache' do
         token_string = 'test_token'
         api_token = build_stubbed(:api_token)
-        
+
         # Simulate concurrent cache reads
         call_count = 0
         allow(Rails.cache).to receive(:fetch) do |&block|
           call_count += 1
           block.call
         end
-        
+
         allow(ApiToken).to receive_message_chain(:valid, :find_by).and_return(api_token)
         allow(BCrypt::Password).to receive(:new).and_return(BCrypt::Password.create(token_string))
         allow(api_token).to receive(:touch_last_used!)
-        
+
         # Multiple concurrent authentications
         3.times { ApiToken.authenticate(token_string) }
-        
+
         # Should call cache fetch each time
         expect(call_count).to eq(3)
       end
@@ -396,12 +396,12 @@ RSpec.describe ApiToken, type: :model, unit: true do
       it 'generates token even when other validations fail' do
         api_token = build(:api_token, name: nil)  # Invalid due to name
         api_token.token_digest = nil  # Trigger token generation
-        
+
         # Token generation should still work
         expect(SecureRandom).to receive(:urlsafe_base64).and_return('generated_token')
-        
+
         api_token.valid?  # Trigger validations and callbacks
-        
+
         # Token should be generated even though model is invalid
         expect(api_token.token).to eq('generated_token')
       end
@@ -412,11 +412,11 @@ RSpec.describe ApiToken, type: :model, unit: true do
     describe 'token storage' do
       it 'never stores plain text token in database' do
         api_token = create(:api_token)
-        
+
         # Check database columns don't contain plain token
         attributes = api_token.attributes
         plain_token = api_token.token
-        
+
         attributes.each do |key, value|
           next if value.nil? || key == 'id'
           expect(value.to_s).not_to eq(plain_token) if plain_token.present?
@@ -428,17 +428,17 @@ RSpec.describe ApiToken, type: :model, unit: true do
       it 'uses BCrypt for constant-time comparison' do
         token_string = 'test_token'
         api_token = build_stubbed(:api_token)
-        
+
         allow(ApiToken).to receive_message_chain(:valid, :find_by).and_return(api_token)
-        
+
         # BCrypt comparison is constant-time
         bcrypt_password = double('BCrypt::Password')
         allow(BCrypt::Password).to receive(:new).and_return(bcrypt_password)
         allow(bcrypt_password).to receive(:==).with(token_string).and_return(true)
         allow(api_token).to receive(:touch_last_used!)
-        
+
         ApiToken.authenticate(token_string)
-        
+
         # Verify BCrypt comparison was used
         expect(bcrypt_password).to have_received(:==).with(token_string)
       end

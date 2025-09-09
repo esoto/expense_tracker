@@ -34,11 +34,13 @@ module EmailProcessing
     private
 
     def find_parsing_rule
+      return nil unless email_account
       ParsingRule.active.for_bank(email_account.bank_name).first
     end
 
     def email_content
       @email_content ||= begin
+        # This will raise NoMethodError if email_data is nil
         content = email_data[:body].to_s
 
         if content.bytesize > MAX_EMAIL_SIZE
@@ -54,11 +56,16 @@ module EmailProcessing
     end
 
     def create_expense(parsed_data)
-      # Check for potential duplicates
-      existing_expense = find_duplicate_expense(parsed_data)
+      begin
+        # Check for potential duplicates
+        existing_expense = find_duplicate_expense(parsed_data)
+      rescue ActiveRecord::RecordNotFound, ActiveRecord::ConnectionNotEstablished, ActiveRecord::StatementTimeout => e
+        add_error("Database error during duplicate check: #{e.message}")
+        return nil
+      end
 
       if existing_expense
-        existing_expense.update(status: "duplicate")
+        existing_expense.update(status: :duplicate)
         add_error("Duplicate expense found")
         return existing_expense
       end
@@ -71,19 +78,29 @@ module EmailProcessing
         description: parsed_data[:description],
         raw_email_content: email_content,
         parsed_data: parsed_data.to_json,
-        status: "pending",
+        status: :pending,
         email_body: email_data[:body].to_s,
-        bank_name: email_account.bank_name
+        bank_name: email_account&.bank_name
       )
 
       # Set currency using enum methods
-      set_currency(expense, parsed_data)
+      begin
+        set_currency(expense, parsed_data)
+      rescue StandardError => e
+        add_error("Currency detection failed: #{e.message}")
+        # Don't re-raise, continue with expense creation
+      end
 
       # Try to auto-categorize
-      expense.category = guess_category(expense)
+      begin
+        expense.category = guess_category(expense)
+      rescue StandardError => e
+        add_error("Category guess failed: #{e.message}")
+        # Don't re-raise, continue with expense creation
+      end
 
       if expense.save
-        expense.update(status: "processed")
+        expense.update(status: :processed)
         Rails.logger.info "Created expense: #{expense.formatted_amount} from #{email_account.email}"
         expense
       else
@@ -115,7 +132,8 @@ module EmailProcessing
 
     def add_error(message)
       @errors << message
-      Rails.logger.error "[EmailProcessing::Parser] #{email_account.email}: #{message}"
+      email_info = email_account&.email || "unknown"
+      Rails.logger.error "[EmailProcessing::Parser] #{email_info}: #{message}"
     end
 
     def process_large_email(content)
@@ -124,24 +142,49 @@ module EmailProcessing
 
       # Process in chunks to avoid memory bloat
       processed = StringIO.new
-      content.each_line.first(100).each do |line|  # Process only first 100 lines
-        processed << decode_quoted_printable_line(line)
+      # Force to string and handle encoding issues
+      content = content.to_s.force_encoding("BINARY")
+
+      lines_processed = 0
+      bytes_accumulated = 0
+      content.each_line do |line|
+        break if lines_processed >= 100  # Process only first 100 lines
+
+        # Truncate individual lines if they're too long
+        line = line[0...1000] if line.length > 1000
+
+        decoded_line = decode_quoted_printable_line(line)
+        # Force to UTF-8 and scrub each line
+        final_line = decoded_line.force_encoding("UTF-8").scrub
+        processed << final_line
+        lines_processed += 1
+        bytes_accumulated += final_line.bytesize
+
+        # Safety check: if we've accumulated way too much, stop
+        break if bytes_accumulated > 100_000  # 100KB absolute max
       end
 
-      result = processed.string.force_encoding("UTF-8").scrub
+      result = processed.string
       processed.close
       result
     end
 
     def process_standard_email(content)
+      # Convert to string and dup to avoid frozen string issues
+      content = content.to_s.dup
+      # Force to binary first to handle any encoding issues
+      content = content.force_encoding("BINARY")
+      # Remove soft line breaks
       content = content.gsub(/=\r\n/, "")
-      content = content.gsub(/=([A-F0-9]{2})/) { [ $1.hex ].pack("C") }
+      # Decode quoted-printable (handle both uppercase and lowercase hex)
+      content = content.gsub(/=([A-Fa-f0-9]{2})/i) { [ $1.hex ].pack("C") }
+      # Force to UTF-8 and scrub invalid sequences
       content.force_encoding("UTF-8").scrub
     end
 
     def decode_quoted_printable_line(line)
       line.gsub(/=\r\n/, "")
-          .gsub(/=([A-F0-9]{2})/) { [ $1.hex ].pack("C") }
+          .gsub(/=([A-Fa-f0-9]{2})/i) { [ $1.hex ].pack("C") }
     end
   end
 end

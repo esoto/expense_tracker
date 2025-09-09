@@ -37,7 +37,7 @@ RSpec.describe ExpensesController, type: :request, unit: true do
           category_id: category.id
         }, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json["success"]).to be false
       end
@@ -47,7 +47,7 @@ RSpec.describe ExpensesController, type: :request, unit: true do
           expense_ids: expense_ids
         }, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json["success"]).to be false
       end
@@ -96,7 +96,7 @@ RSpec.describe ExpensesController, type: :request, unit: true do
           status: "invalid_status"
         }, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         json = JSON.parse(response.body)
         expect(json["success"]).to be false
       end

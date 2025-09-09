@@ -1,0 +1,5 @@
+pattern_type,pattern,category_id,active,confidence_threshold,priority
+merchant,Starbucks,1,true,0.8,5
+description,coffee,1,true,0.7,3
+merchant,McDonald's,2,true,0.9,4
+description,gas station,3,false,0.6,2

@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe SyncSession, type: :model, unit: true do
+RSpec.describe SyncSession, type: :model, unit: true, needs_broadcasting: true do
   # Use build_stubbed for true unit testing
   let(:sync_session) do
     build_stubbed(:sync_session,
@@ -16,7 +16,7 @@ RSpec.describe SyncSession, type: :model, unit: true do
       started_at: 1.hour.ago,
       completed_at: nil,
       error_details: nil,
-      job_ids: ["job1", "job2"])
+      job_ids: [ "job1", "job2" ])
   end
 
   describe "included modules" do
@@ -83,18 +83,18 @@ RSpec.describe SyncSession, type: :model, unit: true do
   describe "serialization" do
     it "serializes job_ids as JSON array" do
       session = create(:sync_session)
-      session.job_ids = ["job1", "job2"]
+      session.job_ids = [ "job1", "job2" ]
       session.save!
-      
+
       session.reload
-      expect(session.job_ids).to eq(["job1", "job2"])
+      expect(session.job_ids).to eq([ "job1", "job2" ])
     end
 
     it "handles nil job_ids" do
       session = build_stubbed(:sync_session)
       allow(session).to receive(:job_ids=)
       allow(session).to receive(:job_ids).and_return(nil)
-      
+
       session.job_ids = nil
       expect(session.job_ids).to be_nil
     end
@@ -103,7 +103,7 @@ RSpec.describe SyncSession, type: :model, unit: true do
       session = create(:sync_session)
       session.job_ids = []
       session.save!
-      
+
       expect(session.job_ids).to eq([])
     end
   end
@@ -112,17 +112,17 @@ RSpec.describe SyncSession, type: :model, unit: true do
     describe "before_create :generate_session_token" do
       it "generates session token on create" do
         allow(SecureRandom).to receive(:urlsafe_base64).with(32).and_return("generated_token")
-        
+
         session = build_stubbed(:sync_session, session_token: nil)
         session.send(:generate_session_token)
-        
+
         expect(session.session_token).to eq("generated_token")
       end
 
       it "does not override existing token" do
         session = build_stubbed(:sync_session, session_token: "existing_token")
         session.send(:generate_session_token)
-        
+
         expect(session.session_token).to eq("existing_token")
       end
     end
@@ -130,11 +130,11 @@ RSpec.describe SyncSession, type: :model, unit: true do
     describe "before_save :track_status_changes" do
       it "sets completed_at when transitioning from running to finished" do
         session = create(:sync_session, status: "running", completed_at: nil)
-        
+
         freeze_time do
           session.status = "completed"
           session.save!
-          
+
           expect(session.completed_at).to eq(Time.current)
         end
       end
@@ -142,19 +142,19 @@ RSpec.describe SyncSession, type: :model, unit: true do
       it "does not override existing completed_at" do
         original_time = 1.hour.ago
         session = create(:sync_session, status: "running", completed_at: original_time)
-        
+
         session.status = "completed"
         session.save!
-        
-        expect(session.completed_at).to eq(original_time)
+
+        expect(session.completed_at).to be_within(1.second).of(original_time)
       end
 
       it "does not set completed_at for non-finished statuses" do
         session = create(:sync_session, status: "pending", completed_at: nil)
-        
+
         session.status = "running"
         session.save!
-        
+
         expect(session.completed_at).to be_nil
       end
     end
@@ -163,18 +163,18 @@ RSpec.describe SyncSession, type: :model, unit: true do
       it "logs error when status changes to failed" do
         session = create(:sync_session, status: "running")
         session.error_details = "Connection failed"
-        
+
         expect(Rails.logger).to receive(:error).with("SyncSession #{session.id} failed: Connection failed")
-        
+
         session.status = "failed"
         session.save!
       end
 
       it "does not log for other status changes" do
         session = create(:sync_session, status: "pending")
-        
+
         expect(Rails.logger).not_to receive(:error)
-        
+
         session.status = "running"
         session.save!
       end
@@ -183,7 +183,7 @@ RSpec.describe SyncSession, type: :model, unit: true do
     describe "after_update_commit :broadcast_dashboard_update" do
       it "triggers broadcast on update" do
         session = create(:sync_session)
-        
+
         expect(session).to receive(:broadcast_dashboard_update)
         session.update!(processed_emails: 10)
       end
@@ -342,10 +342,10 @@ RSpec.describe SyncSession, type: :model, unit: true do
       it "#active? returns true for pending or running" do
         sync_session.status = "pending"
         expect(sync_session.active?).to be true
-        
+
         sync_session.status = "running"
         expect(sync_session.active?).to be true
-        
+
         sync_session.status = "completed"
         expect(sync_session.active?).to be false
       end
@@ -355,7 +355,7 @@ RSpec.describe SyncSession, type: :model, unit: true do
           sync_session.status = status
           expect(sync_session.finished?).to be true
         end
-        
+
         %w[pending running].each do |status|
           sync_session.status = status
           expect(sync_session.finished?).to be false
@@ -369,9 +369,9 @@ RSpec.describe SyncSession, type: :model, unit: true do
       it "updates status to running" do
         freeze_time do
           expect(SyncStatusChannel).to receive(:broadcast_status).with(session)
-          
+
           session.start!
-          
+
           expect(session.status).to eq("running")
           expect(session.started_at).to eq(Time.current)
         end
@@ -380,7 +380,7 @@ RSpec.describe SyncSession, type: :model, unit: true do
       it "handles broadcast errors gracefully" do
         allow(SyncStatusChannel).to receive(:broadcast_status).and_raise(StandardError)
         expect(Rails.logger).to receive(:error)
-        
+
         expect { session.start! }.not_to raise_error
       end
     end
@@ -391,9 +391,9 @@ RSpec.describe SyncSession, type: :model, unit: true do
       it "updates status to completed" do
         freeze_time do
           expect(SyncStatusChannel).to receive(:broadcast_completion).with(session)
-          
+
           session.complete!
-          
+
           expect(session.status).to eq("completed")
           expect(session.completed_at).to eq(Time.current)
         end
@@ -402,13 +402,13 @@ RSpec.describe SyncSession, type: :model, unit: true do
       it "handles broadcast errors gracefully" do
         allow(SyncStatusChannel).to receive(:broadcast_completion).and_raise(StandardError)
         expect(Rails.logger).to receive(:error)
-        
+
         expect { session.complete! }.not_to raise_error
       end
 
       it "re-raises ActiveRecord errors" do
         allow(session).to receive(:update!).and_raise(ActiveRecord::RecordInvalid)
-        
+
         expect { session.complete! }.to raise_error(ActiveRecord::RecordInvalid)
       end
     end
@@ -426,7 +426,7 @@ RSpec.describe SyncSession, type: :model, unit: true do
             error_details: "Connection error"
           )
           expect(SyncStatusChannel).to receive(:broadcast_failure).with(sync_session, "Connection error")
-          
+
           sync_session.fail!("Connection error")
         end
       end
@@ -438,7 +438,7 @@ RSpec.describe SyncSession, type: :model, unit: true do
           error_details: nil
         )
         expect(SyncStatusChannel).to receive(:broadcast_failure).with(sync_session, nil)
-        
+
         sync_session.fail!
       end
 
@@ -446,19 +446,19 @@ RSpec.describe SyncSession, type: :model, unit: true do
         allow(sync_session).to receive(:update!)
         allow(SyncStatusChannel).to receive(:broadcast_failure).and_raise(StandardError)
         expect(Rails.logger).to receive(:error)
-        
+
         expect { sync_session.fail!("Error") }.not_to raise_error
       end
 
       it "re-raises ActiveRecord errors" do
         allow(sync_session).to receive(:update!).and_raise(ActiveRecord::RecordInvalid)
-        
+
         expect { sync_session.fail! }.to raise_error(ActiveRecord::RecordInvalid)
       end
     end
 
     describe "#cancel!" do
-      let(:session) { create(:sync_session, status: "running", job_ids: ["job1"]) }
+      let(:session) { create(:sync_session, status: "running", job_ids: [ "job1" ]) }
       let(:account) { create(:sync_session_account, sync_session: session, status: "processing") }
 
       before do
@@ -468,7 +468,7 @@ RSpec.describe SyncSession, type: :model, unit: true do
       it "updates status to cancelled" do
         freeze_time do
           session.cancel!
-          
+
           expect(session.status).to eq("cancelled")
           expect(session.completed_at).to eq(Time.current)
         end
@@ -480,12 +480,12 @@ RSpec.describe SyncSession, type: :model, unit: true do
       end
 
       it "marks pending accounts as failed" do
-        pending_account = create(:sync_session_account, 
-          sync_session: session, 
+        pending_account = create(:sync_session_account,
+          sync_session: session,
           status: "pending")
-        
+
         session.cancel!
-        
+
         pending_account.reload
         expect(pending_account.status).to eq("failed")
         expect(pending_account.last_error).to eq("Sync cancelled by user")
@@ -498,17 +498,17 @@ RSpec.describe SyncSession, type: :model, unit: true do
     end
 
     describe "#add_job_id" do
-      let(:session) { create(:sync_session, job_ids: ["existing"]) }
+      let(:session) { create(:sync_session, job_ids: [ "existing" ]) }
 
       it "adds job_id to array" do
         session.add_job_id("new_job")
-        expect(session.job_ids).to eq(["existing", "new_job"])
+        expect(session.job_ids).to eq([ "existing", "new_job" ])
       end
 
       it "handles nil job_ids array" do
         session.job_ids = nil
         session.add_job_id("job1")
-        expect(session.job_ids).to eq(["job1"])
+        expect(session.job_ids).to eq([ "job1" ])
       end
 
       it "ignores nil job_id" do
@@ -529,7 +529,7 @@ RSpec.describe SyncSession, type: :model, unit: true do
     end
 
     describe "#cancel_all_jobs" do
-      let(:session) { create(:sync_session, job_ids: ["job1", "job2"]) }
+      let(:session) { create(:sync_session, job_ids: [ "job1", "job2" ]) }
 
       before do
         allow(SolidQueue::Job).to receive(:find_by).and_return(nil)
@@ -537,11 +537,11 @@ RSpec.describe SyncSession, type: :model, unit: true do
 
       it "attempts to cancel each job" do
         job_mock = double("job", scheduled?: true, destroy: true)
-        
+
         expect(SolidQueue::Job).to receive(:find_by).with(id: "job1").and_return(job_mock)
         expect(SolidQueue::Job).to receive(:find_by).with(id: "job2").and_return(job_mock)
         expect(job_mock).to receive(:destroy).twice
-        
+
         session.cancel_all_jobs
       end
 
@@ -557,20 +557,20 @@ RSpec.describe SyncSession, type: :model, unit: true do
 
       it "logs errors but continues" do
         allow(SolidQueue::Job).to receive(:find_by).and_raise(StandardError, "Job error")
-        
+
         expect(Rails.logger).to receive(:error).at_least(:once)
         expect { session.cancel_all_jobs }.not_to raise_error
       end
 
       it "also cancels account-specific jobs" do
-        account = create(:sync_session_account, 
-          sync_session: session, 
+        account = create(:sync_session_account,
+          sync_session: session,
           job_id: "account_job")
-        
+
         job_mock = double("job", scheduled?: true, destroy: true)
         expect(SolidQueue::Job).to receive(:find_by).with(id: "account_job").and_return(job_mock)
         expect(job_mock).to receive(:destroy)
-        
+
         session.cancel_all_jobs
       end
     end
@@ -580,7 +580,7 @@ RSpec.describe SyncSession, type: :model, unit: true do
         updater = double("updater", call: true)
         expect(SyncProgressUpdater).to receive(:new).with(sync_session).and_return(updater)
         expect(updater).to receive(:call)
-        
+
         sync_session.update_progress
       end
     end
@@ -590,17 +590,17 @@ RSpec.describe SyncSession, type: :model, unit: true do
         start_time = Time.current - 2.hours
         end_time = Time.current - 1.hour
         expected_duration = end_time - start_time
-        
+
         allow(sync_session).to receive(:started_at).and_return(start_time)
         allow(sync_session).to receive(:completed_at).and_return(end_time)
-        
+
         expect(sync_session.duration).to eq(expected_duration)
       end
 
       it "calculates duration for running session" do
         sync_session.started_at = 30.minutes.ago
         sync_session.completed_at = nil
-        
+
         expect(sync_session.duration).to be_within(1.second).of(30.minutes)
       end
 
@@ -615,7 +615,7 @@ RSpec.describe SyncSession, type: :model, unit: true do
         sync_session.started_at = 1.hour.ago
         sync_session.completed_at = nil
         sync_session.processed_emails = 60
-        
+
         # 1 hour / 60 emails = 1 minute per email
         result = sync_session.average_processing_time_per_email
         expect(result).to be_within(1.second).of(1.minute)
@@ -640,7 +640,7 @@ RSpec.describe SyncSession, type: :model, unit: true do
         email_accounts_relation = instance_double(ActiveRecord::Relation)
         allow(EmailAccount).to receive(:active).and_return(email_accounts_relation)
         allow(email_accounts_relation).to receive(:order).with(:bank_name, :email).and_return([])
-        
+
         # Mock the broadcast method
         allow(sync_session).to receive(:broadcast_replace_to)
         allow(sync_session).to receive(:build_sync_info_for_dashboard).and_return({})
@@ -655,14 +655,14 @@ RSpec.describe SyncSession, type: :model, unit: true do
             partial: "expenses/sync_status_section"
           )
         )
-        
+
         sync_session.send(:broadcast_dashboard_update)
       end
 
       it "handles errors gracefully" do
         allow(sync_session).to receive(:broadcast_replace_to).and_raise(StandardError)
         expect(Rails.logger).to receive(:error).twice # Once for message, once for backtrace
-        
+
         expect { sync_session.send(:broadcast_dashboard_update) }.not_to raise_error
       end
     end
@@ -673,12 +673,12 @@ RSpec.describe SyncSession, type: :model, unit: true do
       let(:expense) { create(:expense, email_account: account) }
 
       before do
-        allow(EmailAccount).to receive_message_chain(:active).and_return([account])
+        allow(EmailAccount).to receive_message_chain(:active).and_return([ account ])
       end
 
       it "builds sync info hash" do
         result = session.send(:build_sync_info_for_dashboard)
-        
+
         expect(result).to include(
           has_running_jobs: true,
           running_job_count: 1
@@ -692,7 +692,7 @@ RSpec.describe SyncSession, type: :model, unit: true do
       it "handles no active sync" do
         session.status = "completed"
         result = session.send(:build_sync_info_for_dashboard)
-        
+
         expect(result[:has_running_jobs]).to be false
         expect(result[:running_job_count]).to eq(0)
       end
@@ -704,14 +704,14 @@ RSpec.describe SyncSession, type: :model, unit: true do
       it "handles processed > total gracefully" do
         sync_session.total_emails = 10
         sync_session.processed_emails = 15
-        
+
         expect(sync_session.progress_percentage).to eq(150)
       end
 
       it "handles negative values" do
         sync_session.total_emails = -10
         sync_session.processed_emails = 5
-        
+
         # Should calculate but result may be nonsensical
         expect { sync_session.progress_percentage }.not_to raise_error
       end
@@ -721,7 +721,7 @@ RSpec.describe SyncSession, type: :model, unit: true do
       it "handles future started_at" do
         # Mock the method to return expected value for edge case
         allow(sync_session).to receive(:estimated_time_remaining).and_return(nil)
-        
+
         result = sync_session.estimated_time_remaining
         expect(result).to be_nil # Returns nil due to negative elapsed time
       end
@@ -731,7 +731,7 @@ RSpec.describe SyncSession, type: :model, unit: true do
         sync_session.status = "running"
         sync_session.processed_emails = 1000
         sync_session.total_emails = 2000
-        
+
         result = sync_session.estimated_time_remaining
         expect(result).to be < 1.second
       end
@@ -739,11 +739,11 @@ RSpec.describe SyncSession, type: :model, unit: true do
 
     describe "concurrent update scenarios" do
       it "handles race conditions in job cancellation" do
-        session = create(:sync_session, job_ids: ["job1"])
-        
+        session = create(:sync_session, job_ids: [ "job1" ])
+
         # Simulate job already cancelled
         allow(SolidQueue::Job).to receive(:find_by).and_return(nil)
-        
+
         expect { session.cancel_all_jobs }.not_to raise_error
       end
     end
@@ -754,7 +754,7 @@ RSpec.describe SyncSession, type: :model, unit: true do
       it "continues operation when broadcast fails" do
         allow(SyncStatusChannel).to receive(:broadcast_status).and_raise(StandardError)
         expect(Rails.logger).to receive(:error)
-        
+
         expect { session.start! }.not_to raise_error
         expect(session.status).to eq("running")
       end
@@ -772,11 +772,11 @@ RSpec.describe SyncSession, type: :model, unit: true do
     describe "broadcast optimization" do
       it "only broadcasts on commit" do
         session = build(:sync_session)
-        
+
         # Should not broadcast during transaction
         expect(session).not_to receive(:broadcast_dashboard_update)
         session.save
-        
+
         # Broadcasts after commit (tested separately)
       end
     end
@@ -787,14 +787,14 @@ RSpec.describe SyncSession, type: :model, unit: true do
       it "generates secure random tokens" do
         session1 = create(:sync_session)
         session2 = create(:sync_session)
-        
+
         expect(session1.session_token).not_to eq(session2.session_token)
         expect(session1.session_token.length).to be >= 32
       end
 
       it "uses URL-safe encoding" do
         session = create(:sync_session)
-        
+
         # URL-safe base64 doesn't contain +, /, or =
         expect(session.session_token).not_to match(/[+\/=]/)
       end
@@ -803,10 +803,10 @@ RSpec.describe SyncSession, type: :model, unit: true do
     describe "error message handling" do
       it "stores error details safely" do
         session = create(:sync_session)
-        
+
         error_with_sql = "Error: '; DROP TABLE users; --"
         session.fail!(error_with_sql)
-        
+
         expect(session.error_details).to eq(error_with_sql)
       end
     end

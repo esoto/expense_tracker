@@ -148,48 +148,90 @@ class SyncConflict < ApplicationRecord
   def calculate_similarity_score
     return unless new_expense && existing_expense
 
-    score = 0.0
-    weight_total = 0.0
+    amount_score, amount_weight = score_comparison_amount
+    date_score, date_weight = score_comparison_date
+    merchant_score, merchant_weight = score_comparison_merchant
+    description_score, description_weight = score_comparison_description
 
-    # Amount comparison (40% weight)
-    if existing_expense.amount == new_expense.amount
-      score += 40
-    elsif (existing_expense.amount - new_expense.amount).abs < 1
-      score += 30
-    elsif (existing_expense.amount - new_expense.amount).abs < 10
-      score += 20
+    total_score = amount_score + date_score + merchant_score + description_score
+    total_weight = amount_weight + date_weight + merchant_weight + description_weight
+
+    self.similarity_score = (total_score / total_weight * 100).round(2).to_f
+  end
+
+  # Similarity scoring weights (total should equal 100)
+  AMOUNT_WEIGHT = 40.0
+  DATE_WEIGHT = 30.0
+  MERCHANT_WEIGHT = 20.0
+  DESCRIPTION_WEIGHT = 10.0
+
+  def score_comparison_amount
+    amount_diff = (existing_expense.amount - new_expense.amount).abs
+
+    score = if existing_expense.amount == new_expense.amount
+      AMOUNT_WEIGHT
+    elsif amount_diff < 1
+      AMOUNT_WEIGHT * 0.75 # 30 points
+    elsif amount_diff < 10
+      AMOUNT_WEIGHT * 0.5  # 20 points
+    else
+      0
     end
-    weight_total += 40
 
-    # Date comparison (30% weight)
-    if existing_expense.transaction_date == new_expense.transaction_date
-      score += 30
-    elsif (existing_expense.transaction_date - new_expense.transaction_date).abs <= 1
-      score += 20
-    elsif (existing_expense.transaction_date - new_expense.transaction_date).abs <= 3
-      score += 10
+    [ score, AMOUNT_WEIGHT ]
+  end
+
+  def score_comparison_date
+    return [ 0, DATE_WEIGHT ] unless existing_expense.transaction_date && new_expense.transaction_date
+
+    # Convert date difference to days (as integer)
+    date_diff = ((existing_expense.transaction_date - new_expense.transaction_date).abs / 1.day).to_i
+
+    score = if existing_expense.transaction_date == new_expense.transaction_date
+      DATE_WEIGHT
+    elsif date_diff <= 1
+      20.0 # 20 points (exactly)
+    elsif date_diff <= 3
+      10.0 # 10 points (exactly)
+    else
+      0
     end
-    weight_total += 30
 
-    # Merchant comparison (20% weight)
-    if existing_expense.merchant_name == new_expense.merchant_name
-      score += 20
-    elsif existing_expense.merchant_name&.downcase&.include?(new_expense.merchant_name&.downcase.to_s) ||
-          new_expense.merchant_name&.downcase&.include?(existing_expense.merchant_name&.downcase.to_s)
-      score += 10
+    [ score, DATE_WEIGHT ]
+  end
+
+  def score_comparison_merchant
+    return [ 0, MERCHANT_WEIGHT ] unless existing_expense.merchant_name && new_expense.merchant_name
+
+    existing_merchant = existing_expense.merchant_name.downcase
+    new_merchant = new_expense.merchant_name.downcase
+
+    score = if existing_expense.merchant_name == new_expense.merchant_name
+      MERCHANT_WEIGHT
+    elsif existing_merchant.include?(new_merchant) || new_merchant.include?(existing_merchant)
+      MERCHANT_WEIGHT * 0.5 # 10 points
+    else
+      0
     end
-    weight_total += 20
 
-    # Description comparison (10% weight)
-    if existing_expense.description == new_expense.description
-      score += 10
-    elsif existing_expense.description&.downcase&.include?(new_expense.description&.downcase.to_s) ||
-          new_expense.description&.downcase&.include?(existing_expense.description&.downcase.to_s)
-      score += 5
+    [ score, MERCHANT_WEIGHT ]
+  end
+
+  def score_comparison_description
+    return [ 0, DESCRIPTION_WEIGHT ] unless existing_expense.description && new_expense.description
+
+    existing_desc = existing_expense.description.downcase
+    new_desc = new_expense.description.downcase
+
+    score = if existing_expense.description == new_expense.description
+      DESCRIPTION_WEIGHT
+    elsif existing_desc.include?(new_desc) || new_desc.include?(existing_desc)
+      DESCRIPTION_WEIGHT * 0.5 # 5 points
+    else
+      0
     end
-    weight_total += 10
 
-    self.similarity_score = (score / weight_total * 100).round(2)
+    [ score, DESCRIPTION_WEIGHT ]
   end
 
   def set_priority
@@ -241,12 +283,12 @@ class SyncConflict < ApplicationRecord
   def apply_resolution(action, resolution_data)
     case action
     when "keep_existing"
-      new_expense&.update!(status: "duplicate")
+      new_expense&.update!(status: :duplicate)
     when "keep_new"
-      existing_expense.update!(status: "duplicate")
-      new_expense&.update!(status: "processed")
+      existing_expense&.update!(status: :duplicate)
+      new_expense&.update!(status: :processed)
     when "keep_both"
-      new_expense&.update!(status: "processed")
+      new_expense&.update!(status: :processed)
     when "merged"
       merge_expenses(resolution_data)
     when "custom"
@@ -265,7 +307,7 @@ class SyncConflict < ApplicationRecord
     end
 
     existing_expense.update!(updates) if updates.any?
-    new_expense&.update!(status: "duplicate")
+    new_expense&.update!(status: :duplicate)
   end
 
   def apply_custom_resolution(custom_data)

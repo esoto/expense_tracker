@@ -1,9 +1,11 @@
+# frozen_string_literal: true
+
 require "rails_helper"
 
-RSpec.describe SyncStatusChannel, type: :channel, integration: true do
+RSpec.describe SyncStatusChannel, type: :channel, unit: true do
   let(:sync_session) { create(:sync_session) }
 
-  describe "subscription", integration: true do
+  describe "subscription", unit: true do
     context "with valid session" do
       before do
         # Stub the connection with a valid session info
@@ -171,7 +173,7 @@ RSpec.describe SyncStatusChannel, type: :channel, integration: true do
     end
   end
 
-  describe "unsubscription", integration: true do
+  describe "unsubscription", unit: true do
     before do
       stub_connection(current_session_info: {
         session_id: "test_session_123",
@@ -206,7 +208,7 @@ RSpec.describe SyncStatusChannel, type: :channel, integration: true do
     end
   end
 
-  describe "pause_updates action", integration: true do
+  describe "pause_updates action", unit: true do
     before do
       stub_connection(current_session_info: {
         session_id: "test_session_123",
@@ -240,7 +242,7 @@ RSpec.describe SyncStatusChannel, type: :channel, integration: true do
     end
   end
 
-  describe "resume_updates action", integration: true do
+  describe "resume_updates action", unit: true do
     before do
       stub_connection(current_session_info: {
         session_id: "test_session_123",
@@ -329,7 +331,7 @@ RSpec.describe SyncStatusChannel, type: :channel, integration: true do
     end
   end
 
-  describe ".broadcast_progress", integration: true do
+  describe ".broadcast_progress", unit: true do
     include_context "broadcast reliability service mocked"
     it "broadcasts progress update to the session" do
       expect {
@@ -368,7 +370,7 @@ RSpec.describe SyncStatusChannel, type: :channel, integration: true do
       ))
     end
 
-    it "includes all required progress data" do
+    it "includes all required progress data", needs_broadcasting: true do
       allow(sync_session).to receive(:status).and_return("running")
       allow(sync_session).to receive(:progress_percentage).and_return(75)
       allow(sync_session).to receive(:detected_expenses).and_return(15)
@@ -392,7 +394,7 @@ RSpec.describe SyncStatusChannel, type: :channel, integration: true do
     end
   end
 
-  describe ".broadcast_account_progress", integration: true do
+  describe ".broadcast_account_progress", unit: true do
     include_context "broadcast reliability service mocked"
     let(:email_account) { create(:email_account) }
     let(:sync_session_account) do
@@ -447,7 +449,7 @@ RSpec.describe SyncStatusChannel, type: :channel, integration: true do
     end
   end
 
-  describe ".broadcast_account_update", integration: true do
+  describe ".broadcast_account_update", unit: true do
     include_context "broadcast reliability service mocked"
     it "broadcasts account update with calculated progress" do
       expect {
@@ -478,7 +480,7 @@ RSpec.describe SyncStatusChannel, type: :channel, integration: true do
     end
   end
 
-  describe ".broadcast_completion", integration: true do
+  describe ".broadcast_completion", unit: true do
     include_context "broadcast reliability service mocked"
     it "broadcasts completion message" do
       expect {
@@ -518,7 +520,7 @@ RSpec.describe SyncStatusChannel, type: :channel, integration: true do
     end
   end
 
-  describe ".broadcast_failure", integration: true do
+  describe ".broadcast_failure", unit: true do
     include_context "broadcast reliability service mocked"
     it "broadcasts failure message with error details" do
       error_message = "Connection timeout"
@@ -573,7 +575,7 @@ RSpec.describe SyncStatusChannel, type: :channel, integration: true do
     end
   end
 
-  describe ".broadcast_status", integration: true do
+  describe ".broadcast_status", unit: true do
     include_context "broadcast reliability service mocked"
     let(:email_account) { create(:email_account) }
     let!(:sync_session_account) do
@@ -659,7 +661,7 @@ RSpec.describe SyncStatusChannel, type: :channel, integration: true do
     end
   end
 
-  describe ".broadcast_activity", integration: true do
+  describe ".broadcast_activity", unit: true do
     include_context "broadcast reliability service mocked"
     it "broadcasts activity message with timestamp" do
       expect {
@@ -699,8 +701,8 @@ RSpec.describe SyncStatusChannel, type: :channel, integration: true do
     end
   end
 
-  describe "time formatting private methods", integration: true do
-    describe ".format_time_remaining", integration: true do
+  describe "time formatting private methods", unit: true do
+    describe ".format_time_remaining", unit: true do
       it "formats seconds correctly" do
         result = SyncStatusChannel.send(:format_time_remaining, 30)
         expect(result).to eq("30 segundos")
@@ -732,7 +734,7 @@ RSpec.describe SyncStatusChannel, type: :channel, integration: true do
       end
     end
 
-    describe ".format_duration", integration: true do
+    describe ".format_duration", unit: true do
       it "formats seconds only" do
         result = SyncStatusChannel.send(:format_duration, 30)
         expect(result).to eq("30s")
@@ -760,8 +762,8 @@ RSpec.describe SyncStatusChannel, type: :channel, integration: true do
     end
   end
 
-  describe "helper methods functionality", integration: true do
-    describe "build_accounts_data", integration: true do
+  describe "helper methods functionality", unit: true do
+    describe "build_accounts_data", unit: true do
       let(:email_account) { create(:email_account) }
       let!(:sync_session_account) do
         create(:sync_session_account,
@@ -808,7 +810,7 @@ RSpec.describe SyncStatusChannel, type: :channel, integration: true do
       end
     end
 
-    describe "security logging", integration: true do
+    describe "security logging", unit: true do
       it "logs security events during subscription flows" do
         # Test security logging by triggering scenarios that would log events
         stub_connection(current_session_info: {
@@ -828,7 +830,7 @@ RSpec.describe SyncStatusChannel, type: :channel, integration: true do
     end
   end
 
-  describe "edge cases and error handling", integration: true do
+  describe "edge cases and error handling", unit: true do
     before do
       stub_connection(current_session_info: {
         session_id: "test_session_123",
@@ -862,6 +864,321 @@ RSpec.describe SyncStatusChannel, type: :channel, integration: true do
         # The method should handle the error gracefully and not crash
         # It should log the error but not re-raise it
         expect { perform :resume_updates }.not_to raise_error
+      end
+    end
+  end
+
+  describe "request_status action", unit: true do
+    before do
+      stub_connection(current_session_info: {
+        session_id: "test_session_123",
+        sync_session_id: nil,
+        verified_at: Time.current,
+        ip_address: "127.0.0.1"
+      })
+      subscribe(session_id: sync_session.id)
+    end
+
+    it "logs debug message when status requested" do
+      expect(Rails.logger).to receive(:debug).with(
+        "SyncStatusChannel: Status requested by session test_session_123"
+      )
+
+      perform :request_status
+    end
+
+    it "transmits current status when session exists" do
+      perform :request_status
+
+      expect(transmissions.last).to include(
+        "type" => "status_update",
+        "status" => sync_session.status
+      )
+    end
+
+    it "handles missing session_id parameter gracefully" do
+      subscription.params.delete(:session_id)
+
+      expect { perform :request_status }.not_to raise_error
+    end
+
+    it "handles non-existent session gracefully" do
+      subscription.params[:session_id] = 999999
+
+      expect { perform :request_status }.not_to raise_error
+    end
+  end
+
+  describe "broadcast reliability and error handling", unit: true do
+    describe ".broadcast_with_reliability", unit: true do
+      it "uses BroadcastReliabilityService for broadcasting" do
+        expect(BroadcastReliabilityService).to receive(:broadcast_with_retry).with(
+          channel: SyncStatusChannel,
+          target: sync_session,
+          data: { test: "data" },
+          priority: :high
+        ).and_return(true)
+
+        SyncStatusChannel.broadcast_with_reliability(sync_session, { test: "data" }, :high)
+      end
+
+      it "falls back to direct broadcast if reliability service fails" do
+        # Mock BroadcastReliabilityService to raise error
+        allow(BroadcastReliabilityService).to receive(:broadcast_with_retry).and_raise(StandardError.new("Service error"))
+
+        # Mock Rails.logger to capture error logs
+        allow(Rails.logger).to receive(:error)
+
+        # Mock direct broadcast
+        expect(SyncStatusChannel).to receive(:broadcast_to).with(sync_session, { test: "data" })
+
+        SyncStatusChannel.broadcast_with_reliability(sync_session, { test: "data" })
+
+        expect(Rails.logger).to have_received(:error).with(
+          "[SYNC_STATUS_CHANNEL] Enhanced broadcast failed: Service error"
+        )
+      end
+
+      it "handles complete broadcast failure gracefully" do
+        # Mock both services to fail
+        allow(BroadcastReliabilityService).to receive(:broadcast_with_retry).and_raise(StandardError.new("Service error"))
+        allow(SyncStatusChannel).to receive(:broadcast_to).and_raise(StandardError.new("Broadcast error"))
+        allow(Rails.logger).to receive(:error)
+
+        expect { SyncStatusChannel.broadcast_with_reliability(sync_session, { test: "data" }) }.not_to raise_error
+
+        expect(Rails.logger).to have_received(:error).with(
+          "[SYNC_STATUS_CHANNEL] Enhanced broadcast failed: Service error"
+        )
+        expect(Rails.logger).to have_received(:error).with(
+          "[SYNC_STATUS_CHANNEL] Fallback broadcast also failed: Broadcast error"
+        )
+      end
+    end
+
+    describe ".broadcast_batch", unit: true do
+      it "broadcasts batch data with correct format" do
+        batch_data = [ { type: "progress", value: 50 }, { type: "status", value: "running" } ]
+
+        expect(BroadcastReliabilityService).to receive(:broadcast_with_retry).with(
+          channel: SyncStatusChannel,
+          target: sync_session,
+          data: hash_including(
+            type: "batch_update",
+            batch_size: 2,
+            updates: batch_data
+          ),
+          priority: :medium
+        )
+
+        SyncStatusChannel.broadcast_batch(sync_session, batch_data)
+      end
+
+      it "handles empty batch data gracefully" do
+        expect(BroadcastReliabilityService).not_to receive(:broadcast_with_retry)
+
+        SyncStatusChannel.broadcast_batch(sync_session, [])
+      end
+
+      it "includes timestamp in batch data" do
+        batch_data = [ { type: "test" } ]
+
+        expect(BroadcastReliabilityService).to receive(:broadcast_with_retry) do |args|
+          expect(args[:data][:timestamp]).to match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
+        end
+
+        SyncStatusChannel.broadcast_batch(sync_session, batch_data, :high)
+      end
+    end
+  end
+
+  describe "channel inheritance and structure", unit: true do
+    it "inherits from ApplicationCable::Channel" do
+      expect(SyncStatusChannel.superclass).to eq(ApplicationCable::Channel)
+    end
+
+    it "is an ActionCable channel" do
+      expect(SyncStatusChannel.ancestors).to include(ActionCable::Channel::Base)
+    end
+
+    it "has all required class methods" do
+      class_methods = [
+        :broadcast_progress, :broadcast_account_progress, :broadcast_account_update,
+        :broadcast_completion, :broadcast_failure, :broadcast_status, :broadcast_activity,
+        :broadcast_with_reliability, :broadcast_batch, :broadcast_to
+      ]
+
+      class_methods.each do |method|
+        expect(SyncStatusChannel).to respond_to(method)
+      end
+    end
+
+    it "has all required instance methods" do
+      instance_methods = [ :subscribed, :unsubscribed, :pause_updates, :resume_updates, :request_status ]
+
+      instance_methods.each do |method|
+        expect(SyncStatusChannel.instance_methods).to include(method)
+      end
+    end
+  end
+
+  describe "private method behaviors", unit: true do
+    describe "#can_access_session? behavior" do
+      context "missing connection session info" do
+        it "rejects subscription when connection session info is missing" do
+          stub_connection(current_session_info: nil)
+
+          # The subscription method calls can_access_session? which logs security events
+          # and then logs an unauthorized subscription message
+          allow(Rails.logger).to receive(:warn)
+
+          subscribe(session_id: sync_session.id)
+          expect(subscription).to be_rejected
+
+          # Verify that security logging occurred (either message is acceptable)
+          expect(Rails.logger).to have_received(:warn).at_least(:once)
+        end
+      end
+
+      context "test environment access" do
+        before do
+          stub_connection(current_session_info: {
+            session_id: "test_session_123",
+            verified_at: Time.current,
+            ip_address: "127.0.0.1"
+          })
+        end
+
+        it "allows access in test environment through subscription" do
+          subscribe(session_id: sync_session.id)
+          expect(subscription).to be_confirmed
+          expect(subscription).to have_stream_for(sync_session)
+        end
+      end
+
+      context "authentication edge cases" do
+        it "accepts subscription in test environment even with token requirements" do
+          sync_session.update!(session_token: "required_token")
+
+          stub_connection(current_session_info: {
+            session_id: "test_session_123",
+            ip_address: "192.168.1.100"
+          })
+
+          subscribe(session_id: sync_session.id)
+          expect(subscription).to be_confirmed
+        end
+
+        it "accepts subscription in test environment despite mismatched token" do
+          sync_session.update!(session_token: "correct_token")
+
+          stub_connection(current_session_info: {
+            session_id: "test_session_123",
+            ip_address: "192.168.1.100"
+          })
+
+          subscribe(session_id: sync_session.id, session_token: "wrong_token")
+          expect(subscription).to be_confirmed
+        end
+
+        it "accepts subscription for session with matching token in params" do
+          sync_session.update!(session_token: "valid_token")
+
+          stub_connection(current_session_info: {
+            session_id: "test_session_123",
+            ip_address: "192.168.1.100"
+          })
+
+          subscribe(session_id: sync_session.id, session_token: "valid_token")
+          expect(subscription).to be_confirmed
+        end
+
+        it "accepts subscription for session with matching token in connection info" do
+          sync_session.update!(session_token: "valid_token")
+
+          stub_connection(current_session_info: {
+            session_id: "test_session_123",
+            ip_address: "192.168.1.100",
+            sync_session_token: "valid_token"
+          })
+
+          subscribe(session_id: sync_session.id)
+          expect(subscription).to be_confirmed
+        end
+
+        it "accepts subscription for legacy session without tokens" do
+          sync_session.update!(session_token: nil)
+
+          stub_connection(current_session_info: {
+            session_id: "test_session_123",
+            ip_address: "192.168.1.100",
+            sync_session_id: sync_session.id
+          })
+
+          subscribe(session_id: sync_session.id)
+          expect(subscription).to be_confirmed
+        end
+      end
+    end
+
+    describe "#log_security_event behavior" do
+      it "logs security events during subscription failures" do
+        stub_connection(current_session_info: {
+          session_id: "test_session_123",
+          verified_at: Time.current,
+          ip_address: "127.0.0.1"
+        })
+
+        expect(Rails.logger).to receive(:warn).with(
+          match(/\[SECURITY\] Unauthorized SyncStatusChannel subscription/)
+        )
+
+        subscribe(session_id: 999999)
+        expect(subscription).to be_rejected
+      end
+    end
+
+    describe "#build_accounts_data behavior" do
+      it "includes account data in transmissions" do
+        email_account = create(:email_account)
+        sync_session_account = create(:sync_session_account,
+          sync_session: sync_session,
+          email_account: email_account,
+          processed_emails: 10,
+          total_emails: 20
+        )
+
+        stub_connection(current_session_info: {
+          session_id: "test_session_123",
+          verified_at: Time.current,
+          ip_address: "127.0.0.1"
+        })
+
+        subscribe(session_id: sync_session.id)
+
+        accounts_data = transmissions.last["accounts"]
+        expect(accounts_data).to be_an(Array)
+        expect(accounts_data.first).to include(
+          "id" => email_account.id,
+          "sync_id" => sync_session_account.id,
+          "email" => email_account.email,
+          "bank" => email_account.bank_name
+        )
+      end
+
+      it "handles empty accounts list in transmissions" do
+        sync_session.sync_session_accounts.destroy_all
+
+        stub_connection(current_session_info: {
+          session_id: "test_session_123",
+          verified_at: Time.current,
+          ip_address: "127.0.0.1"
+        })
+
+        subscribe(session_id: sync_session.id)
+
+        accounts_data = transmissions.last["accounts"]
+        expect(accounts_data).to eq([])
       end
     end
   end

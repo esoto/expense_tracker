@@ -145,7 +145,7 @@ class SyncSessionsController < ApplicationController
           redirect_to sync_sessions_path, alert: result.message || "Error al crear la sincronización"
         end
       end
-      format.json { render json: { error: result.message }, status: :unprocessable_entity }
+      format.json { render json: { error: result.message }, status: :unprocessable_content }
     end
   end
 

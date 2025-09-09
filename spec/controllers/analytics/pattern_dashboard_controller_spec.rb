@@ -160,22 +160,22 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
 
       it "handles week filter" do
         get :index, params: { time_period: "week" }
-        expect(assigns(:time_range).first).to be >= 1.week.ago
+        expect(assigns(:time_range).first).to be >= (1.week.ago - 1.second)
       end
 
       it "handles month filter" do
         get :index, params: { time_period: "month" }
-        expect(assigns(:time_range).first).to be >= 1.month.ago
+        expect(assigns(:time_range).first).to be >= (1.month.ago - 1.second)
       end
 
       it "handles quarter filter" do
         get :index, params: { time_period: "quarter" }
-        expect(assigns(:time_range).first).to be >= 3.months.ago
+        expect(assigns(:time_range).first).to be >= (3.months.ago - 1.second)
       end
 
       it "handles year filter" do
         get :index, params: { time_period: "year" }
-        expect(assigns(:time_range).first).to be >= 1.year.ago
+        expect(assigns(:time_range).first).to be >= (1.year.ago - 1.second)
       end
 
       it "handles custom date range" do
@@ -189,7 +189,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
 
       it "uses default range for invalid time period" do
         get :index, params: { time_period: "invalid" }
-        expect(assigns(:time_range).first).to be >= 30.days.ago
+        expect(assigns(:time_range).first).to be >= (30.days.ago - 1.second)
       end
     end
 

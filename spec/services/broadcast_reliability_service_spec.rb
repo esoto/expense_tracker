@@ -21,7 +21,7 @@ RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
       .and_return(false)
     
     # Mock sleep to prevent actual delays in tests
-    allow(described_class).to receive(:sleep)
+    allow(Kernel).to receive(:sleep)
   end
 
   describe '.broadcast_with_retry', integration: true do
@@ -161,12 +161,13 @@ RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
     context 'with invalid priority' do
       it 'raises InvalidPriorityError' do
         expect {
-          described_class.broadcast_with_retry(
+          result = described_class.broadcast_with_retry(
             channel: SyncStatusChannel,
             target: sync_session,
             data: test_data,
             priority: :invalid
           )
+          puts "UNEXPECTED: Got result: #{result.inspect}" if result
         }.to raise_error(BroadcastReliabilityService::InvalidPriorityError)
       end
     end

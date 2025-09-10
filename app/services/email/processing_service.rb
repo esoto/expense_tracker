@@ -556,8 +556,7 @@ module Email
 
         def apply_parsing_rule(rule)
           text = email_data[:html_body] || email_data[:text_body] || email_data[:body] || ""
-          # Fix encoding issues
-          text = text.force_encoding("UTF-8") if text.respond_to?(:force_encoding)
+          # The parsing rule will handle encoding issues internally
           parsed_data = rule.parse_email(text)
 
           return [] if parsed_data.empty? || !parsed_data[:amount]

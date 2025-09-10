@@ -200,7 +200,7 @@
   </svg>
   <h3 class="dashboard-expenses-empty-title mt-3 text-sm font-medium text-slate-900">No hay gastos</h3>
   <p class="dashboard-expenses-empty-text mt-1 text-sm text-slate-500">
-    <% if expense_filter_result && expense_filter_result.metadata[:filters_applied] > 0 %>
+    <% if expense_filter_result && expense_filter_result.metadata[:filters_applied].to_i > 0 %>
     No se encontraron gastos con los filtros aplicados.
     <% else %>
     Aún no tienes gastos registrados.

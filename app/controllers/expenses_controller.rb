@@ -175,11 +175,14 @@ class ExpensesController < ApplicationController
       @expense_quick_filters = @expense_filter_result.quick_filters
       @expense_view_mode = view_mode  # Use the normalized view_mode
       @expense_filter_performance = @expense_filter_result.performance_metrics
+      
+      # Log metadata for debugging
+      Rails.logger.debug "Dashboard loaded - Filters applied: #{@expense_filter_result.metadata[:filters_applied]}, Total expenses: #{@expense_filter_result.total_count}"
     else
       # Fallback to basic recent expenses if filter service fails
       @recent_expenses = dashboard_data[:recent_expenses]
       @expense_view_mode = "compact"
-      Rails.logger.error "Dashboard filter service failed, using fallback"
+      Rails.logger.error "Dashboard filter service failed with metadata: #{@expense_filter_result.metadata.inspect}, using fallback"
     end
 
     category_data = dashboard_data[:category_breakdown]

@@ -59,8 +59,8 @@
         <%= form_with url: sync_emails_expenses_path, method: :post, class: "space-y-4" do |form| %>
         <div class="flex flex-col space-y-2">
           <%= form.submit "Sincronizar Todos los Correos",
-                class: "w-full bg-teal-700 hover:bg-teal-800 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 #{@last_sync_info[:has_running_jobs] ? 'opacity-50 cursor-not-allowed' : ''}",
-                disabled: @last_sync_info[:has_running_jobs] %>
+                class: "w-full bg-teal-700 hover:bg-teal-800 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 #{@last_sync_info&.dig(:has_running_jobs) ? 'opacity-50 cursor-not-allowed' : ''}",
+                disabled: @last_sync_info&.dig(:has_running_jobs) %>
           <p class="text-xs text-slate-600">
             Busca nuevos gastos en todas las cuentas de correo activas
           </p>
@@ -76,8 +76,8 @@
             <%= form_with url: sync_emails_expenses_path, method: :post, class: "flex items-center space-x-2" do |form| %>
             <%= form.hidden_field :email_account_id, value: account.id %>
             <%= form.submit account.display_name.truncate(30),
-                      class: "text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 py-1 px-3 rounded transition-colors duration-200 #{@last_sync_info[:has_running_jobs] ? 'opacity-50 cursor-not-allowed' : ''}",
-                      disabled: @last_sync_info[:has_running_jobs] %>
+                      class: "text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 py-1 px-3 rounded transition-colors duration-200 #{@last_sync_info&.dig(:has_running_jobs) ? 'opacity-50 cursor-not-allowed' : ''}",
+                      disabled: @last_sync_info&.dig(:has_running_jobs) %>
             <% end %>
             <% end %>
           </div>
@@ -131,15 +131,15 @@
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              <% elsif @last_sync_info[account.id] %>
+              <% elsif @last_sync_info&.dig(account.id) %>
               <div class="w-2 h-2 bg-emerald-400 rounded-full"></div>
               <% else %>
               <div class="w-2 h-2 bg-slate-400 rounded-full"></div>
               <% end %>
             </div>
             <p class="text-xs text-slate-600 mt-1" data-progress-text>
-              <% if @last_sync_info[account.id] %>
-              Último: <%= format_datetime(@last_sync_info[account.id][:last_sync]) %>
+              <% if @last_sync_info&.dig(account.id) %>
+              Último: <%= format_datetime(@last_sync_info.dig(account.id, :last_sync)) %>
               <% else %>
               Sin datos
               <% end %>
@@ -152,7 +152,7 @@
       <p class="text-sm text-slate-600">No hay cuentas de correo configuradas.</p>
       <% end %>
 
-      <% if @last_sync_info[:has_running_jobs] %>
+      <% if @last_sync_info&.dig(:has_running_jobs) %>
       <div class="bg-teal-50 border border-teal-200 rounded-lg p-3">
         <div class="flex items-center">
           <svg class="animate-spin h-4 w-4 text-teal-700 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -160,7 +160,7 @@
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
           <span class="text-sm text-teal-800">
-            <%= @last_sync_info[:running_job_count] %> sincronización<%= 'es' if @last_sync_info[:running_job_count] != 1 %> en progreso
+            <%= @last_sync_info&.dig(:running_job_count) || 0 %> sincronización<%= 'es' if @last_sync_info&.dig(:running_job_count) != 1 %> en progreso
           </span>
         </div>
       </div>
@@ -472,9 +472,9 @@
     <div class="flex items-center justify-between">
       <div class="flex items-center space-x-4">
         <h2 class="text-lg font-semibold text-slate-900">Gastos Recientes</h2>
-        <% if @expense_filter_result && @expense_filter_result.metadata[:filters_applied] > 0 %>
+        <% if @expense_filter_result && @expense_filter_result.metadata[:filters_applied].to_i > 0 %>
         <span class="px-2 py-1 text-xs font-medium bg-teal-100 text-teal-700 rounded-full">
-          <%= @expense_filter_result.metadata[:filters_applied] %> filtros activos
+          <%= @expense_filter_result.metadata[:filters_applied].to_i %> filtros activos
         </span>
         <% end %>
       </div>
@@ -525,7 +525,7 @@
       </button>
       <% end %>
 
-      <% if @expense_filter_result && @expense_filter_result.metadata[:filters_applied] > 0 %>
+      <% if @expense_filter_result && @expense_filter_result.metadata[:filters_applied].to_i > 0 %>
       <button type="button" class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors" data-action="click->dashboard-expenses#clearFilters">
         <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -964,7 +964,7 @@
       </svg>
       <h3 class="dashboard-expenses-empty-title mt-3 text-sm font-medium text-slate-900">No hay gastos</h3>
       <p class="dashboard-expenses-empty-text mt-1 text-sm text-slate-500">
-        <% if @expense_filter_result && @expense_filter_result.metadata[:filters_applied] > 0 %>
+        <% if @expense_filter_result && @expense_filter_result.metadata[:filters_applied].to_i > 0 %>
         No se encontraron gastos con los filtros aplicados.
         <% else %>
         Aún no tienes gastos registrados.

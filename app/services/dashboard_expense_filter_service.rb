@@ -32,7 +32,7 @@ class DashboardExpenseFilterService < ExpenseFilterService
     end
 
     def has_filters?
-      metadata[:filters_applied] > 0
+      metadata[:filters_applied].to_i > 0
     end
 
     def to_json(*args)
@@ -108,7 +108,13 @@ class DashboardExpenseFilterService < ExpenseFilterService
     DashboardResult.new(
       expenses: [],
       total_count: 0,
-      metadata: { error: e.message },
+      metadata: { 
+        error: e.message,
+        filters_applied: 0,
+        page: @page || 1,
+        per_page: @per_page || DEFAULT_DASHBOARD_LIMIT,
+        dashboard_context: true
+      },
       performance_metrics: { error: true },
       view_mode: @view_mode
     )
@@ -265,6 +271,19 @@ class DashboardExpenseFilterService < ExpenseFilterService
         Arel.sql("COUNT(DISTINCT merchant_normalized)"),
         Arel.sql("COUNT(DISTINCT category_id)")
       )
+
+    # Handle case where pick returns nil (no records)
+    if stats.nil?
+      return {
+        total_count: 0,
+        total_amount: 0.0,
+        average_amount: 0.0,
+        min_amount: 0.0,
+        max_amount: 0.0,
+        unique_merchants: 0,
+        unique_categories: 0
+      }
+    end
 
     {
       total_count: stats[0] || 0,

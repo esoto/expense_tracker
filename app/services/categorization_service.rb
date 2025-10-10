@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Services
-  class Services::CategorizationService
+  class CategorizationService
   def categorize_expense(expense)
     return { category: nil, confidence: 0, method: "no_match", error: "Invalid expense" } if expense.nil?
 

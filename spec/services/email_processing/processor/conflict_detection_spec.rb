@@ -12,11 +12,11 @@ RSpec.describe 'Services::EmailProcessing::Processor - Conflict Detection', type
     let(:sync_session) { instance_double(SyncSession, id: 1) }
     let(:conflict_detector) { instance_double(Services::ConflictDetectionService) }
     let(:parsing_rule) { instance_double(ParsingRule) }
-    let(:parsing_strategy) { instance_double(EmailProcessing::Strategies::Regex) }
+    let(:parsing_strategy) { instance_double(Services::EmailProcessing::Strategies::Regex) }
 
     before do
       allow(ParsingRule).to receive_message_chain(:active, :for_bank, :first).and_return(parsing_rule)
-      allow(EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(parsing_strategy)
+      allow(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(parsing_strategy)
       allow(metrics_collector).to receive(:track_operation).and_yield
     end
 

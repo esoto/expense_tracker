@@ -251,7 +251,7 @@ module Services
   end
 
   def update_redis_analytics(metric_type, duration, success, email_account)
-    return unless defined?(RedisAnalyticsService)
+    return unless defined?(Services::RedisAnalyticsService)
 
     tags = {
       metric_type: metric_type,
@@ -261,12 +261,12 @@ module Services
     tags[:bank] = email_account.bank_name if email_account
 
     # Record in Redis for real-time analytics
-    RedisAnalyticsService.increment_counter(
+    Services::RedisAnalyticsService.increment_counter(
       "sync_metrics",
       tags: tags
     )
 
-    RedisAnalyticsService.record_timing(
+    Services::RedisAnalyticsService.record_timing(
       "sync_duration",
       duration / 1000.0, # Convert to seconds
       tags: tags

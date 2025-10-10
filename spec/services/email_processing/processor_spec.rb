@@ -576,14 +576,14 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
   describe '#detect_and_handle_conflict', integration: true do
     let(:email_data) { { body: 'Transaction details', date: Time.current } }
     let(:parsing_rule) { instance_double(ParsingRule) }
-    let(:parsing_strategy) { instance_double(EmailProcessing::Strategies::Regex) }
+    let(:parsing_strategy) { instance_double(Services::EmailProcessing::Strategies::Regex) }
     let(:sync_session) { instance_double(SyncSession) }
     let(:conflict_detector) { instance_double(Services::ConflictDetectionService) }
     let(:expense_data) { { amount: 100, description: 'Purchase' } }
 
     before do
       allow(ParsingRule).to receive_message_chain(:active, :for_bank, :first).and_return(parsing_rule)
-      allow(EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(parsing_strategy)
+      allow(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(parsing_strategy)
       allow(parsing_strategy).to receive(:parse_email).and_return(expense_data)
       allow(metrics_collector).to receive(:track_operation).and_yield
     end

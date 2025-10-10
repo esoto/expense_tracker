@@ -1,5 +1,5 @@
 module Services
-  class Services::ImapConnectionService
+  class ImapConnectionService
   class ConnectionError < StandardError; end
   class AuthenticationError < StandardError; end
   class SearchError < StandardError; end
@@ -144,7 +144,7 @@ module Services
 
   def add_error(message)
     @errors << message
-    Rails.logger.error "[ImapConnectionService] #{email_account.email}: #{message}"
+    Rails.logger.error "[Services::ImapConnectionService] #{email_account.email}: #{message}"
   end
   end
 end

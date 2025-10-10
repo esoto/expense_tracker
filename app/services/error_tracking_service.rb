@@ -3,7 +3,7 @@
 # Service for centralized error tracking and monitoring
 # Can be configured to use Sentry, Rollbar, or other error tracking services
 module Services
-  class Services::ErrorTrackingService
+  class ErrorTrackingService
   include Singleton
 
   SEVERITY_LEVELS = {

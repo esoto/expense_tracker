@@ -420,11 +420,11 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
         category_id: category.id
       }
     end
-    let(:categorization_service) { double("BulkOperations::CategorizationService") }
+    let(:categorization_service) { double("BulkOperations::Services::CategorizationService") }
     let(:service_result) { { success: true, message: "Categorized successfully", affected_count: 1, failures: [], background: false, job_id: nil } }
 
     before do
-      # Mock the BulkOperations::CategorizationService
+      # Mock the BulkOperations::Services::CategorizationService
       categorization_service_class = Class.new do
         def initialize(expense_ids:, category_id:, user:, options:)
           # Mock constructor that accepts the parameters
@@ -434,14 +434,14 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
           # Mock call method
         end
       end
-      stub_const("Services::BulkOperations::CategorizationService", categorization_service_class)
+      stub_const("Services::BulkOperations::Services::CategorizationService", categorization_service_class)
       allow(categorization_service_class).to receive(:new).and_return(categorization_service)
       allow(categorization_service).to receive(:call).and_return(service_result)
       allow(controller).to receive(:authorize_bulk_operation!).and_return(true)
     end
 
     it "uses the bulk categorization service" do
-      expect(BulkOperations::CategorizationService).to receive(:new).with(
+      expect(BulkOperations::Services::CategorizationService).to receive(:new).with(
         expense_ids: [ expense.id.to_s ],
         category_id: category.id.to_s,
         user: current_user_id, # Controller returns current_user_id from before block

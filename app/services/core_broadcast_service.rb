@@ -4,7 +4,7 @@
 # This service is focused only on performing the actual ActionCable broadcast operation.
 #
 # This is part of the architectural refactor to separate concerns from the monolithic
-# BroadcastReliabilityService into focused, testable components.
+# Services::BroadcastReliabilityService into focused, testable components.
 #
 # Usage:
 #   service = CoreBroadcastService.new(

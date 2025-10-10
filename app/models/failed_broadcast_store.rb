@@ -166,7 +166,7 @@ class FailedBroadcastStore < ApplicationRecord
       increment!(:retry_count)
 
       # Attempt the broadcast
-      success = BroadcastReliabilityService.broadcast_with_retry(
+      success = Services::BroadcastReliabilityService.broadcast_with_retry(
         channel: channel_name,
         target: target,
         data: data,

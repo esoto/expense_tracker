@@ -7,7 +7,7 @@ require "benchmark"
 # Performance target: < 100ms for calculations
 # SECURITY: All metrics are scoped to a specific email_account for data isolation
 module Services
-  class Services::MetricsCalculator
+  class MetricsCalculator
   CACHE_EXPIRY = 1.hour
   SUPPORTED_PERIODS = %i[day week month year].freeze
 

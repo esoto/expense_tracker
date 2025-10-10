@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-# BroadcastReliabilityService provides reliable message broadcasting with retry mechanisms
+# Services::BroadcastReliabilityService provides reliable message broadcasting with retry mechanisms
 # and priority-based queuing for ActionCable messages. This service ensures critical
 # sync status updates are delivered even when the broadcasting infrastructure encounters issues.
 #
 # Usage:
 #   # Direct broadcasting with retry
-#   BroadcastReliabilityService.broadcast_with_retry(
+#   Services::BroadcastReliabilityService.broadcast_with_retry(
 #     channel: SyncStatusChannel,
 #     target: sync_session,
 #     data: { status: 'processing' },
@@ -14,7 +14,7 @@
 #   )
 #
 #   # Queued broadcasting via Sidekiq
-#   BroadcastReliabilityService.queue_broadcast(
+#   Services::BroadcastReliabilityService.queue_broadcast(
 #     channel: 'SyncStatusChannel',
 #     target_id: sync_session.id,
 #     target_type: 'SyncSession',
@@ -22,7 +22,7 @@
 #     priority: :high
 #   )
 module Services
-  class Services::BroadcastReliabilityService
+  class BroadcastReliabilityService
   # Priority levels determine retry behavior and queue priority
   PRIORITIES = {
     critical: { max_retries: 5, backoff_base: 0.5, queue: "critical" },
@@ -286,14 +286,14 @@ module Services
       event_data = {
         event_type: event_type,
         timestamp: Time.current.iso8601,
-        service: "BroadcastReliabilityService"
+        service: "Services::BroadcastReliabilityService"
       }.merge(data)
 
       Rails.logger.warn "[BROADCAST_SECURITY_EVENT] #{event_type}: #{event_data.to_json}"
 
       # Store security events for analysis (could be sent to security monitoring system)
       begin
-        RedisAnalyticsService.increment_counter(
+        Services::RedisAnalyticsService.increment_counter(
           "security_events",
           tags: { event_type: event_type, service: "broadcast" }
         )

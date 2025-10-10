@@ -16,7 +16,7 @@
 #   BroadcastFeatureFlags.enabled_for_user?(:new_rate_limiting, user_id: 123)
 #   BroadcastFeatureFlags.with_fallback(:redis_metrics) { risky_operation }
 module Services
-  class Services::BroadcastFeatureFlags
+  class BroadcastFeatureFlags
   # Feature flag definitions with their configurations
   FEATURES = {
     # Redis-powered analytics
@@ -418,7 +418,7 @@ module Services
     # @param error [String] Error message if failed
     def record_feature_analytics(feature, result, error: nil)
       begin
-        RedisAnalyticsService.increment_counter(
+        Services::RedisAnalyticsService.increment_counter(
           "feature_usage",
           tags: {
             feature: feature.to_s,

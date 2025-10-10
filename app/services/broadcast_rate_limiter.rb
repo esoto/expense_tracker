@@ -21,7 +21,7 @@
 #     retry_after = limiter.retry_after
 #   end
 module Services
-  class Services::BroadcastRateLimiter
+  class BroadcastRateLimiter
   # Rate limit configurations by priority
   RATE_LIMITS = {
     critical: { requests: 100, window: 1.minute, burst: 20 },

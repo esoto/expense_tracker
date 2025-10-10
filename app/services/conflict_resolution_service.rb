@@ -1,5 +1,5 @@
 module Services
-  class Services::ConflictResolutionService
+  class ConflictResolutionService
   attr_reader :sync_conflict, :errors
 
   def initialize(sync_conflict)

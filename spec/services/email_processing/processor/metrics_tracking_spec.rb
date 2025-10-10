@@ -106,7 +106,7 @@ RSpec.describe 'Services::EmailProcessing::Processor - Metrics Tracking', type: 
       let(:sync_session) { instance_double(SyncSession) }
       let(:conflict_detector) { instance_double(Services::ConflictDetectionService) }
       let(:parsing_rule) { instance_double(ParsingRule) }
-      let(:parsing_strategy) { instance_double(EmailProcessing::Strategies::Regex) }
+      let(:parsing_strategy) { instance_double(Services::EmailProcessing::Strategies::Regex) }
       let(:email_data) {
         {
           body: 'Transaction: $50.00 at Store ABC',
@@ -119,7 +119,7 @@ RSpec.describe 'Services::EmailProcessing::Processor - Metrics Tracking', type: 
       before do
         allow(SyncSession).to receive_message_chain(:active, :last).and_return(sync_session)
         allow(ParsingRule).to receive_message_chain(:active, :for_bank, :first).and_return(parsing_rule)
-        allow(EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(parsing_strategy)
+        allow(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(parsing_strategy)
         allow(parsing_strategy).to receive(:parse_email).and_return({
           amount: 50.00,
           description: 'Store ABC',

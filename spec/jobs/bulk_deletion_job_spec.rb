@@ -199,8 +199,8 @@ RSpec.describe BulkDeletionJob, type: :job, unit: true do
   end
 
   describe '#service_class' do
-    it 'returns BulkOperations::DeletionService' do
-      expect(job.send(:service_class)).to eq(BulkOperations::DeletionService)
+    it 'returns Services::BulkOperations::DeletionService' do
+      expect(job.send(:service_class)).to eq(Services::BulkOperations::DeletionService)
     end
   end
 

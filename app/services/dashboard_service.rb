@@ -1,5 +1,5 @@
 module Services
-  class Services::DashboardService
+  class DashboardService
   CACHE_EXPIRY = 5.minutes
 
   def initialize

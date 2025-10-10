@@ -16,7 +16,7 @@ module Services::EmailProcessing
       return nil unless parsing_rule
 
       begin
-        parsing_strategy = EmailProcessing::StrategyFactory.create_strategy(parsing_rule, email_content: email_content)
+        parsing_strategy = Services::EmailProcessing::StrategyFactory.create_strategy(parsing_rule, email_content: email_content)
         parsed_data = parsing_strategy.parse_email(email_content)
 
         if valid_parsed_data?(parsed_data)
@@ -121,19 +121,19 @@ module Services::EmailProcessing
     end
 
     def set_currency(expense, parsed_data)
-      currency_detector = CurrencyDetectorService.new(email_content: email_content)
+      currency_detector = Services::CurrencyDetectorService.new(email_content: email_content)
       currency_detector.apply_currency_to_expense(expense, parsed_data)
     end
 
     def guess_category(expense)
-      category_guesser = CategoryGuesserService.new
+      category_guesser = Services::CategoryGuesserService.new
       category_guesser.guess_category_for_expense(expense)
     end
 
     def add_error(message)
       @errors << message
       email_info = email_account&.email || "unknown"
-      Rails.logger.error "[EmailProcessing::Parser] #{email_info}: #{message}"
+      Rails.logger.error "[Services::EmailProcessing::Parser] #{email_info}: #{message}"
     end
 
     def process_large_email(content)

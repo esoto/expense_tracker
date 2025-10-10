@@ -61,7 +61,7 @@ class Api::WebhooksController < ApplicationController
   end
 
   def expense_summary
-    service = ExpenseSummaryService.new(params[:period])
+    service = Services::ExpenseSummaryService.new(params[:period])
 
     render json: {
       status: "success",

@@ -732,7 +732,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, performance: t
 
     context 'when strategy raises an error' do
       before do
-        allow_any_instance_of(EmailProcessing::Strategies::Regex).to receive(:parse_email).and_raise(StandardError, "Parse error")
+        allow_any_instance_of(Services::EmailProcessing::Strategies::Regex).to receive(:parse_email).and_raise(StandardError, "Parse error")
       end
 
       it 'captures the error and returns nil' do

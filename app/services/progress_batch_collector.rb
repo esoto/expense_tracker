@@ -273,7 +273,7 @@ module Services
   # @param update_data [Hash] Critical update data
   def broadcast_critical_update(update_data)
     begin
-      BroadcastReliabilityService.broadcast_with_retry(
+      Services::BroadcastReliabilityService.broadcast_with_retry(
         channel: SyncStatusChannel,
         target: sync_session,
         data: update_data,
@@ -323,7 +323,7 @@ module Services
     # Use the most recent progress update
     latest_update = updates.max_by { |u| u[:timestamp] }
 
-    BroadcastReliabilityService.broadcast_with_retry(
+    Services::BroadcastReliabilityService.broadcast_with_retry(
       channel: SyncStatusChannel,
       target: sync_session,
       data: {
@@ -344,7 +344,7 @@ module Services
                             .transform_values { |updates| updates.max_by { |u| u[:timestamp] } }
 
     account_updates.each do |account_id, update|
-      BroadcastReliabilityService.broadcast_with_retry(
+      Services::BroadcastReliabilityService.broadcast_with_retry(
         channel: SyncStatusChannel,
         target: sync_session,
         data: update.merge(type: "account_update"),
@@ -356,7 +356,7 @@ module Services
   # Broadcast batched activity updates
   # @param updates [Array<Hash>] Activity updates
   def broadcast_activity_batch(updates)
-    BroadcastReliabilityService.broadcast_with_retry(
+    Services::BroadcastReliabilityService.broadcast_with_retry(
       channel: SyncStatusChannel,
       target: sync_session,
       data: {
@@ -374,7 +374,7 @@ module Services
   def broadcast_individual_update(update)
     priority = update[:critical] ? :high : :medium
 
-    BroadcastReliabilityService.broadcast_with_retry(
+    Services::BroadcastReliabilityService.broadcast_with_retry(
       channel: SyncStatusChannel,
       target: sync_session,
       data: update,

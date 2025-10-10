@@ -41,14 +41,14 @@ module Services::BulkCategorization
       # Don't track this as an error since it's a validation failure
       failure_result(e.message)
     rescue ActiveRecord::RecordInvalid => e
-      ErrorTrackingService.track_bulk_operation_error("categorization", e, {
+      Services::ErrorTrackingService.track_bulk_operation_error("categorization", e, {
         expense_count: expense_ids.count,
         category_id: category_id,
         user_id: user_id
       })
       failure_result(e.message)
     rescue StandardError => e
-      ErrorTrackingService.track_bulk_operation_error("categorization", e, {
+      Services::ErrorTrackingService.track_bulk_operation_error("categorization", e, {
         expense_count: expense_ids.count,
         category_id: category_id,
         user_id: user_id,

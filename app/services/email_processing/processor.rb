@@ -269,7 +269,7 @@ module Services::EmailProcessing
       return false unless parsing_rule
 
       begin
-        parsing_strategy = EmailProcessing::StrategyFactory.create_strategy(parsing_rule, email_content: email_data[:body])
+        parsing_strategy = Services::EmailProcessing::StrategyFactory.create_strategy(parsing_rule, email_content: email_data[:body])
         expense_data = parsing_strategy.parse_email(email_data[:body])
       rescue => e
         Rails.logger.error "[EmailProcessing::Processor] Error parsing email: #{e.message}"

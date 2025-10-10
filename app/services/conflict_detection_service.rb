@@ -1,5 +1,5 @@
 module Services
-  class Services::ConflictDetectionService
+  class ConflictDetectionService
   attr_reader :sync_session, :errors, :metrics_collector
 
   DUPLICATE_THRESHOLD = 90.0 # 90% similarity = duplicate

@@ -23,7 +23,7 @@ class SyncSessionsController < ApplicationController
   end
 
   def create
-    result = SyncSessionCreator.new(sync_params, request_info).call
+    result = Services::SyncSessionCreator.new(sync_params, request_info).call
 
     if result.success?
       @sync_session = result.sync_session

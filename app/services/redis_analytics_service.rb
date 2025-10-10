@@ -3,7 +3,7 @@
 require "redis"
 require "connection_pool"
 
-# RedisAnalyticsService provides direct Redis access for high-performance analytics
+# Services::RedisAnalyticsService provides direct Redis access for high-performance analytics
 # and time-series data storage, bypassing Rails cache for better performance
 # and more sophisticated Redis features.
 #
@@ -15,9 +15,9 @@ require "connection_pool"
 # - Cluster-ready design patterns
 #
 # Usage:
-#   RedisAnalyticsService.increment_counter('broadcast_success', tags: { channel: 'SyncStatus' })
-#   RedisAnalyticsService.record_timing('broadcast_duration', 0.123, tags: { priority: 'high' })
-#   RedisAnalyticsService.get_time_series('broadcast_success', window: 1.hour)
+#   Services::RedisAnalyticsService.increment_counter('broadcast_success', tags: { channel: 'SyncStatus' })
+#   Services::RedisAnalyticsService.record_timing('broadcast_duration', 0.123, tags: { priority: 'high' })
+#   Services::RedisAnalyticsService.get_time_series('broadcast_success', window: 1.hour)
 module Services
   class RedisAnalyticsService
   # Redis key prefixes for different data types

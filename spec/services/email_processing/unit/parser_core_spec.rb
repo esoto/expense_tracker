@@ -48,7 +48,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
   end
 
   describe '#parse_expense' do
-    let(:strategy) { instance_double(EmailProcessing::Strategies::Regex) }
+    let(:strategy) { instance_double(Services::EmailProcessing::Strategies::Regex) }
     let(:parsed_data) do
       {
         amount: BigDecimal('100.00'),
@@ -59,7 +59,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
     end
 
     before do
-      allow(EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(strategy)
+      allow(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(strategy)
       allow(strategy).to receive(:parse_email).and_return(parsed_data)
     end
 
@@ -73,7 +73,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       end
 
       it 'does not create strategy' do
-        expect(EmailProcessing::StrategyFactory).not_to receive(:create_strategy)
+        expect(Services::EmailProcessing::StrategyFactory).not_to receive(:create_strategy)
         parser.parse_expense
       end
     end
@@ -87,7 +87,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       end
 
       it 'creates strategy with parsing rule and email content' do
-        expect(EmailProcessing::StrategyFactory).to receive(:create_strategy)
+        expect(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy)
           .with(parsing_rule, email_content: anything)
         parser.parse_expense
       end
@@ -153,7 +153,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
 
     context 'when StrategyFactory raises error' do
       before do
-        allow(EmailProcessing::StrategyFactory).to receive(:create_strategy)
+        allow(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy)
           .and_raise(ArgumentError, 'Invalid strategy')
       end
 

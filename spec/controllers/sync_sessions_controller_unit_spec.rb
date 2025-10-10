@@ -6,7 +6,7 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
 
   before do
     # Mock service classes to avoid actual implementation calls
-    allow(SyncSessionCreator).to receive(:new).and_return(double(call: double(success?: true, sync_session: sync_session)))
+    allow(Services::SyncSessionCreator).to receive(:new).and_return(double(call: double(success?: true, sync_session: sync_session)))
     allow(SyncSessionRetryService).to receive(:new).and_return(double(call: double(success?: true, sync_session: sync_session)))
     allow(SyncSessionPerformanceOptimizer).to receive(:preload_for_index).and_return([ sync_session ])
     allow(SyncSessionPerformanceOptimizer).to receive(:preload_for_show).and_return([])
@@ -81,7 +81,7 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
     let(:creation_result) { double("result", success?: true, sync_session: sync_session) }
 
     before do
-      allow(SyncSessionCreator).to receive(:new).and_return(sync_creator)
+      allow(Services::SyncSessionCreator).to receive(:new).and_return(sync_creator)
       allow(sync_creator).to receive(:call).and_return(creation_result)
       allow(controller).to receive(:prepare_widget_data)
       allow(controller).to receive(:respond_to).and_yield(double(turbo_stream: nil, html: nil, json: nil))
@@ -91,7 +91,7 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
       let(:valid_params) { { email_account_id: email_account.id, since: "2023-01-01" } }
 
       it "creates sync session with proper service" do
-        expect(SyncSessionCreator).to receive(:new).with(
+        expect(Services::SyncSessionCreator).to receive(:new).with(
           hash_including("email_account_id" => email_account.id.to_s, "since" => "2023-01-01"),
           hash_including(:ip_address, :user_agent, :session_id, :source)
         )

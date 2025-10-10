@@ -4,7 +4,7 @@ module Services::EmailProcessing
 
     def initialize(email_account, imap_service: nil, email_processor: nil, sync_session_account: nil, metrics_collector: nil)
       @email_account = email_account
-      @imap_service = imap_service || ImapConnectionService.new(email_account)
+      @imap_service = imap_service || Services::ImapConnectionService.new(email_account)
       @email_processor = email_processor || EmailProcessing::Processor.new(email_account, metrics_collector: metrics_collector)
       @sync_session_account = sync_session_account
       @metrics_collector = metrics_collector
@@ -23,7 +23,7 @@ module Services::EmailProcessing
           total_emails_found: result[:total_emails_found],
           errors: @errors
         )
-      rescue ImapConnectionService::ConnectionError, ImapConnectionService::AuthenticationError => e
+      rescue Services::ImapConnectionService::ConnectionError, Services::ImapConnectionService::AuthenticationError => e
         add_error("IMAP Error: #{e.message}")
         EmailProcessing::FetcherResponse.failure(errors: @errors)
       rescue StandardError => e
@@ -93,7 +93,7 @@ module Services::EmailProcessing
 
             last_detected = detected_expenses
           rescue => e
-            Rails.logger.error "[EmailProcessing::Fetcher] Failed to update progress: #{e.message}"
+            Rails.logger.error "[Services::EmailProcessing::Fetcher] Failed to update progress: #{e.message}"
             # Continue processing even if progress update fails
           end
         end
@@ -116,7 +116,7 @@ module Services::EmailProcessing
 
     def add_error(message)
       @errors << message
-      Rails.logger.error "[EmailProcessing::Fetcher] #{email_account&.email || 'Unknown'}: #{message}"
+      Rails.logger.error "[Services::EmailProcessing::Fetcher] #{email_account&.email || 'Unknown'}: #{message}"
     end
 
     def format_expense_message(expense)

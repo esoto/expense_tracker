@@ -59,14 +59,14 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
     allow(default_analyzer).to receive(:time_range).and_return(1.week.ago..Time.current)  # For exporter
 
     controller.instance_variable_set(:@analyzer, default_analyzer)
-    allow(::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(default_analyzer)
+    allow(::Services::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(default_analyzer)
   end
 
   describe "GET #index" do
     include_context "analytics mocking"
 
     before do
-      allow(::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(mock_analyzer)
+      allow(::Services::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(mock_analyzer)
 
       # Mock Rails cache
       allow(Rails.cache).to receive(:fetch).with(any_args).and_yield
@@ -85,7 +85,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
       }
 
       expect(assigns(:analyzer)).to eq(mock_analyzer)
-      expect(Analytics::PatternPerformanceAnalyzer).to have_received(:new).with(
+      expect(Services::Analytics::PatternPerformanceAnalyzer).to have_received(:new).with(
         time_range: anything,
         category_id: category.id.to_s,
         pattern_type: "merchant"
@@ -216,7 +216,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
     let(:trend_data) { { daily: [ { date: "2023-01-01", accuracy: 95.2 } ] } }
 
     before do
-      allow(::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(mock_analyzer)
+      allow(::Services::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(mock_analyzer)
       allow(mock_analyzer).to receive(:trend_analysis).and_return(trend_data)
       allow(Rails.cache).to receive(:fetch).with(any_args).and_yield
 
@@ -266,7 +266,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
     let(:heatmap_data) { { hour_12: 20, hour_15: 35, hour_18: 42 } }
 
     before do
-      allow(::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(mock_analyzer)
+      allow(::Services::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(mock_analyzer)
       allow(mock_analyzer).to receive(:usage_heatmap).and_return(heatmap_data)
       allow(Rails.cache).to receive(:fetch).with(any_args).and_yield
 
@@ -326,7 +326,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
     let(:overall_metrics) { { total_patterns: 2 } }
 
     before do
-      allow(::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(mock_analyzer)
+      allow(::Services::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(mock_analyzer)
       allow(mock_analyzer).to receive(:overall_metrics).and_return(overall_metrics)
       allow(::Analytics::DashboardExporter).to receive(:new).and_return(mock_exporter)
       allow(controller).to receive(:send_data)
@@ -438,7 +438,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
         allow(controller).to receive(:require_analytics_permission).and_return(true)
 
         # Mock the analyzer consistently
-        allow(::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(refresh_mock_analyzer)
+        allow(::Services::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(refresh_mock_analyzer)
         allow(refresh_mock_analyzer).to receive(:overall_metrics).and_return(overall_metrics)
         allow(refresh_mock_analyzer).to receive(:category_performance).and_return(category_performance)
         allow(refresh_mock_analyzer).to receive(:recent_activity).and_return(recent_activity)
@@ -651,7 +651,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
     let(:performance_recent_activity) { [ { pattern_id: 1, action: "applied" } ] }
 
     before do
-      allow(::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(performance_mock_analyzer)
+      allow(::Services::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(performance_mock_analyzer)
       allow(performance_mock_analyzer).to receive(:overall_metrics).and_return(performance_overall_metrics)
       allow(performance_mock_analyzer).to receive(:category_performance).and_return(performance_category_performance)
       allow(performance_mock_analyzer).to receive(:pattern_type_analysis).and_return({ merchant: 5 })
@@ -718,7 +718,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
     let(:audit_overall_metrics) { { total_patterns: 1 } }
 
     before do
-      allow(::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(audit_mock_analyzer)
+      allow(::Services::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(audit_mock_analyzer)
       allow(audit_mock_analyzer).to receive(:overall_metrics).and_return(audit_overall_metrics)
       allow(::Analytics::DashboardExporter).to receive(:new).and_return(audit_mock_exporter)
       allow(audit_mock_exporter).to receive(:export).and_return(audit_csv_data)
@@ -772,8 +772,8 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
   describe "Enhanced Error Handling", unit: true do
     describe "database query failures" do
       it "handles database errors gracefully in heatmap" do
-        analyzer = instance_double(Analytics::PatternPerformanceAnalyzer)
-        allow(Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(analyzer)
+        analyzer = instance_double(Services::Analytics::PatternPerformanceAnalyzer)
+        allow(Services::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(analyzer)
         allow(analyzer).to receive(:usage_heatmap).and_return({})
 
         get :heatmap, format: :json
@@ -782,8 +782,8 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
       end
 
       it "returns empty array on trends error" do
-        analyzer = instance_double(Analytics::PatternPerformanceAnalyzer)
-        allow(Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(analyzer)
+        analyzer = instance_double(Services::Analytics::PatternPerformanceAnalyzer)
+        allow(Services::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(analyzer)
         allow(analyzer).to receive(:trend_analysis).and_return([])
 
         get :trends, format: :json

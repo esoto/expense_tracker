@@ -1,5 +1,5 @@
 module Services
-  class Services::ExpenseSummaryService
+  class ExpenseSummaryService
   VALID_PERIODS = %w[week month year].freeze
   DEFAULT_PERIOD = "month".freeze
 

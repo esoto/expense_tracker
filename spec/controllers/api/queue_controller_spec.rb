@@ -5,8 +5,8 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
     # Mock authentication - allow access in test environment
     allow(controller).to receive(:authenticate_queue_access!).and_return(true)
 
-    # Mock the QueueMonitor service
-    allow(QueueMonitor).to receive(:queue_status).and_return({
+    # Mock the Services::QueueMonitor service
+    allow(Services::QueueMonitor).to receive(:queue_status).and_return({
       pending: 10,
       processing: 2,
       completed: 100,
@@ -25,22 +25,22 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
       worker_status: { healthy: 3, total: 4 }
     })
 
-    allow(QueueMonitor).to receive(:detailed_metrics).and_return({
+    allow(Services::QueueMonitor).to receive(:detailed_metrics).and_return({
       throughput: 25.0,
       average_wait_time: 1.2,
       success_rate: 98.5,
       error_rate: 1.5
     })
 
-    allow(QueueMonitor).to receive(:calculate_health_status).and_return({
+    allow(Services::QueueMonitor).to receive(:calculate_health_status).and_return({
       status: "healthy",
       message: "All systems operational"
     })
 
-    allow(QueueMonitor).to receive(:pending_jobs_count).and_return(10)
-    allow(QueueMonitor).to receive(:processing_jobs_count).and_return(2)
-    allow(QueueMonitor).to receive(:failed_jobs_count).and_return(1)
-    allow(QueueMonitor).to receive(:worker_status).and_return({ healthy: 3, total: 4 })
+    allow(Services::QueueMonitor).to receive(:pending_jobs_count).and_return(10)
+    allow(Services::QueueMonitor).to receive(:processing_jobs_count).and_return(2)
+    allow(Services::QueueMonitor).to receive(:failed_jobs_count).and_return(1)
+    allow(Services::QueueMonitor).to receive(:worker_status).and_return({ healthy: 3, total: 4 })
   end
 
   describe "GET #status" do
@@ -87,8 +87,8 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
   describe "POST #pause" do
     context "when pausing all queues" do
       before do
-        allow(QueueMonitor).to receive(:pause_queue).with(nil).and_return(true)
-        allow(QueueMonitor).to receive(:paused_queues).and_return([ "default", "high_priority" ])
+        allow(Services::QueueMonitor).to receive(:pause_queue).with(nil).and_return(true)
+        allow(Services::QueueMonitor).to receive(:paused_queues).and_return([ "default", "high_priority" ])
       end
 
       it "pauses all queues successfully" do
@@ -107,8 +107,8 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
 
     context "when pausing specific queue" do
       before do
-        allow(QueueMonitor).to receive(:pause_queue).with("default").and_return(true)
-        allow(QueueMonitor).to receive(:paused_queues).and_return([ "default" ])
+        allow(Services::QueueMonitor).to receive(:pause_queue).with("default").and_return(true)
+        allow(Services::QueueMonitor).to receive(:paused_queues).and_return([ "default" ])
       end
 
       it "pauses specific queue successfully" do
@@ -127,7 +127,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
 
     context "when pause operation fails" do
       before do
-        allow(QueueMonitor).to receive(:pause_queue).and_return(false)
+        allow(Services::QueueMonitor).to receive(:pause_queue).and_return(false)
       end
 
       it "returns error response" do
@@ -145,8 +145,8 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
   describe "POST #resume" do
     context "when resuming all queues" do
       before do
-        allow(QueueMonitor).to receive(:resume_queue).with(nil).and_return(true)
-        allow(QueueMonitor).to receive(:paused_queues).and_return([])
+        allow(Services::QueueMonitor).to receive(:resume_queue).with(nil).and_return(true)
+        allow(Services::QueueMonitor).to receive(:paused_queues).and_return([])
       end
 
       it "resumes all queues successfully" do
@@ -165,8 +165,8 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
 
     context "when resuming specific queue" do
       before do
-        allow(QueueMonitor).to receive(:resume_queue).with("default").and_return(true)
-        allow(QueueMonitor).to receive(:paused_queues).and_return([ "high_priority" ])
+        allow(Services::QueueMonitor).to receive(:resume_queue).with("default").and_return(true)
+        allow(Services::QueueMonitor).to receive(:paused_queues).and_return([ "high_priority" ])
       end
 
       it "resumes specific queue successfully" do
@@ -184,7 +184,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
 
     context "when resume operation fails" do
       before do
-        allow(QueueMonitor).to receive(:resume_queue).and_return(false)
+        allow(Services::QueueMonitor).to receive(:resume_queue).and_return(false)
       end
 
       it "returns error response" do
@@ -204,7 +204,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
       before do
         job = double("SolidQueue::Job", id: 123)
         allow(SolidQueue::Job).to receive(:find_by).with(id: "123").and_return(job)
-        allow(QueueMonitor).to receive(:retry_failed_job).with("123").and_return(true)
+        allow(Services::QueueMonitor).to receive(:retry_failed_job).with("123").and_return(true)
       end
 
       it "retries job successfully" do
@@ -241,7 +241,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
       before do
         job = double("SolidQueue::Job", id: 123)
         allow(SolidQueue::Job).to receive(:find_by).with(id: "123").and_return(job)
-        allow(QueueMonitor).to receive(:retry_failed_job).with("123").and_return(false)
+        allow(Services::QueueMonitor).to receive(:retry_failed_job).with("123").and_return(false)
       end
 
       it "returns error response" do
@@ -261,7 +261,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
       before do
         job = double("SolidQueue::Job", id: 123)
         allow(SolidQueue::Job).to receive(:find_by).with(id: "123").and_return(job)
-        allow(QueueMonitor).to receive(:clear_failed_job).with("123").and_return(true)
+        allow(Services::QueueMonitor).to receive(:clear_failed_job).with("123").and_return(true)
       end
 
       it "clears job successfully" do
@@ -298,7 +298,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
   describe "POST #retry_all_failed" do
     context "when there are failed jobs to retry" do
       before do
-        allow(QueueMonitor).to receive(:retry_all_failed_jobs).and_return(5)
+        allow(Services::QueueMonitor).to receive(:retry_all_failed_jobs).and_return(5)
       end
 
       it "retries all failed jobs successfully" do
@@ -317,7 +317,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
 
     context "when there are no failed jobs" do
       before do
-        allow(QueueMonitor).to receive(:retry_all_failed_jobs).and_return(0)
+        allow(Services::QueueMonitor).to receive(:retry_all_failed_jobs).and_return(0)
       end
 
       it "returns error response" do
@@ -380,7 +380,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
 
     context "when queue system has warnings" do
       before do
-        allow(QueueMonitor).to receive(:calculate_health_status).and_return({
+        allow(Services::QueueMonitor).to receive(:calculate_health_status).and_return({
           status: "warning",
           message: "High queue depth detected"
         })
@@ -399,7 +399,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
 
     context "when queue system is critical" do
       before do
-        allow(QueueMonitor).to receive(:calculate_health_status).and_return({
+        allow(Services::QueueMonitor).to receive(:calculate_health_status).and_return({
           status: "critical",
           message: "Queue processing has stopped"
         })
@@ -450,8 +450,8 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
       end
 
       it "allows access with valid token" do
-        allow(QueueMonitor).to receive(:pause_queue).and_return(true)
-        allow(QueueMonitor).to receive(:paused_queues).and_return([])
+        allow(Services::QueueMonitor).to receive(:pause_queue).and_return(true)
+        allow(Services::QueueMonitor).to receive(:paused_queues).and_return([])
 
         post :pause, format: :json
 

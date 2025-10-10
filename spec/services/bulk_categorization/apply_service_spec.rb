@@ -47,7 +47,7 @@ RSpec.describe Services::BulkCategorization::ApplyService, type: :service, unit:
     allow(BulkOperationItem).to receive(:create!)
 
     # Stub error tracking
-    allow(ErrorTrackingService).to receive(:track_bulk_operation_error)
+    allow(Services::ErrorTrackingService).to receive(:track_bulk_operation_error)
 
     # Stub pattern learning
     allow(Categorization::PatternLearner).to receive(:new).and_return(pattern_learner)
@@ -166,8 +166,8 @@ RSpec.describe Services::BulkCategorization::ApplyService, type: :service, unit:
         expect(result.message).to eq("An error occurred while categorizing expenses")
       end
 
-      it "tracks error with ErrorTrackingService", unit: true do
-        expect(ErrorTrackingService).to receive(:track_bulk_operation_error).with(
+      it "tracks error with Services::ErrorTrackingService", unit: true do
+        expect(Services::ErrorTrackingService).to receive(:track_bulk_operation_error).with(
           "categorization",
           instance_of(ActiveRecord::RecordNotFound),
           hash_including(
@@ -515,8 +515,8 @@ RSpec.describe Services::BulkCategorization::ApplyService, type: :service, unit:
         expect(result.message).to eq("An error occurred while categorizing expenses")
       end
 
-      it "tracks error with ErrorTrackingService", unit: true do
-        expect(ErrorTrackingService).to receive(:track_bulk_operation_error).with(
+      it "tracks error with Services::ErrorTrackingService", unit: true do
+        expect(Services::ErrorTrackingService).to receive(:track_bulk_operation_error).with(
           "categorization",
           instance_of(StandardError),
           hash_including(

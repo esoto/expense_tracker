@@ -366,8 +366,8 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
   describe "GET #expense_summary" do
     before do
       # Mock the service
-      summary_service = double("ExpenseSummaryService")
-      allow(ExpenseSummaryService).to receive(:new).and_return(summary_service)
+      summary_service = double("Services::ExpenseSummaryService")
+      allow(Services::ExpenseSummaryService).to receive(:new).and_return(summary_service)
       allow(summary_service).to receive(:period).and_return("month")
       allow(summary_service).to receive(:summary).and_return({
         total_amount: 1250.00,
@@ -389,21 +389,21 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
     end
 
     it "passes period parameter to service" do
-      expect(ExpenseSummaryService).to receive(:new).with("week")
+      expect(Services::ExpenseSummaryService).to receive(:new).with("week")
 
       get :expense_summary, params: { period: "week" }
     end
 
     context "error handling" do
       it "handles service initialization failures" do
-        allow(ExpenseSummaryService).to receive(:new).and_raise(StandardError.new("Service error"))
+        allow(Services::ExpenseSummaryService).to receive(:new).and_raise(StandardError.new("Service error"))
 
         expect { get :expense_summary }.to raise_error(StandardError, "Service error")
       end
 
       it "handles service method failures" do
-        summary_service = double("ExpenseSummaryService")
-        allow(ExpenseSummaryService).to receive(:new).and_return(summary_service)
+        summary_service = double("Services::ExpenseSummaryService")
+        allow(Services::ExpenseSummaryService).to receive(:new).and_return(summary_service)
         allow(summary_service).to receive(:period).and_raise(StandardError.new("Period error"))
 
         expect { get :expense_summary }.to raise_error(StandardError, "Period error")
@@ -412,19 +412,19 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
 
     context "parameter validation" do
       it "handles nil period parameter" do
-        expect(ExpenseSummaryService).to receive(:new).with("")
+        expect(Services::ExpenseSummaryService).to receive(:new).with("")
 
         get :expense_summary, params: { period: nil }
       end
 
       it "handles empty string period parameter" do
-        expect(ExpenseSummaryService).to receive(:new).with("")
+        expect(Services::ExpenseSummaryService).to receive(:new).with("")
 
         get :expense_summary, params: { period: "" }
       end
 
       it "handles invalid period parameter" do
-        expect(ExpenseSummaryService).to receive(:new).with("invalid_period")
+        expect(Services::ExpenseSummaryService).to receive(:new).with("invalid_period")
 
         get :expense_summary, params: { period: "invalid_period" }
       end

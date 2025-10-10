@@ -8,8 +8,8 @@ class ExpensesController < ApplicationController
     # Handle dashboard navigation context
     setup_navigation_context
 
-    # Use the optimized ExpenseFilterService for performance
-    filter_service = ExpenseFilterService.new(
+    # Use the optimized Services::ExpenseFilterService for performance
+    filter_service = Services::ExpenseFilterService.new(
       filter_params.merge(
         account_ids: current_user_email_accounts.pluck(:id)
       )
@@ -338,7 +338,7 @@ class ExpensesController < ApplicationController
     permitted = bulk_categorize_params
 
     # Use the new service object for better performance and organization
-    service = Services::BulkOperations::CategorizationService.new(
+    service = Services::BulkOperations::Services::CategorizationService.new(
       expense_ids: permitted[:expense_ids],
       category_id: permitted[:category_id],
       user: current_user_for_bulk_operations,

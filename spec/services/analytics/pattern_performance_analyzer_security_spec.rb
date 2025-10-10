@@ -132,7 +132,7 @@ RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, performance: tru
           end
 
           result = analyzer.category_performance(page: 1, per_page: 500)
-          expect(result.size).to be <= Analytics::PatternPerformanceAnalyzer::MAX_PAGE_SIZE
+          expect(result.size).to be <= Services::Analytics::PatternPerformanceAnalyzer::MAX_PAGE_SIZE
         end
       end
     end
@@ -197,7 +197,7 @@ RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, performance: tru
         end
 
         result = analyzer.recent_activity(limit: 50)
-        expect(result.size).to be <= Analytics::PatternPerformanceAnalyzer::MAX_RECENT_ACTIVITY
+        expect(result.size).to be <= Services::Analytics::PatternPerformanceAnalyzer::MAX_RECENT_ACTIVITY
       end
     end
   end

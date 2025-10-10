@@ -250,8 +250,8 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       end
 
       it 'processes content only once despite multiple method calls' do
-        strategy = instance_double(EmailProcessing::Strategies::Regex)
-        allow(EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(strategy)
+        strategy = instance_double(Services::EmailProcessing::Strategies::Regex)
+        allow(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(strategy)
         allow(strategy).to receive(:parse_email).and_return({})
 
         expect(parser).to receive(:process_standard_email).once.and_call_original
@@ -266,14 +266,14 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         allow(parser).to receive(:parsing_rule).and_return(nil)
 
         expect(parser).not_to receive(:email_content)
-        expect(EmailProcessing::StrategyFactory).not_to receive(:create_strategy)
+        expect(Services::EmailProcessing::StrategyFactory).not_to receive(:create_strategy)
 
         result = parser.parse_expense
         expect(result).to be_nil
       end
 
       it 'returns early on strategy creation failure' do
-        allow(EmailProcessing::StrategyFactory).to receive(:create_strategy)
+        allow(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy)
           .and_raise(StandardError, 'Failed')
 
         expect(parser).not_to receive(:create_expense)
@@ -283,8 +283,8 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       end
 
       it 'returns early on invalid parsed data' do
-        strategy = instance_double(EmailProcessing::Strategies::Regex)
-        allow(EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(strategy)
+        strategy = instance_double(Services::EmailProcessing::Strategies::Regex)
+        allow(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(strategy)
         allow(strategy).to receive(:parse_email).and_return({ amount: nil })
 
         expect(parser).not_to receive(:create_expense)

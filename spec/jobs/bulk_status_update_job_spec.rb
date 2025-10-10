@@ -414,8 +414,8 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
   end
 
   describe '#service_class' do
-    it 'returns BulkOperations::StatusUpdateService' do
-      expect(job.send(:service_class)).to eq(BulkOperations::StatusUpdateService)
+    it 'returns Services::BulkOperations::StatusUpdateService' do
+      expect(job.send(:service_class)).to eq(Services::BulkOperations::StatusUpdateService)
     end
   end
 

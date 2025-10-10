@@ -200,7 +200,7 @@ class SyncStatusChannel < ApplicationCable::Channel
     # @param priority [Symbol] Priority level (:critical, :high, :medium, :low)
     def broadcast_with_reliability(session, data, priority = :medium)
       # Use the enhanced reliability service for broadcasting
-      BroadcastReliabilityService.broadcast_with_retry(
+      Services::BroadcastReliabilityService.broadcast_with_retry(
         channel: self,
         target: session,
         data: data,

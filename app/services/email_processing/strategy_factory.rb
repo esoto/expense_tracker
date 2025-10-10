@@ -15,7 +15,7 @@ module Services::EmailProcessing
 
       # Validate that the strategy can parse the content if provided
       if email_content && !strategy.can_parse?(email_content)
-        Rails.logger.warn "[EmailProcessing::StrategyFactory] Strategy #{strategy_class} cannot parse content for #{parsing_rule.bank_name}"
+        Rails.logger.warn "[Services::EmailProcessing::StrategyFactory] Strategy #{strategy_class} cannot parse content for #{parsing_rule.bank_name}"
       end
 
       strategy

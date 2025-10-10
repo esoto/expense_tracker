@@ -72,12 +72,12 @@ module Services
 
       # Use Redis for high-performance counters and timing
       begin
-        RedisAnalyticsService.increment_counter(
+        Services::RedisAnalyticsService.increment_counter(
           "broadcast_success",
           tags: { channel: channel, priority: priority.to_s }
         )
 
-        RedisAnalyticsService.record_timing(
+        Services::RedisAnalyticsService.record_timing(
           "broadcast_duration",
           duration,
           tags: { channel: channel, priority: priority.to_s, result: "success" }
@@ -127,7 +127,7 @@ module Services
 
       # Use Redis for high-performance counters and timing
       begin
-        RedisAnalyticsService.increment_counter(
+        Services::RedisAnalyticsService.increment_counter(
           "broadcast_failure",
           tags: {
             channel: channel,
@@ -136,7 +136,7 @@ module Services
           }
         )
 
-        RedisAnalyticsService.record_timing(
+        Services::RedisAnalyticsService.record_timing(
           "broadcast_duration",
           duration,
           tags: { channel: channel, priority: priority.to_s, result: "failure" }
@@ -202,17 +202,17 @@ module Services
     # @return [Hash] Redis-based metrics
     def get_redis_metrics(time_window: 1.hour)
       BroadcastFeatureFlags.with_fallback(:redis_analytics) do
-        success_data = RedisAnalyticsService.get_time_series(
+        success_data = Services::RedisAnalyticsService.get_time_series(
           "broadcast_success",
           window: time_window
         )
 
-        failure_data = RedisAnalyticsService.get_time_series(
+        failure_data = Services::RedisAnalyticsService.get_time_series(
           "broadcast_failure",
           window: time_window
         )
 
-        timing_percentiles = RedisAnalyticsService.get_timing_percentiles(
+        timing_percentiles = Services::RedisAnalyticsService.get_timing_percentiles(
           "broadcast_duration",
           percentiles: [ 0.5, 0.95, 0.99 ],
           window: time_window

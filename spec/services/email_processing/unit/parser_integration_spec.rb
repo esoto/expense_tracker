@@ -22,7 +22,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
   end
 
   describe 'StrategyFactory integration' do
-    let(:strategy) { instance_double(EmailProcessing::Strategies::Regex) }
+    let(:strategy) { instance_double(Services::EmailProcessing::Strategies::Regex) }
     let(:parsed_data) do
       {
         amount: BigDecimal('100.00'),
@@ -33,7 +33,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
     end
 
     before do
-      allow(EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(strategy)
+      allow(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(strategy)
       allow(strategy).to receive(:parse_email).and_return(parsed_data)
       allow(parser).to receive(:valid_parsed_data?).and_return(true)
       allow(parser).to receive(:create_expense).and_return(instance_double(Expense))
@@ -41,26 +41,26 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
 
     describe 'strategy creation' do
       it 'passes parsing rule to factory' do
-        expect(EmailProcessing::StrategyFactory).to receive(:create_strategy)
+        expect(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy)
           .with(parsing_rule, email_content: anything)
         parser.parse_expense
       end
 
       it 'passes email content to factory' do
-        expect(EmailProcessing::StrategyFactory).to receive(:create_strategy)
+        expect(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy)
           .with(anything, email_content: parser.send(:email_content))
         parser.parse_expense
       end
 
       it 'handles nil strategy from factory' do
-        allow(EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(nil)
+        allow(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(nil)
 
         expect { parser.parse_expense }.not_to raise_error
         expect(parser.parse_expense).to be_nil
       end
 
       it 'handles factory raising ArgumentError' do
-        allow(EmailProcessing::StrategyFactory).to receive(:create_strategy)
+        allow(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy)
           .and_raise(ArgumentError, 'Unknown strategy type')
 
         expect { parser.parse_expense }.not_to raise_error
@@ -68,7 +68,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       end
 
       it 'handles factory raising NameError' do
-        allow(EmailProcessing::StrategyFactory).to receive(:create_strategy)
+        allow(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy)
           .and_raise(NameError, 'Uninitialized constant')
 
         expect { parser.parse_expense }.not_to raise_error
@@ -108,10 +108,10 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
 
     describe 'different strategy types' do
       context 'with Regex strategy' do
-        let(:regex_strategy) { instance_double(EmailProcessing::Strategies::Regex) }
+        let(:regex_strategy) { instance_double(Services::EmailProcessing::Strategies::Regex) }
 
         before do
-          allow(EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(regex_strategy)
+          allow(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(regex_strategy)
           allow(regex_strategy).to receive(:parse_email).and_return(parsed_data)
         end
 
@@ -124,7 +124,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       context 'with Base strategy subclass' do
         # Test with a generic subclass of Base strategy instead of ML
         let(:base_subclass_strategy) do
-          Class.new(EmailProcessing::Strategies::Base) do
+          Class.new(Services::EmailProcessing::Strategies::Base) do
             def parse_email(content)
               { amount: BigDecimal('100.00'), transaction_date: Date.current }
             end
@@ -132,7 +132,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         end
 
         before do
-          allow(EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(base_subclass_strategy)
+          allow(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(base_subclass_strategy)
         end
 
         it 'works with Base strategy subclass' do
@@ -143,10 +143,10 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
 
       context 'with another Regex strategy instance' do
         # Test with multiple Regex strategy instances
-        let(:another_regex_strategy) { EmailProcessing::Strategies::Regex.new(parsing_rule) }
+        let(:another_regex_strategy) { Services::EmailProcessing::Strategies::Regex.new(parsing_rule) }
 
         before do
-          allow(EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(another_regex_strategy)
+          allow(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(another_regex_strategy)
           allow(another_regex_strategy).to receive(:parse_email).and_return(parsed_data)
         end
 
@@ -158,19 +158,19 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
     end
   end
 
-  describe 'CurrencyDetectorService integration' do
+  describe 'Services::CurrencyDetectorService integration' do
     let(:expense) { instance_double(Expense, usd!: nil, eur!: nil, crc!: nil) }
     let(:parsed_data) { { amount: BigDecimal('100.00') } }
-    let(:currency_detector) { instance_double(CurrencyDetectorService) }
+    let(:currency_detector) { instance_double(Services::CurrencyDetectorService) }
 
     before do
-      allow(CurrencyDetectorService).to receive(:new).and_return(currency_detector)
+      allow(Services::CurrencyDetectorService).to receive(:new).and_return(currency_detector)
       allow(currency_detector).to receive(:apply_currency_to_expense)
     end
 
     describe '#set_currency' do
-      it 'creates CurrencyDetectorService with email content' do
-        expect(CurrencyDetectorService).to receive(:new)
+      it 'creates Services::CurrencyDetectorService with email content' do
+        expect(Services::CurrencyDetectorService).to receive(:new)
           .with(email_content: parser.send(:email_content))
         parser.send(:set_currency, expense, parsed_data)
       end
@@ -182,7 +182,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       end
 
       it 'handles service initialization error' do
-        allow(CurrencyDetectorService).to receive(:new)
+        allow(Services::CurrencyDetectorService).to receive(:new)
           .and_raise(StandardError, 'Service init failed')
 
         expect { parser.send(:set_currency, expense, parsed_data) }.to raise_error(StandardError)
@@ -375,13 +375,13 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
     end
 
     let(:category) { instance_double(Category, name: 'Shopping') }
-    let(:currency_detector) { instance_double(CurrencyDetectorService) }
+    let(:currency_detector) { instance_double(Services::CurrencyDetectorService) }
     let(:category_guesser) { instance_double(Services::CategoryGuesserService) }
 
     before do
       allow(parser).to receive(:find_duplicate_expense).and_return(nil)
       allow(Expense).to receive(:new).and_return(expense)
-      allow(CurrencyDetectorService).to receive(:new).and_return(currency_detector)
+      allow(Services::CurrencyDetectorService).to receive(:new).and_return(currency_detector)
       allow(currency_detector).to receive(:apply_currency_to_expense)
       allow(Services::CategoryGuesserService).to receive(:new).and_return(category_guesser)
       allow(category_guesser).to receive(:guess_category_for_expense).and_return(category)
@@ -500,8 +500,8 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
   end
 
   describe 'full parsing flow with all services' do
-    let(:strategy) { instance_double(EmailProcessing::Strategies::Regex) }
-    let(:currency_detector) { instance_double(CurrencyDetectorService) }
+    let(:strategy) { instance_double(Services::EmailProcessing::Strategies::Regex) }
+    let(:currency_detector) { instance_double(Services::CurrencyDetectorService) }
     let(:category_guesser) { instance_double(Services::CategoryGuesserService) }
     let(:category) { instance_double(Category, name: 'Food') }
     let(:expense) do
@@ -524,11 +524,11 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
 
     before do
       # Setup strategy factory
-      allow(EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(strategy)
+      allow(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(strategy)
       allow(strategy).to receive(:parse_email).and_return(parsed_data)
 
       # Setup currency detector
-      allow(CurrencyDetectorService).to receive(:new).and_return(currency_detector)
+      allow(Services::CurrencyDetectorService).to receive(:new).and_return(currency_detector)
       allow(currency_detector).to receive(:apply_currency_to_expense)
 
       # Setup category guesser
@@ -544,7 +544,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       result = parser.parse_expense
 
       expect(result).to eq(expense)
-      expect(EmailProcessing::StrategyFactory).to have_received(:create_strategy)
+      expect(Services::EmailProcessing::StrategyFactory).to have_received(:create_strategy)
       expect(strategy).to have_received(:parse_email)
       expect(currency_detector).to have_received(:apply_currency_to_expense)
       expect(category_guesser).to have_received(:guess_category_for_expense)

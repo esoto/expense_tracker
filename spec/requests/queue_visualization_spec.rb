@@ -82,7 +82,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       before { mock_queue_monitor_service }
 
       it "pauses all queues" do
-        expect(QueueMonitor).to receive(:pause_queue).with(nil).and_return(true)
+        expect(Services::QueueMonitor).to receive(:pause_queue).with(nil).and_return(true)
 
         post "/api/queue/pause", headers: { "Accept" => "application/json" }
 
@@ -94,7 +94,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       end
 
       it "pauses specific queue" do
-        expect(QueueMonitor).to receive(:pause_queue).with("default").and_return(true)
+        expect(Services::QueueMonitor).to receive(:pause_queue).with("default").and_return(true)
 
         post "/api/queue/pause",
              params: { queue_name: "default" },
@@ -111,7 +111,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       before { mock_queue_monitor_service }
 
       it "resumes all queues" do
-        expect(QueueMonitor).to receive(:resume_queue).with(nil).and_return(true)
+        expect(Services::QueueMonitor).to receive(:resume_queue).with(nil).and_return(true)
 
         post "/api/queue/resume", headers: { "Accept" => "application/json" }
 
@@ -133,7 +133,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       end
 
       it "retries a specific job" do
-        expect(QueueMonitor).to receive(:retry_failed_job).with(job_id.to_s).and_return(true)
+        expect(Services::QueueMonitor).to receive(:retry_failed_job).with(job_id.to_s).and_return(true)
 
         post "/api/queue/jobs/#{job_id}/retry", headers: { "Accept" => "application/json" }
 
@@ -176,7 +176,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       end
 
       it "clears a specific job" do
-        expect(QueueMonitor).to receive(:clear_failed_job).with(job_id.to_s).and_return(true)
+        expect(Services::QueueMonitor).to receive(:clear_failed_job).with(job_id.to_s).and_return(true)
 
         post "/api/queue/jobs/#{job_id}/clear", headers: { "Accept" => "application/json" }
 
@@ -196,7 +196,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       before { mock_queue_monitor_service }
 
       it "retries all failed jobs" do
-        expect(QueueMonitor).to receive(:retry_all_failed_jobs).and_return(5)
+        expect(Services::QueueMonitor).to receive(:retry_all_failed_jobs).and_return(5)
 
         post "/api/queue/retry_all_failed", headers: { "Accept" => "application/json" }
 
@@ -213,7 +213,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       end
 
       it "returns error when no jobs to retry" do
-        expect(QueueMonitor).to receive(:retry_all_failed_jobs).and_return(0)
+        expect(Services::QueueMonitor).to receive(:retry_all_failed_jobs).and_return(0)
 
         post "/api/queue/retry_all_failed", headers: { "Accept" => "application/json" }
 
@@ -239,7 +239,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
           error_rate: 2.5
         }
 
-        expect(QueueMonitor).to receive(:detailed_metrics).and_return(metrics)
+        expect(Services::QueueMonitor).to receive(:detailed_metrics).and_return(metrics)
 
         get "/api/queue/metrics", headers: { "Accept" => "application/json" }
 
@@ -257,7 +257,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
 
       context "when system is healthy" do
         before do
-          allow(QueueMonitor).to receive(:calculate_health_status).and_return(
+          allow(Services::QueueMonitor).to receive(:calculate_health_status).and_return(
             { status: "healthy", message: "Queue system operating normally" }
           )
         end
@@ -275,7 +275,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
 
       context "when system is critical" do
         before do
-          allow(QueueMonitor).to receive(:calculate_health_status).and_return(
+          allow(Services::QueueMonitor).to receive(:calculate_health_status).and_return(
             { status: "critical", message: "No healthy workers available" }
           )
         end
@@ -296,7 +296,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
   describe "Real-time updates via ActionCable", integration: true do
     it "broadcasts queue updates when pausing" do
       mock_queue_monitor_service
-      allow(QueueMonitor).to receive(:pause_queue).and_return(true)
+      allow(Services::QueueMonitor).to receive(:pause_queue).and_return(true)
 
       expect(ActionCable.server).to receive(:broadcast).with(
         "queue_updates",
@@ -314,7 +314,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       mock_queue_monitor_service
       job = instance_double(SolidQueue::Job, id: 123)
       allow(SolidQueue::Job).to receive(:find_by).and_return(job)
-      allow(QueueMonitor).to receive(:retry_failed_job).and_return(true)
+      allow(Services::QueueMonitor).to receive(:retry_failed_job).and_return(true)
 
       expect(ActionCable.server).to receive(:broadcast).with(
         "queue_updates",
@@ -353,7 +353,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
   end
 
   def mock_queue_monitor_service
-    allow(QueueMonitor).to receive(:queue_status).and_return({
+    allow(Services::QueueMonitor).to receive(:queue_status).and_return({
       pending: 10,
       processing: 5,
       completed: 100,
@@ -376,10 +376,10 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       }
     })
 
-    allow(QueueMonitor).to receive(:paused_queues).and_return([])
-    allow(QueueMonitor).to receive(:pending_jobs_count).and_return(10)
-    allow(QueueMonitor).to receive(:processing_jobs_count).and_return(5)
-    allow(QueueMonitor).to receive(:failed_jobs_count).and_return(2)
-    allow(QueueMonitor).to receive(:worker_status).and_return({ healthy: 4 })
+    allow(Services::QueueMonitor).to receive(:paused_queues).and_return([])
+    allow(Services::QueueMonitor).to receive(:pending_jobs_count).and_return(10)
+    allow(Services::QueueMonitor).to receive(:processing_jobs_count).and_return(5)
+    allow(Services::QueueMonitor).to receive(:failed_jobs_count).and_return(2)
+    allow(Services::QueueMonitor).to receive(:worker_status).and_return({ healthy: 4 })
   end
 end

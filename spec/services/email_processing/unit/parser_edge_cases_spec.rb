@@ -285,7 +285,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
           allow(expense).to receive(:category=)
         end
 
-        it 'handles CurrencyDetectorService errors' do
+        it 'handles Services::CurrencyDetectorService errors' do
           allow(parser).to receive(:set_currency).and_raise(StandardError, 'Currency detection failed')
 
           expect { parser.send(:create_expense, parsed_data) }.not_to raise_error

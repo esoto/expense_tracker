@@ -1,5 +1,5 @@
 module Services
-  class Services::CurrencyDetectorService
+  class CurrencyDetectorService
   # Currency detection patterns
   USD_PATTERNS = %w[$ usd dollar].freeze
   EUR_PATTERNS = %w[€ eur euro].freeze

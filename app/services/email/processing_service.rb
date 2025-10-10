@@ -345,11 +345,11 @@ module Email
         uid: message.attr["UID"],
         message_id: mail.message_id,
         from: mail.from&.first,
-        subject: mail.subject,
+        subject: Email::EncodingService.safe_decode(mail.subject),
         date: mail.date,
         body: extract_body(mail),
-        html_body: mail.html_part&.body&.decoded,
-        text_body: mail.text_part&.body&.decoded || mail.body&.decoded
+        html_body: Email::EncodingService.safe_decode(mail.html_part&.body&.decoded),
+        text_body: Email::EncodingService.safe_decode(mail.text_part&.body&.decoded || mail.body&.decoded)
       }
     rescue StandardError => e
       Rails.logger.error "Failed to parse email: #{e.message}"
@@ -357,11 +357,13 @@ module Email
     end
 
     def extract_body(mail)
-      if mail.multipart?
+      body = if mail.multipart?
         mail.text_part&.body&.decoded || mail.html_part&.body&.decoded
       else
         mail.body.decoded
       end
+
+      Email::EncodingService.safe_decode(body)
     end
 
     def email_already_processed?(email)

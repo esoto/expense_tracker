@@ -10,6 +10,15 @@ development:
 test:
   adapter: test
 
+staging:
+  adapter: async
+  # Allow connections from staging domains
+  allowed_request_origins: 
+    - /https?:\/\/staging\..*/
+    - /https?:\/\/.*\.staging\..*/
+    - "http://localhost:3000"
+    - "http://127.0.0.1:3000"
+
 production:
   adapter: solid_cable
   connects_to:

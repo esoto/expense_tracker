@@ -1,4 +1,3 @@
-web: bin/rails server
+web: env OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES bin/rails server -p 3002
 css: bin/rails tailwindcss:watch
-worker: bin/rails solid_queue:start
-sidekiq: bundle exec sidekiq
+/*worker: bin/rails solid_queue:start*/

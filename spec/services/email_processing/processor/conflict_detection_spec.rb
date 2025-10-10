@@ -1,11 +1,11 @@
 require 'rails_helper'
 require 'support/email_processing_processor_test_helper'
 
-RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service, unit: true do
+RSpec.describe 'Services::EmailProcessing::Processor - Conflict Detection', type: :service, unit: true do
   include EmailProcessingProcessorTestHelper
   let(:email_account) { create(:email_account, :bac) }
   let(:metrics_collector) { instance_double(Services::SyncMetricsCollector) }
-  let(:processor) { EmailProcessing::Processor.new(email_account, metrics_collector: metrics_collector) }
+  let(:processor) { Services::EmailProcessing::Processor.new(email_account, metrics_collector: metrics_collector) }
   let(:mock_imap_service) { instance_double(Services::ImapConnectionService) }
 
   describe '#detect_and_handle_conflict' do
@@ -126,7 +126,7 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
           email_data = { body: 'Transaction', date: Time.current }
 
           expect(Rails.logger).to receive(:error).with(
-            '[EmailProcessing::Processor] Error detecting conflict: Session expired'
+            '[Services::EmailProcessing::Processor] Error detecting conflict: Session expired'
           )
 
           result = processor.send(:detect_and_handle_conflict, email_data)
@@ -142,7 +142,7 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
           email_data = { body: 'Transaction', date: Time.current }
 
           expect(Rails.logger).to receive(:error).with(
-            '[EmailProcessing::Processor] Error detecting conflict: Detection timeout'
+            '[Services::EmailProcessing::Processor] Error detecting conflict: Detection timeout'
           )
 
           result = processor.send(:detect_and_handle_conflict, email_data)
@@ -224,7 +224,7 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
           allow(Rails.logger).to receive(:error)
 
           expect(Rails.logger).to receive(:error).with(
-            '[EmailProcessing::Processor] Error detecting conflict: Database connection lost'
+            '[Services::EmailProcessing::Processor] Error detecting conflict: Database connection lost'
           )
 
           result = processor.send(:detect_and_handle_conflict, email_data)
@@ -242,7 +242,7 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
           result = processor.send(:detect_and_handle_conflict, email_data)
 
           expect(Rails.logger).to have_received(:error).with(
-            a_string_including('[EmailProcessing::Processor] Error detecting conflict:')
+            a_string_including('[Services::EmailProcessing::Processor] Error detecting conflict:')
           )
           expect(result).to be false
         end
@@ -269,7 +269,7 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
           allow(Rails.logger).to receive(:error)
 
           expect(Rails.logger).to receive(:error).with(
-            '[EmailProcessing::Processor] Error parsing email: Invalid encoding'
+            '[Services::EmailProcessing::Processor] Error parsing email: Invalid encoding'
           )
 
           result = processor.send(:detect_and_handle_conflict, email_data)
@@ -304,7 +304,7 @@ RSpec.describe 'EmailProcessing::Processor - Conflict Detection', type: :service
         end
 
         it 'works without metrics collector' do
-          processor_no_metrics = EmailProcessing::Processor.new(email_account)
+          processor_no_metrics = Services::EmailProcessing::Processor.new(email_account)
 
           allow(Services::ConflictDetectionService).to receive(:new).with(
             sync_session,

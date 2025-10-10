@@ -1,10 +1,10 @@
 require 'rails_helper'
 require 'support/email_processing_processor_test_helper'
 
-RSpec.describe 'EmailProcessing::Processor - Email Parsing', type: :service, unit: true do
+RSpec.describe 'Services::EmailProcessing::Processor - Email Parsing', type: :service, unit: true do
   include EmailProcessingProcessorTestHelper
   let(:email_account) { create(:email_account, :bac) }
-  let(:processor) { EmailProcessing::Processor.new(email_account) }
+  let(:processor) { Services::EmailProcessing::Processor.new(email_account) }
   let(:mock_imap_service) { instance_double(Services::ImapConnectionService) }
 
   describe 'complex multipart email handling' do

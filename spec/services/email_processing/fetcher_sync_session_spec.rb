@@ -5,10 +5,10 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'sync session integration', i
   let(:sync_session) { create(:sync_session, :running) }
   let(:sync_session_account) { create(:sync_session_account, sync_session: sync_session, email_account: email_account, status: 'processing') }
   let(:mock_imap_service) { instance_double(Services::ImapConnectionService) }
-  let(:mock_email_processor) { instance_double(EmailProcessing::Processor) }
+  let(:mock_email_processor) { instance_double(Services::EmailProcessing::Processor) }
 
   let(:fetcher) do
-    EmailProcessing::Fetcher.new(
+    Services::EmailProcessing::Fetcher.new(
       email_account,
       imap_service: mock_imap_service,
       email_processor: mock_email_processor,
@@ -136,7 +136,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'sync session integration', i
 
   describe 'when sync_session_account is nil', integration: true do
     let(:fetcher_without_sync) do
-      EmailProcessing::Fetcher.new(
+      Services::EmailProcessing::Fetcher.new(
         email_account,
         imap_service: mock_imap_service,
         email_processor: mock_email_processor,

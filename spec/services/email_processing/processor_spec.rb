@@ -533,7 +533,7 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
   describe 'error handling', integration: true do
     describe '#add_error', integration: true do
       it 'adds error to errors array and logs to Rails logger' do
-        expect(Rails.logger).to receive(:error).with("[EmailProcessing::Processor] #{email_account.email}: Test error")
+        expect(Rails.logger).to receive(:error).with("[Services::EmailProcessing::Processor] #{email_account.email}: Test error")
 
         processor.send(:add_error, "Test error")
 
@@ -650,7 +650,7 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
       end
 
       it 'logs error and returns false' do
-        expect(Rails.logger).to receive(:error).with('[EmailProcessing::Processor] Error detecting conflict: Detection error')
+        expect(Rails.logger).to receive(:error).with('[Services::EmailProcessing::Processor] Error detecting conflict: Detection error')
 
         result = processor.send(:detect_and_handle_conflict, email_data)
         expect(result).to be false

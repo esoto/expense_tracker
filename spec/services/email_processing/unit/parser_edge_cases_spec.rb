@@ -100,16 +100,16 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
 
     describe 'MAX_EMAIL_SIZE threshold' do
       it 'has correct MAX_EMAIL_SIZE constant' do
-        expect(EmailProcessing::Parser::MAX_EMAIL_SIZE).to eq(50_000)
+        expect(Services::EmailProcessing::Parser::MAX_EMAIL_SIZE).to eq(50_000)
       end
 
       it 'has correct TRUNCATE_SIZE constant' do
-        expect(EmailProcessing::Parser::TRUNCATE_SIZE).to eq(10_000)
+        expect(Services::EmailProcessing::Parser::TRUNCATE_SIZE).to eq(10_000)
       end
 
       context 'email size detection' do
         it 'processes as standard when exactly at threshold' do
-          content = 'X' * EmailProcessing::Parser::MAX_EMAIL_SIZE
+          content = 'X' * Services::EmailProcessing::Parser::MAX_EMAIL_SIZE
           email_data[:body] = content
 
           expect(parser).not_to receive(:process_large_email)
@@ -118,7 +118,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         end
 
         it 'processes as large when one byte over threshold' do
-          content = 'X' * (EmailProcessing::Parser::MAX_EMAIL_SIZE + 1)
+          content = 'X' * (Services::EmailProcessing::Parser::MAX_EMAIL_SIZE + 1)
           email_data[:body] = content
 
           expect(parser).to receive(:process_large_email).and_call_original

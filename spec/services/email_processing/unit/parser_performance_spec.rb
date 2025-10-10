@@ -105,11 +105,11 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
   describe 'performance characteristics' do
     describe 'size thresholds' do
       it 'defines MAX_EMAIL_SIZE as 50KB' do
-        expect(EmailProcessing::Parser::MAX_EMAIL_SIZE).to eq(50_000)
+        expect(Services::EmailProcessing::Parser::MAX_EMAIL_SIZE).to eq(50_000)
       end
 
       it 'defines TRUNCATE_SIZE as 10KB' do
-        expect(EmailProcessing::Parser::TRUNCATE_SIZE).to eq(10_000)
+        expect(Services::EmailProcessing::Parser::TRUNCATE_SIZE).to eq(10_000)
       end
 
       context 'processing time expectations' do
@@ -246,7 +246,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         expect(parser).not_to receive(:process_large_email)
 
         # Just accessing parser doesn't process content
-        expect(parser).to be_a(EmailProcessing::Parser)
+        expect(parser).to be_a(Services::EmailProcessing::Parser)
       end
 
       it 'processes content only once despite multiple method calls' do
@@ -384,7 +384,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
     end
 
     it 'logs errors with context' do
-      expect(logger).to receive(:error).with('[EmailProcessing::Parser] test@example.com: Performance issue')
+      expect(logger).to receive(:error).with('[Services::EmailProcessing::Parser] test@example.com: Performance issue')
       parser.send(:add_error, 'Performance issue')
     end
   end

@@ -259,7 +259,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
     end
 
     context 'with large email' do
-      let(:large_body) { 'X' * (EmailProcessing::Parser::MAX_EMAIL_SIZE + 1) }
+      let(:large_body) { 'X' * (Services::EmailProcessing::Parser::MAX_EMAIL_SIZE + 1) }
 
       before do
         email_data[:body] = large_body
@@ -272,7 +272,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
     end
 
     context 'with exact threshold size' do
-      let(:threshold_body) { 'X' * EmailProcessing::Parser::MAX_EMAIL_SIZE }
+      let(:threshold_body) { 'X' * Services::EmailProcessing::Parser::MAX_EMAIL_SIZE }
 
       before do
         email_data[:body] = threshold_body
@@ -317,7 +317,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
     end
 
     it 'logs error with proper context' do
-      expect(logger).to receive(:error).with('[EmailProcessing::Parser] test@example.com: Test error')
+      expect(logger).to receive(:error).with('[Services::EmailProcessing::Parser] test@example.com: Test error')
       parser.send(:add_error, 'Test error')
     end
 

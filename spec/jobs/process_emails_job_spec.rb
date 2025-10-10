@@ -7,9 +7,9 @@ RSpec.describe ProcessEmailsJob, type: :job, unit: true do
   let(:sync_session) { create(:sync_session, status: "pending") }
 
   # Mock dependencies
-  let(:mock_fetcher) { instance_double(EmailProcessing::Fetcher) }
+  let(:mock_fetcher) { instance_double(Services::EmailProcessing::Fetcher) }
   let(:mock_metrics_collector) { instance_double(Services::SyncMetricsCollector) }
-  let(:success_response) { EmailProcessing::FetcherResponse.success(processed_emails_count: 5, total_emails_found: 10) }
+  let(:success_response) { Services::EmailProcessing::FetcherResponse.success(processed_emails_count: 5, total_emails_found: 10) }
 
   before do
     # Setup basic mocks
@@ -22,7 +22,7 @@ RSpec.describe ProcessEmailsJob, type: :job, unit: true do
     allow(mock_metrics_collector).to receive(:record_session_metrics)
     allow(mock_metrics_collector).to receive(:flush_buffer)
 
-    allow(EmailProcessing::Fetcher).to receive(:new).and_return(mock_fetcher)
+    allow(Services::EmailProcessing::Fetcher).to receive(:new).and_return(mock_fetcher)
     allow(mock_fetcher).to receive(:fetch_new_emails).and_return(success_response)
   end
 

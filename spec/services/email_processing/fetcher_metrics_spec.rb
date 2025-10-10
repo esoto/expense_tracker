@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe Services::EmailProcessing::Fetcher, 'metrics integration', type: :service, unit: true do
   let(:email_account) { create(:email_account, :bac) }
   let(:mock_imap_service) { instance_double(Services::ImapConnectionService) }
-  let(:mock_email_processor) { instance_double(EmailProcessing::Processor) }
+  let(:mock_email_processor) { instance_double(Services::EmailProcessing::Processor) }
   let(:metrics_collector) { instance_double(Services::SyncMetricsCollector) }
 
   let(:fetcher_with_metrics) do
@@ -95,7 +95,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'metrics integration', type: 
       end
 
       it 'passes metrics collector to email processor' do
-        expect(EmailProcessing::Processor).to receive(:new)
+        expect(Services::EmailProcessing::Processor).to receive(:new)
           .with(email_account, metrics_collector: metrics_collector)
           .and_return(mock_email_processor)
 
@@ -126,7 +126,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'metrics integration', type: 
       end
 
       it 'creates processor without metrics collector' do
-        expect(EmailProcessing::Processor).to receive(:new)
+        expect(Services::EmailProcessing::Processor).to receive(:new)
           .with(email_account, metrics_collector: nil)
           .and_return(mock_email_processor)
 
@@ -335,7 +335,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'metrics integration', type: 
 
     it 'passes metrics to processor during initialization' do
       # Create a new fetcher to test initialization
-      expect(EmailProcessing::Processor).to receive(:new)
+      expect(Services::EmailProcessing::Processor).to receive(:new)
         .with(email_account, metrics_collector: metrics_collector)
         .and_call_original
 
@@ -343,7 +343,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'metrics integration', type: 
     end
 
     it 'creates processor without metrics when not provided' do
-      expect(EmailProcessing::Processor).to receive(:new)
+      expect(Services::EmailProcessing::Processor).to receive(:new)
         .with(email_account, metrics_collector: nil)
         .and_call_original
 

@@ -2,12 +2,12 @@ require 'rails_helper'
 require 'timeout'
 require 'support/email_processing_processor_test_helper'
 
-RSpec.describe 'EmailProcessing::Processor - Error Handling', type: :service, unit: true do
+RSpec.describe 'Services::EmailProcessing::Processor - Error Handling', type: :service, unit: true do
   include EmailProcessingProcessorTestHelper
 
   let(:email_account) { create(:email_account, :bac) }
   let(:metrics_collector) { instance_double(Services::SyncMetricsCollector) }
-  let(:processor) { EmailProcessing::Processor.new(email_account, metrics_collector: metrics_collector) }
+  let(:processor) { Services::EmailProcessing::Processor.new(email_account, metrics_collector: metrics_collector) }
   let(:mock_imap_service) { create_mock_imap_service }
 
   before do

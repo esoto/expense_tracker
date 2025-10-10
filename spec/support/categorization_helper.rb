@@ -38,16 +38,16 @@ module CategorizationTestHelper
 
   # Create a fresh engine instance with clean dependencies
   def create_test_engine(options = {})
-    service_registry = Categorization::ServiceRegistry.new(logger: Rails.logger)
+    service_registry = Services::Categorization::ServiceRegistry.new(logger: Rails.logger)
 
     # Create fresh instances of all services
     pattern_cache = Services::Categorization::PatternCache.new
     service_registry.register(:pattern_cache, pattern_cache)
-    service_registry.register(:fuzzy_matcher, Categorization::Matchers::FuzzyMatcher.new)
-    service_registry.register(:confidence_calculator, Categorization::ConfidenceCalculator.new)
-    service_registry.register(:pattern_learner, Categorization::PatternLearner.new(pattern_cache: pattern_cache))
-    service_registry.register(:performance_tracker, Categorization::PerformanceTracker.new)
-    service_registry.register(:lru_cache, Categorization::LruCache.new(
+    service_registry.register(:fuzzy_matcher, Services::Categorization::Matchers::FuzzyMatcher.new)
+    service_registry.register(:confidence_calculator, Services::Categorization::ConfidenceCalculator.new)
+    service_registry.register(:pattern_learner, Services::Categorization::PatternLearner.new(pattern_cache: pattern_cache))
+    service_registry.register(:performance_tracker, Services::Categorization::PerformanceTracker.new)
+    service_registry.register(:lru_cache, Services::Categorization::LruCache.new(
       max_size: Services::Categorization::Engine::MAX_PATTERN_CACHE_SIZE,
       ttl_seconds: 300
     ))

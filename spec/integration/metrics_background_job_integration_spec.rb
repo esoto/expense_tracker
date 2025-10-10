@@ -74,7 +74,7 @@ RSpec.describe "Metrics Background Job Integration", type: :integration do
       job = MetricsCalculationJob.new
       job.perform(email_account_id: email_account.id, period: :month)
 
-      # The ExtendedCacheServices::MetricsCalculator should have been used
+      # The Services::ExtendedCacheMetricsCalculator should have been used
       cache_key = "metrics_calculator:account_#{email_account.id}:month:#{Date.current.iso8601}"
       cached_data = Rails.cache.read(cache_key)
 
@@ -122,7 +122,7 @@ RSpec.describe "Metrics Background Job Integration", type: :integration do
       lock_key = "metrics_calculation:#{email_account.id}"
 
       # Force an error
-      allow_any_instance_of(ExtendedCacheServices::MetricsCalculator).to receive(:calculate).and_raise(StandardError, "Test error")
+      allow_any_instance_of(Services::ExtendedCacheMetricsCalculator).to receive(:calculate).and_raise(StandardError, "Test error")
 
       job = MetricsCalculationJob.new
       expect { job.perform(email_account_id: email_account.id, period: :month) }.to raise_error(StandardError)
@@ -133,7 +133,7 @@ RSpec.describe "Metrics Background Job Integration", type: :integration do
 
     it "tracks failure metrics" do
       # Force an error
-      allow_any_instance_of(ExtendedCacheServices::MetricsCalculator).to receive(:calculate).and_raise(StandardError, "Test error")
+      allow_any_instance_of(Services::ExtendedCacheMetricsCalculator).to receive(:calculate).and_raise(StandardError, "Test error")
 
       job = MetricsCalculationJob.new
       expect { job.perform(email_account_id: email_account.id, period: :month) }.to raise_error(StandardError)

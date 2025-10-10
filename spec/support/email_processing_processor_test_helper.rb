@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Test helper specifically for EmailProcessing::Processor testing
+# Test helper specifically for Services::EmailProcessing::Processor testing
 module EmailProcessingProcessorTestHelper
   # Mock IMAP service that simulates Services::ImapConnectionService
   class MockImapService
@@ -154,8 +154,8 @@ module EmailProcessingProcessorTestHelper
   end
 
   def mock_parser_for_testing
-    parser = instance_double(EmailProcessing::Parser)
-    allow(EmailProcessing::Parser).to receive(:new).and_return(parser)
+    parser = instance_double(Services::EmailProcessing::Parser)
+    allow(Services::EmailProcessing::Parser).to receive(:new).and_return(parser)
     parser
   end
 

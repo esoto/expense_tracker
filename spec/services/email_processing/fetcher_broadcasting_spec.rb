@@ -10,7 +10,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'broadcasting integration', t
            status: 'processing')
   end
   let(:mock_imap_service) { instance_double(Services::ImapConnectionService) }
-  let(:mock_email_processor) { instance_double(EmailProcessing::Processor) }
+  let(:mock_email_processor) { instance_double(Services::EmailProcessing::Processor) }
   let(:metrics_collector) { instance_double(Services::SyncMetricsCollector) }
 
   let(:fetcher) do
@@ -151,7 +151,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'broadcasting integration', t
 
       it 'logs error and continues processing' do
         expect(Rails.logger).to receive(:error)
-          .with('[EmailProcessing::Fetcher] Failed to update progress: Broadcasting error')
+          .with('[Services::EmailProcessing::Fetcher] Failed to update progress: Broadcasting error')
 
         # Should not raise error
         result = fetcher.fetch_new_emails
@@ -323,7 +323,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'broadcasting integration', t
 
       it 'logs error and continues processing' do
         expect(Rails.logger).to receive(:error)
-          .with('[EmailProcessing::Fetcher] Failed to update progress: Progress update failed')
+          .with('[Services::EmailProcessing::Fetcher] Failed to update progress: Progress update failed')
           .once
 
         result = fetcher.fetch_new_emails
@@ -350,7 +350,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'broadcasting integration', t
       it 'logs only the first error in the chain' do
         # Only the update_progress error should be logged
         expect(Rails.logger).to receive(:error)
-          .with('[EmailProcessing::Fetcher] Failed to update progress: Update failed')
+          .with('[Services::EmailProcessing::Fetcher] Failed to update progress: Update failed')
           .once
 
         # Should not attempt broadcast since update_progress failed first

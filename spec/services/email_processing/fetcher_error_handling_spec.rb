@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe Services::EmailProcessing::Fetcher, 'error handling', type: :service, unit: true do
   let(:email_account) { create(:email_account, :bac) }
   let(:mock_imap_service) { instance_double(Services::ImapConnectionService) }
-  let(:mock_email_processor) { instance_double(EmailProcessing::Processor) }
+  let(:mock_email_processor) { instance_double(Services::EmailProcessing::Processor) }
   let(:metrics_collector) { instance_double(Services::SyncMetricsCollector) }
 
   let(:fetcher) do
@@ -130,7 +130,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'error handling', type: :serv
 
       it 'logs authentication errors' do
         expect(Rails.logger).to receive(:error)
-          .with("[EmailProcessing::Fetcher] #{email_account.email}: IMAP Error: Invalid credentials")
+          .with("[Services::EmailProcessing::Fetcher] #{email_account.email}: IMAP Error: Invalid credentials")
 
         fetcher.fetch_new_emails
       end
@@ -167,7 +167,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'error handling', type: :serv
   describe 'error logging', unit: true do
     it 'logs errors with email account context' do
       expect(Rails.logger).to receive(:error)
-        .with("[EmailProcessing::Fetcher] #{email_account.email}: Test error message")
+        .with("[Services::EmailProcessing::Fetcher] #{email_account.email}: Test error message")
 
       fetcher.send(:add_error, 'Test error message')
     end
@@ -176,7 +176,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'error handling', type: :serv
       fetcher_nil = described_class.new(nil, imap_service: mock_imap_service)
 
       expect(Rails.logger).to receive(:error)
-        .with('[EmailProcessing::Fetcher] Unknown: Test error message')
+        .with('[Services::EmailProcessing::Fetcher] Unknown: Test error message')
 
       fetcher_nil.send(:add_error, 'Test error message')
     end
@@ -208,7 +208,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'error handling', type: :serv
       it 'returns proper failure response structure' do
         result = fetcher.fetch_new_emails
 
-        expect(result).to be_a(EmailProcessing::FetcherResponse)
+        expect(result).to be_a(Services::EmailProcessing::FetcherResponse)
         expect(result.failure?).to be true
         expect(result.success?).to be false
         expect(result.processed_emails_count).to eq(0)
@@ -310,7 +310,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'error handling', type: :serv
 
       it 'logs error but continues processing' do
         expect(Rails.logger).to receive(:error)
-          .with('[EmailProcessing::Fetcher] Failed to update progress: Progress update failed')
+          .with('[Services::EmailProcessing::Fetcher] Failed to update progress: Progress update failed')
 
         result = fetcher_with_sync.fetch_new_emails
         expect(result.success?).to be true

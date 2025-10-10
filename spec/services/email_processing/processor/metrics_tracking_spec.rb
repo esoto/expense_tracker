@@ -1,12 +1,12 @@
 require 'rails_helper'
 require 'support/email_processing_processor_test_helper'
 
-RSpec.describe 'EmailProcessing::Processor - Metrics Tracking', type: :service, unit: true do
+RSpec.describe 'Services::EmailProcessing::Processor - Metrics Tracking', type: :service, unit: true do
   include EmailProcessingProcessorTestHelper
   let(:email_account) { create(:email_account, :bac) }
   let(:sync_session) { create(:sync_session) }
   let(:metrics_collector) { instance_double(Services::SyncMetricsCollector) }
-  let(:processor) { EmailProcessing::Processor.new(email_account, metrics_collector: metrics_collector) }
+  let(:processor) { Services::EmailProcessing::Processor.new(email_account, metrics_collector: metrics_collector) }
   let(:mock_imap_service) { create_mock_imap_service }
 
   describe 'comprehensive metrics integration' do
@@ -277,7 +277,7 @@ RSpec.describe 'EmailProcessing::Processor - Metrics Tracking', type: :service, 
   end
 
   describe 'metrics collector absence handling' do
-    let(:processor_no_metrics) { EmailProcessing::Processor.new(email_account) }
+    let(:processor_no_metrics) { Services::EmailProcessing::Processor.new(email_account) }
 
     it 'gracefully handles nil metrics collector' do
       envelope = double('envelope',

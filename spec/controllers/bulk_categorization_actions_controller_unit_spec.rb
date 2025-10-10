@@ -7,7 +7,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
   let(:expense) { create(:expense, category: nil) }
   let(:category) { create(:category) }
   let(:bulk_operation) { create(:bulk_operation, expense_count: 1, user_id: current_user.id) }
-  let(:bulk_categorization_service) { instance_double(Categorization::BulkServices::CategorizationService) }
+  let(:bulk_categorization_service) { instance_double(Services::Categorization::Bulk::CategorizationService) }
   let(:undo_service) { instance_double(BulkCategorization::UndoService) }
 
   before do
@@ -41,12 +41,12 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
       allow(expenses_relation).to receive(:count).and_return(1)
       allow(expenses_relation).to receive(:empty?).and_return(false)
 
-      allow(Categorization::BulkServices::CategorizationService).to receive(:new).and_return(bulk_categorization_service)
+      allow(Services::Categorization::Bulk::CategorizationService).to receive(:new).and_return(bulk_categorization_service)
       allow(bulk_categorization_service).to receive(:apply!).and_return(result)
     end
 
     it "creates service with correct parameters" do
-      expect(Categorization::BulkServices::CategorizationService).to receive(:new).with(
+      expect(Services::Categorization::Bulk::CategorizationService).to receive(:new).with(
         expenses: anything,
         category_id: category_id.to_s,
         user: current_user,
@@ -67,7 +67,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
 
     context "with custom options" do
       it "passes confidence threshold" do
-        expect(Categorization::BulkServices::CategorizationService).to receive(:new).with(
+        expect(Services::Categorization::Bulk::CategorizationService).to receive(:new).with(
           hash_including(options: hash_including(confidence_threshold: 0.9))
         )
 
@@ -79,7 +79,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
       end
 
       it "passes apply_learning option" do
-        expect(Categorization::BulkServices::CategorizationService).to receive(:new).with(
+        expect(Services::Categorization::Bulk::CategorizationService).to receive(:new).with(
           hash_including(options: hash_including(apply_learning: true))
         )
 
@@ -120,12 +120,12 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
       expenses_relation = Expense.includes(:category, :email_account)
       allow(expenses_relation).to receive(:where).with(id: expense_ids).and_return(expenses_relation)
 
-      allow(Categorization::BulkServices::CategorizationService).to receive(:new).and_return(bulk_categorization_service)
+      allow(Services::Categorization::Bulk::CategorizationService).to receive(:new).and_return(bulk_categorization_service)
       allow(bulk_categorization_service).to receive(:suggest_categories).and_return(suggestions)
     end
 
     it "creates service with correct parameters" do
-      expect(Categorization::BulkServices::CategorizationService).to receive(:new).with(
+      expect(Services::Categorization::Bulk::CategorizationService).to receive(:new).with(
         expenses: anything,
         user: current_user,
         options: {
@@ -167,12 +167,12 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
       expenses_relation = Expense.includes(:category, :email_account)
       allow(expenses_relation).to receive(:where).with(id: expense_ids).and_return(expenses_relation)
 
-      allow(Categorization::BulkServices::CategorizationService).to receive(:new).and_return(bulk_categorization_service)
+      allow(Services::Categorization::Bulk::CategorizationService).to receive(:new).and_return(bulk_categorization_service)
       allow(bulk_categorization_service).to receive(:preview).and_return(preview_data)
     end
 
     it "creates service with correct parameters" do
-      expect(Categorization::BulkServices::CategorizationService).to receive(:new).with(
+      expect(Services::Categorization::Bulk::CategorizationService).to receive(:new).with(
         expenses: anything,
         category_id: category_id.to_s,
         user: current_user
@@ -216,7 +216,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
       allow(scope).to receive(:where).and_return(scope)
       allow(scope).to receive(:limit).with(1000).and_return(expenses)
 
-      allow(Categorization::BulkServices::CategorizationService).to receive(:new).and_return(bulk_categorization_service)
+      allow(Services::Categorization::Bulk::CategorizationService).to receive(:new).and_return(bulk_categorization_service)
       allow(bulk_categorization_service).to receive(:auto_categorize!).and_return(result)
     end
 
@@ -236,7 +236,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
     end
 
     it "creates service with filtered expenses" do
-      expect(Categorization::BulkServices::CategorizationService).to receive(:new).with(
+      expect(Services::Categorization::Bulk::CategorizationService).to receive(:new).with(
         expenses: kind_of(Array),
         user: current_user,
         options: {
@@ -249,7 +249,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
     end
 
     it "passes dry_run option correctly" do
-      expect(Categorization::BulkServices::CategorizationService).to receive(:new).with(
+      expect(Services::Categorization::Bulk::CategorizationService).to receive(:new).with(
         hash_including(options: hash_including(dry_run: true))
       )
 
@@ -277,14 +277,14 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
       expenses_relation = Expense.includes(:category, :email_account)
       allow(expenses_relation).to receive(:where).with(id: expense_ids).and_return(expenses_relation)
 
-      allow(Categorization::BulkServices::CategorizationService).to receive(:new).and_return(bulk_categorization_service)
+      allow(Services::Categorization::Bulk::CategorizationService).to receive(:new).and_return(bulk_categorization_service)
       allow(bulk_categorization_service).to receive(:export).with(format: :csv).and_return(csv_data)
       allow(bulk_categorization_service).to receive(:export).with(format: :json).and_return(json_data)
     end
 
     context "with CSV format" do
       it "creates service and exports as CSV" do
-        expect(Categorization::BulkServices::CategorizationService).to receive(:new).with(
+        expect(Services::Categorization::Bulk::CategorizationService).to receive(:new).with(
           expenses: anything,
           user: current_user
         )
@@ -416,8 +416,8 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
         allow(expenses_relation).to receive(:count).and_return(1)  # Add count method
 
         # Allow service creation but make apply! fail
-        error_service = instance_double(Categorization::BulkServices::CategorizationService)
-        allow(Categorization::BulkServices::CategorizationService).to receive(:new).and_return(error_service)
+        error_service = instance_double(Services::Categorization::Bulk::CategorizationService)
+        allow(Services::Categorization::Bulk::CategorizationService).to receive(:new).and_return(error_service)
         allow(error_service).to receive(:apply!).and_raise(StandardError, "Service error")
       end
 
@@ -466,7 +466,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
       allow(expenses_relation).to receive(:where).with(id: [ expense.id ]).and_return(expenses_relation)
       allow(expenses_relation).to receive(:empty?).and_return(false)
       allow(expenses_relation).to receive(:count).and_return(1)  # Add count method
-      allow(Categorization::BulkServices::CategorizationService).to receive(:new).and_return(bulk_categorization_service)
+      allow(Services::Categorization::Bulk::CategorizationService).to receive(:new).and_return(bulk_categorization_service)
       allow(bulk_categorization_service).to receive(:apply!).and_return({ success: true })
 
       post :categorize, params: { expense_ids: [ expense.id ], category_id: category.id }, format: :json

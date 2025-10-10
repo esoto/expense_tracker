@@ -13,7 +13,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'progress tracking', type: :s
            detected_expenses: 0)
   end
   let(:mock_imap_service) { instance_double(Services::ImapConnectionService) }
-  let(:mock_email_processor) { instance_double(EmailProcessing::Processor) }
+  let(:mock_email_processor) { instance_double(Services::EmailProcessing::Processor) }
   let(:metrics_collector) { instance_double(Services::SyncMetricsCollector) }
 
   let(:fetcher) do

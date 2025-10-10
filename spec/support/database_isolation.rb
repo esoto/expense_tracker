@@ -138,11 +138,11 @@ module EmailServiceIsolation
 
   def reset_service_mocks
     # Reset monitoring service mocks
-    allow(Infrastructure::MonitoringService::ErrorTracker).to receive(:report) if defined?(Infrastructure::MonitoringService::ErrorTracker)
+    allow(Services::Infrastructure::MonitoringService::ErrorTracker).to receive(:report) if defined?(Services::Infrastructure::MonitoringService::ErrorTracker)
 
     # Reset any other commonly stubbed services
-    if defined?(Categorization::Engine)
-      allow(Categorization::Engine).to receive(:create).and_call_original
+    if defined?(Services::Categorization::Engine)
+      allow(Services::Categorization::Engine).to receive(:create).and_call_original
     end
   end
 

@@ -36,7 +36,7 @@ def run_test(test_file, test_line = nil)
 end
 
 puts "=" * 80
-puts "Verifying Test Isolation for Categorization::Engine"
+puts "Verifying Test Isolation for Services::Categorization::Engine"
 puts "=" * 80
 puts
 

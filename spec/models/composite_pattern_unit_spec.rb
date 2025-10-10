@@ -425,16 +425,16 @@ RSpec.describe CompositePattern, type: :model, unit: true do
 
     describe "after_commit :invalidate_cache" do
       it "invalidates cache after commit" do
-        cache_instance = instance_double("Categorization::PatternCache")
-        stub_const("Categorization::PatternCache", class_double("Categorization::PatternCache", instance: cache_instance))
+        cache_instance = instance_double("Services::Categorization::PatternCache")
+        stub_const("Services::Categorization::PatternCache", class_double("Services::Categorization::PatternCache", instance: cache_instance))
 
         expect(cache_instance).to receive(:invalidate).with(composite_pattern)
         composite_pattern.run_callbacks(:commit) { true }
       end
 
       it "logs error if cache invalidation fails" do
-        cache_instance = instance_double("Categorization::PatternCache")
-        stub_const("Categorization::PatternCache", class_double("Categorization::PatternCache", instance: cache_instance))
+        cache_instance = instance_double("Services::Categorization::PatternCache")
+        stub_const("Services::Categorization::PatternCache", class_double("Services::Categorization::PatternCache", instance: cache_instance))
 
         allow(cache_instance).to receive(:invalidate).and_raise(StandardError, "Cache error")
         expect(Rails.logger).to receive(:error).with(/Cache invalidation failed: Cache error/)

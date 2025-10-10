@@ -32,7 +32,7 @@ RSpec.describe Services::Email::ProcessingService, 'Integration Tests', type: :s
 
   # Real component integration - minimal mocking
   let(:real_categorization_engine) do
-    instance_double(Categorization::Engine).tap do |engine|
+    instance_double(Services::Categorization::Engine).tap do |engine|
       allow(engine).to receive(:categorize).and_return(
         double('CategorizationResult',
           successful?: true,
@@ -48,7 +48,7 @@ RSpec.describe Services::Email::ProcessingService, 'Integration Tests', type: :s
   before do
     stub_imap_connection(mock_imap)
     # Real monitoring service integration
-    allow(Infrastructure::MonitoringService::ErrorTracker).to receive(:report)
+    allow(Services::Infrastructure::MonitoringService::ErrorTracker).to receive(:report)
   end
 
   describe 'Phase 5: End-to-End Integration Testing' do
@@ -264,7 +264,7 @@ RSpec.describe Services::Email::ProcessingService, 'Integration Tests', type: :s
         let!(:groceries_category) { create(:category, name: "Groceries") }
         let(:custom_categorization_engine) do
           # Create a proper mock that returns the correct structure
-          engine = instance_double(Categorization::Engine)
+          engine = instance_double(Services::Categorization::Engine)
           result = double(
             'CategorizationResult',
             successful?: true,
@@ -312,7 +312,7 @@ RSpec.describe Services::Email::ProcessingService, 'Integration Tests', type: :s
           ParsingRule.where(bank_name: 'BAC').update_all(active: false)
           create(:parsing_rule, :bac)
 
-          failing_engine = instance_double(Categorization::Engine)
+          failing_engine = instance_double(Services::Categorization::Engine)
           allow(failing_engine).to receive(:categorize).and_raise(StandardError.new("Categorization engine error"))
 
           failing_service = described_class.new(categorization_test_account, auto_categorize_options.merge(categorization_engine: failing_engine))
@@ -335,7 +335,7 @@ RSpec.describe Services::Email::ProcessingService, 'Integration Tests', type: :s
           create(:parsing_rule, :bac)
 
           # Low confidence categorization should not be applied
-          low_confidence_engine = instance_double(Categorization::Engine)
+          low_confidence_engine = instance_double(Services::Categorization::Engine)
           allow(low_confidence_engine).to receive(:categorize).and_return(
             double(
               'LowConfidenceResult',
@@ -368,7 +368,7 @@ RSpec.describe Services::Email::ProcessingService, 'Integration Tests', type: :s
 
         it 'reports errors to monitoring service with proper context' do
           # Reset monitoring service mock for clean expectations
-          allow(Infrastructure::MonitoringService::ErrorTracker).to receive(:report)
+          allow(Services::Infrastructure::MonitoringService::ErrorTracker).to receive(:report)
 
           # Force an error during processing
           error_mock = create_mock_imap
@@ -378,7 +378,7 @@ RSpec.describe Services::Email::ProcessingService, 'Integration Tests', type: :s
           result = processing_service.process_new_emails(since: 1.week.ago)
 
           expect(result[:success]).to be false
-          expect(Infrastructure::MonitoringService::ErrorTracker).to have_received(:report).with(
+          expect(Services::Infrastructure::MonitoringService::ErrorTracker).to have_received(:report).with(
             instance_of(StandardError),
             context: hash_including(
               email_account_id: monitoring_test_account.id
@@ -407,7 +407,7 @@ RSpec.describe Services::Email::ProcessingService, 'Integration Tests', type: :s
         let(:processing_service) { described_class.new(imap_test_account) }
 
         it 'handles connection failures during processing with proper cleanup' do
-          mock_imap.configure_connection_error(Email::ProcessingService::ConnectionError.new("Connection lost"))
+          mock_imap.configure_connection_error(Services::Email::ProcessingService::ConnectionError.new("Connection lost"))
 
           result = processing_service.process_new_emails(since: 1.week.ago)
 
@@ -419,12 +419,12 @@ RSpec.describe Services::Email::ProcessingService, 'Integration Tests', type: :s
         end
 
         it 'handles authentication failures with proper error reporting' do
-          mock_imap.configure_auth_error(Email::ProcessingService::AuthenticationError.new("Invalid credentials"))
+          mock_imap.configure_auth_error(Services::Email::ProcessingService::AuthenticationError.new("Invalid credentials"))
 
           result = processing_service.process_new_emails(since: 1.week.ago)
 
           expect(result[:success]).to be false
-          expect(Infrastructure::MonitoringService::ErrorTracker).to have_received(:report)
+          expect(Services::Infrastructure::MonitoringService::ErrorTracker).to have_received(:report)
           expect(processing_service.errors).not_to be_empty
         end
       end
@@ -452,7 +452,7 @@ RSpec.describe Services::Email::ProcessingService, 'Integration Tests', type: :s
 
         it 'handles expense creation failures without affecting other processing' do
           # Force expense creation to fail by making amount invalid
-          allow_any_instance_of(Email::ProcessingService::EmailParser).to receive(:extract_expenses).and_return([
+          allow_any_instance_of(Services::Email::ProcessingService::EmailParser).to receive(:extract_expenses).and_return([
             { amount: -1000, description: "Invalid expense", date: Date.current }
           ])
 

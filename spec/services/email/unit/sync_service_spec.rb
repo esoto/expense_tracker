@@ -65,7 +65,7 @@ RSpec.describe Services::Email::SyncService, unit: true do
 
         expect {
           service.sync_emails(email_account_id: 999)
-        }.to raise_error(Email::SyncService::SyncError, 'Cuenta de correo no encontrada.')
+        }.to raise_error(Services::Email::SyncService::SyncError, 'Cuenta de correo no encontrada.')
       end
 
       it 'raises SyncError for inactive account' do
@@ -73,7 +73,7 @@ RSpec.describe Services::Email::SyncService, unit: true do
 
         expect {
           service.sync_emails(email_account_id: 2)
-        }.to raise_error(Email::SyncService::SyncError, 'La cuenta de correo está inactiva.')
+        }.to raise_error(Services::Email::SyncService::SyncError, 'La cuenta de correo está inactiva.')
       end
     end
 
@@ -110,7 +110,7 @@ RSpec.describe Services::Email::SyncService, unit: true do
 
         expect {
           service.sync_emails
-        }.to raise_error(Email::SyncService::SyncError, 'No hay cuentas de correo activas configuradas.')
+        }.to raise_error(Services::Email::SyncService::SyncError, 'No hay cuentas de correo activas configuradas.')
       end
 
       context 'with conflict detection enabled' do
@@ -432,12 +432,12 @@ RSpec.describe Services::Email::SyncService, unit: true do
 
   describe 'SyncError' do
     it 'is a StandardError subclass' do
-      error = Email::SyncService::SyncError.new
+      error = Services::Email::SyncService::SyncError.new
       expect(error).to be_a(StandardError)
     end
 
     it 'accepts custom error messages' do
-      error = Email::SyncService::SyncError.new('Custom sync error')
+      error = Services::Email::SyncService::SyncError.new('Custom sync error')
       expect(error.message).to eq('Custom sync error')
     end
   end

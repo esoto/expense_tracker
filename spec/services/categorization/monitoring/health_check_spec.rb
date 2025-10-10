@@ -140,8 +140,8 @@ RSpec.describe Services::Categorization::Monitoring::HealthCheck, performance: t
 
   describe "#check_pattern_cache", performance: true do
     it "checks pattern cache status" do
-      cache = instance_double(Categorization::PatternCache)
-      allow(Categorization::PatternCache).to receive(:instance).and_return(cache)
+      cache = instance_double(Services::Categorization::PatternCache)
+      allow(Services::Categorization::PatternCache).to receive(:instance).and_return(cache)
       allow(cache).to receive(:stats).and_return({
         entries: 100,
         memory_bytes: 1024000,
@@ -159,8 +159,8 @@ RSpec.describe Services::Categorization::Monitoring::HealthCheck, performance: t
     end
 
     it "reports degraded status for low hit rate" do
-      cache = instance_double(Categorization::PatternCache)
-      allow(Categorization::PatternCache).to receive(:instance).and_return(cache)
+      cache = instance_double(Services::Categorization::PatternCache)
+      allow(Services::Categorization::PatternCache).to receive(:instance).and_return(cache)
       allow(cache).to receive(:stats).and_return({
         entries: 100,
         memory_bytes: 1024000,

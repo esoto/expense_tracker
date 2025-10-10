@@ -125,7 +125,7 @@ RSpec.describe Services::Categorization::Orchestrator, type: :service, integrati
       it 'opens circuit after threshold failures' do
         # Simulate failures
         3.times do
-          allow_any_instance_of(Categorization::PatternCache).to receive(:get_patterns_for_expense)
+          allow_any_instance_of(Services::Categorization::PatternCache).to receive(:get_patterns_for_expense)
             .and_raise(StandardError.new("Service error"))
 
           result = orchestrator_with_breaker.categorize(expense)
@@ -155,7 +155,7 @@ RSpec.describe Services::Categorization::Orchestrator, type: :service, integrati
     describe 'Monitoring Integration', integration: true do
       it 'tracks performance metrics' do
         # Stub the module if it's defined
-        if defined?(Infrastructure::MonitoringService::PerformanceTracker)
+        if defined?(Services::Infrastructure::MonitoringService::PerformanceTracker)
           # Create a pattern so categorization has work to do
           category = create(:category, name: 'Shopping')
           create(:categorization_pattern,
@@ -164,12 +164,12 @@ RSpec.describe Services::Categorization::Orchestrator, type: :service, integrati
             pattern_value: 'Amazon'
           )
 
-          allow(Infrastructure::MonitoringService::PerformanceTracker).to receive(:track).and_call_original
+          allow(Services::Infrastructure::MonitoringService::PerformanceTracker).to receive(:track).and_call_original
 
           # Use a longer timeout to ensure the operation completes
           orchestrator.categorize(expense, timeout: 0.100)
 
-          expect(Infrastructure::MonitoringService::PerformanceTracker).to have_received(:track).with(
+          expect(Services::Infrastructure::MonitoringService::PerformanceTracker).to have_received(:track).with(
             "categorization",
             "categorize_expense",
             anything,
@@ -183,14 +183,14 @@ RSpec.describe Services::Categorization::Orchestrator, type: :service, integrati
 
       it 'reports errors to monitoring service' do
         # Stub the module if it's defined
-        if defined?(Infrastructure::MonitoringService::ErrorTracker)
-          allow(Infrastructure::MonitoringService::ErrorTracker).to receive(:report)
+        if defined?(Services::Infrastructure::MonitoringService::ErrorTracker)
+          allow(Services::Infrastructure::MonitoringService::ErrorTracker).to receive(:report)
           allow(CategorizationPattern).to receive(:active)
             .and_raise(StandardError.new("Test error"))
 
           orchestrator.categorize(expense)
 
-          expect(Infrastructure::MonitoringService::ErrorTracker).to have_received(:report).with(
+          expect(Services::Infrastructure::MonitoringService::ErrorTracker).to have_received(:report).with(
             an_instance_of(StandardError),
             hash_including(:service, :expense_id, :correlation_id)
           )

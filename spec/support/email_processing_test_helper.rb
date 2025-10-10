@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Test helper for Email::ProcessingService testing
+# Test helper for Services::Email::ProcessingService testing
 # Provides IMAP mocking, email fixtures, and test utilities
 module EmailProcessingTestHelper
   # IMAP Mock Helper
@@ -243,11 +243,11 @@ module EmailProcessingTestHelper
 
   def stub_processing_dependencies
     # Stub MonitoringService
-    allow(Infrastructure::MonitoringService::ErrorTracker).to receive(:report)
+    allow(Services::Infrastructure::MonitoringService::ErrorTracker).to receive(:report)
 
     # Stub categorization engine
     mock_engine = double("categorization_engine")
-    allow(Categorization::Engine).to receive(:create).and_return(mock_engine)
+    allow(Services::Categorization::Engine).to receive(:create).and_return(mock_engine)
     allow(mock_engine).to receive(:categorize).and_return(
       double(successful?: true, confidence: 0.8, method: "pattern", category: nil)
     )

@@ -8,7 +8,7 @@ RSpec.describe Services::Categorization::OrchestratorFactory, type: :service do
       orchestrator = described_class.create_production
 
       expect(orchestrator).to be_a(Categorization::Orchestrator)
-      expect(orchestrator.pattern_cache).to be_a(Categorization::PatternCache)
+      expect(orchestrator.pattern_cache).to be_a(Services::Categorization::PatternCache)
       expect(orchestrator.matcher).to be_a(Categorization::Matchers::FuzzyMatcher)
       expect(orchestrator.confidence_calculator).to be_a(Categorization::ConfidenceCalculator)
       expect(orchestrator.pattern_learner).to be_a(Categorization::PatternLearner)
@@ -16,7 +16,7 @@ RSpec.describe Services::Categorization::OrchestratorFactory, type: :service do
     end
 
     it "accepts custom services" do
-      custom_cache = instance_double(Categorization::PatternCache)
+      custom_cache = instance_double(Services::Categorization::PatternCache)
       orchestrator = described_class.create_production(pattern_cache: custom_cache)
 
       expect(orchestrator.pattern_cache).to eq(custom_cache)
@@ -54,7 +54,7 @@ RSpec.describe Services::Categorization::OrchestratorFactory, type: :service do
       orchestrator = described_class.create_development
 
       expect(orchestrator).to be_a(Categorization::Orchestrator)
-      expect(orchestrator.pattern_cache).to be_a(Categorization::PatternCache)
+      expect(orchestrator.pattern_cache).to be_a(Services::Categorization::PatternCache)
       expect(orchestrator.performance_tracker).to be_a(Categorization::PerformanceTracker)
     end
 
@@ -62,7 +62,7 @@ RSpec.describe Services::Categorization::OrchestratorFactory, type: :service do
       orchestrator = described_class.create_development
 
       # Development services should have debugging features
-      expect(orchestrator.pattern_cache).to be_a(Categorization::PatternCache)
+      expect(orchestrator.pattern_cache).to be_a(Services::Categorization::PatternCache)
       expect(orchestrator.matcher).to be_a(Categorization::Matchers::FuzzyMatcher)
     end
   end
@@ -70,7 +70,7 @@ RSpec.describe Services::Categorization::OrchestratorFactory, type: :service do
   describe ".create_custom" do
     it "creates orchestrator with provided services" do
       custom_services = {
-        pattern_cache: instance_double(Categorization::PatternCache),
+        pattern_cache: instance_double(Services::Categorization::PatternCache),
         matcher: instance_double(Categorization::Matchers::FuzzyMatcher),
         confidence_calculator: instance_double(Categorization::ConfidenceCalculator),
         pattern_learner: instance_double(Categorization::PatternLearner),
@@ -89,7 +89,7 @@ RSpec.describe Services::Categorization::OrchestratorFactory, type: :service do
     it "creates default services for missing ones" do
       orchestrator = described_class.create_custom({})
 
-      expect(orchestrator.pattern_cache).to be_a(Categorization::PatternCache)
+      expect(orchestrator.pattern_cache).to be_a(Services::Categorization::PatternCache)
       expect(orchestrator.matcher).to be_a(Categorization::Matchers::FuzzyMatcher)
     end
   end

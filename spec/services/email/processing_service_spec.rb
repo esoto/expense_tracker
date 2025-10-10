@@ -14,7 +14,7 @@ RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
   before do
     stub_imap_connection(mock_imap)
     # Ensure MonitoringService is properly stubbed for all tests
-    allow(Infrastructure::MonitoringService::ErrorTracker).to receive(:report)
+    allow(Services::Infrastructure::MonitoringService::ErrorTracker).to receive(:report)
   end
 
   describe 'initialization' do
@@ -37,7 +37,7 @@ RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
     end
 
     it 'creates default categorization engine when none provided' do
-      expect(Categorization::Engine).to receive(:create)
+      expect(Services::Categorization::Engine).to receive(:create)
       described_class.new(email_account)
     end
 
@@ -148,18 +148,18 @@ RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
 
     context 'with valid account but IMAP errors' do
       it 'handles connection errors gracefully' do
-        mock_imap.configure_connection_error(Email::ProcessingService::ConnectionError.new("Connection failed"))
+        mock_imap.configure_connection_error(Services::Email::ProcessingService::ConnectionError.new("Connection failed"))
 
         result = processing_service.process_new_emails(since: since)
 
         expect(result).to be_valid_processing_response
         expect(result[:success]).to be false
         expect(result[:error]).to include("Email processing failed")
-        expect(Infrastructure::MonitoringService::ErrorTracker).to have_received(:report)
+        expect(Services::Infrastructure::MonitoringService::ErrorTracker).to have_received(:report)
       end
 
       it 'handles authentication errors gracefully' do
-        mock_imap.configure_auth_error(Email::ProcessingService::AuthenticationError.new("Auth failed"))
+        mock_imap.configure_auth_error(Services::Email::ProcessingService::AuthenticationError.new("Auth failed"))
 
         result = processing_service.process_new_emails(since: since)
 
@@ -300,7 +300,7 @@ RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
         processing_service.send(:handle_error, test_error)
 
         expect(processing_service.errors).to include("Test error")
-        expect(Infrastructure::MonitoringService::ErrorTracker).to have_received(:report).with(
+        expect(Services::Infrastructure::MonitoringService::ErrorTracker).to have_received(:report).with(
           test_error,
           context: {
             email_account_id: email_account.id,
@@ -393,7 +393,7 @@ RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
 
       processing_service.send(:handle_error, error)
 
-      expect(Infrastructure::MonitoringService::ErrorTracker).to have_received(:report).with(
+      expect(Services::Infrastructure::MonitoringService::ErrorTracker).to have_received(:report).with(
         error,
         context: {
           email_account_id: email_account.id,
@@ -411,7 +411,7 @@ RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
     end
 
     it 'creates default categorization engine when not injected' do
-      expect(Categorization::Engine).to receive(:create).and_return(mock_categorization_engine)
+      expect(Services::Categorization::Engine).to receive(:create).and_return(mock_categorization_engine)
 
       service = described_class.new(email_account)
       expect(service.instance_variable_get(:@categorization_engine)).to eq(mock_categorization_engine)

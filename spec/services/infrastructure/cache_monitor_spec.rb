@@ -4,7 +4,7 @@ require 'rails_helper'
 require_relative '../../../app/services/infrastructure/monitoring_service'
 
 # Skip this test suite as CacheMonitor module is not implemented in this branch
-if defined?(Infrastructure::MonitoringService::CacheMonitor)
+if defined?(Services::Infrastructure::MonitoringService::CacheMonitor)
   RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor do
   describe '.metrics' do
     it 'returns comprehensive cache metrics' do
@@ -34,7 +34,7 @@ if defined?(Infrastructure::MonitoringService::CacheMonitor)
       end
 
       before do
-        allow(Categorization::PatternCache).to receive(:instance).and_return(pattern_cache)
+        allow(Services::Categorization::PatternCache).to receive(:instance).and_return(pattern_cache)
         allow(pattern_cache).to receive(:metrics).and_return(cache_metrics)
         allow(described_class).to receive(:warmup_status).and_return({ status: "recent" })
       end
@@ -57,8 +57,8 @@ if defined?(Infrastructure::MonitoringService::CacheMonitor)
     context 'when PatternCache is not available' do
       before do
         # Stub the module method to simulate PatternCache not being defined
-        stub_const("Categorization::PatternCache", nil)
-        hide_const("Categorization::PatternCache")
+        stub_const("Services::Categorization::PatternCache", nil)
+        hide_const("Services::Categorization::PatternCache")
       end
 
       it 'returns empty hash' do
@@ -68,7 +68,7 @@ if defined?(Infrastructure::MonitoringService::CacheMonitor)
 
     context 'when fetching metrics fails' do
       before do
-        allow(Categorization::PatternCache).to receive(:instance).and_raise(StandardError.new("Connection error"))
+        allow(Services::Categorization::PatternCache).to receive(:instance).and_raise(StandardError.new("Connection error"))
         allow(Rails.logger).to receive(:error)
       end
 
@@ -161,7 +161,7 @@ if defined?(Infrastructure::MonitoringService::CacheMonitor)
     let(:pattern_cache) { double('PatternCache') }
 
     before do
-      allow(Categorization::PatternCache).to receive(:instance).and_return(pattern_cache)
+      allow(Services::Categorization::PatternCache).to receive(:instance).and_return(pattern_cache)
       allow(pattern_cache).to receive(:metrics).and_return({
         hit_rate: 92,
         memory_cache_entries: 500,
@@ -293,7 +293,7 @@ if defined?(Infrastructure::MonitoringService::CacheMonitor)
   end
   end
 else
-  RSpec.describe "Infrastructure::MonitoringService::CacheMonitor" do
+  RSpec.describe "Services::Infrastructure::MonitoringService::CacheMonitor" do
     it "is not implemented in this branch" do
       skip "CacheMonitor module not available in this branch"
     end

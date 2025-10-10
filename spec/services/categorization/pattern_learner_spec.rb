@@ -126,7 +126,7 @@ RSpec.describe Services::Categorization::PatternLearner do
       end
 
       it "invalidates cache after learning" do
-        pattern_cache = instance_double(Categorization::PatternCache)
+        pattern_cache = instance_double(Services::Categorization::PatternCache)
         expect(pattern_cache).to receive(:invalidate_all)
         learner_with_cache = described_class.new(pattern_cache: pattern_cache)
         learner_with_cache.learn_from_correction(expense, food_category)
@@ -157,7 +157,7 @@ RSpec.describe Services::Categorization::PatternLearner do
       end
 
       it "does not invalidate cache" do
-        expect(Categorization::PatternCache.instance).not_to receive(:invalidate_all)
+        expect(Services::Categorization::PatternCache.instance).not_to receive(:invalidate_all)
         learner.learn_from_correction(expense, food_category)
       end
     end
@@ -225,7 +225,7 @@ RSpec.describe Services::Categorization::PatternLearner do
       end
 
       it "invalidates cache once after batch" do
-        pattern_cache = instance_double(Categorization::PatternCache)
+        pattern_cache = instance_double(Services::Categorization::PatternCache)
         expect(pattern_cache).to receive(:invalidate_all).once
         learner_with_cache = described_class.new(pattern_cache: pattern_cache)
         learner_with_cache.batch_learn(corrections)

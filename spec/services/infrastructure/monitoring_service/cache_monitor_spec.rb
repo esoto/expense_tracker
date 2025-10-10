@@ -103,8 +103,8 @@ RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor, type: 
         pattern_cache_instance = double("PatternCache instance")
         allow(pattern_cache_instance).to receive(:metrics).and_raise(StandardError.new("Redis connection failed"))
 
-        pattern_cache_class = double("Categorization::PatternCache")
-        stub_const("Categorization::PatternCache", pattern_cache_class)
+        pattern_cache_class = double("Services::Categorization::PatternCache")
+        stub_const("Services::Categorization::PatternCache", pattern_cache_class)
         allow(pattern_cache_class).to receive(:instance).and_return(pattern_cache_instance)
 
         result = cache_monitor.pattern_cache_metrics
@@ -117,8 +117,8 @@ RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor, type: 
     context "when PatternCache is not defined" do
       it "returns empty hash when PatternCache is not available" do
         # Remove PatternCache constant if it exists
-        if defined?(Categorization::PatternCache)
-          hide_const("Categorization::PatternCache")
+        if defined?(Services::Categorization::PatternCache)
+          hide_const("Services::Categorization::PatternCache")
         end
 
         result = cache_monitor.pattern_cache_metrics
@@ -381,7 +381,7 @@ RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor, type: 
   describe ".check_pattern_cache_health" do
     context "when PatternCache is not configured" do
       it "returns not_configured status" do
-        hide_const("Categorization::PatternCache") if defined?(Categorization::PatternCache)
+        hide_const("Services::Categorization::PatternCache") if defined?(Services::Categorization::PatternCache)
 
         result = cache_monitor.send(:check_pattern_cache_health)
 

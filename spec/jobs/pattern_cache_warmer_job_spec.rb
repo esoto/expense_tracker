@@ -4,10 +4,10 @@ require 'rails_helper'
 
 RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
   let(:job) { described_class.new }
-  let(:cache) { instance_double(Categorization::PatternCache) }
+  let(:cache) { instance_double(Services::Categorization::PatternCache) }
 
   before do
-    allow(Categorization::PatternCache).to receive(:instance).and_return(cache)
+    allow(Services::Categorization::PatternCache).to receive(:instance).and_return(cache)
     allow(Rails.logger).to receive(:info)
     allow(Rails.logger).to receive(:error)
     allow(Rails.logger).to receive(:warn)

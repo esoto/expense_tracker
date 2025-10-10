@@ -215,7 +215,7 @@ RSpec.describe Services::Categorization::EnhancedCategorizationService, performa
     end
 
     it "preloads cache for efficiency" do
-      expect_any_instance_of(Categorization::PatternCache)
+      expect_any_instance_of(Services::Categorization::PatternCache)
         .to receive(:preload_for_expenses).with(expenses)
 
       service.categorize_batch(expenses)

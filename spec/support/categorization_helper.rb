@@ -7,12 +7,12 @@ module CategorizationTestHelper
     # No longer using singleton pattern
 
     # Reset PatternCache if it has singleton behavior
-    if defined?(Categorization::PatternCache)
+    if defined?(Services::Categorization::PatternCache)
       begin
-        if Categorization::PatternCache.respond_to?(:reset_singleton!)
-          Categorization::PatternCache.reset_singleton!
-        elsif Categorization::PatternCache.instance_variable_defined?(:@instance)
-          Categorization::PatternCache.instance_variable_set(:@instance, nil)
+        if Services::Categorization::PatternCache.respond_to?(:reset_singleton!)
+          Services::Categorization::PatternCache.reset_singleton!
+        elsif Services::Categorization::PatternCache.instance_variable_defined?(:@instance)
+          Services::Categorization::PatternCache.instance_variable_set(:@instance, nil)
         end
       rescue => e
         Rails.logger.warn "[Test] Failed to reset pattern cache: #{e.message}"
@@ -41,19 +41,19 @@ module CategorizationTestHelper
     service_registry = Categorization::ServiceRegistry.new(logger: Rails.logger)
 
     # Create fresh instances of all services
-    pattern_cache = Categorization::PatternCache.new
+    pattern_cache = Services::Categorization::PatternCache.new
     service_registry.register(:pattern_cache, pattern_cache)
     service_registry.register(:fuzzy_matcher, Categorization::Matchers::FuzzyMatcher.new)
     service_registry.register(:confidence_calculator, Categorization::ConfidenceCalculator.new)
     service_registry.register(:pattern_learner, Categorization::PatternLearner.new(pattern_cache: pattern_cache))
     service_registry.register(:performance_tracker, Categorization::PerformanceTracker.new)
     service_registry.register(:lru_cache, Categorization::LruCache.new(
-      max_size: Categorization::Engine::MAX_PATTERN_CACHE_SIZE,
+      max_size: Services::Categorization::Engine::MAX_PATTERN_CACHE_SIZE,
       ttl_seconds: 300
     ))
 
     # Create engine with fresh dependencies
-    Categorization::Engine.new(
+    Services::Categorization::Engine.new(
       service_registry: service_registry,
       skip_defaults: true,
       **options

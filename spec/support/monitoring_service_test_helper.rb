@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Shared helper for Infrastructure::MonitoringService tests
+# Shared helper for Services::Infrastructure::MonitoringService tests
 # Provides common mocking patterns and test utilities
 module MonitoringServiceTestHelper
   extend ActiveSupport::Concern
@@ -88,11 +88,11 @@ module MonitoringServiceTestHelper
         average_lookup_time_ms: 2.5
       }
 
-      cache_instance = double("Categorization::PatternCache instance")
+      cache_instance = double("Services::Categorization::PatternCache instance")
       allow(cache_instance).to receive(:metrics).and_return(default_metrics.merge(metrics))
 
-      pattern_cache_class = double("Categorization::PatternCache")
-      stub_const("Categorization::PatternCache", pattern_cache_class)
+      pattern_cache_class = double("Services::Categorization::PatternCache")
+      stub_const("Services::Categorization::PatternCache", pattern_cache_class)
       allow(pattern_cache_class).to receive(:instance).and_return(cache_instance)
 
       cache_instance

@@ -16,10 +16,10 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
   end
 
   describe ".default" do
-    let(:mock_engine) { instance_double(Categorization::Engine) }
+    let(:mock_engine) { instance_double(Services::Categorization::Engine) }
 
     before do
-      allow(Categorization::Engine).to receive(:create).and_return(mock_engine)
+      allow(Services::Categorization::Engine).to receive(:create).and_return(mock_engine)
     end
 
     it "returns a cached default engine instance" do
@@ -44,7 +44,7 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
         confidence_threshold: 0.7
       }
 
-      expect(Categorization::Engine).to receive(:create).with(expected_config).once
+      expect(Services::Categorization::Engine).to receive(:create).with(expected_config).once
 
       described_class.default
     end
@@ -57,7 +57,7 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
     end
 
     it "does not create new engine on subsequent calls" do
-      expect(Categorization::Engine).to receive(:create).once
+      expect(Services::Categorization::Engine).to receive(:create).once
 
       described_class.default
       described_class.default
@@ -66,11 +66,11 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
   end
 
   describe ".create" do
-    let(:mock_engine) { instance_double(Categorization::Engine) }
+    let(:mock_engine) { instance_double(Services::Categorization::Engine) }
     let(:uuid) { "test-uuid-123" }
 
     before do
-      allow(Categorization::Engine).to receive(:create).and_return(mock_engine)
+      allow(Services::Categorization::Engine).to receive(:create).and_return(mock_engine)
       allow(SecureRandom).to receive(:uuid).and_return(uuid)
     end
 
@@ -83,7 +83,7 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
       end
 
       it "creates new engine each time" do
-        expect(Categorization::Engine).to receive(:create).exactly(3).times
+        expect(Services::Categorization::Engine).to receive(:create).exactly(3).times
 
         described_class.create
         described_class.create
@@ -100,10 +100,10 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
       end
 
       it "overwrites existing engine with same name" do
-        first_engine = instance_double(Categorization::Engine)
-        second_engine = instance_double(Categorization::Engine)
+        first_engine = instance_double(Services::Categorization::Engine)
+        second_engine = instance_double(Services::Categorization::Engine)
 
-        allow(Categorization::Engine).to receive(:create).and_return(first_engine, second_engine)
+        allow(Services::Categorization::Engine).to receive(:create).and_return(first_engine, second_engine)
 
         described_class.create("my-engine")
         described_class.create("my-engine")
@@ -134,7 +134,7 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
           custom_option: "test" # New
         }
 
-        expect(Categorization::Engine).to receive(:create).with(expected_config)
+        expect(Services::Categorization::Engine).to receive(:create).with(expected_config)
 
         described_class.create("test", custom_config)
       end
@@ -145,7 +145,7 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
       end
 
       it "handles empty config hash" do
-        expect(Categorization::Engine).to receive(:create).with(hash_including(cache_size: 1000))
+        expect(Services::Categorization::Engine).to receive(:create).with(hash_including(cache_size: 1000))
 
         described_class.create("test", {})
       end
@@ -153,10 +153,10 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
   end
 
   describe ".get" do
-    let(:mock_engine) { instance_double(Categorization::Engine) }
+    let(:mock_engine) { instance_double(Services::Categorization::Engine) }
 
     before do
-      allow(Categorization::Engine).to receive(:create).and_return(mock_engine)
+      allow(Services::Categorization::Engine).to receive(:create).and_return(mock_engine)
     end
 
     context "when engine exists" do
@@ -164,7 +164,7 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
         described_class.create("existing-engine")
 
         # Should not create a new engine
-        expect(Categorization::Engine).not_to receive(:create)
+        expect(Services::Categorization::Engine).not_to receive(:create)
 
         result = described_class.get("existing-engine")
         expect(result).to eq(mock_engine)
@@ -173,7 +173,7 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
 
     context "when engine does not exist" do
       it "creates new engine with given name" do
-        expect(Categorization::Engine).to receive(:create).once
+        expect(Services::Categorization::Engine).to receive(:create).once
 
         engine = described_class.get("new-engine")
 
@@ -185,7 +185,7 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
         first_call = described_class.get("cached-engine")
 
         # Should not create again
-        expect(Categorization::Engine).not_to receive(:create)
+        expect(Services::Categorization::Engine).not_to receive(:create)
 
         second_call = described_class.get("cached-engine")
         expect(first_call).to be(second_call)
@@ -195,9 +195,9 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
     it "handles concurrent access safely" do
       engines_created = Concurrent::AtomicFixnum.new(0)
 
-      allow(Categorization::Engine).to receive(:create) do
+      allow(Services::Categorization::Engine).to receive(:create) do
         engines_created.increment
-        instance_double(Categorization::Engine)
+        instance_double(Services::Categorization::Engine)
       end
 
       threads = 10.times.map do
@@ -212,10 +212,10 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
   end
 
   describe ".reset!" do
-    let(:mock_engine) { instance_double(Categorization::Engine) }
+    let(:mock_engine) { instance_double(Services::Categorization::Engine) }
 
     before do
-      allow(Categorization::Engine).to receive(:create).and_return(mock_engine)
+      allow(Services::Categorization::Engine).to receive(:create).and_return(mock_engine)
     end
 
     it "clears all cached engines" do
@@ -234,7 +234,7 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
       described_class.reset!
 
       # Should create new engine after reset
-      expect(Categorization::Engine).to receive(:create).once
+      expect(Services::Categorization::Engine).to receive(:create).once
       described_class.default
     end
 
@@ -243,7 +243,7 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
       described_class.reset!
 
       # Should create new engine with same name
-      expect(Categorization::Engine).to receive(:create).once
+      expect(Services::Categorization::Engine).to receive(:create).once
       described_class.get("test-engine")
     end
 
@@ -262,12 +262,12 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
   end
 
   describe ".active_engines" do
-    let(:engine1) { instance_double(Categorization::Engine) }
-    let(:engine2) { instance_double(Categorization::Engine) }
-    let(:engine3) { instance_double(Categorization::Engine) }
+    let(:engine1) { instance_double(Services::Categorization::Engine) }
+    let(:engine2) { instance_double(Services::Categorization::Engine) }
+    let(:engine3) { instance_double(Services::Categorization::Engine) }
 
     before do
-      allow(Categorization::Engine).to receive(:create).and_return(engine1, engine2, engine3)
+      allow(Services::Categorization::Engine).to receive(:create).and_return(engine1, engine2, engine3)
     end
 
     it "returns empty array when no engines exist" do
@@ -365,7 +365,7 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
         custom_flag: true
       )
 
-      expect(Categorization::Engine).to receive(:create).with(expected_config)
+      expect(Services::Categorization::Engine).to receive(:create).with(expected_config)
 
       described_class.create("configured-engine")
     end
@@ -441,17 +441,17 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
     end
 
     describe "#create_engine" do
-      let(:mock_engine) { instance_double(Categorization::Engine) }
+      let(:mock_engine) { instance_double(Services::Categorization::Engine) }
 
       before do
-        allow(Categorization::Engine).to receive(:create).and_return(mock_engine)
+        allow(Services::Categorization::Engine).to receive(:create).and_return(mock_engine)
       end
 
       it "creates engine with merged configuration" do
         custom = { cache_size: 2500 }
         expected = described_class.configuration.to_h.merge(custom)
 
-        expect(Categorization::Engine).to receive(:create).with(expected)
+        expect(Services::Categorization::Engine).to receive(:create).with(expected)
 
         described_class.send(:create_engine, "test", custom)
       end
@@ -477,7 +477,7 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
           config.cache_size = nil
         end
 
-        expect(Categorization::Engine).to receive(:create).with(hash_including(cache_size: nil))
+        expect(Services::Categorization::Engine).to receive(:create).with(hash_including(cache_size: nil))
         described_class.create("nil-config")
       end
 
@@ -496,10 +496,10 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
     end
 
     context "with special characters in names" do
-      let(:mock_engine) { instance_double(Categorization::Engine) }
+      let(:mock_engine) { instance_double(Services::Categorization::Engine) }
 
       before do
-        allow(Categorization::Engine).to receive(:create).and_return(mock_engine)
+        allow(Services::Categorization::Engine).to receive(:create).and_return(mock_engine)
       end
 
       it "handles names with spaces" do
@@ -523,8 +523,8 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
 
     context "with memory management" do
       it "allows garbage collection of removed engines" do
-        mock_engine = instance_double(Categorization::Engine)
-        allow(Categorization::Engine).to receive(:create).and_return(mock_engine)
+        mock_engine = instance_double(Services::Categorization::Engine)
+        allow(Services::Categorization::Engine).to receive(:create).and_return(mock_engine)
 
         described_class.create("temp-engine")
         described_class.reset!
@@ -546,10 +546,10 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
         call_count = 0
         mutex = Mutex.new
 
-        allow(Categorization::Engine).to receive(:create) do
+        allow(Services::Categorization::Engine).to receive(:create) do
           mutex.synchronize { call_count += 1 }
           sleep(0.001) # Small delay to increase race condition likelihood
-          instance_double(Categorization::Engine)
+          instance_double(Services::Categorization::Engine)
         end
 
         threads = 5.times.map do
@@ -564,7 +564,7 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
         expect(call_count).to be <= 5
 
         # After all threads complete, subsequent calls should use cached value
-        expect(Categorization::Engine).not_to receive(:create)
+        expect(Services::Categorization::Engine).not_to receive(:create)
         described_class.default
       end
 
@@ -588,10 +588,10 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
   end
 
   describe "integration scenarios" do
-    let(:mock_engine) { instance_double(Categorization::Engine) }
+    let(:mock_engine) { instance_double(Services::Categorization::Engine) }
 
     before do
-      allow(Categorization::Engine).to receive(:create).and_return(mock_engine)
+      allow(Services::Categorization::Engine).to receive(:create).and_return(mock_engine)
     end
 
     it "supports multiple named engines with different configs" do

@@ -16,7 +16,7 @@ RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
     # Mock categorization engine with configurable responses
     let(:mock_categorization_engine) {
       instance_double(
-        Categorization::Engine,
+        Services::Categorization::Engine,
         categorize: categorization_result
       )
     }
@@ -33,7 +33,7 @@ RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
 
     before do
       stub_imap_connection(mock_imap)
-      allow(Infrastructure::MonitoringService::ErrorTracker).to receive(:report)
+      allow(Services::Infrastructure::MonitoringService::ErrorTracker).to receive(:report)
     end
 
     describe 'Database Transaction Safety' do

@@ -33,11 +33,11 @@ RSpec.describe BulkCategorizationsController, type: :controller, unit: true do
 
   describe "GET #index" do
     # Mock the grouping service since it's an external dependency
-    let(:grouping_service) { double("BulkCategorization::GroupingService") }
+    let(:grouping_service) { double("Services::BulkCategorization::GroupingService") }
     let(:grouped_expenses) { [ { expenses: [ expense1, expense2 ], confidence: 0.9, total_amount: 1000 } ] }
 
     before do
-      allow(BulkCategorization::GroupingService).to receive(:new).and_return(grouping_service)
+      allow(Services::BulkCategorization::GroupingService).to receive(:new).and_return(grouping_service)
       allow(grouping_service).to receive(:group_by_similarity).and_return(grouped_expenses)
     end
 
@@ -63,7 +63,7 @@ RSpec.describe BulkCategorizationsController, type: :controller, unit: true do
       end
 
       it "groups similar expenses using service" do
-        expect(BulkCategorization::GroupingService).to receive(:new)
+        expect(Services::BulkCategorization::GroupingService).to receive(:new)
         expect(grouping_service).to receive(:group_by_similarity).and_return(grouped_expenses)
 
         get :index
@@ -158,7 +158,7 @@ RSpec.describe BulkCategorizationsController, type: :controller, unit: true do
         expect(controller).to receive(:load_uncategorized_expenses).and_call_original
 
         # Mock the grouping service to avoid additional complexity
-        allow(BulkCategorization::GroupingService).to receive(:new).and_return(double("service", group_by_similarity: []))
+        allow(Services::BulkCategorization::GroupingService).to receive(:new).and_return(double("service", group_by_similarity: []))
 
         get :index
       end
@@ -250,8 +250,8 @@ RSpec.describe BulkCategorizationsController, type: :controller, unit: true do
     describe "#group_similar_expenses" do
       it "groups expenses by similarity using the grouping service" do
         expenses = [ expense1, expense2 ]
-        grouping_service = double("BulkCategorization::GroupingService", group_by_similarity: [])
-        allow(BulkCategorization::GroupingService).to receive(:new).with(expenses).and_return(grouping_service)
+        grouping_service = double("Services::BulkCategorization::GroupingService", group_by_similarity: [])
+        allow(Services::BulkCategorization::GroupingService).to receive(:new).with(expenses).and_return(grouping_service)
 
         result = controller.send(:group_similar_expenses, expenses)
         expect(result).to be_an(Array)
@@ -259,11 +259,11 @@ RSpec.describe BulkCategorizationsController, type: :controller, unit: true do
 
       it "uses grouping service to group expenses" do
         expenses = [ expense1 ]
-        grouping_service = double("BulkCategorization::GroupingService")
-        allow(BulkCategorization::GroupingService).to receive(:new).and_return(grouping_service)
+        grouping_service = double("Services::BulkCategorization::GroupingService")
+        allow(Services::BulkCategorization::GroupingService).to receive(:new).and_return(grouping_service)
         allow(grouping_service).to receive(:group_by_similarity).and_return([])
 
-        expect(BulkCategorization::GroupingService).to receive(:new).with(expenses)
+        expect(Services::BulkCategorization::GroupingService).to receive(:new).with(expenses)
         expect(grouping_service).to receive(:group_by_similarity)
 
         controller.send(:group_similar_expenses, expenses)

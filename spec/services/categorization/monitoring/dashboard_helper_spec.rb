@@ -10,7 +10,7 @@ RSpec.describe Services::Categorization::Monitoring::DashboardHelper, type: :ser
   # Mock objects
   let(:mock_health_check) { instance_double(Categorization::Monitoring::HealthCheck) }
   let(:mock_metrics_collector) { instance_double(Categorization::Monitoring::MetricsCollector) }
-  let(:mock_pattern_cache) { instance_double(Categorization::PatternCache) }
+  let(:mock_pattern_cache) { instance_double(Services::Categorization::PatternCache) }
   let(:mock_performance_tracker) { instance_double(Categorization::PerformanceTracker) }
   let(:mock_connection_pool) { create_mock_connection_pool(size: 10, connections_count: 5, busy: 2) }
   let(:mock_connection) { double("Connection") }
@@ -46,7 +46,7 @@ RSpec.describe Services::Categorization::Monitoring::DashboardHelper, type: :ser
     allow(Categorization::Monitoring::MetricsCollector).to receive(:instance).and_return(mock_metrics_collector)
 
     # Mock PatternCache singleton
-    allow(Categorization::PatternCache).to receive(:instance).and_return(mock_pattern_cache)
+    allow(Services::Categorization::PatternCache).to receive(:instance).and_return(mock_pattern_cache)
 
     # Mock PerformanceTracker singleton - Note: PerformanceTracker doesn't actually have .instance method,
     # but DashboardHelper tries to call it. This is likely a bug that should be fixed.

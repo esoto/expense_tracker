@@ -36,16 +36,16 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
     end
 
     # Stub all service classes
-    stub_const("Categorization::PatternCache", pattern_cache_class)
+    stub_const("Services::Categorization::PatternCache", pattern_cache_class)
     stub_const("Categorization::Matchers::FuzzyMatcher", fuzzy_matcher_class)
     stub_const("Categorization::ConfidenceCalculator", confidence_calculator_class)
     stub_const("Categorization::PatternLearner", pattern_learner_class)
     stub_const("Categorization::PerformanceTracker", performance_tracker_class)
     stub_const("Categorization::LruCache", lru_cache_class)
-    stub_const("Categorization::Engine::MAX_PATTERN_CACHE_SIZE", 1000)
+    stub_const("Services::Categorization::Engine::MAX_PATTERN_CACHE_SIZE", 1000)
 
     # Allow instantiation of service mocks
-    allow(Categorization::PatternCache).to receive(:new).and_call_original
+    allow(Services::Categorization::PatternCache).to receive(:new).and_call_original
     allow(Categorization::Matchers::FuzzyMatcher).to receive(:new).and_call_original
     allow(Categorization::ConfidenceCalculator).to receive(:new).and_call_original
     allow(Categorization::PatternLearner).to receive(:new).and_call_original
@@ -323,7 +323,7 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
 
       it "creates PatternLearner with pattern_cache dependency" do
         pattern_cache = double("PatternCache")
-        allow(Categorization::PatternCache).to receive(:new).and_return(pattern_cache)
+        allow(Services::Categorization::PatternCache).to receive(:new).and_return(pattern_cache)
 
         expect(Categorization::PatternLearner).to receive(:new)
           .with(pattern_cache: pattern_cache)
@@ -384,7 +384,7 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
       end
 
       it "doesn't instantiate default services when custom ones provided" do
-        expect(Categorization::PatternCache).not_to receive(:new)
+        expect(Services::Categorization::PatternCache).not_to receive(:new)
         expect(Categorization::Matchers::FuzzyMatcher).not_to receive(:new)
 
         registry.build_defaults(options)

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# This file contains fixes for the Email::ProcessingService integration tests
+# This file contains fixes for the Services::Email::ProcessingService integration tests
 # to resolve all 15 failing tests by addressing:
 # 1. Auto-categorization engine injection issues
 # 2. Multi-bank processing conflicts
@@ -244,14 +244,14 @@ module IntegrationTestFixes
   class MonitoringServiceMocker
     def self.setup_mocks
       # Create proper test doubles for monitoring
-      error_tracker = class_double("Infrastructure::MonitoringService::ErrorTracker").as_stubbed_const
+      error_tracker = class_double("Services::Infrastructure::MonitoringService::ErrorTracker").as_stubbed_const
       allow(error_tracker).to receive(:report)
 
-      metrics_tracker = class_double("Infrastructure::MonitoringService::MetricsTracker").as_stubbed_const
+      metrics_tracker = class_double("Services::Infrastructure::MonitoringService::MetricsTracker").as_stubbed_const
       allow(metrics_tracker).to receive(:record)
       allow(metrics_tracker).to receive(:increment)
 
-      health_checker = class_double("Infrastructure::MonitoringService::HealthChecker").as_stubbed_const
+      health_checker = class_double("Services::Infrastructure::MonitoringService::HealthChecker").as_stubbed_const
       allow(health_checker).to receive(:check)
 
       {

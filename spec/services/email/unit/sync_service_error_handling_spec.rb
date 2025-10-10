@@ -18,7 +18,7 @@ RSpec.describe Services::Email::SyncService, 'Error Handling and Edge Cases', un
 
         expect {
           service.sync_emails(email_account_id: 999)
-        }.to raise_error(Email::SyncService::SyncError, 'Cuenta de correo no encontrada.')
+        }.to raise_error(Services::Email::SyncService::SyncError, 'Cuenta de correo no encontrada.')
       end
 
       it 'raises SyncError with Spanish message for inactive account' do
@@ -27,7 +27,7 @@ RSpec.describe Services::Email::SyncService, 'Error Handling and Edge Cases', un
 
         expect {
           service.sync_emails(email_account_id: 1)
-        }.to raise_error(Email::SyncService::SyncError, 'La cuenta de correo está inactiva.')
+        }.to raise_error(Services::Email::SyncService::SyncError, 'La cuenta de correo está inactiva.')
       end
 
       it 'raises SyncError with Spanish message for no active accounts' do
@@ -35,13 +35,13 @@ RSpec.describe Services::Email::SyncService, 'Error Handling and Edge Cases', un
 
         expect {
           service.sync_emails
-        }.to raise_error(Email::SyncService::SyncError, 'No hay cuentas de correo activas configuradas.')
+        }.to raise_error(Services::Email::SyncService::SyncError, 'No hay cuentas de correo activas configuradas.')
       end
     end
 
     context 'error inheritance and type' do
       it 'SyncError inherits from StandardError' do
-        error = Email::SyncService::SyncError.new('Test error')
+        error = Services::Email::SyncService::SyncError.new('Test error')
         expect(error).to be_a(StandardError)
       end
 
@@ -51,7 +51,7 @@ RSpec.describe Services::Email::SyncService, 'Error Handling and Edge Cases', un
         begin
           service.sync_emails(email_account_id: 999)
         rescue StandardError => e
-          expect(e).to be_a(Email::SyncService::SyncError)
+          expect(e).to be_a(Services::Email::SyncService::SyncError)
           expect(e.message).to eq('Cuenta de correo no encontrada.')
         end
       end
@@ -231,7 +231,7 @@ RSpec.describe Services::Email::SyncService, 'Error Handling and Edge Cases', un
 
         expect {
           service.sync_emails(email_account_id: 0)
-        }.to raise_error(Email::SyncService::SyncError, 'Cuenta de correo no encontrada.')
+        }.to raise_error(Services::Email::SyncService::SyncError, 'Cuenta de correo no encontrada.')
       end
     end
 

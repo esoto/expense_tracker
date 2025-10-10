@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-# Phase 3 IMAP Connectivity Tests for Email::ProcessingService
+# Phase 3 IMAP Connectivity Tests for Services::Email::ProcessingService
 # Comprehensive testing of connection management, authentication, and server detection
 # Focus: Costa Rican banking integration with robust error scenarios
 RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :service, unit: true do
@@ -22,7 +22,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
 
   before do
     allow(Net::IMAP).to receive(:new).and_return(mock_imap)
-    allow(Infrastructure::MonitoringService::ErrorTracker).to receive(:report)
+    allow(Services::Infrastructure::MonitoringService::ErrorTracker).to receive(:report)
   end
 
   describe 'IMAP Connection Management' do
@@ -80,7 +80,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
 
           expect {
             processing_service.send(:connect_to_imap)
-          }.to raise_error(Email::ProcessingService::ConnectionError, /Failed to connect to IMAP server.*Network unreachable/)
+          }.to raise_error(Services::Email::ProcessingService::ConnectionError, /Failed to connect to IMAP server.*Network unreachable/)
         end
 
         it 'raises ConnectionError for timeout failures' do
@@ -88,7 +88,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
 
           expect {
             processing_service.send(:connect_to_imap)
-          }.to raise_error(Email::ProcessingService::ConnectionError, /Failed to connect to IMAP server.*Connection timeout/)
+          }.to raise_error(Services::Email::ProcessingService::ConnectionError, /Failed to connect to IMAP server.*Connection timeout/)
         end
 
         it 'raises ConnectionError for SSL certificate failures' do
@@ -96,7 +96,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
 
           expect {
             processing_service.send(:connect_to_imap)
-          }.to raise_error(Email::ProcessingService::ConnectionError, /Failed to connect to IMAP server.*Certificate verification failed/)
+          }.to raise_error(Services::Email::ProcessingService::ConnectionError, /Failed to connect to IMAP server.*Certificate verification failed/)
         end
 
         it 'raises ConnectionError for refused connections' do
@@ -104,7 +104,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
 
           expect {
             processing_service.send(:connect_to_imap)
-          }.to raise_error(Email::ProcessingService::ConnectionError, /Failed to connect to IMAP server.*Connection refused/)
+          }.to raise_error(Services::Email::ProcessingService::ConnectionError, /Failed to connect to IMAP server.*Connection refused/)
         end
       end
     end
@@ -187,7 +187,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
 
           expect {
             processing_service.send(:authenticate_imap, mock_imap)
-          }.to raise_error(Email::ProcessingService::AuthenticationError, /IMAP authentication failed/)
+          }.to raise_error(Services::Email::ProcessingService::AuthenticationError, /IMAP authentication failed/)
         end
 
         it 'raises AuthenticationError on permission denied' do
@@ -195,7 +195,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
 
           expect {
             processing_service.send(:authenticate_imap, mock_imap)
-          }.to raise_error(Email::ProcessingService::AuthenticationError, /IMAP authentication failed/)
+          }.to raise_error(Services::Email::ProcessingService::AuthenticationError, /IMAP authentication failed/)
         end
       end
 
@@ -217,7 +217,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
 
           expect {
             processing_service.send(:authenticate_imap, mock_imap)
-          }.to raise_error(Email::ProcessingService::AuthenticationError, /IMAP authentication failed.*OAuth token expired/)
+          }.to raise_error(Services::Email::ProcessingService::AuthenticationError, /IMAP authentication failed.*OAuth token expired/)
         end
       end
 
@@ -847,7 +847,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
 
         expect {
           processing_service.send(:connect_to_imap)
-        }.to raise_error(Email::ProcessingService::ConnectionError, /Name or service not known/)
+        }.to raise_error(Services::Email::ProcessingService::ConnectionError, /Name or service not known/)
       end
 
       it 'handles network timeout during connection' do
@@ -855,7 +855,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
 
         expect {
           processing_service.send(:connect_to_imap)
-        }.to raise_error(Email::ProcessingService::ConnectionError, /execution expired/)
+        }.to raise_error(Services::Email::ProcessingService::ConnectionError, /execution expired/)
       end
 
       it 'handles SSL/TLS handshake failures' do
@@ -863,7 +863,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
 
         expect {
           processing_service.send(:connect_to_imap)
-        }.to raise_error(Email::ProcessingService::ConnectionError, /SSL_connect/)
+        }.to raise_error(Services::Email::ProcessingService::ConnectionError, /SSL_connect/)
       end
     end
 
@@ -877,7 +877,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
 
         expect {
           processing_service.send(:authenticate_imap, mock_imap)
-        }.to raise_error(Email::ProcessingService::AuthenticationError, /LOGIN failed/)
+        }.to raise_error(Services::Email::ProcessingService::AuthenticationError, /LOGIN failed/)
       end
 
       it 'handles account locked/suspended' do
@@ -885,7 +885,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
 
         expect {
           processing_service.send(:authenticate_imap, mock_imap)
-        }.to raise_error(Email::ProcessingService::AuthenticationError, /Account suspended/)
+        }.to raise_error(Services::Email::ProcessingService::AuthenticationError, /Account suspended/)
       end
 
       it 'handles two-factor authentication required' do
@@ -893,7 +893,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
 
         expect {
           processing_service.send(:authenticate_imap, mock_imap)
-        }.to raise_error(Email::ProcessingService::AuthenticationError, /Application-specific password required/)
+        }.to raise_error(Services::Email::ProcessingService::AuthenticationError, /Application-specific password required/)
       end
 
       it 'handles OAuth token expiration' do
@@ -902,7 +902,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
 
         expect {
           processing_service.send(:authenticate_imap, mock_imap)
-        }.to raise_error(Email::ProcessingService::AuthenticationError, /Token expired/)
+        }.to raise_error(Services::Email::ProcessingService::AuthenticationError, /Token expired/)
       end
     end
 
@@ -1246,7 +1246,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
         # First attempt should fail
         expect {
           processing_service.send(:connect_to_imap)
-        }.to raise_error(Email::ProcessingService::ConnectionError)
+        }.to raise_error(Services::Email::ProcessingService::ConnectionError)
 
         # Second attempt should succeed
         expect(processing_service.send(:connect_to_imap)).to eq(mock_imap)
@@ -1259,7 +1259,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
 
         expect {
           processing_service.send(:connect_to_imap)
-        }.to raise_error(Email::ProcessingService::ConnectionError, /Name or service not known/)
+        }.to raise_error(Services::Email::ProcessingService::ConnectionError, /Name or service not known/)
       end
 
       it 'handles firewall blocking IMAP port' do
@@ -1269,7 +1269,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
 
         expect {
           processing_service.send(:connect_to_imap)
-        }.to raise_error(Email::ProcessingService::ConnectionError, /Connection timed out/)
+        }.to raise_error(Services::Email::ProcessingService::ConnectionError, /Connection timed out/)
       end
     end
 
@@ -1309,7 +1309,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
 
         expect {
           isolated_service.send(:connect_to_imap)
-        }.to raise_error(Email::ProcessingService::ConnectionError, /Protocol version not supported/)
+        }.to raise_error(Services::Email::ProcessingService::ConnectionError, /Protocol version not supported/)
       end
     end
 
@@ -1332,7 +1332,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
 
         expect {
           processing_service.send(:connect_to_imap)
-        }.to raise_error(Email::ProcessingService::ConnectionError, /Too many open files/)
+        }.to raise_error(Services::Email::ProcessingService::ConnectionError, /Too many open files/)
       end
     end
   end
@@ -1587,7 +1587,7 @@ RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :serv
 
         expect {
           processing_service.send(:connect_to_imap)
-        }.to raise_error(Email::ProcessingService::ConnectionError, /Invalid hostname/)
+        }.to raise_error(Services::Email::ProcessingService::ConnectionError, /Invalid hostname/)
       end
     end
 

@@ -344,7 +344,7 @@ RSpec.describe Api::HealthController, type: :controller, unit: true do
       context "when cache is available" do
         before do
           cache_instance = double("PatternCache")
-          allow(Categorization::PatternCache).to receive(:instance).and_return(cache_instance)
+          allow(Services::Categorization::PatternCache).to receive(:instance).and_return(cache_instance)
           allow(cache_instance).to receive(:stats).and_return({
             entries: 100,
             hits: 80,
@@ -366,7 +366,7 @@ RSpec.describe Api::HealthController, type: :controller, unit: true do
 
       context "when cache is unavailable" do
         before do
-          allow(Categorization::PatternCache).to receive(:instance).and_raise(StandardError)
+          allow(Services::Categorization::PatternCache).to receive(:instance).and_raise(StandardError)
         end
 
         it "returns error message" do

@@ -79,7 +79,7 @@ RSpec.describe UserCategoryPreference, type: :model, unit: true do
   describe "callbacks" do
     describe "after_commit :invalidate_cache" do
       let(:cache_instance) { double("cache_instance") }
-      before { allow(Categorization::PatternCache).to receive(:instance).and_return(cache_instance) }
+      before { allow(Services::Categorization::PatternCache).to receive(:instance).and_return(cache_instance) }
       it "invalidates cache for merchant preferences" do
         preference = build(:user_category_preference, context_type: "merchant")
 
@@ -99,7 +99,7 @@ RSpec.describe UserCategoryPreference, type: :model, unit: true do
       it "handles cache invalidation errors gracefully" do
         preference = build(:user_category_preference, context_type: "merchant")
 
-        allow(Categorization::PatternCache).to receive(:instance).and_raise(StandardError.new("Cache error"))
+        allow(Services::Categorization::PatternCache).to receive(:instance).and_raise(StandardError.new("Cache error"))
         expect(Rails.logger).to receive(:error).with(match(/Cache invalidation failed/))
 
         expect { preference.save }.not_to raise_error
@@ -889,7 +889,7 @@ RSpec.describe UserCategoryPreference, type: :model, unit: true do
           )
 
           # Mock external dependencies but let UserCategoryPreference methods execute
-          allow(Categorization::PatternCache).to receive(:instance).and_return(double(invalidate: true))
+          allow(Services::Categorization::PatternCache).to receive(:instance).and_return(double(invalidate: true))
 
           expect {
             UserCategoryPreference.learn_from_categorization(

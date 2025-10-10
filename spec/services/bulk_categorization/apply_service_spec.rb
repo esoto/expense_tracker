@@ -54,7 +54,7 @@ RSpec.describe Services::BulkCategorization::ApplyService, type: :service, unit:
     allow(pattern_learner).to receive(:learn_from_correction)
 
     # Stub categorization engine
-    allow(Categorization::EngineFactory).to receive(:default).and_return(engine)
+    allow(Services::Categorization::EngineFactory).to receive(:default).and_return(engine)
     allow(engine).to receive(:categorize).and_return(categorization_result)
 
     # Stub Turbo broadcasts

@@ -16,7 +16,7 @@ RSpec.describe Services::Categorization::Orchestrator, type: :service do
     }
   end
 
-  let(:pattern_cache) { double("Categorization::PatternCache") }
+  let(:pattern_cache) { double("Services::Categorization::PatternCache") }
   let(:matcher) { double("Categorization::Matchers::FuzzyMatcher") }
   let(:confidence_calculator) { double("Categorization::ConfidenceCalculator") }
   let(:pattern_learner) { double("Categorization::PatternLearner") }
@@ -41,7 +41,7 @@ RSpec.describe Services::Categorization::Orchestrator, type: :service do
 
     it "creates default services when not provided" do
       orchestrator = described_class.new
-      expect(orchestrator.pattern_cache).to be_a(Categorization::PatternCache)
+      expect(orchestrator.pattern_cache).to be_a(Services::Categorization::PatternCache)
       expect(orchestrator.matcher).to be_a(Categorization::Matchers::FuzzyMatcher)
       expect(orchestrator.confidence_calculator).to be_a(Categorization::ConfidenceCalculator)
       expect(orchestrator.pattern_learner).to be_a(Categorization::PatternLearner)

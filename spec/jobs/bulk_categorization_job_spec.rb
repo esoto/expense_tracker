@@ -24,7 +24,7 @@ RSpec.describe BulkCategorizationJob, type: :job, unit: true do
     allow(SecureRandom).to receive(:uuid).and_return('test-uuid-123')
 
     # Mock the bulk categorization service
-    allow(BulkCategorization::ApplyService).to receive(:new).and_return(
+    allow(Services::BulkCategorization::ApplyService).to receive(:new).and_return(
       double('Service', call: successful_result)
     )
   end
@@ -49,21 +49,21 @@ RSpec.describe BulkCategorizationJob, type: :job, unit: true do
       it 'processes expenses in correct batch sizes' do
         large_expense_ids = (1..45).to_a # 45 expenses = 3 batches of 20, 1 batch of 5
         service_double = double('Service', call: successful_result)
-        allow(BulkCategorization::ApplyService).to receive(:new).and_return(service_double)
+        allow(Services::BulkCategorization::ApplyService).to receive(:new).and_return(service_double)
 
         job.perform(large_expense_ids, category_id, user_id, options)
 
         # Should create service instances for each batch
-        expect(BulkCategorization::ApplyService).to have_received(:new).exactly(3).times
+        expect(Services::BulkCategorization::ApplyService).to have_received(:new).exactly(3).times
       end
 
-      it 'passes correct parameters to BulkCategorization::ApplyService' do
+      it 'passes correct parameters to Services::BulkCategorization::ApplyService' do
         service_double = double('Service', call: successful_result)
-        allow(BulkCategorization::ApplyService).to receive(:new).and_return(service_double)
+        allow(Services::BulkCategorization::ApplyService).to receive(:new).and_return(service_double)
 
         job.perform(expense_ids, category_id, user_id, options)
 
-        expect(BulkCategorization::ApplyService).to have_received(:new).with(
+        expect(Services::BulkCategorization::ApplyService).to have_received(:new).with(
           expense_ids: expense_ids,
           category_id: category_id,
           user_id: user_id,
@@ -90,7 +90,7 @@ RSpec.describe BulkCategorizationJob, type: :job, unit: true do
     context 'with failed batch processing' do
       before do
         service_double = double('Service', call: failed_result)
-        allow(BulkCategorization::ApplyService).to receive(:new).and_return(service_double)
+        allow(Services::BulkCategorization::ApplyService).to receive(:new).and_return(service_double)
       end
 
       it 'logs batch processing errors' do
@@ -133,7 +133,7 @@ RSpec.describe BulkCategorizationJob, type: :job, unit: true do
       let(:test_error) { StandardError.new('Database connection failed') }
 
       before do
-        allow(BulkCategorization::ApplyService).to receive(:new).and_raise(test_error)
+        allow(Services::BulkCategorization::ApplyService).to receive(:new).and_raise(test_error)
       end
 
       it 'handles the error and re-raises for retry mechanism' do
@@ -184,13 +184,13 @@ RSpec.describe BulkCategorizationJob, type: :job, unit: true do
     let(:batch_ids) { [ 1, 2, 3 ] }
 
     context 'with successful service call' do
-      it 'calls BulkCategorization::ApplyService with correct parameters' do
+      it 'calls Services::BulkCategorization::ApplyService with correct parameters' do
         service_double = double('Service', call: successful_result)
-        allow(BulkCategorization::ApplyService).to receive(:new).and_return(service_double)
+        allow(Services::BulkCategorization::ApplyService).to receive(:new).and_return(service_double)
 
         job.send(:process_batch, batch_ids, category_id, user_id, options)
 
-        expect(BulkCategorization::ApplyService).to have_received(:new).with(
+        expect(Services::BulkCategorization::ApplyService).to have_received(:new).with(
           expense_ids: batch_ids,
           category_id: category_id,
           user_id: user_id,
@@ -201,7 +201,7 @@ RSpec.describe BulkCategorizationJob, type: :job, unit: true do
 
       it 'does not log errors for successful batches' do
         service_double = double('Service', call: successful_result)
-        allow(BulkCategorization::ApplyService).to receive(:new).and_return(service_double)
+        allow(Services::BulkCategorization::ApplyService).to receive(:new).and_return(service_double)
 
         job.send(:process_batch, batch_ids, category_id, user_id, options)
 
@@ -212,7 +212,7 @@ RSpec.describe BulkCategorizationJob, type: :job, unit: true do
     context 'with failed service call' do
       before do
         service_double = double('Service', call: failed_result)
-        allow(BulkCategorization::ApplyService).to receive(:new).and_return(service_double)
+        allow(Services::BulkCategorization::ApplyService).to receive(:new).and_return(service_double)
       end
 
       it 'logs the failure and tracks failed batch' do

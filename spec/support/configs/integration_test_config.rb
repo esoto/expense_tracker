@@ -32,8 +32,8 @@ RSpec.configure do |config|
     Rails.cache.clear if defined?(Rails.cache)
 
     # Reset any class-level caches that might affect tests
-    if defined?(Categorization::PatternCache)
-      Categorization::PatternCache.instance.clear if Categorization::PatternCache.instance.respond_to?(:clear)
+    if defined?(Services::Categorization::PatternCache)
+      Services::Categorization::PatternCache.instance.clear if Services::Categorization::PatternCache.instance.respond_to?(:clear)
     end
   end
 end

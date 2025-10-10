@@ -2,7 +2,7 @@
 
 require "csv"
 
-module Analytics
+module Services::Analytics
   # Exports analytics dashboard data in various formats
   class DashboardExporter
       attr_reader :analyzer, :format

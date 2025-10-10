@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe BroadcastAnalytics, type: :service, unit: true do
+RSpec.describe Services::BroadcastAnalytics, type: :service, unit: true do
   include ActiveSupport::Testing::TimeHelpers
   let(:channel_name) { 'SyncStatusChannel' }
   let(:target_type) { 'SyncSession' }

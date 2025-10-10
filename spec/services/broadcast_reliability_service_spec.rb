@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
+RSpec.describe Services::BroadcastReliabilityService, type: :service, integration: true do
   let(:sync_session) { create(:sync_session) }
   let(:test_data) { { status: 'processing', processed: 10, total: 100 } }
 

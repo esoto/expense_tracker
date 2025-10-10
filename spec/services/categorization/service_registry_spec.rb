@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::ServiceRegistry, :unit do
+RSpec.describe Services::Categorization::ServiceRegistry, :unit do
   let(:logger) { instance_double(Logger) }
   let(:registry) { described_class.new(logger: logger) }
 

@@ -1,4 +1,5 @@
-class SyncSessionValidator
+module Services
+  class SyncSessionValidator
   class SyncLimitExceeded < StandardError; end
   class RateLimitExceeded < StandardError; end
 
@@ -45,4 +46,5 @@ class SyncSessionValidator
   def rate_limit_exceeded?
     recent_sync_count >= MAX_SYNCS_PER_WINDOW
   end
+end
 end

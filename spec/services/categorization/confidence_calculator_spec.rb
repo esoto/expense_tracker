@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::ConfidenceCalculator do
+RSpec.describe Services::Categorization::ConfidenceCalculator do
   let(:calculator) { described_class.new }
   let(:expense) do
     create(:expense,

@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::Fetcher, 'error handling', type: :service, unit: true do
+RSpec.describe Services::EmailProcessing::Fetcher, 'error handling', type: :service, unit: true do
   let(:email_account) { create(:email_account, :bac) }
   let(:mock_imap_service) { instance_double(ImapConnectionService) }
   let(:mock_email_processor) { instance_double(EmailProcessing::Processor) }

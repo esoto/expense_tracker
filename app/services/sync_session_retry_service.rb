@@ -1,4 +1,5 @@
-class SyncSessionRetryService
+module Services
+  class SyncSessionRetryService
   attr_reader :original_session, :params
 
   def initialize(original_session, params = {})
@@ -91,4 +92,5 @@ class SyncSessionRetryService
       !@success
     end
   end
+end
 end

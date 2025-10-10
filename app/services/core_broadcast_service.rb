@@ -14,7 +14,8 @@
 #   )
 #   result = service.broadcast
 #
-class CoreBroadcastService
+module Services
+  class CoreBroadcastService
   class BroadcastError < StandardError; end
 
   attr_reader :channel, :target, :data
@@ -61,4 +62,5 @@ class CoreBroadcastService
   rescue NameError => e
     raise BroadcastError, "Invalid channel name '#{channel}': #{e.message}"
   end
+end
 end

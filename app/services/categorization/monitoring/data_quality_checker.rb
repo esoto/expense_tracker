@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Categorization
+module Services::Categorization
   module Monitoring
     # Service for monitoring and reporting on categorization data quality
     # Provides comprehensive metrics, auditing, and recommendations for data improvements

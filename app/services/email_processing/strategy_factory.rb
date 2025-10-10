@@ -1,9 +1,9 @@
-module EmailProcessing
+module Services::EmailProcessing
   class StrategyFactory
     # Strategy mappings by bank name or parsing rule type
     STRATEGY_MAPPINGS = {
       # Default strategy for all banks currently
-      default: EmailProcessing::Strategies::Regex
+      default: Services::EmailProcessing::Strategies::Regex
     }.freeze
 
     def self.create_strategy(parsing_rule, email_content: nil)

@@ -3,7 +3,7 @@
 require "rails_helper"
 require_relative "../../../support/monitoring_service_test_helper"
 
-RSpec.describe Infrastructure::MonitoringService::ErrorTracker, type: :service, unit: true do
+RSpec.describe Services::Infrastructure::MonitoringService::ErrorTracker, type: :service, unit: true do
   include MonitoringServiceTestHelper
 
   let(:test_error) { StandardError.new("Test error message") }

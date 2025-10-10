@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::LruCache, :unit do
+RSpec.describe Services::Categorization::LruCache, :unit do
   let(:cache) { described_class.new(max_size: 3, ttl_seconds: 10) }
   let(:current_time) { Time.zone.local(2024, 1, 1, 12, 0, 0) }
 

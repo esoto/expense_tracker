@@ -16,7 +16,8 @@
 #   )
 #   result = orchestrator.broadcast_with_retry(priority: :medium)
 #
-class BroadcastRetryOrchestrator
+module Services
+  class BroadcastRetryOrchestrator
   # Priority levels determine retry behavior
   RETRY_CONFIGS = {
     critical: { max_retries: 5, backoff_base: 0.5 },
@@ -122,4 +123,5 @@ class BroadcastRetryOrchestrator
   class NullErrorHandler
     def handle_final_failure(*); end
   end
+end
 end

@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Analytics::PatternPerformanceAnalyzer, performance: true do
+RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, performance: true do
   let(:category) { create(:category) }
   let(:pattern) { create(:categorization_pattern, category: category) }
   let(:expense) { create(:expense) }

@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::Processor, type: :service, unit: true do
+RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true do
   let(:email_account) { create(:email_account, :bac) }
   let(:metrics_collector) { instance_double(SyncMetricsCollector) }
   let(:processor) { described_class.new(email_account, metrics_collector: metrics_collector) }

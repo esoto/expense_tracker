@@ -1,4 +1,4 @@
-module EmailProcessing
+module Services::EmailProcessing
   class Fetcher
     attr_reader :email_account, :errors, :imap_service, :email_processor, :metrics_collector
 

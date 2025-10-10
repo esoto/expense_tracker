@@ -3,7 +3,7 @@
 require "rails_helper"
 require_relative "../../../support/monitoring_service_test_helper"
 
-RSpec.describe Infrastructure::MonitoringService::CacheMonitor, type: :service, unit: true do
+RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor, type: :service, unit: true do
   include MonitoringServiceTestHelper
 
   let(:cache_monitor) { described_class }

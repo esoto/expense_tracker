@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Email
+module Services::Email
     # SyncService consolidates synchronization operations including
     # session management, conflict detection, progress tracking, and metrics.
     # This is a simplified version that maintains backward compatibility

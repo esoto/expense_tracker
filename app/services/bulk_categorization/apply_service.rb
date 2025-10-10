@@ -1,10 +1,9 @@
 # frozen_string_literal: true
 
-require "ostruct"
-
-module BulkCategorization
+module Services::BulkCategorization
   # Custom error for already categorized expenses
   class AlreadyCategorizedError < StandardError; end
+
 
   # Service to apply categorization to multiple expenses at once
   # Handles validation, database updates, pattern learning, and audit logging
@@ -159,7 +158,7 @@ module BulkCategorization
       return 1.0 unless options[:update_confidence]
 
       # Use categorization engine to calculate confidence
-      engine = Categorization::EngineFactory.default
+      engine = Services::Categorization::EngineFactory.default
       result = engine.categorize(expense, auto_update: false)
 
       if result.successful? && result.category == @category

@@ -2,7 +2,7 @@
 
 require "fuzzystringmatch"
 
-module Categorization
+module Services::Categorization
   module Matchers
     # High-performance fuzzy matching service for merchant name and pattern matching
     # Implements multiple matching algorithms with configurable thresholds

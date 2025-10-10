@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe BulkOperations::DeletionService, type: :service, unit: true do
+RSpec.describe Services::BulkOperations::DeletionService, type: :service, unit: true do
   let(:email_account) { create(:email_account) }
   let(:other_email_account) { create(:email_account) }
   let(:category) { create(:category) }

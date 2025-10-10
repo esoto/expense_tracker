@@ -163,7 +163,7 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job, integratio
 end
 
 # Test for ExtendedCacheMetricsCalculator
-RSpec.describe ExtendedCacheMetricsCalculator, integration: true do
+RSpec.describe Services::ExtendedCacheMetricsCalculator, integration: true do
   let(:email_account) { create(:email_account) }
   let(:calculator) { described_class.new(email_account: email_account, period: :month, cache_hours: 4) }
 

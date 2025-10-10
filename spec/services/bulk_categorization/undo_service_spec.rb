@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe BulkCategorization::UndoService, type: :service, unit: true do
+RSpec.describe Services::BulkCategorization::UndoService, type: :service, unit: true do
   # Test doubles and mocks
   let(:bulk_operation) do
     instance_double(

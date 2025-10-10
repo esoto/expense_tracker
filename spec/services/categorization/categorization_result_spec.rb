@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::CategorizationResult, unit: true do
+RSpec.describe Services::Categorization::CategorizationResult, unit: true do
   let(:category) { build(:category, name: "Food & Dining") }
   let(:alternative_category) { build(:category, name: "Groceries") }
 

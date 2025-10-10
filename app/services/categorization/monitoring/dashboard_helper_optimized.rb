@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Categorization
+module Services::Categorization
   module Monitoring
     # Optimized helper module for rendering monitoring dashboards and metrics
     module DashboardHelperOptimized

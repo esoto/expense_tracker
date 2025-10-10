@@ -2,7 +2,7 @@
 
 require "concurrent"
 
-module Categorization
+module Services::Categorization
   # Thread-safe performance tracking service for categorization operations
   # Monitors and reports on categorization performance metrics with bounded memory usage
   # Ensures operations stay within performance targets (<10ms)

@@ -1,4 +1,5 @@
-class SyncSessionCreator
+module Services
+  class SyncSessionCreator
   attr_reader :params, :validator, :request_info
 
   def initialize(params = {}, request_info = {})
@@ -106,4 +107,5 @@ class SyncSessionCreator
       !@success
     end
   end
+end
 end

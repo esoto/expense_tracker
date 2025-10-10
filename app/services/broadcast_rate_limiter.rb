@@ -20,7 +20,8 @@
 #     # Rate limit exceeded
 #     retry_after = limiter.retry_after
 #   end
-class BroadcastRateLimiter
+module Services
+  class Services::BroadcastRateLimiter
   # Rate limit configurations by priority
   RATE_LIMITS = {
     critical: { requests: 100, window: 1.minute, burst: 20 },
@@ -467,4 +468,5 @@ class BroadcastRateLimiter
   rescue JSON::ParserError
     { tokens: GLOBAL_LIMITS[:requests], usage_percent: 0 }
   end
+end
 end

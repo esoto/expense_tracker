@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe DashboardService, integration: true do
+RSpec.describe Services::DashboardService, integration: true do
   let(:service) { described_class.new }
   let(:category) { create(:category) }
   let(:email_account) { create(:email_account, :bac) }

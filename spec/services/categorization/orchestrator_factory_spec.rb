@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::OrchestratorFactory, type: :service do
+RSpec.describe Services::Categorization::OrchestratorFactory, type: :service do
   describe ".create_production" do
     it "creates orchestrator with production services" do
       orchestrator = described_class.create_production

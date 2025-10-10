@@ -3,7 +3,7 @@
 require "json"
 require "securerandom"
 
-module Categorization
+module Services::Categorization
   module Monitoring
     # Structured logging service for categorization events
     # Provides JSON-formatted logs with correlation IDs for tracing

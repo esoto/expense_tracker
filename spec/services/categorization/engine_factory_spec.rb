@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::EngineFactory, type: :service, unit: true do
+RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: true do
   # Clear cached state before each test
   before do
     described_class.reset!

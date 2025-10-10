@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Categorization
+module Services::Categorization
   class ExpenseCollectionAdapter
       def initialize(collection)
         @collection = collection

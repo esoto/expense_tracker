@@ -1,4 +1,4 @@
-module EmailProcessing
+module Services::EmailProcessing
   class Parser
     MAX_EMAIL_SIZE = 50_000  # 50KB threshold
     TRUNCATE_SIZE = 10_000   # Store only 10KB for large emails

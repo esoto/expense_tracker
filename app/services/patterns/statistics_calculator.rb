@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Patterns
+module Services::Patterns
   # Service object for calculating pattern statistics with caching
   class StatisticsCalculator
     include ActiveModel::Model

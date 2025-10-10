@@ -2,7 +2,7 @@
 
 require_relative "expense_collection_adapter"
 
-module Categorization
+module Services::Categorization
   # BulkCategorizationService consolidates all bulk categorization operations
   # including preview, apply, undo, export, grouping, and suggestions.
   # This replaces 8 separate service files for better cohesion and maintainability.

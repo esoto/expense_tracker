@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Email::SyncService, 'Metrics and Progress Tracking', unit: true do
+RSpec.describe Services::Email::SyncService, 'Metrics and Progress Tracking', unit: true do
   let(:service) { described_class.new(options) }
   let(:options) { {} }
   let(:mock_time) { Time.zone.parse('2024-01-15 10:00:00') }

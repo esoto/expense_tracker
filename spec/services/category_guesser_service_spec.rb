@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe CategoryGuesserService, integration: true do
+RSpec.describe Services::CategoryGuesserService, integration: true do
   let(:service) { described_class.new }
   let(:expense) { instance_double(Expense, description: nil, merchant_name: nil) }
 

@@ -2,7 +2,8 @@
 
 # Service for centralized error tracking and monitoring
 # Can be configured to use Sentry, Rollbar, or other error tracking services
-class ErrorTrackingService
+module Services
+  class Services::ErrorTrackingService
   include Singleton
 
   SEVERITY_LEVELS = {
@@ -216,4 +217,5 @@ class ErrorTrackingService
              :track_bulk_operation_error, :set_user_context, :add_breadcrumb,
              to: :instance
   end
+end
 end

@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Email::ProcessingService, type: :service, unit: true do
+RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
   include EmailProcessingTestHelper
 
   let(:email_account) { create(:email_account, :bac, :gmail) }

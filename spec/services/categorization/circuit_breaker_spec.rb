@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service, unit: true do
+RSpec.describe Services::Categorization::Orchestrator::CircuitBreaker, type: :service, unit: true do
   let(:circuit_breaker) do
     described_class.new(
       failure_threshold: 3,

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module BulkCategorization
+module Services::BulkCategorization
   # Service to undo bulk categorization operations
   class UndoService
     include ActiveModel::Model

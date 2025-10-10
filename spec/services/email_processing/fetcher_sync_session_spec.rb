@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::Fetcher, 'sync session integration', integration: true do
+RSpec.describe Services::EmailProcessing::Fetcher, 'sync session integration', integration: true do
   let(:email_account) { create(:email_account) }
   let(:sync_session) { create(:sync_session, :running) }
   let(:sync_session_account) { create(:sync_session_account, sync_session: sync_session, email_account: email_account, status: 'processing') }

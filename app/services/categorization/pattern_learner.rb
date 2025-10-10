@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Categorization
+module Services::Categorization
   # Intelligent service that learns from user corrections and feedback to improve
   # categorization patterns over time. Implements machine learning-inspired techniques
   # including pattern strengthening, weakening, creation, merging, and decay.

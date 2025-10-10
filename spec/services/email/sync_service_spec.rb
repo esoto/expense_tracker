@@ -1,7 +1,7 @@
 require 'rails_helper'
 require_relative '../../../app/services/email/sync_service'
 
-RSpec.describe Email::SyncService, integration: true do
+RSpec.describe Services::Email::SyncService, integration: true do
   include EmailServiceIsolation
   let(:service) { described_class.new }
 

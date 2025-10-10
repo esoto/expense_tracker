@@ -2,7 +2,7 @@ class ProcessEmailsJob < ApplicationJob
   queue_as :email_processing
 
   # Add retry logic
-  retry_on ImapConnectionService::ConnectionError, wait: 10.seconds, attempts: 3
+  retry_on Services::ImapConnectionService::ConnectionError, wait: 10.seconds, attempts: 3
   retry_on Net::ReadTimeout, wait: 5.seconds, attempts: 2
 
   # Add performance monitoring
@@ -25,7 +25,7 @@ class ProcessEmailsJob < ApplicationJob
 
   def perform(email_account_id = nil, since: 1.week.ago, sync_session_id: nil)
     @sync_session = sync_session_id ? SyncSession.find_by(id: sync_session_id) : nil
-    @metrics_collector = SyncMetricsCollector.new(@sync_session) if @sync_session
+    @metrics_collector = Services::SyncMetricsCollector.new(@sync_session) if @sync_session
 
     # Validate sync session state
     if @sync_session
@@ -102,7 +102,7 @@ class ProcessEmailsJob < ApplicationJob
 
     begin
       # Pass metrics collector to fetcher
-      fetcher = EmailProcessing::Fetcher.new(
+      fetcher = Services::EmailProcessing::Fetcher.new(
         email_account,
         sync_session_account: session_account,
         metrics_collector: @metrics_collector

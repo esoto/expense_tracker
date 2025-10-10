@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Categorization::Monitoring::DashboardAdapter do
+RSpec.describe Services::Categorization::Monitoring::DashboardAdapter do
   let(:adapter) { described_class.new }
   let(:adapter_with_override) { described_class.new(strategy_override: :original) }
 

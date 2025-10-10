@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::StrategyFactory, integration: true do
+RSpec.describe Services::EmailProcessing::StrategyFactory, integration: true do
   let(:parsing_rule) { create(:parsing_rule, bank_name: 'Banco Nacional') }
   let(:email_content) { 'Monto: ₡1000\nFecha: 15/08/2024' }
 

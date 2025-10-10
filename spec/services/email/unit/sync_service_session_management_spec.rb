@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Email::SyncService, 'Session Management', unit: true do
+RSpec.describe Services::Email::SyncService, 'Session Management', unit: true do
   let(:service) { described_class.new(options) }
   let(:options) { {} }
   let(:mock_time) { Time.zone.parse('2024-01-15 14:30:00') }

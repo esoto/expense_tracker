@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::Monitoring::HealthCheck, performance: true do
+RSpec.describe Services::Categorization::Monitoring::HealthCheck, performance: true do
   let(:health_check) { described_class.new }
 
   describe "#check_all", performance: true do

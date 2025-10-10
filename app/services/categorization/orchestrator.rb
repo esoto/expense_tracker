@@ -3,7 +3,7 @@
 require "concurrent"
 require "timeout"
 
-module Categorization
+module Services::Categorization
   # Clean orchestrator service for expense categorization
   # Follows single responsibility principle - orchestrates categorization workflow
   # Delegates all implementation details to specialized services
@@ -508,8 +508,8 @@ module Categorization
       @logger.debug error.backtrace.first(5).join("\n") if error.backtrace
 
       # Report to monitoring service if available
-      if defined?(Infrastructure::MonitoringService::ErrorTracker)
-        Infrastructure::MonitoringService::ErrorTracker.report(
+      if defined?(Services::Infrastructure::MonitoringService::ErrorTracker)
+        Services::Infrastructure::MonitoringService::ErrorTracker.report(
           error,
           service: "categorization",
           expense_id: expense&.id,
@@ -528,8 +528,8 @@ module Categorization
       @logger.debug error.backtrace.first(5).join("\n") if error.backtrace
 
       # Report to monitoring service if available
-      if defined?(Infrastructure::MonitoringService::ErrorTracker)
-        Infrastructure::MonitoringService::ErrorTracker.report(
+      if defined?(Services::Infrastructure::MonitoringService::ErrorTracker)
+        Services::Infrastructure::MonitoringService::ErrorTracker.report(
           error,
           service: "categorization_learning",
           expense_id: expense&.id,
@@ -649,8 +649,8 @@ module Categorization
       duration = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000
 
       # Track with monitoring service if available
-      if defined?(Infrastructure::MonitoringService::PerformanceTracker)
-        Infrastructure::MonitoringService::PerformanceTracker.track(
+      if defined?(Services::Infrastructure::MonitoringService::PerformanceTracker)
+        Services::Infrastructure::MonitoringService::PerformanceTracker.track(
           "categorization",
           operation,
           duration,
@@ -677,8 +677,8 @@ module Categorization
     def handle_circuit_breaker_error(error, expense)
       @logger.error "[CIRCUIT_BREAKER] Circuit open for expense #{expense&.id}: #{error.message} (correlation_id: #{@correlation_id})"
 
-      if defined?(Infrastructure::MonitoringService::ErrorTracker)
-        Infrastructure::MonitoringService::ErrorTracker.report(
+      if defined?(Services::Infrastructure::MonitoringService::ErrorTracker)
+        Services::Infrastructure::MonitoringService::ErrorTracker.report(
           error,
           service: "categorization",
           expense_id: expense&.id,
@@ -704,8 +704,8 @@ module Categorization
     def handle_database_error(error, expense)
       @logger.error "[DATABASE] Database error for expense #{expense&.id}: #{error.message} (correlation_id: #{@correlation_id})"
 
-      if defined?(Infrastructure::MonitoringService::ErrorTracker)
-        Infrastructure::MonitoringService::ErrorTracker.report(
+      if defined?(Services::Infrastructure::MonitoringService::ErrorTracker)
+        Services::Infrastructure::MonitoringService::ErrorTracker.report(
           error,
           service: "categorization",
           expense_id: expense&.id,

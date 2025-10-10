@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Categorization::Orchestrator, type: :service, integration: true do
+RSpec.describe Services::Categorization::Orchestrator, type: :service, integration: true do
   describe 'Performance and Safety Improvements', integration: true do
     let(:orchestrator) { Categorization::OrchestratorFactory.create_test }
     let(:expense) do

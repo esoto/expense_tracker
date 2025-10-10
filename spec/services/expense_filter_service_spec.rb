@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe ExpenseFilterService, type: :service, performance: true do
+RSpec.describe Services::ExpenseFilterService, type: :service, performance: true do
   let(:email_account) { EmailAccount.create!(provider: "gmail", email: "test@example.com", bank_name: "BAC", active: true) }
   let(:category) { Category.create!(name: "Food", color: "#FF0000") }
 

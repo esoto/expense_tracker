@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Categorization::MlConfidenceIntegration do
+RSpec.describe Services::Categorization::MlConfidenceIntegration do
   # Create a test class that includes the module
   let(:test_class) do
     Class.new do

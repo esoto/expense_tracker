@@ -1,4 +1,4 @@
-module EmailProcessing
+module Services::EmailProcessing
   class FetcherResponse
     attr_reader :success, :errors, :processed_emails_count, :total_emails_found
 

@@ -172,7 +172,7 @@ class Expense < ApplicationRecord
   end
 
   def clear_dashboard_cache
-    DashboardService.clear_cache
+    Services::DashboardService.clear_cache
   end
 
   def trigger_metrics_refresh

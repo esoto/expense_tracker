@@ -1,4 +1,4 @@
-module EmailProcessing
+module Services::EmailProcessing
   class Processor
     attr_reader :email_account, :errors, :metrics_collector
 

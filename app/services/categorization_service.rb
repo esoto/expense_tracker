@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-class CategorizationService
+module Services
+  class Services::CategorizationService
   def categorize_expense(expense)
     return { category: nil, confidence: 0, method: "no_match", error: "Invalid expense" } if expense.nil?
 
@@ -238,4 +239,5 @@ class CategorizationService
            .distinct
            .limit(5)
   end
+end
 end

@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Email::ProcessingService::EmailParser, type: :service, unit: true do
+RSpec.describe Services::Email::ProcessingService::EmailParser, type: :service, unit: true do
   include EmailProcessingTestHelper
   include BankSpecificIsolation
 

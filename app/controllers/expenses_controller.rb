@@ -115,11 +115,11 @@ class ExpensesController < ApplicationController
     # This ensures proper data isolation per email account
     primary_email_account = EmailAccount.active.first
 
-    # Calculate metrics for different periods using MetricsCalculator
+    # Calculate metrics for different periods using Services::MetricsCalculator
     if primary_email_account
       # Batch calculate all metrics for better performance
       # This optimization reduces object instantiation and improves efficiency
-      batch_results = MetricsCalculator.batch_calculate(
+      batch_results = Services::MetricsCalculator.batch_calculate(
         email_account: primary_email_account,
         periods: [ :year, :month, :week, :day ],
         reference_date: Date.current
@@ -137,8 +137,8 @@ class ExpensesController < ApplicationController
       @day_metrics = default_empty_metrics
     end
 
-    # Get dashboard data from DashboardService for other components
-    dashboard_data = DashboardService.new.analytics
+    # Get dashboard data from Services::DashboardService for other components
+    dashboard_data = Services::DashboardService.new.analytics
 
     # Legacy variables for compatibility with existing views
     totals = dashboard_data[:totals]

@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Email::ProcessingService, 'Integration Tests', type: :service, unit: true do
+RSpec.describe Services::Email::ProcessingService, 'Integration Tests', type: :service, unit: true do
   include EmailProcessingTestHelper
   include EmailServiceIsolation
 

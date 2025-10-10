@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe BroadcastRetryOrchestrator, type: :service do
+RSpec.describe Services::BroadcastRetryOrchestrator, type: :service do
   let(:sync_session) { create(:sync_session) }
   let(:test_data) { { status: 'processing', processed: 10, total: 100 } }
   let(:broadcaster) do

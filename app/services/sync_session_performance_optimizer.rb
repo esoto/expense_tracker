@@ -1,4 +1,5 @@
-class SyncSessionPerformanceOptimizer
+module Services
+  class SyncSessionPerformanceOptimizer
   # Query optimizations
   def self.preload_for_index
     SyncSession
@@ -91,4 +92,5 @@ class SyncSessionPerformanceOptimizer
 
     Time.current + (remaining / rate).seconds
   end
+end
 end

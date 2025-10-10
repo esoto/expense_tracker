@@ -1,4 +1,5 @@
-class DashboardService
+module Services
+  class Services::DashboardService
   CACHE_EXPIRY = 5.minutes
 
   def initialize
@@ -129,4 +130,5 @@ class DashboardService
       last_completed: SyncSession.completed.recent.first
     }
   end
+end
 end

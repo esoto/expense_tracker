@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::Fetcher, 'progress tracking', type: :service, unit: true do
+RSpec.describe Services::EmailProcessing::Fetcher, 'progress tracking', type: :service, unit: true do
   let(:email_account) { create(:email_account, :bac) }
   let(:sync_session) { create(:sync_session, :running) }
   let(:sync_session_account) do

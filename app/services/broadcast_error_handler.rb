@@ -19,7 +19,8 @@
 #
 #   # Check if broadcasts are healthy
 #   healthy = BroadcastErrorHandler.broadcast_health_check
-class BroadcastErrorHandler
+module Services
+  class Services::BroadcastErrorHandler
   # Circuit breaker states
   CIRCUIT_STATES = %w[closed open half_open].freeze
 
@@ -402,4 +403,5 @@ class BroadcastErrorHandler
       }
     end
   end
+end
 end

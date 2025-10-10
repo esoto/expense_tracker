@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Infrastructure
+module Services::Infrastructure
   # CacheAdapter provides a consistent interface for cache operations
   # with support for key pattern matching in tests and production
   class CacheAdapter

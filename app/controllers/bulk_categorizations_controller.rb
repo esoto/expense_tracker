@@ -68,7 +68,7 @@ class BulkCategorizationsController < ApplicationController
   end
 
   def group_similar_expenses(expenses)
-    BulkCategorization::GroupingService.new(expenses).group_by_similarity
+    Services::BulkCategorization::GroupingService.new(expenses).group_by_similarity
   end
 
   def calculate_statistics(grouped_expenses)

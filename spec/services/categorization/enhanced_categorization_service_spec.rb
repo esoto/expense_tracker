@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::EnhancedCategorizationService, performance: true do
+RSpec.describe Services::Categorization::EnhancedCategorizationService, performance: true do
   let(:service) { described_class.new }
 
   describe "#categorize", performance: true do

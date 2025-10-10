@@ -153,7 +153,7 @@ class SyncSession < ApplicationRecord
   end
 
   def update_progress
-    SyncProgressUpdater.new(self).call
+    Services::SyncProgressUpdater.new(self).call
   end
 
   def duration
@@ -224,7 +224,7 @@ class SyncSession < ApplicationRecord
   end
 
   def build_sync_info_for_dashboard
-    # Build sync info similar to DashboardService
+    # Build sync info similar to Services::DashboardService
     sync_data = {}
 
     EmailAccount.active.each do |account|

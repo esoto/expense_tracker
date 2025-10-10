@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe ImapConnectionService, integration: true do
+RSpec.describe Services::ImapConnectionService, integration: true do
   let(:email_account) { create(:email_account, :bac) }
   let(:service) { described_class.new(email_account) }
   let(:mock_imap) { instance_double(Net::IMAP) }

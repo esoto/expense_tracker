@@ -2,7 +2,7 @@
 
 require "set"
 
-module Email
+module Services::Email
   # ProcessingService consolidates email fetching, parsing, and processing
   # into a single cohesive service. This replaces multiple separate services
   # for better maintainability and clearer interfaces.
@@ -345,11 +345,11 @@ module Email
         uid: message.attr["UID"],
         message_id: mail.message_id,
         from: mail.from&.first,
-        subject: Email::EncodingService.safe_decode(mail.subject),
+        subject: Services::Email::EncodingService.safe_decode(mail.subject),
         date: mail.date,
         body: extract_body(mail),
-        html_body: Email::EncodingService.safe_decode(mail.html_part&.body&.decoded),
-        text_body: Email::EncodingService.safe_decode(mail.text_part&.body&.decoded || mail.body&.decoded)
+        html_body: Services::Email::EncodingService.safe_decode(mail.html_part&.body&.decoded),
+        text_body: Services::Email::EncodingService.safe_decode(mail.text_part&.body&.decoded || mail.body&.decoded)
       }
     rescue StandardError => e
       Rails.logger.error "Failed to parse email: #{e.message}"
@@ -363,7 +363,7 @@ module Email
         mail.body.decoded
       end
 
-      Email::EncodingService.safe_decode(body)
+      Services::Email::EncodingService.safe_decode(body)
     end
 
     def email_already_processed?(email)
@@ -477,7 +477,7 @@ module Email
       add_error(error.message)
 
       # Report to error tracking service
-      Infrastructure::MonitoringService::ErrorTracker.report(error, context: {
+      Services::Infrastructure::MonitoringService::ErrorTracker.report(error, context: {
         email_account_id: email_account.id,
         service: "EmailProcessingService"
       })

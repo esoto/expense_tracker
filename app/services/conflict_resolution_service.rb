@@ -1,4 +1,5 @@
-class ConflictResolutionService
+module Services
+  class Services::ConflictResolutionService
   attr_reader :sync_conflict, :errors
 
   def initialize(sync_conflict)
@@ -234,4 +235,5 @@ class ConflictResolutionService
   def add_error(message)
     @errors << message
   end
+end
 end

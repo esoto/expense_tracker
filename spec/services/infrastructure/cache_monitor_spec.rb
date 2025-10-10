@@ -5,7 +5,7 @@ require_relative '../../../app/services/infrastructure/monitoring_service'
 
 # Skip this test suite as CacheMonitor module is not implemented in this branch
 if defined?(Infrastructure::MonitoringService::CacheMonitor)
-  RSpec.describe Infrastructure::MonitoringService::CacheMonitor do
+  RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor do
   describe '.metrics' do
     it 'returns comprehensive cache metrics' do
       metrics = described_class.metrics

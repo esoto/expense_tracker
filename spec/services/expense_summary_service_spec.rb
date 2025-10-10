@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe ExpenseSummaryService, integration: true do
+RSpec.describe Services::ExpenseSummaryService, integration: true do
   let(:category) { create(:category) }
   let(:email_account) { create(:email_account, :bac) }
 

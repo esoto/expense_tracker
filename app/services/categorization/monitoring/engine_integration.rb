@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Categorization
+module Services::Categorization
   module Monitoring
     # Module to integrate monitoring capabilities into the Categorization Engine
     module EngineIntegration

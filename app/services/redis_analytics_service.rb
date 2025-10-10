@@ -18,7 +18,8 @@ require "connection_pool"
 #   RedisAnalyticsService.increment_counter('broadcast_success', tags: { channel: 'SyncStatus' })
 #   RedisAnalyticsService.record_timing('broadcast_duration', 0.123, tags: { priority: 'high' })
 #   RedisAnalyticsService.get_time_series('broadcast_success', window: 1.hour)
-class RedisAnalyticsService
+module Services
+  class RedisAnalyticsService
   # Redis key prefixes for different data types
   KEY_PREFIXES = {
     counter: "analytics:counter",
@@ -458,4 +459,5 @@ class RedisAnalyticsService
       }
     end
   end
+end
 end

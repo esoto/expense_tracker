@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Email::EncodingService do
+RSpec.describe Services::Email::EncodingService do
   describe '.safe_decode' do
     context 'with valid UTF-8 text' do
       it 'returns the text unchanged' do

@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe SyncSessionRetryService, integration: true do
+RSpec.describe Services::SyncSessionRetryService, integration: true do
   let(:email_account) { create(:email_account, active: true) }
   let(:original_session) { create(:sync_session, :failed) }
   let(:params) { {} }

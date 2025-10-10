@@ -3,7 +3,7 @@
 require "rails_helper"
 require_relative "../../../app/services/categorization/bulk_categorization_service"
 
-RSpec.describe Categorization::BulkCategorizationService, type: :service, unit: true do
+RSpec.describe Services::Categorization::BulkCategorizationService, type: :service, unit: true do
   # Test data setup
   let(:user) { nil } # User is optional for this service
   let(:category) { build(:category, id: 1, name: "Food & Dining") }

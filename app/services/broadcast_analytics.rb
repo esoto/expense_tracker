@@ -24,7 +24,8 @@
 #   # Get analytics data
 #   analytics = BroadcastAnalytics.get_metrics(time_window: 1.hour)
 #   puts "Success rate: #{analytics[:success_rate]}%"
-class BroadcastAnalytics
+module Services
+  class BroadcastAnalytics
   # Cache key prefixes for different metric types
   CACHE_KEYS = {
     success: "broadcast_analytics:success",
@@ -497,4 +498,5 @@ class BroadcastAnalytics
       ]
     end
   end
+end
 end

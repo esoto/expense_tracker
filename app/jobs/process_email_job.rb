@@ -16,7 +16,7 @@ class ProcessEmailJob < ApplicationJob
 
     # Get current sync session for metrics
     sync_session = SyncSession.active.last
-    metrics_collector = SyncMetricsCollector.new(sync_session) if sync_session
+    metrics_collector = Services::SyncMetricsCollector.new(sync_session) if sync_session
 
     # Track expense detection operation
     if metrics_collector
@@ -32,7 +32,7 @@ class ProcessEmailJob < ApplicationJob
   private
 
   def parse_and_save_expense(email_account, email_data)
-    parser = EmailProcessing::Parser.new(email_account, email_data)
+    parser = Services::EmailProcessing::Parser.new(email_account, email_data)
     expense = parser.parse_expense
 
     if expense

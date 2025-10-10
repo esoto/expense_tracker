@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Categorization
+module Services::Categorization
   # Service registry for managing dependencies in categorization engine
   # Provides dependency injection container for all categorization services
   class ServiceRegistry

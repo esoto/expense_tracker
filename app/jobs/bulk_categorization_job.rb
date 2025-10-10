@@ -31,7 +31,7 @@ class BulkCategorizationJob < ApplicationJob
   private
 
   def process_batch(batch_ids, category_id, user_id, options)
-    result = BulkCategorization::ApplyService.new(
+    result = Services::BulkCategorization::ApplyService.new(
       expense_ids: batch_ids,
       category_id: category_id,
       user_id: user_id,

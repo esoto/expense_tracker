@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::PatternLearner do
+RSpec.describe Services::Categorization::PatternLearner do
   subject(:learner) { described_class.new(options) }
 
   let(:options) { {} }

@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe SyncSessionValidator, integration: true do
+RSpec.describe Services::SyncSessionValidator, integration: true do
   let(:validator) { described_class.new }
 
   before(:each) do

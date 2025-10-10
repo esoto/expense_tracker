@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe BulkCategorization::ApplyService, type: :service, unit: true do
+RSpec.describe Services::BulkCategorization::ApplyService, type: :service, unit: true do
   # Test doubles and mocks
   let(:expense_ids) { [ 1, 2, 3 ] }
   let(:category_id) { 10 }

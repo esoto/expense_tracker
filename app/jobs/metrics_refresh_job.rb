@@ -42,7 +42,7 @@ class MetricsRefreshJob < ApplicationJob
       refresh_count = 0
       periods_to_refresh.each do |period, dates|
         dates.each do |date|
-          calculator = MetricsCalculator.new(
+          calculator = Services::MetricsCalculator.new(
             email_account: email_account,
             period: period,
             reference_date: date
@@ -115,7 +115,7 @@ class MetricsRefreshJob < ApplicationJob
 
     # If no specific dates provided, refresh current periods
     if affected_dates.blank?
-      MetricsCalculator::SUPPORTED_PERIODS.each do |period|
+      Services::MetricsCalculator::SUPPORTED_PERIODS.each do |period|
         periods[period] = [ current_date ]
       end
       return periods

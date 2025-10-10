@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::Engine, type: :service do
+RSpec.describe Services::Categorization::Engine, type: :service do
   # Create a fresh engine instance for each test with clean dependencies
   let(:engine) { create_test_engine }
 

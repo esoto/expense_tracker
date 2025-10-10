@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe ConflictResolutionService, type: :service, unit: true do
+RSpec.describe Services::ConflictResolutionService, type: :service, unit: true do
   # Add notes attribute to Expense for testing (service has a bug that uses non-existent field)
   before(:all) do
     Expense.class_eval do

@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::Parser, type: :service, unit: true do
+RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
   let(:email_account) { instance_double(EmailAccount, email: 'test@example.com', bank_name: 'TEST_BANK') }
   let(:parsing_rule) { instance_double(ParsingRule, id: 1, bank_name: 'TEST_BANK') }
   let(:email_data) do

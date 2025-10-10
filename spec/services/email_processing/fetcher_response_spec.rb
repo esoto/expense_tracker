@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::FetcherResponse, integration: true do
+RSpec.describe Services::EmailProcessing::FetcherResponse, integration: true do
   describe '#initialize', integration: true do
     it 'sets default values when no parameters provided' do
       response = EmailProcessing::FetcherResponse.new

@@ -2,7 +2,8 @@
 
 # ExpenseFilterService provides optimized filtering and pagination for expenses
 # Achieves <50ms query performance for 10k+ records through intelligent indexing
-class ExpenseFilterService
+module Services
+  class Services::ExpenseFilterService
   include ActiveModel::Model
   include ActiveModel::Validations
 
@@ -438,4 +439,5 @@ class ExpenseFilterService
       StatsD.gauge("expense_filter.rows_examined", result.performance_metrics[:rows_examined])
     end
   end
+end
 end

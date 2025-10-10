@@ -3,7 +3,7 @@
 require "rails_helper"
 require "ostruct"
 
-RSpec.describe Categorization::Monitoring::StructuredLogger, performance: true do
+RSpec.describe Services::Categorization::Monitoring::StructuredLogger, performance: true do
   let(:mock_logger) { instance_double(Logger) }
   let(:structured_logger) { described_class.new(logger: mock_logger) }
 

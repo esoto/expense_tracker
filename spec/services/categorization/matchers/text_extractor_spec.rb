@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::Matchers::TextExtractor, :unit do
+RSpec.describe Services::Categorization::Matchers::TextExtractor, :unit do
   subject(:extractor) { described_class.new }
 
   describe "#extract_from" do

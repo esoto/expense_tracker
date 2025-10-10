@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe ConflictDetectionService, integration: true do
+RSpec.describe Services::ConflictDetectionService, integration: true do
   let(:sync_session) { create(:sync_session) }
   let(:email_account) { create(:email_account) }
   let(:service) { described_class.new(sync_session) }

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Categorization
+module Services::Categorization
   module Monitoring
     # Service for checking the health status of the categorization system
     class HealthCheck

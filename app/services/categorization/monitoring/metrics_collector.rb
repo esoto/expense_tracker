@@ -3,7 +3,7 @@
 require "singleton"
 require "forwardable"
 
-module Categorization
+module Services::Categorization
   module Monitoring
     # Singleton service for collecting and reporting metrics
     # Integrates with StatsD for production monitoring

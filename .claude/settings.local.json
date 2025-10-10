@@ -12,7 +12,6 @@
       "Bash(bundle exec rails console:*)",
       "Bash(diff:*)",
       "Bash(grep:*)",
-      "Bash(git checkout:*)",
       "Bash(rails g:*)",
       "Bash(bin/rails:*)",
       "Bash(bundle exec brakeman:*)",

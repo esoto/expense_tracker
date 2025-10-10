@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Email
+module Services::Email
   class EncodingService
     COMMON_ENCODINGS = %w[UTF-8 ISO-8859-1 Windows-1252 UTF-16 ASCII].freeze
 

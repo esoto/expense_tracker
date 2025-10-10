@@ -2,7 +2,7 @@
 
 require "ostruct"
 
-module Categorization
+module Services::Categorization
   # Factory for creating orchestrator instances with proper dependency injection
   # Provides different configurations for various environments and use cases
   # Thread-safe singleton pattern for shared service instances

@@ -27,7 +27,8 @@ require "concurrent"
 #
 #   # Manually trigger batch send
 #   collector.flush_batch
-class ProgressBatchCollector
+module Services
+  class ProgressBatchCollector
   # Default configuration values
   DEFAULT_CONFIG = {
     batch_interval: 2.seconds,      # Maximum time between batches
@@ -450,4 +451,5 @@ class ProgressBatchCollector
   def time_for_batch_flush?
     Time.current - @last_batch_time >= @config[:batch_interval]
   end
+end
 end

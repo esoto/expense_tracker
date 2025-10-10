@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Analytics
+module Services::Analytics
   # Analyzes performance metrics for categorization patterns
   class PatternPerformanceAnalyzer
       include ActiveSupport::NumberHelper

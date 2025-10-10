@@ -15,7 +15,8 @@
 #   BroadcastFeatureFlags.enabled?(:redis_analytics)
 #   BroadcastFeatureFlags.enabled_for_user?(:new_rate_limiting, user_id: 123)
 #   BroadcastFeatureFlags.with_fallback(:redis_metrics) { risky_operation }
-class BroadcastFeatureFlags
+module Services
+  class Services::BroadcastFeatureFlags
   # Feature flag definitions with their configurations
   FEATURES = {
     # Redis-powered analytics
@@ -437,4 +438,5 @@ class BroadcastFeatureFlags
       %w[true 1 yes on enabled].include?(value.to_s.downcase)
     end
   end
+end
 end

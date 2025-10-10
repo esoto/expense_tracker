@@ -19,7 +19,8 @@
 #     duration: 123.45,
 #     emails_processed: 10
 #   )
-class SyncMetricsCollector
+module Services
+  class SyncMetricsCollector
   attr_reader :sync_session, :metrics_buffer
 
   def initialize(sync_session)
@@ -381,4 +382,5 @@ class SyncMetricsCollector
         .count
     end
   end
+end
 end

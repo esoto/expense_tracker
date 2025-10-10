@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-module Categorization
+module Services::Categorization
   module Monitoring
     # Adapter for dashboard monitoring strategies
     # Provides a unified interface to switch between original and optimized implementations
     class DashboardAdapter
       # Available strategies
       STRATEGIES = {
-        original: DashboardHelper,
-        optimized: DashboardHelperOptimized
+        original: Services::Categorization::Monitoring::DashboardHelper,
+        optimized: Services::Categorization::Monitoring::DashboardHelperOptimized
       }.freeze
 
       # Default strategy

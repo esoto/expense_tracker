@@ -21,7 +21,8 @@
 #     data: { status: 'processing' },
 #     priority: :high
 #   )
-class BroadcastReliabilityService
+module Services
+  class Services::BroadcastReliabilityService
   # Priority levels determine retry behavior and queue priority
   PRIORITIES = {
     critical: { max_retries: 5, backoff_base: 0.5, queue: "critical" },
@@ -301,4 +302,5 @@ class BroadcastReliabilityService
       end
     end
   end
+end
 end

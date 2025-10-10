@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe CategorizationService, performance: true do
+RSpec.describe Services::CategorizationService, performance: true do
   let(:service) { described_class.new }
   let(:groceries_category) { create(:category, name: "Groceries") }
   let(:dining_category) { create(:category, name: "Dining") }

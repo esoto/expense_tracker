@@ -5,7 +5,7 @@ require 'rails_helper'
 # Phase 3 IMAP Connectivity Tests for Email::ProcessingService
 # Comprehensive testing of connection management, authentication, and server detection
 # Focus: Costa Rican banking integration with robust error scenarios
-RSpec.describe Email::ProcessingService, :imap_connection, type: :service, unit: true do
+RSpec.describe Services::Email::ProcessingService, :imap_connection, type: :service, unit: true do
   include EmailProcessingTestHelper
 
   let(:email_account) { create(:email_account, :bac, :gmail) }

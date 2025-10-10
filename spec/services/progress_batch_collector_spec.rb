@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe ProgressBatchCollector, type: :service, integration: true do
+RSpec.describe Services::ProgressBatchCollector, type: :service, integration: true do
   include ActiveSupport::Testing::TimeHelpers
   let(:sync_session) { create(:sync_session) }
   let(:config) do

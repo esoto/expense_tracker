@@ -3,7 +3,7 @@
 require "rails_helper"
 require "ostruct"
 
-RSpec.describe Categorization::Orchestrator, type: :service do
+RSpec.describe Services::Categorization::Orchestrator, type: :service do
   let(:orchestrator) { described_class.new(**dependencies) }
   let(:dependencies) do
     {

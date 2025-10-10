@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::Parser, type: :service, performance: true do
+RSpec.describe Services::EmailProcessing::Parser, type: :service, performance: true do
   let(:parsing_rule) { create(:parsing_rule, :bac, bank_name: "TEST_BAC_UNIQUE") }
   let(:email_account) { create(:email_account, :bac, bank_name: "TEST_BAC_UNIQUE") }
   let(:category) { create(:category, name: 'Alimentación') }

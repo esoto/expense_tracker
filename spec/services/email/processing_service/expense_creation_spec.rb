@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe Email::ProcessingService, type: :service, unit: true do
+RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
   describe 'Phase 4: Transaction Processing & Expense Creation' do
     include EmailProcessingTestHelper
 

@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe MetricsJobMonitor do
+RSpec.describe Services::MetricsJobMonitor do
   let(:email_account) { create(:email_account) }
 
   before do

@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe SyncProgressUpdater, type: :service, integration: true do
+RSpec.describe Services::SyncProgressUpdater, type: :service, integration: true do
   # Use build_stubbed to avoid database hits
   let(:sync_session) { build_stubbed(:sync_session, id: 1) }
   let(:email_account1) { build_stubbed(:email_account, id: 1) }

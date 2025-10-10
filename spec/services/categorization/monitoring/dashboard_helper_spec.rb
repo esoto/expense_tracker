@@ -3,7 +3,7 @@
 require "rails_helper"
 require "support/shared_contexts/activerecord_stubs"
 
-RSpec.describe Categorization::Monitoring::DashboardHelper, type: :service, unit: true do
+RSpec.describe Services::Categorization::Monitoring::DashboardHelper, type: :service, unit: true do
   include_context "activerecord stubs"
   let(:fixed_time) { Time.zone.local(2024, 12, 15, 14, 30, 0) }
 

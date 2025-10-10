@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::Matchers::MatchResult, performance: true do
+RSpec.describe Services::Categorization::Matchers::MatchResult, performance: true do
   let(:matches) do
     [
       { id: 1, text: "Starbucks", score: 0.95 },

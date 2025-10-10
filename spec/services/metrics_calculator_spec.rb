@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe MetricsCalculator, type: :service, performance: true do
+RSpec.describe Services::MetricsCalculator, type: :service, performance: true do
   let(:current_date) { Date.parse('2025-08-10') }
   let(:calculator) { described_class.new(email_account: email_account, period: period, reference_date: current_date) }
   let(:period) { :month }

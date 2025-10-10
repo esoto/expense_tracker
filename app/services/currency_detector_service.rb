@@ -1,4 +1,5 @@
-class CurrencyDetectorService
+module Services
+  class Services::CurrencyDetectorService
   # Currency detection patterns
   USD_PATTERNS = %w[$ usd dollar].freeze
   EUR_PATTERNS = %w[€ eur euro].freeze
@@ -57,4 +58,5 @@ class CurrencyDetectorService
   def contains_eur?(text)
     EUR_PATTERNS.any? { |pattern| text.include?(pattern) }
   end
+end
 end

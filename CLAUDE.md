@@ -22,7 +22,16 @@ This is a Ruby on Rails 8.0.2 application. Key commands:
 
 ## Git Pre-commit Hook
 
-A pre-commit hook has been configured to automatically run tests, RuboCop linting, Brakeman security scanning, and Rails Best Practices before allowing commits. This ensures code quality and security standards are maintained.
+A pre-commit hook is available to automatically run code quality checks and security scanning before allowing commits. This ensures code quality and security standards are maintained.
+
+**Setup:** Run `./bin/setup-git-hooks` after cloning the repository to install the hooks.
+
+The hook runs:
+1. **RuboCop** - Ensures code style compliance
+2. **Brakeman** - Security vulnerability scanner
+3. **RSpec unit tests** - Runs only tests tagged with `:unit` (uses `bundle exec rspec --tag unit`)
+
+To bypass the hook (not recommended): `git commit --no-verify`
 
 ## Architecture
 

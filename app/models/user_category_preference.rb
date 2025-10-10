@@ -146,7 +146,7 @@ class UserCategoryPreference < ApplicationRecord
 
   def invalidate_cache
     # Invalidate cache for merchant-based preferences
-    Categorization::PatternCache.instance.invalidate(self) if context_type == "merchant"
+    Services::Categorization::PatternCache.instance.invalidate(self) if context_type == "merchant"
   rescue => e
     Rails.logger.error "[UserCategoryPreference] Cache invalidation failed: #{e.message}"
   end

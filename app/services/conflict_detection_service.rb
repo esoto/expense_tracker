@@ -332,5 +332,5 @@ module Services
   def add_error(message)
     @errors << message
   end
-end
+  end
 end

@@ -451,5 +451,5 @@ module Services
   def time_for_batch_flush?
     Time.current - @last_batch_time >= @config[:batch_interval]
   end
-end
+  end
 end

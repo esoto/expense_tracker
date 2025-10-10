@@ -372,5 +372,5 @@ module Services
       recommendations
     end
   end
-end
+  end
 end

@@ -468,5 +468,5 @@ module Services
   rescue JSON::ParserError
     { tokens: GLOBAL_LIMITS[:requests], usage_percent: 0 }
   end
-end
+  end
 end

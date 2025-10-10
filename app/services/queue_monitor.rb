@@ -467,5 +467,5 @@ module Services
       Rails.cache.delete("queue_monitor:status")
     end
   end
-end
+  end
 end

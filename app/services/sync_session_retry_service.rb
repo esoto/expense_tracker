@@ -92,5 +92,5 @@ module Services
       !@success
     end
   end
-end
+  end
 end

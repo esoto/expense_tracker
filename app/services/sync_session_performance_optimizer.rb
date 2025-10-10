@@ -92,5 +92,5 @@ module Services
 
     Time.current + (remaining / rate).seconds
   end
-end
+  end
 end

@@ -123,5 +123,5 @@ module Services
   class NullErrorHandler
     def handle_final_failure(*); end
   end
-end
+  end
 end

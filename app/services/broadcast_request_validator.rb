@@ -343,5 +343,5 @@ module Services
 
     sanitized
   end
-end
+  end
 end

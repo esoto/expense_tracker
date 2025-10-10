@@ -83,5 +83,5 @@ module Services
       .sum(:amount)
       .transform_values(&:to_f)
   end
-end
+  end
 end

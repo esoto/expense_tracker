@@ -4,7 +4,7 @@ RSpec.describe Api::HealthController, type: :controller, unit: true do
   before do
     # Mock the health check service
     @health_check = double("HealthCheck")
-    allow(Categorization::Monitoring::HealthCheck).to receive(:new).and_return(@health_check)
+    allow(Services::Categorization::Monitoring::HealthCheck).to receive(:new).and_return(@health_check)
   end
 
   describe "GET #index" do
@@ -25,7 +25,7 @@ RSpec.describe Api::HealthController, type: :controller, unit: true do
       end
 
       it "returns healthy status with OK response" do
-        expect(Categorization::Monitoring::HealthCheck).to receive(:new)
+        expect(Services::Categorization::Monitoring::HealthCheck).to receive(:new)
         get :index
 
         expect(response).to have_http_status(:ok)

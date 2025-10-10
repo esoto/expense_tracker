@@ -37,20 +37,20 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
 
     # Stub all service classes
     stub_const("Services::Categorization::PatternCache", pattern_cache_class)
-    stub_const("Categorization::Matchers::FuzzyMatcher", fuzzy_matcher_class)
-    stub_const("Categorization::ConfidenceCalculator", confidence_calculator_class)
-    stub_const("Categorization::PatternLearner", pattern_learner_class)
-    stub_const("Categorization::PerformanceTracker", performance_tracker_class)
-    stub_const("Categorization::LruCache", lru_cache_class)
+    stub_const("Services::Categorization::Matchers::FuzzyMatcher", fuzzy_matcher_class)
+    stub_const("Services::Categorization::ConfidenceCalculator", confidence_calculator_class)
+    stub_const("Services::Categorization::PatternLearner", pattern_learner_class)
+    stub_const("Services::Categorization::PerformanceTracker", performance_tracker_class)
+    stub_const("Services::Categorization::LruCache", lru_cache_class)
     stub_const("Services::Categorization::Engine::MAX_PATTERN_CACHE_SIZE", 1000)
 
     # Allow instantiation of service mocks
     allow(Services::Categorization::PatternCache).to receive(:new).and_call_original
-    allow(Categorization::Matchers::FuzzyMatcher).to receive(:new).and_call_original
-    allow(Categorization::ConfidenceCalculator).to receive(:new).and_call_original
-    allow(Categorization::PatternLearner).to receive(:new).and_call_original
-    allow(Categorization::PerformanceTracker).to receive(:new).and_call_original
-    allow(Categorization::LruCache).to receive(:new).and_call_original
+    allow(Services::Categorization::Matchers::FuzzyMatcher).to receive(:new).and_call_original
+    allow(Services::Categorization::ConfidenceCalculator).to receive(:new).and_call_original
+    allow(Services::Categorization::PatternLearner).to receive(:new).and_call_original
+    allow(Services::Categorization::PerformanceTracker).to receive(:new).and_call_original
+    allow(Services::Categorization::LruCache).to receive(:new).and_call_original
   end
 
   describe "#initialize" do

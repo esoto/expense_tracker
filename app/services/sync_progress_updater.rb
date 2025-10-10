@@ -175,5 +175,5 @@ module Services
   def batch_stats
     batch_collector&.stats || {}
   end
-end
+  end
 end

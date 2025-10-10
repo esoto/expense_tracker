@@ -46,5 +46,5 @@ module Services
   def rate_limit_exceeded?
     recent_sync_count >= MAX_SYNCS_PER_WINDOW
   end
-end
+  end
 end

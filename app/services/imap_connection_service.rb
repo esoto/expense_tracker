@@ -146,5 +146,5 @@ module Services
     @errors << message
     Rails.logger.error "[ImapConnectionService] #{email_account.email}: #{message}"
   end
-end
+  end
 end

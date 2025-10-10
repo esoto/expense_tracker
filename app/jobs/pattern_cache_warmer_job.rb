@@ -14,7 +14,7 @@ class PatternCacheWarmerJob < ApplicationJob
     start_time = Time.current
 
     # Get the cache instance
-    cache = Categorization::PatternCache.instance
+    cache = Services::Categorization::PatternCache.instance
 
     # Perform memory cleanup if needed
     cleanup_memory_if_needed(cache)

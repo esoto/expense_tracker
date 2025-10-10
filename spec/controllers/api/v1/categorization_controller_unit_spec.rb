@@ -15,7 +15,7 @@ RSpec.describe Api::V1::CategorizationController, type: :controller, unit: true 
     categorization_module = Module.new
     stub_const("Categorization", categorization_module)
     enhanced_service_class = Class.new
-    categorization_module.const_set("EnhancedServices::CategorizationService", enhanced_service_class)
+    categorization_module.const_set("EnhancedCategorizationService", enhanced_service_class)
     allow(enhanced_service_class).to receive(:new).and_return(categorization_service)
   end
 

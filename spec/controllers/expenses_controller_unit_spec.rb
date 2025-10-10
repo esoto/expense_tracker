@@ -425,8 +425,6 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
 
     before do
       # Mock the BulkOperations::CategorizationService
-      bulk_operations = Module.new
-      stub_const("BulkOperations", bulk_operations)
       categorization_service_class = Class.new do
         def initialize(expense_ids:, category_id:, user:, options:)
           # Mock constructor that accepts the parameters
@@ -436,7 +434,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
           # Mock call method
         end
       end
-      bulk_operations.const_set("Services::CategorizationService", categorization_service_class)
+      stub_const("Services::BulkOperations::CategorizationService", categorization_service_class)
       allow(categorization_service_class).to receive(:new).and_return(categorization_service)
       allow(categorization_service).to receive(:call).and_return(service_result)
       allow(controller).to receive(:authorize_bulk_operation!).and_return(true)

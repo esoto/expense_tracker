@@ -38,8 +38,8 @@ RSpec.describe BulkCategorizationActionsController, type: :controller do
         bulk_operation = create(:bulk_operation)
 
         # Mock the undo service to return success
-        undo_service = instance_double(BulkCategorization::UndoService)
-        allow(BulkCategorization::UndoService).to receive(:new).and_return(undo_service)
+        undo_service = instance_double(Services::BulkCategorization::UndoService)
+        allow(Services::BulkCategorization::UndoService).to receive(:new).and_return(undo_service)
         allow(undo_service).to receive(:call).and_return(
           OpenStruct.new(
             success?: true,
@@ -219,7 +219,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller do
     describe 'Error Handling' do
       it 'handles service errors gracefully' do
         # Mock service to raise an error
-        allow_any_instance_of(Services::Categorization::Bulk::CategorizationService)
+        allow_any_instance_of(Services::Categorization::BulkCategorizationService)
           .to receive(:apply!)
           .and_raise(StandardError.new('Simulated error'))
 

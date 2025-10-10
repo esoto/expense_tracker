@@ -58,5 +58,5 @@ module Services
   def contains_eur?(text)
     EUR_PATTERNS.any? { |pattern| text.include?(pattern) }
   end
-end
+  end
 end

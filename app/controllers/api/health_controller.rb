@@ -125,7 +125,7 @@ module Api
     end
 
     def cache_metrics
-      cache = Categorization::PatternCache.instance
+      cache = Services::Categorization::PatternCache.instance
       stats = cache.stats
 
       {

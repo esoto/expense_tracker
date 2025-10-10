@@ -338,7 +338,7 @@ class ExpensesController < ApplicationController
     permitted = bulk_categorize_params
 
     # Use the new service object for better performance and organization
-    service = BulkOperations::CategorizationService.new(
+    service = Services::BulkOperations::CategorizationService.new(
       expense_ids: permitted[:expense_ids],
       category_id: permitted[:category_id],
       user: current_user_for_bulk_operations,
@@ -376,7 +376,7 @@ class ExpensesController < ApplicationController
     permitted = bulk_status_params
 
     # Use the new service object for better performance
-    service = BulkOperations::StatusUpdateService.new(
+    service = Services::BulkOperations::StatusUpdateService.new(
       expense_ids: permitted[:expense_ids],
       status: permitted[:status],
       user: current_user_for_bulk_operations,
@@ -413,7 +413,7 @@ class ExpensesController < ApplicationController
     permitted = bulk_destroy_params
 
     # Use the new service object for better performance
-    service = BulkOperations::DeletionService.new(
+    service = Services::BulkOperations::DeletionService.new(
       expense_ids: permitted[:expense_ids],
       user: current_user_for_bulk_operations,
       options: {

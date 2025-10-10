@@ -17,16 +17,16 @@ module BroadcastServiceTestHelper
     # Setup analytics mock with proper tracking (unless disabled)
     unless options[:skip_analytics_mock]
       @analytics_recorder = AnalyticsRecorder.new
-      allow(Infrastructure::BroadcastService::Analytics).to receive(:record) do |channel, target, priority, result|
+      allow(Services::Infrastructure::BroadcastService::Analytics).to receive(:record) do |channel, target, priority, result|
         @analytics_recorder.record(channel, target, priority, result)
       end
-      allow(Infrastructure::BroadcastService::Analytics).to receive(:get_metrics) do |options = {}|
+      allow(Services::Infrastructure::BroadcastService::Analytics).to receive(:get_metrics) do |options = {}|
         @analytics_recorder.get_metrics(options)
       end
     end
 
     # Reset feature flags to default state
-    Infrastructure::BroadcastService::FeatureFlags.reset!
+    Services::Infrastructure::BroadcastService::FeatureFlags.reset!
 
     # Clear any existing failed broadcasts
     FailedBroadcastStore.destroy_all if defined?(FailedBroadcastStore)
@@ -36,7 +36,7 @@ module BroadcastServiceTestHelper
   def setup_minimal_broadcast_test_environment
     @original_cache = Rails.cache
     Rails.cache = ActiveSupport::Cache::MemoryStore.new
-    Infrastructure::BroadcastService::FeatureFlags.reset!
+    Services::Infrastructure::BroadcastService::FeatureFlags.reset!
   end
 
   def teardown_broadcast_test_environment
@@ -58,11 +58,11 @@ module BroadcastServiceTestHelper
   end
 
   def with_feature_flag(flag, value)
-    original = Infrastructure::BroadcastService::FeatureFlags.flags[flag]
-    Infrastructure::BroadcastService::FeatureFlags.flags[flag] = value
+    original = Services::Infrastructure::BroadcastService::FeatureFlags.flags[flag]
+    Services::Infrastructure::BroadcastService::FeatureFlags.flags[flag] = value
     yield
   ensure
-    Infrastructure::BroadcastService::FeatureFlags.flags[flag] = original
+    Services::Infrastructure::BroadcastService::FeatureFlags.flags[flag] = original
   end
 
   def with_rate_limit(target, count)

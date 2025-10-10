@@ -239,5 +239,5 @@ module Services
            .distinct
            .limit(5)
   end
-end
+  end
 end

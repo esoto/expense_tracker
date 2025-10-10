@@ -31,7 +31,7 @@ RSpec.configure do |config|
         allow(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(nil)
       end
 
-      # Stub Infrastructure::BroadcastService if it exists
+      # Stub Services::Infrastructure::BroadcastService if it exists
       if defined?(Services::Infrastructure::BroadcastService)
         allow(Services::Infrastructure::BroadcastService).to receive(:broadcast).and_return(nil) if Services::Infrastructure::BroadcastService.respond_to?(:broadcast)
       end

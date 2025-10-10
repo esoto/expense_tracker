@@ -439,5 +439,5 @@ module Services
       StatsD.gauge("expense_filter.rows_examined", result.performance_metrics[:rows_examined])
     end
   end
-end
+  end
 end

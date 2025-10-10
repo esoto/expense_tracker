@@ -23,7 +23,7 @@ module Services::Email
         processing_time: 0
       }
       # Support dependency injection for categorization engine
-      @categorization_engine = options[:categorization_engine] || Categorization::Engine.create
+      @categorization_engine = options[:categorization_engine] || Services::Categorization::Engine.create
     end
 
     # Main method to fetch and process new emails

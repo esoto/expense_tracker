@@ -35,5 +35,5 @@ module Services
   rescue StandardError => e
     handle_calculation_error(e)
   end
-end
+  end
 end

@@ -62,5 +62,5 @@ module Services
   rescue NameError => e
     raise BroadcastError, "Invalid channel name '#{channel}': #{e.message}"
   end
-end
+  end
 end

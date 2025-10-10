@@ -217,5 +217,5 @@ module Services
              :track_bulk_operation_error, :set_user_context, :add_breadcrumb,
              to: :instance
   end
-end
+  end
 end

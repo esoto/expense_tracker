@@ -130,5 +130,5 @@ module Services
       last_completed: SyncSession.completed.recent.first
     }
   end
-end
+  end
 end

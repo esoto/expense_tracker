@@ -15,7 +15,7 @@ module Services::BulkCategorization
       @expenses = expenses
       @options = default_options.merge(options)
       # Use factory instead of singleton for better testability
-      @categorization_engine = options[:categorization_engine] || Categorization::EngineFactory.default
+      @categorization_engine = options[:categorization_engine] || Services::Categorization::EngineFactory.default
     end
 
     # Main method to group expenses by similarity

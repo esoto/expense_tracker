@@ -438,5 +438,5 @@ module Services
       %w[true 1 yes on enabled].include?(value.to_s.downcase)
     end
   end
-end
+  end
 end

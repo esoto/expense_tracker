@@ -21,7 +21,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
     stub_const('User', user_class)
 
     status_update_service_class = double('StatusUpdateServiceClass')
-    stub_const('BulkOperations::StatusUpdateService', status_update_service_class)
+    stub_const('Services::BulkOperations::StatusUpdateService', status_update_service_class)
 
     # Mock inherited behavior from BaseJob
     allow(User).to receive(:find_by).with(id: user.id).and_return(user)
@@ -33,7 +33,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
     allow(job).to receive(:sleep) # Stub sleep to keep tests fast
 
     # Default service mocking - allow any parameters
-    allow(BulkOperations::StatusUpdateService).to receive(:new).and_return(batch_service)
+    allow(Services::BulkOperations::StatusUpdateService).to receive(:new).and_return(batch_service)
   end
 
   describe '#perform' do
@@ -41,7 +41,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
       it 'sets the status and calls parent perform' do
         # This test verifies the basic flow
         # Mock the redundant service at the end
-        allow(BulkOperations::StatusUpdateService).to receive(:new)
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new)
           .with(expense_ids: expense_ids, status: status, user: user, options: merged_options)
           .and_return(main_service)
 
@@ -60,18 +60,18 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
         batch3_service = double('Batch3Service', call: { success: true })
 
         # Set up expectations for batch service creation
-        allow(BulkOperations::StatusUpdateService).to receive(:new)
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new)
           .with(expense_ids: expense_ids[0...50], status: status, user: user, options: merged_options)
           .and_return(batch1_service)
-        allow(BulkOperations::StatusUpdateService).to receive(:new)
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new)
           .with(expense_ids: expense_ids[50...100], status: status, user: user, options: merged_options)
           .and_return(batch2_service)
-        allow(BulkOperations::StatusUpdateService).to receive(:new)
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new)
           .with(expense_ids: expense_ids[100...120], status: status, user: user, options: merged_options)
           .and_return(batch3_service)
 
         # Mock the main service call at the end (the BUG!)
-        allow(BulkOperations::StatusUpdateService).to receive(:new)
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new)
           .with(expense_ids: expense_ids, status: status, user: user, options: merged_options)
           .and_return(main_service)
 
@@ -115,7 +115,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
         service_creation_order = []
         creation_count = 0
 
-        allow(BulkOperations::StatusUpdateService).to receive(:new) do |args|
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new) do |args|
           creation_count += 1
           service_creation_order << args[:expense_ids].size
 
@@ -158,7 +158,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
         # This test shows that expenses are processed TWICE
         processed_expense_ids = []
 
-        allow(BulkOperations::StatusUpdateService).to receive(:new) do |args|
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new) do |args|
           # Track which expense IDs are being processed
           processed_expense_ids.concat(args[:expense_ids])
           batch_service
@@ -191,7 +191,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
       it 'processes all expenses in a single batch without sleep' do
         single_batch_service = double('SingleBatchService', call: { success: true })
 
-        allow(BulkOperations::StatusUpdateService).to receive(:new)
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new)
           .with(expense_ids: expense_ids, status: status, user: user, options: merged_options)
           .and_return(single_batch_service)
 
@@ -209,7 +209,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
       it 'processes in one batch but still makes redundant call' do
         boundary_service = double('BoundaryService', call: { success: true })
 
-        allow(BulkOperations::StatusUpdateService).to receive(:new)
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new)
           .with(expense_ids: expense_ids, status: status, user: user, options: merged_options)
           .and_return(boundary_service)
 
@@ -227,7 +227,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
       it 'processes in exactly 2 batches plus redundant call' do
         batch_services = []
 
-        allow(BulkOperations::StatusUpdateService).to receive(:new) do |args|
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new) do |args|
           service = double("Service#{args[:expense_ids].size}", call: { success: true })
           batch_services << { size: args[:expense_ids].size, service: service }
           service
@@ -262,7 +262,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
       it 'completes successfully without processing batches' do
         empty_service = double('EmptyService', call: { success: true, message: 'No expenses to update', affected_count: 0 })
 
-        allow(BulkOperations::StatusUpdateService).to receive(:new)
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new)
           .with(expense_ids: [], status: status, user: user, options: merged_options)
           .and_return(empty_service)
 
@@ -280,7 +280,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
       it 'processes single expense but still makes redundant call' do
         single_service = double('SingleService', call: { success: true })
 
-        allow(BulkOperations::StatusUpdateService).to receive(:new)
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new)
           .with(expense_ids: [ 42 ], status: status, user: user, options: merged_options)
           .and_return(single_service)
 
@@ -296,7 +296,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
       let(:test_error) { StandardError.new('Status update failed') }
 
       before do
-        allow(BulkOperations::StatusUpdateService).to receive(:new).and_return(batch_service)
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new).and_return(batch_service)
         allow(batch_service).to receive(:call).and_raise(test_error)
       end
 
@@ -314,7 +314,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
       end
 
       it 'proceeds with nil user' do
-        allow(BulkOperations::StatusUpdateService).to receive(:new)
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new)
           .with(expense_ids: expense_ids, status: status, user: nil, options: merged_options)
           .and_return(main_service)
 
@@ -326,7 +326,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
     context 'when status is not provided' do
       it 'allows nil status but may cause issues in service' do
         # The job itself doesn't validate status, but the service might
-        allow(BulkOperations::StatusUpdateService).to receive(:new)
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new)
           .with(expense_ids: expense_ids, status: nil, user: user, options: merged_options)
           .and_return(main_service)
 
@@ -349,7 +349,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
     end
 
     it 'creates main service and batch services with correct parameters' do
-      expect(BulkOperations::StatusUpdateService).to receive(:new)
+      expect(Services::BulkOperations::StatusUpdateService).to receive(:new)
         .with(expense_ids: expense_ids, status: status, user: user, options: merged_options)
         .and_return(main_service).twice # Once for initial, once for redundant call
 
@@ -368,7 +368,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
       # Track service instantiation
       instantiation_count = 0
 
-      allow(BulkOperations::StatusUpdateService).to receive(:new) do |args|
+      allow(Services::BulkOperations::StatusUpdateService).to receive(:new) do |args|
         instantiation_count += 1
         if instantiation_count == 1
           # Line 13: Service created but NEVER USED in batch processing
@@ -390,7 +390,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
       let(:expense_ids) { (1..150).to_a }
 
       it 'calls sleep after each batch for large jobs' do
-        allow(BulkOperations::StatusUpdateService).to receive(:new).and_return(batch_service, main_service)
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new).and_return(batch_service, main_service)
 
         job.send(:execute_operation)
 
@@ -403,7 +403,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
       let(:expense_ids) { (1..75).to_a } # Will create 2 batches: 50, 25
 
       it 'calculates correct progress percentages' do
-        allow(BulkOperations::StatusUpdateService).to receive(:new).and_return(batch_service, main_service)
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new).and_return(batch_service, main_service)
 
         job.send(:execute_operation)
 
@@ -443,7 +443,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
       job.instance_variable_set(:@status, status)
       job.instance_variable_set(:@user, user)
       job.instance_variable_set(:@options, options)
-      allow(BulkOperations::StatusUpdateService).to receive(:new).and_return(batch_service, main_service)
+      allow(Services::BulkOperations::StatusUpdateService).to receive(:new).and_return(batch_service, main_service)
     end
 
     it 'calculates correct progress percentages' do
@@ -490,7 +490,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
       it 'processes efficiently in batches' do
         call_count = 0
 
-        allow(BulkOperations::StatusUpdateService).to receive(:new) do
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new) do
           call_count += 1
           batch_service
         end

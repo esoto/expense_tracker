@@ -19,7 +19,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
   end
 
   describe "GET #index", unit: true do
-    let(:filter_service) { double("ExpenseFilterService") }
+    let(:filter_service) { double("Services::ExpenseFilterService") }
     let(:service_result) do
       double("ServiceResult", {
         success?: true,
@@ -35,7 +35,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
     end
 
     before do
-      allow(ExpenseFilterService).to receive(:new).and_return(filter_service)
+      allow(Services::ExpenseFilterService).to receive(:new).and_return(filter_service)
       allow(filter_service).to receive(:call).and_return(service_result)
       allow(controller).to receive(:setup_navigation_context)
       allow(controller).to receive(:calculate_summary_from_result)
@@ -43,7 +43,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
     end
 
     it "creates filter service with account IDs and filter params" do
-      expect(ExpenseFilterService).to receive(:new).with(
+      expect(Services::ExpenseFilterService).to receive(:new).with(
         hash_including(account_ids: [ email_account.id ])
       )
 
@@ -273,8 +273,8 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
   end
 
   describe "GET #dashboard", unit: true do
-    let(:metrics_calculator) { double("MetricsCalculator") }
-    let(:dashboard_service) { double("DashboardService") }
+    let(:metrics_calculator) { double("Services::MetricsCalculator") }
+    let(:dashboard_service) { double("Services::DashboardService") }
     let(:batch_results) do
       {
         year: { metrics: { total_amount: 1000, transaction_count: 50 }, trends: { previous_period_total: 900 } },
@@ -299,13 +299,13 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
 
     before do
       allow(EmailAccount).to receive(:active).and_return(double(first: email_account))
-      allow(MetricsCalculator).to receive(:batch_calculate).and_return(batch_results)
-      allow(DashboardService).to receive(:new).and_return(dashboard_service)
+      allow(Services::MetricsCalculator).to receive(:batch_calculate).and_return(batch_results)
+      allow(Services::DashboardService).to receive(:new).and_return(dashboard_service)
       allow(dashboard_service).to receive(:analytics).and_return(dashboard_data)
     end
 
-    it "calculates metrics using MetricsCalculator" do
-      expect(MetricsCalculator).to receive(:batch_calculate).with(
+    it "calculates metrics using Services::MetricsCalculator" do
+      expect(Services::MetricsCalculator).to receive(:batch_calculate).with(
         email_account: email_account,
         periods: [ :year, :month, :week, :day ],
         reference_date: Date.current
@@ -436,7 +436,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
           # Mock call method
         end
       end
-      bulk_operations.const_set("CategorizationService", categorization_service_class)
+      bulk_operations.const_set("Services::CategorizationService", categorization_service_class)
       allow(categorization_service_class).to receive(:new).and_return(categorization_service)
       allow(categorization_service).to receive(:call).and_return(service_result)
       allow(controller).to receive(:authorize_bulk_operation!).and_return(true)
@@ -604,7 +604,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
 
     context "when service raises an error" do
       before do
-        allow(ExpenseFilterService).to receive(:new).and_raise(StandardError, "Service error")
+        allow(Services::ExpenseFilterService).to receive(:new).and_raise(StandardError, "Service error")
       end
 
       it "does not rescue the error (lets Rails handle it)" do

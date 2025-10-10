@@ -6,7 +6,7 @@ RSpec.describe Services::BroadcastRetryOrchestrator, type: :service do
   let(:sync_session) { create(:sync_session) }
   let(:test_data) { { status: 'processing', processed: 10, total: 100 } }
   let(:broadcaster) do
-    CoreBroadcastService.new(
+    Services::CoreBroadcastService.new(
       channel: SyncStatusChannel,
       target: sync_session,
       data: test_data
@@ -82,7 +82,7 @@ RSpec.describe Services::BroadcastRetryOrchestrator, type: :service do
         allow(broadcaster).to receive(:broadcast) do
           call_count += 1
           if call_count == 1
-            raise CoreBroadcastService::BroadcastError, 'Temporary failure'
+            raise Services::CoreBroadcastService::BroadcastError, 'Temporary failure'
           else
             true
           end
@@ -105,7 +105,7 @@ RSpec.describe Services::BroadcastRetryOrchestrator, type: :service do
     context 'when broadcast fails all attempts' do
       before do
         allow(broadcaster).to receive(:broadcast)
-          .and_raise(CoreBroadcastService::BroadcastError, 'Persistent failure')
+          .and_raise(Services::CoreBroadcastService::BroadcastError, 'Persistent failure')
       end
 
       it 'exhausts retries and returns false' do
@@ -128,7 +128,7 @@ RSpec.describe Services::BroadcastRetryOrchestrator, type: :service do
           broadcaster.target,
           broadcaster.data,
           :medium,
-          be_a(CoreBroadcastService::BroadcastError)
+          be_a(Services::CoreBroadcastService::BroadcastError)
         )
       end
     end
@@ -136,7 +136,7 @@ RSpec.describe Services::BroadcastRetryOrchestrator, type: :service do
     context 'with different priority levels' do
       before do
         allow(broadcaster).to receive(:broadcast)
-          .and_raise(CoreBroadcastService::BroadcastError, 'Failure')
+          .and_raise(Services::CoreBroadcastService::BroadcastError, 'Failure')
       end
 
       it 'uses correct retry count for critical priority' do

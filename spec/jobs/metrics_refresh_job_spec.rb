@@ -19,7 +19,7 @@ RSpec.describe MetricsRefreshJob, type: :job, integration: true do
         create(:expense, email_account: email_account, transaction_date: 1.day.ago)
 
         # Pre-calculate metrics to populate cache
-        calculator = MetricsCalculator.new(email_account: email_account, period: :day)
+        calculator = Services::MetricsCalculator.new(email_account: email_account, period: :day)
         calculator.calculate
 
         # Clear cache to simulate stale data
@@ -38,7 +38,7 @@ RSpec.describe MetricsRefreshJob, type: :job, integration: true do
 
         # Count unique period/date combinations that will be calculated
         # Each date affects day, week, month, year periods
-        allow_any_instance_of(MetricsCalculator).to receive(:calculate).and_return({
+        allow_any_instance_of(Services::MetricsCalculator).to receive(:calculate).and_return({
           metrics: { total_amount: 0.0, transaction_count: 0 }
         })
 
@@ -52,7 +52,7 @@ RSpec.describe MetricsRefreshJob, type: :job, integration: true do
 
         # Job should skip execution
         expect(Rails.logger).to receive(:info).with(/skipped - another job is already processing/)
-        expect_any_instance_of(MetricsCalculator).not_to receive(:calculate)
+        expect_any_instance_of(Services::MetricsCalculator).not_to receive(:calculate)
 
         job.perform(email_account.id)
       end
@@ -93,7 +93,7 @@ RSpec.describe MetricsRefreshJob, type: :job, integration: true do
       it "releases lock even on error" do
         lock_key = "metrics_refresh:#{email_account.id}"
 
-        allow_any_instance_of(MetricsCalculator).to receive(:calculate).and_raise(StandardError, "Test error")
+        allow_any_instance_of(Services::MetricsCalculator).to receive(:calculate).and_raise(StandardError, "Test error")
 
         expect { job.perform(email_account.id) }.to raise_error(StandardError)
 
@@ -102,7 +102,7 @@ RSpec.describe MetricsRefreshJob, type: :job, integration: true do
       end
 
       it "tracks failure metrics" do
-        allow_any_instance_of(MetricsCalculator).to receive(:calculate).and_raise(StandardError, "Test error")
+        allow_any_instance_of(Services::MetricsCalculator).to receive(:calculate).and_raise(StandardError, "Test error")
 
         expect { job.perform(email_account.id) }.to raise_error(StandardError)
 
@@ -176,7 +176,7 @@ RSpec.describe MetricsRefreshJob, type: :job, integration: true do
       job = described_class.new
       periods = job.send(:determine_affected_periods, [])
 
-      MetricsCalculator::SUPPORTED_PERIODS.each do |period|
+      Services::MetricsCalculator::SUPPORTED_PERIODS.each do |period|
         expect(periods[period]).to eq([ Date.current ])
       end
     end

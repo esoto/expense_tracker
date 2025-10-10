@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe Services::EmailProcessing::Fetcher, type: :service, integration: true do
   let(:email_account) { create(:email_account, :bac) }
-  let(:mock_imap_service) { instance_double(ImapConnectionService) }
+  let(:mock_imap_service) { instance_double(Services::ImapConnectionService) }
   let(:mock_email_processor) { instance_double(EmailProcessing::Processor) }
   let(:fetcher) { EmailProcessing::Fetcher.new(email_account, imap_service: mock_imap_service, email_processor: mock_email_processor) }
 
@@ -21,7 +21,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, type: :service, integration: 
 
     it 'creates default services if none provided' do
       default_fetcher = EmailProcessing::Fetcher.new(email_account)
-      expect(default_fetcher.imap_service).to be_a(ImapConnectionService)
+      expect(default_fetcher.imap_service).to be_a(Services::ImapConnectionService)
       expect(default_fetcher.email_processor).to be_a(EmailProcessing::Processor)
     end
   end
@@ -85,7 +85,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, type: :service, integration: 
       before do
         allow(fetcher).to receive(:valid_account?).and_return(true)
         allow(mock_imap_service).to receive(:search_emails)
-          .and_raise(ImapConnectionService::ConnectionError, 'Connection failed')
+          .and_raise(Services::ImapConnectionService::ConnectionError, 'Connection failed')
       end
 
       it 'handles IMAP connection errors gracefully' do
@@ -100,7 +100,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, type: :service, integration: 
       before do
         allow(fetcher).to receive(:valid_account?).and_return(true)
         allow(mock_imap_service).to receive(:search_emails)
-          .and_raise(ImapConnectionService::AuthenticationError, 'Auth failed')
+          .and_raise(Services::ImapConnectionService::AuthenticationError, 'Auth failed')
       end
 
       it 'handles IMAP authentication errors gracefully' do

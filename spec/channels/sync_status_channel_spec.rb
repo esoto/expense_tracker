@@ -318,12 +318,12 @@ RSpec.describe SyncStatusChannel, type: :channel, unit: true do
     end
   end
 
-  # Shared context for broadcast tests that use BroadcastReliabilityService
+  # Shared context for broadcast tests that use Services::BroadcastReliabilityService
   shared_context "broadcast reliability service mocked" do
     before do
-      # Mock the BroadcastReliabilityService to directly call broadcast_to
+      # Mock the Services::BroadcastReliabilityService to directly call broadcast_to
       # This ensures ActionCable broadcast matchers work correctly in tests
-      allow(BroadcastReliabilityService).to receive(:broadcast_with_retry) do |**args|
+      allow(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry) do |**args|
         channel_class = args[:channel].is_a?(String) ? args[:channel].constantize : args[:channel]
         channel_class.broadcast_to(args[:target], args[:data])
         true
@@ -375,8 +375,8 @@ RSpec.describe SyncStatusChannel, type: :channel, unit: true do
       allow(sync_session).to receive(:progress_percentage).and_return(75)
       allow(sync_session).to receive(:detected_expenses).and_return(15)
 
-      # Mock the BroadcastReliabilityService to directly call broadcast_to
-      allow(BroadcastReliabilityService).to receive(:broadcast_with_retry) do |args|
+      # Mock the Services::BroadcastReliabilityService to directly call broadcast_to
+      allow(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry) do |args|
         args[:channel].broadcast_to(args[:target], args[:data])
         true
       end
@@ -911,8 +911,8 @@ RSpec.describe SyncStatusChannel, type: :channel, unit: true do
 
   describe "broadcast reliability and error handling", unit: true do
     describe ".broadcast_with_reliability", unit: true do
-      it "uses BroadcastReliabilityService for broadcasting" do
-        expect(BroadcastReliabilityService).to receive(:broadcast_with_retry).with(
+      it "uses Services::BroadcastReliabilityService for broadcasting" do
+        expect(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry).with(
           channel: SyncStatusChannel,
           target: sync_session,
           data: { test: "data" },
@@ -923,8 +923,8 @@ RSpec.describe SyncStatusChannel, type: :channel, unit: true do
       end
 
       it "falls back to direct broadcast if reliability service fails" do
-        # Mock BroadcastReliabilityService to raise error
-        allow(BroadcastReliabilityService).to receive(:broadcast_with_retry).and_raise(StandardError.new("Service error"))
+        # Mock Services::BroadcastReliabilityService to raise error
+        allow(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry).and_raise(StandardError.new("Service error"))
 
         # Mock Rails.logger to capture error logs
         allow(Rails.logger).to receive(:error)
@@ -941,7 +941,7 @@ RSpec.describe SyncStatusChannel, type: :channel, unit: true do
 
       it "handles complete broadcast failure gracefully" do
         # Mock both services to fail
-        allow(BroadcastReliabilityService).to receive(:broadcast_with_retry).and_raise(StandardError.new("Service error"))
+        allow(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry).and_raise(StandardError.new("Service error"))
         allow(SyncStatusChannel).to receive(:broadcast_to).and_raise(StandardError.new("Broadcast error"))
         allow(Rails.logger).to receive(:error)
 
@@ -960,7 +960,7 @@ RSpec.describe SyncStatusChannel, type: :channel, unit: true do
       it "broadcasts batch data with correct format" do
         batch_data = [ { type: "progress", value: 50 }, { type: "status", value: "running" } ]
 
-        expect(BroadcastReliabilityService).to receive(:broadcast_with_retry).with(
+        expect(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry).with(
           channel: SyncStatusChannel,
           target: sync_session,
           data: hash_including(
@@ -975,7 +975,7 @@ RSpec.describe SyncStatusChannel, type: :channel, unit: true do
       end
 
       it "handles empty batch data gracefully" do
-        expect(BroadcastReliabilityService).not_to receive(:broadcast_with_retry)
+        expect(Services::BroadcastReliabilityService).not_to receive(:broadcast_with_retry)
 
         SyncStatusChannel.broadcast_batch(sync_session, [])
       end
@@ -983,7 +983,7 @@ RSpec.describe SyncStatusChannel, type: :channel, unit: true do
       it "includes timestamp in batch data" do
         batch_data = [ { type: "test" } ]
 
-        expect(BroadcastReliabilityService).to receive(:broadcast_with_retry) do |args|
+        expect(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry) do |args|
           expect(args[:data][:timestamp]).to match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
         end
 

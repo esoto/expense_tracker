@@ -2,7 +2,7 @@
 
 # Test helper specifically for EmailProcessing::Processor testing
 module EmailProcessingProcessorTestHelper
-  # Mock IMAP service that simulates ImapConnectionService
+  # Mock IMAP service that simulates Services::ImapConnectionService
   class MockImapService
     attr_reader :errors
 
@@ -160,8 +160,8 @@ module EmailProcessingProcessorTestHelper
   end
 
   def mock_conflict_detection_service
-    service = instance_double(ConflictDetectionService)
-    allow(ConflictDetectionService).to receive(:new).and_return(service)
+    service = instance_double(Services::ConflictDetectionService)
+    allow(Services::ConflictDetectionService).to receive(:new).and_return(service)
     service
   end
 

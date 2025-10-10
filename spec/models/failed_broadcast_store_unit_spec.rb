@@ -530,7 +530,7 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
           expect(store).to receive(:increment!).with(:retry_count)
 
           error = StandardError.new("Broadcast failed")
-          expect(BroadcastReliabilityService).to receive(:broadcast_with_retry).and_raise(error)
+          expect(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry).and_raise(error)
           expect(FailedBroadcastStore).to receive(:classify_error).with(error).and_return("unknown")
 
           expect(store).to receive(:update!).with(

@@ -266,19 +266,19 @@ RSpec.describe Expense, type: :model, integration: true do
   describe 'callbacks', integration: true do
     describe 'after_commit :clear_dashboard_cache', integration: true do
       it 'clears dashboard cache after creating an expense' do
-        expect(DashboardService).to receive(:clear_cache)
+        expect(Services::DashboardService).to receive(:clear_cache)
         create(:expense, email_account: email_account)
       end
 
       it 'clears dashboard cache after updating an expense' do
         expense = create(:expense, email_account: email_account)
-        expect(DashboardService).to receive(:clear_cache)
+        expect(Services::DashboardService).to receive(:clear_cache)
         expense.update(amount: 200.0)
       end
 
       it 'clears dashboard cache after destroying an expense' do
         expense = create(:expense, email_account: email_account)
-        expect(DashboardService).to receive(:clear_cache)
+        expect(Services::DashboardService).to receive(:clear_cache)
         expense.destroy
       end
     end

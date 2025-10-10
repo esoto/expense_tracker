@@ -181,7 +181,7 @@ RSpec.describe Services::DashboardService, integration: true do
 
     it 'clears all dashboard cache keys' do
       expect(Rails.cache).to receive(:delete_matched).with("dashboard_*")
-      DashboardService.clear_cache
+      Services::DashboardService.clear_cache
     end
   end
 
@@ -195,7 +195,7 @@ RSpec.describe Services::DashboardService, integration: true do
         PatternLearningEvent.destroy_all if defined?(PatternLearningEvent)
         Expense.destroy_all
         EmailAccount.destroy_all
-        DashboardService.clear_cache  # Clear cache after destroying data
+        Services::DashboardService.clear_cache  # Clear cache after destroying data
       end
 
       it 'returns zero values when no expenses exist' do

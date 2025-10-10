@@ -157,7 +157,7 @@ RSpec.describe "Expense metrics callbacks", type: :model, integration: true do
 
   describe 'integration with dashboard cache clearing', integration: true do
     it 'clears dashboard cache in addition to triggering metrics refresh' do
-      expect(DashboardService).to receive(:clear_cache)
+      expect(Services::DashboardService).to receive(:clear_cache)
       expect(MetricsRefreshJob).to receive(:enqueue_debounced)
 
       create(:expense, email_account: email_account)

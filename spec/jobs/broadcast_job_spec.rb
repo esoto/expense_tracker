@@ -13,8 +13,8 @@ RSpec.describe BroadcastJob, type: :job, integration: true do
   describe '#perform', integration: true do
     context 'when broadcast succeeds' do
       before do
-        allow(BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(true)
-        allow(BroadcastAnalytics).to receive(:record_success)
+        allow(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(true)
+        allow(Services::BroadcastAnalytics).to receive(:record_success)
       end
 
       it 'performs broadcast successfully' do
@@ -22,7 +22,7 @@ RSpec.describe BroadcastJob, type: :job, integration: true do
           described_class.new.perform(channel_name, target_id, target_type, data, priority)
         }.not_to raise_error
 
-        expect(BroadcastReliabilityService).to have_received(:broadcast_with_retry).with(
+        expect(Services::BroadcastReliabilityService).to have_received(:broadcast_with_retry).with(
           channel: channel_name,
           target: sync_session,
           data: data,
@@ -43,7 +43,7 @@ RSpec.describe BroadcastJob, type: :job, integration: true do
       it 'records success in analytics' do
         described_class.new.perform(channel_name, target_id, target_type, data, priority)
 
-        expect(BroadcastAnalytics).to have_received(:record_success).with(
+        expect(Services::BroadcastAnalytics).to have_received(:record_success).with(
           hash_including(
             channel: channel_name,
             target_type: target_type,
@@ -57,8 +57,8 @@ RSpec.describe BroadcastJob, type: :job, integration: true do
 
     context 'when broadcast fails' do
       before do
-        allow(BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(false)
-        allow(BroadcastAnalytics).to receive(:record_failure)
+        allow(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(false)
+        allow(Services::BroadcastAnalytics).to receive(:record_failure)
         allow(FailedBroadcastStore).to receive(:create!)
       end
 
@@ -75,7 +75,7 @@ RSpec.describe BroadcastJob, type: :job, integration: true do
       it 'records failure in analytics' do
         described_class.new.perform(channel_name, target_id, target_type, data, priority)
 
-        expect(BroadcastAnalytics).to have_received(:record_failure).with(
+        expect(Services::BroadcastAnalytics).to have_received(:record_failure).with(
           hash_including(
             channel: channel_name,
             error: "Broadcast failed after service-level retries"
@@ -99,7 +99,7 @@ RSpec.describe BroadcastJob, type: :job, integration: true do
       let(:invalid_target_id) { 99999 }
 
       before do
-        allow(BroadcastAnalytics).to receive(:record_failure)
+        allow(Services::BroadcastAnalytics).to receive(:record_failure)
         allow(FailedBroadcastStore).to receive(:create!)
       end
 
@@ -112,7 +112,7 @@ RSpec.describe BroadcastJob, type: :job, integration: true do
       it 'records failure in analytics' do
         described_class.new.perform(channel_name, invalid_target_id, target_type, data, priority)
 
-        expect(BroadcastAnalytics).to have_received(:record_failure).with(
+        expect(Services::BroadcastAnalytics).to have_received(:record_failure).with(
           channel: channel_name,
           target_type: target_type,
           target_id: invalid_target_id,
@@ -158,7 +158,7 @@ RSpec.describe BroadcastJob, type: :job, integration: true do
 
       before do
         allow(SyncSession).to receive(:find).and_raise(StandardError, error_message)
-        allow(BroadcastAnalytics).to receive(:record_failure)
+        allow(Services::BroadcastAnalytics).to receive(:record_failure)
         allow(FailedBroadcastStore).to receive(:create!)
         allow(Rails.logger).to receive(:error)
       end
@@ -168,7 +168,7 @@ RSpec.describe BroadcastJob, type: :job, integration: true do
           described_class.new.perform(channel_name, target_id, target_type, data, priority)
         }.to raise_error(StandardError, error_message)
 
-        expect(BroadcastAnalytics).to have_received(:record_failure)
+        expect(Services::BroadcastAnalytics).to have_received(:record_failure)
         expect(FailedBroadcastStore).to have_received(:create!)
       end
 
@@ -196,12 +196,12 @@ RSpec.describe BroadcastJob, type: :job, integration: true do
 
     context 'with default priority' do
       it 'uses medium priority when not specified' do
-        allow(BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(true)
-        allow(BroadcastAnalytics).to receive(:record_success)
+        allow(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(true)
+        allow(Services::BroadcastAnalytics).to receive(:record_success)
 
         described_class.new.perform(channel_name, target_id, target_type, data)
 
-        expect(BroadcastReliabilityService).to have_received(:broadcast_with_retry).with(
+        expect(Services::BroadcastReliabilityService).to have_received(:broadcast_with_retry).with(
           hash_including(priority: :medium)
         )
       end
@@ -214,7 +214,7 @@ RSpec.describe BroadcastJob, type: :job, integration: true do
     before do
       allow(described_class).to receive(:set).and_return(job_double)
       allow(job_double).to receive(:perform_later)
-      allow(BroadcastAnalytics).to receive(:record_queued)
+      allow(Services::BroadcastAnalytics).to receive(:record_queued)
     end
 
     it 'enqueues job with correct queue based on priority' do
@@ -277,7 +277,7 @@ RSpec.describe BroadcastJob, type: :job, integration: true do
         priority: :high
       )
 
-      expect(BroadcastAnalytics).to have_received(:record_queued).with(
+      expect(Services::BroadcastAnalytics).to have_received(:record_queued).with(
         channel: channel_name,
         target_type: target_type,
         target_id: target_id,

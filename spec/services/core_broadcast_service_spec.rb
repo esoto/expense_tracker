@@ -51,7 +51,7 @@ RSpec.describe Services::CoreBroadcastService, type: :service do
       end
 
       it 'raises BroadcastError' do
-        expect { service.broadcast }.to raise_error(CoreBroadcastService::BroadcastError, /Broadcast failed: Connection failed/)
+        expect { service.broadcast }.to raise_error(Services::CoreBroadcastService::BroadcastError, /Broadcast failed: Connection failed/)
       end
     end
 
@@ -85,7 +85,7 @@ RSpec.describe Services::CoreBroadcastService, type: :service do
       end
 
       it 'raises BroadcastError' do
-        expect { service.broadcast }.to raise_error(CoreBroadcastService::BroadcastError, /Invalid channel name/)
+        expect { service.broadcast }.to raise_error(Services::CoreBroadcastService::BroadcastError, /Invalid channel name/)
       end
     end
 

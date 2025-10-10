@@ -9,9 +9,9 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'broadcasting integration', t
            email_account: email_account,
            status: 'processing')
   end
-  let(:mock_imap_service) { instance_double(ImapConnectionService) }
+  let(:mock_imap_service) { instance_double(Services::ImapConnectionService) }
   let(:mock_email_processor) { instance_double(EmailProcessing::Processor) }
-  let(:metrics_collector) { instance_double(SyncMetricsCollector) }
+  let(:metrics_collector) { instance_double(Services::SyncMetricsCollector) }
 
   let(:fetcher) do
     described_class.new(

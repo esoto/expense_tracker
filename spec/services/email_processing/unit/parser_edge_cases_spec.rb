@@ -292,7 +292,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
           expect(parser.errors).to include(/Currency detection failed/)
         end
 
-        it 'handles CategoryGuesserService errors' do
+        it 'handles Services::CategoryGuesserService errors' do
           allow(parser).to receive(:set_currency)
           allow(parser).to receive(:guess_category).and_raise(StandardError, 'Category guess failed')
 

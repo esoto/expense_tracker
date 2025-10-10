@@ -2,9 +2,9 @@ require 'rails_helper'
 
 RSpec.describe Services::EmailProcessing::Fetcher, 'metrics integration', type: :service, unit: true do
   let(:email_account) { create(:email_account, :bac) }
-  let(:mock_imap_service) { instance_double(ImapConnectionService) }
+  let(:mock_imap_service) { instance_double(Services::ImapConnectionService) }
   let(:mock_email_processor) { instance_double(EmailProcessing::Processor) }
-  let(:metrics_collector) { instance_double(SyncMetricsCollector) }
+  let(:metrics_collector) { instance_double(Services::SyncMetricsCollector) }
 
   let(:fetcher_with_metrics) do
     described_class.new(
@@ -213,7 +213,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'metrics integration', type: 
       end
     end
 
-    context 'when metrics collector is not a SyncMetricsCollector' do
+    context 'when metrics collector is not a Services::SyncMetricsCollector' do
       let(:invalid_metrics) { 'not a metrics collector' }
 
       let(:fetcher_invalid) do
@@ -313,7 +313,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'metrics integration', type: 
         end
 
         allow(mock_imap_service).to receive(:search_emails)
-          .and_raise(ImapConnectionService::ConnectionError, 'Connection failed')
+          .and_raise(Services::ImapConnectionService::ConnectionError, 'Connection failed')
       end
 
       it 'tracks metrics even when IMAP fails' do

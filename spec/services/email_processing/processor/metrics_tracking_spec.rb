@@ -5,7 +5,7 @@ RSpec.describe 'EmailProcessing::Processor - Metrics Tracking', type: :service, 
   include EmailProcessingProcessorTestHelper
   let(:email_account) { create(:email_account, :bac) }
   let(:sync_session) { create(:sync_session) }
-  let(:metrics_collector) { instance_double(SyncMetricsCollector) }
+  let(:metrics_collector) { instance_double(Services::SyncMetricsCollector) }
   let(:processor) { EmailProcessing::Processor.new(email_account, metrics_collector: metrics_collector) }
   let(:mock_imap_service) { create_mock_imap_service }
 
@@ -104,7 +104,7 @@ RSpec.describe 'EmailProcessing::Processor - Metrics Tracking', type: :service, 
 
     describe 'conflict detection with metrics' do
       let(:sync_session) { instance_double(SyncSession) }
-      let(:conflict_detector) { instance_double(ConflictDetectionService) }
+      let(:conflict_detector) { instance_double(Services::ConflictDetectionService) }
       let(:parsing_rule) { instance_double(ParsingRule) }
       let(:parsing_strategy) { instance_double(EmailProcessing::Strategies::Regex) }
       let(:email_data) {
@@ -127,8 +127,8 @@ RSpec.describe 'EmailProcessing::Processor - Metrics Tracking', type: :service, 
         })
       end
 
-      it 'passes metrics collector to ConflictDetectionService' do
-        expect(ConflictDetectionService).to receive(:new).with(
+      it 'passes metrics collector to Services::ConflictDetectionService' do
+        expect(Services::ConflictDetectionService).to receive(:new).with(
           sync_session,
           metrics_collector: metrics_collector
         ).and_return(conflict_detector)
@@ -139,7 +139,7 @@ RSpec.describe 'EmailProcessing::Processor - Metrics Tracking', type: :service, 
       end
 
       it 'tracks conflict detection operations through the service' do
-        allow(ConflictDetectionService).to receive(:new).and_return(conflict_detector)
+        allow(Services::ConflictDetectionService).to receive(:new).and_return(conflict_detector)
 
         expect(conflict_detector).to receive(:detect_conflict_for_expense).with(
           hash_including(

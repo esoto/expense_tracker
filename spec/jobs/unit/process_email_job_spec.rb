@@ -17,7 +17,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
   let(:parser) { instance_double(EmailProcessing::Parser) }
   let(:expense) { instance_double(Expense, id: 1, formatted_amount: '$100.00', amount: 100.0) }
   let(:sync_session) { instance_double(SyncSession) }
-  let(:metrics_collector) { instance_double(SyncMetricsCollector) }
+  let(:metrics_collector) { instance_double(Services::SyncMetricsCollector) }
 
   before do
     # Stub Rails.logger to prevent actual logging
@@ -100,7 +100,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
       context 'with active sync session' do
         before do
           allow(SyncSession).to receive_message_chain(:active, :last).and_return(sync_session)
-          allow(SyncMetricsCollector).to receive(:new).with(sync_session).and_return(metrics_collector)
+          allow(Services::SyncMetricsCollector).to receive(:new).with(sync_session).and_return(metrics_collector)
           allow(metrics_collector).to receive(:track_operation).and_yield
           allow(metrics_collector).to receive(:flush_buffer)
         end
@@ -112,7 +112,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
           end
 
           it 'creates a metrics collector with the sync session' do
-            expect(SyncMetricsCollector).to receive(:new).with(sync_session).and_return(metrics_collector)
+            expect(Services::SyncMetricsCollector).to receive(:new).with(sync_session).and_return(metrics_collector)
             job.perform(email_account_id, email_data)
           end
 
@@ -172,7 +172,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
       end
 
       it 'does not create a metrics collector' do
-        expect(SyncMetricsCollector).not_to receive(:new)
+        expect(Services::SyncMetricsCollector).not_to receive(:new)
         job.perform(email_account_id, email_data)
       end
     end

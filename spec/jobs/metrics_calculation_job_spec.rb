@@ -88,7 +88,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
       it "returns early without further processing" do
         expect(job).not_to receive(:acquire_lock)
-        expect(ExtendedCacheMetricsCalculator).not_to receive(:new)
+        expect(ExtendedCacheServices::MetricsCalculator).not_to receive(:new)
 
         job.perform(email_account_id: nil)
       end
@@ -193,7 +193,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
         it "skips processing when lock cannot be acquired" do
           expect(job).not_to receive(:calculate_all_periods)
-          expect(ExtendedCacheMetricsCalculator).not_to receive(:new)
+          expect(ExtendedCacheServices::MetricsCalculator).not_to receive(:new)
 
           job.perform(email_account_id: email_account)
         end
@@ -221,27 +221,27 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
       end
 
       it "clears cache when force_refresh is true" do
-        expect(MetricsCalculator).to receive(:clear_cache)
+        expect(Services::MetricsCalculator).to receive(:clear_cache)
           .with(email_account: email_account)
 
         job.perform(email_account_id: email_account, force_refresh: true)
       end
 
       it "does not clear cache when force_refresh is false" do
-        expect(MetricsCalculator).not_to receive(:clear_cache)
+        expect(Services::MetricsCalculator).not_to receive(:clear_cache)
 
         job.perform(email_account_id: email_account, force_refresh: false)
       end
 
       it "does not clear cache when force_refresh is not provided" do
-        expect(MetricsCalculator).not_to receive(:clear_cache)
+        expect(Services::MetricsCalculator).not_to receive(:clear_cache)
 
         job.perform(email_account_id: email_account)
       end
     end
 
     context "specific period calculation mode" do
-      let(:calculator_double) { instance_double(ExtendedCacheMetricsCalculator) }
+      let(:calculator_double) { instance_double(ExtendedCacheServices::MetricsCalculator) }
       let(:calculation_result) do
         {
           metrics: {
@@ -255,7 +255,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
       before do
         allow(job).to receive(:acquire_lock).and_return(true)
         allow(job).to receive(:release_lock)
-        allow(ExtendedCacheMetricsCalculator).to receive(:new).and_return(calculator_double)
+        allow(ExtendedCacheServices::MetricsCalculator).to receive(:new).and_return(calculator_double)
         allow(calculator_double).to receive(:calculate).and_return(calculation_result)
         allow(Rails.logger).to receive(:info)
       end
@@ -267,7 +267,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
           reference_date: reference_date
         )
 
-        expect(ExtendedCacheMetricsCalculator).to have_received(:new).with(
+        expect(ExtendedCacheServices::MetricsCalculator).to have_received(:new).with(
           email_account: email_account,
           period: :month,
           reference_date: reference_date,
@@ -358,13 +358,13 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
     end
 
     context "performance monitoring" do
-      let(:calculator_double) { instance_double(ExtendedCacheMetricsCalculator) }
+      let(:calculator_double) { instance_double(ExtendedCacheServices::MetricsCalculator) }
 
       before do
         allow(job).to receive(:acquire_lock).and_return(true)
         allow(job).to receive(:release_lock)
         allow(job).to receive(:track_job_metrics)
-        allow(ExtendedCacheMetricsCalculator).to receive(:new).and_return(calculator_double)
+        allow(ExtendedCacheServices::MetricsCalculator).to receive(:new).and_return(calculator_double)
         allow(calculator_double).to receive(:calculate).and_return({
           metrics: { transaction_count: 10, total_amount: 100.0 }
         })
@@ -509,13 +509,13 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
   end
 
   describe "#calculate_all_periods" do
-    let(:calculator_double) { instance_double(ExtendedCacheMetricsCalculator) }
+    let(:calculator_double) { instance_double(ExtendedCacheServices::MetricsCalculator) }
     let(:result) { { metrics: { transaction_count: 10, total_amount: 100.0 } } }
 
     before do
       allow(job).to receive(:acquire_lock).and_return(true)
       allow(job).to receive(:release_lock)
-      allow(ExtendedCacheMetricsCalculator).to receive(:new).and_return(calculator_double)
+      allow(ExtendedCacheServices::MetricsCalculator).to receive(:new).and_return(calculator_double)
       allow(calculator_double).to receive(:calculate).and_return(result)
       allow(Rails.logger).to receive(:info)
       allow(Rails.logger).to receive(:debug)
@@ -525,7 +525,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
       # Expected: 8 days + 5 weeks + 4 months + 2 years = 19 total
       job.perform(email_account_id: email_account)
 
-      expect(ExtendedCacheMetricsCalculator).to have_received(:new).exactly(19).times
+      expect(ExtendedCacheServices::MetricsCalculator).to have_received(:new).exactly(19).times
     end
 
     it "logs pre-calculation summary" do
@@ -538,7 +538,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
     it "creates calculator with correct cache hours" do
       job.perform(email_account_id: email_account)
 
-      expect(ExtendedCacheMetricsCalculator).to have_received(:new)
+      expect(ExtendedCacheServices::MetricsCalculator).to have_received(:new)
         .with(hash_including(cache_hours: 4))
         .at_least(:once)
     end
@@ -926,7 +926,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
   describe "integration scenarios" do
     context "complete successful flow with specific period" do
-      let(:calculator) { instance_double(ExtendedCacheMetricsCalculator) }
+      let(:calculator) { instance_double(ExtendedCacheServices::MetricsCalculator) }
       let(:metrics_result) do
         {
           metrics: {
@@ -945,7 +945,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
           failure_count: 0,
           total_time: 0.0
         })
-        allow(ExtendedCacheMetricsCalculator).to receive(:new).and_return(calculator)
+        allow(ExtendedCacheServices::MetricsCalculator).to receive(:new).and_return(calculator)
         allow(calculator).to receive(:calculate).and_return(metrics_result)
         allow(Rails.logger).to receive(:info)
       end
@@ -964,7 +964,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
           hash_including(expires_in: 5.minutes)
         ).ordered
 
-        expect(ExtendedCacheMetricsCalculator).to have_received(:new).ordered
+        expect(ExtendedCacheServices::MetricsCalculator).to have_received(:new).ordered
         expect(calculator).to have_received(:calculate).ordered
 
         expect(Rails.cache).to have_received(:delete).with(
@@ -985,8 +985,8 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
         })
 
         # Mock calculator for all period combinations
-        calculator = instance_double(ExtendedCacheMetricsCalculator)
-        allow(ExtendedCacheMetricsCalculator).to receive(:new).and_return(calculator)
+        calculator = instance_double(ExtendedCacheServices::MetricsCalculator)
+        allow(ExtendedCacheServices::MetricsCalculator).to receive(:new).and_return(calculator)
         allow(calculator).to receive(:calculate).and_return({
           metrics: { transaction_count: 10, total_amount: 100.0 }
         })
@@ -999,7 +999,7 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
         job.perform(email_account_id: email_account)
 
         # Should create 19 calculators (8 days + 5 weeks + 4 months + 2 years)
-        expect(ExtendedCacheMetricsCalculator).to have_received(:new).exactly(19).times
+        expect(ExtendedCacheServices::MetricsCalculator).to have_received(:new).exactly(19).times
       end
     end
 
@@ -1154,8 +1154,8 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
       end
 
       it "handles string period parameter" do
-        calculator = instance_double(ExtendedCacheMetricsCalculator)
-        allow(ExtendedCacheMetricsCalculator).to receive(:new).and_return(calculator)
+        calculator = instance_double(ExtendedCacheServices::MetricsCalculator)
+        allow(ExtendedCacheServices::MetricsCalculator).to receive(:new).and_return(calculator)
         allow(calculator).to receive(:calculate).and_return({
           metrics: { transaction_count: 5, total_amount: 50.0 }
         })
@@ -1169,8 +1169,8 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
           reference_date: reference_date
         )
 
-        # The job passes the period as-is to ExtendedCacheMetricsCalculator
-        expect(ExtendedCacheMetricsCalculator).to have_received(:new).with(
+        # The job passes the period as-is to ExtendedCacheServices::MetricsCalculator
+        expect(ExtendedCacheServices::MetricsCalculator).to have_received(:new).with(
           hash_including(period: "month")
         )
       end

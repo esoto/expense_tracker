@@ -7,14 +7,14 @@ RSpec.describe MetricsRefreshJob, type: :job, unit: true do
 
   let(:email_account) { create(:email_account) }
   let(:job) { described_class.new }
-  let(:metrics_calculator_double) { instance_double(MetricsCalculator) }
+  let(:metrics_calculator_double) { instance_double(Services::MetricsCalculator) }
 
   before do
     # Use test Redis namespace for infrastructure tests
     Rails.cache.clear
 
     # Set up default mocks
-    allow(MetricsCalculator).to receive(:new).and_return(metrics_calculator_double)
+    allow(Services::MetricsCalculator).to receive(:new).and_return(metrics_calculator_double)
     allow(metrics_calculator_double).to receive(:calculate).and_return({
       metrics: { total_amount: 1000.0, transaction_count: 10 }
     })
@@ -41,23 +41,23 @@ RSpec.describe MetricsRefreshJob, type: :job, unit: true do
           calculator_instances = []
 
           # Expect calculator creation for each supported period
-          MetricsCalculator::SUPPORTED_PERIODS.each do |period|
-            calculator_instance = instance_double(MetricsCalculator)
+          Services::MetricsCalculator::SUPPORTED_PERIODS.each do |period|
+            calculator_instance = instance_double(Services::MetricsCalculator)
             allow(calculator_instance).to receive(:calculate).and_return({ metrics: {} })
             calculator_instances << calculator_instance
           end
 
           call_count = 0
-          allow(MetricsCalculator).to receive(:new) do |args|
+          allow(Services::MetricsCalculator).to receive(:new) do |args|
             expect(args[:email_account]).to eq(email_account)
-            expect(args[:period]).to be_in(MetricsCalculator::SUPPORTED_PERIODS)
+            expect(args[:period]).to be_in(Services::MetricsCalculator::SUPPORTED_PERIODS)
             expect(args[:reference_date]).to eq(Date.current)
             calculator_instances[call_count].tap { call_count += 1 }
           end
 
           job.perform(email_account.id)
 
-          expect(call_count).to eq(MetricsCalculator::SUPPORTED_PERIODS.size)
+          expect(call_count).to eq(Services::MetricsCalculator::SUPPORTED_PERIODS.size)
         end
 
         it "processes specific affected dates correctly" do
@@ -66,7 +66,7 @@ RSpec.describe MetricsRefreshJob, type: :job, unit: true do
           # Track which period/date combinations are processed
           processed_combinations = []
 
-          allow(MetricsCalculator).to receive(:new) do |args|
+          allow(Services::MetricsCalculator).to receive(:new) do |args|
             processed_combinations << [ args[:period], args[:reference_date] ]
             metrics_calculator_double
           end
@@ -98,7 +98,7 @@ RSpec.describe MetricsRefreshJob, type: :job, unit: true do
         it "does not attempt metric calculation for invalid account" do
           allow(EmailAccount).to receive(:find).and_raise(ActiveRecord::RecordNotFound)
 
-          expect(MetricsCalculator).not_to receive(:new)
+          expect(Services::MetricsCalculator).not_to receive(:new)
 
           expect { job.perform(999999) }.to raise_error(ActiveRecord::RecordNotFound)
         end
@@ -109,7 +109,7 @@ RSpec.describe MetricsRefreshJob, type: :job, unit: true do
       it "returns all periods with current date when no dates provided" do
         periods = job.send(:determine_affected_periods, [])
 
-        MetricsCalculator::SUPPORTED_PERIODS.each do |period|
+        Services::MetricsCalculator::SUPPORTED_PERIODS.each do |period|
           expect(periods[period]).to eq([ Date.current ])
         end
       end
@@ -205,7 +205,7 @@ RSpec.describe MetricsRefreshJob, type: :job, unit: true do
         expect(Rails.logger).to receive(:info).with(
           "MetricsRefreshJob skipped - another job is already processing account #{email_account.id}"
         )
-        expect(MetricsCalculator).not_to receive(:new)
+        expect(Services::MetricsCalculator).not_to receive(:new)
 
         job.perform(email_account.id)
       end
@@ -231,7 +231,7 @@ RSpec.describe MetricsRefreshJob, type: :job, unit: true do
         end
 
         # Should be able to acquire lock as the old one expired
-        expect(MetricsCalculator).to receive(:new).and_return(metrics_calculator_double)
+        expect(Services::MetricsCalculator).to receive(:new).and_return(metrics_calculator_double)
 
         job.perform(email_account.id)
       end
@@ -244,7 +244,7 @@ RSpec.describe MetricsRefreshJob, type: :job, unit: true do
         Rails.cache.write("metrics_refresh:#{email_account.id}", "locked", expires_in: 60.seconds)
 
         expect(Rails.logger).to receive(:info).with(/skipped/)
-        expect(MetricsCalculator).not_to receive(:new)
+        expect(Services::MetricsCalculator).not_to receive(:new)
 
         described_class.new.perform(email_account.id)
       end

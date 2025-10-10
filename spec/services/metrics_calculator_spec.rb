@@ -17,7 +17,7 @@ RSpec.describe Services::MetricsCalculator, type: :service, performance: true do
     context 'with email_account' do
       it 'requires email_account parameter' do
         expect { described_class.new(period: :month) }
-          .to raise_error(MetricsCalculator::MissingEmailAccountError, /EmailAccount is required/)
+          .to raise_error(Services::MetricsCalculator::MissingEmailAccountError, /EmailAccount is required/)
       end
 
       it 'accepts email_account with valid period' do
@@ -36,7 +36,7 @@ RSpec.describe Services::MetricsCalculator, type: :service, performance: true do
     context 'with invalid period' do
       it 'raises InvalidPeriodError' do
         expect { described_class.new(email_account: email_account, period: :invalid) }
-          .to raise_error(MetricsCalculator::InvalidPeriodError, /Invalid period: invalid/)
+          .to raise_error(Services::MetricsCalculator::InvalidPeriodError, /Invalid period: invalid/)
       end
     end
 
@@ -424,7 +424,7 @@ RSpec.describe Services::MetricsCalculator, type: :service, performance: true do
   describe '.pre_calculate_all', performance: true do
     it 'requires email_account parameter' do
       expect { described_class.pre_calculate_all(reference_date: current_date) }
-        .to raise_error(MetricsCalculator::MissingEmailAccountError, /EmailAccount is required/)
+        .to raise_error(Services::MetricsCalculator::MissingEmailAccountError, /EmailAccount is required/)
     end
 
     it 'pre-calculates metrics for all supported periods for specific email_account' do
@@ -469,7 +469,7 @@ RSpec.describe Services::MetricsCalculator, type: :service, performance: true do
 
     it 'requires email_account parameter' do
       expect { described_class.batch_calculate(periods: [ :month ]) }
-        .to raise_error(MetricsCalculator::MissingEmailAccountError, /EmailAccount is required/)
+        .to raise_error(Services::MetricsCalculator::MissingEmailAccountError, /EmailAccount is required/)
     end
 
     it 'validates all periods are supported' do
@@ -478,7 +478,7 @@ RSpec.describe Services::MetricsCalculator, type: :service, performance: true do
           email_account: email_account,
           periods: [ :month, :invalid_period ]
         )
-      }.to raise_error(MetricsCalculator::InvalidPeriodError, /Invalid periods: invalid_period/)
+      }.to raise_error(Services::MetricsCalculator::InvalidPeriodError, /Invalid periods: invalid_period/)
     end
 
     it 'returns a hash with period symbols as keys' do
@@ -668,7 +668,7 @@ RSpec.describe Services::MetricsCalculator, type: :service, performance: true do
       error = StandardError.new('Test error')
       allow(email_account.expenses).to receive(:where).and_raise(error)
 
-      expect(Rails.logger).to receive(:error).with(/MetricsCalculator error: Test error/)
+      expect(Rails.logger).to receive(:error).with(/Services::MetricsCalculator error: Test error/)
       expect(Rails.logger).to receive(:error).with(/.*/) # backtrace
 
       calculator.calculate

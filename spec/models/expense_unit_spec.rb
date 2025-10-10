@@ -104,7 +104,7 @@ RSpec.describe Expense, type: :model, unit: true do
       let(:expense) { create(:expense, email_account: real_email_account) }
 
       it "triggers clear_dashboard_cache" do
-        expect(DashboardService).to receive(:clear_cache).at_least(:once)
+        expect(Services::DashboardService).to receive(:clear_cache).at_least(:once)
         expense.update!(amount: 10000)
       end
 

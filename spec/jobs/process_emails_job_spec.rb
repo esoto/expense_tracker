@@ -8,7 +8,7 @@ RSpec.describe ProcessEmailsJob, type: :job, unit: true do
 
   # Mock dependencies
   let(:mock_fetcher) { instance_double(EmailProcessing::Fetcher) }
-  let(:mock_metrics_collector) { instance_double(SyncMetricsCollector) }
+  let(:mock_metrics_collector) { instance_double(Services::SyncMetricsCollector) }
   let(:success_response) { EmailProcessing::FetcherResponse.success(processed_emails_count: 5, total_emails_found: 10) }
 
   before do
@@ -17,7 +17,7 @@ RSpec.describe ProcessEmailsJob, type: :job, unit: true do
     allow(Rails.logger).to receive(:warn)
     allow(Rails.logger).to receive(:error)
 
-    allow(SyncMetricsCollector).to receive(:new).and_return(mock_metrics_collector)
+    allow(Services::SyncMetricsCollector).to receive(:new).and_return(mock_metrics_collector)
     allow(mock_metrics_collector).to receive(:track_operation).and_yield
     allow(mock_metrics_collector).to receive(:record_session_metrics)
     allow(mock_metrics_collector).to receive(:flush_buffer)
@@ -39,7 +39,7 @@ RSpec.describe ProcessEmailsJob, type: :job, unit: true do
       rescue_handlers = described_class.rescue_handlers
       handler_classes = rescue_handlers.map(&:first)
 
-      expect(handler_classes).to include("ImapConnectionService::ConnectionError")
+      expect(handler_classes).to include("Services::ImapConnectionService::ConnectionError")
       expect(handler_classes).to include("Net::ReadTimeout")
     end
   end

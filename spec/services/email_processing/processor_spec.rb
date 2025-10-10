@@ -2,10 +2,10 @@ require 'rails_helper'
 
 RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true do
   let(:email_account) { create(:email_account, :bac) }
-  let(:metrics_collector) { instance_double(SyncMetricsCollector) }
+  let(:metrics_collector) { instance_double(Services::SyncMetricsCollector) }
   let(:processor) { described_class.new(email_account, metrics_collector: metrics_collector) }
   let(:processor_without_metrics) { described_class.new(email_account) }
-  let(:mock_imap_service) { instance_double(ImapConnectionService) }
+  let(:mock_imap_service) { instance_double(Services::ImapConnectionService) }
 
   describe '#initialize' do
     it 'sets email account and initializes empty errors' do
@@ -578,7 +578,7 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
     let(:parsing_rule) { instance_double(ParsingRule) }
     let(:parsing_strategy) { instance_double(EmailProcessing::Strategies::Regex) }
     let(:sync_session) { instance_double(SyncSession) }
-    let(:conflict_detector) { instance_double(ConflictDetectionService) }
+    let(:conflict_detector) { instance_double(Services::ConflictDetectionService) }
     let(:expense_data) { { amount: 100, description: 'Purchase' } }
 
     before do
@@ -591,7 +591,7 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
     context 'with active sync session' do
       before do
         allow(SyncSession).to receive_message_chain(:active, :last).and_return(sync_session)
-        allow(ConflictDetectionService).to receive(:new).with(sync_session, metrics_collector: metrics_collector).and_return(conflict_detector)
+        allow(Services::ConflictDetectionService).to receive(:new).with(sync_session, metrics_collector: metrics_collector).and_return(conflict_detector)
       end
 
       it 'detects conflict when present' do
@@ -645,7 +645,7 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
     context 'with error during conflict detection' do
       before do
         allow(SyncSession).to receive_message_chain(:active, :last).and_return(sync_session)
-        allow(ConflictDetectionService).to receive(:new).and_raise(StandardError, 'Detection error')
+        allow(Services::ConflictDetectionService).to receive(:new).and_raise(StandardError, 'Detection error')
         allow(Rails.logger).to receive(:error)
       end
 

@@ -2,9 +2,9 @@ require 'rails_helper'
 
 RSpec.describe Services::EmailProcessing::Fetcher, 'error handling', type: :service, unit: true do
   let(:email_account) { create(:email_account, :bac) }
-  let(:mock_imap_service) { instance_double(ImapConnectionService) }
+  let(:mock_imap_service) { instance_double(Services::ImapConnectionService) }
   let(:mock_email_processor) { instance_double(EmailProcessing::Processor) }
-  let(:metrics_collector) { instance_double(SyncMetricsCollector) }
+  let(:metrics_collector) { instance_double(Services::SyncMetricsCollector) }
 
   let(:fetcher) do
     described_class.new(
@@ -101,7 +101,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'error handling', type: :serv
         allow(mock_imap_service).to receive(:search_emails) do
           call_count += 1
           if call_count == 1
-            raise ImapConnectionService::ConnectionError, 'Temporary network issue'
+            raise Services::ImapConnectionService::ConnectionError, 'Temporary network issue'
           else
             [ 1, 2 ]
           end
@@ -119,7 +119,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'error handling', type: :serv
       before do
         allow(metrics_collector).to receive(:track_operation).and_yield
         allow(mock_imap_service).to receive(:search_emails)
-          .and_raise(ImapConnectionService::AuthenticationError, 'Invalid credentials')
+          .and_raise(Services::ImapConnectionService::AuthenticationError, 'Invalid credentials')
       end
 
       it 'captures authentication errors correctly' do
@@ -222,7 +222,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'error handling', type: :serv
       before do
         allow(metrics_collector).to receive(:track_operation).and_yield
         allow(mock_imap_service).to receive(:search_emails)
-          .and_raise(ImapConnectionService::ConnectionError, 'Network timeout')
+          .and_raise(Services::ImapConnectionService::ConnectionError, 'Network timeout')
       end
 
       it 'returns failure response with IMAP error details' do
@@ -323,7 +323,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'error handling', type: :serv
     it 'formats IMAP connection errors correctly' do
       allow(metrics_collector).to receive(:track_operation).and_yield
       allow(mock_imap_service).to receive(:search_emails)
-        .and_raise(ImapConnectionService::ConnectionError, 'Connection refused')
+        .and_raise(Services::ImapConnectionService::ConnectionError, 'Connection refused')
 
       result = fetcher.fetch_new_emails
       expect(result.errors.first).to eq('IMAP Error: Connection refused')
@@ -332,7 +332,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'error handling', type: :serv
     it 'formats IMAP authentication errors correctly' do
       allow(metrics_collector).to receive(:track_operation).and_yield
       allow(mock_imap_service).to receive(:search_emails)
-        .and_raise(ImapConnectionService::AuthenticationError, 'Bad credentials')
+        .and_raise(Services::ImapConnectionService::AuthenticationError, 'Bad credentials')
 
       result = fetcher.fetch_new_emails
       expect(result.errors.first).to eq('IMAP Error: Bad credentials')

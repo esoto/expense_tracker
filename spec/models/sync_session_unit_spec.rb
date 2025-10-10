@@ -576,9 +576,9 @@ RSpec.describe SyncSession, type: :model, unit: true, needs_broadcasting: true d
     end
 
     describe "#update_progress" do
-      it "delegates to SyncProgressUpdater" do
+      it "delegates to Services::SyncProgressUpdater" do
         updater = double("updater", call: true)
-        expect(SyncProgressUpdater).to receive(:new).with(sync_session).and_return(updater)
+        expect(Services::SyncProgressUpdater).to receive(:new).with(sync_session).and_return(updater)
         expect(updater).to receive(:call)
 
         sync_session.update_progress

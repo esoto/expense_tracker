@@ -292,16 +292,16 @@ RSpec.describe SyncSession, type: :model, integration: true do
     let!(:account1) { create(:sync_session_account, sync_session: sync_session, total_emails: 50, processed_emails: 25, detected_expenses: 10) }
     let!(:account2) { create(:sync_session_account, sync_session: sync_session, total_emails: 100, processed_emails: 75, detected_expenses: 20) }
 
-    it 'delegates to SyncProgressUpdater service' do
-      updater = instance_double(SyncProgressUpdater)
-      expect(SyncProgressUpdater).to receive(:new).with(sync_session).and_return(updater)
+    it 'delegates to Services::SyncProgressUpdater service' do
+      updater = instance_double(Services::SyncProgressUpdater)
+      expect(Services::SyncProgressUpdater).to receive(:new).with(sync_session).and_return(updater)
       expect(updater).to receive(:call).and_return(true)
 
       sync_session.update_progress
     end
 
     it 'returns the result from the service' do
-      allow_any_instance_of(SyncProgressUpdater).to receive(:call).and_return(true)
+      allow_any_instance_of(Services::SyncProgressUpdater).to receive(:call).and_return(true)
       expect(sync_session.update_progress).to eq(true)
     end
   end

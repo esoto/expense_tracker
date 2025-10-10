@@ -26,9 +26,9 @@ RSpec.configure do |config|
       allow_any_instance_of(SyncSession).to receive(:broadcast_append_to).and_return(nil)
       allow_any_instance_of(SyncSession).to receive(:broadcast_prepend_to).and_return(nil)
 
-      # Stub BroadcastReliabilityService
-      if defined?(BroadcastReliabilityService)
-        allow(BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(nil)
+      # Stub Services::BroadcastReliabilityService
+      if defined?(Services::BroadcastReliabilityService)
+        allow(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(nil)
       end
 
       # Stub Infrastructure::BroadcastService if it exists

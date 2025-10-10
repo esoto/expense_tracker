@@ -252,7 +252,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
     end
   end
 
-  describe 'CategoryGuesserService integration' do
+  describe 'Services::CategoryGuesserService integration' do
     let(:expense) do
       instance_double(Expense,
         merchant_name: 'RESTAURANT ABC',
@@ -260,17 +260,17 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         amount: BigDecimal('50.00')
       )
     end
-    let(:category_guesser) { instance_double(CategoryGuesserService) }
+    let(:category_guesser) { instance_double(Services::CategoryGuesserService) }
     let(:category) { instance_double(Category, name: 'Food & Dining') }
 
     before do
-      allow(CategoryGuesserService).to receive(:new).and_return(category_guesser)
+      allow(Services::CategoryGuesserService).to receive(:new).and_return(category_guesser)
       allow(category_guesser).to receive(:guess_category_for_expense).and_return(category)
     end
 
     describe '#guess_category' do
-      it 'creates CategoryGuesserService' do
-        expect(CategoryGuesserService).to receive(:new).with(no_args)
+      it 'creates Services::CategoryGuesserService' do
+        expect(Services::CategoryGuesserService).to receive(:new).with(no_args)
         parser.send(:guess_category, expense)
       end
 
@@ -292,7 +292,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       end
 
       it 'handles service initialization error' do
-        allow(CategoryGuesserService).to receive(:new)
+        allow(Services::CategoryGuesserService).to receive(:new)
           .and_raise(StandardError, 'Service init failed')
 
         expect { parser.send(:guess_category, expense) }.to raise_error(StandardError)
@@ -376,14 +376,14 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
 
     let(:category) { instance_double(Category, name: 'Shopping') }
     let(:currency_detector) { instance_double(CurrencyDetectorService) }
-    let(:category_guesser) { instance_double(CategoryGuesserService) }
+    let(:category_guesser) { instance_double(Services::CategoryGuesserService) }
 
     before do
       allow(parser).to receive(:find_duplicate_expense).and_return(nil)
       allow(Expense).to receive(:new).and_return(expense)
       allow(CurrencyDetectorService).to receive(:new).and_return(currency_detector)
       allow(currency_detector).to receive(:apply_currency_to_expense)
-      allow(CategoryGuesserService).to receive(:new).and_return(category_guesser)
+      allow(Services::CategoryGuesserService).to receive(:new).and_return(category_guesser)
       allow(category_guesser).to receive(:guess_category_for_expense).and_return(category)
       allow(parser).to receive(:email_content).and_return('email content')
     end
@@ -502,7 +502,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
   describe 'full parsing flow with all services' do
     let(:strategy) { instance_double(EmailProcessing::Strategies::Regex) }
     let(:currency_detector) { instance_double(CurrencyDetectorService) }
-    let(:category_guesser) { instance_double(CategoryGuesserService) }
+    let(:category_guesser) { instance_double(Services::CategoryGuesserService) }
     let(:category) { instance_double(Category, name: 'Food') }
     let(:expense) do
       instance_double(Expense,
@@ -532,7 +532,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       allow(currency_detector).to receive(:apply_currency_to_expense)
 
       # Setup category guesser
-      allow(CategoryGuesserService).to receive(:new).and_return(category_guesser)
+      allow(Services::CategoryGuesserService).to receive(:new).and_return(category_guesser)
       allow(category_guesser).to receive(:guess_category_for_expense).and_return(category)
 
       # Setup expense creation

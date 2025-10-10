@@ -219,7 +219,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller do
     describe 'Error Handling' do
       it 'handles service errors gracefully' do
         # Mock service to raise an error
-        allow_any_instance_of(Categorization::BulkCategorizationService)
+        allow_any_instance_of(Categorization::BulkServices::CategorizationService)
           .to receive(:apply!)
           .and_raise(StandardError.new('Simulated error'))
 

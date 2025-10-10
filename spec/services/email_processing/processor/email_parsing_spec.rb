@@ -5,7 +5,7 @@ RSpec.describe 'EmailProcessing::Processor - Email Parsing', type: :service, uni
   include EmailProcessingProcessorTestHelper
   let(:email_account) { create(:email_account, :bac) }
   let(:processor) { EmailProcessing::Processor.new(email_account) }
-  let(:mock_imap_service) { instance_double(ImapConnectionService) }
+  let(:mock_imap_service) { instance_double(Services::ImapConnectionService) }
 
   describe 'complex multipart email handling' do
     let(:message_id) { 123 }

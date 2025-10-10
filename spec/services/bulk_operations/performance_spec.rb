@@ -6,7 +6,7 @@ RSpec.describe "Bulk Operations Performance", type: :performance do
   let(:email_account) { create(:email_account) }
   let(:category) { create(:category) }
 
-  describe "BulkOperations::Services::CategorizationService" do
+  describe "Services::BulkOperations::CategorizationService" do
     context "with 500 expenses" do
       let!(:expenses) do
         expenses = []
@@ -23,7 +23,7 @@ RSpec.describe "Bulk Operations Performance", type: :performance do
       end
 
       it "completes within 500ms using batch updates" do
-        service = BulkOperations::Services::CategorizationService.new(
+        service = Services::BulkOperations::CategorizationService.new(
           expense_ids: expenses,
           category_id: category.id,
           options: { force_synchronous: true }
@@ -49,7 +49,7 @@ RSpec.describe "Bulk Operations Performance", type: :performance do
       end
 
       it "uses background job for large operations" do
-        service = BulkOperations::Services::CategorizationService.new(
+        service = Services::BulkOperations::CategorizationService.new(
           expense_ids: expenses,
           category_id: category.id
         )
@@ -69,7 +69,7 @@ RSpec.describe "Bulk Operations Performance", type: :performance do
       end
 
       it "processes synchronously for small operations" do
-        service = BulkOperations::Services::CategorizationService.new(
+        service = Services::BulkOperations::CategorizationService.new(
           expense_ids: expenses,
           category_id: category.id
         )

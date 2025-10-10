@@ -83,6 +83,12 @@ RSpec.describe Admin::PatternTestingController, type: :controller, unit: true do
       end
 
       context "with successful test" do
+        let(:tester) { double("tester", test: true, categories_with_confidence: [ { category: "Food", confidence: 0.8 } ], test_expense: double("expense", description: "Test", amount: 10.0)) }
+
+        before do
+          allow(Services::Patterns::PatternTester).to receive(:new).and_return(tester)
+        end
+
         it "creates pattern tester with correct parameters" do
           expect(Services::Patterns::PatternTester).to receive(:new).with(
             hash_including(
@@ -91,16 +97,13 @@ RSpec.describe Admin::PatternTestingController, type: :controller, unit: true do
               "amount" => "15.50",
               "transaction_date" => "2023-12-01"
             )
-          ).and_call_original
+          ).and_return(tester)
 
           post :test_pattern, params: test_params
         end
 
         it "calls test method on pattern tester" do
-          tester = double("tester", test: true, categories_with_confidence: [], test_expense: double("expense"))
-          allow(Services::Patterns::PatternTester).to receive(:new).and_return(tester)
-
-          expect(tester).to receive(:test)
+          expect(tester).to receive(:test).and_return(true)
 
           post :test_pattern, params: test_params
         end

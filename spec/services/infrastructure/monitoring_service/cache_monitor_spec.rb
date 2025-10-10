@@ -107,6 +107,11 @@ RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor, type: 
         stub_const("Services::Categorization::PatternCache", pattern_cache_class)
         allow(pattern_cache_class).to receive(:instance).and_return(pattern_cache_instance)
 
+        # Also stub the short form used in defined? checks
+        categorization_module = Module.new
+        categorization_module.const_set("PatternCache", pattern_cache_class)
+        stub_const("Categorization", categorization_module)
+
         result = cache_monitor.pattern_cache_metrics
 
         expect(result).to eq({ error: "Redis connection failed" })
@@ -390,6 +395,13 @@ RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor, type: 
     end
 
     context "when PatternCache is configured" do
+      before do
+        # Stub the Categorization module for defined? checks
+        categorization_module = Module.new
+        categorization_module.const_set("PatternCache", double("PatternCache"))
+        stub_const("Categorization", categorization_module)
+      end
+
       it "returns healthy status for good metrics" do
         allow(cache_monitor).to receive(:pattern_cache_metrics).and_return({
           hit_rate: 90.0,

@@ -208,7 +208,7 @@ class BulkCategorizationActionsController < ApplicationController
 
   # Service builder methods to eliminate DRY violations
   def build_categorization_service(expenses: @expenses, **options)
-    Categorization::BulkCategorizationService.new(
+    Services::Categorization::BulkCategorizationService.new(
       expenses: expenses,
       user: current_user,
       **options

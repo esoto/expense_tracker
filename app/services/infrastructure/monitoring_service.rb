@@ -36,6 +36,17 @@ module Services::Infrastructure
         def cache_metrics
           CacheMonitor.metrics
         end
+
+        # Convenience method for recording metrics (delegates to PerformanceTracker)
+        def record_metric(metric_name, data, tags: {})
+          PerformanceTracker.record_custom_metric(metric_name, data, tags)
+        end
+
+        # Convenience method for recording errors (delegates to ErrorTracker)
+        def record_error(error_name, details, tags: {})
+          error = StandardError.new("#{error_name}: #{details.inspect}")
+          ErrorTracker.report(error, tags)
+        end
       end
 
       # Queue monitoring module

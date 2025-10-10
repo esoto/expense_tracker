@@ -13,7 +13,7 @@ RSpec.describe Services::Infrastructure::MonitoringService, type: :service, unit
 
     describe ".queue_metrics" do
       it "delegates to Services::QueueMonitor.metrics" do
-        expect(Services::Infrastructure::MonitoringService::Services::QueueMonitor).to receive(:metrics).and_return({ test: "data" })
+        expect(Services::Infrastructure::MonitoringService::QueueMonitor).to receive(:metrics).and_return({ test: "data" })
 
         result = described_class.queue_metrics
 

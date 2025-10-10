@@ -95,6 +95,11 @@ module MonitoringServiceTestHelper
       stub_const("Services::Categorization::PatternCache", pattern_cache_class)
       allow(pattern_cache_class).to receive(:instance).and_return(cache_instance)
 
+      # Also stub the short form used in defined? checks
+      categorization_module = Module.new
+      categorization_module.const_set("PatternCache", pattern_cache_class)
+      stub_const("Categorization", categorization_module)
+
       cache_instance
     end
 

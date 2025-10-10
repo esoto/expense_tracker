@@ -3,7 +3,7 @@
 module Services::BulkOperations
   # Service for bulk categorization of expenses
   # Optimized to use batch updates for performance
-  class Services::CategorizationService < BaseService
+  class CategorizationService < BaseService
     attr_accessor :category_id
 
     validates :category_id, presence: true

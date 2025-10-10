@@ -12,11 +12,7 @@ RSpec.describe Api::V1::CategorizationController, type: :controller, unit: true 
     controller.class.skip_before_action :log_request, raise: false
 
     # Mock the categorization service initialization
-    categorization_module = Module.new
-    stub_const("Categorization", categorization_module)
-    enhanced_service_class = Class.new
-    categorization_module.const_set("EnhancedCategorizationService", enhanced_service_class)
-    allow(enhanced_service_class).to receive(:new).and_return(categorization_service)
+    allow(Services::Categorization::EnhancedCategorizationService).to receive(:new).and_return(categorization_service)
   end
 
   describe "POST #suggest", unit: true do
@@ -26,10 +22,11 @@ RSpec.describe Api::V1::CategorizationController, type: :controller, unit: true 
     before do
       allow(categorization_service).to receive(:suggest_categories).and_return(suggestions)
       allow(controller).to receive(:format_suggestions).and_return([])
+      allow(controller).to receive(:render).and_return(nil)
     end
 
     it "calls categorization service with expense data" do
-      expect(categorization_service).to receive(:suggest_categories)
+      expect(categorization_service).to receive(:suggest_categories).and_return(suggestions)
 
       post :suggest, params: valid_params, format: :json
     end
@@ -52,6 +49,7 @@ RSpec.describe Api::V1::CategorizationController, type: :controller, unit: true 
       allow(PatternFeedback).to receive(:record_feedback).and_return(double(improvement_suggestion: "Test"))
       allow(categorization_service).to receive(:learn_from_feedback)
       allow(controller).to receive(:serialize_feedback).and_return({})
+      allow(controller).to receive(:render).and_return(nil)
     end
 
     it "processes feedback successfully" do
@@ -72,6 +70,7 @@ RSpec.describe Api::V1::CategorizationController, type: :controller, unit: true 
 
     before do
       allow(categorization_service).to receive(:categorize_batch).and_return(batch_results)
+      allow(controller).to receive(:render).and_return(nil)
     end
 
     it "processes batch suggestions successfully" do
@@ -84,6 +83,8 @@ RSpec.describe Api::V1::CategorizationController, type: :controller, unit: true 
 
     it "rejects large batches" do
       large_batch = { expenses: Array.new(101) { { merchant_name: "Test" } } }
+
+      allow(controller).to receive(:render).and_call_original
 
       post :batch_suggest, params: large_batch, format: :json
 

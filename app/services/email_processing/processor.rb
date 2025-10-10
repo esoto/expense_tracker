@@ -48,7 +48,7 @@ module Services::EmailProcessing
           result || { processed: false, expense_created: false }
         rescue StandardError => e
           # Log metrics errors but continue processing
-          Rails.logger.error "[EmailProcessing::Processor] Metrics tracking error: #{e.message}"
+          Rails.logger.error "[Services::EmailProcessing::Processor] Metrics tracking error: #{e.message}"
           # Still process the email even if metrics fail
           process_email_with_metrics(message_id, imap_service)
         end
@@ -272,7 +272,7 @@ module Services::EmailProcessing
         parsing_strategy = Services::EmailProcessing::StrategyFactory.create_strategy(parsing_rule, email_content: email_data[:body])
         expense_data = parsing_strategy.parse_email(email_data[:body])
       rescue => e
-        Rails.logger.error "[EmailProcessing::Processor] Error parsing email: #{e.message}"
+        Rails.logger.error "[Services::EmailProcessing::Processor] Error parsing email: #{e.message}"
         return false
       end
 
@@ -296,13 +296,13 @@ module Services::EmailProcessing
 
       false # No conflict detected
     rescue => e
-      Rails.logger.error "[EmailProcessing::Processor] Error detecting conflict: #{e.message}"
+      Rails.logger.error "[Services::EmailProcessing::Processor] Error detecting conflict: #{e.message}"
       false # Continue with normal processing on error
     end
 
     def add_error(message)
       @errors << message
-      Rails.logger.error "[EmailProcessing::Processor] #{email_account.email}: #{message}"
+      Rails.logger.error "[Services::EmailProcessing::Processor] #{email_account.email}: #{message}"
     end
   end
 end

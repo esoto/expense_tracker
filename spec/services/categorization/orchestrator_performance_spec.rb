@@ -4,9 +4,9 @@ require "rails_helper"
 require "benchmark"
 require "get_process_mem"
 
-RSpec.describe "Categorization::Orchestrator Performance", type: :service, performance: true do
+RSpec.describe "Services::Categorization::Orchestrator Performance", type: :service, performance: true do
   describe "Performance benchmarks", performance: true do
-    let(:orchestrator) { Categorization::OrchestratorFactory.create_production }
+    let(:orchestrator) { Services::Categorization::OrchestratorFactory.create_production }
 
     # Helper method to simulate time passing without actual sleep
     def travel(duration)
@@ -88,7 +88,7 @@ RSpec.describe "Categorization::Orchestrator Performance", type: :service, perfo
           elapsed = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000
           times << elapsed
 
-          expect(result).to be_a(Categorization::CategorizationResult)
+          expect(result).to be_a(Services::Categorization::CategorizationResult)
         end
 
         average_time = times.sum / times.size
@@ -115,7 +115,7 @@ RSpec.describe "Categorization::Orchestrator Performance", type: :service, perfo
           elapsed = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000
           times << elapsed
 
-          expect(result).to be_a(Categorization::CategorizationResult)
+          expect(result).to be_a(Services::Categorization::CategorizationResult)
         end
 
         average_time = times.sum / times.size

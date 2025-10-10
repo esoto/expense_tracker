@@ -3,7 +3,7 @@ require "rails_helper"
 RSpec.describe Api::V1::CategorizationController, type: :controller, unit: true do
   let(:expense) { create(:expense) }
   let(:category) { create(:category) }
-  let(:categorization_service) { double("Categorization::EnhancedServices::CategorizationService") }
+  let(:categorization_service) { double("Services::Categorization::EnhancedCategorizationService") }
 
   before do
     # Skip authentication and other base controller concerns for unit tests

@@ -325,7 +325,7 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
         pattern_cache = double("PatternCache")
         allow(Services::Categorization::PatternCache).to receive(:new).and_return(pattern_cache)
 
-        expect(Categorization::PatternLearner).to receive(:new)
+        expect(Services::Categorization::PatternLearner).to receive(:new)
           .with(pattern_cache: pattern_cache)
           .and_return(double("PatternLearner"))
 
@@ -333,7 +333,7 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
       end
 
       it "creates LruCache with correct parameters" do
-        expect(Categorization::LruCache).to receive(:new)
+        expect(Services::Categorization::LruCache).to receive(:new)
           .with(max_size: 1000, ttl_seconds: 300)
           .and_return(double("LruCache"))
 
@@ -385,7 +385,7 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
 
       it "doesn't instantiate default services when custom ones provided" do
         expect(Services::Categorization::PatternCache).not_to receive(:new)
-        expect(Categorization::Matchers::FuzzyMatcher).not_to receive(:new)
+        expect(Services::Categorization::Matchers::FuzzyMatcher).not_to receive(:new)
 
         registry.build_defaults(options)
       end
@@ -401,9 +401,9 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
           fuzzy_matcher: custom_fuzzy_matcher
         }
 
-        expect(Categorization::ConfidenceCalculator).to receive(:new)
-        expect(Categorization::PerformanceTracker).to receive(:new)
-        expect(Categorization::LruCache).to receive(:new)
+        expect(Services::Categorization::ConfidenceCalculator).to receive(:new)
+        expect(Services::Categorization::PerformanceTracker).to receive(:new)
+        expect(Services::Categorization::LruCache).to receive(:new)
 
         registry.build_defaults(options)
 
@@ -425,7 +425,7 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
       end
 
       it "fills in missing services" do
-        expect(Categorization::Matchers::FuzzyMatcher).to receive(:new)
+        expect(Services::Categorization::Matchers::FuzzyMatcher).to receive(:new)
         registry.build_defaults
       end
     end

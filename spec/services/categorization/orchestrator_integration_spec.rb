@@ -2,9 +2,9 @@
 
 require "rails_helper"
 
-RSpec.describe "Categorization::Orchestrator Integration", type: :service do
+RSpec.describe "Services::Categorization::Orchestrator Integration", type: :service do
   describe "End-to-end service orchestration" do
-    let(:orchestrator) { Categorization::OrchestratorFactory.create_test }
+    let(:orchestrator) { Services::Categorization::OrchestratorFactory.create_test }
 
     # Create test data
     let!(:groceries_category) { create(:category, name: "Groceries") }
@@ -172,7 +172,7 @@ RSpec.describe "Categorization::Orchestrator Integration", type: :service do
 
         expect(results).to be_an(Array)
         expect(results.size).to eq(4)
-        expect(results).to all(be_a(Categorization::CategorizationResult))
+        expect(results).to all(be_a(Services::Categorization::CategorizationResult))
 
         # Should be efficient for batch processing
         expect(elapsed_ms).to be < 200 # 50ms per expense max
@@ -200,7 +200,7 @@ RSpec.describe "Categorization::Orchestrator Integration", type: :service do
           results = orchestrator.batch_categorize(expenses, parallel: true)
 
           expect(results.size).to eq(4)
-          expect(results).to all(be_a(Categorization::CategorizationResult))
+          expect(results).to all(be_a(Services::Categorization::CategorizationResult))
         end
       end
     end
@@ -308,7 +308,7 @@ RSpec.describe "Categorization::Orchestrator Integration", type: :service do
         result = orchestrator.categorize(expense, include_alternatives: true)
 
         # Configuration should be applied
-        expect(result).to be_a(Categorization::CategorizationResult)
+        expect(result).to be_a(Services::Categorization::CategorizationResult)
       end
     end
 
@@ -346,7 +346,7 @@ RSpec.describe "Categorization::Orchestrator Integration", type: :service do
 
         # Should still work after reset
         result = orchestrator.categorize(expense)
-        expect(result).to be_a(Categorization::CategorizationResult)
+        expect(result).to be_a(Services::Categorization::CategorizationResult)
       end
     end
   end

@@ -64,7 +64,7 @@ module Analytics
       format = validate_export_format(params[:format_type])
       return redirect_to analytics_pattern_dashboard_index_path, alert: "Invalid export format" unless format
 
-      exporter = ::Analytics::DashboardExporter.new(@analyzer, format: format)
+      exporter = ::Services::Analytics::DashboardExporter.new(@analyzer, format: format)
 
       data = exporter.export
       filename = "pattern_analytics_#{Time.current.strftime('%Y%m%d_%H%M%S')}"

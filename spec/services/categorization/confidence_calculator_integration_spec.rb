@@ -3,8 +3,8 @@
 require "rails_helper"
 
 RSpec.describe "ConfidenceCalculator Integration", type: :integration do
-  let(:calculator) { Categorization::ConfidenceCalculator.new }
-  let(:fuzzy_matcher) { Categorization::Matchers::FuzzyMatcher.instance }
+  let(:calculator) { Services::Categorization::ConfidenceCalculator.new }
+  let(:fuzzy_matcher) { Services::Categorization::Matchers::FuzzyMatcher.instance }
   let(:enhanced_service) { Categorization::EnhancedServices::CategorizationService.new }
 
   let(:category_shopping) { create(:category, name: "Shopping") }

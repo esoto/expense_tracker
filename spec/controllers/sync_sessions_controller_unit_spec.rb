@@ -7,7 +7,7 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
   before do
     # Mock service classes to avoid actual implementation calls
     allow(Services::SyncSessionCreator).to receive(:new).and_return(double(call: double(success?: true, sync_session: sync_session)))
-    allow(SyncSessionRetryService).to receive(:new).and_return(double(call: double(success?: true, sync_session: sync_session)))
+    allow(Services::SyncSessionRetryService).to receive(:new).and_return(double(call: double(success?: true, sync_session: sync_session)))
     allow(SyncSessionPerformanceOptimizer).to receive(:preload_for_index).and_return([ sync_session ])
     allow(SyncSessionPerformanceOptimizer).to receive(:preload_for_show).and_return([])
     allow(SyncSessionPerformanceOptimizer).to receive(:cache_key_for_status).and_return("sync_status_#{sync_session.id}")
@@ -181,7 +181,7 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
     before do
       allow(SyncSession).to receive(:find).and_return(sync_session)
       allow(controller).to receive(:authorize_sync_session_owner!)
-      allow(SyncSessionRetryService).to receive(:new).and_return(retry_service)
+      allow(Services::SyncSessionRetryService).to receive(:new).and_return(retry_service)
       allow(retry_service).to receive(:call).and_return(retry_result)
       allow(controller).to receive(:respond_to).and_yield(double(html: nil, json: nil))
     end
@@ -190,7 +190,7 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
       let(:retry_params) { { since: "2023-01-01" } }
 
       it "creates retry service with correct parameters" do
-        expect(SyncSessionRetryService).to receive(:new).with(sync_session, hash_including("since" => "2023-01-01"))
+        expect(Services::SyncSessionRetryService).to receive(:new).with(sync_session, hash_including("since" => "2023-01-01"))
         post :retry, params: { id: sync_session.id, **retry_params }
       end
 

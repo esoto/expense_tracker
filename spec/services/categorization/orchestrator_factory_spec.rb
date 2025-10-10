@@ -7,12 +7,12 @@ RSpec.describe Services::Categorization::OrchestratorFactory, type: :service do
     it "creates orchestrator with production services" do
       orchestrator = described_class.create_production
 
-      expect(orchestrator).to be_a(Categorization::Orchestrator)
+      expect(orchestrator).to be_a(Services::Categorization::Orchestrator)
       expect(orchestrator.pattern_cache).to be_a(Services::Categorization::PatternCache)
-      expect(orchestrator.matcher).to be_a(Categorization::Matchers::FuzzyMatcher)
-      expect(orchestrator.confidence_calculator).to be_a(Categorization::ConfidenceCalculator)
-      expect(orchestrator.pattern_learner).to be_a(Categorization::PatternLearner)
-      expect(orchestrator.performance_tracker).to be_a(Categorization::PerformanceTracker)
+      expect(orchestrator.matcher).to be_a(Services::Categorization::Matchers::FuzzyMatcher)
+      expect(orchestrator.confidence_calculator).to be_a(Services::Categorization::ConfidenceCalculator)
+      expect(orchestrator.pattern_learner).to be_a(Services::Categorization::PatternLearner)
+      expect(orchestrator.performance_tracker).to be_a(Services::Categorization::PerformanceTracker)
     end
 
     it "accepts custom services" do
@@ -34,9 +34,9 @@ RSpec.describe Services::Categorization::OrchestratorFactory, type: :service do
     it "creates orchestrator with test services" do
       orchestrator = described_class.create_test
 
-      expect(orchestrator).to be_a(Categorization::Orchestrator)
-      expect(orchestrator.pattern_cache).to be_a(Categorization::OrchestratorFactory::InMemoryPatternCache)
-      expect(orchestrator.performance_tracker).to be_a(Categorization::OrchestratorFactory::NoOpPerformanceTracker)
+      expect(orchestrator).to be_a(Services::Categorization::Orchestrator)
+      expect(orchestrator.pattern_cache).to be_a(Services::Categorization::OrchestratorFactory::InMemoryPatternCache)
+      expect(orchestrator.performance_tracker).to be_a(Services::Categorization::OrchestratorFactory::NoOpPerformanceTracker)
     end
 
     it "uses simplified services for faster tests" do
@@ -53,9 +53,9 @@ RSpec.describe Services::Categorization::OrchestratorFactory, type: :service do
     it "creates orchestrator with development services" do
       orchestrator = described_class.create_development
 
-      expect(orchestrator).to be_a(Categorization::Orchestrator)
+      expect(orchestrator).to be_a(Services::Categorization::Orchestrator)
       expect(orchestrator.pattern_cache).to be_a(Services::Categorization::PatternCache)
-      expect(orchestrator.performance_tracker).to be_a(Categorization::PerformanceTracker)
+      expect(orchestrator.performance_tracker).to be_a(Services::Categorization::PerformanceTracker)
     end
 
     it "configures services for debugging" do
@@ -63,7 +63,7 @@ RSpec.describe Services::Categorization::OrchestratorFactory, type: :service do
 
       # Development services should have debugging features
       expect(orchestrator.pattern_cache).to be_a(Services::Categorization::PatternCache)
-      expect(orchestrator.matcher).to be_a(Categorization::Matchers::FuzzyMatcher)
+      expect(orchestrator.matcher).to be_a(Services::Categorization::Matchers::FuzzyMatcher)
     end
   end
 
@@ -71,10 +71,10 @@ RSpec.describe Services::Categorization::OrchestratorFactory, type: :service do
     it "creates orchestrator with provided services" do
       custom_services = {
         pattern_cache: instance_double(Services::Categorization::PatternCache),
-        matcher: instance_double(Categorization::Matchers::FuzzyMatcher),
-        confidence_calculator: instance_double(Categorization::ConfidenceCalculator),
-        pattern_learner: instance_double(Categorization::PatternLearner),
-        performance_tracker: instance_double(Categorization::PerformanceTracker)
+        matcher: instance_double(Services::Categorization::Matchers::FuzzyMatcher),
+        confidence_calculator: instance_double(Services::Categorization::ConfidenceCalculator),
+        pattern_learner: instance_double(Services::Categorization::PatternLearner),
+        performance_tracker: instance_double(Services::Categorization::PerformanceTracker)
       }
 
       orchestrator = described_class.create_custom(custom_services)
@@ -90,7 +90,7 @@ RSpec.describe Services::Categorization::OrchestratorFactory, type: :service do
       orchestrator = described_class.create_custom({})
 
       expect(orchestrator.pattern_cache).to be_a(Services::Categorization::PatternCache)
-      expect(orchestrator.matcher).to be_a(Categorization::Matchers::FuzzyMatcher)
+      expect(orchestrator.matcher).to be_a(Services::Categorization::Matchers::FuzzyMatcher)
     end
   end
 
@@ -98,12 +98,12 @@ RSpec.describe Services::Categorization::OrchestratorFactory, type: :service do
     it "creates orchestrator with minimal services" do
       orchestrator = described_class.create_minimal
 
-      expect(orchestrator).to be_a(Categorization::Orchestrator)
-      expect(orchestrator.pattern_cache).to be_a(Categorization::OrchestratorFactory::InMemoryPatternCache)
-      expect(orchestrator.matcher).to be_a(Categorization::OrchestratorFactory::SimpleMatcher)
-      expect(orchestrator.confidence_calculator).to be_a(Categorization::OrchestratorFactory::SimpleConfidenceCalculator)
-      expect(orchestrator.pattern_learner).to be_a(Categorization::OrchestratorFactory::NoOpPatternLearner)
-      expect(orchestrator.performance_tracker).to be_a(Categorization::OrchestratorFactory::NoOpPerformanceTracker)
+      expect(orchestrator).to be_a(Services::Categorization::Orchestrator)
+      expect(orchestrator.pattern_cache).to be_a(Services::Categorization::OrchestratorFactory::InMemoryPatternCache)
+      expect(orchestrator.matcher).to be_a(Services::Categorization::OrchestratorFactory::SimpleMatcher)
+      expect(orchestrator.confidence_calculator).to be_a(Services::Categorization::OrchestratorFactory::SimpleConfidenceCalculator)
+      expect(orchestrator.pattern_learner).to be_a(Services::Categorization::OrchestratorFactory::NoOpPatternLearner)
+      expect(orchestrator.performance_tracker).to be_a(Services::Categorization::OrchestratorFactory::NoOpPerformanceTracker)
     end
   end
 
@@ -228,7 +228,7 @@ RSpec.describe Services::Categorization::OrchestratorFactory, type: :service do
         expense = create(:expense, merchant_name: "Test Store")
         result = orchestrator.categorize(expense)
 
-        expect(result).to be_a(Categorization::CategorizationResult)
+        expect(result).to be_a(Services::Categorization::CategorizationResult)
       end
     end
   end

@@ -118,8 +118,8 @@ RSpec.describe Services::Categorization::Monitoring::DashboardAdapter do
       it "handles errors gracefully for #{method_name}" do
         # Mock the actual strategy class method to raise an error
         strategy_class = adapter.strategy_name == :original ?
-          Categorization::Monitoring::DashboardHelper :
-          Categorization::Monitoring::DashboardHelperOptimized
+          Services::Categorization::Monitoring::DashboardHelper :
+          Services::Categorization::Monitoring::DashboardHelperOptimized
 
         # Use the appropriate method name based on strategy
         actual_method = if adapter.strategy_name == :optimized
@@ -179,8 +179,8 @@ RSpec.describe Services::Categorization::Monitoring::DashboardAdapter do
 
     it 'logs slow operations' do
       strategy_class = adapter.strategy_name == :original ?
-        Categorization::Monitoring::DashboardHelper :
-        Categorization::Monitoring::DashboardHelperOptimized
+        Services::Categorization::Monitoring::DashboardHelper :
+        Services::Categorization::Monitoring::DashboardHelperOptimized
 
       allow(strategy_class).to receive(:metrics_summary) do
         sleep 0.11 # Simulate slow operation
@@ -197,7 +197,7 @@ RSpec.describe Services::Categorization::Monitoring::DashboardAdapter do
       let(:original_adapter) { described_class.new(strategy_override: :original) }
 
       it 'uses DashboardHelper methods' do
-        expect(Categorization::Monitoring::DashboardHelper).to receive(:categorization_metrics).and_return({})
+        expect(Services::Categorization::Monitoring::DashboardHelper).to receive(:categorization_metrics).and_return({})
         original_adapter.categorization_metrics
       end
     end
@@ -206,7 +206,7 @@ RSpec.describe Services::Categorization::Monitoring::DashboardAdapter do
       let(:optimized_adapter) { described_class.new(strategy_override: :optimized) }
 
       it 'uses DashboardHelperOptimized methods' do
-        expect(Categorization::Monitoring::DashboardHelperOptimized).to receive(:categorization_metrics_optimized).and_return({})
+        expect(Services::Categorization::Monitoring::DashboardHelperOptimized).to receive(:categorization_metrics_optimized).and_return({})
         optimized_adapter.categorization_metrics
       end
     end
@@ -214,7 +214,7 @@ RSpec.describe Services::Categorization::Monitoring::DashboardAdapter do
 
   describe 'error handling' do
     it 'returns error hash when strategy method fails' do
-      allow(Categorization::Monitoring::DashboardHelperOptimized).to receive(:metrics_summary)
+      allow(Services::Categorization::Monitoring::DashboardHelperOptimized).to receive(:metrics_summary)
         .and_raise(StandardError, 'Database connection error')
 
       result = adapter.metrics_summary
@@ -226,7 +226,7 @@ RSpec.describe Services::Categorization::Monitoring::DashboardAdapter do
       error = StandardError.new('Test error')
       error.set_backtrace([ 'line1', 'line2', 'line3' ])
 
-      allow(Categorization::Monitoring::DashboardHelperOptimized).to receive(:metrics_summary)
+      allow(Services::Categorization::Monitoring::DashboardHelperOptimized).to receive(:metrics_summary)
         .and_raise(error)
 
       expect(Rails.logger).to receive(:error).with(/Dashboard adapter error/)

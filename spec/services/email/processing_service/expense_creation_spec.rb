@@ -23,7 +23,7 @@ RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
 
     # Default categorization result with high confidence
     let(:categorization_result) {
-      Categorization::CategorizationResult.new(
+      Services::Categorization::CategorizationResult.new(
         category: category,
         confidence: 0.85,
         method: 'pattern_match',
@@ -345,7 +345,7 @@ RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
         end
 
         it 'does not assign category when confidence <= 0.7' do
-          low_confidence_result = Categorization::CategorizationResult.new(
+          low_confidence_result = Services::Categorization::CategorizationResult.new(
             category: category,
             confidence: 0.65,
             method: 'pattern_match'
@@ -373,7 +373,7 @@ RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
         end
 
         it 'stores low confidence metadata when categorization fails' do
-          low_confidence_result = Categorization::CategorizationResult.new(
+          low_confidence_result = Services::Categorization::CategorizationResult.new(
             category: category,
             confidence: 0.45,
             method: 'pattern_match'
@@ -419,7 +419,7 @@ RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
         end
 
         it 'handles failed categorization result' do
-          failed_result = Categorization::CategorizationResult.error('No patterns found')
+          failed_result = Services::Categorization::CategorizationResult.error('No patterns found')
 
           expect(mock_categorization_engine).to receive(:categorize)
             .and_return(failed_result)

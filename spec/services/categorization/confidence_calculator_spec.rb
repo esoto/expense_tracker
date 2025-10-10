@@ -38,7 +38,7 @@ RSpec.describe Services::Categorization::ConfidenceCalculator do
   describe "#calculate" do
     context "with valid inputs" do
       let(:match_result) do
-        Categorization::Matchers::MatchResult.new(
+        Services::Categorization::Matchers::MatchResult.new(
           success: true,
           matches: [ { score: 0.85, text: "amazon" } ]
         )
@@ -122,7 +122,7 @@ RSpec.describe Services::Categorization::ConfidenceCalculator do
 
     context "with different match_result types" do
       it "handles MatchResult object" do
-        match_result = Categorization::Matchers::MatchResult.new(
+        match_result = Services::Categorization::Matchers::MatchResult.new(
           success: true,
           matches: [ { score: 0.9 } ]
         )
@@ -382,7 +382,7 @@ RSpec.describe Services::Categorization::ConfidenceCalculator do
 
       expect(results).to be_an(Array)
       expect(results.size).to eq(3)
-      expect(results).to all(be_a(Categorization::ConfidenceScore))
+      expect(results).to all(be_a(Services::Categorization::ConfidenceScore))
     end
 
     it "sorts results by confidence score descending" do
@@ -525,7 +525,7 @@ RSpec.describe Services::Categorization::ConfidenceCalculator do
 
   describe "ConfidenceScore" do
     let(:score) do
-      Categorization::ConfidenceScore.new(
+      Services::Categorization::ConfidenceScore.new(
         score: 0.87,
         raw_score: 0.75,
         factors: {
@@ -560,7 +560,7 @@ RSpec.describe Services::Categorization::ConfidenceCalculator do
         ]
 
         test_cases.each do |test|
-          score = Categorization::ConfidenceScore.new(score: test[:score])
+          score = Services::Categorization::ConfidenceScore.new(score: test[:score])
           expect(score.confidence_level).to eq(test[:level])
         end
       end
@@ -608,7 +608,7 @@ RSpec.describe Services::Categorization::ConfidenceCalculator do
 
       it "includes normalization note when applicable" do
         # Create a score where normalization was applied
-        normalized_score = Categorization::ConfidenceScore.new(
+        normalized_score = Services::Categorization::ConfidenceScore.new(
           score: 0.87,
           raw_score: 0.75,
           factors: score.factors,
@@ -622,16 +622,16 @@ RSpec.describe Services::Categorization::ConfidenceCalculator do
       end
 
       it "shows error for invalid scores" do
-        invalid_score = Categorization::ConfidenceScore.invalid("Test error")
+        invalid_score = Services::Categorization::ConfidenceScore.invalid("Test error")
         expect(invalid_score.explanation).to include("Error: Test error")
       end
     end
 
     describe "comparison" do
       it "compares scores using <=> operator" do
-        score1 = Categorization::ConfidenceScore.new(score: 0.8)
-        score2 = Categorization::ConfidenceScore.new(score: 0.9)
-        score3 = Categorization::ConfidenceScore.new(score: 0.8)
+        score1 = Services::Categorization::ConfidenceScore.new(score: 0.8)
+        score2 = Services::Categorization::ConfidenceScore.new(score: 0.9)
+        score3 = Services::Categorization::ConfidenceScore.new(score: 0.8)
 
         expect(score1 <=> score2).to eq(-1)
         expect(score2 <=> score1).to eq(1)
@@ -640,9 +640,9 @@ RSpec.describe Services::Categorization::ConfidenceCalculator do
 
       it "supports sorting" do
         scores = [
-          Categorization::ConfidenceScore.new(score: 0.5),
-          Categorization::ConfidenceScore.new(score: 0.9),
-          Categorization::ConfidenceScore.new(score: 0.7)
+          Services::Categorization::ConfidenceScore.new(score: 0.5),
+          Services::Categorization::ConfidenceScore.new(score: 0.9),
+          Services::Categorization::ConfidenceScore.new(score: 0.7)
         ]
 
         sorted = scores.sort

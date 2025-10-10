@@ -64,7 +64,7 @@ class SyncSessionsController < ApplicationController
   end
 
   def retry
-    result = SyncSessionRetryService.new(@sync_session, retry_params).call
+    result = Services::SyncSessionRetryService.new(@sync_session, retry_params).call
 
     if result.success?
       new_session = result.sync_session

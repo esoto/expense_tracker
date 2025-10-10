@@ -11,7 +11,7 @@ RSpec.describe Services::Categorization::Monitoring::DashboardHelper, type: :ser
   let(:mock_health_check) { instance_double(Categorization::Monitoring::HealthCheck) }
   let(:mock_metrics_collector) { instance_double(Categorization::Monitoring::MetricsCollector) }
   let(:mock_pattern_cache) { instance_double(Services::Categorization::PatternCache) }
-  let(:mock_performance_tracker) { instance_double(Categorization::PerformanceTracker) }
+  let(:mock_performance_tracker) { instance_double(Services::Categorization::PerformanceTracker) }
   let(:mock_connection_pool) { create_mock_connection_pool(size: 10, connections_count: 5, busy: 2) }
   let(:mock_connection) { double("Connection") }
   let(:mock_process_mem) { double("GetProcessMem") }
@@ -52,10 +52,10 @@ RSpec.describe Services::Categorization::Monitoring::DashboardHelper, type: :ser
     # but DashboardHelper tries to call it. This is likely a bug that should be fixed.
     # We'll define the method temporarily for testing
     test_instance = mock_performance_tracker
-    unless Categorization::PerformanceTracker.respond_to?(:instance)
-      Categorization::PerformanceTracker.define_singleton_method(:instance) { test_instance }
+    unless Services::Categorization::PerformanceTracker.respond_to?(:instance)
+      Services::Categorization::PerformanceTracker.define_singleton_method(:instance) { test_instance }
     else
-      allow(Categorization::PerformanceTracker).to receive(:instance).and_return(mock_performance_tracker)
+      allow(Services::Categorization::PerformanceTracker).to receive(:instance).and_return(mock_performance_tracker)
     end
 
     # Use shared context helper to mock connection pool
@@ -65,8 +65,8 @@ RSpec.describe Services::Categorization::Monitoring::DashboardHelper, type: :ser
   after do
     travel_back
     # Clean up the singleton method we added
-    if Categorization::PerformanceTracker.singleton_class.method_defined?(:instance)
-      Categorization::PerformanceTracker.singleton_class.remove_method(:instance)
+    if Services::Categorization::PerformanceTracker.singleton_class.method_defined?(:instance)
+      Services::Categorization::PerformanceTracker.singleton_class.remove_method(:instance)
     end
   end
 

@@ -338,7 +338,7 @@ class ExpensesController < ApplicationController
     permitted = bulk_categorize_params
 
     # Use the new service object for better performance and organization
-    service = Services::BulkOperations::Services::CategorizationService.new(
+    service = Services::BulkOperations::CategorizationService.new(
       expense_ids: permitted[:expense_ids],
       category_id: permitted[:category_id],
       user: current_user_for_bulk_operations,

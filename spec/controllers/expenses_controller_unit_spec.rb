@@ -434,7 +434,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
           # Mock call method
         end
       end
-      stub_const("Services::BulkOperations::Services::CategorizationService", categorization_service_class)
+      stub_const("Services::BulkOperations::CategorizationService", categorization_service_class)
       allow(categorization_service_class).to receive(:new).and_return(categorization_service)
       allow(categorization_service).to receive(:call).and_return(service_result)
       allow(controller).to receive(:authorize_bulk_operation!).and_return(true)

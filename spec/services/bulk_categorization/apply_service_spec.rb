@@ -29,7 +29,7 @@ RSpec.describe Services::BulkCategorization::ApplyService, type: :service, unit:
   let(:category) { instance_double(Category, id: category_id, name: "Groceries") }
   let(:expenses) { [] }
   let(:bulk_operation) { instance_double(BulkOperation, id: 100) }
-  let(:pattern_learner) { instance_double(Categorization::PatternLearner) }
+  let(:pattern_learner) { instance_double(Services::Categorization::PatternLearner) }
   let(:engine) { instance_double("CategorizationEngine") }
   let(:categorization_result) do
     OpenStruct.new(
@@ -50,7 +50,7 @@ RSpec.describe Services::BulkCategorization::ApplyService, type: :service, unit:
     allow(Services::ErrorTrackingService).to receive(:track_bulk_operation_error)
 
     # Stub pattern learning
-    allow(Categorization::PatternLearner).to receive(:new).and_return(pattern_learner)
+    allow(Services::Categorization::PatternLearner).to receive(:new).and_return(pattern_learner)
     allow(pattern_learner).to receive(:learn_from_correction)
 
     # Stub categorization engine
@@ -391,7 +391,7 @@ RSpec.describe Services::BulkCategorization::ApplyService, type: :service, unit:
         end
 
         it "does not learn patterns", unit: true do
-          expect(Categorization::PatternLearner).not_to receive(:new)
+          expect(Services::Categorization::PatternLearner).not_to receive(:new)
           service.call
         end
       end

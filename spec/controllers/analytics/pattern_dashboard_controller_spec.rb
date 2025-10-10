@@ -328,7 +328,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
     before do
       allow(::Services::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(mock_analyzer)
       allow(mock_analyzer).to receive(:overall_metrics).and_return(overall_metrics)
-      allow(::Analytics::DashboardExporter).to receive(:new).and_return(mock_exporter)
+      allow(::Services::Analytics::DashboardExporter).to receive(:new).and_return(mock_exporter)
       allow(controller).to receive(:send_data)
       allow(controller).to receive(:log_admin_action)
 
@@ -377,7 +377,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
       allow(mock_exporter).to receive(:export).and_return(csv_data)
 
       post :export
-      expect(::Analytics::DashboardExporter).to have_received(:new).with(
+      expect(::Services::Analytics::DashboardExporter).to have_received(:new).with(
         mock_analyzer,
         format: :csv
       )
@@ -387,7 +387,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
       allow(mock_exporter).to receive(:export).and_return(csv_data)
 
       post :export, params: { format_type: "csv" }
-      expect(::Analytics::DashboardExporter).to have_received(:new).with(
+      expect(::Services::Analytics::DashboardExporter).to have_received(:new).with(
         mock_analyzer,
         format: :csv
       )
@@ -720,7 +720,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
     before do
       allow(::Services::Analytics::PatternPerformanceAnalyzer).to receive(:new).and_return(audit_mock_analyzer)
       allow(audit_mock_analyzer).to receive(:overall_metrics).and_return(audit_overall_metrics)
-      allow(::Analytics::DashboardExporter).to receive(:new).and_return(audit_mock_exporter)
+      allow(::Services::Analytics::DashboardExporter).to receive(:new).and_return(audit_mock_exporter)
       allow(audit_mock_exporter).to receive(:export).and_return(audit_csv_data)
       allow(controller).to receive(:send_data)
       # Don't mock log_admin_action - let it run for audit tests

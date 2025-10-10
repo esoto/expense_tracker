@@ -54,11 +54,11 @@ RSpec.describe "DashboardHelper Performance Benchmark", type: :benchmark do
 
       Benchmark.ips do |x|
         x.report("Original implementation") do
-          Categorization::Monitoring::DashboardHelper.categorization_metrics
+          Services::Categorization::Monitoring::DashboardHelper.categorization_metrics
         end
 
         x.report("Optimized implementation") do
-          Categorization::Monitoring::DashboardHelperOptimized.categorization_metrics_optimized
+          Services::Categorization::Monitoring::DashboardHelperOptimized.categorization_metrics_optimized
         end
 
         x.compare!
@@ -70,11 +70,11 @@ RSpec.describe "DashboardHelper Performance Benchmark", type: :benchmark do
 
       Benchmark.ips do |x|
         x.report("Original implementation") do
-          Categorization::Monitoring::DashboardHelper.pattern_metrics
+          Services::Categorization::Monitoring::DashboardHelper.pattern_metrics
         end
 
         x.report("Optimized implementation") do
-          Categorization::Monitoring::DashboardHelperOptimized.pattern_metrics_optimized
+          Services::Categorization::Monitoring::DashboardHelperOptimized.pattern_metrics_optimized
         end
 
         x.compare!
@@ -86,11 +86,11 @@ RSpec.describe "DashboardHelper Performance Benchmark", type: :benchmark do
 
       Benchmark.ips do |x|
         x.report("Original implementation") do
-          Categorization::Monitoring::DashboardHelper.learning_metrics
+          Services::Categorization::Monitoring::DashboardHelper.learning_metrics
         end
 
         x.report("Optimized implementation") do
-          Categorization::Monitoring::DashboardHelperOptimized.learning_metrics_optimized
+          Services::Categorization::Monitoring::DashboardHelperOptimized.learning_metrics_optimized
         end
 
         x.compare!
@@ -107,8 +107,8 @@ RSpec.describe "DashboardHelper Performance Benchmark", type: :benchmark do
         original_queries << event.payload[:sql] unless event.payload[:sql].match?(/SCHEMA|TRANSACTION/)
       end
 
-      Categorization::Monitoring::DashboardHelper.categorization_metrics
-      Categorization::Monitoring::DashboardHelper.pattern_metrics
+      Services::Categorization::Monitoring::DashboardHelper.categorization_metrics
+      Services::Categorization::Monitoring::DashboardHelper.pattern_metrics
 
       original_count = original_queries.size
       ActiveSupport::Notifications.unsubscribe("sql.active_record")
@@ -121,8 +121,8 @@ RSpec.describe "DashboardHelper Performance Benchmark", type: :benchmark do
       end
 
       Rails.cache.clear # Clear cache to ensure fair comparison
-      Categorization::Monitoring::DashboardHelperOptimized.categorization_metrics_optimized
-      Categorization::Monitoring::DashboardHelperOptimized.pattern_metrics_optimized
+      Services::Categorization::Monitoring::DashboardHelperOptimized.categorization_metrics_optimized
+      Services::Categorization::Monitoring::DashboardHelperOptimized.pattern_metrics_optimized
 
       optimized_count = optimized_queries.size
       ActiveSupport::Notifications.unsubscribe("sql.active_record")
@@ -149,7 +149,7 @@ RSpec.describe "DashboardHelper Performance Benchmark", type: :benchmark do
           Thread.new do
             iterations.times do
               begin
-                Categorization::Monitoring::DashboardHelper.system_metrics
+                Services::Categorization::Monitoring::DashboardHelper.system_metrics
               rescue => e
                 original_errors << e
               end
@@ -166,7 +166,7 @@ RSpec.describe "DashboardHelper Performance Benchmark", type: :benchmark do
           Thread.new do
             iterations.times do
               begin
-                Categorization::Monitoring::DashboardHelperOptimized.system_metrics_safe
+                Services::Categorization::Monitoring::DashboardHelperOptimized.system_metrics_safe
               rescue => e
                 optimized_errors << e
               end
@@ -194,14 +194,14 @@ RSpec.describe "DashboardHelper Performance Benchmark", type: :benchmark do
 
       # First call (cache miss)
       miss_time = Benchmark.realtime do
-        Categorization::Monitoring::DashboardHelperOptimized.metrics_summary
+        Services::Categorization::Monitoring::DashboardHelperOptimized.metrics_summary
       end
 
       # Subsequent calls (cache hits)
       hit_times = []
       5.times do
         hit_times << Benchmark.realtime do
-          Categorization::Monitoring::DashboardHelperOptimized.metrics_summary
+          Services::Categorization::Monitoring::DashboardHelperOptimized.metrics_summary
         end
       end
 

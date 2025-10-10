@@ -1,5 +1,5 @@
 module Services
-  class SyncSessionRetryService
+  class Services::SyncSessionRetryService
   attr_reader :original_session, :params
 
   def initialize(original_session, params = {})

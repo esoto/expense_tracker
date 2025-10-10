@@ -29,7 +29,7 @@ RSpec.describe 'ML Confidence Categorization Integration', type: :integration do
   describe 'automatic categorization with ML confidence' do
     it 'updates ML fields when categorization result is applied' do
       # Create a mock successful categorization result
-      result = Categorization::CategorizationResult.new(
+      result = Services::Categorization::CategorizationResult.new(
         category: food_category,
         confidence: 0.85,
         method: 'pattern_match',
@@ -40,7 +40,7 @@ RSpec.describe 'ML Confidence Categorization Integration', type: :integration do
       )
 
       # Use the ML confidence integration directly
-      integration = Class.new { include Categorization::MlConfidenceIntegration }.new
+      integration = Class.new { include Services::Categorization::MlConfidenceIntegration }.new
 
       expect(integration.update_expense_with_ml_confidence(expense, result)).to be true
 
@@ -56,14 +56,14 @@ RSpec.describe 'ML Confidence Categorization Integration', type: :integration do
     context 'with low confidence result' do
       it 'suggests category instead of directly applying when confidence is low' do
         # Create a mock low confidence result
-        result = Categorization::CategorizationResult.new(
+        result = Services::Categorization::CategorizationResult.new(
           category: food_category,
           confidence: 0.45,
           method: 'pattern_match'
         )
 
         # Use the ML confidence integration directly
-        integration = Class.new { include Categorization::MlConfidenceIntegration }.new
+        integration = Class.new { include Services::Categorization::MlConfidenceIntegration }.new
 
         # Ensure expense has no category initially
         expense.update!(category: nil)

@@ -58,7 +58,7 @@ class MetricsCalculationJob < ApplicationJob
         Rails.logger.info "Calculating metrics for account #{email_account.id}, period: #{period}, date: #{reference_date}"
 
         # Use longer cache expiration for background-calculated metrics
-        calculator = ExtendedCacheServices::MetricsCalculator.new(
+        calculator = Services::ExtendedCacheMetricsCalculator.new(
           email_account: email_account,
           period: period,
           reference_date: reference_date,
@@ -114,7 +114,7 @@ class MetricsCalculationJob < ApplicationJob
       Rails.logger.debug "Calculating metrics for account #{email_account.id}, #{period} period on #{date}"
 
       # Use extended cache for background calculations
-      calculator = ExtendedCacheServices::MetricsCalculator.new(
+      calculator = Services::ExtendedCacheMetricsCalculator.new(
         email_account: email_account,
         period: period,
         reference_date: date,

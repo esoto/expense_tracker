@@ -81,7 +81,7 @@ RSpec.describe Services::Categorization::Orchestrator::CircuitBreaker, type: :se
 
         expect {
           circuit_breaker.call { executed = true }
-        }.to raise_error(Categorization::Orchestrator::CircuitBreaker::CircuitOpenError)
+        }.to raise_error(Services::Categorization::Orchestrator::CircuitBreaker::CircuitOpenError)
 
         expect(executed).to be false
       end
@@ -181,7 +181,7 @@ RSpec.describe Services::Categorization::Orchestrator::CircuitBreaker, type: :se
         Thread.new do
           begin
             circuit_breaker.call { raise StandardError }
-          rescue StandardError, Categorization::Orchestrator::CircuitBreaker::CircuitOpenError
+          rescue StandardError, Services::Categorization::Orchestrator::CircuitBreaker::CircuitOpenError
             # Expected
           end
         end
@@ -222,7 +222,7 @@ RSpec.describe Services::Categorization::Orchestrator::CircuitBreaker, type: :se
             else
               circuit_breaker.call { raise StandardError }
             end
-          rescue StandardError, Categorization::Orchestrator::CircuitBreaker::CircuitOpenError => e
+          rescue StandardError, Services::Categorization::Orchestrator::CircuitBreaker::CircuitOpenError => e
             errors << e
           end
         end
@@ -238,7 +238,7 @@ RSpec.describe Services::Categorization::Orchestrator::CircuitBreaker, type: :se
 
   describe "integration with orchestrator" do
     let(:orchestrator) do
-      Categorization::Orchestrator.new(
+      Services::Categorization::Orchestrator.new(
         circuit_breaker: circuit_breaker
       )
     end
@@ -325,7 +325,7 @@ RSpec.describe Services::Categorization::Orchestrator::CircuitBreaker, type: :se
       # Mock time for first check
       travel(1.second)
       expect { cb.call { "test" } }.to raise_error(
-        Categorization::Orchestrator::CircuitBreaker::CircuitOpenError
+        Services::Categorization::Orchestrator::CircuitBreaker::CircuitOpenError
       )
 
       # Mock time for successful transition

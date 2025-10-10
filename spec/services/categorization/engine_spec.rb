@@ -363,7 +363,7 @@ RSpec.describe Services::Categorization::Engine, type: :service do
       expect(results).to be_an(Array)
       expect(results.size).to eq(expenses.size)
       results.each do |result|
-        expect(result).to be_a(Categorization::CategorizationResult)
+        expect(result).to be_a(Services::Categorization::CategorizationResult)
       end
 
       # Wait for any async operations to complete
@@ -484,7 +484,7 @@ RSpec.describe Services::Categorization::Engine, type: :service do
 
       results = threads.map(&:value)
 
-      expect(results).to all(be_a(Categorization::CategorizationResult))
+      expect(results).to all(be_a(Services::Categorization::CategorizationResult))
     end
   end
 

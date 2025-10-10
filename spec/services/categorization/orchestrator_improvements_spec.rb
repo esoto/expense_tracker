@@ -4,7 +4,7 @@ require 'rails_helper'
 
 RSpec.describe Services::Categorization::Orchestrator, type: :service, integration: true do
   describe 'Performance and Safety Improvements', integration: true do
-    let(:orchestrator) { Categorization::OrchestratorFactory.create_test }
+    let(:orchestrator) { Services::Categorization::OrchestratorFactory.create_test }
     let(:expense) do
       create(:expense,
         merchant_name: 'Amazon',
@@ -52,7 +52,7 @@ RSpec.describe Services::Categorization::Orchestrator, type: :service, integrati
         threads.each(&:join)
 
         expect(results.size).to eq(20)
-        expect(results.all? { |r| r.is_a?(Categorization::CategorizationResult) }).to be true
+        expect(results.all? { |r| r.is_a?(Services::Categorization::CategorizationResult) }).to be true
       end
 
       it 'synchronizes reset operations safely' do
@@ -115,9 +115,9 @@ RSpec.describe Services::Categorization::Orchestrator, type: :service, integrati
     end
 
     describe 'Circuit Breaker Integration', integration: true do
-      let(:circuit_breaker) { Categorization::Orchestrator::CircuitBreaker.new(failure_threshold: 3) }
+      let(:circuit_breaker) { Services::Categorization::Orchestrator::CircuitBreaker.new(failure_threshold: 3) }
       let(:orchestrator_with_breaker) do
-        Categorization::OrchestratorFactory.create_custom(
+        Services::Categorization::OrchestratorFactory.create_custom(
           circuit_breaker: circuit_breaker
         )
       end
@@ -208,7 +208,7 @@ RSpec.describe Services::Categorization::Orchestrator, type: :service, integrati
         results = orchestrator.batch_categorize(expenses, parallel: true, max_threads: 4)
 
         expect(results.size).to eq(20)
-        expect(results.all? { |r| r.is_a?(Categorization::CategorizationResult) }).to be true
+        expect(results.all? { |r| r.is_a?(Services::Categorization::CategorizationResult) }).to be true
       end
 
       it 'preloads categories to avoid N+1 queries' do

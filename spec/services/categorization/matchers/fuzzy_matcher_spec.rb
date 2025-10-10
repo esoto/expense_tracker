@@ -242,7 +242,7 @@ RSpec.describe Services::Categorization::Matchers::FuzzyMatcher, performance: tr
       expect(results.size).to eq(texts.size)
 
       results.each do |result|
-        expect(result).to be_a(Categorization::Matchers::MatchResult)
+        expect(result).to be_a(Services::Categorization::Matchers::MatchResult)
       end
     end
 

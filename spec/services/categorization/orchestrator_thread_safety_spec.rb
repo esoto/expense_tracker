@@ -3,9 +3,9 @@
 require "rails_helper"
 require "concurrent"
 
-RSpec.describe "Categorization::Orchestrator Thread Safety", type: :service, integration: true do
+RSpec.describe "Services::Categorization::Orchestrator Thread Safety", type: :service, integration: true do
   describe "Concurrent operations", integration: true do
-    let(:orchestrator) { Categorization::OrchestratorFactory.create_production }
+    let(:orchestrator) { Services::Categorization::OrchestratorFactory.create_production }
 
     # Helper method to simulate time passing without actual sleep
     def travel(duration)
@@ -61,7 +61,7 @@ RSpec.describe "Categorization::Orchestrator Thread Safety", type: :service, int
         threads = 10.times.map do
           Thread.new do
             begin
-              orch = Categorization::OrchestratorFactory.create_production
+              orch = Services::Categorization::OrchestratorFactory.create_production
               orchestrators << orch
 
               # Verify services are properly initialized
@@ -102,7 +102,7 @@ RSpec.describe "Categorization::Orchestrator Thread Safety", type: :service, int
 
         expect(errors).to be_empty
         expect(results.size).to eq(20)
-        expect(results).to all(be_a(Categorization::CategorizationResult))
+        expect(results).to all(be_a(Services::Categorization::CategorizationResult))
       end
 
       it "maintains data integrity under concurrent access" do
@@ -229,7 +229,7 @@ RSpec.describe "Categorization::Orchestrator Thread Safety", type: :service, int
         categorization_threads.each(&:join)
 
         expect(errors).to be_empty
-        expect(results).to all(be_a(Categorization::CategorizationResult))
+        expect(results).to all(be_a(Services::Categorization::CategorizationResult))
       end
 
       it "safely handles reset operations" do
@@ -340,8 +340,8 @@ RSpec.describe "Categorization::Orchestrator Thread Safety", type: :service, int
     describe "Circuit breaker thread safety", integration: true do
       it "handles circuit breaker state changes safely" do
         # Create orchestrator with low circuit breaker threshold
-        orch = Categorization::Orchestrator.new(
-          circuit_breaker: Categorization::Orchestrator::CircuitBreaker.new(
+        orch = Services::Categorization::Orchestrator.new(
+          circuit_breaker: Services::Categorization::Orchestrator::CircuitBreaker.new(
             failure_threshold: 3,
             timeout: 1.second
           )
@@ -364,7 +364,7 @@ RSpec.describe "Categorization::Orchestrator Thread Safety", type: :service, int
         threads.each(&:join)
 
         # Should handle failures gracefully
-        expect(results).to all(be_a(Categorization::CategorizationResult))
+        expect(results).to all(be_a(Services::Categorization::CategorizationResult))
         expect(results.map(&:failed?).count(true)).to be > 0
       end
     end
@@ -391,7 +391,7 @@ RSpec.describe "Categorization::Orchestrator Thread Safety", type: :service, int
         threads.each(&:join)
 
         expect(results.size).to eq(100)
-        expect(results).to all(be_a(Categorization::CategorizationResult))
+        expect(results).to all(be_a(Services::Categorization::CategorizationResult))
       end
 
       it "maintains performance under contention" do

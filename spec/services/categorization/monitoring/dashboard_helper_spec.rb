@@ -8,8 +8,8 @@ RSpec.describe Services::Categorization::Monitoring::DashboardHelper, type: :ser
   let(:fixed_time) { Time.zone.local(2024, 12, 15, 14, 30, 0) }
 
   # Mock objects
-  let(:mock_health_check) { instance_double(Categorization::Monitoring::HealthCheck) }
-  let(:mock_metrics_collector) { instance_double(Categorization::Monitoring::MetricsCollector) }
+  let(:mock_health_check) { instance_double(Services::Categorization::Monitoring::HealthCheck) }
+  let(:mock_metrics_collector) { instance_double(Services::Categorization::Monitoring::MetricsCollector) }
   let(:mock_pattern_cache) { instance_double(Services::Categorization::PatternCache) }
   let(:mock_performance_tracker) { instance_double(Services::Categorization::PerformanceTracker) }
   let(:mock_connection_pool) { create_mock_connection_pool(size: 10, connections_count: 5, busy: 2) }
@@ -40,10 +40,10 @@ RSpec.describe Services::Categorization::Monitoring::DashboardHelper, type: :ser
     allow(Expense).to receive(:defined_enums).and_return({ "currency" => { "crc" => 0, "usd" => 1, "eur" => 2 } })
 
     # Mock HealthCheck
-    allow(Categorization::Monitoring::HealthCheck).to receive(:new).and_return(mock_health_check)
+    allow(Services::Categorization::Monitoring::HealthCheck).to receive(:new).and_return(mock_health_check)
 
     # Mock MetricsCollector singleton
-    allow(Categorization::Monitoring::MetricsCollector).to receive(:instance).and_return(mock_metrics_collector)
+    allow(Services::Categorization::Monitoring::MetricsCollector).to receive(:instance).and_return(mock_metrics_collector)
 
     # Mock PatternCache singleton
     allow(Services::Categorization::PatternCache).to receive(:instance).and_return(mock_pattern_cache)

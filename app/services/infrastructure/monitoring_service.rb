@@ -510,7 +510,7 @@ module Services::Infrastructure
           def pattern_cache_metrics
             return {} unless defined?(Categorization::PatternCache)
 
-            cache = Categorization::PatternCache.instance
+            cache = Services::Categorization::PatternCache.instance
             cache_metrics = cache.metrics
 
             {

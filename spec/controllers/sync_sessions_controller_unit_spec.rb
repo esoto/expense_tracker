@@ -8,10 +8,10 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
     # Mock service classes to avoid actual implementation calls
     allow(Services::SyncSessionCreator).to receive(:new).and_return(double(call: double(success?: true, sync_session: sync_session)))
     allow(Services::SyncSessionRetryService).to receive(:new).and_return(double(call: double(success?: true, sync_session: sync_session)))
-    allow(SyncSessionPerformanceOptimizer).to receive(:preload_for_index).and_return([ sync_session ])
-    allow(SyncSessionPerformanceOptimizer).to receive(:preload_for_show).and_return([])
-    allow(SyncSessionPerformanceOptimizer).to receive(:cache_key_for_status).and_return("sync_status_#{sync_session.id}")
-    allow(SyncSessionPerformanceOptimizer).to receive(:calculate_metrics).and_return({})
+    allow(Services::SyncSessionPerformanceOptimizer).to receive(:preload_for_index).and_return([ sync_session ])
+    allow(Services::SyncSessionPerformanceOptimizer).to receive(:preload_for_show).and_return([])
+    allow(Services::SyncSessionPerformanceOptimizer).to receive(:cache_key_for_status).and_return("sync_status_#{sync_session.id}")
+    allow(Services::SyncSessionPerformanceOptimizer).to receive(:calculate_metrics).and_return({})
 
     # Mock render and redirect methods to avoid template issues
     allow(controller).to receive(:render).and_return(nil)
@@ -25,7 +25,7 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
     before do
       allow(SyncSession).to receive_message_chain(:active, :includes).and_return(double(first: active_session))
       preload_chain = double("preload_chain")
-      allow(SyncSessionPerformanceOptimizer).to receive(:preload_for_index).and_return(preload_chain)
+      allow(Services::SyncSessionPerformanceOptimizer).to receive(:preload_for_index).and_return(preload_chain)
       allow(preload_chain).to receive(:limit).with(10).and_return(recent_sessions)
       allow(EmailAccount).to receive_message_chain(:active, :order).and_return([ email_account ])
       allow(EmailAccount).to receive_message_chain(:active, :count).and_return(1)

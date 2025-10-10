@@ -34,7 +34,7 @@ RSpec.describe Services::Categorization::Engine, type: :service do
     end
 
     it "allows custom service registry" do
-      registry = Categorization::ServiceRegistry.new
+      registry = Services::Categorization::ServiceRegistry.new
       custom_engine = described_class.create(service_registry: registry)
 
       expect(custom_engine.service_registry).to eq(registry)

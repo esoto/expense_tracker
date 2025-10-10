@@ -5,7 +5,7 @@ module Services::EmailProcessing
     def initialize(email_account, imap_service: nil, email_processor: nil, sync_session_account: nil, metrics_collector: nil)
       @email_account = email_account
       @imap_service = imap_service || Services::ImapConnectionService.new(email_account)
-      @email_processor = email_processor || EmailProcessing::Processor.new(email_account, metrics_collector: metrics_collector)
+      @email_processor = email_processor || Processor.new(email_account, metrics_collector: metrics_collector)
       @sync_session_account = sync_session_account
       @metrics_collector = metrics_collector
       @errors = []
@@ -13,22 +13,22 @@ module Services::EmailProcessing
 
     def fetch_new_emails(since: 1.week.ago)
       unless valid_account?
-        return EmailProcessing::FetcherResponse.failure(errors: @errors)
+        return FetcherResponse.failure(errors: @errors)
       end
 
       begin
         result = search_and_process_emails(since)
-        EmailProcessing::FetcherResponse.success(
+        FetcherResponse.success(
           processed_emails_count: result[:processed_emails_count],
           total_emails_found: result[:total_emails_found],
           errors: @errors
         )
       rescue Services::ImapConnectionService::ConnectionError, Services::ImapConnectionService::AuthenticationError => e
         add_error("IMAP Error: #{e.message}")
-        EmailProcessing::FetcherResponse.failure(errors: @errors)
+        FetcherResponse.failure(errors: @errors)
       rescue StandardError => e
         add_error("Unexpected error: #{e.message}")
-        EmailProcessing::FetcherResponse.failure(errors: @errors)
+        FetcherResponse.failure(errors: @errors)
       end
     end
 

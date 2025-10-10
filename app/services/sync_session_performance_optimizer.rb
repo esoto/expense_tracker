@@ -1,5 +1,5 @@
 module Services
-  class SyncSessionPerformanceOptimizer
+  class Services::SyncSessionPerformanceOptimizer
   # Query optimizations
   def self.preload_for_index
     SyncSession

@@ -171,7 +171,7 @@ module Services::BulkCategorization
     def learn_from_categorization
       return unless options[:learn_patterns]
 
-      learner = Categorization::PatternLearner.new
+      learner = Services::Categorization::PatternLearner.new
 
       @expenses.each do |expense|
         # Learn from this manual categorization

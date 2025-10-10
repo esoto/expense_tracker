@@ -84,7 +84,7 @@ RSpec.describe Admin::PatternTestingController, type: :controller, unit: true do
 
       context "with successful test" do
         it "creates pattern tester with correct parameters" do
-          expect(Patterns::PatternTester).to receive(:new).with(
+          expect(Services::Patterns::PatternTester).to receive(:new).with(
             hash_including(
               "description" => "Coffee purchase",
               "merchant_name" => "Starbucks",
@@ -98,7 +98,7 @@ RSpec.describe Admin::PatternTestingController, type: :controller, unit: true do
 
         it "calls test method on pattern tester" do
           tester = double("tester", test: true, categories_with_confidence: [], test_expense: double("expense"))
-          allow(Patterns::PatternTester).to receive(:new).and_return(tester)
+          allow(Services::Patterns::PatternTester).to receive(:new).and_return(tester)
 
           expect(tester).to receive(:test)
 
@@ -240,8 +240,8 @@ RSpec.describe Admin::PatternTestingController, type: :controller, unit: true do
   end
 
   describe "pattern integration", unit: true do
-    it "integrates with Patterns::PatternTester" do
-      expect(Patterns::PatternTester).to respond_to(:new)
+    it "integrates with Services::Patterns::PatternTester" do
+      expect(Services::Patterns::PatternTester).to respond_to(:new)
     end
 
     it "works with CategorizationPattern model" do

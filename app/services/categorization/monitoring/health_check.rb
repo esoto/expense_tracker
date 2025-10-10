@@ -102,7 +102,7 @@ module Services::Categorization
 
       # Check pattern cache status
       def check_pattern_cache
-        cache = Categorization::PatternCache.instance
+        cache = Services::Categorization::PatternCache.instance
 
         stats = cache.stats
         hit_rate = calculate_hit_rate(stats[:hits], stats[:misses])

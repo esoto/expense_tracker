@@ -288,7 +288,7 @@ module Services::EmailProcessing
 
       if sync_session
         # Use conflict detection service with metrics tracking
-        detector = ConflictDetectionService.new(sync_session, metrics_collector: @metrics_collector)
+        detector = Services::ConflictDetectionService.new(sync_session, metrics_collector: @metrics_collector)
         conflict = detector.detect_conflict_for_expense(expense_data)
 
         return true if conflict # Conflict detected and handled

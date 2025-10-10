@@ -8,7 +8,7 @@ module Api
     # GET /api/monitoring/metrics
     # Returns comprehensive dashboard metrics using the configured strategy
     def metrics
-      adapter = Categorization::Monitoring::DashboardAdapter.new
+      adapter = Services::Categorization::Monitoring::DashboardAdapter.new
 
       render json: {
         status: "success",
@@ -30,12 +30,12 @@ module Api
     # GET /api/monitoring/strategy
     # Returns current dashboard strategy information
     def strategy
-      adapter = Categorization::Monitoring::DashboardAdapter.new
+      adapter = Services::Categorization::Monitoring::DashboardAdapter.new
 
       render json: {
         current_strategy: adapter.strategy_name,
         strategy_info: adapter.strategy_info,
-        available_strategies: Categorization::Monitoring::DashboardAdapter::STRATEGIES.keys,
+        available_strategies: Services::Categorization::Monitoring::DashboardAdapter::STRATEGIES.keys,
         configuration_source: adapter.strategy_info[:source]
       }
     end

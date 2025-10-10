@@ -325,7 +325,7 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
       let(:pattern_tester) { double("PatternTester") }
 
       before do
-        allow(Patterns::PatternTester).to receive(:new).and_return(pattern_tester)
+        allow(Services::Patterns::PatternTester).to receive(:new).and_return(pattern_tester)
         allow(controller).to receive(:test_pattern_params).and_return({ description: "test" })
       end
 
@@ -342,7 +342,7 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
 
         controller.test_pattern
 
-        expect(Patterns::PatternTester).to have_received(:new).with({ description: "test" })
+        expect(Services::Patterns::PatternTester).to have_received(:new).with({ description: "test" })
         expect(pattern_tester).to have_received(:test)
         expect(controller.instance_variable_get(:@matching_patterns)).to be_present
         expect(controller.instance_variable_get(:@test_expense)).to be_present
@@ -1036,7 +1036,7 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
       let(:importer) { double("CsvImporter") }
 
       before do
-        allow(Patterns::CsvImporter).to receive(:new).and_return(importer)
+        allow(Services::Patterns::CsvImporter).to receive(:new).and_return(importer)
         allow(controller).to receive(:redirect_to)
         allow(controller).to receive(:log_admin_action)
         allow(controller).to receive(:current_admin_user).and_return(admin_user)
@@ -1056,7 +1056,7 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
         it "creates importer with correct parameters and executes import" do
           controller.import
 
-          expect(Patterns::CsvImporter).to have_received(:new).with(
+          expect(Services::Patterns::CsvImporter).to have_received(:new).with(
             file: csv_file,
             user: admin_user,
             dry_run: false
@@ -1071,7 +1071,7 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
 
           controller.import
 
-          expect(Patterns::CsvImporter).to have_received(:new).with(
+          expect(Services::Patterns::CsvImporter).to have_received(:new).with(
             file: csv_file,
             user: admin_user,
             dry_run: true
@@ -1177,7 +1177,7 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
       end
 
       before do
-        allow(Patterns::StatisticsCalculator).to receive(:new).and_return(statistics_calculator)
+        allow(Services::Patterns::StatisticsCalculator).to receive(:new).and_return(statistics_calculator)
         allow(statistics_calculator).to receive(:calculate).and_return(statistics_data)
         allow(controller).to receive(:statistics_filters).and_return({})
         allow(controller).to receive(:respond_to).and_yield(double(
@@ -1189,7 +1189,7 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
       it "creates calculator with filters and calculates statistics" do
         controller.statistics
 
-        expect(Patterns::StatisticsCalculator).to have_received(:new).with({})
+        expect(Services::Patterns::StatisticsCalculator).to have_received(:new).with({})
         expect(statistics_calculator).to have_received(:calculate)
         expect(controller.instance_variable_get(:@statistics)).to eq(statistics_data)
       end
@@ -1204,7 +1204,7 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
         it "passes filters to statistics calculator" do
           controller.statistics
 
-          expect(Patterns::StatisticsCalculator).to have_received(:new).with(filters)
+          expect(Services::Patterns::StatisticsCalculator).to have_received(:new).with(filters)
         end
       end
     end

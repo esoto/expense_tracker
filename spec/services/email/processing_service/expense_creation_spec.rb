@@ -464,8 +464,11 @@ RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
           allow(service_with_categorization).to receive(:promotional_email?).and_return(false)
           allow(service_with_categorization).to receive(:parse_email).and_return([ expense_data ])
 
+          # Expect two log messages: one for expense creation, one for auto-categorization
           expect(Rails.logger).to receive(:info)
-            .with(/Auto-categorized expense.*'Groceries'.*0.85 confidence.*pattern_match/)
+            .with(/\[EmailProcessing\] Created expense #\d+:.*Supermarket/)
+          expect(Rails.logger).to receive(:info)
+            .with(/\[EmailProcessing\] Auto-categorized expense #\d+.*'Groceries'.*0.85% confidence.*pattern_match/)
 
           service_with_categorization.send(:process_single_email, email_data)
         end

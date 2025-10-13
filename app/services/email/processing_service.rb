@@ -140,34 +140,48 @@ module Services::Email
     end
 
     def process_single_email(email)
+      Rails.logger.debug "[EmailProcessing] Processing: #{email[:subject]&.slice(0, 60)}"
+
       # Skip if already processed
-      return { success: true, expenses_created: 0 } if email_already_processed?(email)
+      if email_already_processed?(email)
+        Rails.logger.debug "[EmailProcessing] Already processed - skipping"
+        return { success: true, expenses_created: 0 }
+      end
 
       # Skip promotional emails
-      return { success: true, expenses_created: 0 } if promotional_email?(email)
+      if promotional_email?(email)
+        Rails.logger.debug "[EmailProcessing] Promotional email - skipping"
+        return { success: true, expenses_created: 0 }
+      end
 
       # Parse email for expenses
       expenses_data = parse_email(email)
+      Rails.logger.debug "[EmailProcessing] Found #{expenses_data.count} expense(s) in email"
 
-      return { success: true, expenses_created: 0 } if expenses_data.empty?
+      if expenses_data.empty?
+        Rails.logger.debug "[EmailProcessing] No expenses found in email"
+        return { success: true, expenses_created: 0 }
+      end
 
       # Create expense records
       expenses_created = 0
 
       ApplicationRecord.transaction do
         expenses_data.each do |expense_data|
+          Rails.logger.debug "[EmailProcessing] Creating expense: #{expense_data[:merchant]} - #{expense_data[:currency]}#{expense_data[:amount]}"
           expense = create_expense(expense_data)
           if expense.persisted?
             expenses_created += 1
+            Rails.logger.info "[EmailProcessing] Created expense ##{expense.id}: #{expense.merchant_name} - #{expense.currency.upcase}#{expense.amount}"
 
             # Log categorization success if auto-categorized
             if options[:auto_categorize] && expense.auto_categorized?
-              Rails.logger.info "[EmailProcessing] Auto-categorized expense #{expense.id} " \
-                               "as '#{expense.category&.name}' with #{expense.categorization_confidence} confidence " \
+              Rails.logger.info "[EmailProcessing] Auto-categorized expense ##{expense.id} " \
+                               "as '#{expense.category&.name}' (#{expense.categorization_confidence}% confidence) " \
                                "using #{expense.categorization_method}"
             end
           else
-            Rails.logger.warn "[EmailProcessing] Failed to save expense: #{expense.errors.full_messages.join(', ')}"
+            Rails.logger.error "[EmailProcessing] Failed to save expense: #{expense.errors.full_messages.join(', ')}"
           end
         end
 
@@ -341,6 +355,19 @@ module Services::Email
 
       mail = Mail.read_from_string(message.attr["RFC822"])
 
+      # Extract text body - prefer actual text part, fallback to converting HTML to text
+      text_content = if mail.text_part&.body
+        mail.text_part.body.decoded
+      elsif mail.html_part&.body
+        # Convert HTML to plain text by stripping tags
+        html = mail.html_part.body.decoded
+        html.gsub(/<[^>]*>/, " ").gsub(/\s+/, " ").strip
+      elsif !mail.multipart?
+        mail.body.decoded
+      else
+        ""
+      end
+
       {
         uid: message.attr["UID"],
         message_id: mail.message_id,
@@ -349,7 +376,7 @@ module Services::Email
         date: mail.date,
         body: extract_body(mail),
         html_body: Services::Email::EncodingService.safe_decode(mail.html_part&.body&.decoded),
-        text_body: Services::Email::EncodingService.safe_decode(mail.text_part&.body&.decoded || mail.body&.decoded)
+        text_body: Services::Email::EncodingService.safe_decode(text_content)
       }
     rescue StandardError => e
       Rails.logger.error "Failed to parse email: #{e.message}"
@@ -518,14 +545,21 @@ module Services::Email
 
       def parse_with_patterns
         # Use parsing rules specific to the bank
+        Rails.logger.debug "[EmailProcessing] Looking for parsing rule for bank: #{email_account.bank_name}"
         rule = ParsingRule.find_by(
           bank_name: email_account.bank_name,
           active: true
         )
 
-        return [] unless rule
-
-        apply_parsing_rule(rule)
+        if rule
+          Rails.logger.debug "[EmailProcessing] Found parsing rule for #{rule.bank_name}"
+          result = apply_parsing_rule(rule)
+          Rails.logger.debug "[EmailProcessing] Parsing rule returned #{result.count} expense(s)"
+          result
+        else
+          Rails.logger.debug "[EmailProcessing] No parsing rule found for #{email_account.bank_name}"
+          []
+        end
       end
 
       def parse_with_regex
@@ -641,7 +675,8 @@ module Services::Email
       end
 
       def apply_parsing_rule(rule)
-        text = email_data[:html_body] || email_data[:text_body] || email_data[:body] || ""
+        # Prioritize text_body over html_body for better pattern matching
+        text = email_data[:text_body] || email_data[:html_body] || email_data[:body] || ""
         # Fix encoding issues - make a copy to avoid modifying frozen strings
         if text.respond_to?(:force_encoding)
           text = text.dup

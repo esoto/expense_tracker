@@ -28,14 +28,21 @@ class ParsingRule < ApplicationRecord
       end
     end
 
+    Rails.logger.debug "[ParsingRule] Testing amount pattern: #{amount_pattern}"
+    Rails.logger.debug "[ParsingRule] Email content preview: #{email_content.slice(0, 200)}"
+
     # Extract amount and detect currency
     if amount_match = email_content.match(Regexp.new(amount_pattern, Regexp::IGNORECASE))
       amount_str = amount_match[1] || amount_match[0]
       parsed_data[:amount] = extract_amount(amount_str)
+      Rails.logger.debug "[ParsingRule] Found amount: #{parsed_data[:amount]}"
 
       # Detect currency from the full match or surrounding context
       full_match = amount_match[0]
       parsed_data[:currency] = detect_currency(full_match, email_content)
+      Rails.logger.debug "[ParsingRule] Currency: #{parsed_data[:currency]}"
+    else
+      Rails.logger.debug "[ParsingRule] Amount pattern did not match"
     end
 
     # Extract date

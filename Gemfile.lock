@@ -191,7 +191,7 @@ GEM
       rspec (>= 2.0, < 4.0)
     jwt (3.1.2)
       base64
-    kamal (2.7.0)
+    kamal (2.8.1)
       activesupport (>= 7.0)
       base64 (~> 0.2)
       bcrypt_pbkdf (~> 1.0)

@@ -57,7 +57,7 @@ jobs:
         run: bin/test-unit
 
       - name: Upload Unit Coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: unit-coverage
@@ -141,7 +141,7 @@ jobs:
         run: bin/test-integration
 
       - name: Upload Integration Coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: integration-coverage
@@ -224,14 +224,14 @@ jobs:
         run: bin/test-system
 
       - name: Upload System Coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: system-coverage
           path: coverage/system/
 
       - name: Upload Screenshots
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: system-test-failures
@@ -307,7 +307,7 @@ jobs:
         run: bin/test-performance
       
       - name: Upload Performance Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: performance-report
           path: tmp/performance/
@@ -387,7 +387,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload Combined Coverage Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: combined-coverage-report

@@ -31,14 +31,21 @@ RSpec.configure do |config|
   end
 
   config.around(:each, :unit) do |example|
-    # Use faster database strategy for unit tests
-    if defined?(ActiveRecord)
-      # Use transactions for unit tests (fastest cleanup)
-      ActiveRecord::Base.connection.begin_transaction(joinable: false)
+    # Use Rails' built-in transactional fixtures for unit tests
+    # This is much faster and avoids manual transaction management conflicts
+    if defined?(ActiveRecord) && RSpec.configuration.use_transactional_fixtures
+      # Let Rails handle the transaction - don't manually manage it
       example.run
-      ActiveRecord::Base.connection.rollback_transaction
     else
-      example.run
+      # Only manually manage transactions if transactional fixtures are disabled
+      if defined?(ActiveRecord)
+        ActiveRecord::Base.transaction(requires_new: true, joinable: false) do
+          example.run
+          raise ActiveRecord::Rollback
+        end
+      else
+        example.run
+      end
     end
   end
 
@@ -47,9 +54,7 @@ RSpec.configure do |config|
     Rails.cache.clear if defined?(Rails) && Rails.respond_to?(:cache)
 
     # Reset any service state
-    if defined?(Categorization::CachedCategorizationService)
-      Categorization::CachedCategorizationService.instance_variable_set(:@cache, nil)
-    end
+    # (CachedServices::CategorizationService removed - no longer needed)
 
     # Stub external services by default
     stub_external_services if respond_to?(:stub_external_services)
@@ -79,9 +84,10 @@ RSpec.configure do |config|
     config.before(:suite) do
       next unless RSpec.configuration.inclusion_filter[:unit]
       # Setup parallel test database if needed
-      if ParallelTests.first_process?
-        puts "Setting up parallel unit test execution..."
-      end
+      # DISABLED: Causing socket errors with Ruby 3.4
+      # if ParallelTests.first_process?
+      #   puts "Setting up parallel unit test execution..."
+      # end
     end
   end
 end

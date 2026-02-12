@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::Matchers::FuzzyMatcher, type: :service, performance: true do
+RSpec.describe Services::Categorization::Matchers::FuzzyMatcher, type: :service, performance: true do
   describe "Task 1.7.1 Fixes - ActiveRecord Object Handling", performance: true do
     let(:matcher) { described_class.new }
     let(:category) { create(:category, name: "Food") }

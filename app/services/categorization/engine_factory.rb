@@ -2,7 +2,7 @@
 
 require "ostruct"
 
-module Categorization
+module Services::Categorization
   # Factory for creating and managing categorization engine instances
   # Replaces singleton pattern with configurable instances for better testing
   class EngineFactory

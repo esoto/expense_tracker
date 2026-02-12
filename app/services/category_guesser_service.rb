@@ -1,4 +1,5 @@
-class CategoryGuesserService
+module Services
+  class CategoryGuesserService
   # Category keyword mappings for automatic categorization
   CATEGORY_KEYWORDS = {
     "Alimentación" => %w[restaurant restaurante comida food super supermercado grocery mercado],
@@ -67,5 +68,6 @@ class CategoryGuesserService
     end
 
     nil
+  end
   end
 end

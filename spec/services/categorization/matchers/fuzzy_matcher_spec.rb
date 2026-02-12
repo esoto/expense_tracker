@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::Matchers::FuzzyMatcher, performance: true do
+RSpec.describe Services::Categorization::Matchers::FuzzyMatcher, performance: true do
   let(:matcher) { described_class.new }
 
   describe "#match", performance: true do
@@ -242,7 +242,7 @@ RSpec.describe Categorization::Matchers::FuzzyMatcher, performance: true do
       expect(results.size).to eq(texts.size)
 
       results.each do |result|
-        expect(result).to be_a(Categorization::Matchers::MatchResult)
+        expect(result).to be_a(Services::Categorization::Matchers::MatchResult)
       end
     end
 

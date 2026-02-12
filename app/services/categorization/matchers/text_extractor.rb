@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Categorization
+module Services::Categorization
   module Matchers
     # Dedicated service for extracting text from various object types
     # Provides a clean separation of concerns for text extraction logic

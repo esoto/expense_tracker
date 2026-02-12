@@ -78,9 +78,7 @@ class EmailAccount < ApplicationRecord
 
   def imap_port
     case provider
-    when "gmail", "outlook"
-      993
-    when "yahoo"
+    when "gmail", "outlook", "yahoo"
       993
     else
       settings.dig("imap", "port") || 993
@@ -96,6 +94,4 @@ class EmailAccount < ApplicationRecord
     settings.dig("oauth", "access_token").present? ||
     settings.dig("oauth", "refresh_token").present?
   end
-
-  private
 end

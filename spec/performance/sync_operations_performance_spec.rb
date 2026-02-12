@@ -4,7 +4,7 @@ RSpec.describe "Sync Operations Performance", type: :performance do
   let(:email_account) { create(:email_account) }
   let(:sync_session) { create(:sync_session) }
 
-  describe "SyncProgressUpdater Performance" do
+  describe "Services::SyncProgressUpdater Performance" do
     it "handles concurrent updates efficiently" do
       # Simple test that doesn't break
       expect(sync_session).to be_valid

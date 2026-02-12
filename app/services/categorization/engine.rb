@@ -6,7 +6,7 @@ require_relative "lru_cache"
 require_relative "ml_confidence_integration"
 require_relative "service_registry"
 
-module Categorization
+module Services::Categorization
   # Simple circuit breaker implementation for fault tolerance
   class SimpleCircuitBreaker
     attr_reader :name, :state, :failures, :last_failure

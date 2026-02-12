@@ -17,11 +17,9 @@ namespace :email do
       puts "\n🏦 Processing account: #{email_account.email}"
 
       begin
-        # Load the service class
-        require Rails.root.join("app/services/email/processing_service")
-
         # Create processing service with auto-categorization
-        service = Email::ProcessingService.new(email_account, {
+        # Note: Services module namespace is configured in config/initializers/autoloading.rb
+        service = Services::Email::ProcessingService.new(email_account, {
           auto_categorize: true,
           limit: 500
         })
@@ -138,8 +136,7 @@ namespace :email do
       random_date = rand(since_date..until_date)
 
       begin
-        require Rails.root.join("app/services/email/processing_service")
-        service = Email::ProcessingService.new(email_account, auto_categorize: true)
+        service = Services::Email::ProcessingService.new(email_account, auto_categorize: true)
         expense_data = {
           amount: sample[:amount] + rand(-10.0..10.0).round(2),
           description: sample[:description],

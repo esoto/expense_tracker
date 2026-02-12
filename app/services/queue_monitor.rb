@@ -2,7 +2,8 @@
 
 # Service to monitor SolidQueue background job processing
 # Provides real-time metrics about queue depth, processing status, and job health
-class QueueMonitor
+module Services
+  class QueueMonitor
   include ActiveSupport::NumberHelper
 
   # Cache duration for queue status to avoid excessive database queries
@@ -465,5 +466,6 @@ class QueueMonitor
     def clear_cache
       Rails.cache.delete("queue_monitor:status")
     end
+  end
   end
 end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Categorization
+module Services::Categorization
   # Integrates ML confidence scores with the expense categorization system
   # This module provides methods to populate ML confidence fields when categorizing expenses
   module MlConfidenceIntegration

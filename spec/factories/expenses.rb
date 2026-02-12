@@ -5,29 +5,33 @@ FactoryBot.define do
     transaction_date { Time.current }
     merchant_name { "Test Merchant" }
     merchant_normalized { "Test Merchant" }
-    status { "pending" }
+    status { :pending }
     currency { "crc" }
     raw_email_content { nil }
     parsed_data { nil }
     bank_name { "BAC" }
 
     association :email_account
-    association :category, factory: :category
+    category { nil }  # Don't auto-assign category by default
+
+    trait :with_category do
+      association :category, factory: :category
+    end
 
     trait :without_category do
       category { nil }
     end
 
     trait :processed do
-      status { "processed" }
+      status { :processed }
     end
 
     trait :failed do
-      status { "failed" }
+      status { :failed }
     end
 
     trait :duplicate do
-      status { "duplicate" }
+      status { :duplicate }
     end
 
     trait :usd do

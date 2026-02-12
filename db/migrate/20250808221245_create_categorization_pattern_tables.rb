@@ -26,33 +26,33 @@ class CreateCategorizationPatternTables < ActiveRecord::Migration[8.0]
       t.index :pattern_value, using: :gin, opclass: :gin_trgm_ops # For fuzzy matching
     end
 
-    # Canonical merchants table for merchant normalization
-    create_table :canonical_merchants do |t|
-      t.string :name, null: false # Normalized name
-      t.string :display_name
-      t.string :category_hint
-      t.jsonb :metadata, default: {}
-      t.integer :usage_count, default: 0
-      t.timestamps
+      # Canonical merchants table for merchant normalization
+      create_table :canonical_merchants do |t|
+        t.string :name, null: false # Normalized name
+        t.string :display_name
+        t.string :category_hint
+        t.jsonb :metadata, default: {}
+        t.integer :usage_count, default: 0
+        t.timestamps
 
-      t.index :name, unique: true
-      t.index :usage_count
-    end
-
-    # Merchant aliases for handling variations
-    create_table :merchant_aliases do |t|
-      t.string :raw_name, null: false
-      t.string :normalized_name, null: false
-      t.references :canonical_merchant, foreign_key: true
-      t.float :confidence, default: 1.0
-      t.integer :match_count, default: 0
-      t.datetime :last_seen_at
-      t.timestamps
-
-      t.index :raw_name
-      t.index :normalized_name, using: :gin, opclass: :gin_trgm_ops
-      t.index [ :canonical_merchant_id, :confidence ]
+        t.index :name, unique: true
+        t.index :usage_count
       end
+
+      # Merchant aliases for handling variations
+      create_table :merchant_aliases do |t|
+        t.string :raw_name, null: false
+        t.string :normalized_name, null: false
+        t.references :canonical_merchant, foreign_key: true
+        t.float :confidence, default: 1.0
+        t.integer :match_count, default: 0
+        t.datetime :last_seen_at
+        t.timestamps
+
+        t.index :raw_name
+        t.index :normalized_name, using: :gin, opclass: :gin_trgm_ops
+        t.index [ :canonical_merchant_id, :confidence ]
+        end
     end
 
     # Track pattern learning from user corrections

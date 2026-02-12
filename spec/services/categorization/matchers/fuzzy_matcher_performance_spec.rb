@@ -4,7 +4,7 @@ require "rails_helper"
 require "benchmark"
 
 RSpec.describe "FuzzyMatcher Performance", type: :performance do
-  let(:matcher) { Categorization::Matchers::FuzzyMatcher.new }
+  let(:matcher) { Services::Categorization::Matchers::FuzzyMatcher.new }
 
   describe "matching performance" do
     context "with realistic merchant data" do
@@ -276,7 +276,7 @@ RSpec.describe "FuzzyMatcher Performance", type: :performance do
 
     context "different algorithms" do
       it "Jaro-Winkler performs within target" do
-        jw_matcher = Categorization::Matchers::FuzzyMatcher.new(algorithms: [ :jaro_winkler ])
+        jw_matcher = Services::Categorization::Matchers::FuzzyMatcher.new(algorithms: [ :jaro_winkler ])
 
         time = Benchmark.realtime do
           100.times do
@@ -289,7 +289,7 @@ RSpec.describe "FuzzyMatcher Performance", type: :performance do
       end
 
       it "Levenshtein performs within target" do
-        lev_matcher = Categorization::Matchers::FuzzyMatcher.new(algorithms: [ :levenshtein ])
+        lev_matcher = Services::Categorization::Matchers::FuzzyMatcher.new(algorithms: [ :levenshtein ])
 
         time = Benchmark.realtime do
           100.times do
@@ -302,7 +302,7 @@ RSpec.describe "FuzzyMatcher Performance", type: :performance do
       end
 
       it "Trigram performs within target" do
-        trigram_matcher = Categorization::Matchers::FuzzyMatcher.new(algorithms: [ :trigram ])
+        trigram_matcher = Services::Categorization::Matchers::FuzzyMatcher.new(algorithms: [ :trigram ])
 
         time = Benchmark.realtime do
           100.times do

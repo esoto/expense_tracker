@@ -88,18 +88,18 @@ parsing_rules = [
   {
     bank_name: "BAC",
     email_pattern: "(?:transacci[oó]n|notificaci[oó]n).*(?:BAC|PTA)",
-    amount_pattern: "(?:CRC|USD)\\s+([\\d,]+\\.\\d{2})",
-    date_pattern: "(\\w+\\s+\\d{1,2},\\s+\\d{4},\\s+\\d{1,2}:\\d{2})",
-    merchant_pattern: "Comercio:.*?</td>.*?<p.*?>\\s*([^<]+?)\\s*</p>",
-    description_pattern: "Tipo de Transacci[oó]n:.*?</td>.*?<p.*?>\\s*([A-Z]+)\\s*</p>"
+    amount_pattern: "(?:Monto)[:\\s]*₡?([\\d,]+\\.\\d{2})",
+    date_pattern: "(\\d{1,2}/\\d{1,2}/\\d{4}\\s+\\d{1,2}:\\d{2}:\\d{2})",
+    merchant_pattern: "(?:Comercio)[:\\s]+([^\\n\\r]+)",
+    description_pattern: "(?:Autorizaci[oó]n)[:\\s]+([\\d]+)"
   },
   {
     bank_name: "BCR",
     email_pattern: "(?:transacci[oó]n|compra|pago|cargo).*BCR",
-    amount_pattern: "(?:₡|colones?|CRC)[\\s]*(\\d{1,3}(?:[,.]\\d{3})*(?:[,.]\\d{2})?)",
-    date_pattern: "(\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4})",
-    merchant_pattern: "(?:comercio|merchant|establecimiento)[:\\s]+(.*?)(?:\\n|$)",
-    description_pattern: "(?:descripcion|concepto)[:\\s]+(.*?)(?:\\n|$)"
+    amount_pattern: "(?:Importe)[:\\s]*\\$?([\\d,]+\\.\\d{2})",
+    date_pattern: "(\\d{1,2}/\\d{1,2}/\\d{4}\\s+\\d{1,2}:\\d{2})",
+    merchant_pattern: "(?:Establecimiento)[:\\s]+([^\\n\\r]+)",
+    description_pattern: "(?:Tarjeta terminada en)[:\\s]+([\\d]+)"
   },
   {
     bank_name: "Scotiabank",

@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::Parser, type: :service, performance: true do
+RSpec.describe Services::EmailProcessing::Parser, type: :service, performance: true do
   let(:parsing_rule) { create(:parsing_rule, :bac, bank_name: "TEST_BAC_UNIQUE") }
   let(:email_account) { create(:email_account, :bac, bank_name: "TEST_BAC_UNIQUE") }
   let(:category) { create(:category, name: 'Alimentación') }
@@ -15,7 +15,7 @@ RSpec.describe EmailProcessing::Parser, type: :service, performance: true do
   end
   let(:parser) {
     parsing_rule  # Ensure parsing rule exists first
-    EmailProcessing::Parser.new(email_account, email_data)
+    Services::EmailProcessing::Parser.new(email_account, email_data)
   }
 
   let(:sample_bac_email) do
@@ -34,7 +34,7 @@ RSpec.describe EmailProcessing::Parser, type: :service, performance: true do
   describe '#initialize', performance: true do
     it 'sets email account and email data' do
       parsing_rule  # Ensure parsing rule exists
-      parser = EmailProcessing::Parser.new(email_account, email_data)
+      parser = Services::EmailProcessing::Parser.new(email_account, email_data)
       expect(parser.email_account).to eq(email_account)
       expect(parser.email_data).to eq(email_data)
       expect(parser.errors).to be_empty
@@ -42,13 +42,13 @@ RSpec.describe EmailProcessing::Parser, type: :service, performance: true do
 
     it 'finds parsing rule for the bank' do
       parsing_rule  # Ensure parsing rule is created first
-      parser = EmailProcessing::Parser.new(email_account, email_data)
+      parser = Services::EmailProcessing::Parser.new(email_account, email_data)
       expect(parser.parsing_rule).to eq(parsing_rule)
     end
 
     it 'handles missing parsing rule gracefully' do
       email_account.update(bank_name: 'Unknown Bank')
-      parser = EmailProcessing::Parser.new(email_account, email_data)
+      parser = Services::EmailProcessing::Parser.new(email_account, email_data)
       expect(parser.parsing_rule).to be_nil
     end
   end
@@ -94,7 +94,7 @@ RSpec.describe EmailProcessing::Parser, type: :service, performance: true do
           EMAIL
         )
         parsing_rule  # Ensure parsing rule exists
-        food_parser = EmailProcessing::Parser.new(email_account, food_email)
+        food_parser = Services::EmailProcessing::Parser.new(email_account, food_email)
 
         expense = food_parser.parse_expense
         expect(expense).to be_a(Expense)
@@ -124,7 +124,7 @@ RSpec.describe EmailProcessing::Parser, type: :service, performance: true do
           EMAIL
         )
         parsing_rule  # Ensure parsing rule exists
-        invalid_parser = EmailProcessing::Parser.new(email_account, invalid_email)
+        invalid_parser = Services::EmailProcessing::Parser.new(email_account, invalid_email)
 
         result = invalid_parser.parse_expense
         expect(result).to be_nil
@@ -159,7 +159,7 @@ RSpec.describe EmailProcessing::Parser, type: :service, performance: true do
       it 'handles errors gracefully when parsing rule fails' do
         # Create parser with no parsing rule (will cause error)
         email_account.update(bank_name: 'UNKNOWN_BANK')
-        error_parser = EmailProcessing::Parser.new(email_account, email_data)
+        error_parser = Services::EmailProcessing::Parser.new(email_account, email_data)
 
         result = error_parser.parse_expense
         expect(result).to be_nil
@@ -442,7 +442,7 @@ RSpec.describe EmailProcessing::Parser, type: :service, performance: true do
     end
 
     it 'logs error with email account context' do
-      expect(Rails.logger).to receive(:error).with("[EmailProcessing::Parser] #{email_account.email}: Test error")
+      expect(Rails.logger).to receive(:error).with("[Services::EmailProcessing::Parser] #{email_account.email}: Test error")
       parser.send(:add_error, 'Test error')
     end
   end
@@ -464,7 +464,7 @@ RSpec.describe EmailProcessing::Parser, type: :service, performance: true do
           EMAIL
         )
         parsing_rule  # Ensure parsing rule exists
-        usd_parser = EmailProcessing::Parser.new(email_account, usd_email)
+        usd_parser = Services::EmailProcessing::Parser.new(email_account, usd_email)
 
         expense = usd_parser.parse_expense
         expect(expense).to be_a(Expense)
@@ -491,7 +491,7 @@ RSpec.describe EmailProcessing::Parser, type: :service, performance: true do
           EMAIL
         )
         parsing_rule  # Ensure parsing rule exists
-        minimal_parser = EmailProcessing::Parser.new(email_account, minimal_email)
+        minimal_parser = Services::EmailProcessing::Parser.new(email_account, minimal_email)
 
         expense = minimal_parser.parse_expense
         expect(expense).to be_a(Expense)
@@ -503,7 +503,7 @@ RSpec.describe EmailProcessing::Parser, type: :service, performance: true do
     context 'error scenarios' do
       it 'handles corrupted email content gracefully' do
         corrupted_email = email_data.merge(body: "\xFF\xFE\x00\x00corrupted")
-        corrupted_parser = EmailProcessing::Parser.new(email_account, corrupted_email)
+        corrupted_parser = Services::EmailProcessing::Parser.new(email_account, corrupted_email)
 
         expect {
           result = corrupted_parser.parse_expense
@@ -513,7 +513,7 @@ RSpec.describe EmailProcessing::Parser, type: :service, performance: true do
 
       it 'handles missing email body' do
         empty_email = email_data.merge(body: nil)
-        empty_parser = EmailProcessing::Parser.new(email_account, empty_email)
+        empty_parser = Services::EmailProcessing::Parser.new(email_account, empty_email)
 
         result = empty_parser.parse_expense
         expect(result).to be_nil
@@ -732,7 +732,7 @@ RSpec.describe EmailProcessing::Parser, type: :service, performance: true do
 
     context 'when strategy raises an error' do
       before do
-        allow_any_instance_of(EmailProcessing::Strategies::Regex).to receive(:parse_email).and_raise(StandardError, "Parse error")
+        allow_any_instance_of(Services::EmailProcessing::Strategies::Regex).to receive(:parse_email).and_raise(StandardError, "Parse error")
       end
 
       it 'captures the error and returns nil' do
@@ -745,7 +745,7 @@ RSpec.describe EmailProcessing::Parser, type: :service, performance: true do
 
   describe '#add_error', performance: true do
     it 'logs errors with email account context' do
-      expect(Rails.logger).to receive(:error).with("[EmailProcessing::Parser] #{email_account.email}: Test error")
+      expect(Rails.logger).to receive(:error).with("[Services::EmailProcessing::Parser] #{email_account.email}: Test error")
       parser.send(:add_error, "Test error")
     end
 

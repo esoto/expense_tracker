@@ -1,4 +1,5 @@
-class ExpenseSummaryService
+module Services
+  class ExpenseSummaryService
   VALID_PERIODS = %w[week month year].freeze
   DEFAULT_PERIOD = "month".freeze
 
@@ -81,5 +82,6 @@ class ExpenseSummaryService
       .group_by_month(:transaction_date)
       .sum(:amount)
       .transform_values(&:to_f)
+  end
   end
 end

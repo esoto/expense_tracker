@@ -33,11 +33,6 @@ class Category < ApplicationRecord
     "#{parent.name} > #{name}"
   end
 
-  # Check if this is a user-specific category (placeholder for future implementation)
-  def user_specific?
-    false # Will be implemented when user-specific categories are added
-  end
-
   private
 
   def cannot_be_parent_of_itself

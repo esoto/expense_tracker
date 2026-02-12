@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module BulkCategorization
+module Services::BulkCategorization
   # Service to group similar uncategorized expenses for bulk processing
   # Uses merchant similarity, amounts, and dates to create logical groups
   class GroupingService
@@ -15,7 +15,7 @@ module BulkCategorization
       @expenses = expenses
       @options = default_options.merge(options)
       # Use factory instead of singleton for better testability
-      @categorization_engine = options[:categorization_engine] || Categorization::EngineFactory.default
+      @categorization_engine = options[:categorization_engine] || Services::Categorization::EngineFactory.default
     end
 
     # Main method to group expenses by similarity

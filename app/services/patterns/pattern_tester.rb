@@ -2,7 +2,7 @@
 
 require "ostruct"
 
-module Patterns
+module Services::Patterns
   # Service object for testing categorization patterns against expenses
   # with caching and performance optimization
   class PatternTester

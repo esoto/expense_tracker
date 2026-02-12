@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::Strategies::Regex, integration: true do
+RSpec.describe Services::EmailProcessing::Strategies::Regex, integration: true do
   let(:parsing_rule) do
     create(:parsing_rule,
       bank_name: 'Banco Nacional',

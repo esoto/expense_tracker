@@ -2,7 +2,7 @@
 
 require "concurrent"
 
-module Categorization
+module Services::Categorization
   # Thread-safe LRU (Least Recently Used) cache with TTL support
   # Provides bounded memory usage and automatic eviction of stale entries
   class LruCache

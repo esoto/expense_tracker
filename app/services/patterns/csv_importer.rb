@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Patterns
+module Services::Patterns
   # Service object for importing categorization patterns from CSV files
   # with comprehensive validation and security checks
   class CsvImporter

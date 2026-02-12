@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe BroadcastAnalytics, type: :service, unit: true do
+RSpec.describe Services::BroadcastAnalytics, type: :service, unit: true do
   include ActiveSupport::Testing::TimeHelpers
   let(:channel_name) { 'SyncStatusChannel' }
   let(:target_type) { 'SyncSession' }
@@ -13,9 +13,9 @@ RSpec.describe BroadcastAnalytics, type: :service, unit: true do
     # Clear cache before each test
     Rails.cache.clear
 
-    # Stub RedisAnalyticsService to ensure fallback to Rails.cache
-    allow(RedisAnalyticsService).to receive(:increment_counter).and_raise(StandardError, "Redis not available")
-    allow(RedisAnalyticsService).to receive(:record_timing).and_raise(StandardError, "Redis not available")
+    # Stub Services::RedisAnalyticsService to ensure fallback to Rails.cache
+    allow(Services::RedisAnalyticsService).to receive(:increment_counter).and_raise(StandardError, "Redis not available")
+    allow(Services::RedisAnalyticsService).to receive(:record_timing).and_raise(StandardError, "Redis not available")
   end
 
   describe '.record_success', unit: true do
@@ -245,6 +245,11 @@ RSpec.describe BroadcastAnalytics, type: :service, unit: true do
 
   describe '.get_metrics', unit: true do
     before do
+      # Clear any existing analytics data before each test
+      described_class.instance_variable_set(:@events, [])
+    end
+
+    let(:setup_test_data) do
       freeze_time do
         # Record some test data
         described_class.record_success(
@@ -267,6 +272,7 @@ RSpec.describe BroadcastAnalytics, type: :service, unit: true do
     end
 
     it 'calculates metrics for given time window' do
+      setup_test_data
       metrics = described_class.get_metrics(time_window: 1.hour)
 
       expect(metrics).to include(
@@ -280,6 +286,7 @@ RSpec.describe BroadcastAnalytics, type: :service, unit: true do
     end
 
     it 'caches metrics to avoid recalculation' do
+      setup_test_data
       # First call should calculate
       expect(described_class).to receive(:calculate_metrics).and_call_original
       first_result = described_class.get_metrics(time_window: 1.hour)
@@ -292,6 +299,7 @@ RSpec.describe BroadcastAnalytics, type: :service, unit: true do
     end
 
     it 'handles zero events gracefully' do
+      # Don't call setup_test_data - we want zero events
       Rails.cache.clear
 
       metrics = described_class.get_metrics(time_window: 1.hour)

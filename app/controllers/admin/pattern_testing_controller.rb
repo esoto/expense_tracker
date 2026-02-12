@@ -10,7 +10,7 @@ class Admin::PatternTestingController < Admin::BaseController
   end
 
   def test_pattern
-    tester = Patterns::PatternTester.new(test_pattern_params)
+    tester = Services::Patterns::PatternTester.new(test_pattern_params)
 
     if tester.test
       @matching_patterns = tester.categories_with_confidence

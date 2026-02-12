@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe CurrencyDetectorService, integration: true do
+RSpec.describe Services::CurrencyDetectorService, integration: true do
   let(:email_content) { 'Transaction completed at AMAZON.COM for USD 250.00' }
   let(:service) { described_class.new(email_content: email_content) }
 

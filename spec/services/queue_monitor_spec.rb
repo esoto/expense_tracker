@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe QueueMonitor do
+RSpec.describe Services::QueueMonitor do
   # Clean up before each test across all describe blocks
   before do
     Rails.cache.clear

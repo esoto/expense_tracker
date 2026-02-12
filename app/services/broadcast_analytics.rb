@@ -24,7 +24,8 @@
 #   # Get analytics data
 #   analytics = BroadcastAnalytics.get_metrics(time_window: 1.hour)
 #   puts "Success rate: #{analytics[:success_rate]}%"
-class BroadcastAnalytics
+module Services
+  class BroadcastAnalytics
   # Cache key prefixes for different metric types
   CACHE_KEYS = {
     success: "broadcast_analytics:success",
@@ -71,12 +72,12 @@ class BroadcastAnalytics
 
       # Use Redis for high-performance counters and timing
       begin
-        RedisAnalyticsService.increment_counter(
+        Services::RedisAnalyticsService.increment_counter(
           "broadcast_success",
           tags: { channel: channel, priority: priority.to_s }
         )
 
-        RedisAnalyticsService.record_timing(
+        Services::RedisAnalyticsService.record_timing(
           "broadcast_duration",
           duration,
           tags: { channel: channel, priority: priority.to_s, result: "success" }
@@ -126,7 +127,7 @@ class BroadcastAnalytics
 
       # Use Redis for high-performance counters and timing
       begin
-        RedisAnalyticsService.increment_counter(
+        Services::RedisAnalyticsService.increment_counter(
           "broadcast_failure",
           tags: {
             channel: channel,
@@ -135,7 +136,7 @@ class BroadcastAnalytics
           }
         )
 
-        RedisAnalyticsService.record_timing(
+        Services::RedisAnalyticsService.record_timing(
           "broadcast_duration",
           duration,
           tags: { channel: channel, priority: priority.to_s, result: "failure" }
@@ -201,17 +202,17 @@ class BroadcastAnalytics
     # @return [Hash] Redis-based metrics
     def get_redis_metrics(time_window: 1.hour)
       BroadcastFeatureFlags.with_fallback(:redis_analytics) do
-        success_data = RedisAnalyticsService.get_time_series(
+        success_data = Services::RedisAnalyticsService.get_time_series(
           "broadcast_success",
           window: time_window
         )
 
-        failure_data = RedisAnalyticsService.get_time_series(
+        failure_data = Services::RedisAnalyticsService.get_time_series(
           "broadcast_failure",
           window: time_window
         )
 
-        timing_percentiles = RedisAnalyticsService.get_timing_percentiles(
+        timing_percentiles = Services::RedisAnalyticsService.get_timing_percentiles(
           "broadcast_duration",
           percentiles: [ 0.5, 0.95, 0.99 ],
           window: time_window
@@ -496,5 +497,6 @@ class BroadcastAnalytics
         }
       ]
     end
+  end
   end
 end

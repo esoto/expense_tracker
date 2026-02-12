@@ -2,7 +2,8 @@
 
 # Extended metrics calculator with configurable cache expiration
 # Used by background jobs to set longer cache times for pre-calculated metrics
-class ExtendedCacheMetricsCalculator < MetricsCalculator
+module Services
+  class ExtendedCacheMetricsCalculator < Services::MetricsCalculator
   attr_reader :cache_hours
 
   def initialize(email_account:, period: :month, reference_date: Date.current, cache_hours: 4)
@@ -33,5 +34,6 @@ class ExtendedCacheMetricsCalculator < MetricsCalculator
     end
   rescue StandardError => e
     handle_calculation_error(e)
+  end
   end
 end

@@ -3,8 +3,8 @@
 require "rails_helper"
 
 RSpec.describe "Pattern Learning Integration", type: :integration do
-  let(:learner) { Categorization::PatternLearner.new }
-  let(:confidence_calculator) { Categorization::ConfidenceCalculator.new }
+  let(:learner) { Services::Categorization::PatternLearner.new }
+  let(:confidence_calculator) { Services::Categorization::ConfidenceCalculator.new }
 
   # Categories
   let!(:food_category) { create(:category, name: "Food & Dining") }
@@ -233,7 +233,7 @@ RSpec.describe "Pattern Learning Integration", type: :integration do
   end
 
   describe "Learning effectiveness metrics" do
-    let(:metrics_learner) { Categorization::PatternLearner.new }
+    let(:metrics_learner) { Services::Categorization::PatternLearner.new }
 
     before do
       # Perform various learning operations with unique merchants

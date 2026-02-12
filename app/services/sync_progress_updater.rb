@@ -1,4 +1,5 @@
-class SyncProgressUpdater
+module Services
+  class SyncProgressUpdater
   attr_reader :sync_session, :batch_collector, :metrics_collector
 
   def initialize(sync_session, metrics_collector: nil)
@@ -173,5 +174,6 @@ class SyncProgressUpdater
   # Get batch collector statistics for monitoring
   def batch_stats
     batch_collector&.stats || {}
+  end
   end
 end

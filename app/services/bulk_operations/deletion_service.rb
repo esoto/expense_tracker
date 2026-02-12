@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-module BulkOperations
-  # Service for bulk deletion of expenses with undo support
-  # Handles soft deletes and maintains audit trail
+module Services::BulkOperations
+  # Service for bulk deletion of expenses
+  # Handles soft deletes and maintains audit trail if configured
   class DeletionService < BaseService
     protected
 

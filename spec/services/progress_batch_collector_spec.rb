@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe ProgressBatchCollector, type: :service, integration: true do
+RSpec.describe Services::ProgressBatchCollector, type: :service, integration: true do
   include ActiveSupport::Testing::TimeHelpers
   let(:sync_session) { create(:sync_session) }
   let(:config) do
@@ -18,7 +18,7 @@ RSpec.describe ProgressBatchCollector, type: :service, integration: true do
   subject { described_class.new(sync_session, config: config) }
 
   before do
-    allow(BroadcastReliabilityService).to receive(:broadcast_with_retry)
+    allow(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry)
   end
 
   after do
@@ -76,7 +76,7 @@ RSpec.describe ProgressBatchCollector, type: :service, integration: true do
 
     it 'flushes batch when progress reaches milestone' do
       # 50/100 = 50% which is a milestone
-      expect(BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(true)
+      expect(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(true)
 
       subject.add_progress_update(processed: 50, total: 100)
 
@@ -142,7 +142,7 @@ RSpec.describe ProgressBatchCollector, type: :service, integration: true do
 
         # When critical_immediate is false, it still flushes but not immediately
         # The broadcast will happen as part of the batch
-        expect(BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(true)
+        expect(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(true)
 
         subject.add_critical_update(
           type: 'error',
@@ -192,7 +192,7 @@ RSpec.describe ProgressBatchCollector, type: :service, integration: true do
     end
 
     it 'flushes all pending updates' do
-      expect(BroadcastReliabilityService).to receive(:broadcast_with_retry).at_least(:once)
+      expect(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry).at_least(:once)
 
       subject.flush_batch
 
@@ -389,7 +389,7 @@ RSpec.describe ProgressBatchCollector, type: :service, integration: true do
     end
 
     it 'broadcasts progress updates as batches with latest data' do
-      expect(BroadcastReliabilityService).to receive(:broadcast_with_retry).with(
+      expect(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry).with(
         channel: SyncStatusChannel,
         target: sync_session,
         data: hash_including(

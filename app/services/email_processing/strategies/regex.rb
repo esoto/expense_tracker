@@ -1,4 +1,4 @@
-module EmailProcessing
+module Services::EmailProcessing
   module Strategies
     class Regex < Base
       def parse_email(email_content)

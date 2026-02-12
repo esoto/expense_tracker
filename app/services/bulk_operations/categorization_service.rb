@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module BulkOperations
+module Services::BulkOperations
   # Service for bulk categorization of expenses
   # Optimized to use batch updates for performance
   class CategorizationService < BaseService

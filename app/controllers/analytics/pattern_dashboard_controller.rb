@@ -64,7 +64,7 @@ module Analytics
       format = validate_export_format(params[:format_type])
       return redirect_to analytics_pattern_dashboard_index_path, alert: "Invalid export format" unless format
 
-      exporter = ::Analytics::DashboardExporter.new(@analyzer, format: format)
+      exporter = ::Services::Analytics::DashboardExporter.new(@analyzer, format: format)
 
       data = exporter.export
       filename = "pattern_analytics_#{Time.current.strftime('%Y%m%d_%H%M%S')}"
@@ -128,7 +128,7 @@ module Analytics
     end
 
     def set_analyzer
-      @analyzer = ::Analytics::PatternPerformanceAnalyzer.new(
+      @analyzer = ::Services::Analytics::PatternPerformanceAnalyzer.new(
         time_range: @time_range,
         category_id: @category_id,
         pattern_type: @pattern_type
@@ -224,9 +224,9 @@ module Analytics
           return 30.days.ago..Time.current
         end
 
-        max_range_date = ::Analytics::PatternPerformanceAnalyzer::MAX_DATE_RANGE_YEARS.years.ago.to_date
+        max_range_date = ::Services::Analytics::PatternPerformanceAnalyzer::MAX_DATE_RANGE_YEARS.years.ago.to_date
         if start_date < max_range_date
-          Rails.logger.warn "Date range too large, limiting to #{::Analytics::PatternPerformanceAnalyzer::MAX_DATE_RANGE_YEARS} years"
+          Rails.logger.warn "Date range too large, limiting to #{::Services::Analytics::PatternPerformanceAnalyzer::MAX_DATE_RANGE_YEARS} years"
           start_date = max_range_date
         end
 

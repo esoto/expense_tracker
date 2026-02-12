@@ -16,11 +16,11 @@ class ProcessEmailJob < ApplicationJob
 
     # Get current sync session for metrics
     sync_session = SyncSession.active.last
-    metrics_collector = SyncMetricsCollector.new(sync_session) if sync_session
+    metrics_collector = Services::SyncMetricsCollector.new(sync_session) if sync_session
 
     # Track expense detection operation
     if metrics_collector
-      metrics_collector.track_operation(:detect_expense, email_account, { email_subject: email_data[:subject] }) do
+      metrics_collector.track_operation(:detect_expense, email_account, { email_subject: email_data&.dig(:subject) }) do
         parse_and_save_expense(email_account, email_data)
       end
       metrics_collector.flush_buffer
@@ -32,7 +32,7 @@ class ProcessEmailJob < ApplicationJob
   private
 
   def parse_and_save_expense(email_account, email_data)
-    parser = EmailProcessing::Parser.new(email_account, email_data)
+    parser = Services::EmailProcessing::Parser.new(email_account, email_data)
     expense = parser.parse_expense
 
     if expense
@@ -51,7 +51,7 @@ class ProcessEmailJob < ApplicationJob
   end
 
   def save_failed_parsing(email_account, email_data, errors)
-    email_body = email_data[:body].to_s
+    email_body = email_data&.dig(:body).to_s
     truncated = false
 
     if email_body.bytesize > TRUNCATE_SIZE
@@ -69,7 +69,7 @@ class ProcessEmailJob < ApplicationJob
       parsed_data: {
         errors: errors,
         truncated: truncated,
-        original_size: email_data[:body].to_s.bytesize
+        original_size: email_data&.dig(:body).to_s.bytesize
       }.to_json,
       status: "failed",
       email_body: email_body,

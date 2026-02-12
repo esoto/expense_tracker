@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Email
+module Services::Email
     # SyncService consolidates synchronization operations including
     # session management, conflict detection, progress tracking, and metrics.
     # This is a simplified version that maintains backward compatibility
@@ -27,10 +27,14 @@ module Email
 
       # Create sync session for tracking
       def create_session(email_account = nil)
+        account_count = email_account ? 1 : EmailAccount.active.count
+
         @sync_session = SyncSession.create!(
           status: "pending",
-          total_accounts: email_account ? 1 : EmailAccount.active.count,
-          started_at: Time.current
+          total_emails: 0,  # Will be updated when processing starts
+          processed_emails: 0,
+          started_at: Time.current,
+          metadata: { total_accounts: account_count }
         )
 
         if email_account
@@ -49,8 +53,8 @@ module Email
 
         @sync_session.update!(
           status: status || @sync_session.status,
-          processed_emails_count: processed,
-          total_emails_count: total,
+          processed_emails: processed,
+          total_emails: total,
           last_activity_at: Time.current
         )
 
@@ -64,9 +68,12 @@ module Email
         return { success: false, error: "Session not found" } unless session
         return { success: false, error: "Session not failed" } unless session.failed?
 
+        # Update retry count in metadata
+        retry_count = (session.metadata&.dig("retry_count") || 0) + 1
+
         session.update!(
           status: "retrying",
-          retry_count: session.retry_count + 1
+          metadata: (session.metadata || {}).merge("retry_count" => retry_count)
         )
 
         # Re-run sync for failed accounts
@@ -96,7 +103,7 @@ module Email
         # Find potential duplicate expenses
         recent_expenses = Expense.where(created_at: 1.hour.ago..Time.current)
 
-        recent_expenses.group_by { |e| [ e.date, e.amount.round(2) ] }.each do |_, expenses|
+        recent_expenses.group_by { |e| [ e.transaction_date, e.amount.round(2) ] }.each do |_, expenses|
           next if expenses.count < 2
 
           expenses.combination(2).each do |exp1, exp2|
@@ -121,20 +128,25 @@ module Email
           case conflict[:type]
           when "duplicate"
             if strategy == :keep_newest
-              expenses = Expense.find(conflict[:expenses])
-              keeper = expenses.max_by(&:created_at)
+              begin
+                expenses = Expense.find(conflict[:expenses])
+                keeper = expenses.max_by(&:created_at)
 
-              expenses.each do |expense|
-                next if expense == keeper
-                begin
-                  expense.reload.update!(status: "duplicate", duplicate_of_id: keeper.id)
-                rescue ActiveRecord::StaleObjectError
-                  # Expense was modified concurrently, skip marking as duplicate
-                  Rails.logger.warn "Skipped marking expense #{expense.id} as duplicate due to concurrent modification"
+                expenses.each do |expense|
+                  next if expense == keeper
+                  begin
+                    expense.reload.update!(status: "duplicate")
+                  rescue ActiveRecord::StaleObjectError
+                    # Expense was modified concurrently, skip marking as duplicate
+                    Rails.logger.warn "Skipped marking expense #{expense.id} as duplicate due to concurrent modification"
+                  end
                 end
-              end
 
-              resolved += 1
+                resolved += 1
+              rescue ActiveRecord::RecordNotFound
+                # Skip if expenses don't exist
+                Rails.logger.warn "Skipped conflict resolution - expenses not found: #{conflict[:expenses]}"
+              end
             end
           end
         end
@@ -209,9 +221,9 @@ module Email
       end
 
       def calculate_progress_percentage
-        return 0 unless @sync_session&.total_emails_count&.positive?
+        return 0 unless @sync_session&.total_emails&.positive?
 
-        ((@sync_session.processed_emails_count.to_f / @sync_session.total_emails_count) * 100).round
+        ((@sync_session.processed_emails.to_f / @sync_session.total_emails) * 100).round
       end
 
       def calculate_average_duration(time_window)
@@ -227,7 +239,7 @@ module Email
       end
 
       def calculate_emails_processed(time_window)
-        SyncSession.where(created_at: time_window.ago..Time.current).sum(:processed_emails_count)
+        SyncSession.where(created_at: time_window.ago..Time.current).sum(:processed_emails)
       end
 
       def calculate_conflicts(time_window)

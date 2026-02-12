@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :email_account do
-    sequence(:email) { |n| "user#{n}@example.com" }
+    sequence(:email) { |n| "user#{n}_#{Time.current.to_i}@example.com" }
     provider { "gmail" }
     bank_name { "BAC" }
     encrypted_password { "test_password" }
@@ -9,12 +9,12 @@ FactoryBot.define do
 
     trait :gmail do
       provider { "gmail" }
-      email { "test@gmail.com" }
+      sequence(:email) { |n| "gmail_#{SecureRandom.hex(4)}@example.com" }
     end
 
     trait :outlook do
       provider { "outlook" }
-      email { "test@outlook.com" }
+      sequence(:email) { |n| "outlook_#{SecureRandom.hex(4)}@example.com" }
     end
 
     trait :custom do
@@ -22,8 +22,26 @@ FactoryBot.define do
       encrypted_settings { { imap: { server: "custom.imap.com", port: 993 } }.to_json }
     end
 
+    # Integration test traits with fixed emails for predictability
+    trait :integration_gmail do
+      provider { "gmail" }
+      email { "test@gmail.com" }
+    end
+
+    trait :integration_outlook do
+      provider { "outlook" }
+      email { "test@outlook.com" }
+    end
+
+    trait :integration_custom do
+      provider { "custom" }
+      email { "test@custom.com" }
+      encrypted_settings { { imap: { server: "custom.imap.com", port: 993 } }.to_json }
+    end
+
     trait :inactive do
       active { false }
+      sequence(:email) { |n| "inactive_#{SecureRandom.hex(4)}@example.com" }
     end
 
     trait :bac do

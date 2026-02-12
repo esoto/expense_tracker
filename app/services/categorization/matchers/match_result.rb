@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Categorization
+module Services::Categorization
   module Matchers
     # Value object representing the result of a fuzzy matching operation
     # Provides structured access to match results with confidence scores

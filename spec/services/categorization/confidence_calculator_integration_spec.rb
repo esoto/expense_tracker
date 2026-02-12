@@ -3,9 +3,9 @@
 require "rails_helper"
 
 RSpec.describe "ConfidenceCalculator Integration", type: :integration do
-  let(:calculator) { Categorization::ConfidenceCalculator.new }
-  let(:fuzzy_matcher) { Categorization::Matchers::FuzzyMatcher.instance }
-  let(:enhanced_service) { Categorization::EnhancedCategorizationService.new }
+  let(:calculator) { Services::Categorization::ConfidenceCalculator.new }
+  let(:fuzzy_matcher) { Services::Categorization::Matchers::FuzzyMatcher.instance }
+  let(:enhanced_service) { Services::Categorization::EnhancedServices::CategorizationService.new }
 
   let(:category_shopping) { create(:category, name: "Shopping") }
   let(:category_food) { create(:category, name: "Food & Dining") }
@@ -99,7 +99,7 @@ RSpec.describe "ConfidenceCalculator Integration", type: :integration do
     end
   end
 
-  describe "integration with EnhancedCategorizationService" do
+  describe "integration with EnhancedServices::CategorizationService" do
     before do
       # Create diverse patterns for testing
       create(:categorization_pattern,

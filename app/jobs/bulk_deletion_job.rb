@@ -9,7 +9,7 @@ class BulkDeletionJob < BulkOperations::BaseJob
   protected
 
   def execute_operation
-    service = BulkOperations::DeletionService.new(
+    service = Services::BulkOperations::DeletionService.new(
       expense_ids: @expense_ids,
       user: @user,
       options: @options.merge(force_synchronous: true)
@@ -21,7 +21,7 @@ class BulkDeletionJob < BulkOperations::BaseJob
 
     # Process in batches with progress updates
     @expense_ids.each_slice(50) do |batch_ids|
-      batch_service = BulkOperations::DeletionService.new(
+      batch_service = Services::BulkOperations::DeletionService.new(
         expense_ids: batch_ids,
         user: @user,
         options: @options.merge(force_synchronous: true)
@@ -41,6 +41,6 @@ class BulkDeletionJob < BulkOperations::BaseJob
   end
 
   def service_class
-    BulkOperations::DeletionService
+    Services::BulkOperations::DeletionService
   end
 end

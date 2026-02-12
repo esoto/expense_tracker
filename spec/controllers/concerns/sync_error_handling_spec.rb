@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'rails_helper'
 
 RSpec.describe SyncErrorHandling, type: :controller, unit: true do
@@ -39,6 +41,9 @@ RSpec.describe SyncErrorHandling, type: :controller, unit: true do
 
     allow(controller).to receive(:sync_sessions_path).and_return('/sync_sessions')
   end
+
+  # Note: Cannot use error handling concern shared examples as
+  # they expect specific model setups and contexts
 
   describe 'ActiveRecord::RecordNotFound handling', unit: true do
     it 'redirects to sync sessions with alert for HTML' do
@@ -105,25 +110,44 @@ RSpec.describe SyncErrorHandling, type: :controller, unit: true do
     end
   end
 
-  context 'in production environment' do
+  describe 'StandardError handling in development', unit: true do
+    it 'does not handle unexpected errors (lets them bubble up)' do
+      expect { get :unexpected_error }.to raise_error(StandardError, "Something went wrong")
+    end
+  end
+
+  describe 'production environment behavior', unit: true do
     before do
-      # Stub Rails.env before the controller is defined so the module inclusion sees production
-      allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new("production"))
+      # Mock Rails.logger for unexpected error logging
+      allow(Rails.logger).to receive(:error)
     end
 
-    controller(ApplicationController) do
-      include SyncErrorHandling
+    it 'logs unexpected errors with details' do
+      exception = StandardError.new("Test error")
+      exception.set_backtrace([ "line1", "line2" ])
 
-      def unexpected_error
-        raise StandardError, "Something went wrong"
-      end
+      # Mock the Rails.env check and respond_to call to avoid complexity
+      allow(controller).to receive(:respond_to)
+      allow(controller).to receive(:controller_name).and_return('Test')
+
+      controller.send(:handle_unexpected_error, exception)
+
+      expect(Rails.logger).to have_received(:error).with("Unexpected error in Test: Test error")
+      expect(Rails.logger).to have_received(:error).with("line1\nline2")
     end
 
-    before do
-      routes.draw do
-        get 'unexpected_error' => 'anonymous#unexpected_error'
-      end
-      allow(controller).to receive(:sync_sessions_path).and_return('/sync_sessions')
+    it 'logs error message and backtrace separately' do
+      exception = StandardError.new("Database connection failed")
+      exception.set_backtrace([ "app/models/user.rb:10", "app/controllers/users_controller.rb:15" ])
+
+      # Mock the controller name and respond_to to avoid complex setup
+      allow(controller).to receive(:controller_name).and_return('User')
+      allow(controller).to receive(:respond_to)
+
+      controller.send(:handle_unexpected_error, exception)
+
+      expect(Rails.logger).to have_received(:error).with("Unexpected error in User: Database connection failed")
+      expect(Rails.logger).to have_received(:error).with("app/models/user.rb:10\napp/controllers/users_controller.rb:15")
     end
   end
 end

@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::Strategies::Regex, integration: true do
+RSpec.describe Services::EmailProcessing::Strategies::Regex, integration: true do
   let(:parsing_rule) { create(:parsing_rule, :bac) }
   let(:strategy) { described_class.new(parsing_rule) }
 

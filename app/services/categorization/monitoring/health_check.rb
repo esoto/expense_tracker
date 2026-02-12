@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Categorization
+module Services::Categorization
   module Monitoring
     # Service for checking the health status of the categorization system
     class HealthCheck
@@ -102,7 +102,7 @@ module Categorization
 
       # Check pattern cache status
       def check_pattern_cache
-        cache = Categorization::PatternCache.instance
+        cache = Services::Categorization::PatternCache.instance
 
         stats = cache.stats
         hit_rate = calculate_hit_rate(stats[:hits], stats[:misses])

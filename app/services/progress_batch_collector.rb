@@ -27,7 +27,8 @@ require "concurrent"
 #
 #   # Manually trigger batch send
 #   collector.flush_batch
-class ProgressBatchCollector
+module Services
+  class ProgressBatchCollector
   # Default configuration values
   DEFAULT_CONFIG = {
     batch_interval: 2.seconds,      # Maximum time between batches
@@ -272,7 +273,7 @@ class ProgressBatchCollector
   # @param update_data [Hash] Critical update data
   def broadcast_critical_update(update_data)
     begin
-      BroadcastReliabilityService.broadcast_with_retry(
+      Services::BroadcastReliabilityService.broadcast_with_retry(
         channel: SyncStatusChannel,
         target: sync_session,
         data: update_data,
@@ -322,7 +323,7 @@ class ProgressBatchCollector
     # Use the most recent progress update
     latest_update = updates.max_by { |u| u[:timestamp] }
 
-    BroadcastReliabilityService.broadcast_with_retry(
+    Services::BroadcastReliabilityService.broadcast_with_retry(
       channel: SyncStatusChannel,
       target: sync_session,
       data: {
@@ -343,7 +344,7 @@ class ProgressBatchCollector
                             .transform_values { |updates| updates.max_by { |u| u[:timestamp] } }
 
     account_updates.each do |account_id, update|
-      BroadcastReliabilityService.broadcast_with_retry(
+      Services::BroadcastReliabilityService.broadcast_with_retry(
         channel: SyncStatusChannel,
         target: sync_session,
         data: update.merge(type: "account_update"),
@@ -355,7 +356,7 @@ class ProgressBatchCollector
   # Broadcast batched activity updates
   # @param updates [Array<Hash>] Activity updates
   def broadcast_activity_batch(updates)
-    BroadcastReliabilityService.broadcast_with_retry(
+    Services::BroadcastReliabilityService.broadcast_with_retry(
       channel: SyncStatusChannel,
       target: sync_session,
       data: {
@@ -373,7 +374,7 @@ class ProgressBatchCollector
   def broadcast_individual_update(update)
     priority = update[:critical] ? :high : :medium
 
-    BroadcastReliabilityService.broadcast_with_retry(
+    Services::BroadcastReliabilityService.broadcast_with_retry(
       channel: SyncStatusChannel,
       target: sync_session,
       data: update,
@@ -449,5 +450,6 @@ class ProgressBatchCollector
   # @return [Boolean] True if time to flush
   def time_for_batch_flush?
     Time.current - @last_batch_time >= @config[:batch_interval]
+  end
   end
 end

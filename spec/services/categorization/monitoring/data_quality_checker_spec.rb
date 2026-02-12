@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::Monitoring::DataQualityChecker do
+RSpec.describe Services::Categorization::Monitoring::DataQualityChecker do
   let(:checker) { described_class.new }
 
   # Create test data

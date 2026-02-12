@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe SyncSessionCreator, integration: true do
+RSpec.describe Services::SyncSessionCreator, integration: true do
   let(:email_account) { create(:email_account, active: true) }
   let(:params) { {} }
   let(:service) { described_class.new(params) }

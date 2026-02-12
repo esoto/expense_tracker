@@ -36,7 +36,7 @@ namespace :categorization do
     create_test_patterns(categories)
     expenses = create_test_expenses(1000)
 
-    engine = Categorization::Engine.new
+    engine = Services::Categorization::Engine.new
 
     report = MemoryProfiler.report do
       expenses.each { |expense| engine.categorize(expense) }
@@ -226,7 +226,7 @@ namespace :categorization do
     create_test_patterns(categories)
     expenses = create_test_expenses(100)
 
-    engine = Categorization::Engine.new
+    engine = Services::Categorization::Engine.new
 
     require "benchmark"
 
@@ -266,7 +266,7 @@ namespace :categorization do
   def benchmark_fuzzy_matching
     puts "\n--- Fuzzy Matching Benchmarks ---"
 
-    matcher = Categorization::Matchers::FuzzyMatcher.new
+    matcher = Services::Categorization::Matchers::FuzzyMatcher.new
 
     # Test data
     candidates = [
@@ -315,7 +315,7 @@ namespace :categorization do
   def benchmark_pattern_cache
     puts "\n--- Pattern Cache Benchmarks ---"
 
-    cache = Categorization::PatternCache.instance
+    cache = Services::Categorization::PatternCache.instance
 
     # Create test patterns
     categories = create_test_categories

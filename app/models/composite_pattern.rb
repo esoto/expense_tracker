@@ -333,7 +333,7 @@ class CompositePattern < ApplicationRecord
   end
 
   def invalidate_cache
-    Categorization::PatternCache.instance.invalidate(self) if defined?(Categorization::PatternCache)
+    Services::Categorization::PatternCache.instance.invalidate(self) if defined?(Services::Categorization::PatternCache)
   rescue => e
     Rails.logger.error "[CompositePattern] Cache invalidation failed: #{e.message}"
   end

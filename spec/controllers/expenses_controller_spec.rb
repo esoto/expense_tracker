@@ -6,8 +6,13 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
 
   describe "GET #index", integration: true do
     before do
-      # Clean up any existing expenses to ensure test isolation
-      Expense.delete_all
+      # Clean up any existing expenses and their dependencies to ensure test isolation
+      # Order matters due to foreign key constraints
+      PatternLearningEvent.destroy_all if defined?(PatternLearningEvent)
+      ConflictResolution.where.not(undone_by_resolution_id: nil).update_all(undone_by_resolution_id: nil) if defined?(ConflictResolution)
+      ConflictResolution.destroy_all if defined?(ConflictResolution)
+      SyncConflict.destroy_all if defined?(SyncConflict)
+      Expense.destroy_all
       # Create expenses for different periods
       @today_expense = create(:expense,
         email_account: email_account,
@@ -17,18 +22,37 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
         merchant_name: "Today Shop"
       )
 
+      # Use a date that's definitely in the current week but not today
+      week_date = if Date.current.wday == 0  # Sunday
+                    Date.current - 1.day  # Saturday
+      else
+                    Date.current.beginning_of_week + 2.days  # Tuesday of current week
+      end
+      week_date = Date.current - 1.day if week_date == Date.current  # Ensure it's not today
+
       @week_expense = create(:expense,
         email_account: email_account,
         category: category,
-        transaction_date: Date.current.beginning_of_week + 1.day,  # Ensure it's within current week
+        transaction_date: week_date,
         amount: 2000,
         merchant_name: "Week Shop"
       )
 
+      # Use a date that's in the current month but not today or in current week
+      month_date = Date.current.beginning_of_month + 15.days
+      # Adjust if it would be today or in the future
+      if month_date >= Date.current
+        month_date = Date.current - 15.days
+      end
+      # Make sure it's still in current month
+      if month_date.month != Date.current.month
+        month_date = Date.current.beginning_of_month + 7.days
+      end
+
       @month_expense = create(:expense,
         email_account: email_account,
         category: category,
-        transaction_date: Date.current.beginning_of_month + 5.days,
+        transaction_date: month_date,
         amount: 3000,
         merchant_name: "Month Shop"
       )
@@ -41,10 +65,17 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
         merchant_name: "Last Month Shop"
       )
 
+      # Use a date that's in the current year but not in current month
+      year_date = Date.current.beginning_of_year + 45.days  # Mid-February
+      # Adjust if it would be in current month
+      if year_date.month == Date.current.month
+        year_date = Date.current.beginning_of_year + 10.days  # Early January
+      end
+
       @year_expense = create(:expense,
         email_account: email_account,
         category: category,
-        transaction_date: Date.current.beginning_of_year,
+        transaction_date: year_date,
         amount: 5000,
         merchant_name: "Year Shop"
       )

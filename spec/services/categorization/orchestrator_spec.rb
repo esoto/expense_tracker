@@ -3,7 +3,7 @@
 require "rails_helper"
 require "ostruct"
 
-RSpec.describe Categorization::Orchestrator, type: :service do
+RSpec.describe Services::Categorization::Orchestrator, type: :service do
   let(:orchestrator) { described_class.new(**dependencies) }
   let(:dependencies) do
     {
@@ -16,11 +16,11 @@ RSpec.describe Categorization::Orchestrator, type: :service do
     }
   end
 
-  let(:pattern_cache) { double("Categorization::PatternCache") }
-  let(:matcher) { double("Categorization::Matchers::FuzzyMatcher") }
-  let(:confidence_calculator) { double("Categorization::ConfidenceCalculator") }
-  let(:pattern_learner) { double("Categorization::PatternLearner") }
-  let(:performance_tracker) { double("Categorization::PerformanceTracker") }
+  let(:pattern_cache) { double("Services::Categorization::PatternCache") }
+  let(:matcher) { double("Services::Categorization::Matchers::FuzzyMatcher") }
+  let(:confidence_calculator) { double("Services::Categorization::ConfidenceCalculator") }
+  let(:pattern_learner) { double("Services::Categorization::PatternLearner") }
+  let(:performance_tracker) { double("Services::Categorization::PerformanceTracker") }
 
   let(:category) { create(:category, name: "Groceries") }
   let(:expense) do
@@ -41,11 +41,11 @@ RSpec.describe Categorization::Orchestrator, type: :service do
 
     it "creates default services when not provided" do
       orchestrator = described_class.new
-      expect(orchestrator.pattern_cache).to be_a(Categorization::PatternCache)
-      expect(orchestrator.matcher).to be_a(Categorization::Matchers::FuzzyMatcher)
-      expect(orchestrator.confidence_calculator).to be_a(Categorization::ConfidenceCalculator)
-      expect(orchestrator.pattern_learner).to be_a(Categorization::PatternLearner)
-      expect(orchestrator.performance_tracker).to be_a(Categorization::PerformanceTracker)
+      expect(orchestrator.pattern_cache).to be_a(Services::Categorization::PatternCache)
+      expect(orchestrator.matcher).to be_a(Services::Categorization::Matchers::FuzzyMatcher)
+      expect(orchestrator.confidence_calculator).to be_a(Services::Categorization::ConfidenceCalculator)
+      expect(orchestrator.pattern_learner).to be_a(Services::Categorization::PatternLearner)
+      expect(orchestrator.performance_tracker).to be_a(Services::Categorization::PerformanceTracker)
     end
   end
 
@@ -59,7 +59,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
       end
 
       let(:match_result) do
-        Categorization::Matchers::MatchResult.new(
+        Services::Categorization::Matchers::MatchResult.new(
           success: true,
           matches: [ { pattern: pattern, score: 0.85 } ]
         )
@@ -153,7 +153,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
         end
 
         let(:multi_match_result) do
-          Categorization::Matchers::MatchResult.new(
+          Services::Categorization::Matchers::MatchResult.new(
             success: true,
             matches: [
               { pattern: pattern, score: 0.85 },
@@ -264,7 +264,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
         allow(pattern_cache).to receive(:get_user_preference).and_return(nil)
         allow(pattern_cache).to receive(:get_patterns_for_expense).and_return([])
         allow(matcher).to receive(:match_pattern).and_return(
-          Categorization::Matchers::MatchResult.new(success: true, matches: [])
+          Services::Categorization::Matchers::MatchResult.new(success: true, matches: [])
         )
       end
 
@@ -313,7 +313,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
       allow(pattern_cache).to receive(:get_patterns_for_expense).and_return([])
       allow(pattern_cache).to receive(:preload_for_texts)
       allow(matcher).to receive(:match_pattern).and_return(
-        Categorization::Matchers::MatchResult.new(success: true, matches: [])
+        Services::Categorization::Matchers::MatchResult.new(success: true, matches: [])
       )
     end
 
@@ -322,7 +322,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
 
       expect(results).to be_an(Array)
       expect(results.size).to eq(3)
-      expect(results).to all(be_a(Categorization::CategorizationResult))
+      expect(results).to all(be_a(Services::Categorization::CategorizationResult))
     end
 
     it "preloads patterns for efficiency" do
@@ -341,7 +341,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
     let(:correct_category) { create(:category, name: "Transportation") }
     let(:predicted_category) { category }
     let(:learning_result) do
-      Categorization::LearningResult.success(patterns_created: 1, patterns_updated: 2)
+      Services::Categorization::LearningResult.success(patterns_created: 1, patterns_updated: 2)
     end
 
     before do
@@ -408,7 +408,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
       allow(pattern_cache).to receive(:get_user_preference).and_return(nil)
       allow(pattern_cache).to receive(:get_patterns_for_expense).and_return([])
       allow(matcher).to receive(:match_pattern).and_return(
-        Categorization::Matchers::MatchResult.new(success: true, matches: [])
+        Services::Categorization::Matchers::MatchResult.new(success: true, matches: [])
       )
 
       orchestrator.categorize(expense, min_confidence: 0.6)
@@ -520,7 +520,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
   describe "performance" do
     it "categorizes within target time (<10ms)" do
       # Use real services for performance testing
-      orchestrator = Categorization::OrchestratorFactory.create_test
+      orchestrator = Services::Categorization::OrchestratorFactory.create_test
 
       pattern = create(:categorization_pattern,
                       pattern_type: "merchant",
@@ -537,7 +537,7 @@ RSpec.describe Categorization::Orchestrator, type: :service do
 
       # Should complete within 10ms (allowing some margin for test environment)
       expect(elapsed_ms).to be < 50 # More lenient for test environment
-      expect(result).to be_a(Categorization::CategorizationResult)
+      expect(result).to be_a(Services::Categorization::CategorizationResult)
     end
   end
 end

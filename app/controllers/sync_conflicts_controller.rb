@@ -66,7 +66,7 @@ class SyncConflictsController < ApplicationController
     action = params[:action_type]
     options = resolve_params
 
-    service = ConflictResolutionService.new(@sync_conflict)
+    service = Services::ConflictResolutionService.new(@sync_conflict)
 
     if service.resolve(action, options)
       respond_to do |format|
@@ -140,7 +140,7 @@ class SyncConflictsController < ApplicationController
 
     # Use first conflict to initialize service (for bulk operations)
     first_conflict = SyncConflict.find(conflict_ids.first)
-    service = ConflictResolutionService.new(first_conflict)
+    service = Services::ConflictResolutionService.new(first_conflict)
 
     result = service.bulk_resolve(conflict_ids, action, resolve_params)
 
@@ -182,7 +182,7 @@ class SyncConflictsController < ApplicationController
   end
 
   def undo
-    service = ConflictResolutionService.new(@sync_conflict)
+    service = Services::ConflictResolutionService.new(@sync_conflict)
 
     if service.undo_resolution
       respond_to do |format|
@@ -237,7 +237,7 @@ class SyncConflictsController < ApplicationController
   def preview_merge
     merge_fields = params[:merge_fields] || ActionController::Parameters.new({})
 
-    service = ConflictResolutionService.new(@sync_conflict)
+    service = Services::ConflictResolutionService.new(@sync_conflict)
     preview = service.preview_merge(merge_fields)
 
     render json: {

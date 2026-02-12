@@ -9,8 +9,8 @@ class ExpensesController < ApplicationController
     # Handle dashboard navigation context
     setup_navigation_context
 
-    # Use the optimized ExpenseFilterService for performance
-    filter_service = ExpenseFilterService.new(
+    # Use the optimized Services::ExpenseFilterService for performance
+    filter_service = Services::ExpenseFilterService.new(
       filter_params.merge(
         account_ids: current_user_email_accounts.pluck(:id)
       )
@@ -116,11 +116,11 @@ class ExpensesController < ApplicationController
     # This ensures proper data isolation per email account
     primary_email_account = EmailAccount.active.first
 
-    # Calculate metrics for different periods using MetricsCalculator
+    # Calculate metrics for different periods using Services::MetricsCalculator
     if primary_email_account
       # Batch calculate all metrics for better performance
       # This optimization reduces object instantiation and improves efficiency
-      batch_results = MetricsCalculator.batch_calculate(
+      batch_results = Services::MetricsCalculator.batch_calculate(
         email_account: primary_email_account,
         periods: [ :year, :month, :week, :day ],
         reference_date: Date.current
@@ -138,8 +138,8 @@ class ExpensesController < ApplicationController
       @day_metrics = default_empty_metrics
     end
 
-    # Get dashboard data from DashboardService for other components
-    dashboard_data = DashboardService.new.analytics
+    # Get dashboard data from Services::DashboardService for other components
+    dashboard_data = Services::DashboardService.new.analytics
 
     # Legacy variables for compatibility with existing views
     totals = dashboard_data[:totals]
@@ -391,7 +391,7 @@ class ExpensesController < ApplicationController
 
     # Reset certain attributes for the duplicate
     duplicated_expense.transaction_date = Date.current
-    duplicated_expense.status = "pending"
+    duplicated_expense.status = :pending
     duplicated_expense.ml_confidence = nil
     duplicated_expense.ml_suggested_category_id = nil
     duplicated_expense.ml_confidence_explanation = nil
@@ -431,7 +431,7 @@ class ExpensesController < ApplicationController
     permitted = bulk_categorize_params
 
     # Use the new service object for better performance and organization
-    service = BulkOperations::CategorizationService.new(
+    service = Services::BulkOperations::CategorizationService.new(
       expense_ids: permitted[:expense_ids],
       category_id: permitted[:category_id],
       user: current_user_for_bulk_operations,
@@ -469,7 +469,7 @@ class ExpensesController < ApplicationController
     permitted = bulk_status_params
 
     # Use the new service object for better performance
-    service = BulkOperations::StatusUpdateService.new(
+    service = Services::BulkOperations::StatusUpdateService.new(
       expense_ids: permitted[:expense_ids],
       status: permitted[:status],
       user: current_user_for_bulk_operations,
@@ -506,7 +506,7 @@ class ExpensesController < ApplicationController
     permitted = bulk_destroy_params
 
     # Use the new service object for better performance
-    service = BulkOperations::DeletionService.new(
+    service = Services::BulkOperations::DeletionService.new(
       expense_ids: permitted[:expense_ids],
       user: current_user_for_bulk_operations,
       options: {

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Categorization
+module Services::Categorization
   # Value object representing the result of a learning operation
   # Tracks patterns created/updated and any errors that occurred
   class LearningResult

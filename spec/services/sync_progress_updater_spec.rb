@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe SyncProgressUpdater, type: :service, integration: true do
+RSpec.describe Services::SyncProgressUpdater, type: :service, integration: true do
   # Use build_stubbed to avoid database hits
   let(:sync_session) { build_stubbed(:sync_session, id: 1) }
   let(:email_account1) { build_stubbed(:email_account, id: 1) }
@@ -9,8 +9,8 @@ RSpec.describe SyncProgressUpdater, type: :service, integration: true do
 
   # Mock the batch collector to avoid thread creation overhead
   before do
-    batch_collector = instance_double(ProgressBatchCollector)
-    allow(ProgressBatchCollector).to receive(:new).and_return(batch_collector)
+    batch_collector = instance_double(Services::ProgressBatchCollector)
+    allow(Services::ProgressBatchCollector).to receive(:new).and_return(batch_collector)
     allow(batch_collector).to receive(:add_progress_update)
     allow(batch_collector).to receive(:add_account_update)
     allow(batch_collector).to receive(:add_activity_update)

@@ -3,7 +3,7 @@
 require "rails_helper"
 require "benchmark"
 
-RSpec.describe Analytics::PatternPerformanceAnalyzer, type: :service, performance: true do
+RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, type: :service, performance: true do
   let(:analyzer) { described_class.new(time_range: time_range, category_id: category_id, pattern_type: pattern_type) }
   let(:time_range) { 7.days.ago..Time.current }
   let(:category_id) { nil }

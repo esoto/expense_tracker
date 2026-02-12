@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Categorization
+module Services::Categorization
   # Sophisticated confidence scoring system that combines multiple signals
   # to calculate categorization confidence scores.
   #

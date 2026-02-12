@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::EnhancedCategorizationService, performance: true do
+RSpec.describe Services::Categorization::EnhancedCategorizationService, performance: true do
   let(:service) { described_class.new }
 
   describe "#categorize", performance: true do
@@ -215,7 +215,7 @@ RSpec.describe Categorization::EnhancedCategorizationService, performance: true 
     end
 
     it "preloads cache for efficiency" do
-      expect_any_instance_of(Categorization::PatternCache)
+      expect_any_instance_of(Services::Categorization::PatternCache)
         .to receive(:preload_for_expenses).with(expenses)
 
       service.categorize_batch(expenses)

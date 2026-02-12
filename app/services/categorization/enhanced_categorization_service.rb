@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Categorization
+module Services::Categorization
   # Enhanced categorization service that integrates fuzzy matching
   # with the existing pattern-based categorization system
   class EnhancedCategorizationService

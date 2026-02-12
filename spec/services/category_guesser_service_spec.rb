@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe CategoryGuesserService, integration: true do
+RSpec.describe Services::CategoryGuesserService, integration: true do
   let(:service) { described_class.new }
   let(:expense) { instance_double(Expense, description: nil, merchant_name: nil) }
 
@@ -350,7 +350,7 @@ RSpec.describe CategoryGuesserService, integration: true do
       end
 
       it 'falls back to Other if Sin Categoría not found' do
-        Category.find_by(name: 'Sin Categoría').destroy
+        Category.find_by(name: 'Sin Categoría')&.destroy
         category = service.send(:find_default_category)
         expect(category.name).to eq('Other')
       end

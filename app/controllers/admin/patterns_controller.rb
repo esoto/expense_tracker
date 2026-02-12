@@ -131,7 +131,7 @@ module Admin
 
     # POST /admin/patterns/test_pattern
     def test_pattern
-      tester = Patterns::PatternTester.new(test_pattern_params)
+      tester = Services::Patterns::PatternTester.new(test_pattern_params)
 
       if tester.test
         @matching_patterns = tester.categories_with_confidence
@@ -170,7 +170,7 @@ module Admin
 
     # POST /admin/patterns/import
     def import
-      importer = Patterns::CsvImporter.new(
+      importer = Services::Patterns::CsvImporter.new(
         file: params[:file],
         user: current_admin_user,
         dry_run: params[:dry_run] == "true"
@@ -204,7 +204,7 @@ module Admin
 
     # GET /admin/patterns/statistics
     def statistics
-      calculator = Patterns::StatisticsCalculator.new(statistics_filters)
+      calculator = Services::Patterns::StatisticsCalculator.new(statistics_filters)
       @statistics = calculator.calculate
 
       respond_to do |format|

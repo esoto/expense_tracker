@@ -18,7 +18,8 @@
 #     # Handle validation errors
 #     validator.errors.each { |error| puts error }
 #   end
-class BroadcastRequestValidator
+module Services
+  class BroadcastRequestValidator
   # Maximum allowed data size (1MB)
   MAX_DATA_SIZE = 1.megabyte
 
@@ -341,5 +342,6 @@ class BroadcastRequestValidator
     end
 
     sanitized
+  end
   end
 end

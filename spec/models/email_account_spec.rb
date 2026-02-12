@@ -96,8 +96,8 @@ RSpec.describe EmailAccount, type: :model, integration: true do
   end
 
   describe 'instance methods', integration: true do
-    let(:gmail_account) { build(:email_account, :gmail) }
-    let(:custom_account) { build(:email_account, :custom) }
+    let(:gmail_account) { build(:email_account, :integration_gmail, bank_name: 'BAC') }
+    let(:custom_account) { build(:email_account, :integration_custom) }
 
     describe '#imap_settings', integration: true do
       it 'returns Gmail IMAP settings for Gmail provider' do
@@ -109,7 +109,7 @@ RSpec.describe EmailAccount, type: :model, integration: true do
       end
 
       it 'returns custom settings for custom provider' do
-        custom_account = create(:email_account, :custom)
+        custom_account = create(:email_account, :integration_custom)
         settings = custom_account.imap_settings
         expect(settings[:address]).to eq('custom.imap.com')
         expect(settings[:port]).to eq(993)

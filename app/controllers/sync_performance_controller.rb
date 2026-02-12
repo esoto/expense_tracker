@@ -245,8 +245,8 @@ class SyncPerformanceController < ApplicationController
 
   def calculate_current_processing_rate
     # Use Redis analytics if available
-    if defined?(RedisAnalyticsService)
-      data = RedisAnalyticsService.get_time_series("sync_metrics", window: 5.minutes)
+    if defined?(Services::RedisAnalyticsService)
+      data = Services::RedisAnalyticsService.get_time_series("sync_metrics", window: 5.minutes)
       return data[:average].to_f.round(2) if data[:average] > 0
     end
 

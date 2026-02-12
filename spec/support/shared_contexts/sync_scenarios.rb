@@ -236,7 +236,7 @@ RSpec.shared_context "with mocked IMAP responses" do
   end
 
   before do
-    allow_any_instance_of(EmailProcessing::Fetcher).to receive(:fetch_new_emails).and_return({
+    allow_any_instance_of(Services::EmailProcessing::Fetcher).to receive(:fetch_new_emails).and_return({
       success: true,
       expenses_created: 5,
       total_emails_processed: 10,

@@ -88,8 +88,8 @@ if ENV['TEST_TIER'] == 'combined'
   merge_timeout 21600 # 6 hours
   command_name "combined-coverage-#{Time.now.to_i}"
 
-    # Merge results from all test tiers
-    SimpleCov.command_name 'Combined Test Suite'
+  # Merge results from all test tiers
+  SimpleCov.command_name 'Combined Test Suite'
   end
 
   puts "🎯 Combined Coverage: Merging results from all test tiers"

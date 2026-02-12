@@ -332,14 +332,14 @@ RSpec.describe FailedBroadcastStore, type: :model, integration: true do
 
     context 'when retry succeeds' do
       before do
-        allow(BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(true)
+        allow(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(true)
       end
 
       it 'retries broadcast successfully' do
         result = record.retry_broadcast!
 
         expect(result).to be true
-        expect(BroadcastReliabilityService).to have_received(:broadcast_with_retry).with(
+        expect(Services::BroadcastReliabilityService).to have_received(:broadcast_with_retry).with(
           channel: record.channel_name,
           target: sync_session,
           data: record.data,
@@ -381,7 +381,7 @@ RSpec.describe FailedBroadcastStore, type: :model, integration: true do
 
     context 'when retry fails' do
       before do
-        allow(BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(false)
+        allow(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(false)
       end
 
       it 'returns false and does not mark as recovered' do
@@ -425,7 +425,7 @@ RSpec.describe FailedBroadcastStore, type: :model, integration: true do
       let(:error_message) { 'New connection error' }
 
       before do
-        allow(BroadcastReliabilityService).to receive(:broadcast_with_retry)
+        allow(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry)
           .and_raise(StandardError, error_message)
       end
 
@@ -453,14 +453,14 @@ RSpec.describe FailedBroadcastStore, type: :model, integration: true do
       let(:record) { create(:failed_broadcast_store, :max_retries_reached) }
 
       before do
-        allow(BroadcastReliabilityService).to receive(:broadcast_with_retry)
+        allow(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry)
       end
 
       it 'returns false without attempting retry' do
         result = record.retry_broadcast!
 
         expect(result).to be false
-        expect(BroadcastReliabilityService).not_to have_received(:broadcast_with_retry)
+        expect(Services::BroadcastReliabilityService).not_to have_received(:broadcast_with_retry)
       end
     end
 
@@ -468,14 +468,14 @@ RSpec.describe FailedBroadcastStore, type: :model, integration: true do
       let(:record) { create(:failed_broadcast_store, :recovered) }
 
       before do
-        allow(BroadcastReliabilityService).to receive(:broadcast_with_retry)
+        allow(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry)
       end
 
       it 'returns false without attempting retry' do
         result = record.retry_broadcast!
 
         expect(result).to be false
-        expect(BroadcastReliabilityService).not_to have_received(:broadcast_with_retry)
+        expect(Services::BroadcastReliabilityService).not_to have_received(:broadcast_with_retry)
       end
     end
   end

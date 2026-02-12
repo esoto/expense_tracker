@@ -89,8 +89,8 @@ class BroadcastJob < ApplicationJob
       # Find the target object
       target = target_type.constantize.find(target_id)
 
-      # Delegate to BroadcastReliabilityService for actual broadcasting
-      success = BroadcastReliabilityService.broadcast_with_retry(
+      # Delegate to Services::BroadcastReliabilityService for actual broadcasting
+      success = Services::BroadcastReliabilityService.broadcast_with_retry(
         channel: channel_name,
         target: target,
         data: data,
@@ -108,11 +108,11 @@ class BroadcastJob < ApplicationJob
           target_type: target_type,
           target_id: target_id,
           priority: priority,
-          attempt: 1,  # First attempt since retries are handled by BroadcastReliabilityService
+          attempt: 1,  # First attempt since retries are handled by Services::BroadcastReliabilityService
           duration: duration
         )
       else
-        # BroadcastReliabilityService already handled its own retries
+        # Services::BroadcastReliabilityService already handled its own retries
         # This indicates a failure after service-level retries
         Rails.logger.warn "[BROADCAST_JOB] Failed after retries: #{channel_name} -> #{target_type}##{target_id}, Priority: #{priority}"
 

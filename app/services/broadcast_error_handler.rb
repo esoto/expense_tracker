@@ -12,14 +12,15 @@
 # - Integration with monitoring and alerting systems
 #
 # Usage:
-#   # Handle a broadcast failure (called by BroadcastReliabilityService)
+#   # Handle a broadcast failure (called by Services::BroadcastReliabilityService)
 #   BroadcastErrorHandler.handle_final_failure(
 #     SyncStatusChannel, sync_session, data, :high, error
 #   )
 #
 #   # Check if broadcasts are healthy
 #   healthy = BroadcastErrorHandler.broadcast_health_check
-class BroadcastErrorHandler
+module Services
+  class BroadcastErrorHandler
   # Circuit breaker states
   CIRCUIT_STATES = %w[closed open half_open].freeze
 
@@ -401,5 +402,6 @@ class BroadcastErrorHandler
         }
       }
     end
+  end
   end
 end

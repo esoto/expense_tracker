@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
-# ExpenseFilterService provides optimized filtering and pagination for expenses
+# Services::ExpenseFilterService provides optimized filtering and pagination for expenses
 # Achieves <50ms query performance for 10k+ records through intelligent indexing
-class ExpenseFilterService
+module Services
+  class ExpenseFilterService
   include ActiveModel::Model
   include ActiveModel::Validations
 
@@ -118,7 +119,7 @@ class ExpenseFilterService
 
     result
   rescue StandardError => e
-    Rails.logger.error "ExpenseFilterService error: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
+    Rails.logger.error "Services::ExpenseFilterService error: #{e.message}\n#{e.backtrace.first(5).join("\n")}"
     Result.new(
       expenses: [],
       total_count: 0,
@@ -429,7 +430,7 @@ class ExpenseFilterService
 
   def log_performance(result)
     Rails.logger.info({
-      service: "ExpenseFilterService",
+      service: "Services::ExpenseFilterService",
       query_time_ms: result.performance_metrics[:query_time_ms],
       rows_examined: result.performance_metrics[:rows_examined],
       filters_applied: result.metadata[:filters_applied],
@@ -442,5 +443,6 @@ class ExpenseFilterService
       StatsD.timing("expense_filter.query_time", result.performance_metrics[:query_time_ms])
       StatsD.gauge("expense_filter.rows_examined", result.performance_metrics[:rows_examined])
     end
+  end
   end
 end

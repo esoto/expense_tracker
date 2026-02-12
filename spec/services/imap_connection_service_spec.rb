@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe ImapConnectionService, integration: true do
+RSpec.describe Services::ImapConnectionService, integration: true do
   let(:email_account) { create(:email_account, :bac) }
   let(:service) { described_class.new(email_account) }
   let(:mock_imap) { instance_double(Net::IMAP) }
@@ -218,7 +218,7 @@ RSpec.describe ImapConnectionService, integration: true do
       it 'raises ConnectionError for inactive account' do
         expect {
           service.with_connection { |imap| "should not reach" }
-        }.to raise_error(ImapConnectionService::ConnectionError, "Email account is not active")
+        }.to raise_error(Services::ImapConnectionService::ConnectionError, "Email account is not active")
       end
     end
 
@@ -228,7 +228,7 @@ RSpec.describe ImapConnectionService, integration: true do
       it 'raises ConnectionError for missing password' do
         expect {
           service.with_connection { |imap| "should not reach" }
-        }.to raise_error(ImapConnectionService::ConnectionError, "Email account missing password")
+        }.to raise_error(Services::ImapConnectionService::ConnectionError, "Email account missing password")
       end
     end
 
@@ -248,7 +248,7 @@ RSpec.describe ImapConnectionService, integration: true do
 
         expect {
           service.with_connection { |imap| "should not reach" }
-        }.to raise_error(ImapConnectionService::AuthenticationError, /Authentication failed/)
+        }.to raise_error(Services::ImapConnectionService::AuthenticationError, /Authentication failed/)
       end
     end
 
@@ -263,7 +263,7 @@ RSpec.describe ImapConnectionService, integration: true do
 
         expect {
           service.with_connection { |imap| "should not reach" }
-        }.to raise_error(ImapConnectionService::ConnectionError, "IMAP error: Server error")
+        }.to raise_error(Services::ImapConnectionService::ConnectionError, "IMAP error: Server error")
       end
     end
 
@@ -278,7 +278,7 @@ RSpec.describe ImapConnectionService, integration: true do
 
         expect {
           service.with_connection { |imap| "should not reach" }
-        }.to raise_error(ImapConnectionService::ConnectionError, "Unexpected error: Unexpected error")
+        }.to raise_error(Services::ImapConnectionService::ConnectionError, "Unexpected error: Unexpected error")
       end
     end
 
@@ -300,19 +300,19 @@ RSpec.describe ImapConnectionService, integration: true do
   describe 'error handling', integration: true do
     describe 'ConnectionError', integration: true do
       it 'is a StandardError subclass' do
-        expect(ImapConnectionService::ConnectionError.new).to be_a(StandardError)
+        expect(Services::ImapConnectionService::ConnectionError.new).to be_a(StandardError)
       end
     end
 
     describe 'AuthenticationError', integration: true do
       it 'is a StandardError subclass' do
-        expect(ImapConnectionService::AuthenticationError.new).to be_a(StandardError)
+        expect(Services::ImapConnectionService::AuthenticationError.new).to be_a(StandardError)
       end
     end
 
     describe 'SearchError', integration: true do
       it 'is a StandardError subclass' do
-        expect(ImapConnectionService::SearchError.new).to be_a(StandardError)
+        expect(Services::ImapConnectionService::SearchError.new).to be_a(StandardError)
       end
     end
   end
@@ -320,7 +320,7 @@ RSpec.describe ImapConnectionService, integration: true do
   describe 'private methods', integration: true do
     describe '#add_error', integration: true do
       it 'adds error to errors array and logs to Rails logger' do
-        expect(Rails.logger).to receive(:error).with("[ImapConnectionService] #{email_account.email}: Test error")
+        expect(Rails.logger).to receive(:error).with("[Services::ImapConnectionService] #{email_account.email}: Test error")
 
         service.send(:add_error, "Test error")
 

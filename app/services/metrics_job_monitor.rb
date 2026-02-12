@@ -2,7 +2,8 @@
 
 # Service for monitoring metrics calculation job performance
 # Tracks execution times, success rates, and ensures performance targets are met
-class MetricsJobMonitor
+module Services
+  class MetricsJobMonitor
   # Performance targets
   TARGET_EXECUTION_TIME = 30.seconds
   WARNING_EXECUTION_TIME = 20.seconds
@@ -370,5 +371,6 @@ class MetricsJobMonitor
 
       recommendations
     end
+  end
   end
 end

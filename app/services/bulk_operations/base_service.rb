@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module BulkOperations
+module Services::BulkOperations
   # Base service for all bulk operations on expenses
   # Provides common functionality like batch processing, progress tracking, and error handling
   class BaseService

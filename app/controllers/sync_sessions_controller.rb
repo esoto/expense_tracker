@@ -7,7 +7,7 @@ class SyncSessionsController < ApplicationController
 
   def index
     @active_session = SyncSession.active.includes(:sync_session_accounts, :email_accounts).first
-    @recent_sessions = SyncSessionPerformanceOptimizer.preload_for_index.limit(10)
+    @recent_sessions = Services::SyncSessionPerformanceOptimizer.preload_for_index.limit(10)
     @email_accounts = EmailAccount.active.order(:bank_name, :email)
     # Additional data for enhanced UI
     @active_accounts_count = EmailAccount.active.count
@@ -19,11 +19,11 @@ class SyncSessionsController < ApplicationController
   end
 
   def show
-    @session_accounts = SyncSessionPerformanceOptimizer.preload_for_show(@sync_session)
+    @session_accounts = Services::SyncSessionPerformanceOptimizer.preload_for_show(@sync_session)
   end
 
   def create
-    result = SyncSessionCreator.new(sync_params, request_info).call
+    result = Services::SyncSessionCreator.new(sync_params, request_info).call
 
     if result.success?
       @sync_session = result.sync_session
@@ -64,7 +64,7 @@ class SyncSessionsController < ApplicationController
   end
 
   def retry
-    result = SyncSessionRetryService.new(@sync_session, retry_params).call
+    result = Services::SyncSessionRetryService.new(@sync_session, retry_params).call
 
     if result.success?
       new_session = result.sync_session
@@ -83,7 +83,7 @@ class SyncSessionsController < ApplicationController
     if session
       # Use caching for frequently accessed status
       status_data = Rails.cache.fetch(
-        SyncSessionPerformanceOptimizer.cache_key_for_status(session.id),
+        Services::SyncSessionPerformanceOptimizer.cache_key_for_status(session.id),
         expires_in: 5.seconds,
         race_condition_ttl: 2.seconds
       ) do
@@ -145,7 +145,7 @@ class SyncSessionsController < ApplicationController
           redirect_to sync_sessions_path, alert: result.message || "Error al crear la sincronización"
         end
       end
-      format.json { render json: { error: result.message }, status: :unprocessable_entity }
+      format.json { render json: { error: result.message }, status: :unprocessable_content }
     end
   end
 
@@ -169,7 +169,7 @@ class SyncSessionsController < ApplicationController
       total_emails: session.total_emails,
       detected_expenses: session.detected_expenses,
       time_remaining: session.estimated_time_remaining,
-      metrics: SyncSessionPerformanceOptimizer.calculate_metrics(session),
+      metrics: Services::SyncSessionPerformanceOptimizer.calculate_metrics(session),
       accounts: accounts.map do |account|
         {
           id: account.id,

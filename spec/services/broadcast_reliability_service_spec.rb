@@ -2,15 +2,26 @@
 
 require 'rails_helper'
 
-RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
+RSpec.describe Services::BroadcastReliabilityService, type: :service, integration: true do
   let(:sync_session) { create(:sync_session) }
   let(:test_data) { { status: 'processing', processed: 10, total: 100 } }
 
   before do
     # Clear analytics before each test
-    allow(BroadcastAnalytics).to receive(:record_success)
-    allow(BroadcastAnalytics).to receive(:record_failure)
-    allow(BroadcastAnalytics).to receive(:record_queued)
+    allow(Services::BroadcastAnalytics).to receive(:record_success)
+    allow(Services::BroadcastAnalytics).to receive(:record_failure)
+    allow(Services::BroadcastAnalytics).to receive(:record_queued)
+
+    # Disable security validation by default for tests (individual tests can override)
+    allow(BroadcastFeatureFlags).to receive(:enabled?)
+      .with(:broadcast_validation)
+      .and_return(false)
+    allow(BroadcastFeatureFlags).to receive(:enabled?)
+      .with(:enhanced_rate_limiting)
+      .and_return(false)
+
+    # Mock sleep to prevent actual delays in tests
+    allow(Kernel).to receive(:sleep)
   end
 
   describe '.broadcast_with_retry', integration: true do
@@ -29,7 +40,7 @@ RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
 
         expect(result).to be true
         expect(SyncStatusChannel).to have_received(:broadcast_to).with(sync_session, test_data)
-        expect(BroadcastAnalytics).to have_received(:record_success).with(
+        expect(Services::BroadcastAnalytics).to have_received(:record_success).with(
           channel: 'SyncStatusChannel',
           target_type: 'SyncSession',
           target_id: sync_session.id,
@@ -64,7 +75,7 @@ RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
         expect(SyncStatusChannel).to have_received(:broadcast_to).twice
 
         # Should record failure for first attempt
-        expect(BroadcastAnalytics).to have_received(:record_failure).with(
+        expect(Services::BroadcastAnalytics).to have_received(:record_failure).with(
           channel: 'SyncStatusChannel',
           target_type: 'SyncSession',
           target_id: sync_session.id,
@@ -75,7 +86,7 @@ RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
         )
 
         # Should record success for second attempt
-        expect(BroadcastAnalytics).to have_received(:record_success).with(
+        expect(Services::BroadcastAnalytics).to have_received(:record_success).with(
           channel: 'SyncStatusChannel',
           target_type: 'SyncSession',
           target_id: sync_session.id,
@@ -106,7 +117,7 @@ RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
         expect(SyncStatusChannel).to have_received(:broadcast_to).exactly(3).times
 
         # Should record failures for all attempts
-        expect(BroadcastAnalytics).to have_received(:record_failure).exactly(3).times
+        expect(Services::BroadcastAnalytics).to have_received(:record_failure).exactly(3).times
 
         # Should handle final failure
         expect(BroadcastErrorHandler).to have_received(:handle_final_failure).with(
@@ -150,13 +161,14 @@ RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
     context 'with invalid priority' do
       it 'raises InvalidPriorityError' do
         expect {
-          described_class.broadcast_with_retry(
+          result = described_class.broadcast_with_retry(
             channel: SyncStatusChannel,
             target: sync_session,
             data: test_data,
             priority: :invalid
           )
-        }.to raise_error(BroadcastReliabilityService::InvalidPriorityError)
+          puts "UNEXPECTED: Got result: #{result.inspect}" if result
+        }.to raise_error(Services::BroadcastReliabilityService::InvalidPriorityError)
       end
     end
 
@@ -230,7 +242,7 @@ RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
           data: test_data,
           priority: :invalid
         )
-      }.to raise_error(BroadcastReliabilityService::InvalidPriorityError)
+      }.to raise_error(Services::BroadcastReliabilityService::InvalidPriorityError)
     end
   end
 
@@ -268,7 +280,7 @@ RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
     it 'raises error for invalid priority' do
       expect {
         described_class.priority_config(:invalid)
-      }.to raise_error(BroadcastReliabilityService::InvalidPriorityError)
+      }.to raise_error(Services::BroadcastReliabilityService::InvalidPriorityError)
     end
   end
 
@@ -298,7 +310,7 @@ RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
     context 'when broadcast raises BroadcastError' do
       before do
         allow(SyncStatusChannel).to receive(:broadcast_to).and_raise(
-          BroadcastReliabilityService::BroadcastError, "Channel error"
+          Services::BroadcastReliabilityService::BroadcastError, "Channel error"
         )
         allow(BroadcastErrorHandler).to receive(:handle_final_failure)
       end
@@ -312,7 +324,7 @@ RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
         )
 
         expect(result).to be false
-        expect(BroadcastAnalytics).to have_received(:record_failure).with(
+        expect(Services::BroadcastAnalytics).to have_received(:record_failure).with(
           hash_including(error: "Broadcast failed: Channel error")
         ).exactly(3).times
       end
@@ -327,7 +339,7 @@ RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
       end
 
       it 'returns false after retries for invalid channel name' do
-        allow(BroadcastAnalytics).to receive(:record_failure)
+        allow(Services::BroadcastAnalytics).to receive(:record_failure)
         allow(BroadcastErrorHandler).to receive(:handle_final_failure)
 
         result = described_class.broadcast_with_retry(
@@ -338,7 +350,7 @@ RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
         )
 
         expect(result).to be false
-        expect(BroadcastAnalytics).to have_received(:record_failure).exactly(3).times
+        expect(Services::BroadcastAnalytics).to have_received(:record_failure).exactly(3).times
         expect(BroadcastErrorHandler).to have_received(:handle_final_failure)
       end
     end
@@ -351,7 +363,7 @@ RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
       end
 
       it 'rejects invalid channel names before retry attempts' do
-        allow(BroadcastAnalytics).to receive(:record_failure)
+        allow(Services::BroadcastAnalytics).to receive(:record_failure)
 
         result = described_class.broadcast_with_retry(
           channel: 'InvalidChannel',
@@ -362,7 +374,7 @@ RSpec.describe BroadcastReliabilityService, type: :service, integration: true do
 
         expect(result).to be false
         # Should not attempt retries when validation fails
-        expect(BroadcastAnalytics).not_to have_received(:record_failure)
+        expect(Services::BroadcastAnalytics).not_to have_received(:record_failure)
       end
     end
   end

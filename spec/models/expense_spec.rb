@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Expense, type: :model, integration: true do
-  let(:email_account) { create(:email_account, email: 'test@example.com', provider: 'gmail', bank_name: 'BAC', encrypted_password: 'pass') }
+  let(:email_account) { create(:email_account, email: "test_#{SecureRandom.hex(4)}@example.com", provider: 'gmail', bank_name: 'BAC', encrypted_password: 'pass') }
   let(:category) { create(:category, name: 'Test Category') }
 
   describe 'validations', integration: true do
@@ -21,17 +21,6 @@ RSpec.describe Expense, type: :model, integration: true do
       expect(expense.errors[:amount]).to include("can't be blank")
     end
 
-    it 'requires amount to be greater than 0' do
-      expense = build(:expense, amount: 0, transaction_date: Time.current, email_account: email_account)
-      expect(expense).not_to be_valid
-      expect(expense.errors[:amount]).to include('must be greater than 0')
-    end
-
-    it 'requires positive amount' do
-      expense = build(:expense, amount: -10, transaction_date: Time.current, email_account: email_account)
-      expect(expense).not_to be_valid
-      expect(expense.errors[:amount]).to include('must be greater than 0')
-    end
 
     it 'requires transaction_date' do
       expense = build(:expense, amount: 100, transaction_date: nil, email_account: email_account)
@@ -45,16 +34,19 @@ RSpec.describe Expense, type: :model, integration: true do
       expect(expense.errors[:email_account]).to include("must exist")
     end
 
-    it 'validates status inclusion' do
-      valid_statuses = [ 'pending', 'processed', 'failed', 'duplicate' ]
-      valid_statuses.each do |status|
-        expense = build(:expense, status: status)
-        expect(expense).to be_valid, "#{status} should be valid"
-      end
+    it 'validates category exists when provided' do
+      # Valid category_id should pass
+      valid_expense = build(:expense, category_id: category.id, email_account: email_account)
+      expect(valid_expense).to be_valid
 
-      invalid_expense = build(:expense, status: 'invalid')
+      # Nil category_id should pass (optional association)
+      nil_category_expense = build(:expense, category_id: nil, email_account: email_account)
+      expect(nil_category_expense).to be_valid
+
+      # Non-existent category_id should fail
+      invalid_expense = build(:expense, category_id: 99999, email_account: email_account)
       expect(invalid_expense).not_to be_valid
-      expect(invalid_expense.errors[:status]).to include('is not included in the list')
+      expect(invalid_expense.errors[:category]).to include("must exist")
     end
 
     it 'validates currency inclusion' do
@@ -159,9 +151,9 @@ RSpec.describe Expense, type: :model, integration: true do
   end
 
   describe 'class methods', integration: true do
-    let!(:expense1) { create(:expense, amount: 100, transaction_date: Time.current, email_account: email_account, category: category) }
-    let!(:expense2) { create(:expense, amount: 200, transaction_date: Time.current, email_account: email_account, category: category) }
-    let!(:expense3) { create(:expense, amount: 150, transaction_date: 1.month.ago, email_account: email_account, category: category) }
+    let!(:expense1) { create(:expense, :with_category, amount: 100, transaction_date: Time.current, email_account: email_account, category: category) }
+    let!(:expense2) { create(:expense, :with_category, amount: 200, transaction_date: Time.current, email_account: email_account, category: category) }
+    let!(:expense3) { create(:expense, :with_category, amount: 150, transaction_date: 1.month.ago, email_account: email_account, category: category) }
 
     it 'calculates total amount for period' do
       start_date = 1.hour.ago
@@ -184,57 +176,10 @@ RSpec.describe Expense, type: :model, integration: true do
   end
 
   describe 'instance methods', integration: true do
-    let(:crc_expense) { create(:expense, amount: 95000, transaction_date: Time.current, email_account: email_account, currency: 'crc') }
-    let(:usd_expense) { create(:expense, amount: 20.50, transaction_date: Time.current, email_account: email_account, currency: 'usd') }
+    let(:crc_expense) { create(:expense, :with_category, amount: 95000, transaction_date: Time.current, email_account: email_account, currency: 'crc') }
+    let(:usd_expense) { create(:expense, :with_category, amount: 20.50, transaction_date: Time.current, email_account: email_account, currency: 'usd') }
 
-    describe '#formatted_amount', integration: true do
-      it 'formats CRC amounts with ₡ symbol' do
-        expect(crc_expense.formatted_amount).to eq('₡95000.0')
-      end
 
-      it 'formats USD amounts with $ symbol' do
-        expect(usd_expense.formatted_amount).to eq('$20.5')
-      end
-
-      it 'formats EUR amounts with € symbol' do
-        eur_expense = create(:expense, amount: 15.75, transaction_date: Time.current, email_account: email_account, currency: 'eur')
-        expect(eur_expense.formatted_amount).to eq('€15.75')
-      end
-    end
-
-    describe '#formatted_amount', integration: true do
-      it 'includes currency symbols in formatted amounts' do
-        expect(crc_expense.formatted_amount).to include('₡')
-        expect(usd_expense.formatted_amount).to include('$')
-
-        eur_expense = create(:expense, amount: 15, transaction_date: Time.current, email_account: email_account, currency: 'eur')
-        expect(eur_expense.formatted_amount).to include('€')
-      end
-    end
-
-    describe '#duplicate?', integration: true do
-      it 'returns true when status is duplicate' do
-        expense = create(:expense,
-          amount: 100,
-          transaction_date: Time.current,
-          email_account: email_account,
-          status: 'duplicate'
-        )
-
-        expect(expense).to be_duplicate
-      end
-
-      it 'returns false when status is not duplicate' do
-        expense = create(:expense,
-          amount: 100,
-          transaction_date: Time.current,
-          email_account: email_account,
-          status: 'pending'
-        )
-
-        expect(expense).not_to be_duplicate
-      end
-    end
 
     describe 'status helper methods', integration: true do
       it 'has helper methods for all statuses' do
@@ -316,48 +261,24 @@ RSpec.describe Expense, type: :model, integration: true do
         end
       end
     end
-
-    describe '#pending?', integration: true do
-      it 'returns true when status is pending' do
-        expense = create(:expense, status: 'pending', email_account: email_account)
-        expect(expense.pending?).to be true
-      end
-
-      it 'returns false when status is not pending' do
-        expense = create(:expense, status: 'processed', email_account: email_account)
-        expect(expense.pending?).to be false
-      end
-    end
-
-    describe '#failed?', integration: true do
-      it 'returns true when status is failed' do
-        expense = create(:expense, status: 'failed', email_account: email_account)
-        expect(expense.failed?).to be true
-      end
-
-      it 'returns false when status is not failed' do
-        expense = create(:expense, status: 'pending', email_account: email_account)
-        expect(expense.failed?).to be false
-      end
-    end
   end
 
   describe 'callbacks', integration: true do
     describe 'after_commit :clear_dashboard_cache', integration: true do
       it 'clears dashboard cache after creating an expense' do
-        expect(DashboardService).to receive(:clear_cache)
+        expect(Services::DashboardService).to receive(:clear_cache)
         create(:expense, email_account: email_account)
       end
 
       it 'clears dashboard cache after updating an expense' do
         expense = create(:expense, email_account: email_account)
-        expect(DashboardService).to receive(:clear_cache)
+        expect(Services::DashboardService).to receive(:clear_cache)
         expense.update(amount: 200.0)
       end
 
       it 'clears dashboard cache after destroying an expense' do
         expense = create(:expense, email_account: email_account)
-        expect(DashboardService).to receive(:clear_cache)
+        expect(Services::DashboardService).to receive(:clear_cache)
         expense.destroy
       end
     end

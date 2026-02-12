@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe MetricsCalculator, '#calculate_trend_data', performance: true do
+RSpec.describe Services::MetricsCalculator, '#calculate_trend_data', performance: true do
   let(:email_account) { create(:email_account) }
   let(:reference_date) { Date.current }
   let(:calculator) { described_class.new(email_account: email_account, reference_date: reference_date) }

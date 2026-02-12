@@ -1,18 +1,32 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::Processor, integration: true do
+RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true do
   let(:email_account) { create(:email_account, :bac) }
-  let(:processor) { described_class.new(email_account) }
-  let(:mock_imap_service) { instance_double(ImapConnectionService) }
+  let(:metrics_collector) { instance_double(Services::SyncMetricsCollector) }
+  let(:processor) { described_class.new(email_account, metrics_collector: metrics_collector) }
+  let(:processor_without_metrics) { described_class.new(email_account) }
+  let(:mock_imap_service) { instance_double(Services::ImapConnectionService) }
 
-  describe '#initialize', integration: true do
+  describe '#initialize' do
     it 'sets email account and initializes empty errors' do
       expect(processor.email_account).to eq(email_account)
       expect(processor.errors).to be_empty
     end
+
+    it 'accepts optional metrics collector' do
+      expect(processor.metrics_collector).to eq(metrics_collector)
+    end
+
+    it 'works without metrics collector' do
+      expect(processor_without_metrics.metrics_collector).to be_nil
+    end
   end
 
   describe '#process_emails', integration: true do
+    before do
+      allow(metrics_collector).to receive(:track_operation).and_yield
+    end
+
     context 'with empty message list' do
       it 'returns zero counts' do
         result = processor.process_emails([], mock_imap_service)
@@ -519,11 +533,127 @@ RSpec.describe EmailProcessing::Processor, integration: true do
   describe 'error handling', integration: true do
     describe '#add_error', integration: true do
       it 'adds error to errors array and logs to Rails logger' do
-        expect(Rails.logger).to receive(:error).with("[EmailProcessing::Processor] #{email_account.email}: Test error")
+        expect(Rails.logger).to receive(:error).with("[Services::EmailProcessing::Processor] #{email_account.email}: Test error")
 
         processor.send(:add_error, "Test error")
 
         expect(processor.errors).to include("Test error")
+      end
+    end
+  end
+
+  describe 'metrics integration', integration: true do
+    let(:message_id) { 123 }
+    let(:envelope) { double('envelope', subject: 'BAC - Notificación de transacción', date: Time.current, from: [ double('from', mailbox: 'bank', host: 'bac.co.cr') ]) }
+
+    describe '#process_single_email with metrics' do
+      it 'tracks operation with metrics collector when available' do
+        allow(mock_imap_service).to receive(:fetch_envelope).and_return(envelope)
+        allow(processor).to receive(:extract_email_data).and_return({ body: 'test' })
+        allow(ProcessEmailJob).to receive(:perform_later)
+
+        expect(metrics_collector).to receive(:track_operation).with(
+          :parse_email,
+          email_account,
+          { message_id: message_id }
+        ).and_yield
+
+        processor.send(:process_single_email, message_id, mock_imap_service)
+      end
+
+      it 'processes without metrics when collector not available' do
+        allow(mock_imap_service).to receive(:fetch_envelope).and_return(envelope)
+        allow(processor_without_metrics).to receive(:extract_email_data).and_return({ body: 'test' })
+        allow(ProcessEmailJob).to receive(:perform_later)
+
+        expect {
+          processor_without_metrics.send(:process_single_email, message_id, mock_imap_service)
+        }.not_to raise_error
+      end
+    end
+  end
+
+  describe '#detect_and_handle_conflict', integration: true do
+    let(:email_data) { { body: 'Transaction details', date: Time.current } }
+    let(:parsing_rule) { instance_double(ParsingRule) }
+    let(:parsing_strategy) { instance_double(Services::EmailProcessing::Strategies::Regex) }
+    let(:sync_session) { instance_double(SyncSession) }
+    let(:conflict_detector) { instance_double(Services::ConflictDetectionService) }
+    let(:expense_data) { { amount: 100, description: 'Purchase' } }
+
+    before do
+      allow(ParsingRule).to receive_message_chain(:active, :for_bank, :first).and_return(parsing_rule)
+      allow(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(parsing_strategy)
+      allow(parsing_strategy).to receive(:parse_email).and_return(expense_data)
+      allow(metrics_collector).to receive(:track_operation).and_yield
+    end
+
+    context 'with active sync session' do
+      before do
+        allow(SyncSession).to receive_message_chain(:active, :last).and_return(sync_session)
+        allow(Services::ConflictDetectionService).to receive(:new).with(sync_session, metrics_collector: metrics_collector).and_return(conflict_detector)
+      end
+
+      it 'detects conflict when present' do
+        allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(true)
+
+        result = processor.send(:detect_and_handle_conflict, email_data)
+        expect(result).to be true
+      end
+
+      it 'returns false when no conflict' do
+        allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(false)
+
+        result = processor.send(:detect_and_handle_conflict, email_data)
+        expect(result).to be false
+      end
+    end
+
+    context 'without active sync session' do
+      before do
+        allow(SyncSession).to receive_message_chain(:active, :last).and_return(nil)
+      end
+
+      it 'returns false when no sync session' do
+        result = processor.send(:detect_and_handle_conflict, email_data)
+        expect(result).to be false
+      end
+    end
+
+    context 'when no parsing rule exists' do
+      before do
+        allow(ParsingRule).to receive_message_chain(:active, :for_bank, :first).and_return(nil)
+      end
+
+      it 'returns false when no parsing rule found' do
+        result = processor.send(:detect_and_handle_conflict, email_data)
+        expect(result).to be false
+      end
+    end
+
+    context 'when parser returns nil' do
+      before do
+        allow(parsing_strategy).to receive(:parse_email).and_return(nil)
+      end
+
+      it 'returns false when expense data cannot be parsed' do
+        result = processor.send(:detect_and_handle_conflict, email_data)
+        expect(result).to be false
+      end
+    end
+
+    context 'with error during conflict detection' do
+      before do
+        allow(SyncSession).to receive_message_chain(:active, :last).and_return(sync_session)
+        allow(Services::ConflictDetectionService).to receive(:new).and_raise(StandardError, 'Detection error')
+        allow(Rails.logger).to receive(:error)
+      end
+
+      it 'logs error and returns false' do
+        expect(Rails.logger).to receive(:error).with('[Services::EmailProcessing::Processor] Error detecting conflict: Detection error')
+
+        result = processor.send(:detect_and_handle_conflict, email_data)
+        expect(result).to be false
       end
     end
   end

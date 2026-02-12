@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service, integration: true do
+RSpec.describe Services::Categorization::Orchestrator::CircuitBreaker, type: :service, unit: true do
   let(:circuit_breaker) do
     described_class.new(
       failure_threshold: 3,
@@ -10,7 +10,13 @@ RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service, int
     )
   end
 
-  describe "#call", integration: true do
+  # Helper method to simulate time passing without actual sleep
+  def travel(duration)
+    new_time = Time.current + duration
+    allow(Time).to receive(:current).and_return(new_time)
+  end
+
+  describe "#call" do
     context "when circuit is closed" do
       it "executes the block successfully" do
         result = circuit_breaker.call { "success" }
@@ -75,7 +81,7 @@ RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service, int
 
         expect {
           circuit_breaker.call { executed = true }
-        }.to raise_error(Categorization::Orchestrator::CircuitBreaker::CircuitOpenError)
+        }.to raise_error(Services::Categorization::Orchestrator::CircuitBreaker::CircuitOpenError)
 
         expect(executed).to be false
       end
@@ -83,8 +89,8 @@ RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service, int
       it "transitions to half-open after timeout" do
         expect(circuit_breaker.state).to eq(:open)
 
-        # Wait for timeout
-        sleep 0.6
+        # Simulate time passing using time travel
+        travel(0.6.seconds)
 
         # Should transition to half-open and allow one request
         result = circuit_breaker.call { "recovery" }
@@ -104,8 +110,8 @@ RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service, int
           end
         end
 
-        # Wait for timeout to transition to half-open
-        sleep 0.6
+        # Simulate timeout to transition to half-open
+        travel(0.6.seconds)
       end
 
       it "closes circuit on successful test request" do
@@ -137,7 +143,7 @@ RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service, int
     end
   end
 
-  describe "#record_failure", integration: true do
+  describe "#record_failure" do
     it "increments failure count" do
       expect(circuit_breaker.state).to eq(:closed)
 
@@ -152,7 +158,7 @@ RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service, int
     end
   end
 
-  describe "#reset!", integration: true do
+  describe "#reset!" do
     it "resets circuit to initial state" do
       # Open the circuit
       3.times { circuit_breaker.record_failure }
@@ -169,13 +175,13 @@ RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service, int
     end
   end
 
-  describe "thread safety", integration: true do
+  describe "thread safety" do
     it "handles concurrent failures safely" do
       threads = 10.times.map do
         Thread.new do
           begin
             circuit_breaker.call { raise StandardError }
-          rescue StandardError, Categorization::Orchestrator::CircuitBreaker::CircuitOpenError
+          rescue StandardError, Services::Categorization::Orchestrator::CircuitBreaker::CircuitOpenError
             # Expected
           end
         end
@@ -216,7 +222,7 @@ RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service, int
             else
               circuit_breaker.call { raise StandardError }
             end
-          rescue StandardError, Categorization::Orchestrator::CircuitBreaker::CircuitOpenError => e
+          rescue StandardError, Services::Categorization::Orchestrator::CircuitBreaker::CircuitOpenError => e
             errors << e
           end
         end
@@ -230,9 +236,9 @@ RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service, int
     end
   end
 
-  describe "integration with orchestrator", integration: true do
+  describe "integration with orchestrator" do
     let(:orchestrator) do
-      Categorization::Orchestrator.new(
+      Services::Categorization::Orchestrator.new(
         circuit_breaker: circuit_breaker
       )
     end
@@ -280,8 +286,8 @@ RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service, int
       allow(orchestrator.pattern_cache).to receive(:get_patterns_for_expense)
         .and_return([])
 
-      # Wait for timeout
-      sleep 0.6
+      # Simulate time passing
+      travel(0.6.seconds)
 
       # Should work again
       result = orchestrator.categorize(expense)
@@ -289,7 +295,7 @@ RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service, int
     end
   end
 
-  describe "configuration", integration: true do
+  describe "configuration" do
     it "respects custom failure threshold" do
       cb = described_class.new(failure_threshold: 5, timeout: 1.second)
 
@@ -316,14 +322,14 @@ RSpec.describe Categorization::Orchestrator::CircuitBreaker, type: :service, int
       expect { cb.call { raise StandardError } }.to raise_error(StandardError)
       expect(cb.state).to eq(:open)
 
-      # Should still be open after 1 second
-      sleep 1
+      # Mock time for first check
+      travel(1.second)
       expect { cb.call { "test" } }.to raise_error(
-        Categorization::Orchestrator::CircuitBreaker::CircuitOpenError
+        Services::Categorization::Orchestrator::CircuitBreaker::CircuitOpenError
       )
 
-      # Should transition to half-open after 2 seconds
-      sleep 1.1
+      # Mock time for successful transition
+      travel(1.1.seconds)
       result = cb.call { "success" }
       expect(result).to eq("success")
     end

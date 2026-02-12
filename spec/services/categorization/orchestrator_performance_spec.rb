@@ -4,9 +4,15 @@ require "rails_helper"
 require "benchmark"
 require "get_process_mem"
 
-RSpec.describe "Categorization::Orchestrator Performance", type: :service, performance: true do
+RSpec.describe "Services::Categorization::Orchestrator Performance", type: :service, performance: true do
   describe "Performance benchmarks", performance: true do
-    let(:orchestrator) { Categorization::OrchestratorFactory.create_production }
+    let(:orchestrator) { Services::Categorization::OrchestratorFactory.create_production }
+
+    # Helper method to simulate time passing without actual sleep
+    def travel(duration)
+      new_time = Time.current + duration
+      allow(Time).to receive(:current).and_return(new_time)
+    end
 
     # Create comprehensive test data
     before(:all) do
@@ -82,7 +88,7 @@ RSpec.describe "Categorization::Orchestrator Performance", type: :service, perfo
           elapsed = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000
           times << elapsed
 
-          expect(result).to be_a(Categorization::CategorizationResult)
+          expect(result).to be_a(Services::Categorization::CategorizationResult)
         end
 
         average_time = times.sum / times.size
@@ -109,7 +115,7 @@ RSpec.describe "Categorization::Orchestrator Performance", type: :service, perfo
           elapsed = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000
           times << elapsed
 
-          expect(result).to be_a(Categorization::CategorizationResult)
+          expect(result).to be_a(Services::Categorization::CategorizationResult)
         end
 
         average_time = times.sum / times.size
@@ -192,7 +198,7 @@ RSpec.describe "Categorization::Orchestrator Performance", type: :service, perfo
 
         # Force garbage collection
         GC.start
-        sleep 0.1
+        travel(0.1.seconds)
 
         final_memory = GetProcessMem.new.mb
         memory_increase = final_memory - initial_memory
@@ -216,7 +222,7 @@ RSpec.describe "Categorization::Orchestrator Performance", type: :service, perfo
         end
 
         GC.start
-        sleep 0.1
+        travel(0.1.seconds)
 
         final_memory = GetProcessMem.new.mb
         memory_increase = final_memory - initial_memory

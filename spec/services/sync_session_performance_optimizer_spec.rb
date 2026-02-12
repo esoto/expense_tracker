@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe SyncSessionPerformanceOptimizer, performance: true do
+RSpec.describe Services::SyncSessionPerformanceOptimizer, performance: true do
   let(:email_account1) { create(:email_account) }
   let(:email_account2) { create(:email_account) }
   let(:sync_session) { create(:sync_session, :running) }

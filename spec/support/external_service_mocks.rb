@@ -38,10 +38,10 @@ module ExternalServiceMocks
 
   # Stub broadcast reliability service when needed
   def stub_broadcast_reliability_service
-    return unless defined?(BroadcastReliabilityService)
+    return unless defined?(Services::BroadcastReliabilityService)
 
-    allow(BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(true)
-    allow(BroadcastReliabilityService).to receive(:ensure_delivery).and_return(true)
+    allow(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(true)
+    allow(Services::BroadcastReliabilityService).to receive(:ensure_delivery).and_return(true)
   end
 
   # Configure ActionMailer for tests

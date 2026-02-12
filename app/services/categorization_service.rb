@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-class CategorizationService
+module Services
+  class CategorizationService
   def categorize_expense(expense)
     return { category: nil, confidence: 0, method: "no_match", error: "Invalid expense" } if expense.nil?
 
@@ -237,5 +238,6 @@ class CategorizationService
            .where("LOWER(merchant_name) LIKE ANY (ARRAY[?])", words.map { |w| "%#{w}%" })
            .distinct
            .limit(5)
+  end
   end
 end

@@ -11,7 +11,7 @@ module Api
     # GET /api/queue/status.json
     # Returns comprehensive queue status including metrics and health information
     def status
-      status_data = QueueMonitor.queue_status
+      status_data = Services::QueueMonitor.queue_status
 
       render json: {
         success: true,
@@ -47,7 +47,7 @@ module Api
     def pause
       queue_name = params[:queue_name]
 
-      if QueueMonitor.pause_queue(queue_name)
+      if Services::QueueMonitor.pause_queue(queue_name)
         broadcast_queue_update("paused", queue_name)
 
         render json: {
@@ -55,7 +55,7 @@ module Api
           message: queue_name.present? ?
             "Queue '#{queue_name}' has been paused" :
             "All queues have been paused",
-          paused_queues: QueueMonitor.paused_queues
+          paused_queues: Services::QueueMonitor.paused_queues
         }
       else
         render json: {
@@ -70,7 +70,7 @@ module Api
     def resume
       queue_name = params[:queue_name]
 
-      if QueueMonitor.resume_queue(queue_name)
+      if Services::QueueMonitor.resume_queue(queue_name)
         broadcast_queue_update("resumed", queue_name)
 
         render json: {
@@ -78,7 +78,7 @@ module Api
           message: queue_name.present? ?
             "Queue '#{queue_name}' has been resumed" :
             "All queues have been resumed",
-          paused_queues: QueueMonitor.paused_queues
+          paused_queues: Services::QueueMonitor.paused_queues
         }
       else
         render json: {
@@ -91,7 +91,7 @@ module Api
     # POST /api/queue/jobs/:id/retry
     # Retries a specific failed job
     def retry_job
-      if QueueMonitor.retry_failed_job(params[:id])
+      if Services::QueueMonitor.retry_failed_job(params[:id])
         broadcast_job_update("retried", params[:id])
 
         render json: {
@@ -110,7 +110,7 @@ module Api
     # POST /api/queue/jobs/:id/clear
     # Clears a failed job without retrying
     def clear_job
-      if QueueMonitor.clear_failed_job(params[:id])
+      if Services::QueueMonitor.clear_failed_job(params[:id])
         broadcast_job_update("cleared", params[:id])
 
         render json: {
@@ -129,7 +129,7 @@ module Api
     # POST /api/queue/retry_all_failed
     # Retries all failed jobs
     def retry_all_failed
-      count = QueueMonitor.retry_all_failed_jobs
+      count = Services::QueueMonitor.retry_all_failed_jobs
 
       if count > 0
         broadcast_queue_update("retry_all", nil)
@@ -150,7 +150,7 @@ module Api
     # GET /api/queue/metrics
     # Returns detailed performance metrics for monitoring
     def metrics
-      metrics_data = QueueMonitor.detailed_metrics
+      metrics_data = Services::QueueMonitor.detailed_metrics
 
       render json: {
         success: true,
@@ -162,7 +162,7 @@ module Api
     # GET /api/queue/health
     # Simple health check endpoint for monitoring systems
     def health
-      health_status = QueueMonitor.calculate_health_status
+      health_status = Services::QueueMonitor.calculate_health_status
       status_code = case health_status[:status]
       when "critical" then :service_unavailable
       when "warning" then :ok
@@ -173,10 +173,10 @@ module Api
         status: health_status[:status],
         message: health_status[:message],
         metrics: {
-          pending: QueueMonitor.pending_jobs_count,
-          processing: QueueMonitor.processing_jobs_count,
-          failed: QueueMonitor.failed_jobs_count,
-          workers: QueueMonitor.worker_status[:healthy]
+          pending: Services::QueueMonitor.pending_jobs_count,
+          processing: Services::QueueMonitor.processing_jobs_count,
+          failed: Services::QueueMonitor.failed_jobs_count,
+          workers: Services::QueueMonitor.worker_status[:healthy]
         },
         timestamp: Time.current.iso8601
       }, status: status_code
@@ -211,9 +211,9 @@ module Api
           queue_name: queue_name,
           timestamp: Time.current.iso8601,
           current_status: {
-            paused_queues: QueueMonitor.paused_queues,
-            pending: QueueMonitor.pending_jobs_count,
-            processing: QueueMonitor.processing_jobs_count
+            paused_queues: Services::QueueMonitor.paused_queues,
+            pending: Services::QueueMonitor.pending_jobs_count,
+            processing: Services::QueueMonitor.processing_jobs_count
           }
         }
       )
@@ -229,7 +229,7 @@ module Api
           action: "job_#{action}",
           job_id: job_id,
           timestamp: Time.current.iso8601,
-          failed_count: QueueMonitor.failed_jobs_count
+          failed_count: Services::QueueMonitor.failed_jobs_count
         }
       )
     rescue StandardError => e

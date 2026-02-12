@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::PatternLearner do
+RSpec.describe Services::Categorization::PatternLearner do
   subject(:learner) { described_class.new(options) }
 
   let(:options) { {} }
@@ -126,7 +126,7 @@ RSpec.describe Categorization::PatternLearner do
       end
 
       it "invalidates cache after learning" do
-        pattern_cache = instance_double(Categorization::PatternCache)
+        pattern_cache = instance_double(Services::Categorization::PatternCache)
         expect(pattern_cache).to receive(:invalidate_all)
         learner_with_cache = described_class.new(pattern_cache: pattern_cache)
         learner_with_cache.learn_from_correction(expense, food_category)
@@ -157,7 +157,7 @@ RSpec.describe Categorization::PatternLearner do
       end
 
       it "does not invalidate cache" do
-        expect(Categorization::PatternCache.instance).not_to receive(:invalidate_all)
+        expect(Services::Categorization::PatternCache.instance).not_to receive(:invalidate_all)
         learner.learn_from_correction(expense, food_category)
       end
     end
@@ -204,11 +204,17 @@ RSpec.describe Categorization::PatternLearner do
       end
 
       it "creates patterns for each unique merchant" do
+        # Clear existing patterns to avoid conflicts
+        CategorizationPattern.where(
+          pattern_type: "merchant",
+          pattern_value: [ "uber", "lyft", "yellow cab" ]
+        ).destroy_all
+
         expect {
           learner.batch_learn(corrections)
         }.to change(CategorizationPattern, :count).by_at_least(3)
 
-        %w[uber lyft yellow\ cab].each do |merchant|
+        [ "uber", "lyft", "yellow cab" ].each do |merchant|
           pattern = CategorizationPattern.find_by(
             pattern_type: "merchant",
             pattern_value: merchant
@@ -219,7 +225,7 @@ RSpec.describe Categorization::PatternLearner do
       end
 
       it "invalidates cache once after batch" do
-        pattern_cache = instance_double(Categorization::PatternCache)
+        pattern_cache = instance_double(Services::Categorization::PatternCache)
         expect(pattern_cache).to receive(:invalidate_all).once
         learner_with_cache = described_class.new(pattern_cache: pattern_cache)
         learner_with_cache.batch_learn(corrections)
@@ -271,7 +277,7 @@ RSpec.describe Categorization::PatternLearner do
       it "returns empty result" do
         result = learner.batch_learn([])
         expect(result.total).to eq(0)
-        expect(result).to be_a(Categorization::BatchLearningResult)
+        expect(result).to be_a(Services::Categorization::BatchLearningResult)
       end
     end
 

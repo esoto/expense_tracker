@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Categorization::PatternCache, performance: true do
+RSpec.describe Services::Categorization::PatternCache, performance: true do
   let(:cache) { described_class.new }
   let(:category) { create(:category, name: "Food & Dining") }
   let(:pattern) do
@@ -32,7 +32,7 @@ RSpec.describe Categorization::PatternCache, performance: true do
     # Clear cache before each test
     cache.invalidate_all
     # Reset singleton for test isolation
-    Categorization::PatternCache.instance_variable_set(:@instance, nil)
+    Services::Categorization::PatternCache.instance_variable_set(:@instance, nil)
   end
 
   describe "#initialize", performance: true do
@@ -497,8 +497,8 @@ RSpec.describe Categorization::PatternCache, performance: true do
     end
 
     it "uses default TTL values when not configured" do
-      expect(cache.send(:memory_ttl)).to eq(Categorization::PatternCache::DEFAULT_MEMORY_TTL)
-      expect(cache.send(:redis_ttl)).to eq(Categorization::PatternCache::DEFAULT_REDIS_TTL)
+      expect(cache.send(:memory_ttl)).to eq(Services::Categorization::PatternCache::DEFAULT_MEMORY_TTL)
+      expect(cache.send(:redis_ttl)).to eq(Services::Categorization::PatternCache::DEFAULT_REDIS_TTL)
     end
   end
 end

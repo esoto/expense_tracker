@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Categorization
+module Services::Categorization
   # Value object representing the result of a categorization operation
   # Stores all relevant information about the categorization including
   # confidence breakdown, patterns used, and performance metrics

@@ -2,9 +2,9 @@
 
 require "rails_helper"
 
-RSpec.describe "Categorization::Orchestrator Test Summary", type: :service, integration: true do
+RSpec.describe "Services::Categorization::Orchestrator Test Summary", type: :service, integration: true do
   describe "Production readiness validation", integration: true do
-    let(:orchestrator) { Categorization::OrchestratorFactory.create_test }
+    let(:orchestrator) { Services::Categorization::OrchestratorFactory.create_test }
 
     before(:each) do
       # Create test data
@@ -36,7 +36,7 @@ RSpec.describe "Categorization::Orchestrator Test Summary", type: :service, inte
     describe "Core functionality", integration: true do
       it "categorizes expenses successfully" do
         result = orchestrator.categorize(@expense)
-        expect(result).to be_a(Categorization::CategorizationResult)
+        expect(result).to be_a(Services::Categorization::CategorizationResult)
       end
 
       it "handles batch operations" do
@@ -59,7 +59,7 @@ RSpec.describe "Categorization::Orchestrator Test Summary", type: :service, inte
 
       it "supports learning from corrections" do
         result = orchestrator.learn_from_correction(@expense, @category)
-        expect(result).to be_a(Categorization::LearningResult)
+        expect(result).to be_a(Services::Categorization::LearningResult)
       end
     end
 
@@ -110,7 +110,7 @@ RSpec.describe "Categorization::Orchestrator Test Summary", type: :service, inte
 
         threads.each(&:join)
 
-        expect(results).to all(be_a(Categorization::CategorizationResult))
+        expect(results).to all(be_a(Services::Categorization::CategorizationResult))
         expect(results.size).to eq(5)
       end
     end
@@ -143,21 +143,21 @@ RSpec.describe "Categorization::Orchestrator Test Summary", type: :service, inte
 
         # Should still work after reset
         result = orchestrator.categorize(@expense)
-        expect(result).to be_a(Categorization::CategorizationResult)
+        expect(result).to be_a(Services::Categorization::CategorizationResult)
       end
     end
   end
 
   describe "QA Requirements Validation", integration: true do
     it "✅ Service classes properly loaded" do
-      orchestrator = Categorization::OrchestratorFactory.create_test
+      orchestrator = Services::Categorization::OrchestratorFactory.create_test
       expect(orchestrator.pattern_cache).not_to be_nil
       expect(orchestrator.matcher).not_to be_nil
       expect(orchestrator.confidence_calculator).not_to be_nil
     end
 
     it "✅ Mock configuration complete" do
-      orchestrator = Categorization::OrchestratorFactory.create_test
+      orchestrator = Services::Categorization::OrchestratorFactory.create_test
 
       # Test services respond to expected methods
       expect(orchestrator.pattern_cache).to respond_to(:get_patterns_for_expense)
@@ -166,7 +166,7 @@ RSpec.describe "Categorization::Orchestrator Test Summary", type: :service, inte
     end
 
     it "✅ Database optimization working" do
-      orchestrator = Categorization::OrchestratorFactory.create_test
+      orchestrator = Services::Categorization::OrchestratorFactory.create_test
       expenses = Expense.limit(5)
 
       query_count = 0
@@ -183,7 +183,7 @@ RSpec.describe "Categorization::Orchestrator Test Summary", type: :service, inte
     end
 
     it "✅ Performance validation complete" do
-      orchestrator = Categorization::OrchestratorFactory.create_test
+      orchestrator = Services::Categorization::OrchestratorFactory.create_test
       expense = @expense
 
       # Multiple runs to ensure consistency
@@ -220,7 +220,7 @@ RSpec.describe "Categorization::Orchestrator Test Summary", type: :service, inte
       puts "  • Error scenarios tested"
 
       puts "\n📊 PERFORMANCE METRICS:"
-      orchestrator = Categorization::OrchestratorFactory.create_test
+      orchestrator = Services::Categorization::OrchestratorFactory.create_test
       expense = @expense
 
       # Warm up

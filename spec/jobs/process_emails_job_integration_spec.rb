@@ -14,12 +14,12 @@ RSpec.describe ProcessEmailsJob, type: :job, integration: true do
     context "with successful email processing" do
       before do
         # Mock IMAP service to return successful result
-        success_response = EmailProcessing::FetcherResponse.success(
+        success_response = Services::EmailProcessing::FetcherResponse.success(
           processed_emails_count: 3,
           total_emails_found: 3,
           errors: []
         )
-        allow_any_instance_of(EmailProcessing::Fetcher).to receive(:fetch_new_emails).and_return(success_response)
+        allow_any_instance_of(Services::EmailProcessing::Fetcher).to receive(:fetch_new_emails).and_return(success_response)
       end
 
       it "processes emails successfully without errors" do
@@ -40,10 +40,10 @@ RSpec.describe ProcessEmailsJob, type: :job, integration: true do
 
     context "with IMAP connection errors" do
       before do
-        error_response = EmailProcessing::FetcherResponse.failure(
+        error_response = Services::EmailProcessing::FetcherResponse.failure(
           errors: [ "IMAP Error: Connection failed" ]
         )
-        allow_any_instance_of(EmailProcessing::Fetcher).to receive(:fetch_new_emails).and_return(error_response)
+        allow_any_instance_of(Services::EmailProcessing::Fetcher).to receive(:fetch_new_emails).and_return(error_response)
       end
 
       it "handles connection errors gracefully" do

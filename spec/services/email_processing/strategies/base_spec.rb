@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::Strategies::Base, unit: true do
+RSpec.describe Services::EmailProcessing::Strategies::Base, unit: true do
   let(:parsing_rule) { create(:parsing_rule) }
   let(:strategy) { described_class.new(parsing_rule) }
 

@@ -8,7 +8,7 @@ module Api
     # Comprehensive health check endpoint
     # GET /api/health
     def index
-      health_check = Categorization::Monitoring::HealthCheck.new
+      health_check = Services::Categorization::Monitoring::HealthCheck.new
       result = health_check.check_all
 
       if health_check.healthy?
@@ -21,7 +21,7 @@ module Api
     # Kubernetes readiness probe
     # GET /api/health/ready
     def ready
-      health_check = Categorization::Monitoring::HealthCheck.new
+      health_check = Services::Categorization::Monitoring::HealthCheck.new
       health_check.check_all
 
       if health_check.ready?
@@ -41,7 +41,7 @@ module Api
     # Kubernetes liveness probe
     # GET /api/health/live
     def live
-      health_check = Categorization::Monitoring::HealthCheck.new
+      health_check = Services::Categorization::Monitoring::HealthCheck.new
 
       if health_check.live?
         render json: {
@@ -125,7 +125,7 @@ module Api
     end
 
     def cache_metrics
-      cache = Categorization::PatternCache.instance
+      cache = Services::Categorization::PatternCache.instance
       stats = cache.stats
 
       {

@@ -1,7 +1,14 @@
 require 'rails_helper'
 
-RSpec.describe SyncSessionValidator, integration: true do
+RSpec.describe Services::SyncSessionValidator, integration: true do
   let(:validator) { described_class.new }
+
+  before(:each) do
+    # Clean up sync sessions to ensure test isolation
+    SyncMetric.delete_all if defined?(SyncMetric)
+    SyncSessionAccount.delete_all
+    SyncSession.delete_all
+  end
 
   describe '#validate!', integration: true do
     context 'when no active syncs exist and rate limit not exceeded' do
@@ -30,7 +37,8 @@ RSpec.describe SyncSessionValidator, integration: true do
 
     context 'when rate limit is exceeded' do
       before do
-        # Create 3 completed sync sessions in the last 5 minutes
+        # Ensure no active syncs exist first (validator checks this first)
+        # Create 3 completed sync sessions in the last 5 minutes to trigger rate limit
         3.times { create(:sync_session, status: 'completed', created_at: 2.minutes.ago) }
       end
 
@@ -117,6 +125,9 @@ RSpec.describe SyncSessionValidator, integration: true do
 
     context 'with syncs in different time windows' do
       before do
+        # Clean up any existing sync sessions for predictable test
+        SyncSession.destroy_all
+
         # Old sync (outside window)
         create(:sync_session, created_at: 10.minutes.ago)
         # Recent syncs (inside window)

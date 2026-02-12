@@ -10,7 +10,7 @@ class BulkStatusUpdateJob < BulkOperations::BaseJob
   protected
 
   def execute_operation
-    service = BulkOperations::StatusUpdateService.new(
+    service = Services::BulkOperations::StatusUpdateService.new(
       expense_ids: @expense_ids,
       status: @status,
       user: @user,
@@ -23,7 +23,7 @@ class BulkStatusUpdateJob < BulkOperations::BaseJob
 
     # Process in batches with progress updates
     @expense_ids.each_slice(50) do |batch_ids|
-      batch_service = BulkOperations::StatusUpdateService.new(
+      batch_service = Services::BulkOperations::StatusUpdateService.new(
         expense_ids: batch_ids,
         status: @status,
         user: @user,
@@ -44,6 +44,6 @@ class BulkStatusUpdateJob < BulkOperations::BaseJob
   end
 
   def service_class
-    BulkOperations::StatusUpdateService
+    Services::BulkOperations::StatusUpdateService
   end
 end

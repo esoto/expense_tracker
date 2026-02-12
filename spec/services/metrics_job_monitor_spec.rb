@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe MetricsJobMonitor do
+RSpec.describe Services::MetricsJobMonitor do
   let(:email_account) { create(:email_account) }
 
   before do
@@ -227,8 +227,20 @@ RSpec.describe MetricsJobMonitor do
 
   describe '.force_recalculate_all' do
     it 'enqueues jobs for all active accounts' do
+      # Clear existing accounts to have predictable test environment
+      EmailAccount.destroy_all
+
+      # Create test accounts
+      account1 = create(:email_account, email: "test1_#{SecureRandom.hex(4)}@example.com")
+      account2 = create(:email_account, email: "test2_#{SecureRandom.hex(4)}@example.com")
+
+      # Expect jobs to be enqueued for both accounts
       expect(MetricsCalculationJob).to receive(:perform_later).with(
-        email_account_id: email_account.id,
+        email_account_id: account1.id,
+        force_refresh: true
+      )
+      expect(MetricsCalculationJob).to receive(:perform_later).with(
+        email_account_id: account2.id,
         force_refresh: true
       )
 

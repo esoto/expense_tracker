@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe BulkCategorization::GroupingService, integration: true do
+RSpec.describe Services::BulkCategorization::GroupingService, integration: true do
   let(:email_account) { create(:email_account) }
   let(:category) { create(:category, name: "Food & Dining") }
 

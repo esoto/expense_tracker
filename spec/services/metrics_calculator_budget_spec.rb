@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe MetricsCalculator, 'budget calculations', performance: true do
+RSpec.describe Services::MetricsCalculator, 'budget calculations', performance: true do
   let(:email_account) { create(:email_account) }
   let(:category) { create(:category) }
   let(:calculator) { described_class.new(email_account: email_account, period: :month) }

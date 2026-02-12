@@ -8,7 +8,7 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job, integratio
   let(:current_date) { Date.parse('2025-08-10') }
   let(:job) { MetricsCalculationJob.new }
   let!(:email_account) { create(:email_account) }
-  let!(:other_email_account) { create(:email_account, email: 'other@example.com') }
+  let!(:other_email_account) { create(:email_account, email: "other_#{SecureRandom.hex(4)}@example.com") }
 
   before do
     # Clear cache before each test
@@ -21,7 +21,7 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job, integratio
       Rails.cache.write(lock_key, Time.current.to_s, expires_in: 5.minutes)
 
       expect(Rails.logger).to receive(:info).with(/skipped - another job is already processing/)
-      expect_any_instance_of(ExtendedCacheMetricsCalculator).not_to receive(:calculate)
+      expect_any_instance_of(Services::ExtendedCacheMetricsCalculator).not_to receive(:calculate)
 
       job.perform(email_account_id: email_account.id, period: :month)
     end
@@ -38,7 +38,7 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job, integratio
     it 'releases lock even on error' do
       lock_key = "metrics_calculation:#{email_account.id}"
 
-      allow_any_instance_of(ExtendedCacheMetricsCalculator).to receive(:calculate).and_raise(StandardError, "Test error")
+      allow_any_instance_of(Services::ExtendedCacheMetricsCalculator).to receive(:calculate).and_raise(StandardError, "Test error")
 
       expect { job.perform(email_account_id: email_account.id, period: :month) }.to raise_error(StandardError)
 
@@ -61,7 +61,7 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job, integratio
     end
 
     it 'tracks job metrics on failure' do
-      allow_any_instance_of(ExtendedCacheMetricsCalculator).to receive(:calculate).and_raise(StandardError, "Test error")
+      allow_any_instance_of(Services::ExtendedCacheMetricsCalculator).to receive(:calculate).and_raise(StandardError, "Test error")
 
       expect { job.perform(email_account_id: email_account.id, period: :month) }.to raise_error(StandardError)
 
@@ -108,10 +108,10 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job, integratio
       cache_key = "metrics_calculator:account_#{email_account.id}:month:#{current_date.iso8601}"
       Rails.cache.write(cache_key, { test: "data" })
 
-      expect(MetricsCalculator).to receive(:clear_cache).with(email_account: email_account)
+      expect(Services::MetricsCalculator).to receive(:clear_cache).with(email_account: email_account)
 
       # Mock the calculator to avoid nil metrics error
-      allow_any_instance_of(ExtendedCacheMetricsCalculator).to receive(:calculate).and_return({
+      allow_any_instance_of(Services::ExtendedCacheMetricsCalculator).to receive(:calculate).and_return({
         metrics: { total_amount: 0.0, transaction_count: 0 }
       })
 
@@ -120,8 +120,8 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job, integratio
   end
 
   describe 'extended cache', integration: true do
-    it 'uses ExtendedCacheMetricsCalculator for background calculations' do
-      expect(ExtendedCacheMetricsCalculator).to receive(:new)
+    it 'uses Services::ExtendedCacheMetricsCalculator for background calculations' do
+      expect(Services::ExtendedCacheMetricsCalculator).to receive(:new)
         .with(email_account: email_account, period: :month, reference_date: current_date, cache_hours: 4)
         .and_call_original
 
@@ -162,8 +162,8 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job, integratio
   end
 end
 
-# Test for ExtendedCacheMetricsCalculator
-RSpec.describe ExtendedCacheMetricsCalculator, integration: true do
+# Test for Services::ExtendedCacheMetricsCalculator
+RSpec.describe Services::MetricsCalculator, integration: true do
   let(:email_account) { create(:email_account) }
   let(:calculator) { described_class.new(email_account: email_account, period: :month, cache_hours: 4) }
 
@@ -172,8 +172,8 @@ RSpec.describe ExtendedCacheMetricsCalculator, integration: true do
       expect(calculator.cache_hours).to eq(4)
     end
 
-    it 'inherits from MetricsCalculator' do
-      expect(calculator).to be_a(MetricsCalculator)
+    it 'inherits from Services::MetricsCalculator' do
+      expect(calculator).to be_a(Services::MetricsCalculator)
     end
   end
 

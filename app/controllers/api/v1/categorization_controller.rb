@@ -103,7 +103,7 @@ module Api
       private
 
       def initialize_categorization_service
-        @categorization_service = Categorization::EnhancedCategorizationService.new
+        @categorization_service = Services::Categorization::EnhancedCategorizationService.new
       end
 
       def suggest_params

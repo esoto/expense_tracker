@@ -50,7 +50,7 @@ class MetricsCalculationJob < ApplicationJob
 
       # Clear cache if forced refresh
       if force_refresh
-        MetricsCalculator.clear_cache(email_account: email_account)
+        Services::MetricsCalculator.clear_cache(email_account: email_account)
       end
 
       if period.present?
@@ -58,7 +58,7 @@ class MetricsCalculationJob < ApplicationJob
         Rails.logger.info "Calculating metrics for account #{email_account.id}, period: #{period}, date: #{reference_date}"
 
         # Use longer cache expiration for background-calculated metrics
-        calculator = ExtendedCacheMetricsCalculator.new(
+        calculator = Services::ExtendedCacheMetricsCalculator.new(
           email_account: email_account,
           period: period,
           reference_date: reference_date,
@@ -114,7 +114,7 @@ class MetricsCalculationJob < ApplicationJob
       Rails.logger.debug "Calculating metrics for account #{email_account.id}, #{period} period on #{date}"
 
       # Use extended cache for background calculations
-      calculator = ExtendedCacheMetricsCalculator.new(
+      calculator = Services::ExtendedCacheMetricsCalculator.new(
         email_account: email_account,
         period: period,
         reference_date: date,
@@ -130,7 +130,7 @@ class MetricsCalculationJob < ApplicationJob
     periods_and_dates = []
 
     # For each period type, calculate current, previous, and next
-    MetricsCalculator::SUPPORTED_PERIODS.each do |period|
+    Services::MetricsCalculator::SUPPORTED_PERIODS.each do |period|
       case period
       when :day
         # Current day and past 7 days

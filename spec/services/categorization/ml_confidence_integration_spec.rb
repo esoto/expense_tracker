@@ -2,11 +2,11 @@
 
 require 'rails_helper'
 
-RSpec.describe Categorization::MlConfidenceIntegration do
+RSpec.describe Services::Categorization::MlConfidenceIntegration do
   # Create a test class that includes the module
   let(:test_class) do
     Class.new do
-      include Categorization::MlConfidenceIntegration
+      include Services::Categorization::MlConfidenceIntegration
     end
   end
 
@@ -16,7 +16,7 @@ RSpec.describe Categorization::MlConfidenceIntegration do
 
   describe '#update_expense_with_ml_confidence' do
     let(:result) do
-      Categorization::CategorizationResult.new(
+      Services::Categorization::CategorizationResult.new(
         category: category,
         confidence: confidence,
         method: 'pattern_match',
@@ -60,7 +60,7 @@ RSpec.describe Categorization::MlConfidenceIntegration do
     end
 
     context 'with unsuccessful result' do
-      let(:result) { Categorization::CategorizationResult.no_match }
+      let(:result) { Services::Categorization::CategorizationResult.no_match }
 
       it 'returns false and does not update expense' do
         expect(integration.update_expense_with_ml_confidence(expense, result)).to be false
@@ -74,7 +74,7 @@ RSpec.describe Categorization::MlConfidenceIntegration do
   describe '#build_confidence_explanation' do
     context 'with confidence breakdown' do
       let(:result) do
-        Categorization::CategorizationResult.new(
+        Services::Categorization::CategorizationResult.new(
           category: category,
           confidence: 0.85,
           confidence_breakdown: {
@@ -95,7 +95,7 @@ RSpec.describe Categorization::MlConfidenceIntegration do
 
     context 'without confidence breakdown' do
       let(:result) do
-        Categorization::CategorizationResult.new(
+        Services::Categorization::CategorizationResult.new(
           category: category,
           confidence: confidence
         )

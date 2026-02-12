@@ -1,4 +1,5 @@
-class SyncSessionPerformanceOptimizer
+module Services
+  class Services::SyncSessionPerformanceOptimizer
   # Query optimizations
   def self.preload_for_index
     SyncSession
@@ -90,5 +91,6 @@ class SyncSessionPerformanceOptimizer
     return nil if rate.zero?
 
     Time.current + (remaining / rate).seconds
+  end
   end
 end

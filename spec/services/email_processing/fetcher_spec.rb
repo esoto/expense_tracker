@@ -1,10 +1,10 @@
 require 'rails_helper'
 
-RSpec.describe EmailProcessing::Fetcher, type: :service, integration: true do
+RSpec.describe Services::EmailProcessing::Fetcher, type: :service, integration: true do
   let(:email_account) { create(:email_account, :bac) }
-  let(:mock_imap_service) { instance_double(ImapConnectionService) }
-  let(:mock_email_processor) { instance_double(EmailProcessing::Processor) }
-  let(:fetcher) { EmailProcessing::Fetcher.new(email_account, imap_service: mock_imap_service, email_processor: mock_email_processor) }
+  let(:mock_imap_service) { instance_double(Services::ImapConnectionService) }
+  let(:mock_email_processor) { instance_double(Services::EmailProcessing::Processor) }
+  let(:fetcher) { Services::EmailProcessing::Fetcher.new(email_account, imap_service: mock_imap_service, email_processor: mock_email_processor) }
 
   before do
     allow(mock_imap_service).to receive(:errors).and_return([])
@@ -20,9 +20,9 @@ RSpec.describe EmailProcessing::Fetcher, type: :service, integration: true do
     end
 
     it 'creates default services if none provided' do
-      default_fetcher = EmailProcessing::Fetcher.new(email_account)
-      expect(default_fetcher.imap_service).to be_a(ImapConnectionService)
-      expect(default_fetcher.email_processor).to be_a(EmailProcessing::Processor)
+      default_fetcher = Services::EmailProcessing::Fetcher.new(email_account)
+      expect(default_fetcher.imap_service).to be_a(Services::ImapConnectionService)
+      expect(default_fetcher.email_processor).to be_a(Services::EmailProcessing::Processor)
     end
   end
 
@@ -39,7 +39,7 @@ RSpec.describe EmailProcessing::Fetcher, type: :service, integration: true do
       it 'successfully fetches and processes emails' do
         result = fetcher.fetch_new_emails(since: 1.day.ago)
 
-        expect(result).to be_a(EmailProcessing::FetcherResponse)
+        expect(result).to be_a(Services::EmailProcessing::FetcherResponse)
         expect(result.success?).to be true
         expect(result.processed_emails_count).to eq(2)
         expect(result.total_emails_found).to eq(2)
@@ -76,7 +76,7 @@ RSpec.describe EmailProcessing::Fetcher, type: :service, integration: true do
       it 'returns failure response without attempting connection' do
         expect(mock_imap_service).not_to receive(:search_emails)
         result = fetcher.fetch_new_emails
-        expect(result).to be_a(EmailProcessing::FetcherResponse)
+        expect(result).to be_a(Services::EmailProcessing::FetcherResponse)
         expect(result.failure?).to be true
       end
     end
@@ -85,12 +85,12 @@ RSpec.describe EmailProcessing::Fetcher, type: :service, integration: true do
       before do
         allow(fetcher).to receive(:valid_account?).and_return(true)
         allow(mock_imap_service).to receive(:search_emails)
-          .and_raise(ImapConnectionService::ConnectionError, 'Connection failed')
+          .and_raise(Services::ImapConnectionService::ConnectionError, 'Connection failed')
       end
 
       it 'handles IMAP connection errors gracefully' do
         result = fetcher.fetch_new_emails
-        expect(result).to be_a(EmailProcessing::FetcherResponse)
+        expect(result).to be_a(Services::EmailProcessing::FetcherResponse)
         expect(result.failure?).to be true
         expect(result.errors).to include('IMAP Error: Connection failed')
       end
@@ -100,12 +100,12 @@ RSpec.describe EmailProcessing::Fetcher, type: :service, integration: true do
       before do
         allow(fetcher).to receive(:valid_account?).and_return(true)
         allow(mock_imap_service).to receive(:search_emails)
-          .and_raise(ImapConnectionService::AuthenticationError, 'Auth failed')
+          .and_raise(Services::ImapConnectionService::AuthenticationError, 'Auth failed')
       end
 
       it 'handles IMAP authentication errors gracefully' do
         result = fetcher.fetch_new_emails
-        expect(result).to be_a(EmailProcessing::FetcherResponse)
+        expect(result).to be_a(Services::EmailProcessing::FetcherResponse)
         expect(result.failure?).to be true
         expect(result.errors).to include('IMAP Error: Auth failed')
       end
@@ -120,7 +120,7 @@ RSpec.describe EmailProcessing::Fetcher, type: :service, integration: true do
 
       it 'handles standard errors gracefully' do
         result = fetcher.fetch_new_emails
-        expect(result).to be_a(EmailProcessing::FetcherResponse)
+        expect(result).to be_a(Services::EmailProcessing::FetcherResponse)
         expect(result.failure?).to be true
         expect(result.errors).to include('Unexpected error: Unexpected error')
       end
@@ -128,6 +128,31 @@ RSpec.describe EmailProcessing::Fetcher, type: :service, integration: true do
   end
 
   describe 'private methods', integration: true do
+    describe '#format_expense_message', integration: true do
+      it 'formats expense with Costa Rican currency' do
+        expense = instance_double(Expense, amount: 25750.99, merchant_name: 'Walmart')
+        message = fetcher.send(:format_expense_message, expense)
+        expect(message).to eq('₡25,750.99 en Walmart')
+      end
+
+      it 'handles nil expense' do
+        message = fetcher.send(:format_expense_message, nil)
+        expect(message).to eq('')
+      end
+
+      it 'handles expense with nil merchant' do
+        expense = instance_double(Expense, amount: 1000, merchant_name: nil)
+        message = fetcher.send(:format_expense_message, expense)
+        expect(message).to eq('₡1,000.00 en Comercio desconocido')
+      end
+
+      it 'handles expense with blank merchant' do
+        expense = instance_double(Expense, amount: 500.50, merchant_name: '   ')
+        message = fetcher.send(:format_expense_message, expense)
+        expect(message).to eq('₡500.50 en Comercio desconocido')
+      end
+    end
+
     describe '#valid_account?', integration: true do
       context 'with valid account' do
         it 'returns true' do
@@ -156,7 +181,7 @@ RSpec.describe EmailProcessing::Fetcher, type: :service, integration: true do
       end
 
       context 'with blank account' do
-        let(:fetcher) { EmailProcessing::Fetcher.new(nil, imap_service: mock_imap_service, email_processor: mock_email_processor) }
+        let(:fetcher) { Services::EmailProcessing::Fetcher.new(nil, imap_service: mock_imap_service, email_processor: mock_email_processor) }
 
         it 'returns false and adds error' do
           result = fetcher.send(:valid_account?)
@@ -169,6 +194,8 @@ RSpec.describe EmailProcessing::Fetcher, type: :service, integration: true do
     describe '#search_and_process_emails', integration: true do
       let(:message_ids) { [ 1, 2 ] }
       let(:since_date) { 1.day.ago }
+      let(:sync_session) { create(:sync_session, :running) }
+      let(:sync_session_account) { create(:sync_session_account, sync_session: sync_session, email_account: email_account) }
 
       before do
         allow(mock_imap_service).to receive(:search_emails).and_return(message_ids)
@@ -185,8 +212,55 @@ RSpec.describe EmailProcessing::Fetcher, type: :service, integration: true do
       end
 
       it 'does not log the number of emails found' do
-        expect(Rails.logger).not_to receive(:info).with("[EmailProcessing::Fetcher] Found 2 emails for #{email_account.email}")
+        expect(Rails.logger).not_to receive(:info).with("[Services::EmailProcessing::Fetcher] Found 2 emails for #{email_account.email}")
         fetcher.send(:search_and_process_emails, since_date)
+      end
+
+      context 'with sync_session_account and expense detection' do
+        let(:fetcher_with_sync) do
+          Services::EmailProcessing::Fetcher.new(
+            email_account,
+            imap_service: mock_imap_service,
+            email_processor: mock_email_processor,
+            sync_session_account: sync_session_account
+          )
+        end
+
+        let(:expense) { instance_double(Expense, amount: 1500, merchant_name: 'Test Store') }
+
+        before do
+          stub_const('SyncStatusChannel', double('SyncStatusChannel'))
+          allow(SyncStatusChannel).to receive(:broadcast_activity)
+          allow(sync_session_account).to receive(:update!)
+          allow(sync_session_account).to receive(:update_progress)
+
+          allow(mock_email_processor).to receive(:process_emails) do |ids, service, &block|
+            block&.call(1, 1, expense) if block
+            { processed_count: 1, total_count: 1 }
+          end
+        end
+
+        it 'broadcasts expense detection activity' do
+          expect(SyncStatusChannel).to receive(:broadcast_activity).with(
+            sync_session,
+            "expense_detected",
+            "Gasto detectado: ₡1,500.00 en Test Store"
+          )
+
+          fetcher_with_sync.send(:search_and_process_emails, since_date)
+        end
+
+        it 'handles broadcast errors gracefully' do
+          allow(sync_session_account).to receive(:update_progress)
+            .and_raise(StandardError, 'Update error')
+
+          expect(Rails.logger).to receive(:error)
+            .with('[Services::EmailProcessing::Fetcher] Failed to update progress: Update error')
+
+          # Should not raise error
+          result = fetcher_with_sync.send(:search_and_process_emails, since_date)
+          expect(result[:processed_emails_count]).to eq(1)
+        end
       end
     end
 
@@ -205,13 +279,13 @@ RSpec.describe EmailProcessing::Fetcher, type: :service, integration: true do
       end
 
       it 'logs the error with email account info' do
-        expect(Rails.logger).to receive(:error).with("[EmailProcessing::Fetcher] #{email_account.email}: Test error")
+        expect(Rails.logger).to receive(:error).with("[Services::EmailProcessing::Fetcher] #{email_account.email}: Test error")
         fetcher.send(:add_error, 'Test error')
       end
 
       it 'handles nil email account gracefully' do
-        nil_fetcher = EmailProcessing::Fetcher.new(nil, imap_service: mock_imap_service, email_processor: mock_email_processor)
-        expect(Rails.logger).to receive(:error).with("[EmailProcessing::Fetcher] Unknown: Test error")
+        nil_fetcher = Services::EmailProcessing::Fetcher.new(nil, imap_service: mock_imap_service, email_processor: mock_email_processor)
+        expect(Rails.logger).to receive(:error).with("[Services::EmailProcessing::Fetcher] Unknown: Test error")
         nil_fetcher.send(:add_error, 'Test error')
       end
     end

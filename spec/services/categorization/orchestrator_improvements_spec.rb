@@ -2,9 +2,9 @@
 
 require 'rails_helper'
 
-RSpec.describe Categorization::Orchestrator, type: :service, integration: true do
+RSpec.describe Services::Categorization::Orchestrator, type: :service, integration: true do
   describe 'Performance and Safety Improvements', integration: true do
-    let(:orchestrator) { Categorization::OrchestratorFactory.create_test }
+    let(:orchestrator) { Services::Categorization::OrchestratorFactory.create_test }
     let(:expense) do
       create(:expense,
         merchant_name: 'Amazon',
@@ -52,7 +52,7 @@ RSpec.describe Categorization::Orchestrator, type: :service, integration: true d
         threads.each(&:join)
 
         expect(results.size).to eq(20)
-        expect(results.all? { |r| r.is_a?(Categorization::CategorizationResult) }).to be true
+        expect(results.all? { |r| r.is_a?(Services::Categorization::CategorizationResult) }).to be true
       end
 
       it 'synchronizes reset operations safely' do
@@ -115,9 +115,9 @@ RSpec.describe Categorization::Orchestrator, type: :service, integration: true d
     end
 
     describe 'Circuit Breaker Integration', integration: true do
-      let(:circuit_breaker) { Categorization::Orchestrator::CircuitBreaker.new(failure_threshold: 3) }
+      let(:circuit_breaker) { Services::Categorization::Orchestrator::CircuitBreaker.new(failure_threshold: 3) }
       let(:orchestrator_with_breaker) do
-        Categorization::OrchestratorFactory.create_custom(
+        Services::Categorization::OrchestratorFactory.create_custom(
           circuit_breaker: circuit_breaker
         )
       end
@@ -125,7 +125,7 @@ RSpec.describe Categorization::Orchestrator, type: :service, integration: true d
       it 'opens circuit after threshold failures' do
         # Simulate failures
         3.times do
-          allow_any_instance_of(Categorization::PatternCache).to receive(:get_patterns_for_expense)
+          allow_any_instance_of(Services::Categorization::PatternCache).to receive(:get_patterns_for_expense)
             .and_raise(StandardError.new("Service error"))
 
           result = orchestrator_with_breaker.categorize(expense)
@@ -155,7 +155,7 @@ RSpec.describe Categorization::Orchestrator, type: :service, integration: true d
     describe 'Monitoring Integration', integration: true do
       it 'tracks performance metrics' do
         # Stub the module if it's defined
-        if defined?(Infrastructure::MonitoringService::PerformanceTracker)
+        if defined?(Services::Infrastructure::MonitoringService::PerformanceTracker)
           # Create a pattern so categorization has work to do
           category = create(:category, name: 'Shopping')
           create(:categorization_pattern,
@@ -164,12 +164,12 @@ RSpec.describe Categorization::Orchestrator, type: :service, integration: true d
             pattern_value: 'Amazon'
           )
 
-          allow(Infrastructure::MonitoringService::PerformanceTracker).to receive(:track).and_call_original
+          allow(Services::Infrastructure::MonitoringService::PerformanceTracker).to receive(:track).and_call_original
 
           # Use a longer timeout to ensure the operation completes
           orchestrator.categorize(expense, timeout: 0.100)
 
-          expect(Infrastructure::MonitoringService::PerformanceTracker).to have_received(:track).with(
+          expect(Services::Infrastructure::MonitoringService::PerformanceTracker).to have_received(:track).with(
             "categorization",
             "categorize_expense",
             anything,
@@ -183,14 +183,14 @@ RSpec.describe Categorization::Orchestrator, type: :service, integration: true d
 
       it 'reports errors to monitoring service' do
         # Stub the module if it's defined
-        if defined?(Infrastructure::MonitoringService::ErrorTracker)
-          allow(Infrastructure::MonitoringService::ErrorTracker).to receive(:report)
+        if defined?(Services::Infrastructure::MonitoringService::ErrorTracker)
+          allow(Services::Infrastructure::MonitoringService::ErrorTracker).to receive(:report)
           allow(CategorizationPattern).to receive(:active)
             .and_raise(StandardError.new("Test error"))
 
           orchestrator.categorize(expense)
 
-          expect(Infrastructure::MonitoringService::ErrorTracker).to have_received(:report).with(
+          expect(Services::Infrastructure::MonitoringService::ErrorTracker).to have_received(:report).with(
             an_instance_of(StandardError),
             hash_including(:service, :expense_id, :correlation_id)
           )
@@ -208,7 +208,7 @@ RSpec.describe Categorization::Orchestrator, type: :service, integration: true d
         results = orchestrator.batch_categorize(expenses, parallel: true, max_threads: 4)
 
         expect(results.size).to eq(20)
-        expect(results.all? { |r| r.is_a?(Categorization::CategorizationResult) }).to be true
+        expect(results.all? { |r| r.is_a?(Services::Categorization::CategorizationResult) }).to be true
       end
 
       it 'preloads categories to avoid N+1 queries' do
@@ -242,7 +242,7 @@ RSpec.describe Categorization::Orchestrator, type: :service, integration: true d
 
         # Simulate slow pattern matching - this method is always called
         allow(orchestrator).to receive(:find_pattern_matches).and_wrap_original do |original, *args|
-          sleep 0.030 # 30ms to exceed 25ms threshold
+          sleep 0.030 # Real sleep needed for performance measurement test
           original.call(*args)
         end
 

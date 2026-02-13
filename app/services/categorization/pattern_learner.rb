@@ -890,74 +890,74 @@ module Services::Categorization
         error: @error
       }
     end
-  end
-
-  class BatchLearningResult
-    attr_reader :total, :successful, :failed, :patterns_created,
-                :patterns_updated, :results, :metrics, :error
-
-    def initialize(total:, successful:, failed:, patterns_created:,
-                   patterns_updated:, results: [], metrics: {}, error: nil)
-      @total = total
-      @successful = successful
-      @failed = failed
-      @patterns_created = patterns_created
-      @patterns_updated = patterns_updated
-      @results = results
-      @metrics = metrics
-      @error = error
     end
 
-    def self.empty
-      new(total: 0, successful: 0, failed: 0, patterns_created: 0, patterns_updated: 0)
+    class BatchLearningResult
+      attr_reader :total, :successful, :failed, :patterns_created,
+                  :patterns_updated, :results, :metrics, :error
+
+      def initialize(total:, successful:, failed:, patterns_created:,
+                     patterns_updated:, results: [], metrics: {}, error: nil)
+        @total = total
+        @successful = successful
+        @failed = failed
+        @patterns_created = patterns_created
+        @patterns_updated = patterns_updated
+        @results = results
+        @metrics = metrics
+        @error = error
+      end
+
+      def self.empty
+        new(total: 0, successful: 0, failed: 0, patterns_created: 0, patterns_updated: 0)
+      end
+
+      def self.error(message)
+        new(total: 0, successful: 0, failed: 0, patterns_created: 0,
+            patterns_updated: 0, error: message)
+      end
+
+      def success?
+        @error.nil? && @failed == 0
+      end
+
+      def success_rate
+        return 0.0 if @total == 0
+        (@successful.to_f / @total * 100).round(2)
+      end
+
+      def to_h
+        {
+          total: @total,
+          successful: @successful,
+          failed: @failed,
+          success_rate: success_rate,
+          patterns_created: @patterns_created,
+          patterns_updated: @patterns_updated,
+          metrics: @metrics,
+          error: @error
+        }
+      end
     end
 
-    def self.error(message)
-      new(total: 0, successful: 0, failed: 0, patterns_created: 0,
-          patterns_updated: 0, error: message)
-    end
+    class DecayResult
+      attr_reader :patterns_examined, :patterns_decayed, :patterns_deactivated
 
-    def success?
-      @error.nil? && @failed == 0
-    end
+      def initialize(patterns_examined:, patterns_decayed:, patterns_deactivated:)
+        @patterns_examined = patterns_examined
+        @patterns_decayed = patterns_decayed
+        @patterns_deactivated = patterns_deactivated
+      end
 
-    def success_rate
-      return 0.0 if @total == 0
-      (@successful.to_f / @total * 100).round(2)
+      def to_h
+        {
+          patterns_examined: @patterns_examined,
+          patterns_decayed: @patterns_decayed,
+          patterns_deactivated: @patterns_deactivated,
+          decay_rate: @patterns_examined > 0 ?
+            (@patterns_decayed.to_f / @patterns_examined * 100).round(2) : 0.0
+        }
+      end
     end
-
-    def to_h
-      {
-        total: @total,
-        successful: @successful,
-        failed: @failed,
-        success_rate: success_rate,
-        patterns_created: @patterns_created,
-        patterns_updated: @patterns_updated,
-        metrics: @metrics,
-        error: @error
-      }
-    end
-  end
-
-  class DecayResult
-    attr_reader :patterns_examined, :patterns_decayed, :patterns_deactivated
-
-    def initialize(patterns_examined:, patterns_decayed:, patterns_deactivated:)
-      @patterns_examined = patterns_examined
-      @patterns_decayed = patterns_decayed
-      @patterns_deactivated = patterns_deactivated
-    end
-
-    def to_h
-      {
-        patterns_examined: @patterns_examined,
-        patterns_decayed: @patterns_decayed,
-        patterns_deactivated: @patterns_deactivated,
-        decay_rate: @patterns_examined > 0 ?
-          (@patterns_decayed.to_f / @patterns_examined * 100).round(2) : 0.0
-      }
-    end
-  end
   end
 end

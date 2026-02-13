@@ -1,6 +1,5 @@
 class ExpensesController < ApplicationController
-  skip_before_action :verify_authenticity_token, only: [ :bulk_categorize, :bulk_update_status, :bulk_destroy ], if: -> { request.format.json? }
-  before_action :authenticate_user!, except: [ :dashboard, :bulk_categorize, :bulk_update_status, :bulk_destroy ] # Allow dashboard and bulk operations without auth for now
+  include Authentication
   before_action :set_expense, only: [ :show, :edit, :update, :destroy, :correct_category, :accept_suggestion, :reject_suggestion, :update_status, :duplicate ]
   before_action :authorize_expense!, only: [ :edit, :update, :destroy, :correct_category, :accept_suggestion, :reject_suggestion, :update_status, :duplicate ]
 
@@ -567,27 +566,9 @@ class ExpensesController < ApplicationController
   end
 
   def current_user_email_accounts
-    # Cache this in instance variable to avoid multiple queries
-    @current_user_email_accounts ||= if defined?(current_user) && current_user.present?
-      # If using Devise or similar authentication
-      EmailAccount.where(user_id: current_user.id)
-    else
-      # Fallback for systems without user authentication
-      # In production, this should be properly configured
-      EmailAccount.all
-    end
-  end
-
-  def authenticate_user!
-    # This would normally be provided by Devise or your auth system
-    # For now, we'll make it a no-op if not defined
-    # In test/development without Devise, allow all requests
-    if respond_to?(:super)
-      super
-    else
-      # No-op if authentication system not available
-      true
-    end
+    # Admin users see all email accounts (no User model for per-user scoping yet).
+    # When user-level data isolation is added, scope to current_user's accounts.
+    @current_user_email_accounts ||= EmailAccount.all
   end
 
   def expense_params
@@ -608,8 +589,7 @@ class ExpensesController < ApplicationController
   end
 
   def current_user_for_bulk_operations
-    # Return current_user if using authentication, nil otherwise
-    defined?(current_user) ? current_user : nil
+    current_user
   end
 
   def filter_params
@@ -858,10 +838,7 @@ class ExpensesController < ApplicationController
   end
 
   def authorize_bulk_operation!
-    # Ensure user can perform bulk operations
-    # In test/development, allow if no authentication system is set up
-    # In production, this should verify proper user authorization
-    if Rails.env.production? && !defined?(current_user)
+    unless user_signed_in?
       respond_to do |format|
         format.json { render json: { success: false, message: "No autorizado" }, status: :unauthorized }
         format.html { redirect_to root_path, alert: "No autorizado" }

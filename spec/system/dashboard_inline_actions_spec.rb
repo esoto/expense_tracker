@@ -1,10 +1,13 @@
 require "rails_helper"
 
 RSpec.describe "Dashboard Inline Actions", type: :system, js: true, tier: :system do
+  let(:admin_user) { create(:admin_user) }
   let!(:email_account) { create(:email_account) }
   let!(:category_food) { create(:category, name: "Food", color: "#FF6B6B") }
   let!(:category_transport) { create(:category, name: "Transport", color: "#4ECDC4") }
   let!(:category_entertainment) { create(:category, name: "Entertainment", color: "#FFD93D") }
+
+  before { sign_in_admin_user(admin_user) }
 
   # Create a variety of expenses for testing
   let!(:pending_expense) do

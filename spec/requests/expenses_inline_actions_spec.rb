@@ -1,7 +1,10 @@
 require "rails_helper"
 
 RSpec.describe "Expenses Inline Actions API", type: :request do
+  let!(:admin_user) { create(:admin_user) }
   let!(:email_account) { create(:email_account) }
+
+  before { sign_in_admin(admin_user) }
   let!(:category) { create(:category, name: "Food", color: "#FF6B6B") }
   let!(:new_category) { create(:category, name: "Transport", color: "#4ECDC4") }
   let!(:expense) do

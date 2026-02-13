@@ -125,19 +125,32 @@ RSpec.describe Services::BulkOperations::DeletionService, type: :service, unit: 
     end
 
     context 'with user authorization', unit: true do
-      # Since user_id doesn't exist on email_accounts, user authorization will fail
-      # The BaseService checks EmailAccount.where(user_id: user.id) which returns empty
-      let(:user) { double('User', id: 1) }
-      let(:service) { described_class.new(expense_ids: expense_ids, user: user) }
+      context 'when user has no email_accounts association (admin user)' do
+        let(:user) { double('AdminUser', id: 1, email: 'admin@test.com') }
+        let(:service) { described_class.new(expense_ids: expense_ids, user: user) }
 
-      it 'fails when user has no associated email accounts' do
-        result = service.call
+        it 'allows full access (no per-user scoping)' do
+          result = service.call
 
-        # No email accounts match user_id since the column doesn't exist
-        # This causes a database error which is caught and returned
-        expect(result[:success]).to be false
-        # The error message will be about the missing column
-        expect(result[:errors].first).to match(/user_id does not exist|Error processing operation/)
+          # Admin users without email_accounts association get full access
+          expect(result[:success]).to be true
+          expect(result[:affected_count]).to eq(3)
+        end
+      end
+
+      context 'when user has email_accounts association but no accounts' do
+        let(:user) do
+          double('User', id: 999, email: 'user@test.com',
+                 email_accounts: EmailAccount.none)
+        end
+        let(:service) { described_class.new(expense_ids: expense_ids, user: user) }
+
+        it 'fails when user has no associated email accounts' do
+          result = service.call
+
+          expect(result[:success]).to be false
+          expect(result[:message]).to include("not found or unauthorized")
+        end
       end
     end
 

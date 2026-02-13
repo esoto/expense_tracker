@@ -3,10 +3,12 @@ require 'rails_helper'
 RSpec.describe "Dashboard Accessibility", type: :system, js: true, tier: :system do
   include AccessibilityHelper
 
+  let(:admin_user) { create(:admin_user) }
   let!(:categories) { create_list(:category, 3) }
   let!(:expenses) { create_list(:expense, 15, category: categories.first) }
 
   before do
+    sign_in_admin_user(admin_user)
     visit dashboard_expenses_path
     # Wait for page to fully load
     expect(page).to have_css('[data-controller="dashboard-expenses"]')

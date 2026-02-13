@@ -3,7 +3,10 @@
 require "rails_helper"
 
 RSpec.describe "Dashboard Filter Chips AJAX", type: :request do
+  let!(:admin_user) { create(:admin_user) }
   let!(:email_account) { create(:email_account, active: true) }
+
+  before { sign_in_admin(admin_user) }
   let!(:category1) { create(:category, name: "Food", color: "#10B981") }
   let!(:category2) { create(:category, name: "Transport", color: "#3B82F6") }
 

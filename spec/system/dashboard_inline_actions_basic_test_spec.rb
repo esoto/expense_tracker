@@ -1,6 +1,7 @@
 require "rails_helper"
 
 RSpec.describe "Dashboard Inline Actions Basic Test", type: :system, js: true, tier: :system do
+  let(:admin_user) { create(:admin_user) }
   let!(:email_account) { create(:email_account) }
   let!(:category) { create(:category, name: "Food", color: "#FF6B6B") }
   let!(:expense) do
@@ -17,6 +18,7 @@ RSpec.describe "Dashboard Inline Actions Basic Test", type: :system, js: true, t
   before do
     # Force desktop viewport for proper hover testing
     page.driver.browser.manage.window.resize_to(1400, 900)
+    sign_in_admin_user(admin_user)
     visit dashboard_expenses_path
     wait_for_turbo
   end

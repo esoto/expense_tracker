@@ -1,6 +1,7 @@
 require "rails_helper"
 
 RSpec.describe "Dashboard Inline Actions Basic", type: :system, js: true, tier: :system do
+  let(:admin_user) { create(:admin_user) }
   let!(:email_account) { create(:email_account) }
   let!(:category_food) { create(:category, name: "Food", color: "#FF6B6B") }
   let!(:category_transport) { create(:category, name: "Transport", color: "#4ECDC4") }
@@ -17,6 +18,7 @@ RSpec.describe "Dashboard Inline Actions Basic", type: :system, js: true, tier: 
   end
 
   before do
+    sign_in_admin_user(admin_user)
     visit dashboard_expenses_path
     # Wait for page to load and Stimulus to initialize
     sleep 1

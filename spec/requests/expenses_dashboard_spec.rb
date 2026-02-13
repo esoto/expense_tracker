@@ -1,6 +1,10 @@
 require 'rails_helper'
 
 RSpec.describe "Expenses Dashboard", type: :request, integration: true do
+  let(:admin_user) { create(:admin_user) }
+
+  before { sign_in_admin(admin_user) }
+
   describe "GET /expenses/dashboard", integration: true do
     it "displays the dashboard with sync status widget" do
       # Create test data

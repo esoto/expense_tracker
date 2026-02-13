@@ -7,10 +7,10 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
   let(:current_user_id) { "user_123" }
 
   before do
-    # Skip authentication for unit tests
-    controller.class.skip_before_action :authenticate_user!, raise: false
-    controller.class.skip_before_action :authorize_expense!, raise: false
-    controller.class.skip_before_action :authorize_bulk_operation!, raise: false
+    # Use instance-level mocking (not class-level skip_before_action which pollutes other specs)
+    allow(controller).to receive(:authenticate_user!).and_return(true)
+    allow(controller).to receive(:authorize_expense!).and_return(true)
+    allow(controller).to receive(:authorize_bulk_operation!).and_return(true)
 
     # Mock current user methods
     allow(controller).to receive(:current_user_for_bulk_operations).and_return(current_user_id)
@@ -476,6 +476,8 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
     describe "#authorize_expense!" do
       before do
         controller.instance_variable_set(:@expense, expense)
+        # Remove the mock so we test the real method
+        allow(controller).to receive(:authorize_expense!).and_call_original
       end
 
       it "calls can_modify_expense? to check permissions" do

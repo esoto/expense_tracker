@@ -2,6 +2,7 @@ require "rails_helper"
 require "support/inline_actions_helper"
 
 RSpec.describe "Dashboard Inline Actions Comprehensive", type: :system, js: true, tier: :system do
+  let(:admin_user) { create(:admin_user) }
   let!(:email_account) { create(:email_account) }
   let!(:category_food) { create(:category, name: "Food", color: "#FF6B6B") }
   let!(:category_transport) { create(:category, name: "Transport", color: "#4ECDC4") }
@@ -38,6 +39,7 @@ RSpec.describe "Dashboard Inline Actions Comprehensive", type: :system, js: true
   end
 
   before do
+    sign_in_admin_user(admin_user)
     visit dashboard_expenses_path
     wait_for_page_load
   end

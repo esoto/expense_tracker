@@ -1,6 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Inline Quick Actions", type: :system, js: true do
+  let(:admin_user) { create(:admin_user) }
   let!(:email_account) { create(:email_account) }
   let!(:category1) { create(:category, name: "Food", color: "#22c55e") }
   let!(:category2) { create(:category, name: "Transport", color: "#3b82f6") }
@@ -17,6 +18,7 @@ RSpec.describe "Inline Quick Actions", type: :system, js: true do
 
   before do
     driven_by(:selenium_chrome_headless)
+    sign_in_admin_user(admin_user)
     visit expenses_path
 
     # Wait for Stimulus to be loaded

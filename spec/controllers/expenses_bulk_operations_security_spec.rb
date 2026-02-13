@@ -3,10 +3,13 @@
 require 'rails_helper'
 
 RSpec.describe ExpensesController, type: :request, unit: true do
+  let(:admin_user) { create(:admin_user) }
   let(:email_account) { create(:email_account) }
   let(:category) { create(:category) }
   let(:expenses) { create_list(:expense, 3, email_account: email_account) }
   let(:expense_ids) { expenses.map(&:id) }
+
+  before { sign_in_admin(admin_user) }
 
   describe "Security: Strong Parameters", unit: true do
     describe "POST /expenses/bulk_categorize", unit: true do
@@ -147,19 +150,56 @@ RSpec.describe ExpensesController, type: :request, unit: true do
       let(:other_account) { create(:email_account) }
       let(:other_expenses) { create_list(:expense, 2, email_account: other_account) }
 
-      it "handles expenses from different accounts" do
+      it "allows admin users to access all expenses" do
         post bulk_categorize_expenses_path, params: {
           expense_ids: other_expenses.map(&:id),
           category_id: category.id
         }, as: :json
 
         json = JSON.parse(response.body)
-        # Without user auth, operation succeeds
-        # In production with auth, this would fail
+        # Admin users have full access (no per-user data isolation yet)
         expect(json["success"]).to be true
+      end
+    end
+  end
 
-        # Comment: In production with authentication,
-        # this would prevent modification of unauthorized expenses
+  describe "Security: Authentication Enforcement", unit: true do
+    context "when not authenticated" do
+      before do
+        # Clear the authenticated session so requests hit the real auth flow
+        reset!
+      end
+
+      it "redirects unauthenticated bulk_categorize to login" do
+        post bulk_categorize_expenses_path, params: {
+          expense_ids: expense_ids,
+          category_id: category.id
+        }
+
+        expect(response).to redirect_to(admin_login_url)
+      end
+
+      it "redirects unauthenticated bulk_destroy to login" do
+        delete bulk_destroy_expenses_path, params: {
+          expense_ids: expense_ids
+        }
+
+        expect(response).to redirect_to(admin_login_url)
+      end
+
+      it "redirects unauthenticated bulk_update_status to login" do
+        post bulk_update_status_expenses_path, params: {
+          expense_ids: expense_ids,
+          status: "processed"
+        }
+
+        expect(response).to redirect_to(admin_login_url)
+      end
+
+      it "redirects unauthenticated dashboard access to login" do
+        get dashboard_expenses_path
+
+        expect(response).to redirect_to(admin_login_url)
       end
     end
   end

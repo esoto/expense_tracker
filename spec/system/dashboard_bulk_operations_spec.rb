@@ -1,6 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Dashboard Bulk Operations", type: :system, js: true, tier: :system do
+  let(:admin_user) { create(:admin_user) }
   let(:email_account) { create(:email_account) }
   let(:category1) { create(:category, name: "Food", color: "#FF5733") }
   let(:category2) { create(:category, name: "Transport", color: "#33FF57") }
@@ -22,6 +23,7 @@ RSpec.describe "Dashboard Bulk Operations", type: :system, js: true, tier: :syst
     category2
     category3
 
+    sign_in_admin_user(admin_user)
     visit dashboard_expenses_path
     # Wait for page to load
     expect(page).to have_css('.dashboard-expense-row', wait: 5)

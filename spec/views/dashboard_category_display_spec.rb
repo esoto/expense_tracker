@@ -1,11 +1,13 @@
 require 'rails_helper'
 
 RSpec.describe "Dashboard Category Display", type: :system do
+  let(:admin_user) { create(:admin_user) }
   let!(:category) { create(:category, name: "Test Category", color: "#FF6B6B") }
   let!(:expense_with_category) { create(:expense, category: category, merchant_name: "Test Merchant") }
   let!(:expense_without_category) { create(:expense, category: nil, merchant_name: "No Category Merchant") }
 
   before do
+    sign_in_admin_user(admin_user)
     visit dashboard_expenses_path
   end
 

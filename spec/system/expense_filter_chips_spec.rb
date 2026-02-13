@@ -1,10 +1,13 @@
 require 'rails_helper'
 
 RSpec.describe "Expense Filter Chips", type: :system, js: true do
+  let(:admin_user) { create(:admin_user) }
   let!(:category1) { create(:category, name: "Food", color: "emerald") }
   let!(:category2) { create(:category, name: "Transport", color: "amber") }
   let!(:expense1) { create(:expense, category: category1, bank_name: "BAC", amount: 1000) }
   let!(:expense2) { create(:expense, category: category2, bank_name: "BCR", amount: 2000) }
+
+  before { sign_in_admin_user(admin_user) }
 
   describe "Filter chips display" do
     it "shows active filters as chips" do

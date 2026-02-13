@@ -1,6 +1,7 @@
 require "rails_helper"
 
 RSpec.describe "Dashboard Batch Selection", type: :system, js: true, tier: :system do
+  let(:admin_user) { create(:admin_user) }
   let!(:email_account) { create(:email_account) }
   let!(:food_category) { create(:category, name: "Food", color: "#FF6B6B") }
   let!(:transport_category) { create(:category, name: "Transport", color: "#4ECDC4") }
@@ -53,6 +54,7 @@ RSpec.describe "Dashboard Batch Selection", type: :system, js: true, tier: :syst
   end
 
   before do
+    sign_in_admin_user(admin_user)
     visit dashboard_expenses_path
   end
 

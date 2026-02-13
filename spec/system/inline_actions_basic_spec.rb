@@ -1,11 +1,13 @@
 require "rails_helper"
 
 RSpec.describe "Inline Actions Basic", type: :system, js: true do
+  let(:admin_user) { create(:admin_user) }
   let!(:email_account) { create(:email_account) }
   let!(:category) { create(:category, name: "Test Category", color: "#FF0000") }
   let!(:expense) { create(:expense, email_account: email_account, status: "pending", merchant_name: "Test Merchant") }
 
   before do
+    sign_in_admin_user(admin_user)
     visit dashboard_expenses_path
     expect(page).to have_css("#dashboard-expenses-widget", wait: 10)
     sleep 1 # Allow JS to load

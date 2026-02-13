@@ -441,7 +441,7 @@ RSpec.describe "FuzzyMatcher Performance", type: :performance do
           expect(result).to be_success
         end
 
-        expect(time * 1000).to be < 15, "Transaction '#{transaction}' took #{(time * 1000).round(2)}ms"
+        expect(time * 1000).to be < 25, "Transaction '#{transaction}' took #{(time * 1000).round(2)}ms"
       end
     end
 

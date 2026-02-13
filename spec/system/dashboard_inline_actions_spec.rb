@@ -403,6 +403,18 @@ RSpec.describe "Dashboard Inline Actions", type: :system, js: true, tier: :syste
         expect(focused_element.tag_name.downcase).to eq("button")
       end
     end
+
+    it "supports keyboard-only navigation via Tab" do
+      # Tab to first expense row (no mouse interaction)
+      page.send_keys(:tab) until page.evaluate_script("document.activeElement")&.[]("data-expense-id")
+
+      page.send_keys('c')
+      expect(page).to have_css('[data-dashboard-inline-actions-target="categoryDropdown"]:not(.hidden)')
+
+      page.send_keys(:escape)
+      page.send_keys('s')
+      expect(page).to have_content("Estado cambiado")
+    end
   end
 
   describe "Loading States and Feedback" do
@@ -554,6 +566,21 @@ RSpec.describe "Dashboard Inline Actions", type: :system, js: true, tier: :syste
   end
 
   describe "Integration with View Modes" do
+    it "closes other dropdowns when a new one opens" do
+      rows = all('[data-dashboard-inline-actions-expense-id-value]')
+
+      if rows.length >= 2
+        rows[0].hover
+        within(rows[0]) { find('button[title*="Categorizar"]').click }
+        expect(page).to have_css('[data-dashboard-inline-actions-target="categoryDropdown"]:not(.hidden)', count: 1)
+
+        rows[1].hover
+        within(rows[1]) { find('button[title*="Categorizar"]').click }
+        # Still only one dropdown open
+        expect(page).to have_css('[data-dashboard-inline-actions-target="categoryDropdown"]:not(.hidden)', count: 1)
+      end
+    end
+
     it "works in both compact and expanded views" do
       # Test in compact view (default)
       expect(page).to have_css('.dashboard-expenses-compact')

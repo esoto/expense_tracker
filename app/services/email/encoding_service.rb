@@ -9,7 +9,7 @@ module Services::Email
         return nil if text.nil?
 
         text = text.dup
-        original_encoding = text.encoding
+        replacement = options[:replace_char] || "?"
 
         # Handle quoted-printable encoding first
         if options[:quoted_printable]
@@ -22,39 +22,45 @@ module Services::Email
         end
 
         # Detect and convert encoding
-        result = detect_and_convert(text, original_encoding)
+        result = detect_and_convert(text, replacement)
 
         # Apply final scrubbing
-        result.scrub(options[:replace_char] || "?")
+        result.scrub(replacement)
       rescue => e
         Rails.logger.warn "[EncodingService] Failed to decode: #{e.message}"
-        fallback_decode(text)
+        fallback_decode(text, replacement)
       end
 
       private
 
-      def detect_and_convert(text, original_encoding)
+      def detect_and_convert(text, replacement)
         # If already valid UTF-8, return it
         if text.encoding == Encoding::UTF_8 && text.valid_encoding?
           return text
         end
 
-        # Try to detect encoding using simple heuristics
+        # Try to detect encoding using byte-level heuristics
         detected = detect_encoding(text)
-        if detected && detected != "UTF-8"
-          return text.force_encoding(detected).encode("UTF-8",
-            invalid: :replace,
-            undef: :replace,
-            replace: "?"
-          )
+
+        if detected == "UTF-8"
+          # Force encoding label and scrub invalid sequences,
+          # preserving valid multi-byte characters like "café"
+          return text.dup.force_encoding(Encoding::UTF_8).scrub(replacement)
+        end
+
+        if detected
+          converted = text.dup.force_encoding(detected)
+          if converted.valid_encoding?
+            return converted.encode("UTF-8", invalid: :replace, undef: :replace, replace: replacement)
+          end
         end
 
         # Fallback to trying common encodings
         COMMON_ENCODINGS.each do |encoding|
           begin
-            text.force_encoding(encoding)
-            if text.valid_encoding?
-              return text.encode("UTF-8", invalid: :replace, undef: :replace)
+            candidate = text.dup.force_encoding(encoding)
+            if candidate.valid_encoding?
+              return candidate.encode("UTF-8", invalid: :replace, undef: :replace, replace: replacement)
             end
           rescue
             next
@@ -62,44 +68,48 @@ module Services::Email
         end
 
         # Last resort
-        text.force_encoding("UTF-8").scrub("?")
+        text.force_encoding("UTF-8").scrub(replacement)
       end
 
       def decode_quoted_printable(text)
-        text.gsub(/=\r?\n/, "")
-            .gsub(/=([0-9A-F]{2})/i) { [ $1 ].pack("H*") }
+        # Work in binary to avoid encoding incompatibility when inserting
+        # decoded bytes (e.g. \xC3\xB1) into a UTF-8 string.
+        binary = text.dup.force_encoding(Encoding::ASCII_8BIT)
+        decoded = binary.gsub(/=\r?\n/n, "".b)
+                        .gsub(/=([0-9A-Fa-f]{2})/n) { [$1].pack("H*") }
+        decoded.force_encoding(Encoding::UTF_8)
       end
 
       def detect_encoding(text)
-        # Check for BOM markers
-        return "UTF-16LE" if text.start_with?("\xFF\xFE")
-        return "UTF-16BE" if text.start_with?("\xFE\xFF")
-        return "UTF-8" if text.start_with?("\xEF\xBB\xBF")
+        raw = text.b
 
-        # Check for common patterns
-        if text.include?("\xC3") || text.include?("\xC2")
+        # Check for BOM markers
+        return "UTF-16LE" if raw.start_with?("\xFF\xFE".b)
+        return "UTF-16BE" if raw.start_with?("\xFE\xFF".b)
+        return "UTF-8" if raw.start_with?("\xEF\xBB\xBF".b)
+
+        # Check for common UTF-8 multi-byte lead bytes
+        if raw.include?("\xC3".b) || raw.include?("\xC2".b)
           "UTF-8"
-        elsif text.bytes.any? { |b| b > 127 && b < 160 }
+        elsif raw.bytes.any? { |b| b > 127 && b < 160 }
           "Windows-1252"
         else
           "ISO-8859-1"
         end
       end
 
-      def fallback_decode(text)
+      def fallback_decode(text, replacement = "?")
         return "" if text.nil?
 
         text.to_s.encode("UTF-8",
           invalid: :replace,
           undef: :replace,
-          replace: "?"
+          replace: replacement
         )
       rescue => e
         Rails.logger.error "[EncodingService] Fallback decode failed: #{e.message}"
-        # Force UTF-8 and scrub as last resort
-        text.to_s.force_encoding("UTF-8").scrub("?")
+        text.to_s.force_encoding("UTF-8").scrub(replacement)
       rescue
-        # Absolute fallback - return empty string rather than crash
         Rails.logger.error "[EncodingService] Complete encoding failure, returning empty string"
         ""
       end

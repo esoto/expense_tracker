@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Services::Categorization::Monitoring::DashboardHelperOptimized, type: :service do
+RSpec.describe Services::Categorization::Monitoring::DashboardHelperOptimized, type: :service, integration: true do
   let(:helper) { described_class }
 
   # Test data setup

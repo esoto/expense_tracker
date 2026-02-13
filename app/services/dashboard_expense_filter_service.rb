@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
-# DashboardExpenseFilterService provides optimized filtering for dashboard expense widget
+# Services::DashboardExpenseFilterService provides optimized filtering for dashboard expense widget
 # Extends ExpenseFilterService with dashboard-specific optimizations and context
 # Achieves <50ms query performance for dashboard recent expenses section
+module Services
 class DashboardExpenseFilterService < ExpenseFilterService
   # Constants for dashboard context
   DEFAULT_DASHBOARD_LIMIT = 10
@@ -108,7 +109,7 @@ class DashboardExpenseFilterService < ExpenseFilterService
     DashboardResult.new(
       expenses: [],
       total_count: 0,
-      metadata: { 
+      metadata: {
         error: e.message,
         filters_applied: 0,
         page: @page || 1,
@@ -223,16 +224,13 @@ class DashboardExpenseFilterService < ExpenseFilterService
                     encode_cursor(last_expense.transaction_date, last_expense.id)
     end
 
-    # Estimate total count (for virtual scroll height calculation)
-    # Use cached count for performance
-    total = if @cursor.blank?
-              cache_key = "dashboard_expense_count/#{generate_filters_hash}"
-              Rails.cache.fetch(cache_key, expires_in: DASHBOARD_CACHE_TTL) do
-                scope.except(:limit, :offset, :order).count
-              end
-    else
-              # For subsequent pages, use estimated count
-              expenses.size + (@cursor.present? ? per_page * 2 : 0) # Rough estimate
+    # Get total count for virtual scroll height calculation
+    # Uses the same cached count query regardless of page — the cache key is
+    # based on filter hash (which doesn't change between pages), so subsequent
+    # pages read the count from cache without an extra DB query.
+    cache_key = "dashboard_expense_count/#{generate_filters_hash}"
+    total = Rails.cache.fetch(cache_key, expires_in: DASHBOARD_CACHE_TTL) do
+      scope.except(:limit, :offset, :order).count
     end
 
     pagination_meta = {
@@ -426,4 +424,5 @@ class DashboardExpenseFilterService < ExpenseFilterService
       StatsD.increment("dashboard_expense_filter.requests")
     end
   end
+end
 end

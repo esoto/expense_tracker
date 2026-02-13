@@ -148,7 +148,7 @@ class ExpensesController < ApplicationController
     @current_month_total = @month_metrics[:metrics][:total_amount] || totals[:current_month_total]
     @last_month_total = @month_metrics[:trends][:previous_period_total] || totals[:last_month_total]
 
-    # Use optimized DashboardExpenseFilterService for Recent Expenses widget
+    # Use optimized Services::DashboardExpenseFilterService for Recent Expenses widget
     # This provides filtered, paginated results with performance optimization
     # Always fetch 15 expenses to support both compact and expanded views
     view_mode = params[:view_mode] || "compact"
@@ -166,7 +166,7 @@ class ExpensesController < ApplicationController
       include_quick_filters: true
     )
 
-    dashboard_filter_service = DashboardExpenseFilterService.new(dashboard_filter_params)
+    dashboard_filter_service = Services::DashboardExpenseFilterService.new(dashboard_filter_params)
     @expense_filter_result = dashboard_filter_service.call
 
     if @expense_filter_result.success?
@@ -175,7 +175,7 @@ class ExpensesController < ApplicationController
       @expense_quick_filters = @expense_filter_result.quick_filters
       @expense_view_mode = view_mode  # Use the normalized view_mode
       @expense_filter_performance = @expense_filter_result.performance_metrics
-      
+
       # Log metadata for debugging
       Rails.logger.debug "Dashboard loaded - Filters applied: #{@expense_filter_result.metadata[:filters_applied]}, Total expenses: #{@expense_filter_result.total_count}"
     else
@@ -360,8 +360,8 @@ class ExpensesController < ApplicationController
       include_quick_filters: false  # No filters needed for virtual scroll
     )
 
-    # Use DashboardExpenseFilterService with cursor pagination
-    filter_service = DashboardExpenseFilterService.new(filter_params_with_cursor)
+    # Use Services::DashboardExpenseFilterService with cursor pagination
+    filter_service = Services::DashboardExpenseFilterService.new(filter_params_with_cursor)
     result = filter_service.call
 
     if result.success?

@@ -277,7 +277,7 @@ RSpec.describe Services::Categorization::PatternLearner do
       it "returns empty result" do
         result = learner.batch_learn([])
         expect(result.total).to eq(0)
-        expect(result).to be_a(Services::Categorization::BatchLearningResult)
+        expect(result).to be_a(Services::Categorization::PatternLearner::BatchLearningResult)
       end
     end
 

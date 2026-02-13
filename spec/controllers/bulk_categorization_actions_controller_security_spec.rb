@@ -2,7 +2,7 @@
 
 require 'rails_helper'
 
-RSpec.describe BulkCategorizationActionsController, type: :controller do
+RSpec.describe BulkCategorizationActionsController, type: :controller, integration: true do
   describe 'Security Tests' do
     let(:admin_user) { create(:admin_user) }
     let(:category) { create(:category) }

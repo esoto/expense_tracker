@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe DashboardExpenseFilterService, type: :service do
+RSpec.describe Services::DashboardExpenseFilterService, type: :service do
   let(:email_account) { create(:email_account) }
   let(:category1) { create(:category, name: "Food", color: "#FF6B6B") }
   let(:category2) { create(:category, name: "Transport", color: "#4ECDC4") }
@@ -72,7 +72,7 @@ RSpec.describe DashboardExpenseFilterService, type: :service do
       let(:params) { base_params }
 
       it "returns a DashboardResult" do
-        expect(result).to be_a(DashboardExpenseFilterService::DashboardResult)
+        expect(result).to be_a(Services::DashboardExpenseFilterService::DashboardResult)
       end
 
       it "returns all expenses" do
@@ -159,6 +159,39 @@ RSpec.describe DashboardExpenseFilterService, type: :service do
 
       it "includes total count" do
         expect(result.total_count).to eq(3)
+      end
+    end
+
+    context "with cursor pagination" do
+      let(:params) { base_params.merge(use_cursor: true, per_page: 2) }
+
+      it "returns accurate total count on first page" do
+        expect(result.total_count).to eq(3)
+      end
+
+      it "indicates more pages available" do
+        expect(result.metadata[:has_more]).to be true
+      end
+
+      it "provides a next cursor" do
+        expect(result.metadata[:next_cursor]).to be_present
+      end
+
+      context "on subsequent pages" do
+        let(:first_page_result) { described_class.new(base_params.merge(use_cursor: true, per_page: 2)).call }
+        let(:params) { base_params.merge(use_cursor: true, per_page: 2, cursor: first_page_result.metadata[:next_cursor]) }
+
+        it "returns accurate total count (not a rough estimate)" do
+          expect(result.total_count).to eq(3)
+        end
+
+        it "returns remaining expenses" do
+          expect(result.expenses.count).to eq(1)
+        end
+
+        it "indicates no more pages" do
+          expect(result.metadata[:has_more]).to be false
+        end
       end
     end
 
@@ -306,7 +339,7 @@ RSpec.describe DashboardExpenseFilterService, type: :service do
       let(:params) { base_params }
 
       it "returns error result on failure" do
-        expect(result).to be_a(DashboardExpenseFilterService::DashboardResult)
+        expect(result).to be_a(Services::DashboardExpenseFilterService::DashboardResult)
         expect(result.expenses).to be_empty
         expect(result.metadata[:error]).to eq("Test error")
       end
@@ -324,7 +357,7 @@ RSpec.describe DashboardExpenseFilterService, type: :service do
     let(:quick_filters) { { categories: [] } }
 
     subject(:result) do
-      DashboardExpenseFilterService::DashboardResult.new(
+      Services::DashboardExpenseFilterService::DashboardResult.new(
         expenses: expenses,
         total_count: 2,
         metadata: metadata,

@@ -69,12 +69,18 @@ RSpec.describe MetricsRefreshJob, type: :job, integration: true do
       end
 
       it "logs warning when exceeding 30 second target" do
-        # Mock slow execution
+        # Stub calculator to avoid extra Time.current calls during calculate
+        allow_any_instance_of(Services::MetricsCalculator).to receive(:calculate).and_return({})
+
+        # Time.current calls in order:
+        #   1. acquire_lock (line 105)
+        #   2. start_time = Time.current (line 31)
+        #   3. elapsed = Time.current - start_time (line 56)
+        #   4+ track_job_metrics (line 177)
         start_time = Time.current
+        slow_time = start_time + 31.seconds
         allow(Time).to receive(:current).and_return(
-          start_time,          # Start time
-          start_time,          # Lock acquisition
-          start_time + 31.seconds  # End time
+          start_time, start_time, slow_time, slow_time
         )
 
         expect(Rails.logger).to receive(:warn).with(/exceeded 30s target/)

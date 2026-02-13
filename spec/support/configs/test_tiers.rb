@@ -6,7 +6,11 @@ RSpec.configure do |config|
   # ===============
 
   # Test Speed Tags
-  config.define_derived_metadata(file_path: %r{/spec/unit/}) do |metadata|
+  # Auto-tag standard Rails spec directories as unit tests.
+  # This covers models, services, controllers, helpers, mailers, jobs, views, requests, and migrations.
+  # Note: many files use `integration: true` as decorative metadata — this does NOT affect unit tagging.
+  UNIT_DIRS = %r{/spec/(models|services|controllers|helpers|mailers|jobs|views|requests|migrations|unit)/}
+  config.define_derived_metadata(file_path: UNIT_DIRS) do |metadata|
     metadata[:unit] = true
     metadata[:fast] = true
   end
@@ -55,22 +59,6 @@ RSpec.configure do |config|
 
   # Performance Test Settings
   config.when_first_matching_example_defined(:performance) do
-    # Disable transactional fixtures for accurate measurements
-    config.use_transactional_fixtures = false
-
-    # Use database cleaner only if it's available and we're not running unit tests
-    if defined?(DatabaseCleaner)
-      config.before(:suite) do
-        DatabaseCleaner.strategy = :truncation
-      end
-
-      config.around(:each, :performance) do |example|
-        DatabaseCleaner.cleaning do
-          example.run
-        end
-      end
-    end
-
     # Enable GC profiling
     GC::Profiler.enable
 
@@ -78,22 +66,28 @@ RSpec.configure do |config|
     config.include PerformanceHelpers
   end
 
-  # System Test Settings
-  config.when_first_matching_example_defined(:system) do
-    # Configure Capybara
+  # Scoped hooks for performance tests (must be outside when_first_matching to avoid global registration)
+  config.around(:each, :performance) do |example|
+    old_fixtures = config.use_transactional_fixtures
     config.use_transactional_fixtures = false
-
-    if defined?(DatabaseCleaner)
-      config.before(:suite) do
-        DatabaseCleaner.strategy = :truncation
-      end
-
-      config.around(:each, :system) do |example|
-        DatabaseCleaner.cleaning do
-          example.run
-        end
-      end
+    DatabaseCleaner.strategy = :truncation
+    DatabaseCleaner.cleaning do
+      example.run
     end
+  ensure
+    config.use_transactional_fixtures = old_fixtures
+  end
+
+  # Scoped hooks for system tests
+  config.around(:each, :system) do |example|
+    old_fixtures = config.use_transactional_fixtures
+    config.use_transactional_fixtures = false
+    DatabaseCleaner.strategy = :truncation
+    DatabaseCleaner.cleaning do
+      example.run
+    end
+  ensure
+    config.use_transactional_fixtures = old_fixtures
   end
 
   # FILTERING AND EXCLUSIONS
@@ -107,6 +101,14 @@ RSpec.configure do |config|
     # Run only tagged tests if specified
     if ENV['TEST_TIER']
       config.filter_run ENV['TEST_TIER'].to_sym => true
+
+      # Unit tier: exclude tests explicitly tagged integration: true.
+      # These tests depend on real cache stores, external services, or
+      # cross-service interactions that aren't available in the unit context
+      # (NullStore cache, disabled network). They run in the full suite.
+      if ENV['TEST_TIER'] == 'unit'
+        config.filter_run_excluding integration: true
+      end
     end
   end
 
@@ -116,8 +118,12 @@ RSpec.configure do |config|
   # REPORTING
   # =========
 
+  # Detect if running unit-level tests (standard Rails dirs or spec/unit/)
+  unit_dirs_pattern = %r{/spec/(models|services|controllers|helpers|mailers|jobs|views|requests|migrations|unit)/}
+  running_unit_tests = ENV['TEST_TIER'] == 'unit' || config.files_to_run.all? { |f| f.match?(unit_dirs_pattern) }
+
   # Profile slowest tests only for non-unit tests
-  config.profile_examples = 10 unless config.files_to_run.any? { |f| f.include?('/unit/') }
+  config.profile_examples = 10 unless running_unit_tests
 
   # Formatter is configured in .rspec file
 
@@ -125,6 +131,9 @@ RSpec.configure do |config|
   # =====
 
   config.before(:suite) do
+    # Ensure clean database state before running tests
+    DatabaseCleaner.clean_with(:truncation) if defined?(DatabaseCleaner)
+
     # Print test tier information
     tier = ENV['TEST_TIER'] || 'all'
     puts "\n" + "="*60

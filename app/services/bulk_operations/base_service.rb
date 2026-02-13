@@ -144,7 +144,6 @@ module Services::BulkOperations
 
     def handle_error(error)
       Rails.logger.error "Bulk operation error: #{error.message}"
-      Rails.logger.error error.backtrace.join("\n")
 
       @results = results.merge(
         success: false,

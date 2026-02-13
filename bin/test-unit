@@ -12,12 +12,12 @@ ENV['RAILS_ENV'] = 'test'
 ENV['TEST_TIER'] = 'unit'
 
 # Build RSpec command with properly quoted arguments
-# In CI, be more explicit about which tests to run
+# --tag unit: include tests auto-tagged from standard Rails dirs (models, services, controllers, etc.)
+# --tag ~slow: exclude slow tests (system, performance)
 cmd = if ENV['CI']
-  # In CI, run unit-tagged tests or fallback to specific directories
-  "bundle exec rspec --tag unit --format progress --fail-fast=10 --order random"
+  "bundle exec rspec --tag unit --tag ~slow --format progress --fail-fast=10 --order random"
 else
-  "bundle exec rspec --tag unit --format progress --profile=5 --fail-fast=5 --order random"
+  "bundle exec rspec --tag unit --tag ~slow --format progress --profile=5 --fail-fast=5 --order random"
 end
 
 puts "🧪 Running unit tests (should complete in <30 seconds)..."

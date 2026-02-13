@@ -9,7 +9,8 @@ class UndoHistory < ApplicationRecord
 
   # Associations
   belongs_to :undoable, polymorphic: true, optional: true
-  belongs_to :user, optional: true # Track who performed the action
+  # Note: user_id is stored as a plain column (no User model exists in this app).
+  # When authentication is added, replace with: belongs_to :user, optional: true
 
   # Validations
   validates :action_type, presence: true
@@ -21,7 +22,7 @@ class UndoHistory < ApplicationRecord
   scope :pending, -> { where(undone_at: nil, expired_at: nil) }
   scope :undone, -> { where.not(undone_at: nil) }
   scope :expired, -> { where.not(expired_at: nil) }
-  scope :for_user, ->(user) { where(user: user) }
+  scope :for_user, ->(user_id) { where(user_id: user_id) }
   scope :bulk_operations, -> { where(is_bulk: true) }
 
   # Callbacks
@@ -29,7 +30,7 @@ class UndoHistory < ApplicationRecord
   after_create :cleanup_old_records
 
   # Enums
-  enum action_type: {
+  enum :action_type, {
     soft_delete: 0,
     bulk_delete: 1,
     bulk_update: 2,
@@ -44,7 +45,7 @@ class UndoHistory < ApplicationRecord
       undoable_id: record.id,
       action_type: :soft_delete,
       record_data: record.attributes,
-      user: user,
+      user_id: user&.try(:id),
       description: "Deleted #{record.class.name.humanize.downcase}: #{record.try(:name) || record.try(:merchant_name) || record.id}"
     )
   end
@@ -57,7 +58,7 @@ class UndoHistory < ApplicationRecord
         ids: records.map(&:id),
         records: records.map(&:attributes)
       },
-      user: user,
+      user_id: user&.try(:id),
       is_bulk: true,
       description: "Deleted #{records.count} #{records.first.class.name.humanize.downcase.pluralize}",
       affected_count: records.count
@@ -73,7 +74,7 @@ class UndoHistory < ApplicationRecord
         original_values: records.map { |r| r.attributes.slice(*changes.keys) },
         changes: changes
       },
-      user: user,
+      user_id: user&.try(:id),
       is_bulk: true,
       description: "Updated #{records.count} #{records.first.class.name.humanize.downcase.pluralize}",
       affected_count: records.count

@@ -809,10 +809,9 @@ module Services::Categorization
     rescue => e
       Rails.logger.error "[PatternLearner] Reset failed: #{e.message}"
     end
-  end
 
-  # Result classes for learning operations
-  class LearningResult
+    # Result classes for learning operations
+    class LearningResult
     attr_reader :success, :patterns_affected,
                 :actions_taken, :expense_id, :category_id, :error, :message, :metadata
 
@@ -959,5 +958,6 @@ module Services::Categorization
           (@patterns_decayed.to_f / @patterns_examined * 100).round(2) : 0.0
       }
     end
+  end
   end
 end

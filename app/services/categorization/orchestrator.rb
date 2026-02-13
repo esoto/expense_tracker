@@ -174,8 +174,9 @@ module Services::Categorization
       return LearningResult.error("Invalid expense") unless expense&.persisted?
       return LearningResult.error("Invalid category") unless correct_category&.persisted?
 
+      learning_result = nil
       benchmark "learn_from_correction" do
-        result = @pattern_learner.learn_from_correction(
+        learning_result = @pattern_learner.learn_from_correction(
           expense,
           correct_category,
           predicted_category,
@@ -183,33 +184,14 @@ module Services::Categorization
         )
 
         # Invalidate relevant caches if learning succeeded
-        invalidate_caches(correct_category) if result.success?
+        invalidate_caches(correct_category) if learning_result.success?
+      end
 
-        # Convert PatternLearner's result to our LearningResult format
-        if result.class.name == "Categorization::LearningResult"
-          # Already our format
-          result
-        else
-          # Convert from PatternLearner's internal format
-          patterns_count = if result.patterns_created.is_a?(Array)
-            result.patterns_created.size
-          else
-            result.patterns_created.to_i
-          end
-
-          patterns_updated = if result.respond_to?(:patterns_affected) && result.patterns_affected.is_a?(Array)
-            result.patterns_affected.size
-          else
-            0
-          end
-
-          LearningResult.new(
-            success: result.success?,
-            patterns_created: patterns_count,
-            patterns_updated: patterns_updated,
-            message: result.error || (result.success? ? "Learning completed" : "Learning failed")
-          )
-        end
+      # Convert PatternLearner's result to our LearningResult format
+      if learning_result.is_a?(LearningResult)
+        learning_result
+      else
+        convert_pattern_learner_result(learning_result)
       end
     rescue StandardError => e
       handle_learning_error(e, expense)
@@ -520,6 +502,29 @@ module Services::Categorization
       CategorizationResult.error(
         "Categorization failed: #{error.class.name}",
         processing_time_ms: elapsed_time_ms
+      )
+    end
+
+    def convert_pattern_learner_result(result)
+      patterns_count = if result.patterns_created.is_a?(Array)
+        result.patterns_created.size
+      else
+        result.patterns_created.to_i
+      end
+
+      patterns_updated = if result.respond_to?(:patterns_affected) && result.patterns_affected.is_a?(Array)
+        result.patterns_affected.size
+      else
+        0
+      end
+
+      error_msg = result.respond_to?(:error) ? result.error : nil
+
+      LearningResult.new(
+        success: result.success?,
+        patterns_created: patterns_count,
+        patterns_updated: patterns_updated,
+        message: error_msg || (result.success? ? "Learning completed" : "Learning failed")
       )
     end
 

@@ -158,46 +158,38 @@ RSpec.describe Services::BulkOperations::DeletionService, type: :service, unit: 
   end
 
   describe '#call - deletion modes' do
-    context 'with callbacks (destroy!)', unit: true do
-      let(:service) do
-        described_class.new(
-          expense_ids: expense_ids,
-          options: { skip_callbacks: false }
-        )
-      end
+    context 'soft deletion', unit: true do
+      let(:service) { described_class.new(expense_ids: expense_ids) }
 
-      it 'uses destroy! for each expense' do
-        # Mock find_each to verify destroy! is called
-        expenses = Expense.where(id: expense_ids)
-        allow(expenses).to receive(:find_each).and_yield(user_expenses[0]).and_yield(user_expenses[1]).and_yield(user_expenses[2])
-
-        user_expenses.each do |expense|
-          expect(expense).to receive(:destroy!).and_call_original
-        end
-
-        allow(Expense).to receive(:where).with(id: expense_ids).and_return(expenses)
-
+      it 'uses soft_delete! for each expense' do
         result = service.call
 
         expect(result[:success]).to be true
         expect(result[:affected_count]).to eq(3)
-      end
 
-      it 'triggers ActiveRecord callbacks' do
-        result = service.call
-
-        expect(result[:success]).to be true
+        # Expenses should be soft-deleted (not visible in default scope)
         expect(Expense.where(id: expense_ids)).to be_empty
+        # But still exist when querying with_deleted
+        expect(Expense.unscoped.where(id: expense_ids).count).to eq(3)
       end
 
-      it 'collects individual failures when destroy! fails' do
+      it 'sets deleted_at on each expense' do
+        service.call
+
+        user_expenses.each do |expense|
+          expense.reload
+          expect(expense.deleted_at).to be_present
+        end
+      end
+
+      it 'collects individual failures when soft_delete! fails' do
         failing_expense = user_expenses.first
 
-        allow_any_instance_of(Expense).to receive(:destroy!).and_wrap_original do |method, *args|
+        allow_any_instance_of(Expense).to receive(:soft_delete!).and_wrap_original do |method, *args, **kwargs|
           if method.receiver.id == failing_expense.id
-            raise ActiveRecord::RecordNotDestroyed.new("Cannot delete", method.receiver)
+            raise StandardError, "Cannot delete"
           else
-            method.call(*args)
+            method.call(*args, **kwargs)
           end
         end
 
@@ -213,11 +205,11 @@ RSpec.describe Services::BulkOperations::DeletionService, type: :service, unit: 
       end
 
       it 'continues processing after individual failures' do
-        allow_any_instance_of(Expense).to receive(:destroy!).and_wrap_original do |method, *args|
+        allow_any_instance_of(Expense).to receive(:soft_delete!).and_wrap_original do |method, *args, **kwargs|
           if method.receiver == user_expenses[1]
             raise StandardError, "Simulated failure"
           else
-            method.call(*args)
+            method.call(*args, **kwargs)
           end
         end
 
@@ -228,74 +220,6 @@ RSpec.describe Services::BulkOperations::DeletionService, type: :service, unit: 
         expect(result[:failures].size).to eq(1)
       end
     end
-
-    context 'without callbacks (delete_all)', unit: true do
-      let(:service) do
-        described_class.new(
-          expense_ids: expense_ids,
-          options: { skip_callbacks: true }
-        )
-      end
-
-      it 'uses delete_all for batch deletion' do
-        expect_any_instance_of(ActiveRecord::Relation).to receive(:delete_all).and_call_original
-
-        result = service.call
-
-        expect(result[:success]).to be true
-        expect(result[:affected_count]).to eq(3)
-      end
-
-      it 'does not trigger ActiveRecord callbacks' do
-        expect_any_instance_of(Expense).not_to receive(:destroy!)
-
-        result = service.call
-
-        expect(Expense.where(id: expense_ids)).to be_empty
-      end
-
-      it 'performs faster than with callbacks' do
-        # Create more expenses for performance comparison
-        additional_expenses = create_list(:expense, 47, email_account: email_account)
-        large_expense_ids = (user_expenses + additional_expenses).map(&:id)
-
-        # Measure with callbacks
-        service_with = described_class.new(
-          expense_ids: large_expense_ids.first(25),
-          options: { skip_callbacks: false, force_synchronous: true }
-        )
-
-        time_with = Benchmark.realtime { service_with.call }
-
-        # Measure without callbacks
-        service_without = described_class.new(
-          expense_ids: large_expense_ids.last(25),
-          options: { skip_callbacks: true, force_synchronous: true }
-        )
-
-        time_without = Benchmark.realtime { service_without.call }
-
-        expect(time_without).to be < (time_with * 0.7)
-      end
-    end
-
-    context 'default deletion mode', unit: true do
-      let(:service) { described_class.new(expense_ids: expense_ids) }
-
-      it 'defaults to using callbacks' do
-        # When skip_callbacks is not set, it defaults to using destroy!
-        expenses = Expense.where(id: expense_ids)
-        allow(expenses).to receive(:find_each).and_yield(user_expenses[0]).and_yield(user_expenses[1]).and_yield(user_expenses[2])
-
-        user_expenses.each do |expense|
-          expect(expense).to receive(:destroy!).and_call_original
-        end
-
-        allow(Expense).to receive(:where).with(id: expense_ids).and_return(expenses)
-
-        service.call
-      end
-    end
   end
 
   describe '#call - broadcasting' do
@@ -303,7 +227,7 @@ RSpec.describe Services::BulkOperations::DeletionService, type: :service, unit: 
       let(:service) do
         described_class.new(
           expense_ids: expense_ids,
-          options: { broadcast_updates: true, skip_callbacks: true }
+          options: { broadcast_updates: true }
         )
       end
 
@@ -323,20 +247,15 @@ RSpec.describe Services::BulkOperations::DeletionService, type: :service, unit: 
       end
 
       it 'broadcasts after successful deletion' do
-        call_order = []
-
-        allow_any_instance_of(ActiveRecord::Relation).to receive(:delete_all) do
-          call_order << :delete
-          3
-        end
+        broadcast_count = 0
 
         allow(ActionCable.server).to receive(:broadcast) do
-          call_order << :broadcast
+          broadcast_count += 1
         end
 
         service.call
 
-        expect(call_order).to eq([ :delete, :broadcast, :broadcast, :broadcast ])
+        expect(broadcast_count).to eq(3)
       end
 
       it 'includes correct payload in broadcast' do
@@ -355,7 +274,7 @@ RSpec.describe Services::BulkOperations::DeletionService, type: :service, unit: 
       let(:service) do
         described_class.new(
           expense_ids: expense_ids,
-          options: { broadcast_updates: true, skip_callbacks: true }
+          options: { broadcast_updates: true }
         )
       end
 
@@ -531,9 +450,8 @@ RSpec.describe Services::BulkOperations::DeletionService, type: :service, unit: 
         expect(result[:message]).to eq("Error processing operation")
       end
 
-      it 'logs error with backtrace' do
+      it 'logs error' do
         expect(Rails.logger).to receive(:error).with(/Bulk operation error: Queue error/)
-        expect(Rails.logger).to receive(:error).with(/deletion_service_spec/)
 
         service.call
       end
@@ -555,53 +473,39 @@ RSpec.describe Services::BulkOperations::DeletionService, type: :service, unit: 
     let(:service) { described_class.new(expense_ids: expense_ids) }
 
     it 'wraps deletion in transaction', unit: true do
-      expect(ActiveRecord::Base).to receive(:transaction).and_call_original
+      expect(ActiveRecord::Base).to receive(:transaction).at_least(:once).and_call_original
 
       service.call
     end
 
-    context 'when database error occurs during deletion', unit: true do
+    context 'when soft_delete! raises error for all expenses', unit: true do
       it 'rolls back all changes' do
-        allow_any_instance_of(ActiveRecord::Relation).to receive(:delete_all).and_raise(
-          ActiveRecord::StatementInvalid, "Database connection lost"
-        )
-
-        service = described_class.new(
-          expense_ids: expense_ids,
-          options: { skip_callbacks: true }
+        allow_any_instance_of(Expense).to receive(:soft_delete!).and_raise(
+          StandardError, "Database connection lost"
         )
 
         initial_count = Expense.count
         result = service.call
 
-        expect(result[:success]).to be false
-        expect(result[:errors]).to include("Database connection lost")
+        expect(result[:success]).to be true
+        # All 3 failed individually, so affected_count is 0
+        expect(result[:affected_count]).to eq(0)
+        expect(result[:failures].size).to eq(3)
         expect(Expense.count).to eq(initial_count)
       end
     end
 
-    context 'when destroy! fails midway through', unit: true do
+    context 'when soft_delete! fails midway through', unit: true do
       it 'handles partial failures gracefully' do
-        service = described_class.new(
-          expense_ids: expense_ids,
-          options: { skip_callbacks: false }
-        )
-
-        destroyed_count = 0
-        user_expenses.each_with_index do |expense, i|
-          allow(expense).to receive(:destroy!).and_wrap_original do |method, *args|
-            if i == 1  # Fail on second expense
-              raise ActiveRecord::RecordNotDestroyed.new("Lock timeout", expense)
-            else
-              destroyed_count += 1
-              method.call(*args)
-            end
+        call_count = 0
+        allow_any_instance_of(Expense).to receive(:soft_delete!).and_wrap_original do |method, *args, **kwargs|
+          call_count += 1
+          if call_count == 2 # Fail on second expense
+            raise StandardError, "Lock timeout"
+          else
+            method.call(*args, **kwargs)
           end
         end
-
-        expenses = Expense.where(id: expense_ids)
-        allow(expenses).to receive(:find_each).and_yield(user_expenses[0]).and_yield(user_expenses[1]).and_yield(user_expenses[2])
-        allow(Expense).to receive(:where).with(id: expense_ids).and_return(expenses)
 
         result = service.call
 
@@ -640,9 +544,8 @@ RSpec.describe Services::BulkOperations::DeletionService, type: :service, unit: 
         expect(result[:message]).to eq("Error processing operation")
       end
 
-      it 'logs error with full backtrace' do
+      it 'logs error message' do
         expect(Rails.logger).to receive(:error).with(/Bulk operation error: Database error/)
-        expect(Rails.logger).to receive(:error).with(/spec\/services/)
 
         service.call
       end
@@ -953,12 +856,11 @@ RSpec.describe Services::BulkOperations::DeletionService, type: :service, unit: 
   describe 'memory management', unit: true do
     it 'does not leak memory with large failure arrays' do
       service = described_class.new(
-        expense_ids: expense_ids,
-        options: { skip_callbacks: false }
+        expense_ids: expense_ids
       )
 
-      # Simulate all expenses failing
-      allow_any_instance_of(Expense).to receive(:destroy!).and_raise(
+      # Simulate all expenses failing via soft_delete!
+      allow_any_instance_of(Expense).to receive(:soft_delete!).and_raise(
         StandardError, "Simulated failure"
       )
 

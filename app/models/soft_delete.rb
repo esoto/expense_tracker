@@ -13,9 +13,16 @@ module SoftDelete
     scope :deleted, -> { unscoped.where.not(deleted_at: nil) }
     scope :with_deleted, -> { unscoped }
     scope :recently_deleted, -> { deleted.where(deleted_at: 30.minutes.ago..Time.current) }
+  end
 
-    # Callbacks
-    before_destroy :check_if_soft_deletable
+  # Override destroy to perform soft delete instead of hard delete.
+  # The soft_delete! call triggers a save, which fires after_commit
+  # callbacks (e.g. cache clearing). Returns self so callers see success.
+  def destroy
+    return self if deleted?
+
+    soft_delete!
+    self
   end
 
   # Instance methods
@@ -59,15 +66,6 @@ module SoftDelete
 
   def permanent_delete!
     self.class.unscoped.where(id: id).delete_all
-  end
-
-  private
-
-  def check_if_soft_deletable
-    if self.class.soft_deletable?
-      soft_delete!
-      throw(:abort)
-    end
   end
 
   class_methods do

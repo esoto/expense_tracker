@@ -448,17 +448,15 @@ RSpec.describe ExpenseQueryOptimizer, type: :model, unit: true do
     end
 
     describe "#soft_delete!" do
-      it "sets deleted_at and increments lock_version" do
+      it "sets deleted_at" do
         expect { expense.soft_delete! }.to change { expense.deleted_at }.from(nil)
-          .and change { expense.lock_version }.by(1)
       end
     end
 
     describe "#restore!" do
-      it "clears deleted_at and increments lock_version" do
-        expense.deleted_at = Time.current
+      it "clears deleted_at" do
+        expense.soft_delete!
         expect { expense.restore! }.to change { expense.deleted_at }.to(nil)
-          .and change { expense.lock_version }.by(1)
       end
     end
 

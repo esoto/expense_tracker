@@ -15,10 +15,10 @@ class ParsingRule < ApplicationRecord
   # Instance methods
   def parse_email(email_content)
     parsed_data = {}
-    
+
     # Ensure UTF-8 encoding and clean up invalid bytes
     clean_content = ensure_utf8(email_content)
-    
+
     return parsed_data if clean_content.blank?
 
     # Fix encoding issues - ensure content is UTF-8
@@ -89,7 +89,7 @@ class ParsingRule < ApplicationRecord
 
   def test_patterns(email_content)
     clean_content = ensure_utf8(email_content)
-    
+
     {
       amount: test_pattern(amount_pattern, clean_content),
       date: test_pattern(date_pattern, clean_content),
@@ -99,10 +99,10 @@ class ParsingRule < ApplicationRecord
   end
 
   private
-  
+
   def ensure_utf8(content)
     return "" if content.nil?
-    
+
     # Try to force UTF-8 encoding and replace invalid characters
     if content.respond_to?(:encode)
       content.encode("UTF-8", invalid: :replace, undef: :replace, replace: "")

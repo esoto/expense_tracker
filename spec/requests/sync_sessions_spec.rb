@@ -16,7 +16,7 @@ RSpec.describe "SyncSessions", type: :request, integration: true do
     SyncSessionAccount.delete_all
     SyncSession.delete_all
     # Allow all tests to pass validation by default
-    allow_any_instance_of(SyncSessionValidator).to receive(:validate!).and_return(true)
+    allow_any_instance_of(Services::SyncSessionValidator).to receive(:validate!).and_return(true)
   end
 
   after(:each) do
@@ -73,7 +73,7 @@ RSpec.describe "SyncSessions", type: :request, integration: true do
     before do
       allow(ProcessEmailsJob).to receive(:perform_later)
       # Ensure the validator mock is properly set for all non-validation tests
-      allow_any_instance_of(SyncSessionValidator).to receive(:validate!).and_return(true)
+      allow_any_instance_of(Services::SyncSessionValidator).to receive(:validate!).and_return(true)
     end
 
     context 'with specific email_account_id' do

@@ -123,7 +123,7 @@ module Services
     Result.new(
       expenses: [],
       total_count: 0,
-      metadata: { 
+      metadata: {
         error: e.message,
         filters_applied: 0,
         page: page || 1,

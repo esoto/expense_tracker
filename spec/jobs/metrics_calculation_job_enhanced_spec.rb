@@ -141,4 +141,3 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job, integratio
     end
   end
 end
-

@@ -105,11 +105,13 @@ class CoverageAnalyzer
     
     files.each do |file_path, line_coverage|
       next if file_path.include?('/spec/') || file_path.include?('/config/')
-      
-      file_total = line_coverage.size
-      file_covered = line_coverage.compact.count { |hits| hits && hits > 0 }
+
+      # Only count relevant (executable) lines — nil entries are comments/blanks
+      relevant = line_coverage.compact
+      file_total = relevant.size
+      file_covered = relevant.count { |hits| hits > 0 }
       file_percentage = file_total > 0 ? (file_covered.to_f / file_total * 100) : 0
-      
+
       total_lines += file_total
       covered_lines += file_covered
       

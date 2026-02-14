@@ -1,7 +1,10 @@
 require 'rails_helper'
 
 RSpec.describe "Accessibility Enhancements", type: :system, js: true do
+  let(:admin_user) { create(:admin_user) }
   let!(:expense) { create(:expense, merchant_name: "Test Store", amount: 1000) }
+
+  before { sign_in_admin_user(admin_user) }
 
   describe "ARIA attributes and screen reader support" do
     it "adds proper ARIA labels to expense rows" do

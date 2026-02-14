@@ -11,8 +11,8 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
   let(:undo_service) { instance_double(Services::BulkCategorization::UndoService) }
 
   before do
-    # Skip authentication for unit tests and mock current_user
-    controller.class.skip_before_action :authenticate_user!, raise: false
+    # Use instance-level mocking (not class-level skip_before_action which pollutes other specs)
+    allow(controller).to receive(:authenticate_user!).and_return(true)
     mock_user_authentication(current_user)
 
     # Mock Expense queries (since we no longer use user scoping)

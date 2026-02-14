@@ -1,10 +1,13 @@
 require 'rails_helper'
 
 RSpec.describe "Virtual Scrolling", type: :system, js: true do
+  let(:admin_user) { create(:admin_user) }
+
   context "with large dataset" do
     before do
       # Create 1000+ expenses to trigger virtual scrolling
       create_list(:expense, 600, amount: 1000)
+      sign_in_admin_user(admin_user)
     end
 
     it "enables virtual scrolling for large datasets" do

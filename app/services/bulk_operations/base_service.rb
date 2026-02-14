@@ -107,10 +107,11 @@ module Services::BulkOperations
     def find_authorized_expenses
       scope = Expense.where(id: expense_ids)
 
-      # Apply user authorization if user is provided
-      if user.present?
-        email_account_ids = EmailAccount.where(user_id: user.id).pluck(:id)
-        scope = scope.where(email_account_id: email_account_ids)
+      # Scope to user's email accounts when per-user data isolation exists.
+      # Currently only AdminUser is used for auth, with no per-user scoping.
+      # When a User model with email_account associations is added, scope here.
+      if user.present? && user.respond_to?(:email_accounts)
+        scope = scope.where(email_account: user.email_accounts)
       end
 
       scope
@@ -144,7 +145,6 @@ module Services::BulkOperations
 
     def handle_error(error)
       Rails.logger.error "Bulk operation error: #{error.message}"
-      Rails.logger.error error.backtrace.join("\n")
 
       @results = results.merge(
         success: false,

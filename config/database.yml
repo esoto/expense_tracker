@@ -22,6 +22,10 @@ default: &default
   password: <%= ENV.fetch("POSTGRES_PASSWORD") { "" } %>
   host: <%= ENV.fetch("POSTGRES_HOST") { "localhost" } %>
   port: <%= ENV.fetch("POSTGRES_PORT") { 5432 } %>
+  # Disable GSS encryption to prevent segfault in forked processes on macOS.
+  # PostgreSQL 18's libpq probes Kerberos/GSS credentials via XPC, which
+  # crashes after fork() because XPC ports aren't inherited.
+  gssencmode: disable
   # Performance optimizations
   checkout_timeout: 5
   reaping_frequency: 10
@@ -30,7 +34,7 @@ default: &default
 
 development:
   <<: *default
-  database: expense_tracker_integration_development
+  database: expense_tracker_development
   # Development performance settings
   statement_timeout: 10000  # 10 seconds
   lock_timeout: 5000        # 5 seconds
@@ -43,7 +47,7 @@ development:
 # and recreated between test runs. Don't rely on the data there!
 test:
   <<: *default
-  database: expense_tracker_integration_test<%= ENV['TEST_ENV_NUMBER'] %>
+  database: expense_tracker_test<%= ENV['TEST_ENV_NUMBER'] %>
   # Optimize for testing performance
   min_messages: WARNING
   # Use template0 to avoid encoding issues
@@ -63,7 +67,7 @@ test:
 production:
   primary:
     <<: *default
-    database: expense_tracker_integration_production
+    database: expense_tracker_production
     username: <%= ENV.fetch("POSTGRES_USER") { "expense_tracker" } %>
     password: <%= ENV["POSTGRES_PASSWORD"] %>
     # Production performance settings
@@ -75,19 +79,19 @@ production:
       random_page_cost: 1.1  # For SSD storage
   cache:
     <<: *default
-    database: expense_tracker_integration_production_cache
+    database: expense_tracker_production_cache
     username: <%= ENV.fetch("POSTGRES_USER") { "expense_tracker" } %>
     password: <%= ENV["POSTGRES_PASSWORD"] %>
     migrations_paths: db/cache_migrate
   queue:
     <<: *default
-    database: expense_tracker_integration_production_queue
+    database: expense_tracker_production_queue
     username: <%= ENV.fetch("POSTGRES_USER") { "expense_tracker" } %>
     password: <%= ENV["POSTGRES_PASSWORD"] %>
     migrations_paths: db/queue_migrate
   cable:
     <<: *default
-    database: expense_tracker_integration_production_cable
+    database: expense_tracker_production_cable
     username: <%= ENV.fetch("POSTGRES_USER") { "expense_tracker" } %>
     password: <%= ENV["POSTGRES_PASSWORD"] %>
     migrations_paths: db/cable_migrate

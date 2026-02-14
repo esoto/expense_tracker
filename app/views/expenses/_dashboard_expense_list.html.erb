@@ -1,0 +1,27 @@
+<%# Dashboard Expense List Partial for AJAX Updates — renders table rows %>
+<% if recent_expenses.any? %>
+<tbody class="bg-white divide-y divide-slate-100" data-dashboard-expenses-target="tableBody">
+  <% recent_expenses.each do |expense| %>
+    <%= render "expenses/expense_row", expense: expense, context: 'dashboard' %>
+  <% end %>
+</tbody>
+<% else %>
+<!-- Empty State -->
+<tbody>
+  <tr>
+    <td colspan="8" class="px-6 py-12 text-center">
+      <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+      </svg>
+      <h3 class="mt-3 text-sm font-medium text-slate-900">No hay gastos</h3>
+      <p class="mt-1 text-sm text-slate-500">
+        <% if defined?(expense_filter_result) && expense_filter_result&.metadata&.dig(:filters_applied).to_i > 0 %>
+        No se encontraron gastos con los filtros aplicados.
+        <% else %>
+        No tienes gastos registrados.
+        <% end %>
+      </p>
+    </td>
+  </tr>
+</tbody>
+<% end %>

@@ -44,7 +44,7 @@ class BroadcastJob < ApplicationJob
 
     # Record final failure
     begin
-      BroadcastAnalytics.record_failure(
+      Services::BroadcastAnalytics.record_failure(
         channel: channel_name,
         target_type: target_type,
         target_id: target_id,
@@ -103,7 +103,7 @@ class BroadcastJob < ApplicationJob
         Rails.logger.info "[BROADCAST_JOB] Completed: #{channel_name} -> #{target_type}##{target_id}, Priority: #{priority}, Duration: #{duration.round(3)}s"
 
         # Track successful broadcast
-        BroadcastAnalytics.record_success(
+        Services::BroadcastAnalytics.record_success(
           channel: channel_name,
           target_type: target_type,
           target_id: target_id,
@@ -117,7 +117,7 @@ class BroadcastJob < ApplicationJob
         Rails.logger.warn "[BROADCAST_JOB] Failed after retries: #{channel_name} -> #{target_type}##{target_id}, Priority: #{priority}"
 
         # Record the failure but don't raise - the service already did retries
-        BroadcastAnalytics.record_failure(
+        Services::BroadcastAnalytics.record_failure(
           channel: channel_name,
           target_type: target_type,
           target_id: target_id,
@@ -148,7 +148,7 @@ class BroadcastJob < ApplicationJob
       Rails.logger.error "[BROADCAST_JOB] Target not found: #{target_type}##{target_id}"
 
       # Record failure in analytics
-      BroadcastAnalytics.record_failure(
+      Services::BroadcastAnalytics.record_failure(
         channel: channel_name,
         target_type: target_type,
         target_id: target_id,
@@ -182,7 +182,7 @@ class BroadcastJob < ApplicationJob
       Rails.logger.error e.backtrace.join("\n") if e.backtrace
 
       # Record failure in analytics
-      BroadcastAnalytics.record_failure(
+      Services::BroadcastAnalytics.record_failure(
         channel: channel_name,
         target_type: target_type,
         target_id: target_id,
@@ -229,7 +229,7 @@ class BroadcastJob < ApplicationJob
     )
 
     # Track queued broadcast in analytics
-    BroadcastAnalytics.record_queued(
+    Services::BroadcastAnalytics.record_queued(
       channel: channel_name,
       target_type: target_type,
       target_id: target_id,

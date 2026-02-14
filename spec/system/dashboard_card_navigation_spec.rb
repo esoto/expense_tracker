@@ -1,6 +1,8 @@
 require 'rails_helper'
 
-RSpec.describe "Dashboard Card Navigation", type: :system, js: true do
+RSpec.describe "Dashboard Card Navigation", type: :system, js: true, tier: :system do
+  let(:admin_user) { create(:admin_user) }
+
   before do
     # Create test data
     @email_account = create(:email_account)
@@ -46,6 +48,8 @@ RSpec.describe "Dashboard Card Navigation", type: :system, js: true do
       amount: 5500,
       merchant_name: "Old Store"
     )
+
+    sign_in_admin_user(admin_user)
   end
 
   describe "Navigating from dashboard metric cards" do

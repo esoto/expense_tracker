@@ -6,11 +6,13 @@ RSpec.describe Services::BulkCategorization::GroupingService, integration: true 
   let(:email_account) { create(:email_account) }
   let(:category) { create(:category, name: "Food & Dining") }
 
-  let!(:expense1) { create(:expense, email_account: email_account, merchant_name: "Starbucks", merchant_normalized: "starbucks", amount: 5000, category: nil) }
-  let!(:expense2) { create(:expense, email_account: email_account, merchant_name: "Starbucks Coffee", merchant_normalized: "starbucks", amount: 4500, category: nil) }
-  let!(:expense3) { create(:expense, email_account: email_account, merchant_name: "McDonalds", merchant_normalized: "mcdonalds", amount: 8000, category: nil) }
-  let!(:expense4) { create(:expense, email_account: email_account, merchant_name: "McDonalds", merchant_normalized: "mcdonalds", amount: 7500, category: nil) }
-  let!(:expense5) { create(:expense, email_account: email_account, merchant_name: "Amazon", merchant_normalized: "amazon", amount: 15000, category: nil) }
+  # Note: merchant_normalized is auto-computed by the before_save callback from merchant_name.
+  # "Starbucks" and "STARBUCKS" both normalize to "starbucks", grouping them together.
+  let!(:expense1) { create(:expense, email_account: email_account, merchant_name: "Starbucks", amount: 5000, category: nil) }
+  let!(:expense2) { create(:expense, email_account: email_account, merchant_name: "STARBUCKS", amount: 4500, category: nil) }
+  let!(:expense3) { create(:expense, email_account: email_account, merchant_name: "McDonalds", amount: 8000, category: nil) }
+  let!(:expense4) { create(:expense, email_account: email_account, merchant_name: "McDonalds", amount: 7500, category: nil) }
+  let!(:expense5) { create(:expense, email_account: email_account, merchant_name: "Amazon", amount: 15000, category: nil) }
 
   let(:expenses) { [ expense1, expense2, expense3, expense4, expense5 ] }
   let(:service) { described_class.new(expenses) }

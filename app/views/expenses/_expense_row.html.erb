@@ -1,18 +1,32 @@
+<% # Determine which controller to use based on context %>
+<% controller_name = local_assigns[:context] == 'dashboard' ? 'dashboard-inline-actions' : 'inline-actions' %>
+<% selection_controller = local_assigns[:context] == 'dashboard' ? 'dashboard-expenses' : 'batch-selection' %>
+
 <tr class="hover:bg-slate-50 transition-all duration-200 group relative expense-row-with-actions"
     id="expense_row_<%= expense.id %>"
-    data-controller="inline-actions"
-    data-inline-actions-expense-id-value="<%= expense.id %>"
-    data-inline-actions-current-status-value="<%= expense.status %>"
-    data-batch-selection-target="row"
+    data-controller="<%= controller_name %>"
+    data-<%= controller_name %>-expense-id-value="<%= expense.id %>"
+    data-<%= controller_name %>-current-status-value="<%= expense.status %>"
+    data-<%= selection_controller %>-target="<%= local_assigns[:context] == 'dashboard' ? 'expenseRow' : 'row' %>"
+    <% if local_assigns[:context] == 'dashboard' %>
+    data-expense-id="<%= expense.id %>"
+    data-expense-status="<%= expense.status %>"
+    <% else %>
     data-action="click->batch-selection#handleRowClick"
+    <% end %>
     tabindex="0"
     aria-selected="false">
   <!-- Checkbox Column -->
   <td class="checkbox-cell hidden px-4 py-4 whitespace-nowrap">
     <input type="checkbox"
+           <% if local_assigns[:context] == 'dashboard' %>
+           data-dashboard-expenses-target="selectionCheckbox"
+           data-action="change->dashboard-expenses#toggleSelection"
+           <% else %>
            data-batch-selection-target="checkbox"
-           data-expense-id="<%= expense.id %>"
            data-action="change->batch-selection#toggleSelection click->batch-selection#toggleSelection:stop"
+           <% end %>
+           data-expense-id="<%= expense.id %>"
            class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded"
            aria-label="Seleccionar gasto <%= expense.merchant_name || 'sin comercio' %> de <%= expense.amount %>">
   </td>
@@ -35,20 +49,39 @@
 
   <td class="px-6 py-4 whitespace-nowrap text-sm">
     <div class="expense-category-cell relative">
-      <turbo-frame id="expense_<%= expense.id %>_category">
-        <%= render "expenses/category_with_confidence", expense: expense %>
-      </turbo-frame>
+      <div class="flex items-center gap-3">
+        <!-- Circular Category Badge -->
+        <% if expense.category %>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0"
+               style="background-color: <%= expense.category.color %>;"
+               title="<%= expense.category.name %>">
+            <%= expense.category.name.first.upcase %>
+          </div>
+        <% else %>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center bg-slate-400 text-white font-bold text-xs flex-shrink-0"
+               title="Sin categoría">
+            ?
+          </div>
+        <% end %>
+
+        <!-- Category with Confidence Display -->
+        <turbo-frame id="expense_<%= expense.id %>_category" class="flex-1">
+          <%= render "expenses/category_with_confidence", expense: expense %>
+        </turbo-frame>
+      </div>
 
       <!-- Inline Quick Actions Container -->
       <div class="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1 inline-actions-container"
-           data-inline-actions-target="actionsContainer"
-           data-view-toggle-target="expandedColumns">
+           data-<%= controller_name %>-target="actionsContainer"
+           <% if local_assigns[:context] != 'dashboard' %>
+           data-view-toggle-target="expandedColumns"
+           <% end %>>
 
         <!-- Quick Categorize Button -->
         <div class="relative">
           <button type="button"
                   class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-white border border-slate-200 hover:bg-teal-50 hover:border-teal-300 transition-colors"
-                  data-action="click->inline-actions#toggleCategoryDropdown"
+                  data-action="click-><%= controller_name %>#toggleCategoryDropdown"
                   title="Cambiar categoría (C)"
                   aria-label="Cambiar categoría">
             <svg class="w-4 h-4 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,12 +91,12 @@
 
           <!-- Category Dropdown -->
           <div class="category-dropdown-menu w-48 bg-white rounded-lg shadow-lg border border-slate-200 hidden overflow-hidden"
-               data-inline-actions-target="categoryDropdown">
+               data-<%= controller_name %>-target="categoryDropdown">
             <div class="py-1 max-h-64 overflow-y-auto">
               <% Category.all.order(:name).each do |category| %>
               <button type="button"
                       class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2"
-                      data-action="click->inline-actions#selectCategory"
+                      data-action="click-><%= controller_name %>#selectCategory"
                       data-category-id="<%= category.id %>"
                       data-category-name="<%= category.name %>"
                       role="option">
@@ -78,8 +111,8 @@
         <!-- Mark as Reviewed Button -->
         <button type="button"
                 class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-white border border-slate-200 hover:bg-emerald-50 hover:border-emerald-300 transition-colors"
-                data-inline-actions-target="statusButton"
-                data-action="click->inline-actions#toggleStatus"
+                data-<%= controller_name %>-target="statusButton"
+                data-action="click-><%= controller_name %>#toggleStatus"
                 title="<%= expense.status == 'pending' ? 'Marcar como revisado (R)' : 'Marcar como pendiente (R)' %>"
                 aria-label="<%= expense.status == 'pending' ? 'Marcar como revisado' : 'Marcar como pendiente' %>">
           <% if expense.status == 'pending' %>
@@ -96,8 +129,8 @@
         <!-- Duplicate Button -->
         <button type="button"
                 class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-white border border-slate-200 hover:bg-amber-50 hover:border-amber-300 transition-colors"
-                data-inline-actions-target="duplicateButton"
-                data-action="click->inline-actions#duplicateExpense"
+                data-<%= controller_name %>-target="duplicateButton"
+                data-action="click-><%= controller_name %>#duplicateExpense"
                 title="Duplicar gasto (D)"
                 aria-label="Duplicar gasto">
           <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -109,7 +142,7 @@
         <div class="relative">
           <button type="button"
                   class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-white border border-slate-200 hover:bg-rose-50 hover:border-rose-300 transition-colors"
-                  data-action="click->inline-actions#showDeleteConfirmation"
+                  data-action="click-><%= controller_name %>#showDeleteConfirmation"
                   title="Eliminar gasto (Delete)"
                   aria-label="Eliminar gasto">
             <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -119,7 +152,7 @@
 
           <!-- Delete Confirmation Modal -->
           <div class="delete-confirmation-modal w-56 bg-white rounded-lg shadow-xl border-2 border-rose-200 p-4 hidden"
-               data-inline-actions-target="deleteConfirmation">
+               data-<%= controller_name %>-target="deleteConfirmation">
             <div class="flex items-start gap-3 mb-3">
               <div class="flex-shrink-0 w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center">
                 <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -134,12 +167,12 @@
             <div class="flex gap-2">
               <button type="button"
                       class="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors"
-                      data-action="click->inline-actions#confirmDelete">
+                      data-action="click-><%= controller_name %>#confirmDelete">
                 Eliminar
               </button>
               <button type="button"
                       class="flex-1 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
-                      data-action="click->inline-actions#cancelDelete">
+                      data-action="click-><%= controller_name %>#cancelDelete">
                 Cancelar
               </button>
             </div>
@@ -153,20 +186,20 @@
     <%= defined?(currency_symbol) ? currency_symbol(expense) : "₡" %><%= number_with_delimiter(expense.amount.to_i) %>
   </td>
 
-  <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900" data-view-toggle-target="expandedColumns">
+  <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900" <% if local_assigns[:context] != 'dashboard' %>data-view-toggle-target="expandedColumns"<% else %>data-dashboard-expenses-target="expandedColumns"<% end %>>
     <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
                  <%= expense.bank_name == 'BAC' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-700' %>">
       <%= expense.bank_name %>
     </span>
   </td>
 
-  <td class="px-6 py-4 whitespace-nowrap text-sm" data-view-toggle-target="expandedColumns">
+  <td class="px-6 py-4 whitespace-nowrap text-sm" <% if local_assigns[:context] != 'dashboard' %>data-view-toggle-target="expandedColumns"<% else %>data-dashboard-expenses-target="expandedColumns"<% end %>>
     <turbo-frame id="expense_<%= expense.id %>_status">
       <%= render "expenses/status_badge", expense: expense %>
     </turbo-frame>
   </td>
 
-  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2" data-view-toggle-target="expandedColumns">
+  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2" <% if local_assigns[:context] != 'dashboard' %>data-view-toggle-target="expandedColumns"<% else %>data-dashboard-expenses-target="expandedColumns"<% end %>>
     <turbo-frame id="expense_<%= expense.id %>_actions">
       <%= render "expenses/inline_actions", expense: expense %>
     </turbo-frame>

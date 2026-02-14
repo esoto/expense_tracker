@@ -89,10 +89,14 @@ The application follows Domain-Driven Design principles with services organized 
 - Background job processing with Solid Queue
 - Comprehensive test suite: 236 examples with 100% pass rate (148 model tests, 88 service tests)
 - Production-ready security with encrypted credentials and API token authentication
-- **Epic 3 Progress:**
-  - Task 3.2: View toggle system (compact/expanded) - Complete
-  - Task 3.3: Inline quick actions - Complete (95/100 QA score)
-  - Task 3.4: Batch selection system - Complete with full keyboard navigation and accessibility
+
+**Epic 3 Implementation Complete:**
+- **Task 3.2**: View toggle system (compact/expanded) with persistent user preferences
+- **Task 3.3**: Inline quick actions (95/100 QA score) with keyboard navigation
+- **Task 3.4**: Batch selection system with full accessibility compliance and keyboard shortcuts
+- **Enhanced Dashboard**: Improved UX with DashboardExpenseFilterService extending ExpenseFilterService
+- **Performance Optimized**: <50ms query performance with strategic database indexing
+- **Financial Confidence Design**: Complete color palette implementation across all components
 
 ## Development Rules
 
@@ -153,3 +157,150 @@ This application uses the "Financial Confidence" color palette. ALL new features
 - **Error Messages**: `bg-rose-50 border-rose-200 text-rose-700`
 
 NEVER use the default blue colors (`blue-600`, `blue-500`, etc.) - always use the palette colors above.
+
+## Established Development Practices
+
+Based on Epic 3 implementation, the following development patterns and practices have been established:
+
+### Multi-Agent Development Pattern
+
+Epic 3 established a rigorous multi-agent development workflow:
+
+1. **rails-senior-architect**: Initial implementation with comprehensive technical design
+2. **tech-lead-architect**: Code review and architectural refinement 
+3. **qa-test-strategist**: Comprehensive testing and quality assurance
+4. **Final Review**: Integration testing and performance validation
+
+**Quality Gates:**
+- A-grade code quality standards (90+ scores)
+- 100% test coverage expectation
+- Performance requirements (<50ms queries)
+- Accessibility compliance (WCAG 2.1 AA)
+- Rails Best Practices adherence
+
+### Epic Implementation Structure
+
+**Phase 1: Database Foundation**
+- Performance optimization with strategic indexing
+- Query analysis and optimization
+- Service architecture establishment
+
+**Phase 2: Core Functionality**
+- UI/UX implementation following Financial Confidence design
+- Stimulus controller development for JavaScript interactions
+- Service layer extension (e.g., DashboardExpenseFilterService)
+
+**Phase 3: Enhancement & Testing**
+- Accessibility improvements and keyboard navigation
+- Comprehensive system testing
+- Performance benchmarking and validation
+
+### Technical Architecture Patterns
+
+**Service Layer Extension:**
+```ruby
+# Established pattern: Extend base services for specialized functionality
+class DashboardExpenseFilterService < ExpenseFilterService
+  # Add dashboard-specific filtering logic
+  # Maintain base service compatibility
+  # Enhance with dashboard-specific optimizations
+end
+```
+
+**Stimulus Controller Standards:**
+- Keyboard navigation support (arrow keys, escape, enter)
+- Accessibility attributes (aria-labels, roles)
+- Performance optimization (debouncing, efficient DOM updates)
+- Error handling and graceful degradation
+
+**Database Optimization:**
+- Strategic indexing for common query patterns
+- Performance monitoring and measurement
+- Query optimization with <50ms targets
+
+### Testing Standards
+
+**System Test Coverage:**
+- User interaction flows
+- Keyboard navigation scenarios
+- Accessibility compliance testing
+- Performance benchmarking
+- Error handling and edge cases
+
+**Test Organization:**
+```ruby
+# Follow this structure for system tests
+describe "Feature Name" do
+  context "User Interaction" do
+    it "handles primary user flow" do
+      # Test implementation
+    end
+  end
+  
+  context "Keyboard Navigation" do
+    it "supports standard keyboard shortcuts" do
+      # Test accessibility
+    end
+  end
+  
+  context "Performance" do
+    it "meets response time requirements" do
+      # Test performance
+    end
+  end
+end
+```
+
+### Code Quality Standards
+
+**Mandatory Checks:**
+- RuboCop compliance (rubocop-rails-omakase)
+- Brakeman security scanning
+- Rails Best Practices validation
+- Test coverage maintenance
+
+**Performance Requirements:**
+- Database queries: <50ms
+- Page load times: <200ms initial, <100ms subsequent
+- JavaScript interactions: <16ms for 60fps
+
+### Accessibility Requirements
+
+**WCAG 2.1 AA Compliance:**
+- Keyboard navigation for all interactive elements
+- ARIA labels and roles for screen readers
+- Color contrast ratios meeting standards
+- Focus management and visual indicators
+
+**Implementation Pattern:**
+```erb
+<!-- Established accessible component pattern -->
+<button 
+  type="button"
+  class="<%= financial_confidence_button_classes %>"
+  aria-label="<%= descriptive_action_label %>"
+  data-action="<%= stimulus_controller_action %>"
+  <%= keyboard_navigation_attributes %>
+>
+  <%= button_content %>
+</button>
+```
+
+### Development Workflow Standards
+
+**Branch Strategy:**
+- Feature branches from main: `epic-N-feature-description`
+- Comprehensive testing before PR creation
+- Multi-agent review process
+
+**Commit Standards:**
+- Conventional commit messages with emojis
+- Atomic commits with single responsibility
+- Pre-commit hook validation
+
+**Documentation Requirements:**
+- Update CLAUDE.md for architectural changes
+- Maintain comprehensive test documentation
+- Document performance optimizations and benchmarks
+
+These practices ensure consistent, high-quality development that maintains the standards established during Epic 3 implementation.

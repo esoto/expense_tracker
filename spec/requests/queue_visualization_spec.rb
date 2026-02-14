@@ -3,6 +3,10 @@
 require "rails_helper"
 
 RSpec.describe "Queue Visualization", type: :request, integration: true do
+  let(:admin_user) { create(:admin_user, :with_session) }
+
+  before { sign_in_admin(admin_user) }
+
   describe "Dashboard with queue visualization", integration: true do
     before do
       # Create test data

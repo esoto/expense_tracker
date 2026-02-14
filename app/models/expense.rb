@@ -1,6 +1,7 @@
 class Expense < ApplicationRecord
   include ExpenseQueryOptimizer
   include QuerySecurity
+  include SoftDelete
 
   # Associations
   belongs_to :email_account
@@ -25,7 +26,7 @@ class Expense < ApplicationRecord
   before_save :normalize_merchant_name
   after_commit :clear_dashboard_cache
   after_commit :trigger_metrics_refresh, on: [ :create, :update ]
-  after_destroy :trigger_metrics_refresh_for_deletion
+  after_commit :trigger_metrics_refresh_for_deletion, on: [ :update ], if: :saved_change_to_deleted_at?
 
   # Scopes
   scope :recent, -> { order(transaction_date: :desc) }

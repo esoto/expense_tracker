@@ -354,8 +354,8 @@ RSpec.describe Services::Categorization::Orchestrator, type: :service do
       result = orchestrator.learn_from_correction(expense, correct_category, predicted_category)
 
       expect(result).to be_success
-      expect(result.patterns_created_count).to eq(1)
-      expect(result.patterns_updated_count).to eq(2)
+      expect(result.patterns_created).to eq(1)
+      expect(result.patterns_updated).to eq(2)
       expect(pattern_learner).to have_received(:learn_from_correction)
         .with(expense, correct_category, predicted_category, anything)
     end

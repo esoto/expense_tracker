@@ -1,5 +1,5 @@
 class ExpensesController < ApplicationController
-  before_action :authenticate_user!, except: [ :dashboard, :bulk_destroy, :bulk_categorize, :bulk_update_status ] # Allow bulk operations without auth for now
+  include Authentication
   before_action :set_expense, only: [ :show, :edit, :update, :destroy, :correct_category, :accept_suggestion, :reject_suggestion, :update_status, :duplicate ]
   before_action :authorize_expense!, only: [ :edit, :update, :destroy, :correct_category, :accept_suggestion, :reject_suggestion, :update_status, :duplicate ]
 
@@ -147,7 +147,42 @@ class ExpensesController < ApplicationController
     @current_month_total = @month_metrics[:metrics][:total_amount] || totals[:current_month_total]
     @last_month_total = @month_metrics[:trends][:previous_period_total] || totals[:last_month_total]
 
-    @recent_expenses = dashboard_data[:recent_expenses]
+    # Use optimized Services::DashboardExpenseFilterService for Recent Expenses widget
+    # This provides filtered, paginated results with performance optimization
+    # Always fetch 15 expenses to support both compact and expanded views
+    view_mode = params[:view_mode] || "compact"
+
+    dashboard_filter_params = params.permit(
+      :page, :per_page, :view_mode,
+      :search_query, :status, :period,
+      :min_amount, :max_amount,
+      :sort_by, :sort_direction,
+      category_ids: [], banks: []
+    ).to_h.merge(
+      account_ids: current_user_email_accounts.pluck(:id),
+      per_page: params[:per_page] || 15,  # Always fetch 15 for view toggle support
+      include_summary: true,
+      include_quick_filters: true
+    )
+
+    dashboard_filter_service = Services::DashboardExpenseFilterService.new(dashboard_filter_params)
+    @expense_filter_result = dashboard_filter_service.call
+
+    if @expense_filter_result.success?
+      @recent_expenses = @expense_filter_result.expenses
+      @expense_summary_stats = @expense_filter_result.summary_stats
+      @expense_quick_filters = @expense_filter_result.quick_filters
+      @expense_view_mode = view_mode  # Use the normalized view_mode
+      @expense_filter_performance = @expense_filter_result.performance_metrics
+
+      # Log metadata for debugging
+      Rails.logger.debug "Dashboard loaded - Filters applied: #{@expense_filter_result.metadata[:filters_applied]}, Total expenses: #{@expense_filter_result.total_count}"
+    else
+      # Fallback to basic recent expenses if filter service fails
+      @recent_expenses = dashboard_data[:recent_expenses]
+      @expense_view_mode = "compact"
+      Rails.logger.error "Dashboard filter service failed with metadata: #{@expense_filter_result.metadata.inspect}, using fallback"
+    end
 
     category_data = dashboard_data[:category_breakdown]
     @category_totals = category_data[:totals]
@@ -165,6 +200,15 @@ class ExpensesController < ApplicationController
 
     # Primary email account for display
     @primary_email_account = primary_email_account
+
+    # Handle AJAX requests for partial updates (Task 3.6)
+    if request.xhr? && params[:partial] == "expenses_list"
+      render partial: "expenses/dashboard_expense_list", locals: {
+        recent_expenses: @recent_expenses,
+        expense_view_mode: @expense_view_mode,
+        expense_filter_result: @expense_filter_result
+      }
+    end
   end
 
   # POST /expenses/sync_emails
@@ -198,7 +242,13 @@ class ExpensesController < ApplicationController
       respond_to do |format|
         format.html { redirect_back(fallback_location: @expense, notice: "Categoría actualizada correctamente") }
         format.turbo_stream { render turbo_stream: turbo_stream.replace("expense_#{@expense.id}_category", partial: "expenses/category_with_confidence", locals: { expense: @expense }) }
-        format.json { render json: { success: true, expense: expense_json(@expense) } }
+        format.json {
+          render json: {
+            success: true,
+            expense: expense_json(@expense),
+            color: @expense.category&.color
+          }
+        }
       end
     else
       respond_to do |format|
@@ -288,6 +338,48 @@ class ExpensesController < ApplicationController
     respond_to do |format|
       format.html { redirect_back(fallback_location: @expense, alert: "Error al actualizar el estado") }
       format.json { render json: { success: false, error: e.message }, status: :internal_server_error }
+    end
+  end
+
+  # GET /expenses/virtual_scroll
+  # Endpoint for Task 3.7: Virtual Scrolling with cursor-based pagination
+  def virtual_scroll
+    # Use cursor-based pagination for efficient virtual scrolling
+    filter_params_with_cursor = params.permit(
+      :cursor, :per_page, :view_mode,
+      :search_query, :status, :period,
+      :min_amount, :max_amount,
+      :sort_by, :sort_direction,
+      category_ids: [], banks: []
+    ).to_h.merge(
+      account_ids: current_user_email_accounts.pluck(:id),
+      use_cursor: true,
+      per_page: params[:per_page] || 30,  # Default 30 items per request
+      include_summary: false,  # No summary needed for virtual scroll
+      include_quick_filters: false  # No filters needed for virtual scroll
+    )
+
+    # Use Services::DashboardExpenseFilterService with cursor pagination
+    filter_service = Services::DashboardExpenseFilterService.new(filter_params_with_cursor)
+    result = filter_service.call
+
+    if result.success?
+      # Format response for virtual scrolling
+      render json: {
+        expenses: result.expenses.map { |e| expense_json_for_virtual_scroll(e) },
+        total_count: result.total_count,
+        has_more: result.metadata[:has_more],
+        next_cursor: result.metadata[:next_cursor],
+        performance: {
+          query_time_ms: result.performance_metrics[:query_time_ms],
+          index_used: result.performance_metrics[:index_used]
+        }
+      }
+    else
+      render json: {
+        error: "Error loading expenses",
+        message: result.metadata[:error]
+      }, status: :internal_server_error
     end
   end
 
@@ -430,9 +522,11 @@ class ExpensesController < ApplicationController
         message: result[:message],
         affected_count: result[:affected_count],
         failures: result[:failures],
-        reload: true, # Signal to reload the page after deletion
+        reload: false, # Don't reload to preserve undo notification
         background: result[:background],
-        job_id: result[:job_id]
+        job_id: result[:job_id],
+        undo_id: result[:undo_id],
+        undo_time_remaining: result[:undo_time_remaining]
       }
     else
       render json: {
@@ -472,21 +566,9 @@ class ExpensesController < ApplicationController
   end
 
   def current_user_email_accounts
-    # Cache this in instance variable to avoid multiple queries
-    @current_user_email_accounts ||= if defined?(current_user) && current_user.present?
-      # If using Devise or similar authentication
-      EmailAccount.where(user_id: current_user.id)
-    else
-      # Fallback for systems without user authentication
-      # In production, this should be properly configured
-      EmailAccount.all
-    end
-  end
-
-  def authenticate_user!
-    # This would normally be provided by Devise or your auth system
-    # For now, we'll make it a no-op if not defined
-    super if defined?(super)
+    # Admin users see all email accounts (no User model for per-user scoping yet).
+    # When user-level data isolation is added, scope to current_user's accounts.
+    @current_user_email_accounts ||= EmailAccount.all
   end
 
   def expense_params
@@ -507,8 +589,7 @@ class ExpensesController < ApplicationController
   end
 
   def current_user_for_bulk_operations
-    # Return current_user if using authentication, nil otherwise
-    defined?(current_user) ? current_user : nil
+    current_user
   end
 
   def filter_params
@@ -534,9 +615,11 @@ class ExpensesController < ApplicationController
   def expense_json(expense)
     {
       id: expense.id,
-      amount: expense.amount,
+      amount: expense.amount.to_f.to_s,
       description: expense.description,
       merchant_name: expense.merchant_name,
+      status: expense.status,
+      transaction_date: expense.transaction_date,
       category: expense.category ? {
         id: expense.category.id,
         name: expense.category.name,
@@ -550,6 +633,27 @@ class ExpensesController < ApplicationController
         name: expense.ml_suggested_category.name,
         color: expense.ml_suggested_category.color
       } : nil
+    }
+  end
+
+  def expense_json_for_virtual_scroll(expense)
+    # Optimized JSON for virtual scrolling with minimal data
+    {
+      id: expense.id,
+      merchant_name: expense.merchant_name,
+      amount: expense.amount.to_f,
+      currency: expense.currency,
+      transaction_date: expense.transaction_date.to_s,
+      status: expense.status,
+      bank_name: expense.bank_name,
+      description: expense.description&.truncate(100),  # Truncate for performance
+      created_at: expense.created_at.to_s,
+      category: expense.category ? {
+        id: expense.category.id,
+        name: expense.category.name,
+        color: expense.category.color
+      } : nil,
+      ml_confidence: expense.ml_confidence
     }
   end
 
@@ -734,11 +838,11 @@ class ExpensesController < ApplicationController
   end
 
   def authorize_bulk_operation!
-    # Ensure user can perform bulk operations
-    # In test/development, allow if no authentication system is set up
-    # In production, this should verify proper user authorization
-    if Rails.env.production? && !defined?(current_user)
-      render json: { success: false, message: "No autorizado" }, status: :unauthorized
+    unless user_signed_in?
+      respond_to do |format|
+        format.json { render json: { success: false, message: "No autorizado" }, status: :unauthorized }
+        format.html { redirect_to root_path, alert: "No autorizado" }
+      end
       return false
     end
     true

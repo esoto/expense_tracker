@@ -2,7 +2,8 @@
 
 require 'rails_helper'
 
-RSpec.describe 'Dashboard tooltips', type: :system, js: true, skip: "JavaScript timing issues in CI environment" do
+RSpec.describe 'Dashboard tooltips', type: :system, js: true, tier: :system, skip: "JavaScript timing issues in CI environment" do
+  let(:admin_user) { create(:admin_user) }
   let(:email_account) { create(:email_account) }
 
   before do
@@ -16,6 +17,7 @@ RSpec.describe 'Dashboard tooltips', type: :system, js: true, skip: "JavaScript 
              merchant_name: "Test Merchant #{days_ago}")
     end
 
+    sign_in_admin_user(admin_user)
     visit dashboard_expenses_path
   end
 

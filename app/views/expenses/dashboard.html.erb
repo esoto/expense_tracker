@@ -12,550 +12,868 @@
 
   <!-- Email Sync Section -->
   <%= turbo_frame_tag "sync_status_section" do %>
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
-       data-controller="sync-widget"
-       data-sync-widget-session-id-value="<%= @active_sync_session&.id || 0 %>"
-       data-sync-widget-active-value="<%= @active_sync_session.present? %>">
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6" data-controller="sync-widget" data-sync-widget-session-id-value="<%= @active_sync_session&.id || 0 %>" data-sync-widget-active-value="<%= @active_sync_session.present? %>">
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg font-semibold text-slate-900">Sincronización de Correos</h2>
       <% if @active_sync_session %>
-        <div class="flex items-center text-teal-700">
-          <svg class="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span class="text-sm font-medium">Sincronizando...</span>
-          <span class="text-sm ml-2" data-sync-widget-target="progressPercentage"><%= @active_sync_session.progress_percentage %>%</span>
-        </div>
+      <div class="flex items-center text-teal-700">
+        <svg class="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span class="text-sm font-medium">Sincronizando...</span>
+        <span class="text-sm ml-2" data-sync-widget-target="progressPercentage"><%= @active_sync_session.progress_percentage %>%</span>
+      </div>
       <% end %>
     </div>
 
     <!-- Real-time Progress Bar -->
     <% if @active_sync_session %>
-      <div class="mb-4" data-sync-widget-target="activeSection">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-sm text-slate-600">Progreso general</span>
-          <span class="text-sm font-medium text-slate-900">
-            <span data-sync-widget-target="processedCount"><%= @active_sync_session.processed_emails %></span> /
-            <%= @active_sync_session.total_emails %> correos
-          </span>
-        </div>
-        <div class="w-full bg-slate-200 rounded-full h-2">
-          <div class="bg-teal-700 h-2 rounded-full transition-all duration-300 ease-out"
-               data-sync-widget-target="progressBar"
-               style="width: <%= @active_sync_session.progress_percentage %>%"></div>
-        </div>
-        <div class="flex items-center justify-between mt-2">
-          <span class="text-xs text-slate-600">
-            <span data-sync-widget-target="detectedCount"><%= @active_sync_session.detected_expenses %></span> gastos detectados
-          </span>
-          <% if @active_sync_session.estimated_time_remaining %>
-            <span class="text-xs text-slate-600" data-sync-widget-target="timeRemaining">
-              <%= distance_of_time_in_words(@active_sync_session.estimated_time_remaining) %> restante
-            </span>
-          <% end %>
-        </div>
+    <div class="mb-4" data-sync-widget-target="activeSection">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm text-slate-600">Progreso general</span>
+        <span class="text-sm font-medium text-slate-900">
+          <span data-sync-widget-target="processedCount"><%= @active_sync_session.processed_emails %></span> /
+          <%= @active_sync_session.total_emails %> correos
+        </span>
       </div>
+      <div class="w-full bg-slate-200 rounded-full h-2">
+        <div class="bg-teal-700 h-2 rounded-full transition-all duration-300 ease-out" data-sync-widget-target="progressBar" style="width: <%= @active_sync_session.progress_percentage %>%"></div>
+      </div>
+      <div class="flex items-center justify-between mt-2">
+        <span class="text-xs text-slate-600">
+          <span data-sync-widget-target="detectedCount"><%= @active_sync_session.detected_expenses %></span> gastos detectados
+        </span>
+        <% if @active_sync_session.estimated_time_remaining %>
+        <span class="text-xs text-slate-600" data-sync-widget-target="timeRemaining">
+          <%= distance_of_time_in_words(@active_sync_session.estimated_time_remaining) %> restante
+        </span>
+        <% end %>
+      </div>
+    </div>
     <% end %>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Sync All Button -->
       <div class="space-y-4">
         <%= form_with url: sync_emails_expenses_path, method: :post, class: "space-y-4" do |form| %>
-          <div class="flex flex-col space-y-2">
-            <%= form.submit "Sincronizar Todos los Correos",
-                class: "w-full bg-teal-700 hover:bg-teal-800 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 #{@last_sync_info[:has_running_jobs] ? 'opacity-50 cursor-not-allowed' : ''}",
-                disabled: @last_sync_info[:has_running_jobs] %>
-            <p class="text-xs text-slate-600">
-              Busca nuevos gastos en todas las cuentas de correo activas
-            </p>
-          </div>
+        <div class="flex flex-col space-y-2">
+          <%= form.submit "Sincronizar Todos los Correos",
+                class: "w-full bg-teal-700 hover:bg-teal-800 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 #{@last_sync_info&.dig(:has_running_jobs) ? 'opacity-50 cursor-not-allowed' : ''}",
+                disabled: @last_sync_info&.dig(:has_running_jobs) %>
+          <p class="text-xs text-slate-600">
+            Busca nuevos gastos en todas las cuentas de correo activas
+          </p>
+        </div>
         <% end %>
 
         <% if @email_accounts.any? %>
-          <!-- Individual Account Sync -->
-          <div class="border-t pt-4">
-            <h3 class="text-sm font-medium text-slate-700 mb-2">Sincronizar cuenta individual:</h3>
-            <div class="space-y-2">
-              <% @email_accounts.each do |account| %>
-                <%= form_with url: sync_emails_expenses_path, method: :post, class: "flex items-center space-x-2" do |form| %>
-                  <%= form.hidden_field :email_account_id, value: account.id %>
-                  <%= form.submit account.display_name.truncate(30),
-                      class: "text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 py-1 px-3 rounded transition-colors duration-200 #{@last_sync_info[:has_running_jobs] ? 'opacity-50 cursor-not-allowed' : ''}",
-                      disabled: @last_sync_info[:has_running_jobs] %>
+        <!-- Individual Account Sync -->
+        <div class="border-t pt-4">
+          <h3 class="text-sm font-medium text-slate-700 mb-2">Sincronizar cuenta individual:</h3>
+          <div class="space-y-2">
+            <% @email_accounts.each do |account| %>
+            <%= form_with url: sync_emails_expenses_path, method: :post, class: "flex items-center space-x-2" do |form| %>
+            <%= form.hidden_field :email_account_id, value: account.id %>
+            <%= form.submit account.display_name.truncate(30),
+                      class: "text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 py-1 px-3 rounded transition-colors duration-200 #{@last_sync_info&.dig(:has_running_jobs) ? 'opacity-50 cursor-not-allowed' : ''}",
+                      disabled: @last_sync_info&.dig(:has_running_jobs) %>
             <% end %>
             <% end %>
           </div>
         </div>
         <% else %>
-          <div class="border-t pt-4">
-            <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <div class="flex">
-                <div class="flex-shrink-0">
-                  <svg class="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                  </svg>
-                </div>
-                <div class="ml-3">
-                  <p class="text-sm text-amber-800">
-                    No hay cuentas de correo configuradas.
-                    <%= link_to "Configurar cuenta", email_accounts_path, class: "font-medium underline" %>
-                  </p>
-                </div>
+        <div class="border-t pt-4">
+          <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm text-amber-800">
+                  No hay cuentas de correo configuradas.
+                  <%= link_to "Configurar cuenta", email_accounts_path, class: "font-medium underline" %>
+                </p>
               </div>
             </div>
           </div>
         </div>
-        <% end %>
       </div>
+      <% end %>
+    </div>
 
-      <!-- Sync Status -->
-      <div class="space-y-4">
-        <h3 class="text-sm font-medium text-slate-700">Estado de sincronización:</h3>
-        <% if @email_accounts.any? %>
-          <div class="space-y-3" data-sync-widget-target="accountsList">
-            <% @email_accounts.each do |account| %>
-              <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg" data-account-id="<%= account.id %>">
-                <div class="flex items-center space-x-3">
-                  <div class="flex-shrink-0">
-                    <div class="w-8 h-8 <%= account.bank_name == 'BAC' ? 'bg-teal-100' : 'bg-slate-100' %> rounded-full flex items-center justify-center">
-                      <span class="text-xs font-bold <%= account.bank_name == 'BAC' ? 'text-teal-700' : 'text-slate-600' %>">
-                        <%= account.bank_name.first %>
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <p class="text-sm font-medium text-slate-900"><%= account.email %></p>
-                    <p class="text-xs text-slate-600"><%= account.bank_name %></p>
-                  </div>
-                </div>
-                <div class="text-right">
-                  <div data-status-icon>
-                    <% if @active_sync_session && @active_sync_session.sync_session_accounts.joins(:email_account).where(email_accounts: { id: account.id }).exists? %>
-                      <svg class="animate-spin h-4 w-4 text-teal-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                    <% elsif @last_sync_info[account.id] %>
-                      <div class="w-2 h-2 bg-emerald-400 rounded-full"></div>
-                    <% else %>
-                      <div class="w-2 h-2 bg-slate-400 rounded-full"></div>
-                    <% end %>
-                  </div>
-                  <p class="text-xs text-slate-600 mt-1" data-progress-text>
-                    <% if @last_sync_info[account.id] %>
-                      Último: <%= format_datetime(@last_sync_info[account.id][:last_sync]) %>
-                    <% else %>
-                      Sin datos
-                    <% end %>
-                  </p>
-                </div>
+    <!-- Sync Status -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-medium text-slate-700">Estado de sincronización:</h3>
+      <% if @email_accounts.any? %>
+      <div class="space-y-3" data-sync-widget-target="accountsList">
+        <% @email_accounts.each do |account| %>
+        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg" data-account-id="<%= account.id %>">
+          <div class="flex items-center space-x-3">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 <%= account.bank_name == 'BAC' ? 'bg-teal-100' : 'bg-slate-100' %> rounded-full flex items-center justify-center">
+                <span class="text-xs font-bold <%= account.bank_name == 'BAC' ? 'text-teal-700' : 'text-slate-600' %>">
+                  <%= account.bank_name.first %>
+                </span>
               </div>
-            <% end %>
-        </div>
-        <% else %>
-          <p class="text-sm text-slate-600">No hay cuentas de correo configuradas.</p>
-        <% end %>
-
-        <% if @last_sync_info[:has_running_jobs] %>
-          <div class="bg-teal-50 border border-teal-200 rounded-lg p-3">
-            <div class="flex items-center">
-              <svg class="animate-spin h-4 w-4 text-teal-700 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            </div>
+            <div>
+              <p class="text-sm font-medium text-slate-900"><%= account.email %></p>
+              <p class="text-xs text-slate-600"><%= account.bank_name %></p>
+            </div>
+          </div>
+          <div class="text-right">
+            <div data-status-icon>
+              <% if @active_sync_session && @active_sync_session.sync_session_accounts.joins(:email_account).where(email_accounts: { id: account.id }).exists? %>
+              <svg class="animate-spin h-4 w-4 text-teal-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              <span class="text-sm text-teal-800">
-                <%= @last_sync_info[:running_job_count] %> sincronización<%= 'es' if @last_sync_info[:running_job_count] != 1 %> en progreso
-              </span>
+              <% elsif @last_sync_info&.dig(account.id) %>
+              <div class="w-2 h-2 bg-emerald-400 rounded-full"></div>
+              <% else %>
+              <div class="w-2 h-2 bg-slate-400 rounded-full"></div>
+              <% end %>
             </div>
+            <p class="text-xs text-slate-600 mt-1" data-progress-text>
+              <% if @last_sync_info&.dig(account.id) %>
+              Último: <%= format_datetime(@last_sync_info.dig(account.id, :last_sync)) %>
+              <% else %>
+              Sin datos
+              <% end %>
+            </p>
           </div>
         </div>
         <% end %>
       </div>
-    </div>
-  </div>
-  <% end %>
-
-  <!-- Sync Status Widget -->
-  <div class="mb-6">
-    <%= render 'sync_sessions/unified_widget' %>
-  </div>
-
-  <!-- Queue Visualization Widget -->
-  <div class="mb-6">
-    <%= render 'sync_sessions/queue_visualization' %>
-  </div>
-
-  <!-- Conflict Alert (if any pending conflicts) -->
-  <% pending_conflicts_count = SyncConflict.unresolved.count %>
-  <% if pending_conflicts_count > 0 %>
-    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center">
-          <svg class="w-5 h-5 text-amber-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-          </svg>
-          <div>
-            <p class="text-sm font-medium text-amber-900">
-              <%= pending_conflicts_count %> <%= pending_conflicts_count == 1 ? 'conflicto pendiente' : 'conflictos pendientes' %> de resolución
-            </p>
-            <p class="text-xs text-amber-700 mt-1">
-              Se detectaron transacciones duplicadas o similares que requieren tu atención
-            </p>
-          </div>
-        </div>
-        <%= link_to sync_conflicts_path, class: "px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors" do %>
-          Resolver Conflictos
-        <% end %>
-      </div>
-    </div>
-  <% end %>
-
-  <!-- Enhanced Key Metrics with Visual Hierarchy -->
-  <div class="space-y-6">
-    <!-- Primary Metric Card - 1.5x Larger with Tooltip and Navigation -->
-    <div id="primary-metric-card" class="bg-gradient-to-br from-teal-700 to-teal-800 rounded-2xl shadow-xl p-8 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] cursor-pointer relative"
-         role="button"
-         tabindex="0"
-         aria-label="Ver gastos del año completo"
-         data-controller="animated-metric tooltip dashboard-card-navigation"
-         data-animated-metric-container-target="container"
-         data-animated-metric-to-value="<%= @total_metrics[:metrics][:total_amount] %>"
-         data-animated-metric-prefix-value="₡"
-         data-animated-metric-trend-value-value="<%= @month_metrics[:trends][:amount_change] %>"
-         data-animated-metric-is-increase-value="<%= @month_metrics[:trends][:is_increase] %>"
-         data-tooltip-trend-data-value='<%= @total_metrics[:trend_data].to_json %>'
-         data-tooltip-metric-label-value="Total de Gastos (Año)"
-         data-tooltip-position-value="bottom"
-         data-dashboard-card-navigation-period-value="year"
-         data-dashboard-card-navigation-date-from-value="<%= @total_metrics[:date_range].first %>"
-         data-dashboard-card-navigation-date-to-value="<%= @total_metrics[:date_range].last %>"
-         data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
-
-      <div class="flex items-start justify-between mb-4">
-        <div>
-          <h3 class="text-lg font-medium text-teal-100 mb-2">TOTAL DE GASTOS</h3>
-          <div class="flex items-baseline">
-            <span class="text-5xl font-bold tracking-tight"
-                  data-animated-metric-target="value">₡<%= number_with_delimiter(@total_expenses.to_i) %></span>
-          </div>
-        </div>
-        <div class="p-4 bg-white/10 rounded-xl backdrop-blur-sm">
-          <svg class="w-10 h-10 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-          </svg>
-        </div>
-      </div>
-
-      <!-- Trend Indicator with Animation -->
-      <div class="flex items-center justify-between mt-6">
-        <div data-animated-metric-target="trend" class="flex items-center">
-          <% if @month_metrics[:trends][:is_increase] %>
-            <svg class="w-5 h-5 text-rose-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
-            </svg>
-            <span class="text-rose-300 font-semibold">↑ +<%= @month_metrics[:trends][:amount_change].round(1) %>%</span>
-          <% else %>
-            <svg class="w-5 h-5 text-emerald-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-            </svg>
-            <span class="text-emerald-300 font-semibold">↓ <%= @month_metrics[:trends][:amount_change].round(1) %>%</span>
-          <% end %>
-          <span class="text-teal-200 text-sm ml-2">vs mes anterior</span>
-        </div>
-
-        <!-- Mini Sparkline -->
-        <div data-animated-metric-target="sparkline" class="opacity-60"></div>
-      </div>
-
-      <!-- Budget Progress for Year -->
-      <% if @total_metrics[:budgets] && @total_metrics[:budgets][:has_budget] && @total_metrics[:budgets][:general_budget] %>
-        <% budget = @total_metrics[:budgets][:general_budget] %>
-        <div class="mt-4 pt-4 border-t border-white/20">
-          <div class="flex items-center justify-between text-sm mb-2">
-            <span class="text-teal-200">Presupuesto Anual</span>
-            <span class="font-semibold text-white">
-              <%= budget[:usage_percentage] %>% usado
-            </span>
-          </div>
-          <div class="w-full bg-white/20 rounded-full h-2 overflow-hidden">
-            <div class="h-2 rounded-full transition-all duration-500 ease-out <%= budget[:status] == :exceeded ? 'bg-rose-400' : budget[:status] == :critical ? 'bg-rose-300' : budget[:status] == :warning ? 'bg-amber-400' : 'bg-emerald-400' %>"
-                 style="width: <%= [budget[:usage_percentage], 100].min %>%">
-            </div>
-          </div>
-          <div class="flex items-center justify-between mt-2">
-            <span class="text-xs text-teal-200">
-              <%= budget[:formatted_amount] %> total
-            </span>
-            <span class="text-xs font-medium text-white">
-              <%= budget[:remaining] >= 0 ? 'Disponible' : 'Excedido' %>: <%= budget[:formatted_remaining] %>
-            </span>
-          </div>
-        </div>
+      <% else %>
+      <p class="text-sm text-slate-600">No hay cuentas de correo configuradas.</p>
       <% end %>
 
-      <!-- Additional Stats -->
-      <div class="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-white/20">
-        <div>
-          <p class="text-teal-200 text-xs uppercase tracking-wide">Transacciones</p>
-          <p class="text-2xl font-bold mt-1"><%= number_with_delimiter(@total_metrics[:metrics][:transaction_count]) %></p>
-        </div>
-        <div>
-          <p class="text-teal-200 text-xs uppercase tracking-wide">Promedio</p>
-          <p class="text-2xl font-bold mt-1">₡<%= number_with_delimiter(@total_metrics[:metrics][:average_amount].to_i) %></p>
-        </div>
-        <div>
-          <p class="text-teal-200 text-xs uppercase tracking-wide">Categorías</p>
-          <p class="text-2xl font-bold mt-1"><%= @total_metrics[:metrics][:unique_categories] %></p>
+      <% if @last_sync_info&.dig(:has_running_jobs) %>
+      <div class="bg-teal-50 border border-teal-200 rounded-lg p-3">
+        <div class="flex items-center">
+          <svg class="animate-spin h-4 w-4 text-teal-700 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span class="text-sm text-teal-800">
+            <%= @last_sync_info&.dig(:running_job_count) || 0 %> sincronización<%= 'es' if @last_sync_info&.dig(:running_job_count) != 1 %> en progreso
+          </span>
         </div>
       </div>
     </div>
+    <% end %>
+  </div>
+</div>
+</div>
+<% end %>
 
-    <!-- Secondary Metrics Cards - Regular Size -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <!-- Este Mes Card with Tooltip, Budget and Navigation -->
-      <div id="month-metric-card" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative"
-           role="button"
-           tabindex="0"
-           aria-label="Ver gastos de este mes"
-           data-controller="animated-metric tooltip dashboard-card-navigation"
-           data-animated-metric-container-target="container"
-           data-animated-metric-to-value="<%= @month_metrics[:metrics][:total_amount] %>"
-           data-animated-metric-prefix-value="₡"
-           data-tooltip-trend-data-value='<%= @month_metrics[:trend_data].to_json %>'
-           data-tooltip-metric-label-value="Gastos del Mes"
-           data-tooltip-position-value="top"
-           data-dashboard-card-navigation-period-value="month"
-           data-dashboard-card-navigation-date-from-value="<%= @month_metrics[:date_range].first %>"
-           data-dashboard-card-navigation-date-to-value="<%= @month_metrics[:date_range].last %>"
-           data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
-        <div class="flex items-center justify-between mb-3">
-          <div class="p-2 rounded-lg bg-amber-100">
-            <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-            </svg>
-          </div>
-          <% if @month_metrics[:trends][:count_change] != 0 %>
-            <span class="text-xs font-medium <%= @month_metrics[:trends][:count_change] > 0 ? 'text-rose-600' : 'text-emerald-600' %>">
-              <%= @month_metrics[:trends][:count_change] > 0 ? '+' : '' %><%= @month_metrics[:trends][:count_change].round(0) %>%
-            </span>
-          <% end %>
+<!-- Sync Status Widget -->
+<div class="mb-6">
+  <%= render 'sync_sessions/unified_widget' %>
+</div>
+
+<!-- Queue Visualization Widget -->
+<div class="mb-6">
+  <%= render 'sync_sessions/queue_visualization' %>
+</div>
+
+<!-- Conflict Alert (if any pending conflicts) -->
+<% pending_conflicts_count = SyncConflict.unresolved.count %>
+<% if pending_conflicts_count > 0 %>
+<div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center">
+      <svg class="w-5 h-5 text-amber-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+      </svg>
+      <div>
+        <p class="text-sm font-medium text-amber-900">
+          <%= pending_conflicts_count %> <%= pending_conflicts_count == 1 ? 'conflicto pendiente' : 'conflictos pendientes' %> de resolución
+        </p>
+        <p class="text-xs text-amber-700 mt-1">
+          Se detectaron transacciones duplicadas o similares que requieren tu atención
+        </p>
+      </div>
+    </div>
+    <%= link_to sync_conflicts_path, class: "px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors" do %>
+    Resolver Conflictos
+    <% end %>
+  </div>
+</div>
+<% end %>
+
+<!-- Enhanced Key Metrics with Visual Hierarchy -->
+<div class="space-y-6">
+  <!-- Primary Metric Card - 1.5x Larger with Tooltip and Navigation -->
+  <div id="primary-metric-card" class="bg-gradient-to-br from-teal-700 to-teal-800 rounded-2xl shadow-xl p-8 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] cursor-pointer relative" role="button" tabindex="0" aria-label="Ver gastos del año completo" data-controller="animated-metric tooltip dashboard-card-navigation" data-animated-metric-container-target="container" data-animated-metric-to-value="<%= @total_metrics[:metrics][:total_amount] %>" data-animated-metric-prefix-value="₡" data-animated-metric-trend-value-value="<%= @month_metrics[:trends][:amount_change] %>" data-animated-metric-is-increase-value="<%= @month_metrics[:trends][:is_increase] %>" data-tooltip-trend-data-value='<%= @total_metrics[:trend_data].to_json %>' data-tooltip-metric-label-value="Total de Gastos (Año)" data-tooltip-position-value="bottom" data-dashboard-card-navigation-period-value="year" data-dashboard-card-navigation-date-from-value="<%= @total_metrics[:date_range].first %>" data-dashboard-card-navigation-date-to-value="<%= @total_metrics[:date_range].last %>" data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
+
+    <div class="flex items-start justify-between mb-4">
+      <div>
+        <h3 class="text-lg font-medium text-teal-100 mb-2">TOTAL DE GASTOS</h3>
+        <div class="flex items-baseline">
+          <span class="text-5xl font-bold tracking-tight" data-animated-metric-target="value">₡<%= number_with_delimiter(@total_expenses.to_i) %></span>
         </div>
-        <div>
-          <p class="text-sm font-medium text-slate-600 mb-1">Este Mes</p>
-          <p class="text-2xl font-bold text-slate-900" data-animated-metric-target="value">
-            ₡<%= number_with_delimiter(@month_metrics[:metrics][:total_amount].to_i) %>
-          </p>
-          <p class="text-xs text-slate-500 mt-2">
-            <%= @month_metrics[:metrics][:transaction_count] %> transacciones
-          </p>
+      </div>
+      <div class="p-4 bg-white/10 rounded-xl backdrop-blur-sm">
+        <svg class="w-10 h-10 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+        </svg>
+      </div>
+    </div>
 
-          <!-- Budget Progress -->
-          <%= render 'shared/budget_progress',
+    <!-- Trend Indicator with Animation -->
+    <div class="flex items-center justify-between mt-6">
+      <div data-animated-metric-target="trend" class="flex items-center">
+        <% if @month_metrics[:trends][:is_increase] %>
+        <svg class="w-5 h-5 text-rose-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
+        </svg>
+        <span class="text-rose-300 font-semibold">↑ +<%= @month_metrics[:trends][:amount_change].round(1) %>%</span>
+        <% else %>
+        <svg class="w-5 h-5 text-emerald-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+        </svg>
+        <span class="text-emerald-300 font-semibold">↓ <%= @month_metrics[:trends][:amount_change].round(1) %>%</span>
+        <% end %>
+        <span class="text-teal-200 text-sm ml-2">vs mes anterior</span>
+      </div>
+
+      <!-- Mini Sparkline -->
+      <div data-animated-metric-target="sparkline" class="opacity-60"></div>
+    </div>
+
+    <!-- Budget Progress for Year -->
+    <% if @total_metrics[:budgets] && @total_metrics[:budgets][:has_budget] && @total_metrics[:budgets][:general_budget] %>
+    <% budget = @total_metrics[:budgets][:general_budget] %>
+    <div class="mt-4 pt-4 border-t border-white/20">
+      <div class="flex items-center justify-between text-sm mb-2">
+        <span class="text-teal-200">Presupuesto Anual</span>
+        <span class="font-semibold text-white">
+          <%= budget[:usage_percentage] %>% usado
+        </span>
+      </div>
+      <div class="w-full bg-white/20 rounded-full h-2 overflow-hidden">
+        <div class="h-2 rounded-full transition-all duration-500 ease-out <%= budget[:status] == :exceeded ? 'bg-rose-400' : budget[:status] == :critical ? 'bg-rose-300' : budget[:status] == :warning ? 'bg-amber-400' : 'bg-emerald-400' %>" style="width: <%= [budget[:usage_percentage], 100].min %>%">
+        </div>
+      </div>
+      <div class="flex items-center justify-between mt-2">
+        <span class="text-xs text-teal-200">
+          <%= budget[:formatted_amount] %> total
+        </span>
+        <span class="text-xs font-medium text-white">
+          <%= budget[:remaining] >= 0 ? 'Disponible' : 'Excedido' %>: <%= budget[:formatted_remaining] %>
+        </span>
+      </div>
+    </div>
+    <% end %>
+
+    <!-- Additional Stats -->
+    <div class="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-white/20">
+      <div>
+        <p class="text-teal-200 text-xs uppercase tracking-wide">Transacciones</p>
+        <p class="text-2xl font-bold mt-1"><%= number_with_delimiter(@total_metrics[:metrics][:transaction_count]) %></p>
+      </div>
+      <div>
+        <p class="text-teal-200 text-xs uppercase tracking-wide">Promedio</p>
+        <p class="text-2xl font-bold mt-1">₡<%= number_with_delimiter(@total_metrics[:metrics][:average_amount].to_i) %></p>
+      </div>
+      <div>
+        <p class="text-teal-200 text-xs uppercase tracking-wide">Categorías</p>
+        <p class="text-2xl font-bold mt-1"><%= @total_metrics[:metrics][:unique_categories] %></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Secondary Metrics Cards - Regular Size -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- Este Mes Card with Tooltip, Budget and Navigation -->
+    <div id="month-metric-card" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative" role="button" tabindex="0" aria-label="Ver gastos de este mes" data-controller="animated-metric tooltip dashboard-card-navigation" data-animated-metric-container-target="container" data-animated-metric-to-value="<%= @month_metrics[:metrics][:total_amount] %>" data-animated-metric-prefix-value="₡" data-tooltip-trend-data-value='<%= @month_metrics[:trend_data].to_json %>' data-tooltip-metric-label-value="Gastos del Mes" data-tooltip-position-value="top" data-dashboard-card-navigation-period-value="month" data-dashboard-card-navigation-date-from-value="<%= @month_metrics[:date_range].first %>" data-dashboard-card-navigation-date-to-value="<%= @month_metrics[:date_range].last %>" data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
+      <div class="flex items-center justify-between mb-3">
+        <div class="p-2 rounded-lg bg-amber-100">
+          <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <% if @month_metrics[:trends][:count_change] != 0 %>
+        <span class="text-xs font-medium <%= @month_metrics[:trends][:count_change] > 0 ? 'text-rose-600' : 'text-emerald-600' %>">
+          <%= @month_metrics[:trends][:count_change] > 0 ? '+' : '' %><%= @month_metrics[:trends][:count_change].round(0) %>%
+        </span>
+        <% end %>
+      </div>
+      <div>
+        <p class="text-sm font-medium text-slate-600 mb-1">Este Mes</p>
+        <p class="text-2xl font-bold text-slate-900" data-animated-metric-target="value">
+          ₡<%= number_with_delimiter(@month_metrics[:metrics][:total_amount].to_i) %>
+        </p>
+        <p class="text-xs text-slate-500 mt-2">
+          <%= @month_metrics[:metrics][:transaction_count] %> transacciones
+        </p>
+
+        <!-- Budget Progress -->
+        <%= render 'shared/budget_progress',
               budget_data: @month_metrics[:budgets],
               metric_amount: @month_metrics[:metrics][:total_amount],
               period_label: 'Este Mes' %>
-        </div>
       </div>
+    </div>
 
-      <!-- Esta Semana Card with Tooltip, Budget and Navigation -->
-      <div id="week-metric-card" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative"
-           role="button"
-           tabindex="0"
-           aria-label="Ver gastos de esta semana"
-           data-controller="animated-metric tooltip dashboard-card-navigation"
-           data-animated-metric-container-target="container"
-           data-animated-metric-to-value="<%= @week_metrics[:metrics][:total_amount] %>"
-           data-animated-metric-prefix-value="₡"
-           data-tooltip-trend-data-value='<%= @week_metrics[:trend_data].to_json %>'
-           data-tooltip-metric-label-value="Gastos de la Semana"
-           data-tooltip-position-value="top"
-           data-dashboard-card-navigation-period-value="week"
-           data-dashboard-card-navigation-date-from-value="<%= @week_metrics[:date_range].first %>"
-           data-dashboard-card-navigation-date-to-value="<%= @week_metrics[:date_range].last %>"
-           data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
-        <div class="flex items-center justify-between mb-3">
-          <div class="p-2 rounded-lg bg-teal-100">
-            <svg class="w-6 h-6 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-            </svg>
-          </div>
-          <% if @week_metrics[:trends][:amount_change] != 0 %>
-            <span class="text-xs font-medium <%= @week_metrics[:trends][:is_increase] ? 'text-rose-600' : 'text-emerald-600' %>">
-              <%= @week_metrics[:trends][:is_increase] ? '+' : '' %><%= @week_metrics[:trends][:amount_change].round(0) %>%
-            </span>
-          <% end %>
+    <!-- Esta Semana Card with Tooltip, Budget and Navigation -->
+    <div id="week-metric-card" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative" role="button" tabindex="0" aria-label="Ver gastos de esta semana" data-controller="animated-metric tooltip dashboard-card-navigation" data-animated-metric-container-target="container" data-animated-metric-to-value="<%= @week_metrics[:metrics][:total_amount] %>" data-animated-metric-prefix-value="₡" data-tooltip-trend-data-value='<%= @week_metrics[:trend_data].to_json %>' data-tooltip-metric-label-value="Gastos de la Semana" data-tooltip-position-value="top" data-dashboard-card-navigation-period-value="week" data-dashboard-card-navigation-date-from-value="<%= @week_metrics[:date_range].first %>" data-dashboard-card-navigation-date-to-value="<%= @week_metrics[:date_range].last %>" data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
+      <div class="flex items-center justify-between mb-3">
+        <div class="p-2 rounded-lg bg-teal-100">
+          <svg class="w-6 h-6 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+          </svg>
         </div>
-        <div>
-          <p class="text-sm font-medium text-slate-600 mb-1">Esta Semana</p>
-          <p class="text-2xl font-bold text-slate-900" data-animated-metric-target="value">
-            ₡<%= number_with_delimiter(@week_metrics[:metrics][:total_amount].to_i) %>
-          </p>
-          <p class="text-xs text-slate-500 mt-2">
-            <%= @week_metrics[:metrics][:transaction_count] %> transacciones
-          </p>
+        <% if @week_metrics[:trends][:amount_change] != 0 %>
+        <span class="text-xs font-medium <%= @week_metrics[:trends][:is_increase] ? 'text-rose-600' : 'text-emerald-600' %>">
+          <%= @week_metrics[:trends][:is_increase] ? '+' : '' %><%= @week_metrics[:trends][:amount_change].round(0) %>%
+        </span>
+        <% end %>
+      </div>
+      <div>
+        <p class="text-sm font-medium text-slate-600 mb-1">Esta Semana</p>
+        <p class="text-2xl font-bold text-slate-900" data-animated-metric-target="value">
+          ₡<%= number_with_delimiter(@week_metrics[:metrics][:total_amount].to_i) %>
+        </p>
+        <p class="text-xs text-slate-500 mt-2">
+          <%= @week_metrics[:metrics][:transaction_count] %> transacciones
+        </p>
 
-          <!-- Budget Progress -->
-          <%= render 'shared/budget_progress',
+        <!-- Budget Progress -->
+        <%= render 'shared/budget_progress',
               budget_data: @week_metrics[:budgets],
               metric_amount: @week_metrics[:metrics][:total_amount],
               period_label: 'Esta Semana' %>
-        </div>
       </div>
+    </div>
 
-      <!-- Hoy Card with Tooltip, Budget and Navigation -->
-      <div id="day-metric-card" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative"
-           role="button"
-           tabindex="0"
-           aria-label="Ver gastos de hoy"
-           data-controller="animated-metric tooltip dashboard-card-navigation"
-           data-animated-metric-container-target="container"
-           data-animated-metric-to-value="<%= @day_metrics[:metrics][:total_amount] %>"
-           data-animated-metric-prefix-value="₡"
-           data-tooltip-trend-data-value='<%= @day_metrics[:trend_data].to_json %>'
-           data-tooltip-metric-label-value="Gastos de Hoy"
-           data-tooltip-position-value="top"
-           data-dashboard-card-navigation-period-value="day"
-           data-dashboard-card-navigation-date-from-value="<%= @day_metrics[:date_range].first %>"
-           data-dashboard-card-navigation-date-to-value="<%= @day_metrics[:date_range].last %>"
-           data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
-        <div class="flex items-center justify-between mb-3">
-          <div class="p-2 rounded-lg bg-emerald-100">
-            <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-          </div>
-          <% if @day_metrics[:trends][:amount_change] != 0 %>
-            <span class="text-xs font-medium <%= @day_metrics[:trends][:is_increase] ? 'text-rose-600' : 'text-emerald-600' %>">
-              <%= @day_metrics[:trends][:is_increase] ? '+' : '' %><%= @day_metrics[:trends][:amount_change].round(0) %>%
-            </span>
-          <% end %>
+    <!-- Hoy Card with Tooltip, Budget and Navigation -->
+    <div id="day-metric-card" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative" role="button" tabindex="0" aria-label="Ver gastos de hoy" data-controller="animated-metric tooltip dashboard-card-navigation" data-animated-metric-container-target="container" data-animated-metric-to-value="<%= @day_metrics[:metrics][:total_amount] %>" data-animated-metric-prefix-value="₡" data-tooltip-trend-data-value='<%= @day_metrics[:trend_data].to_json %>' data-tooltip-metric-label-value="Gastos de Hoy" data-tooltip-position-value="top" data-dashboard-card-navigation-period-value="day" data-dashboard-card-navigation-date-from-value="<%= @day_metrics[:date_range].first %>" data-dashboard-card-navigation-date-to-value="<%= @day_metrics[:date_range].last %>" data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
+      <div class="flex items-center justify-between mb-3">
+        <div class="p-2 rounded-lg bg-emerald-100">
+          <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
         </div>
-        <div>
-          <p class="text-sm font-medium text-slate-600 mb-1">Hoy</p>
-          <p class="text-2xl font-bold text-slate-900" data-animated-metric-target="value">
-            ₡<%= number_with_delimiter(@day_metrics[:metrics][:total_amount].to_i) %>
-          </p>
-          <p class="text-xs text-slate-500 mt-2">
-            <%= @day_metrics[:metrics][:transaction_count] %> transacciones
-          </p>
+        <% if @day_metrics[:trends][:amount_change] != 0 %>
+        <span class="text-xs font-medium <%= @day_metrics[:trends][:is_increase] ? 'text-rose-600' : 'text-emerald-600' %>">
+          <%= @day_metrics[:trends][:is_increase] ? '+' : '' %><%= @day_metrics[:trends][:amount_change].round(0) %>%
+        </span>
+        <% end %>
+      </div>
+      <div>
+        <p class="text-sm font-medium text-slate-600 mb-1">Hoy</p>
+        <p class="text-2xl font-bold text-slate-900" data-animated-metric-target="value">
+          ₡<%= number_with_delimiter(@day_metrics[:metrics][:total_amount].to_i) %>
+        </p>
+        <p class="text-xs text-slate-500 mt-2">
+          <%= @day_metrics[:metrics][:transaction_count] %> transacciones
+        </p>
 
-          <!-- Budget Progress -->
-          <%= render 'shared/budget_progress',
+        <!-- Budget Progress -->
+        <%= render 'shared/budget_progress',
               budget_data: @day_metrics[:budgets],
               metric_amount: @day_metrics[:metrics][:total_amount],
               period_label: 'Hoy' %>
-        </div>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Charts Row -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Monthly Trend -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <h2 class="text-lg font-semibold text-slate-900 mb-4">Tendencia Mensual</h2>
-      <%= line_chart @monthly_data,
+<!-- Charts Row -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <!-- Monthly Trend -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <h2 class="text-lg font-semibold text-slate-900 mb-4">Tendencia Mensual</h2>
+    <%= line_chart @monthly_data,
           prefix: "₡",
           thousands: ",",
           height: "300px",
           colors: ["#0F766E"] %>
-    </div>
+  </div>
 
-    <!-- Category Breakdown -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <h2 class="text-lg font-semibold text-slate-900 mb-4">Gastos por Categoría</h2>
-      <%= pie_chart @sorted_categories.first(8),
+  <!-- Category Breakdown -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <h2 class="text-lg font-semibold text-slate-900 mb-4">Gastos por Categoría</h2>
+    <%= pie_chart @sorted_categories.first(8),
           prefix: "₡",
           thousands: ",",
           height: "300px" %>
+  </div>
+</div>
+
+<!-- Detailed Tables -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <!-- Top Merchants -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <h2 class="text-lg font-semibold text-slate-900 mb-4">Comercios con Más Gastos</h2>
+    <div class="space-y-3">
+      <% @top_merchants.each_with_index do |(merchant, amount), index| %>
+      <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+        <div class="flex items-center space-x-3">
+          <div class="flex-shrink-0 w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
+            <span class="text-sm font-bold text-teal-700"><%= index + 1 %></span>
+          </div>
+          <span class="font-medium text-slate-900"><%= merchant&.truncate(30) || "Unknown Merchant" %></span>
+        </div>
+        <span class="font-bold text-slate-900">₡<%= number_with_delimiter(amount.to_i) %></span>
+      </div>
+      <% end %>
     </div>
   </div>
 
-  <!-- Detailed Tables -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Top Merchants -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <h2 class="text-lg font-semibold text-slate-900 mb-4">Comercios con Más Gastos</h2>
-      <div class="space-y-3">
-        <% @top_merchants.each_with_index do |(merchant, amount), index| %>
-          <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-            <div class="flex items-center space-x-3">
-              <div class="flex-shrink-0 w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
-                <span class="text-sm font-bold text-teal-700"><%= index + 1 %></span>
-              </div>
-              <span class="font-medium text-slate-900"><%= merchant&.truncate(30) || "Unknown Merchant" %></span>
-            </div>
-            <span class="font-bold text-slate-900">₡<%= number_with_delimiter(amount.to_i) %></span>
+  <!-- Bank Breakdown -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <h2 class="text-lg font-semibold text-slate-900 mb-4">Gastos por Banco</h2>
+    <div class="space-y-3">
+      <% @bank_totals.each do |bank, amount| %>
+      <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+        <div class="flex items-center space-x-3">
+          <div class="flex-shrink-0 w-8 h-8 <%= bank == 'BAC' ? 'bg-teal-100' : 'bg-slate-100' %> rounded-full flex items-center justify-center">
+            <span class="text-sm font-bold <%= bank == 'BAC' ? 'text-teal-700' : 'text-slate-600' %>">
+              <%= bank == 'BAC' ? 'B' : 'M' %>
+            </span>
           </div>
+          <span class="font-medium text-slate-900"><%= bank %></span>
         </div>
-        <% end %>
+        <span class="font-bold text-slate-900">₡<%= number_with_delimiter(amount.to_i) %></span>
       </div>
-    </div>
-
-    <!-- Bank Breakdown -->
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <h2 class="text-lg font-semibold text-slate-900 mb-4">Gastos por Banco</h2>
-      <div class="space-y-3">
-        <% @bank_totals.each do |bank, amount| %>
-          <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-            <div class="flex items-center space-x-3">
-              <div class="flex-shrink-0 w-8 h-8 <%= bank == 'BAC' ? 'bg-teal-100' : 'bg-slate-100' %> rounded-full flex items-center justify-center">
-                <span class="text-sm font-bold <%= bank == 'BAC' ? 'text-teal-700' : 'text-slate-600' %>">
-                  <%= bank == 'BAC' ? 'B' : 'M' %>
-                </span>
-              </div>
-              <span class="font-medium text-slate-900"><%= bank %></span>
-            </div>
-            <span class="font-bold text-slate-900">₡<%= number_with_delimiter(amount.to_i) %></span>
-          </div>
-        </div>
-        <% end %>
-      </div>
+      <% end %>
     </div>
   </div>
+</div>
 
-  <!-- Recent Expenses -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200">
-    <div class="px-6 py-4 border-b border-slate-200">
-      <div class="flex items-center justify-between">
+<!-- Enhanced Recent Expenses Widget with Virtual Scrolling (Epic 3 Task 3.7) -->
+<% use_virtual_scroll = @recent_expenses.size > 50 || params[:enable_virtual] == "true" %>
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 dashboard-expenses-<%= @expense_view_mode || 'compact' %>"
+     id="dashboard-expenses-widget"
+     data-controller="dashboard-expenses <%= use_virtual_scroll ? 'dashboard-virtual-scroll' : '' %> dashboard-filter-persistence"
+     data-dashboard-expenses-view-mode-value="<%= @expense_view_mode || 'compact' %>"
+     data-dashboard-virtual-scroll-total-items-value="<%= @expense_filter_result&.total_count || 0 %>"
+     data-dashboard-virtual-scroll-view-mode-value="<%= @expense_view_mode || 'compact' %>"
+     data-dashboard-virtual-scroll-has-more-value="<%= @expense_filter_result&.metadata&.dig(:has_more) || false %>"
+     data-dashboard-filter-persistence-auto-restore-value="true"
+     data-dashboard-filter-persistence-show-notifications-value="true"
+     data-dashboard-filter-persistence-sync-across-tabs-value="true"
+     data-environment="<%= Rails.env %>">
+
+  <!-- Filter Persistence Notification Area (Task 3.8) -->
+  <div data-dashboard-filter-persistence-target="restoreNotification"
+       class="hidden mb-4"
+       style="display: none;"></div>
+
+  <!-- Header with Actions -->
+  <div class="px-6 py-4 border-b border-slate-200">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-4">
         <h2 class="text-lg font-semibold text-slate-900">Gastos Recientes</h2>
+        <% if @expense_filter_result && @expense_filter_result.metadata[:filters_applied].to_i > 0 %>
+        <span class="px-2 py-1 text-xs font-medium bg-teal-100 text-teal-700 rounded-full">
+          <%= @expense_filter_result.metadata[:filters_applied].to_i %> filtros activos
+        </span>
+        <% end %>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <!-- Batch Selection Toggle (Task 3.4) -->
+        <button type="button" class="p-2 text-slate-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors" data-action="click->dashboard-expenses#toggleSelectionMode" title="Modo de selección múltiple (Ctrl+Shift+S)" aria-label="Activar selección múltiple">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+          </svg>
+        </button>
+
+        <!-- View Toggle (Task 3.2: Dashboard Compact View Toggle) -->
+        <div class="dashboard-expenses-toggle" role="group" aria-label="Vista" title="Atajo: Ctrl+Shift+V">
+          <button type="button" class="<%= @expense_view_mode == 'compact' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900' %>" data-action="click->dashboard-expenses#setViewMode" data-mode="compact" data-dashboard-expenses-target="compactButton" aria-pressed="<%= @expense_view_mode == 'compact' %>" aria-label="Vista compacta">
+            <svg class="view-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+            <span class="view-label">Compacta</span>
+          </button>
+          <button type="button" class="<%= @expense_view_mode == 'expanded' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900' %>" data-action="click->dashboard-expenses#setViewMode" data-mode="expanded" data-dashboard-expenses-target="expandedButton" aria-pressed="<%= @expense_view_mode == 'expanded' %>" aria-label="Vista expandida">
+            <svg class="view-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h8m-8 4h16M4 18h11"></path>
+            </svg>
+            <span class="view-label">Expandida</span>
+          </button>
+        </div>
+
         <%= link_to "Ver todos", expenses_path, class: "text-teal-700 hover:text-teal-800 text-sm font-medium" %>
       </div>
     </div>
-    <div class="p-6">
-      <div class="space-y-4">
-        <% @recent_expenses.first(5).each do |expense| %>
-          <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-            <div class="flex items-center space-x-4">
-              <div class="flex-shrink-0">
-                <% if expense.category %>
-                  <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                       style="background-color: <%= expense.category.color %>;">
-                    <%= expense.category.name.first %>
-                  </div>
-                <% else %>
-                  <div class="w-10 h-10 rounded-full bg-slate-400 flex items-center justify-center text-white font-bold">
-                    ?
-                  </div>
-                <% end %>
-              </div>
-              <div>
-                <p class="font-medium text-slate-900"><%= expense.merchant_name %></p>
-                <p class="text-sm text-slate-600">
-                  <%= expense.transaction_date.strftime("%d/%m/%Y") %> •
-                  <%= expense.category&.name || "Sin categoría" %> •
-                  <%= expense.bank_name %>
-                </p>
-              </div>
-            </div>
-            <div class="text-right">
-              <p class="font-bold text-slate-900"><%= currency_symbol(expense) %><%= number_with_delimiter(expense.amount.to_i) %></p>
-              <p class="text-xs text-slate-500"><%= format_datetime(expense.created_at) %></p>
-            </div>
-          </div>
-        <% end %>
+
+    <!-- Quick Filters (Foundation for Epic 3 filtering) -->
+    <% if @expense_quick_filters && (@expense_quick_filters[:categories].any? || @expense_quick_filters[:statuses].any?) %>
+    <div class="mt-3 flex flex-wrap gap-2">
+      <% @expense_quick_filters[:categories]&.first(3)&.each do |category| %>
+      <button type="button" class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors" data-action="click->dashboard-expenses#filterByCategory" data-category-id="<%= category[:id] %>">
+        <span class="w-2 h-2 rounded-full mr-1.5" style="background-color: <%= category[:color] %>"></span>
+        <%= category[:name] %>
+        <span class="ml-1 text-slate-500">(<%= category[:count] %>)</span>
+      </button>
+      <% end %>
+
+      <% if @expense_quick_filters[:statuses]&.any? { |s| s[:status] == 'uncategorized' } %>
+      <button type="button" class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition-colors" data-action="click->dashboard-expenses#filterByStatus" data-status="uncategorized">
+        Sin categorizar
+        <span class="ml-1">(<%= @expense_quick_filters[:statuses].find { |s| s[:status] == 'uncategorized' }[:count] %>)</span>
+      </button>
+      <% end %>
+
+      <% if @expense_filter_result && @expense_filter_result.metadata[:filters_applied].to_i > 0 %>
+      <button type="button" class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors" data-action="click->dashboard-expenses#clearFilters">
+        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+        Limpiar filtros
+      </button>
+      <% end %>
+    </div>
+    <% end %>
+  </div>
+
+  <!-- Performance Metrics (Development/Staging only) -->
+  <% if Rails.env.development? && @expense_filter_performance %>
+  <div class="px-6 py-2 bg-slate-50 border-b border-slate-200 text-xs text-slate-600">
+    <span class="font-medium">Performance:</span>
+    <%= @expense_filter_performance[:query_time_ms] %>ms query time,
+    <%= @expense_filter_performance[:queries_executed] %> queries,
+    <%= @expense_filter_performance[:rows_examined] %> rows
+    <% if @expense_filter_performance[:index_used] %>
+    <span class="text-emerald-600">✓ Index used</span>
+    <% else %>
+    <span class="text-rose-600">✗ No index</span>
+    <% end %>
+  </div>
+  <% end %>
+
+  <!-- Batch Selection Toolbar (Task 3.4) -->
+  <div class="hidden px-6 py-3 bg-teal-50 border-b border-teal-200" data-dashboard-expenses-target="selectionToolbar" role="toolbar" aria-label="Acciones de selección">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <!-- Select All Checkbox -->
+        <div class="flex items-center">
+          <input type="checkbox" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500" data-dashboard-expenses-target="selectAllCheckbox" data-action="change->dashboard-expenses#selectAll" aria-label="Seleccionar todos">
+          <label class="ml-2 text-sm font-medium text-slate-700">
+            Seleccionar todos
+          </label>
+        </div>
+
+        <!-- Selection Count -->
+        <div class="text-sm text-slate-600">
+          <span data-dashboard-expenses-target="selectedCount">0</span> seleccionados
+        </div>
+      </div>
+
+      <!-- Bulk Actions -->
+      <div class="flex items-center space-x-2">
+        <button type="button" class="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" data-action="click->dashboard-expenses#bulkCategorize" title="Categorizar seleccionados">
+          <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+          </svg>
+          Categorizar
+        </button>
+
+        <button type="button" class="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" data-action="click->dashboard-expenses#bulkUpdateStatus" title="Actualizar estado">
+          <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          Estado
+        </button>
+
+        <button type="button" class="px-3 py-1.5 text-sm font-medium text-white bg-rose-600 border border-rose-600 rounded-lg hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" data-action="click->dashboard-expenses#bulkDelete" title="Eliminar seleccionados">
+          <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+          </svg>
+          Eliminar
+        </button>
+
+        <div class="w-px h-6 bg-slate-300"></div>
+
+        <button type="button" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors" data-action="click->dashboard-expenses#disableSelectionMode" title="Salir del modo de selección (Esc)">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
       </div>
     </div>
   </div>
+
+  <!-- Task 3.6: Dashboard Filter Chips -->
+  <div class="dashboard-filter-chips border-b border-slate-200"
+       data-controller="dashboard-filter-chips"
+       data-dashboard-filter-chips-dashboard-url-value="/expenses/dashboard">
+
+    <div class="p-4 space-y-3">
+      <!-- Loading Indicator -->
+      <div class="hidden absolute inset-0 bg-white bg-opacity-75 z-10 flex items-center justify-center" data-dashboard-filter-chips-target="loadingIndicator">
+        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-700"></div>
+      </div>
+
+      <!-- Category Filters -->
+      <% if @expense_filter_result&.quick_filters&.dig(:categories)&.any? %>
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Categorías:</span>
+        <% @expense_filter_result.quick_filters[:categories].each do |category| %>
+        <button type="button"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full border transition-all duration-200 bg-white text-slate-700 border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-teal-500"
+                data-dashboard-filter-chips-target="chip categoryChip"
+                data-category-id="<%= category[:id] %>"
+                data-action="click->dashboard-filter-chips#toggleCategory"
+                aria-pressed="false"
+                role="button"
+                tabindex="0">
+          <span class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: <%= category[:color] %>"></span>
+          <span><%= category[:name] %></span>
+          <span class="text-xs text-slate-500">(<%= category[:count] %>)</span>
+        </button>
+        <% end %>
+      </div>
+      <% end %>
+
+      <!-- Status & Period Filters Row -->
+      <div class="flex flex-wrap items-center gap-4">
+        <!-- Status Filters -->
+        <% if @expense_filter_result&.quick_filters&.dig(:statuses)&.any? %>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Estado:</span>
+          <% @expense_filter_result.quick_filters[:statuses].each do |status| %>
+          <button type="button"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full border transition-all duration-200 bg-white text-slate-700 border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-teal-500"
+                  data-dashboard-filter-chips-target="chip statusChip"
+                  data-status="<%= status[:status] %>"
+                  data-action="click->dashboard-filter-chips#toggleStatus"
+                  aria-pressed="false"
+                  role="button"
+                  tabindex="0">
+            <% if status[:status] == 'pending' %>
+            <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <% else %>
+            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <% end %>
+            <span><%= status[:label] %></span>
+            <span class="text-xs text-slate-500">(<%= status[:count] %>)</span>
+          </button>
+          <% end %>
+        </div>
+        <% end %>
+
+        <!-- Period Filters -->
+        <% if @expense_filter_result&.quick_filters&.dig(:recent_periods)&.any? %>
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Período:</span>
+          <% @expense_filter_result.quick_filters[:recent_periods].each do |period| %>
+          <button type="button"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full border transition-all duration-200 bg-white text-slate-700 border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-teal-500"
+                  data-dashboard-filter-chips-target="chip periodChip"
+                  data-period="<%= period[:period] %>"
+                  data-action="click->dashboard-filter-chips#selectPeriod"
+                  aria-pressed="false"
+                  role="button"
+                  tabindex="0">
+            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <span><%= period[:label] %></span>
+            <span class="text-xs text-slate-500">(<%= period[:count] %>)</span>
+          </button>
+          <% end %>
+        </div>
+        <% end %>
+
+        <!-- Clear All Button -->
+        <button type="button"
+                class="hidden items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-rose-600 hover:text-rose-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-rose-500"
+                data-dashboard-filter-chips-target="clearButton"
+                data-action="click->dashboard-filter-chips#clearAllFilters"
+                title="Limpiar todos los filtros (Esc)">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+          <span>Limpiar filtros</span>
+          <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-rose-600 rounded-full hidden" data-dashboard-filter-chips-target="filterCount">0</span>
+        </button>
+
+        <!-- Filter Persistence Actions (Task 3.8) -->
+        <div class="flex items-center gap-2">
+          <!-- Share Filters Button -->
+          <button type="button"
+                  class="p-1.5 text-slate-400 hover:text-teal-600 transition-colors"
+                  data-dashboard-filter-persistence-target="shareButton"
+                  data-action="click->dashboard-filter-persistence#shareFilters"
+                  title="Compartir filtros">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a3 3 0 10-2.684-2.684m0 0a3 3 0 00-2.684 2.684M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </button>
+
+          <!-- Reset Filters Button -->
+          <button type="button"
+                  class="p-1.5 text-slate-400 hover:text-rose-600 transition-colors"
+                  data-dashboard-filter-persistence-target="resetButton"
+                  data-action="click->dashboard-filter-persistence#resetFilters"
+                  title="Restablecer filtros y preferencias">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+          </button>
+
+          <!-- Persistence Indicator -->
+          <div data-dashboard-filter-persistence-target="persistenceIndicator"
+               class="hidden text-xs text-teal-600"
+               style="display: none;"></div>
+        </div>
+      </div>
+
+      <!-- Active Filters Summary (shown when filters are applied) -->
+      <div class="hidden text-xs text-slate-600" id="active-filters-summary">
+        <span class="font-medium">Filtros activos:</span>
+        <span id="active-filters-text"></span>
+      </div>
+
+      <!-- Filter State Indicator (Task 3.8) -->
+      <div class="filter-chips-container" data-filter-chips-container></div>
+    </div>
+  </div>
+
+  <!-- Expense List Container -->
+  <div class="dashboard-expenses-container <%= use_virtual_scroll ? 'virtual-scroll-container' : '' %> p-6"
+       data-dashboard-expenses-target="container"
+       data-dashboard-filter-chips-target="expenseContainer"
+       <%= use_virtual_scroll ? 'data-dashboard-virtual-scroll-target="viewport"' : '' %>>
+
+    <% if use_virtual_scroll %>
+      <!-- Virtual Scroll Structure -->
+      <div class="virtual-scroll-viewport" data-dashboard-virtual-scroll-target="viewport">
+        <div class="virtual-scroll-content" data-dashboard-virtual-scroll-target="scrollContent">
+          <div class="virtual-scroll-items" data-dashboard-virtual-scroll-target="itemContainer">
+            <!-- Items will be rendered here by virtual scroll controller -->
+          </div>
+        </div>
+
+        <!-- Loading indicators -->
+        <div class="virtual-scroll-loading virtual-scroll-loading-top hidden" data-dashboard-virtual-scroll-target="loadingTop">
+          <svg class="virtual-scroll-spinner" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+
+        <div class="virtual-scroll-loading virtual-scroll-loading-bottom hidden" data-dashboard-virtual-scroll-target="loadingBottom">
+          <svg class="virtual-scroll-spinner" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Scroll position indicator -->
+      <div class="virtual-scroll-position" data-dashboard-virtual-scroll-target="scrollPosition">
+        <span data-dashboard-virtual-scroll-target="scrollPositionText">0%</span>
+      </div>
+
+      <!-- Visual scroll indicator -->
+      <div class="virtual-scroll-indicator">
+        <div class="indicator" style="height: 0%"></div>
+      </div>
+
+      <!-- Performance stats (development only) -->
+      <% if Rails.env.development? %>
+      <div class="virtual-scroll-stats">
+        <div class="stat">
+          <span class="stat-label">Rendered:</span>
+          <span class="stat-value" data-dashboard-virtual-scroll-target="renderedCount">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Total:</span>
+          <span class="stat-value" data-dashboard-virtual-scroll-target="totalCount"><%= @expense_filter_result&.total_count || 0 %></span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">FPS:</span>
+          <span class="stat-value" data-dashboard-virtual-scroll-target="fps">60</span>
+        </div>
+      </div>
+      <% end %>
+
+    <% elsif @recent_expenses.any? %>
+    <div class="overflow-x-auto" data-dashboard-expenses-target="list">
+      <table class="min-w-full divide-y divide-slate-200" data-dashboard-expenses-target="table">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="checkbox-header hidden px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+              <input type="checkbox"
+                     data-dashboard-expenses-target="selectAllCheckbox"
+                     data-action="change->dashboard-expenses#selectAll"
+                     class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded"
+                     aria-label="Seleccionar todos los gastos visibles">
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Fecha</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Comercio</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Categoría</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Monto</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" data-dashboard-expenses-target="expandedColumns">Banco</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" data-dashboard-expenses-target="expandedColumns">Estado</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" data-dashboard-expenses-target="expandedColumns">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-slate-100" data-dashboard-expenses-target="tableBody">
+          <% @recent_expenses.each do |expense| %>
+            <%= render "expense_row", expense: expense, context: 'dashboard' %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <% else %>
+    <!-- Empty State -->
+    <div class="dashboard-expenses-empty p-6">
+      <svg class="dashboard-expenses-empty-icon mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+      </svg>
+      <h3 class="dashboard-expenses-empty-title mt-3 text-sm font-medium text-slate-900">No hay gastos</h3>
+      <p class="dashboard-expenses-empty-text mt-1 text-sm text-slate-500">
+        <% if @expense_filter_result && @expense_filter_result.metadata[:filters_applied].to_i > 0 %>
+        No se encontraron gastos con los filtros aplicados.
+        <% else %>
+        Aún no tienes gastos registrados.
+        <% end %>
+      </p>
+    </div>
+    <% end %>
+  </div>
+
+  <!-- Pagination (if more than page size) -->
+  <% if @recent_expenses.any? && @expense_filter_result && @expense_filter_result.metadata[:has_more] %>
+  <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 text-center">
+    <button type="button" class="px-4 py-2 text-sm font-medium text-teal-700 bg-white border border-teal-300 rounded-lg hover:bg-teal-50 transition-colors" data-action="click->dashboard-expenses#loadMore">
+      Cargar más gastos
+    </button>
+  </div>
+  <% end %>
+
+  <!-- Summary Stats (if available) -->
+  <% if @expense_summary_stats %>
+  <div class="px-6 py-3 bg-slate-50 border-t border-slate-200">
+    <div class="flex items-center justify-between text-xs text-slate-600">
+      <span>
+        Total mostrado: <span class="font-medium text-slate-900">₡<%= number_with_delimiter(@expense_summary_stats[:total_amount].to_i) %></span>
+      </span>
+      <span>
+        <%= @expense_summary_stats[:total_count] %> gastos •
+        <%= @expense_summary_stats[:unique_merchants] %> comercios •
+        <%= @expense_summary_stats[:unique_categories] %> categorías
+      </span>
+    </div>
+  </div>
+  <% end %>
+</div>
 </div>

@@ -54,6 +54,10 @@ module Services::Categorization
       !@success
     end
 
+    def error
+      @message unless @success
+    end
+
     def patterns_affected
       @patterns_created + @patterns_updated
     end

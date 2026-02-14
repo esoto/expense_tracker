@@ -3,10 +3,12 @@ require 'rails_helper'
 RSpec.describe ExpensesController, type: :controller, performance: true do
   render_views
   describe "View Toggle Feature Integration", performance: true do
+    let(:admin_user) { create(:admin_user, :with_session) }
     let(:email_account) { create(:email_account) }
     let(:category) { create(:category, name: "Transportation", color: "#0F766E") }
 
     before do
+      authenticate_admin_in_controller(admin_user)
       # Create expenses with different attributes for testing
       @expenses = []
 

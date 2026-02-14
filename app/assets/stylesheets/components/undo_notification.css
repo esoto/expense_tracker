@@ -1,0 +1,87 @@
+/* Undo Notification Styles */
+
+/* Slide in from bottom animation */
+@keyframes slideInBottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Fade out animation */
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.slide-in-bottom {
+  animation: slideInBottom 0.3s ease-out;
+}
+
+.fade-out {
+  animation: fadeOut 0.3s ease-out;
+}
+
+/* Undo notification container */
+.undo-notification {
+  @apply fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50;
+  @apply bg-white rounded-lg shadow-xl border border-slate-200 p-4;
+  @apply transform transition-all duration-300;
+}
+
+.undo-notification-icon {
+  @apply w-5 h-5 text-amber-600 mt-0.5;
+}
+
+.undo-notification-message {
+  @apply text-sm font-medium text-slate-900;
+}
+
+.undo-notification-timer {
+  @apply text-xs text-slate-600 mt-1;
+}
+
+.undo-notification-timer-value {
+  @apply font-medium;
+}
+
+.undo-notification-timer-value.expiring {
+  @apply text-rose-600;
+}
+
+.undo-notification-actions {
+  @apply flex items-center space-x-2 ml-4;
+}
+
+.undo-notification-undo-btn {
+  @apply px-3 py-1.5 text-sm font-medium text-white bg-teal-700 rounded-lg;
+  @apply hover:bg-teal-800 transition-colors;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.undo-notification-dismiss-btn {
+  @apply p-1 text-slate-400 hover:text-slate-600 transition-colors;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+  .undo-notification {
+    @apply left-2 right-2 bottom-2;
+  }
+  
+  .undo-notification-actions {
+    @apply ml-2;
+  }
+  
+  .undo-notification-undo-btn {
+    @apply px-2 py-1 text-xs;
+  }
+}

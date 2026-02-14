@@ -1,8 +1,11 @@
 require 'rails_helper'
 
 RSpec.describe "Filter Persistence", type: :system, js: true do
+  let(:admin_user) { create(:admin_user) }
   let!(:category) { create(:category, name: "Food") }
   let!(:expenses) { create_list(:expense, 10, category: category) }
+
+  before { sign_in_admin_user(admin_user) }
 
   describe "filter state persistence" do
     it "saves filter state to session storage" do

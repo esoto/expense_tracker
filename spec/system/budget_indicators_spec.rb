@@ -3,11 +3,13 @@
 require 'rails_helper'
 
 RSpec.describe 'Budget Indicators on Dashboard', type: :system do
+  let(:admin_user) { create(:admin_user) }
   let!(:email_account) { create(:email_account) }
   let!(:category) { create(:category, name: 'Alimentación') }
 
   before do
     driven_by(:selenium_chrome_headless)
+    sign_in_admin_user(admin_user)
   end
 
   describe 'budget progress display' do

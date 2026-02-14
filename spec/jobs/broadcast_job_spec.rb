@@ -377,25 +377,22 @@ RSpec.describe BroadcastJob, type: :job, integration: true do
 
   describe 'integration test', integration: true do
     it 'performs end-to-end broadcast job successfully' do
-      # Simulate real broadcast
-      allow(SyncStatusChannel).to receive(:broadcast_to)
+      # The job delegates to BroadcastReliabilityService, not SyncStatusChannel directly
+      allow(Services::BroadcastReliabilityService).to receive(:broadcast_with_retry).and_return(true)
+      allow(Services::BroadcastAnalytics).to receive(:record_success)
       allow(Rails.logger).to receive(:info)
 
-      # Enqueue and perform job
-      described_class.enqueue_broadcast(
-        channel_name: channel_name,
-        target_id: target_id,
-        target_type: target_type,
-        data: data,
-        priority: :high
-      )
-
-      # Manually perform the job (instead of waiting for Sidekiq)
+      # Manually perform the job
       job = described_class.new
       job.perform(channel_name, target_id, target_type, data, 'high')
 
-      # Verify the broadcast was called
-      expect(SyncStatusChannel).to have_received(:broadcast_to).with(sync_session, data)
+      # Verify the broadcast was delegated to the reliability service
+      expect(Services::BroadcastReliabilityService).to have_received(:broadcast_with_retry).with(
+        channel: channel_name,
+        target: sync_session,
+        data: data,
+        priority: :high
+      )
     end
   end
 end

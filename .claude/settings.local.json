@@ -72,8 +72,15 @@
       "Bash(mv:*)",
       "Bash(npm test)",
       "Bash(rails --version)",
+      "Bash(RAILS_ENV=test bundle exec rails db:seed)",
+      "Bash(RAILS_ENV=test bundle exec rails console)",
+      "Bash(echo $RAILS_ENV)",
+      "Bash(RAILS_ENV=test bundle exec rspec spec/system/dashboard_bulk_operations_spec.rb --format progress)",
       "WebSearch",
-      "Bash(docker-compose:*)"
+      "Bash(docker-compose:*)",
+      "Bash(bin/test-unit:*)",
+      "Bash(RAILS_ENV=test bundle exec rspec:*)",
+      "Bash(RAILS_ENV=test TEST_TIER=unit bash:*)"
     ],
     "deny": []
   }

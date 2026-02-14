@@ -16,7 +16,7 @@ RSpec.describe "SyncSessions", type: :request, integration: true do
     SyncSessionAccount.delete_all
     SyncSession.delete_all
     # Allow all tests to pass validation by default
-    allow_any_instance_of(SyncSessionValidator).to receive(:validate!).and_return(true)
+    allow_any_instance_of(Services::SyncSessionValidator).to receive(:validate!).and_return(true)
   end
 
   after(:each) do
@@ -73,7 +73,7 @@ RSpec.describe "SyncSessions", type: :request, integration: true do
     before do
       allow(ProcessEmailsJob).to receive(:perform_later)
       # Ensure the validator mock is properly set for all non-validation tests
-      allow_any_instance_of(SyncSessionValidator).to receive(:validate!).and_return(true)
+      allow_any_instance_of(Services::SyncSessionValidator).to receive(:validate!).and_return(true)
     end
 
     context 'with specific email_account_id' do
@@ -176,7 +176,7 @@ RSpec.describe "SyncSessions", type: :request, integration: true do
         SyncSession.destroy_all
         SyncSessionAccount.destroy_all
         # Don't use the default mock for this test
-        allow_any_instance_of(SyncSessionValidator).to receive(:validate!).and_call_original
+        allow_any_instance_of(Services::SyncSessionValidator).to receive(:validate!).and_call_original
         # Create an active sync session
         create(:sync_session, status: 'running', created_at: 10.minutes.ago)
       end
@@ -203,7 +203,7 @@ RSpec.describe "SyncSessions", type: :request, integration: true do
         SyncSession.connection.execute('DELETE FROM sync_sessions')
         SyncSessionAccount.connection.execute('DELETE FROM sync_session_accounts')
         # Don't use the default mock for this test
-        allow_any_instance_of(SyncSessionValidator).to receive(:validate!).and_call_original
+        allow_any_instance_of(Services::SyncSessionValidator).to receive(:validate!).and_call_original
         # Create exactly 3 completed sync sessions in the last 5 minutes
         3.times do |i|
           create(:sync_session, status: 'completed', created_at: (2 + i * 0.1).minutes.ago)

@@ -1,6 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Expense View Toggle", type: :system, js: true do
+  let(:admin_user) { create(:admin_user) }
   let(:email_account) { create(:email_account) }
   let(:category) { create(:category, name: "Food", color: "#10B981") }
 
@@ -42,6 +43,8 @@ RSpec.describe "Expense View Toggle", type: :system, js: true do
       ml_confidence: 0.35,
       ml_confidence_explanation: "Low confidence - needs review"
     )
+
+    sign_in_admin_user(admin_user)
   end
 
   describe "View Toggle Button" do

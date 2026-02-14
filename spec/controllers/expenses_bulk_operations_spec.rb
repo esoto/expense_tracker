@@ -1,9 +1,12 @@
 require 'rails_helper'
 
 RSpec.describe ExpensesController, type: :controller, integration: true do
+  let(:admin_user) { create(:admin_user, :with_session) }
   let(:email_account) { create(:email_account) }
   let(:category1) { create(:category, name: "Food") }
   let(:category2) { create(:category, name: "Transport") }
+
+  before { authenticate_admin_in_controller(admin_user) }
   let(:expenses) do
     [
       create(:expense, email_account: email_account, category: nil, amount: 100),
@@ -22,8 +25,7 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
           category_id: category2.id
         }, format: :json
 
-        expect(response).to have_http_status(:success),
-          "Expected success but got #{response.status}: #{response.body}"
+        expect(response).to have_http_status(:success)
         json_response = JSON.parse(response.body)
 
         expect(json_response['success']).to be true
@@ -90,7 +92,7 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
 
         expect(json_response['success']).to be true
         expect(json_response['affected_count']).to eq(3)
-        expect(json_response['reload']).to be true
+        expect(json_response['reload']).to be false # Don't reload to preserve undo notification
 
         # Verify expenses were deleted
         expect(Expense.count).to eq(initial_count - 3)

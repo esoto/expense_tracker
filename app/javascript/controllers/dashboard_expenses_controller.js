@@ -6,8 +6,11 @@ import { Turbo } from "@hotwired/turbo-rails"
 export default class extends Controller {
   static targets = [
     "container",
-    "list", 
+    "list",
+    "table",
+    "tableBody",
     "expenseRow",
+    "expandedColumns",
     "expandedDetails",
     "quickActions",
     "selectionContainer",
@@ -165,11 +168,11 @@ export default class extends Controller {
   // Apply the current view mode to the UI
   applyViewMode() {
     const mode = this.viewModeValue
-    
+
     // Update widget container classes
     this.element.classList.remove("dashboard-expenses-compact", "dashboard-expenses-expanded")
     this.element.classList.add(`dashboard-expenses-${mode}`)
-    
+
     // Update button states with smooth transition
     this.element.querySelectorAll("[data-mode]").forEach(button => {
       if (button.dataset.mode === mode) {
@@ -182,79 +185,31 @@ export default class extends Controller {
         button.setAttribute("aria-pressed", "false")
       }
     })
-    
-    // Apply view-specific styles to expense rows
-    this.expenseRowTargets.forEach((row, index) => {
-      // Add smooth transition
-      row.style.transition = "all 0.2s ease-out"
-      
+
+    // Toggle column visibility (table-based layout)
+    if (this.expandedColumnsTargets && this.expandedColumnsTargets.length > 0) {
+      this.expandedColumnsTargets.forEach(col => {
+        if (mode === "expanded") {
+          col.classList.remove("hidden")
+        } else {
+          col.classList.add("hidden")
+        }
+      })
+    }
+
+    // Toggle description visibility in merchant cells
+    this.element.querySelectorAll(".expense-description").forEach(desc => {
       if (mode === "expanded") {
-        // Expanded view: more padding, show all details
-        row.classList.remove("p-3", "sm:p-4")
-        row.classList.add("p-4", "sm:p-5")
-        
-        // Show expanded details
-        const details = row.querySelector("[data-dashboard-expenses-target='expandedDetails']")
-        if (details) {
-          details.classList.remove("hidden")
-          details.style.opacity = "0"
-          setTimeout(() => {
-            details.style.transition = "opacity 0.2s ease-in"
-            details.style.opacity = "1"
-          }, 50)
-        }
-        
-        // Show more items (15 in expanded mode)
-        if (index < 15) {
-          row.classList.remove("hidden")
-        } else {
-          row.classList.add("hidden")
-        }
+        desc.classList.remove("hidden")
       } else {
-        // Compact view: minimal padding, hide extra details
-        row.classList.remove("p-4", "sm:p-5")
-        row.classList.add("p-3", "sm:p-4")
-        
-        // Hide expanded details with fade out
-        const details = row.querySelector("[data-dashboard-expenses-target='expandedDetails']")
-        if (details) {
-          details.style.transition = "opacity 0.15s ease-out"
-          details.style.opacity = "0"
-          setTimeout(() => {
-            details.classList.add("hidden")
-          }, 150)
-        }
-        
-        // Show fewer items (5 in compact mode)
-        if (index < 5) {
-          row.classList.remove("hidden")
-        } else {
-          row.classList.add("hidden")
-        }
+        desc.classList.add("hidden")
       }
     })
-    
-    // Update list container styles
-    if (this.hasListTarget) {
-      if (mode === "expanded") {
-        this.listTarget.classList.remove("space-y-2")
-        this.listTarget.classList.add("space-y-3")
-      } else {
-        this.listTarget.classList.remove("space-y-3")
-        this.listTarget.classList.add("space-y-2")
-      }
-    }
-    
-    // Update widget height for smooth transition
-    if (this.hasContainerTarget) {
-      this.containerTarget.style.transition = "max-height 0.3s ease-out"
-      if (mode === "expanded") {
-        this.containerTarget.style.maxHeight = "none"
-      } else {
-        this.containerTarget.style.maxHeight = "600px"
-        this.containerTarget.style.overflowY = "auto"
-      }
-    }
+
+    // Show all rows (table shows all loaded expenses)
+    this.expenseRowTargets.forEach(row => {
+      row.classList.remove("hidden")
+    })
   }
   
   // Filter by category (Quick filter foundation)
@@ -600,7 +555,7 @@ export default class extends Controller {
   toggleSelection(event) {
     const checkbox = event.currentTarget
     const expenseId = checkbox.dataset.expenseId
-    const row = checkbox.closest(".dashboard-expense-row")
+    const row = checkbox.closest("tr[data-expense-id]") || checkbox.closest(".dashboard-expense-row")
     const rowIndex = parseInt(row.dataset.rowIndex) || this.expenseRowTargets.indexOf(row)
     
     // Check for Shift+click on checkbox
@@ -756,9 +711,9 @@ export default class extends Controller {
       if (event.key === " " && this.selectionModeValue) {
         const activeElement = document.activeElement
         // Check if the focused element is a row or within a row
-        const focusedRow = activeElement.classList.contains("dashboard-expense-row") ? 
-                          activeElement : 
-                          activeElement.closest(".dashboard-expense-row")
+        const focusedRow = activeElement.closest("tr[data-expense-id]") ||
+                          activeElement.closest(".dashboard-expense-row") ||
+                          (activeElement.matches("[data-dashboard-expenses-target='expenseRow']") ? activeElement : null)
         
         if (focusedRow) {
           event.preventDefault()

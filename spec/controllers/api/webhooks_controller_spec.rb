@@ -412,7 +412,7 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
 
     context "parameter validation" do
       it "handles nil period parameter" do
-        expect(Services::ExpenseSummaryService).to receive(:new).with("")
+        expect(Services::ExpenseSummaryService).to receive(:new).with(nil)
 
         get :expense_summary, params: { period: nil }
       end

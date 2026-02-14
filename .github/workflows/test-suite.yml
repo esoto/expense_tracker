@@ -62,6 +62,7 @@ jobs:
         with:
           name: unit-coverage
           path: coverage/unit/
+          include-hidden-files: true
 
   # Validate unit test coverage separately
   unit-coverage-validation:
@@ -80,7 +81,7 @@ jobs:
           bundler-cache: true
 
       - name: Download Unit Coverage
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v4
         with:
           name: unit-coverage
           path: coverage/unit/
@@ -146,6 +147,7 @@ jobs:
         with:
           name: integration-coverage
           path: coverage/integration/
+          include-hidden-files: true
 
   # Validate integration test coverage separately
   integration-coverage-validation:
@@ -164,7 +166,7 @@ jobs:
           bundler-cache: true
 
       - name: Download Integration Coverage
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v4
         with:
           name: integration-coverage
           path: coverage/integration/
@@ -229,6 +231,7 @@ jobs:
         with:
           name: system-coverage
           path: coverage/system/
+          include-hidden-files: true
 
       - name: Upload Screenshots
         uses: actions/upload-artifact@v4
@@ -254,7 +257,7 @@ jobs:
           bundler-cache: true
 
       - name: Download System Coverage
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v4
         with:
           name: system-coverage
           path: coverage/system/
@@ -354,21 +357,21 @@ jobs:
           bundler-cache: true
       
       - name: Download Unit Coverage
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v4
         with:
           name: unit-coverage
           path: coverage/unit/
         continue-on-error: true
       
       - name: Download Integration Coverage
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v4
         with:
           name: integration-coverage
           path: coverage/integration/
         continue-on-error: true
       
       - name: Download System Coverage
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v4
         with:
           name: system-coverage
           path: coverage/system/

@@ -102,7 +102,9 @@ class CoveragePolicyValidator
 
     begin
       resultset = JSON.parse(File.read(resultset_file))
-      resultset.values.first["coverage"]
+      # Use the latest group (last entry) — SimpleCov accumulates old runs
+      # in the resultset, and the most recent one reflects current coverage.
+      resultset.values.last["coverage"]
     rescue JSON::ParserError, StandardError
       nil
     end

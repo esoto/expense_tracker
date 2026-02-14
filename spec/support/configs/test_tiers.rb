@@ -25,6 +25,17 @@ RSpec.configure do |config|
     metadata[:slow] = true
   end
 
+  # Tag specs by type regardless of directory location
+  # (some performance/system specs live outside their canonical dirs)
+  config.define_derived_metadata(type: :performance) do |metadata|
+    metadata[:performance] = true
+  end
+
+  config.define_derived_metadata(type: :system) do |metadata|
+    metadata[:system] = true
+    metadata[:slow] = true
+  end
+
   config.define_derived_metadata(file_path: %r{/spec/system/}) do |metadata|
     metadata[:system] = true
     metadata[:slow] = true

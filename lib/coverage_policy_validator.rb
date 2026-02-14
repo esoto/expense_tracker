@@ -119,8 +119,10 @@ class CoveragePolicyValidator
       line_coverage = file_data.is_a?(Array) ? file_data : file_data["lines"]
       next unless line_coverage
 
-      total_lines += line_coverage.size
-      covered_lines += line_coverage.compact.count { |hits| hits && hits > 0 }
+      # Only count relevant (executable) lines — nil entries are comments/blanks
+      relevant = line_coverage.compact
+      total_lines += relevant.size
+      covered_lines += relevant.count { |hits| hits > 0 }
     end
 
     return if total_lines.zero?
@@ -148,10 +150,12 @@ class CoveragePolicyValidator
       line_coverage = file_data.is_a?(Array) ? file_data : file_data["lines"]
       next unless line_coverage
 
-      total_lines = line_coverage.size
+      # Only count relevant (executable) lines
+      relevant = line_coverage.compact
+      total_lines = relevant.size
       next if total_lines.zero?
 
-      covered_lines = line_coverage.compact.count { |hits| hits && hits > 0 }
+      covered_lines = relevant.count { |hits| hits > 0 }
       percentage = (covered_lines.to_f / total_lines * 100)
 
       if percentage < critical_threshold
@@ -199,10 +203,11 @@ class CoveragePolicyValidator
         line_coverage = file_data.is_a?(Array) ? file_data : file_data["lines"]
         next unless line_coverage
 
-        total_lines = line_coverage.size
+        relevant = line_coverage.compact
+        total_lines = relevant.size
         next if total_lines.zero?
 
-        covered_lines = line_coverage.compact.count { |hits| hits && hits > 0 }
+        covered_lines = relevant.count { |hits| hits > 0 }
         percentage = (covered_lines.to_f / total_lines * 100)
 
         if percentage < minimum
@@ -230,10 +235,11 @@ class CoveragePolicyValidator
         line_coverage = file_data.is_a?(Array) ? file_data : file_data["lines"]
         next unless line_coverage
 
-        total_lines = line_coverage.size
+        relevant = line_coverage.compact
+        total_lines = relevant.size
         next if total_lines.zero?
 
-        covered_lines = line_coverage.compact.count { |hits| hits && hits > 0 }
+        covered_lines = relevant.count { |hits| hits > 0 }
         percentage = (covered_lines.to_f / total_lines * 100)
 
         if percentage < 100
@@ -258,10 +264,12 @@ class CoveragePolicyValidator
       line_coverage = file_data.is_a?(Array) ? file_data : file_data["lines"]
       next unless line_coverage
 
-      total_lines = line_coverage.size
+      # Only count relevant (executable) lines
+      relevant = line_coverage.compact
+      total_lines = relevant.size
       next if total_lines < complexity_threshold
 
-      covered_lines = line_coverage.compact.count { |hits| hits && hits > 0 }
+      covered_lines = relevant.count { |hits| hits > 0 }
       percentage = (covered_lines.to_f / total_lines * 100)
 
       if percentage < high_complexity_min

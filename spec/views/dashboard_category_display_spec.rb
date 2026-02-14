@@ -13,31 +13,26 @@ RSpec.describe "Dashboard Category Display", type: :system do
 
   describe "Category badge rendering" do
     it "displays colored badge for expenses with categories" do
-      # Dashboard uses div-based layout with data-expense-id
-      expense_row = find("div[data-expense-id='#{expense_with_category.id}']")
+      # Dashboard now uses table layout with _expense_row partial
+      expense_row = find("#expense_row_#{expense_with_category.id}")
 
       within expense_row do
-        # Check for the category name in the expense row
         expect(page).to have_content(category.name)
       end
     end
 
     it "displays '?' badge for expenses without categories" do
-      # Dashboard uses div-based layout with data-expense-id
-      expense_row = find("div[data-expense-id='#{expense_without_category.id}']")
+      expense_row = find("#expense_row_#{expense_without_category.id}")
 
       within expense_row do
-        # Check for "Sin categoría" in the expense row
         expect(page).to have_content("Sin categoría")
       end
     end
 
-    it "renders category badge correctly" do
-      # Check that category badges are present in the dashboard
-      expect(page).to have_css(".expense-category-badge")
-
-      # Check for uncategorized badge
-      expect(page).to have_css(".expense-category-badge.uncategorized")
+    it "renders category column with turbo frames" do
+      # Both dashboard and index now use the same _expense_row partial with turbo frames
+      expect(page).to have_css("turbo-frame[id='expense_#{expense_with_category.id}_category']")
+      expect(page).to have_css("turbo-frame[id='expense_#{expense_without_category.id}_category']")
     end
   end
 
@@ -54,16 +49,14 @@ RSpec.describe "Dashboard Category Display", type: :system do
         expect(page).to have_css("turbo-frame[id='expense_#{expense_with_category.id}_category']")
       end
 
-      # Visit dashboard
+      # Visit dashboard — now uses same table layout
       visit dashboard_expenses_path
 
-      # Dashboard uses div-based layout with category badges
-      dashboard_expense_row = find("div[data-expense-id='#{expense_with_category.id}']")
+      dashboard_expense_row = find("#expense_row_#{expense_with_category.id}")
 
       within dashboard_expense_row do
-        # Dashboard shows category name and badge
         expect(page).to have_content(category.name)
-        expect(page).to have_css(".expense-category-badge")
+        expect(page).to have_css("turbo-frame[id='expense_#{expense_with_category.id}_category']")
       end
     end
   end

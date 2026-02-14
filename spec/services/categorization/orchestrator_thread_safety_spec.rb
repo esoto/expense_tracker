@@ -140,7 +140,7 @@ RSpec.describe "Services::Categorization::Orchestrator Thread Safety", type: :se
     end
 
     describe "Concurrent batch processing", integration: true do
-      it "handles concurrent batch operations", :skip => "Flaky: batch_categorize returns empty array under thread contention in CI" do
+      it "handles concurrent batch operations", skip: "Flaky: batch_categorize returns empty array under thread contention in CI" do
         batches = @expenses.each_slice(5).to_a
         all_results = Concurrent::Array.new
         errors = Concurrent::Array.new

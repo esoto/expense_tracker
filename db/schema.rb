@@ -10,39 +10,39 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
+ActiveRecord::Schema[8.1].define(version: 2025_08_30_124847) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
   enable_extension "unaccent"
 
   create_table "admin_users", force: :cascade do |t|
+    t.datetime "created_at", null: false
     t.string "email"
-    t.string "password_digest"
-    t.string "name"
-    t.integer "role"
-    t.datetime "last_login_at"
     t.integer "failed_login_attempts"
+    t.datetime "last_login_at"
     t.datetime "locked_at"
-    t.string "session_token"
+    t.string "name"
+    t.string "password_digest"
+    t.integer "role"
     t.datetime "session_expires_at"
+    t.string "session_token"
     t.boolean "two_factor_enabled"
     t.string "two_factor_secret"
-    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_admin_users_on_email", unique: true
     t.index ["session_token"], name: "index_admin_users_on_session_token", unique: true
   end
 
   create_table "api_tokens", force: :cascade do |t|
-    t.string "name", null: false
-    t.string "token_digest", null: false
-    t.datetime "last_used_at"
-    t.datetime "expires_at"
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.datetime "expires_at"
+    t.datetime "last_used_at"
+    t.string "name", null: false
+    t.string "token_digest", null: false
     t.string "token_hash"
+    t.datetime "updated_at", null: false
     t.index ["active", "expires_at"], name: "index_api_tokens_on_active_and_expires_at"
     t.index ["active"], name: "index_api_tokens_on_active"
     t.index ["expires_at"], name: "index_api_tokens_on_expires_at"
@@ -51,30 +51,30 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
   end
 
   create_table "budgets", force: :cascade do |t|
-    t.bigint "email_account_id", null: false
-    t.bigint "category_id"
-    t.string "name", null: false
-    t.text "description"
-    t.integer "period", default: 2, null: false
-    t.decimal "amount", precision: 12, scale: 2, null: false
-    t.string "currency", default: "CRC", null: false
     t.boolean "active", default: true, null: false
-    t.date "start_date", null: false
-    t.date "end_date"
-    t.integer "warning_threshold", default: 70
+    t.decimal "amount", precision: 12, scale: 2, null: false
+    t.bigint "category_id"
+    t.datetime "created_at", null: false
     t.integer "critical_threshold", default: 90
-    t.boolean "notify_on_warning", default: true
-    t.boolean "notify_on_critical", default: true
-    t.boolean "notify_on_exceeded", default: true
-    t.boolean "rollover_enabled", default: false
-    t.decimal "rollover_amount", precision: 12, scale: 2, default: "0.0"
+    t.string "currency", default: "CRC", null: false
     t.decimal "current_spend", precision: 12, scale: 2, default: "0.0"
     t.datetime "current_spend_updated_at"
-    t.integer "times_exceeded", default: 0
+    t.text "description"
+    t.bigint "email_account_id", null: false
+    t.date "end_date"
     t.datetime "last_exceeded_at"
     t.jsonb "metadata", default: {}
-    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.boolean "notify_on_critical", default: true
+    t.boolean "notify_on_exceeded", default: true
+    t.boolean "notify_on_warning", default: true
+    t.integer "period", default: 2, null: false
+    t.decimal "rollover_amount", precision: 12, scale: 2, default: "0.0"
+    t.boolean "rollover_enabled", default: false
+    t.date "start_date", null: false
+    t.integer "times_exceeded", default: 0
     t.datetime "updated_at", null: false
+    t.integer "warning_threshold", default: 70
     t.index ["active", "start_date"], name: "index_budgets_on_active_and_start_date"
     t.index ["category_id"], name: "index_budgets_on_category_id"
     t.index ["email_account_id", "active"], name: "index_budgets_on_email_account_id_and_active"
@@ -88,14 +88,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
 
   create_table "bulk_operation_items", force: :cascade do |t|
     t.bigint "bulk_operation_id", null: false
+    t.datetime "created_at", null: false
+    t.text "error_message"
     t.bigint "expense_id", null: false
-    t.bigint "previous_category_id"
     t.bigint "new_category_id"
-    t.integer "status", default: 0, null: false
+    t.bigint "previous_category_id"
     t.float "previous_confidence"
     t.datetime "processed_at"
-    t.text "error_message"
-    t.datetime "created_at", null: false
+    t.integer "status", default: 0, null: false
     t.datetime "updated_at", null: false
     t.index ["bulk_operation_id", "expense_id"], name: "index_bulk_operation_items_on_bulk_operation_id_and_expense_id", unique: true
     t.index ["bulk_operation_id", "status"], name: "index_bulk_operation_items_on_bulk_operation_id_and_status"
@@ -107,18 +107,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
   end
 
   create_table "bulk_operations", force: :cascade do |t|
-    t.integer "operation_type", default: 0, null: false
-    t.string "user_id"
-    t.bigint "target_category_id"
-    t.integer "expense_count", default: 0, null: false
-    t.decimal "total_amount", precision: 15, scale: 2, default: "0.0", null: false
-    t.integer "status", default: 0, null: false
     t.datetime "completed_at"
-    t.datetime "undone_at"
-    t.jsonb "metadata", default: {}
-    t.text "error_message"
     t.datetime "created_at", null: false
+    t.text "error_message"
+    t.integer "expense_count", default: 0, null: false
+    t.jsonb "metadata", default: {}
+    t.integer "operation_type", default: 0, null: false
+    t.integer "status", default: 0, null: false
+    t.bigint "target_category_id"
+    t.decimal "total_amount", precision: 15, scale: 2, default: "0.0", null: false
+    t.datetime "undone_at"
     t.datetime "updated_at", null: false
+    t.string "user_id"
     t.index ["created_at"], name: "index_bulk_operations_on_created_at"
     t.index ["metadata"], name: "index_bulk_operations_on_metadata", using: :gin
     t.index ["operation_type"], name: "index_bulk_operations_on_operation_type"
@@ -130,42 +130,42 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
   end
 
   create_table "canonical_merchants", force: :cascade do |t|
-    t.string "name", null: false
-    t.string "display_name"
     t.string "category_hint"
-    t.jsonb "metadata", default: {}
-    t.integer "usage_count", default: 0
     t.datetime "created_at", null: false
+    t.string "display_name"
+    t.jsonb "metadata", default: {}
+    t.string "name", null: false
     t.datetime "updated_at", null: false
+    t.integer "usage_count", default: 0
     t.index ["name", "usage_count"], name: "idx_canonical_merchant_lookup"
     t.index ["name"], name: "index_canonical_merchants_on_name", unique: true
     t.index ["usage_count"], name: "index_canonical_merchants_on_usage_count"
   end
 
   create_table "categories", force: :cascade do |t|
-    t.string "name", null: false
-    t.text "description"
-    t.integer "parent_id"
     t.string "color", limit: 7
     t.datetime "created_at", null: false
+    t.text "description"
+    t.string "name", null: false
+    t.integer "parent_id"
     t.datetime "updated_at", null: false
     t.index ["name"], name: "index_categories_on_name"
     t.index ["parent_id"], name: "index_categories_on_parent_id"
   end
 
   create_table "categorization_patterns", force: :cascade do |t|
+    t.boolean "active", default: true
     t.bigint "category_id", null: false
+    t.float "confidence_weight", default: 1.0
+    t.datetime "created_at", null: false
+    t.jsonb "metadata", default: {}
     t.string "pattern_type", null: false
     t.string "pattern_value", null: false
-    t.float "confidence_weight", default: 1.0
-    t.integer "usage_count", default: 0
     t.integer "success_count", default: 0
     t.float "success_rate", default: 0.0
-    t.jsonb "metadata", default: {}
-    t.boolean "active", default: true
-    t.boolean "user_created", default: false
-    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "usage_count", default: 0
+    t.boolean "user_created", default: false
     t.index "lower((pattern_value)::text)", name: "idx_patterns_value_lower"
     t.index ["active", "confidence_weight"], name: "idx_patterns_high_confidence", where: "((active = true) AND (confidence_weight >= (2.0)::double precision))"
     t.index ["active", "pattern_type", "usage_count"], name: "idx_patterns_active_type_usage"
@@ -202,19 +202,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
   end
 
   create_table "composite_patterns", force: :cascade do |t|
+    t.boolean "active", default: true
     t.bigint "category_id", null: false
+    t.jsonb "conditions", default: {}
+    t.float "confidence_weight", default: 1.5
+    t.datetime "created_at", null: false
     t.string "name", null: false
     t.string "operator", null: false
     t.jsonb "pattern_ids", default: []
-    t.jsonb "conditions", default: {}
-    t.float "confidence_weight", default: 1.5
-    t.integer "usage_count", default: 0
     t.integer "success_count", default: 0
     t.float "success_rate", default: 0.0
-    t.boolean "active", default: true
-    t.boolean "user_created", default: false
-    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "usage_count", default: 0
+    t.boolean "user_created", default: false
     t.index ["active", "category_id", "success_rate"], name: "idx_composite_active_category", where: "(active = true)"
     t.index ["active", "operator", "success_rate"], name: "idx_composite_patterns_lookup", where: "(active = true)", comment: "Optimized index for composite pattern lookups"
     t.index ["active", "success_rate"], name: "idx_composite_active_success", where: "(active = true)"
@@ -230,19 +230,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
   end
 
   create_table "conflict_resolutions", force: :cascade do |t|
-    t.bigint "sync_conflict_id", null: false
     t.string "action", null: false
-    t.jsonb "before_state", default: {}
     t.jsonb "after_state", default: {}
+    t.jsonb "before_state", default: {}
     t.jsonb "changes_made", default: {}
+    t.datetime "created_at", null: false
+    t.text "notes"
+    t.string "resolution_method"
+    t.string "resolved_by"
+    t.bigint "sync_conflict_id", null: false
     t.boolean "undoable", default: true
     t.boolean "undone", default: false
     t.datetime "undone_at"
     t.bigint "undone_by_resolution_id"
-    t.string "resolved_by"
-    t.string "resolution_method"
-    t.text "notes"
-    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["action"], name: "index_conflict_resolutions_on_action"
     t.index ["after_state"], name: "index_conflict_resolutions_on_after_state", using: :gin
@@ -255,13 +255,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
   end
 
   create_table "email_accounts", force: :cascade do |t|
-    t.string "provider", null: false
+    t.boolean "active", default: true, null: false
+    t.string "bank_name", null: false
+    t.datetime "created_at", null: false
     t.string "email", null: false
     t.text "encrypted_password"
     t.text "encrypted_settings"
-    t.string "bank_name", null: false
-    t.boolean "active", default: true, null: false
-    t.datetime "created_at", null: false
+    t.string "provider", null: false
     t.datetime "updated_at", null: false
     t.index ["active", "bank_name"], name: "index_email_accounts_on_active_and_bank_name"
     t.index ["active"], name: "index_email_accounts_on_active"
@@ -271,34 +271,34 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
 
   create_table "expenses", force: :cascade do |t|
     t.decimal "amount", precision: 10, scale: 2, null: false
-    t.string "description"
-    t.datetime "transaction_date", null: false
-    t.string "merchant_name"
-    t.integer "email_account_id", null: false
-    t.integer "category_id"
-    t.text "raw_email_content"
-    t.text "parsed_data"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.string "bank_name"
-    t.integer "currency", default: 0, null: false
-    t.text "email_body"
-    t.string "merchant_normalized"
     t.boolean "auto_categorized", default: false
+    t.string "bank_name"
     t.float "categorization_confidence"
     t.string "categorization_method"
     t.datetime "categorized_at"
     t.string "categorized_by"
+    t.integer "category_id"
+    t.datetime "created_at", null: false
+    t.integer "currency", default: 0, null: false
+    t.datetime "deleted_at"
+    t.string "deleted_by"
+    t.integer "deleted_by_id"
+    t.string "description"
+    t.integer "email_account_id", null: false
+    t.text "email_body"
+    t.integer "lock_version", default: 0, null: false
+    t.string "merchant_name"
+    t.string "merchant_normalized"
     t.float "ml_confidence"
     t.text "ml_confidence_explanation"
-    t.integer "ml_suggested_category_id"
-    t.datetime "ml_last_corrected_at", precision: nil
     t.integer "ml_correction_count", default: 0
-    t.integer "lock_version", default: 0, null: false
-    t.datetime "deleted_at"
-    t.integer "deleted_by_id"
-    t.string "deleted_by"
+    t.datetime "ml_last_corrected_at", precision: nil
+    t.integer "ml_suggested_category_id"
+    t.text "parsed_data"
+    t.text "raw_email_content"
     t.integer "status", default: 0, null: false
+    t.datetime "transaction_date", null: false
+    t.datetime "updated_at", null: false
     t.index "EXTRACT(hour FROM transaction_date), EXTRACT(dow FROM transaction_date)", name: "idx_expenses_hour_dow"
     t.index "EXTRACT(year FROM transaction_date), EXTRACT(month FROM transaction_date)", name: "idx_expenses_year_month", where: "(deleted_at IS NULL)", comment: "For monthly/yearly aggregations"
     t.index ["amount"], name: "idx_expenses_amount_range", using: :brin, comment: "BRIN index for amount range queries"
@@ -334,18 +334,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
 
   create_table "failed_broadcast_stores", force: :cascade do |t|
     t.string "channel_name", null: false
-    t.string "target_type", null: false
-    t.bigint "target_id", null: false
+    t.datetime "created_at", null: false
     t.json "data", null: false
-    t.string "priority", default: "medium", null: false
-    t.string "error_type", null: false
     t.text "error_message", null: false
+    t.string "error_type", null: false
     t.datetime "failed_at", null: false
-    t.integer "retry_count", default: 0, null: false
-    t.string "sidekiq_job_id"
+    t.string "priority", default: "medium", null: false
     t.datetime "recovered_at"
     t.text "recovery_notes"
-    t.datetime "created_at", null: false
+    t.integer "retry_count", default: 0, null: false
+    t.string "sidekiq_job_id"
+    t.bigint "target_id", null: false
+    t.string "target_type", null: false
     t.datetime "updated_at", null: false
     t.index ["channel_name", "priority"], name: "idx_failed_broadcasts_channel_priority"
     t.index ["error_type"], name: "idx_failed_broadcasts_error_type"
@@ -355,13 +355,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
   end
 
   create_table "merchant_aliases", force: :cascade do |t|
-    t.string "raw_name", null: false
-    t.string "normalized_name", null: false
     t.bigint "canonical_merchant_id"
     t.float "confidence", default: 1.0
-    t.integer "match_count", default: 0
-    t.datetime "last_seen_at"
     t.datetime "created_at", null: false
+    t.datetime "last_seen_at"
+    t.integer "match_count", default: 0
+    t.string "normalized_name", null: false
+    t.string "raw_name", null: false
     t.datetime "updated_at", null: false
     t.index "lower((normalized_name)::text)", name: "idx_merchant_aliases_normalized_lower"
     t.index ["canonical_merchant_id", "confidence", "match_count"], name: "idx_merchant_alias_confidence", where: "(confidence >= (0.8)::double precision)"
@@ -373,14 +373,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
   end
 
   create_table "parsing_rules", force: :cascade do |t|
-    t.string "bank_name", null: false
-    t.text "email_pattern"
-    t.string "amount_pattern", null: false
-    t.string "date_pattern", null: false
-    t.string "merchant_pattern"
-    t.string "description_pattern"
     t.boolean "active", default: true, null: false
+    t.string "amount_pattern", null: false
+    t.string "bank_name", null: false
     t.datetime "created_at", null: false
+    t.string "date_pattern", null: false
+    t.string "description_pattern"
+    t.text "email_pattern"
+    t.string "merchant_pattern"
     t.datetime "updated_at", null: false
     t.index ["active"], name: "index_parsing_rules_on_active"
     t.index ["bank_name", "active"], name: "index_parsing_rules_on_bank_name_and_active"
@@ -389,14 +389,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
 
   create_table "pattern_feedbacks", force: :cascade do |t|
     t.bigint "categorization_pattern_id"
-    t.bigint "expense_id"
     t.bigint "category_id"
-    t.boolean "was_correct"
     t.float "confidence_score"
-    t.string "feedback_type"
     t.jsonb "context_data", default: {}
     t.datetime "created_at", null: false
+    t.bigint "expense_id"
+    t.string "feedback_type"
     t.datetime "updated_at", null: false
+    t.boolean "was_correct"
     t.index ["categorization_pattern_id", "created_at"], name: "idx_feedbacks_pattern_time"
     t.index ["categorization_pattern_id", "was_correct", "created_at"], name: "idx_feedback_pattern_performance"
     t.index ["categorization_pattern_id", "was_correct"], name: "idx_feedbacks_pattern_correct"
@@ -418,16 +418,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
   end
 
   create_table "pattern_learning_events", force: :cascade do |t|
-    t.bigint "expense_id"
     t.bigint "category_id"
-    t.string "pattern_used"
-    t.boolean "was_correct"
     t.float "confidence_score"
     t.jsonb "context_data", default: {}
     t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
     t.string "event_type"
+    t.bigint "expense_id"
     t.jsonb "metadata", default: {}
+    t.string "pattern_used"
+    t.datetime "updated_at", null: false
+    t.boolean "was_correct"
     t.index ["category_id", "created_at"], name: "idx_learning_events_category_time"
     t.index ["category_id", "pattern_used", "created_at"], name: "idx_learning_category_pattern_created"
     t.index ["category_id"], name: "index_pattern_learning_events_on_category_id"
@@ -446,13 +446,13 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
   end
 
   create_table "processed_emails", force: :cascade do |t|
-    t.string "message_id", null: false
-    t.bigint "email_account_id", null: false
-    t.datetime "processed_at", null: false
-    t.string "uid"
-    t.text "subject"
-    t.string "from_address"
     t.datetime "created_at", null: false
+    t.bigint "email_account_id", null: false
+    t.string "from_address"
+    t.string "message_id", null: false
+    t.datetime "processed_at", null: false
+    t.text "subject"
+    t.string "uid"
     t.datetime "updated_at", null: false
     t.index ["email_account_id"], name: "index_processed_emails_on_email_account_id"
     t.index ["message_id", "email_account_id"], name: "idx_processed_emails_unique", unique: true
@@ -460,42 +460,42 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
   end
 
   create_table "solid_queue_blocked_executions", force: :cascade do |t|
-    t.bigint "job_id", null: false
-    t.string "queue_name", null: false
-    t.integer "priority", default: 0, null: false
     t.string "concurrency_key", null: false
-    t.datetime "expires_at", null: false
     t.datetime "created_at", null: false
+    t.datetime "expires_at", null: false
+    t.bigint "job_id", null: false
+    t.integer "priority", default: 0, null: false
+    t.string "queue_name", null: false
     t.index ["concurrency_key", "priority", "job_id"], name: "index_solid_queue_blocked_executions_for_release"
     t.index ["expires_at", "concurrency_key"], name: "index_solid_queue_blocked_executions_for_maintenance"
     t.index ["job_id"], name: "index_solid_queue_blocked_executions_on_job_id", unique: true
   end
 
   create_table "solid_queue_claimed_executions", force: :cascade do |t|
+    t.datetime "created_at", null: false
     t.bigint "job_id", null: false
     t.bigint "process_id"
-    t.datetime "created_at", null: false
     t.index ["job_id"], name: "index_solid_queue_claimed_executions_on_job_id", unique: true
     t.index ["process_id", "job_id"], name: "index_solid_queue_claimed_executions_on_process_id_and_job_id"
   end
 
   create_table "solid_queue_failed_executions", force: :cascade do |t|
-    t.bigint "job_id", null: false
-    t.text "error"
     t.datetime "created_at", null: false
+    t.text "error"
+    t.bigint "job_id", null: false
     t.index ["job_id"], name: "index_solid_queue_failed_executions_on_job_id", unique: true
   end
 
   create_table "solid_queue_jobs", force: :cascade do |t|
-    t.string "queue_name", null: false
-    t.string "class_name", null: false
-    t.text "arguments"
-    t.integer "priority", default: 0, null: false
     t.string "active_job_id"
-    t.datetime "scheduled_at"
-    t.datetime "finished_at"
+    t.text "arguments"
+    t.string "class_name", null: false
     t.string "concurrency_key"
     t.datetime "created_at", null: false
+    t.datetime "finished_at"
+    t.integer "priority", default: 0, null: false
+    t.string "queue_name", null: false
+    t.datetime "scheduled_at"
     t.datetime "updated_at", null: false
     t.index ["active_job_id"], name: "index_solid_queue_jobs_on_active_job_id"
     t.index ["class_name"], name: "index_solid_queue_jobs_on_class_name"
@@ -506,98 +506,98 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
   end
 
   create_table "solid_queue_pauses", force: :cascade do |t|
-    t.string "queue_name", null: false
     t.datetime "created_at", null: false
+    t.string "queue_name", null: false
     t.index ["queue_name"], name: "index_solid_queue_pauses_on_queue_name", unique: true
   end
 
   create_table "solid_queue_processes", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "hostname"
     t.string "kind", null: false
     t.datetime "last_heartbeat_at", null: false
-    t.bigint "supervisor_id"
-    t.integer "pid", null: false
-    t.string "hostname"
     t.text "metadata"
-    t.datetime "created_at", null: false
     t.string "name", null: false
+    t.integer "pid", null: false
+    t.bigint "supervisor_id"
     t.index ["last_heartbeat_at"], name: "index_solid_queue_processes_on_last_heartbeat_at"
     t.index ["name", "supervisor_id"], name: "index_solid_queue_processes_on_name_and_supervisor_id", unique: true
     t.index ["supervisor_id"], name: "index_solid_queue_processes_on_supervisor_id"
   end
 
   create_table "solid_queue_ready_executions", force: :cascade do |t|
-    t.bigint "job_id", null: false
-    t.string "queue_name", null: false
-    t.integer "priority", default: 0, null: false
     t.datetime "created_at", null: false
+    t.bigint "job_id", null: false
+    t.integer "priority", default: 0, null: false
+    t.string "queue_name", null: false
     t.index ["job_id"], name: "index_solid_queue_ready_executions_on_job_id", unique: true
     t.index ["priority", "job_id"], name: "index_solid_queue_poll_all"
     t.index ["queue_name", "priority", "job_id"], name: "index_solid_queue_poll_by_queue"
   end
 
   create_table "solid_queue_recurring_executions", force: :cascade do |t|
-    t.bigint "job_id", null: false
-    t.string "task_key", null: false
-    t.datetime "run_at", null: false
     t.datetime "created_at", null: false
+    t.bigint "job_id", null: false
+    t.datetime "run_at", null: false
+    t.string "task_key", null: false
     t.index ["job_id"], name: "index_solid_queue_recurring_executions_on_job_id", unique: true
     t.index ["task_key", "run_at"], name: "index_solid_queue_recurring_executions_on_task_key_and_run_at", unique: true
   end
 
   create_table "solid_queue_recurring_tasks", force: :cascade do |t|
-    t.string "key", null: false
-    t.string "schedule", null: false
-    t.string "command", limit: 2048
-    t.string "class_name"
     t.text "arguments"
-    t.string "queue_name"
-    t.integer "priority", default: 0
-    t.boolean "static", default: true, null: false
-    t.text "description"
+    t.string "class_name"
+    t.string "command", limit: 2048
     t.datetime "created_at", null: false
+    t.text "description"
+    t.string "key", null: false
+    t.integer "priority", default: 0
+    t.string "queue_name"
+    t.string "schedule", null: false
+    t.boolean "static", default: true, null: false
     t.datetime "updated_at", null: false
     t.index ["key"], name: "index_solid_queue_recurring_tasks_on_key", unique: true
     t.index ["static"], name: "index_solid_queue_recurring_tasks_on_static"
   end
 
   create_table "solid_queue_scheduled_executions", force: :cascade do |t|
-    t.bigint "job_id", null: false
-    t.string "queue_name", null: false
-    t.integer "priority", default: 0, null: false
-    t.datetime "scheduled_at", null: false
     t.datetime "created_at", null: false
+    t.bigint "job_id", null: false
+    t.integer "priority", default: 0, null: false
+    t.string "queue_name", null: false
+    t.datetime "scheduled_at", null: false
     t.index ["job_id"], name: "index_solid_queue_scheduled_executions_on_job_id", unique: true
     t.index ["scheduled_at", "priority", "job_id"], name: "index_solid_queue_dispatch_all"
   end
 
   create_table "solid_queue_semaphores", force: :cascade do |t|
-    t.string "key", null: false
-    t.integer "value", default: 1, null: false
-    t.datetime "expires_at", null: false
     t.datetime "created_at", null: false
+    t.datetime "expires_at", null: false
+    t.string "key", null: false
     t.datetime "updated_at", null: false
+    t.integer "value", default: 1, null: false
     t.index ["expires_at"], name: "index_solid_queue_semaphores_on_expires_at"
     t.index ["key", "value"], name: "index_solid_queue_semaphores_on_key_and_value"
     t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
   end
 
   create_table "sync_conflicts", force: :cascade do |t|
+    t.boolean "bulk_resolvable", default: true
+    t.jsonb "conflict_data", default: {}
+    t.string "conflict_type", null: false
+    t.datetime "created_at", null: false
+    t.jsonb "differences", default: {}
     t.bigint "existing_expense_id", null: false
     t.bigint "new_expense_id"
-    t.bigint "sync_session_id", null: false
-    t.string "conflict_type", null: false
-    t.decimal "similarity_score", precision: 5, scale: 2
-    t.jsonb "conflict_data", default: {}
-    t.jsonb "differences", default: {}
-    t.string "status", default: "pending", null: false
+    t.text "notes"
+    t.integer "priority", default: 0
     t.string "resolution_action"
     t.jsonb "resolution_data", default: {}
     t.datetime "resolved_at"
     t.string "resolved_by"
-    t.text "notes"
-    t.integer "priority", default: 0
-    t.boolean "bulk_resolvable", default: true
-    t.datetime "created_at", null: false
+    t.decimal "similarity_score", precision: 5, scale: 2
+    t.string "status", default: "pending", null: false
+    t.bigint "sync_session_id", null: false
     t.datetime "updated_at", null: false
     t.index ["conflict_data"], name: "index_sync_conflicts_on_conflict_data", using: :gin
     t.index ["conflict_type"], name: "index_sync_conflicts_on_conflict_type"
@@ -614,18 +614,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
   end
 
   create_table "sync_metrics", force: :cascade do |t|
-    t.bigint "sync_session_id", null: false
-    t.bigint "email_account_id"
-    t.string "metric_type", null: false
-    t.decimal "duration", precision: 10, scale: 3
-    t.integer "emails_processed", default: 0
-    t.boolean "success", default: true
-    t.string "error_type"
-    t.text "error_message"
-    t.jsonb "metadata", default: {}
-    t.datetime "started_at", null: false
     t.datetime "completed_at"
     t.datetime "created_at", null: false
+    t.decimal "duration", precision: 10, scale: 3
+    t.bigint "email_account_id"
+    t.integer "emails_processed", default: 0
+    t.text "error_message"
+    t.string "error_type"
+    t.jsonb "metadata", default: {}
+    t.string "metric_type", null: false
+    t.datetime "started_at", null: false
+    t.boolean "success", default: true
+    t.bigint "sync_session_id", null: false
     t.datetime "updated_at", null: false
     t.index ["completed_at"], name: "index_sync_metrics_on_completed_at"
     t.index ["email_account_id", "metric_type"], name: "index_sync_metrics_on_email_account_id_and_metric_type"
@@ -643,17 +643,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
   end
 
   create_table "sync_session_accounts", force: :cascade do |t|
-    t.bigint "sync_session_id", null: false
-    t.bigint "email_account_id", null: false
-    t.string "status", default: "pending", null: false
-    t.integer "total_emails", default: 0
-    t.integer "processed_emails", default: 0
-    t.integer "detected_expenses", default: 0
-    t.text "last_error"
     t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.integer "detected_expenses", default: 0
+    t.bigint "email_account_id", null: false
     t.string "job_id"
+    t.text "last_error"
     t.integer "lock_version", default: 0, null: false
+    t.integer "processed_emails", default: 0
+    t.string "status", default: "pending", null: false
+    t.bigint "sync_session_id", null: false
+    t.integer "total_emails", default: 0
+    t.datetime "updated_at", null: false
     t.index ["email_account_id"], name: "index_sync_session_accounts_on_email_account_id"
     t.index ["job_id"], name: "index_sync_session_accounts_on_job_id"
     t.index ["status"], name: "index_sync_session_accounts_on_status"
@@ -661,20 +661,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
   end
 
   create_table "sync_sessions", force: :cascade do |t|
-    t.string "status", default: "pending", null: false
-    t.integer "total_emails", default: 0
-    t.integer "processed_emails", default: 0
-    t.integer "detected_expenses", default: 0
-    t.integer "errors_count", default: 0
-    t.datetime "started_at"
     t.datetime "completed_at"
-    t.text "error_details"
     t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.integer "detected_expenses", default: 0
+    t.text "error_details"
+    t.integer "errors_count", default: 0
     t.text "job_ids", default: "[]"
     t.integer "lock_version", default: 0, null: false
-    t.string "session_token"
     t.jsonb "metadata", default: {}
+    t.integer "processed_emails", default: 0
+    t.string "session_token"
+    t.datetime "started_at"
+    t.string "status", default: "pending", null: false
+    t.integer "total_emails", default: 0
+    t.datetime "updated_at", null: false
     t.index ["created_at"], name: "index_sync_sessions_on_created_at"
     t.index ["metadata"], name: "index_sync_sessions_on_metadata", using: :gin
     t.index ["session_token"], name: "index_sync_sessions_on_session_token", unique: true
@@ -682,19 +682,19 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
   end
 
   create_table "undo_histories", force: :cascade do |t|
-    t.string "undoable_type"
-    t.bigint "undoable_id"
-    t.bigint "user_id"
     t.integer "action_type", null: false
-    t.jsonb "record_data", default: {}, null: false
-    t.string "description"
-    t.boolean "is_bulk", default: false
     t.integer "affected_count", default: 1
-    t.datetime "expires_at"
-    t.datetime "expired_at"
-    t.datetime "undone_at"
     t.datetime "created_at", null: false
+    t.string "description"
+    t.datetime "expired_at"
+    t.datetime "expires_at"
+    t.boolean "is_bulk", default: false
+    t.jsonb "record_data", default: {}, null: false
+    t.bigint "undoable_id"
+    t.string "undoable_type"
+    t.datetime "undone_at"
     t.datetime "updated_at", null: false
+    t.bigint "user_id"
     t.index ["action_type", "undone_at"], name: "index_undo_histories_on_action_type_and_undone_at"
     t.index ["action_type"], name: "index_undo_histories_on_action_type"
     t.index ["created_at"], name: "index_undo_histories_on_created_at"
@@ -708,14 +708,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_30_124847) do
   end
 
   create_table "user_category_preferences", force: :cascade do |t|
-    t.bigint "email_account_id"
     t.bigint "category_id"
     t.string "context_type"
     t.string "context_value"
-    t.integer "preference_weight", default: 1
-    t.integer "usage_count", default: 0
     t.datetime "created_at", null: false
+    t.bigint "email_account_id"
+    t.integer "preference_weight", default: 1
     t.datetime "updated_at", null: false
+    t.integer "usage_count", default: 0
     t.index ["category_id"], name: "index_user_category_preferences_on_category_id"
     t.index ["context_type", "context_value", "category_id"], name: "idx_user_prefs_merchant_lookup", where: "((context_type)::text = 'merchant'::text)", comment: "Optimized index for merchant preference lookups"
     t.index ["context_type", "context_value", "preference_weight"], name: "idx_user_prefs_context_weight"

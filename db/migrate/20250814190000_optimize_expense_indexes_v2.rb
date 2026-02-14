@@ -12,8 +12,8 @@ class OptimizeExpenseIndexesV2 < ActiveRecord::Migration[8.0]
       remove_index_if_exists :expenses, :amount, name: "idx_expenses_amount_brin"
 
       # Remove duplicate merchant indexes (keep only the most efficient trigram one)
-      remove_index_if_exists :expenses, :merchant_normalized, name: "index_expenses_on_merchant_normalized_trgm"
-      remove_index_if_exists :expenses, [ :merchant_normalized ], name: "idx_expenses_merchant_trgm_new"
+      remove_index_if_exists :expenses, name: "index_expenses_on_merchant_normalized_trgm"
+      remove_index_if_exists :expenses, name: "idx_expenses_merchant_trgm_new"
 
       # Remove redundant category indexes (covered by composite indexes)
       remove_index_if_exists :expenses, [ :category_id, :created_at, :merchant_normalized ],
@@ -44,15 +44,14 @@ class OptimizeExpenseIndexesV2 < ActiveRecord::Migration[8.0]
 
     say_with_time "Creating optimized composite indexes..." do
       # Primary composite index for filtering operations (covers most queries)
-      add_index :expenses, [ :email_account_id, :deleted_at, :transaction_date, :category_id, :status ],
+      add_index_if_not_exists :expenses, [ :email_account_id, :deleted_at, :transaction_date, :category_id, :status ],
                 name: "idx_expenses_primary_composite",
                 where: "deleted_at IS NULL",
                 comment: "Primary composite index for filtering operations"
 
       # Merchant search index (trigram for fuzzy matching)
-      unless index_exists?(:expenses, :merchant_normalized, name: "idx_expenses_merchant_search")
-        # Keep existing if it exists
-        add_index :expenses, :merchant_normalized,
+      unless index_name_exists?(:expenses, "idx_expenses_merchant_search")
+        add_index_if_not_exists :expenses, :merchant_normalized,
                   name: "idx_expenses_merchant_fuzzy",
                   using: :gin,
                   opclass: :gin_trgm_ops,
@@ -61,31 +60,31 @@ class OptimizeExpenseIndexesV2 < ActiveRecord::Migration[8.0]
       end
 
       # Amount range queries (BRIN index for range scans)
-      add_index :expenses, :amount,
+      add_index_if_not_exists :expenses, :amount,
                 name: "idx_expenses_amount_range",
                 using: :brin,
                 comment: "BRIN index for amount range queries"
 
       # Date-based analytics (covering index)
-      add_index :expenses, [ :transaction_date, :category_id, :amount ],
+      add_index_if_not_exists :expenses, [ :transaction_date, :category_id, :amount ],
                 name: "idx_expenses_analytics",
                 where: "deleted_at IS NULL",
                 comment: "Covering index for date-based analytics"
 
       # Uncategorized expenses (specific optimization)
-      add_index :expenses, [ :category_id, :transaction_date ],
+      add_index_if_not_exists :expenses, [ :category_id, :transaction_date ],
                 name: "idx_expenses_uncategorized",
                 where: "category_id IS NULL AND deleted_at IS NULL",
                 comment: "Index for finding uncategorized expenses"
 
       # Auto-categorization tracking
-      add_index :expenses, [ :auto_categorized, :categorization_confidence ],
+      add_index_if_not_exists :expenses, [ :auto_categorized, :categorization_confidence ],
                 name: "idx_expenses_auto_categorization",
                 where: "auto_categorized = true AND deleted_at IS NULL",
                 comment: "Index for tracking auto-categorization"
 
       # Duplicate detection
-      add_index :expenses, [ :email_account_id, :amount, :transaction_date, :merchant_name ],
+      add_index_if_not_exists :expenses, [ :email_account_id, :amount, :transaction_date, :merchant_name ],
                 name: "idx_expenses_duplicate_check",
                 comment: "Index for detecting duplicate transactions"
     end
@@ -116,10 +115,21 @@ class OptimizeExpenseIndexesV2 < ActiveRecord::Migration[8.0]
   private
 
   def remove_index_if_exists(table, columns = nil, name: nil)
-    if name && index_exists?(table, nil, name: name)
+    if name && index_name_exists?(table, name)
       remove_index table, name: name
-    elsif columns && index_exists?(table, columns)
-      remove_index table, columns
+    elsif columns
+      matching = connection.indexes(table).select { |i| Array(i.columns) == Array(columns).map(&:to_s) }
+      matching.each { |i| remove_index table, name: i.name }
     end
+  end
+
+  def add_index_if_not_exists(table, columns, **options)
+    return if options[:name] && index_name_exists?(table, options[:name])
+
+    add_index table, columns, **options
+  end
+
+  def index_name_exists?(table, name)
+    connection.indexes(table).any? { |i| i.name == name }
   end
 end

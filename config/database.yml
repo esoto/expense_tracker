@@ -22,6 +22,10 @@ default: &default
   password: <%= ENV.fetch("POSTGRES_PASSWORD") { "" } %>
   host: <%= ENV.fetch("POSTGRES_HOST") { "localhost" } %>
   port: <%= ENV.fetch("POSTGRES_PORT") { 5432 } %>
+  # Disable GSS encryption to prevent segfault in forked processes on macOS.
+  # PostgreSQL 18's libpq probes Kerberos/GSS credentials via XPC, which
+  # crashes after fork() because XPC ports aren't inherited.
+  gssencmode: disable
   # Performance optimizations
   checkout_timeout: 5
   reaping_frequency: 10

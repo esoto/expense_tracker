@@ -99,7 +99,7 @@ RSpec.describe "Metrics Background Job Integration", type: :integration do
       expect(metrics[:executions].first[:status]).to eq(:success)
     end
 
-    it "monitors job health through MetricsJobMonitor" do
+    it "monitors job health through Services::MetricsJobMonitor" do
       # Simulate some job executions
       metrics_key = "job_metrics:metrics_calculation:#{email_account.id}"
       Rails.cache.write(metrics_key, {
@@ -110,7 +110,7 @@ RSpec.describe "Metrics Background Job Integration", type: :integration do
       })
 
       # Check health status
-      status = MetricsJobMonitor.status
+      status = Services::MetricsJobMonitor.status
 
       expect(status).to include(:health)
       expect(status[:health]).to include(:status, :message, :checks)

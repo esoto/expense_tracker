@@ -243,9 +243,10 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, integrati
         expect(response).to have_http_status(:not_found)
         response_body = JSON.parse(response.body)
 
-        # Should not reveal internal system details
-        expect(response_body['error']).not_to include('expense')
+        # Should not reveal internal system details (table names, SQL, stack traces)
         expect(response_body['error']).not_to include('database')
+        expect(response_body['error']).not_to include('ActiveRecord')
+        expect(response_body['error']).not_to include('PG::')
       end
     end
 

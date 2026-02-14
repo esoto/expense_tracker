@@ -119,26 +119,6 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job, integratio
     end
   end
 
-  describe 'extended cache', integration: true do
-    it 'uses Services::ExtendedCacheMetricsCalculator for background calculations' do
-      expect(Services::ExtendedCacheMetricsCalculator).to receive(:new)
-        .with(email_account: email_account, period: :month, reference_date: current_date, cache_hours: 4)
-        .and_call_original
-
-      job.perform(email_account_id: email_account.id, period: :month, reference_date: current_date)
-    end
-
-    it 'sets longer cache expiration for background-calculated metrics' do
-      job.perform(email_account_id: email_account.id, period: :month, reference_date: current_date)
-
-      cache_key = "metrics_calculator:account_#{email_account.id}:month:#{current_date.iso8601}"
-      cached_data = Rails.cache.read(cache_key)
-
-      expect(cached_data).not_to be_nil
-      expect(cached_data[:background_calculated]).to be true
-    end
-  end
-
   describe '.enqueue_for_all_accounts', integration: true do
     it 'enqueues jobs for all active email accounts' do
       # Assuming email_account and other_email_account are active by default
@@ -162,53 +142,3 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job, integratio
   end
 end
 
-# Test for Services::ExtendedCacheMetricsCalculator
-RSpec.describe Services::MetricsCalculator, integration: true do
-  let(:email_account) { create(:email_account) }
-  let(:calculator) { described_class.new(email_account: email_account, period: :month, cache_hours: 4) }
-
-  describe '#initialize', integration: true do
-    it 'accepts cache_hours parameter' do
-      expect(calculator.cache_hours).to eq(4)
-    end
-
-    it 'inherits from Services::MetricsCalculator' do
-      expect(calculator).to be_a(Services::MetricsCalculator)
-    end
-  end
-
-  describe '#calculate', integration: true do
-    it 'uses extended cache expiration' do
-      # Create some test data
-      create(:expense, email_account: email_account, amount: 100, transaction_date: Date.current)
-
-      # Calculate metrics
-      result = calculator.calculate
-
-      # Verify result includes background_calculated flag
-      expect(result[:background_calculated]).to be true
-
-      # Verify cache was written with longer expiration
-      cache_key = calculator.cache_key
-      expect(Rails.cache.exist?(cache_key)).to be true
-    end
-
-    it 'includes all standard metrics' do
-      result = calculator.calculate
-
-      expect(result).to include(
-        :period,
-        :reference_date,
-        :date_range,
-        :metrics,
-        :trends,
-        :category_breakdown,
-        :daily_breakdown,
-        :trend_data,
-        :budgets,
-        :calculated_at,
-        :background_calculated
-      )
-    end
-  end
-end

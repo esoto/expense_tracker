@@ -1,6 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe ExpensesController, type: :controller, integration: true do
+  setup_authentication_mocks
+
   describe "ML Confidence actions", integration: true do
     let(:email_account) { create(:email_account) }
     let(:category) { create(:category, name: "Alimentación") }

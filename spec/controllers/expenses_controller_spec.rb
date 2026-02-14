@@ -1,6 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe ExpensesController, type: :controller, integration: true do
+  setup_authentication_mocks
+
   let(:email_account) { create(:email_account) }
   let(:category) { create(:category, name: "Food", color: "#10B981") }
 

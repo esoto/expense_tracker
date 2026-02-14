@@ -93,22 +93,24 @@ RSpec.configure do |config|
   # FILTERING AND EXCLUSIONS
   # ========================
 
-  # Exclude slow tests by default in development
+  # Exclude slow tests by default in development (CI handles this via CLI --tag flags)
   unless ENV['RUN_ALL_TESTS'] || ENV['CI']
     config.filter_run_excluding :slow
     config.filter_run_excluding :performance
+  end
 
-    # Run only tagged tests if specified
-    if ENV['TEST_TIER']
-      config.filter_run ENV['TEST_TIER'].to_sym => true
+  # TEST_TIER filtering applies in ALL environments (dev, CI, etc.)
+  if ENV['TEST_TIER']
+    config.filter_run ENV['TEST_TIER'].to_sym => true
 
-      # Unit tier: exclude tests explicitly tagged integration: true.
-      # These tests depend on real cache stores, external services, or
-      # cross-service interactions that aren't available in the unit context
-      # (NullStore cache, disabled network). They run in the full suite.
-      if ENV['TEST_TIER'] == 'unit'
-        config.filter_run_excluding integration: true
-      end
+    # Unit tier: exclude integration and performance tests.
+    # Integration tests depend on real cache stores, external services, or
+    # cross-service interactions that aren't available in the unit context
+    # (NullStore cache, disabled network). Performance tests have separate
+    # CI flows. Both run in the full suite.
+    if ENV['TEST_TIER'] == 'unit'
+      config.filter_run_excluding integration: true
+      config.filter_run_excluding performance: true
     end
   end
 

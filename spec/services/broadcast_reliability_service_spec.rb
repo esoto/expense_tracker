@@ -408,3 +408,25 @@ RSpec.describe Services::BroadcastReliabilityService, type: :service, integratio
     end
   end
 end
+
+RSpec.describe Services::BroadcastReliabilityService, "stdout output",
+               type: :service, unit: true, needs_broadcasting: true do
+  let(:sync_session) { create(:sync_session) }
+
+  before do
+    allow(Services::BroadcastFeatureFlags).to receive(:enabled?).and_return(false)
+    allow(SyncStatusChannel).to receive(:broadcast_to)
+    allow(Services::BroadcastAnalytics).to receive(:record_success)
+  end
+
+  it "does not write to stdout during broadcast_with_retry" do
+    expect {
+      described_class.broadcast_with_retry(
+        channel: SyncStatusChannel,
+        target: sync_session,
+        data: { status: "test" },
+        priority: :medium
+      )
+    }.not_to output.to_stdout
+  end
+end

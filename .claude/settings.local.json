@@ -80,7 +80,10 @@
       "Bash(docker-compose:*)",
       "Bash(bin/test-unit:*)",
       "Bash(RAILS_ENV=test bundle exec rspec:*)",
-      "Bash(RAILS_ENV=test TEST_TIER=unit bash:*)"
+      "Bash(RAILS_ENV=test TEST_TIER=unit bash:*)",
+      "Bash(RAILS_ENV=test bin/rails db:schema:load:*)",
+      "Read(//Users/esoto/.claude/plugins/cache/superpowers-marketplace/superpowers/4.0.3/skills/subagent-driven-development/**)",
+      "Bash(TEST_ENV_NUMBER=_worktree bundle exec rspec:*)"
     ],
     "deny": []
   }

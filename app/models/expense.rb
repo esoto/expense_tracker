@@ -44,6 +44,9 @@ class Expense < ApplicationRecord
   end
 
   def bank_name
+    value = self[:bank_name]
+    return value if value.present?
+
     email_account&.bank_name || "Manual"
   end
 

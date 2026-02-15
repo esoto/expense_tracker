@@ -565,8 +565,8 @@ class ExpensesController < ApplicationController
   def current_user_expenses
     # Get expenses that belong to the current user's email accounts
     # Include manual expenses (email_account_id IS NULL) alongside linked ones
-    Expense.left_joins(:email_account)
-           .where(email_account_id: [ nil, *current_user_email_accounts.pluck(:id) ])
+    Expense.where(email_account_id: current_user_email_accounts.pluck(:id))
+           .or(Expense.where(email_account_id: nil))
   end
 
   def current_user_email_accounts

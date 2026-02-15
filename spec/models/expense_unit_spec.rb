@@ -200,8 +200,19 @@ RSpec.describe Expense, type: :model, unit: true do
     end
 
     describe "#bank_name" do
-      it "returns email account bank name" do
+      it "returns column value when present" do
+        expect(expense.bank_name).to eq("BAC")
+      end
+
+      it "falls back to email account bank name when column is blank" do
+        expense.bank_name = nil
         expect(expense.bank_name).to eq("BCR")
+      end
+
+      it "returns 'Manual' when no email account and no column value" do
+        expense.bank_name = nil
+        expense.email_account = nil
+        expect(expense.bank_name).to eq("Manual")
       end
     end
 

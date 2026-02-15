@@ -16,6 +16,7 @@ class ExpensesController < ApplicationController
     )
 
     @result = filter_service.call
+    @categories = Category.all.order(:name)
 
     if @result.success?
       @expenses = @result.expenses
@@ -201,12 +202,16 @@ class ExpensesController < ApplicationController
     # Primary email account for display
     @primary_email_account = primary_email_account
 
+    # Load categories once for expense row partials (avoids N+1 queries)
+    @categories = Category.all.order(:name)
+
     # Handle AJAX requests for partial updates (Task 3.6)
     if request.xhr? && params[:partial] == "expenses_list"
       render partial: "expenses/dashboard_expense_list", locals: {
         recent_expenses: @recent_expenses,
         expense_view_mode: @expense_view_mode,
-        expense_filter_result: @expense_filter_result
+        expense_filter_result: @expense_filter_result,
+        categories: @categories
       }
     end
   end
@@ -402,7 +407,7 @@ class ExpensesController < ApplicationController
         format.html { redirect_to duplicated_expense, notice: "Gasto duplicado exitosamente" }
         format.turbo_stream do
           render turbo_stream: [
-            turbo_stream.prepend("expenses_table_body", partial: "expenses/expense_row", locals: { expense: duplicated_expense }),
+            turbo_stream.prepend("expenses_table_body", partial: "expenses/expense_row", locals: { expense: duplicated_expense, categories: Category.all.order(:name) }),
             turbo_stream.update("flash_messages", partial: "shared/flash", locals: { notice: "Gasto duplicado exitosamente" })
           ]
         end

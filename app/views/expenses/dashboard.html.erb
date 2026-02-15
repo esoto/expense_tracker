@@ -827,7 +827,7 @@
         </thead>
         <tbody class="bg-white divide-y divide-slate-100" data-dashboard-expenses-target="tableBody">
           <% @recent_expenses.each do |expense| %>
-            <%= render "expense_row", expense: expense, context: 'dashboard' %>
+            <%= render "expense_row", expense: expense, context: 'dashboard', categories: @categories %>
           <% end %>
         </tbody>
       </table>

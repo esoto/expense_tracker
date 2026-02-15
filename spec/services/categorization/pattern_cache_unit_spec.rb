@@ -94,6 +94,9 @@ RSpec.describe Services::Categorization::PatternCache, :unit do
       allow(mock_redis).to receive(:del).with("cat:pattern:1:v1")
 
       cache.reset!
+
+      expect(mock_redis).to have_received(:scan).with("0", match: "cat:*", count: 100)
+      expect(mock_redis).to have_received(:del).with("cat:pattern:1:v1")
     end
   end
 

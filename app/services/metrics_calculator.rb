@@ -260,7 +260,7 @@ module Services
   end
 
   def calculate_category_breakdown
-    expenses_in_period
+    rows = expenses_in_period
       .left_joins(:category)
       .group(Arel.sql("COALESCE(categories.name, 'Uncategorized')"))
       .pluck(
@@ -271,7 +271,10 @@ module Services
         Arel.sql("MIN(expenses.amount)"),
         Arel.sql("MAX(expenses.amount)")
       )
-      .map do |name, total, count, avg, min, max|
+
+    grand_total = rows.sum { |_, amount, *| amount.to_f }
+
+    rows.map do |name, total, count, avg, min, max|
         {
           category: name,
           total_amount: total.to_f,
@@ -279,7 +282,7 @@ module Services
           average_amount: avg.to_f.round(2),
           min_amount: min.to_f,
           max_amount: max.to_f,
-          percentage_of_total: calculate_percentage_of_total(total.to_f)
+          percentage_of_total: grand_total.zero? ? 0.0 : ((total.to_f / grand_total) * 100).round(2)
         }
       end
       .sort_by { |item| -item[:total_amount] }

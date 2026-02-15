@@ -66,6 +66,24 @@ RSpec.describe Services::MetricsCalculator, type: :service, performance: true do
       end
     end
 
+    context 'category breakdown query efficiency' do
+      before do
+        create(:expense, email_account: email_account, category: category1, amount: 100, transaction_date: current_date)
+        create(:expense, email_account: email_account, category: category2, amount: 50, transaction_date: current_date)
+        create(:expense, email_account: email_account, category: nil, amount: 25, transaction_date: current_date)
+        Rails.cache.clear
+      end
+
+      it 'does not fire N+1 queries for percentage calculation', :unit do
+        # Warm up AR caches
+        calculator.send(:expenses_in_period)
+
+        query_count = count_queries { calculator.send(:calculate_category_breakdown) }
+        # Should be constant (1-3 queries), not proportional to category count
+        expect(query_count).to be <= 3
+      end
+    end
+
     before do
       # Create expenses for current month
       create(:expense,

@@ -66,6 +66,22 @@ RSpec.describe Services::MetricsCalculator, type: :service, performance: true do
       end
     end
 
+    context 'calculate_metrics query consolidation' do
+      before do
+        create_list(:expense, 3, email_account: email_account, category: category1, transaction_date: current_date, merchant_name: 'TestMerchant')
+        Rails.cache.clear
+      end
+
+      it 'uses consolidated queries for aggregate calculations', :unit do
+        # Warm up AR caches
+        calculator.send(:expenses_in_period)
+
+        query_count = count_queries { calculator.send(:calculate_metrics) }
+        # Consolidated should need at most 7 queries (main agg + distinct merchants + distinct categories + uncategorized + status + currency + median)
+        expect(query_count).to be <= 7
+      end
+    end
+
     context 'category breakdown query efficiency' do
       before do
         create(:expense, email_account: email_account, category: category1, amount: 100, transaction_date: current_date)

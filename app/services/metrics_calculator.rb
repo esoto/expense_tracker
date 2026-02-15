@@ -224,13 +224,22 @@ module Services
   def calculate_metrics
     expenses = expenses_in_period
 
+    # Single query for main aggregates
+    count, total, average, min_val, max_val = expenses.pick(
+      Arel.sql("COUNT(*)"),
+      Arel.sql("COALESCE(SUM(amount), 0)"),
+      Arel.sql("COALESCE(AVG(amount), 0)"),
+      Arel.sql("MIN(amount)"),
+      Arel.sql("MAX(amount)")
+    )
+
     {
-      total_amount: expenses.sum(:amount).to_f,
-      transaction_count: expenses.count,
-      average_amount: calculate_average(expenses),
+      total_amount: total.to_f,
+      transaction_count: count.to_i,
+      average_amount: average.to_f.round(2),
       median_amount: calculate_median(expenses),
-      min_amount: expenses.minimum(:amount)&.to_f || 0.0,
-      max_amount: expenses.maximum(:amount)&.to_f || 0.0,
+      min_amount: min_val&.to_f || 0.0,
+      max_amount: max_val&.to_f || 0.0,
       unique_merchants: expenses.distinct.count(:merchant_name),
       unique_categories: expenses.joins(:category).distinct.count("categories.id"),
       uncategorized_count: expenses.uncategorized.count,

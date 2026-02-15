@@ -32,11 +32,6 @@ module ApplicationCable
       if rails_session_id.present?
         # Log successful authentication for monitoring
         Rails.logger.info "[SECURITY] WebSocket authentication successful: IP=#{ip_address}, Session=#{rails_session_id[0..8]}..., Time=#{timestamp}"
-        # Check for session ID fallback usage
-        if session_data.is_a?(Hash) && (!session_data["session_id"] && !session_data[:session_id])
-          Rails.logger.info "[SECURITY] Session ID fallback used: IP=#{ip_address}, Generated=#{rails_session_id[0..8]}..., Time=#{timestamp}"
-        end
-
         {
           session_id: rails_session_id,
           sync_session_id: session_data&.dig("sync_session_id"),
@@ -55,7 +50,8 @@ module ApplicationCable
       case session_data
       when Hash
         # Rails session ID is typically stored in the session itself
-        session_data["session_id"] || session_data[:session_id] || SecureRandom.hex(16)
+        value = session_data["session_id"] || session_data[:session_id]
+        value.is_a?(String) && value.present? ? value : nil
       when String
         # Invalid format
         nil

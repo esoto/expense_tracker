@@ -555,14 +555,18 @@ class ExpensesController < ApplicationController
     # Check if the expense belongs to the current user's email accounts
     return false unless expense.present?
 
+    # Manual expenses (no email_account) can be modified by any authenticated user
+    return true if expense.email_account.nil?
+
     # Allow modification if expense belongs to user's email accounts
     current_user_email_accounts.include?(expense.email_account)
   end
 
   def current_user_expenses
     # Get expenses that belong to the current user's email accounts
-    Expense.joins(:email_account)
-           .where(email_account: current_user_email_accounts)
+    # Include manual expenses (email_account_id IS NULL) alongside linked ones
+    Expense.left_joins(:email_account)
+           .where(email_account_id: [ nil, *current_user_email_accounts.pluck(:id) ])
   end
 
   def current_user_email_accounts

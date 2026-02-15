@@ -4,7 +4,7 @@ class Expense < ApplicationRecord
   include SoftDelete
 
   # Associations
-  belongs_to :email_account
+  belongs_to :email_account, optional: true
   belongs_to :category, optional: true
   belongs_to :ml_suggested_category, class_name: "Category", foreign_key: "ml_suggested_category_id", optional: true
   has_many :pattern_feedbacks, dependent: :destroy
@@ -44,7 +44,7 @@ class Expense < ApplicationRecord
   end
 
   def bank_name
-    email_account.bank_name
+    email_account&.bank_name || "Manual"
   end
 
   def category_name

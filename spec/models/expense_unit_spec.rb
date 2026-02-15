@@ -55,7 +55,7 @@ RSpec.describe Expense, type: :model, unit: true do
   end
 
   describe "associations" do
-    it { should belong_to(:email_account) }
+    it { should belong_to(:email_account).optional }
     it { should belong_to(:category).optional }
     it { should belong_to(:ml_suggested_category).class_name("Category").with_foreign_key("ml_suggested_category_id").optional }
     it { should have_many(:pattern_feedbacks).dependent(:destroy) }

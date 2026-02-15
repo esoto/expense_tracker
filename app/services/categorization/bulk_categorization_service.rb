@@ -288,7 +288,7 @@ module Services::Categorization
           user_id: user&.id,
           target_category_id: category_id,
           expense_count: results.count,
-          total_amount: results.sum { |r| Expense.find(r[:expense_id]).amount },
+          total_amount: Expense.where(id: results.map { |r| r[:expense_id] }).sum(:amount),
           status: :completed,
           completed_at: Time.current,
           metadata: { results: results }

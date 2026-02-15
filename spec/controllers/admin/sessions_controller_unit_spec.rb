@@ -367,41 +367,27 @@ RSpec.describe Admin::SessionsController, type: :controller, unit: true do
   end
 
   describe "CSRF protection", unit: true do
-    it "does not skip verify_authenticity_token" do
-      # Verify the controller source does not contain skip_before_action for CSRF
-      source_file = Rails.root.join("app/controllers/admin/sessions_controller.rb")
-      source_code = File.read(source_file)
+    it "rejects login requests without a valid CSRF token" do
+      # Enable forgery protection for this test (disabled by default in test env)
+      ActionController::Base.allow_forgery_protection = true
 
-      expect(source_code).not_to include("skip_before_action :verify_authenticity_token"),
-        "Expected admin sessions controller to NOT skip CSRF protection, but it does"
-    end
+      begin
+        post :create, params: {
+          admin_user: { email: "test@example.com", password: "password123" }
+        }
 
-    it "enforces CSRF token verification on login" do
-      # Verify verify_authenticity_token is in the callback chain for :create
-      callbacks = described_class._process_action_callbacks.select do |cb|
-        cb.filter == :verify_authenticity_token
-      end
-
-      # Should have the callback and it should NOT be skipped for :create
-      expect(callbacks).not_to be_empty, "Expected verify_authenticity_token in callback chain"
-
-      skipped_actions = described_class._process_action_callbacks.select do |cb|
-        cb.filter == :verify_authenticity_token && cb.kind == :before && cb.instance_variable_get(:@if)&.any?
-      end
-
-      # None of the CSRF callbacks should exclude :create
-      skipped_actions.each do |cb|
-        conditions = cb.instance_variable_get(:@unless) || []
-        conditions.each do |condition|
-          expect(condition.to_s).not_to include("create"),
-            "Expected CSRF protection to NOT be skipped for :create action"
-        end
+        # With forgery protection enabled, the request should not create a session.
+        # Rails may use :exception (raise error) or :null_session (wipe session)
+        # depending on configuration — either way, no admin session should be set.
+        expect(session[:admin_session_token]).to be_nil
+      rescue ActionController::InvalidAuthenticityToken
+        # This is the expected behavior when protect_from_forgery uses :exception strategy
+      ensure
+        ActionController::Base.allow_forgery_protection = false
       end
     end
 
     it "inherits CSRF protection from ApplicationController" do
-      # ApplicationController inherits from ActionController::Base which includes
-      # protect_from_forgery by default. Confirm the chain is intact.
       expect(described_class.superclass).to eq(ApplicationController)
       expect(ApplicationController.superclass).to eq(ActionController::Base)
     end

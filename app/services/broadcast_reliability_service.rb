@@ -45,10 +45,8 @@ module Services
     # @param user_id [String] Optional user ID for rate limiting
     # @return [Boolean] Success status
     def broadcast_with_retry(channel:, target:, data:, priority: :medium, attempt: 1, request_ip: nil, user_id: nil)
-      puts "[BROADCAST_DEBUG] Starting broadcast_with_retry with priority: #{priority}"
       Rails.logger.debug "[BROADCAST_DEBUG] Starting broadcast_with_retry with priority: #{priority}"
       validate_priority!(priority)
-      puts "[BROADCAST_DEBUG] Priority validated"
       Rails.logger.debug "[BROADCAST_DEBUG] Priority validated"
 
       # Security validation and rate limiting (only on first attempt)

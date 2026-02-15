@@ -192,7 +192,7 @@ RSpec.describe ApplicationCable::Connection, type: :channel, unit: true do
         def extract_session_id(session_data)
           case session_data
           when Hash
-            session_data["session_id"] || session_data[:session_id] || SecureRandom.hex(16)
+            session_data["session_id"] || session_data[:session_id]
           when String
             nil
           else
@@ -224,31 +224,22 @@ RSpec.describe ApplicationCable::Connection, type: :channel, unit: true do
           expect(result).to eq("string_key_value")
         end
 
-        it "generates fallback ID for hash without session_id" do
+        it "returns nil for hash without session_id" do
           session_data = { "other_key" => "value" }
           result = test_instance.extract_session_id(session_data)
-          expect(result).to match(/\A[0-9a-f]{32}\z/)
+          expect(result).to be_nil
         end
 
-        it "generates different fallback IDs for each call" do
-          session_data = { "other_key" => "value" }
-          result1 = test_instance.extract_session_id(session_data)
-          result2 = test_instance.extract_session_id(session_data)
-          expect(result1).not_to eq(result2)
-          expect(result1).to match(/\A[0-9a-f]{32}\z/)
-          expect(result2).to match(/\A[0-9a-f]{32}\z/)
-        end
-
-        it "handles empty hash by generating fallback ID" do
+        it "returns nil for empty hash" do
           session_data = {}
           result = test_instance.extract_session_id(session_data)
-          expect(result).to match(/\A[0-9a-f]{32}\z/)
+          expect(result).to be_nil
         end
 
-        it "handles hash with nil session_id values" do
+        it "returns nil for hash with nil session_id values" do
           session_data = { "session_id" => nil, session_id: nil }
           result = test_instance.extract_session_id(session_data)
-          expect(result).to match(/\A[0-9a-f]{32}\z/)
+          expect(result).to be_nil
         end
       end
 
@@ -344,15 +335,10 @@ RSpec.describe ApplicationCable::Connection, type: :channel, unit: true do
               rails_session_id = extract_session_id(session_data)
 
               if rails_session_id.present?
-                # Line 34: Success logging
+                # Success logging
                 Rails.logger.info "[SECURITY] WebSocket authentication successful: IP=#{ip_address}, Session=#{rails_session_id[0..8]}..., Time=#{timestamp}"
 
-                # Lines 36-37: Fallback logging
-                if session_data.is_a?(Hash) && (!session_data["session_id"] && !session_data[:session_id])
-                  Rails.logger.info "[SECURITY] Session ID fallback used: IP=#{ip_address}, Generated=#{rails_session_id[0..8]}..., Time=#{timestamp}"
-                end
-
-                # Lines 41-42: Session info object creation
+                # Session info object creation
                 {
                   session_id: rails_session_id,
                   sync_session_id: session_data&.dig("sync_session_id"),
@@ -360,7 +346,7 @@ RSpec.describe ApplicationCable::Connection, type: :channel, unit: true do
                   ip_address: ip_address
                 }
               else
-                # Line 48: Failure logging
+                # Failure logging
                 session_status = session_data.nil? ? "nil" : session_data.class.name
                 Rails.logger.warn "[SECURITY] Failed WebSocket authentication: IP=#{ip_address}, Session=#{session_status}, Time=#{timestamp}"
                 raise "Connection rejected"
@@ -370,7 +356,7 @@ RSpec.describe ApplicationCable::Connection, type: :channel, unit: true do
             def self.extract_session_id(session_data)
               case session_data
               when Hash
-                session_data["session_id"] || session_data[:session_id] || SecureRandom.hex(16)
+                session_data["session_id"] || session_data[:session_id]
               when String
                 nil
               else
@@ -414,25 +400,18 @@ RSpec.describe ApplicationCable::Connection, type: :channel, unit: true do
             expect(result[:sync_session_id]).to be_nil
           end
 
-          it "logs session ID fallback when no session_id keys exist and creates session" do
+          it "rejects connection when hash has no session_id keys" do
             session_data = { "user_id" => 123, "other_data" => "value" }
 
-            expect(Rails.logger).to receive(:info).with(
-              match(/\[SECURITY\] WebSocket authentication successful/)
-            ).ordered
-
-            expect(Rails.logger).to receive(:info) do |message|
-              expect(message).to include("[SECURITY] Session ID fallback used")
+            expect(Rails.logger).to receive(:warn) do |message|
+              expect(message).to include("[SECURITY] Failed WebSocket authentication")
               expect(message).to include("IP=10.0.0.1")
-              expect(message).to include("Generated=")
-            end.ordered
+              expect(message).to include("Session=Hash")
+            end
 
-            result = connection_helper.test_find_verified_session_logic(session_data, "10.0.0.1")
-
-            expect(result[:session_id]).to match(/\A[0-9a-f]{32}\z/)
-            expect(result[:sync_session_id]).to be_nil
-            expect(result[:ip_address]).to eq("10.0.0.1")
-            expect(result[:verified_at]).to be_within(1.second).of(Time.current)
+            expect {
+              connection_helper.test_find_verified_session_logic(session_data, "10.0.0.1")
+            }.to raise_error("Connection rejected")
           end
 
           it "uses fallback IP when remote_ip is nil" do
@@ -481,6 +460,30 @@ RSpec.describe ApplicationCable::Connection, type: :channel, unit: true do
 
             expect {
               connection_helper.test_find_verified_session_logic("invalid_string", "test.ip")
+            }.to raise_error("Connection rejected")
+          end
+
+          it "rejects connection for empty hash session data" do
+            expect(Rails.logger).to receive(:warn) do |message|
+              expect(message).to include("[SECURITY] Failed WebSocket authentication")
+              expect(message).to include("Session=Hash")
+            end
+
+            expect {
+              connection_helper.test_find_verified_session_logic({}, "192.168.0.1")
+            }.to raise_error("Connection rejected")
+          end
+
+          it "rejects connection for hash with nil session_id values" do
+            session_data = { "session_id" => nil, session_id: nil }
+
+            expect(Rails.logger).to receive(:warn) do |message|
+              expect(message).to include("[SECURITY] Failed WebSocket authentication")
+              expect(message).to include("Session=Hash")
+            end
+
+            expect {
+              connection_helper.test_find_verified_session_logic(session_data, "10.0.0.5")
             }.to raise_error("Connection rejected")
           end
         end

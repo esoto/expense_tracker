@@ -16,16 +16,15 @@ RSpec.describe Services::Categorization::PatternCache, :unit do
       cache.instance_variable_set(:@redis_available, true)
 
       expect(mock_redis).not_to receive(:flushdb)
-
-      allow(mock_redis).to receive(:scan)
+      expect(mock_redis).to receive(:scan)
         .with("0", match: "cat:*", count: 100)
         .and_return([ "0", [ "cat:pattern:1:v1", "cat:composite:2:v1" ] ])
-      allow(mock_redis).to receive(:del).with("cat:pattern:1:v1", "cat:composite:2:v1")
+      expect(mock_redis).to receive(:del).with("cat:pattern:1:v1", "cat:composite:2:v1")
 
       cache.invalidate_all
     end
 
-    it "deletes only pattern cache keys and preserves non-pattern keys" do
+    it "deletes all namespaced keys and preserves non-namespaced keys" do
       cache = described_class.new
       cache.instance_variable_set(:@redis_available, true)
 

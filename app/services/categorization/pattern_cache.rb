@@ -36,10 +36,10 @@ module Services::Categorization
 
     # Cache key namespace and prefixes
     CACHE_NAMESPACE = "cat:"
-    PATTERN_KEY_PREFIX = "cat:pattern"
-    COMPOSITE_KEY_PREFIX = "cat:composite"
-    USER_PREF_KEY_PREFIX = "cat:user_pref"
-    METRICS_KEY = "cat:metrics"
+    PATTERN_KEY_PREFIX = "#{CACHE_NAMESPACE}pattern"
+    COMPOSITE_KEY_PREFIX = "#{CACHE_NAMESPACE}composite"
+    USER_PREF_KEY_PREFIX = "#{CACHE_NAMESPACE}user_pref"
+    METRICS_KEY = "#{CACHE_NAMESPACE}metrics"
 
     class << self
       # Get or create a default instance (for services that haven't migrated to DI yet)
@@ -225,7 +225,7 @@ module Services::Categorization
       end
     end
 
-    # Clear all caches (only pattern cache keys, not the entire Redis database)
+    # Clear all caches (only PatternCache namespaced keys under cat:*, not the entire Redis database)
     def invalidate_all
       @lock.synchronize do
         @memory_cache.clear
@@ -329,7 +329,7 @@ module Services::Categorization
       end
     end
 
-    # Reset cache and metrics (only pattern cache keys, not the entire Redis database)
+    # Reset cache and metrics (only PatternCache namespaced keys under cat:*, not the entire Redis database)
     def reset!
       @lock.synchronize do
         @memory_cache.clear

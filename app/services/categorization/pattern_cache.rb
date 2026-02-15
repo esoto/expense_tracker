@@ -34,7 +34,8 @@ module Services::Categorization
                            0.01 # Sample 1% of requests for detailed metrics
     end
 
-    # Cache key prefixes
+    # Cache key namespace and prefixes
+    CACHE_NAMESPACE = "cat:"
     PATTERN_KEY_PREFIX = "cat:pattern"
     COMPOSITE_KEY_PREFIX = "cat:composite"
     USER_PREF_KEY_PREFIX = "cat:user_pref"
@@ -224,13 +225,13 @@ module Services::Categorization
       end
     end
 
-    # Clear all caches
+    # Clear all caches (only pattern cache keys, not the entire Redis database)
     def invalidate_all
       @lock.synchronize do
         @memory_cache.clear
 
         if @redis_available
-          redis_client.flushdb
+          delete_namespaced_keys
         end
 
         Rails.logger.info "[PatternCache] All caches cleared"
@@ -328,7 +329,7 @@ module Services::Categorization
       end
     end
 
-    # Reset cache and metrics
+    # Reset cache and metrics (only pattern cache keys, not the entire Redis database)
     def reset!
       @lock.synchronize do
         @memory_cache.clear
@@ -336,7 +337,7 @@ module Services::Categorization
 
         if @redis_available
           begin
-            redis_client.flushdb
+            delete_namespaced_keys
           rescue => e
             Rails.logger.error "[PatternCache] Redis reset failed: #{e.message}"
           end
@@ -577,6 +578,17 @@ module Services::Categorization
       end
     rescue => e
       Rails.logger.error "[PatternCache] Error invalidating key #{key}: #{e.message}"
+    end
+
+    # Delete only keys under the cache namespace using SCAN + DEL
+    # This avoids flushdb which would destroy all Redis data (Solid Cache, Queue, Cable, etc.)
+    def delete_namespaced_keys
+      cursor = "0"
+      loop do
+        cursor, keys = redis_client.scan(cursor, match: "#{CACHE_NAMESPACE}*", count: 100)
+        redis_client.del(*keys) if keys.any?
+        break if cursor == "0"
+      end
     end
 
     # Cache key generation methods

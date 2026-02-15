@@ -66,6 +66,30 @@ RSpec.describe Services::MetricsCalculator, type: :service, performance: true do
       end
     end
 
+    context 'median calculation' do
+      before do
+        Rails.cache.clear
+      end
+
+      it 'calculates median using SQL PERCENTILE_CONT', :unit do
+        [10, 20, 30, 40, 50].each { |amt| create(:expense, amount: amt, email_account: email_account, transaction_date: current_date) }
+        expenses = email_account.expenses.where(transaction_date: current_date.beginning_of_day..current_date.end_of_day, amount: [10, 20, 30, 40, 50])
+        result = calculator.send(:calculate_median, expenses)
+        expect(result).to eq(30.0)
+      end
+
+      it 'uses PERCENTILE_CONT in SQL query', :unit do
+        create(:expense, amount: 100, email_account: email_account, transaction_date: current_date)
+        expenses = calculator.send(:expenses_in_period)
+        queries = []
+        counter = ->(*_args, payload) { queries << payload[:sql] if payload[:sql]&.include?("PERCENTILE_CONT") }
+        ActiveSupport::Notifications.subscribed(counter, "sql.active_record") do
+          calculator.send(:calculate_median, expenses)
+        end
+        expect(queries.size).to eq(1)
+      end
+    end
+
     context 'calculate_metrics query consolidation' do
       before do
         create_list(:expense, 3, email_account: email_account, category: category1, transaction_date: current_date, merchant_name: 'TestMerchant')

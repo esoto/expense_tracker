@@ -372,15 +372,8 @@ module Services
   end
 
   def calculate_median(expenses_relation)
-    amounts = expenses_relation.pluck(:amount).map(&:to_f).sort
-    return 0.0 if amounts.empty?
-
-    mid = amounts.length / 2
-    if amounts.length.odd?
-      amounts[mid]
-    else
-      ((amounts[mid - 1] + amounts[mid]) / 2.0).round(2)
-    end
+    result = expenses_relation.pick(Arel.sql("PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY amount)"))
+    result&.to_f&.round(2) || 0.0
   end
 
   def calculate_percentage_change(current, previous)

@@ -199,19 +199,22 @@ RSpec.describe Expense, type: :model, unit: true do
       end
     end
 
-    describe "#bank_name" do
-      it "returns column value when present" do
+    describe "#ensure_bank_name callback" do
+      it "preserves column value when already present" do
+        expense.send(:ensure_bank_name)
         expect(expense.bank_name).to eq("BAC")
       end
 
-      it "falls back to email account bank name when column is blank" do
+      it "populates from email account when column is blank" do
         expense.bank_name = nil
+        expense.send(:ensure_bank_name)
         expect(expense.bank_name).to eq("BCR")
       end
 
-      it "returns 'Manual' when no email account and no column value" do
+      it "sets 'Manual' when no email account and no column value" do
         expense.bank_name = nil
         expense.email_account = nil
+        expense.send(:ensure_bank_name)
         expect(expense.bank_name).to eq("Manual")
       end
     end

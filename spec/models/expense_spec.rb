@@ -203,14 +203,19 @@ RSpec.describe Expense, type: :model, integration: true do
     end
 
     describe '#bank_name', integration: true do
-      it 'returns bank name from email account' do
+      it 'returns column value when set' do
         expense = create(:expense, email_account: email_account)
         expect(expense.bank_name).to eq('BAC')
       end
 
-      it 'returns "Manual" when email_account is nil' do
+      it 'returns "Manual" for manual entries' do
         expense = create(:expense, :manual_entry)
         expect(expense.bank_name).to eq('Manual')
+      end
+
+      it 'populates from email account on save when blank' do
+        expense = create(:expense, bank_name: nil, email_account: email_account)
+        expect(expense.reload.bank_name).to eq('BAC')
       end
     end
 

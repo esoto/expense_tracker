@@ -23,6 +23,7 @@ class Expense < ApplicationRecord
   validate :category_exists_if_provided
 
   # Callbacks
+  before_save :ensure_bank_name
   before_save :normalize_merchant_name
   after_commit :clear_dashboard_cache
   after_commit :trigger_metrics_refresh, on: [ :create, :update ]
@@ -41,13 +42,6 @@ class Expense < ApplicationRecord
   def formatted_amount
     symbol = crc? ? "₡" : (usd? ? "$" : "€")
     "#{symbol}#{amount.to_f.round(2)}"
-  end
-
-  def bank_name
-    value = self[:bank_name]
-    return value if value.present?
-
-    email_account&.bank_name || "Manual"
   end
 
   def category_name
@@ -220,6 +214,10 @@ class Expense < ApplicationRecord
     )
   rescue StandardError => e
     Rails.logger.error "Failed to trigger metrics refresh after deletion: #{e.message}"
+  end
+
+  def ensure_bank_name
+    self.bank_name = email_account&.bank_name || "Manual" if self[:bank_name].blank?
   end
 
   def normalize_merchant_name

@@ -14,6 +14,11 @@ FactoryBot.define do
     association :email_account
     category { nil }  # Don't auto-assign category by default
 
+    trait :manual_entry do
+      email_account { nil }
+      bank_name { "Manual" }
+    end
+
     trait :with_category do
       association :category, factory: :category
     end

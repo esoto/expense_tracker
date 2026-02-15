@@ -14,7 +14,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
 
     # Mock current user methods
     allow(controller).to receive(:current_user_for_bulk_operations).and_return(current_user_id)
-    allow(controller).to receive(:current_user_email_accounts).and_return([ email_account ])
+    allow(controller).to receive(:current_user_email_accounts).and_return(EmailAccount.where(id: email_account.id))
     allow(controller).to receive(:can_modify_expense?).and_return(true)
   end
 
@@ -537,7 +537,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
 
     describe "#current_user_expenses" do
       it "returns expenses scoped to user's email accounts" do
-        allow(controller).to receive(:current_user_email_accounts).and_return([ email_account ])
+        allow(controller).to receive(:current_user_email_accounts).and_return(EmailAccount.where(id: email_account.id))
 
         result = controller.send(:current_user_expenses)
 
@@ -553,7 +553,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
       end
 
       it "returns true for expenses belonging to user's accounts" do
-        allow(controller).to receive(:current_user_email_accounts).and_return([ email_account ])
+        allow(controller).to receive(:current_user_email_accounts).and_return(EmailAccount.where(id: email_account.id))
 
         result = controller.send(:can_modify_expense?, expense)
 
@@ -563,7 +563,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
       it "returns false for expenses not belonging to user's accounts" do
         other_account = create(:email_account, email: "other@example.com")
         other_expense = build(:expense, email_account: other_account)
-        allow(controller).to receive(:current_user_email_accounts).and_return([])
+        allow(controller).to receive(:current_user_email_accounts).and_return(EmailAccount.none)
 
         result = controller.send(:can_modify_expense?, other_expense)
 

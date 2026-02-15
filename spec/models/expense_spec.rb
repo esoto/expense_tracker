@@ -28,10 +28,14 @@ RSpec.describe Expense, type: :model, integration: true do
       expect(expense.errors[:transaction_date]).to include("can't be blank")
     end
 
-    it 'requires email_account' do
+    it 'allows nil email_account for manual entry' do
       expense = build(:expense, amount: 100, email_account: nil, transaction_date: Time.current)
-      expect(expense).not_to be_valid
-      expect(expense.errors[:email_account]).to include("must exist")
+      expect(expense).to be_valid
+    end
+
+    it 'is valid with a real email_account' do
+      expense = build(:expense, amount: 100, email_account: email_account, transaction_date: Time.current)
+      expect(expense).to be_valid
     end
 
     it 'validates category exists when provided' do
@@ -65,8 +69,11 @@ RSpec.describe Expense, type: :model, integration: true do
   describe 'associations', integration: true do
     let(:expense) { create(:expense, email_account: email_account, category: category) }
 
-    it 'belongs to email_account' do
+    it 'belongs to email_account optionally' do
       expect(expense.email_account).to eq(email_account)
+
+      manual_expense = create(:expense, :manual_entry)
+      expect(manual_expense.email_account).to be_nil
     end
 
     it 'belongs to category optionally' do
@@ -196,9 +203,19 @@ RSpec.describe Expense, type: :model, integration: true do
     end
 
     describe '#bank_name', integration: true do
-      it 'returns bank name from email account' do
+      it 'returns column value when set' do
         expense = create(:expense, email_account: email_account)
         expect(expense.bank_name).to eq('BAC')
+      end
+
+      it 'returns "Manual" for manual entries' do
+        expense = create(:expense, :manual_entry)
+        expect(expense.bank_name).to eq('Manual')
+      end
+
+      it 'populates from email account on save when blank' do
+        expense = create(:expense, bank_name: nil, email_account: email_account)
+        expect(expense.reload.bank_name).to eq('BAC')
       end
     end
 
@@ -260,6 +277,41 @@ RSpec.describe Expense, type: :model, integration: true do
           expect(expense_without_category.category_name).to eq('Uncategorized')
         end
       end
+    end
+  end
+
+  describe 'manual expense creation', :unit do
+    it 'creates a valid expense without email_account' do
+      expense = build(:expense, :manual_entry,
+        amount: 5000,
+        transaction_date: Date.current,
+        description: 'Manual grocery purchase',
+        currency: 'crc',
+        status: 'processed'
+      )
+      expect(expense).to be_valid
+      expect(expense.save).to be true
+      expect(expense.email_account_id).to be_nil
+    end
+
+    it 'persists and reloads correctly' do
+      expense = create(:expense, :manual_entry,
+        amount: 250.00,
+        description: 'Cash payment'
+      )
+      reloaded = Expense.find(expense.id)
+      expect(reloaded.email_account_id).to be_nil
+      expect(reloaded.bank_name).to eq('Manual')
+    end
+
+    it 'does not break formatted_amount for manual expenses' do
+      expense = build(:expense, :manual_entry, amount: 1500, currency: 'crc')
+      expect(expense.formatted_amount).to eq('₡1500.0')
+    end
+
+    it 'handles display_description for manual expenses' do
+      expense = build(:expense, :manual_entry, description: 'Manual entry test', merchant_name: nil)
+      expect(expense.display_description).to eq('Manual entry test')
     end
   end
 

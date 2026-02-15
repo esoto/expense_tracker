@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_08_30_124847) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_15_144706) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -284,7 +284,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_08_30_124847) do
     t.string "deleted_by"
     t.integer "deleted_by_id"
     t.string "description"
-    t.integer "email_account_id", null: false
+    t.integer "email_account_id"
     t.text "email_body"
     t.integer "lock_version", default: 0, null: false
     t.string "merchant_name"

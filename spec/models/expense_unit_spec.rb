@@ -55,7 +55,7 @@ RSpec.describe Expense, type: :model, unit: true do
   end
 
   describe "associations" do
-    it { should belong_to(:email_account) }
+    it { should belong_to(:email_account).optional }
     it { should belong_to(:category).optional }
     it { should belong_to(:ml_suggested_category).class_name("Category").with_foreign_key("ml_suggested_category_id").optional }
     it { should have_many(:pattern_feedbacks).dependent(:destroy) }
@@ -199,9 +199,23 @@ RSpec.describe Expense, type: :model, unit: true do
       end
     end
 
-    describe "#bank_name" do
-      it "returns email account bank name" do
+    describe "#ensure_bank_name callback" do
+      it "preserves column value when already present" do
+        expense.send(:ensure_bank_name)
+        expect(expense.bank_name).to eq("BAC")
+      end
+
+      it "populates from email account when column is blank" do
+        expense.bank_name = nil
+        expense.send(:ensure_bank_name)
         expect(expense.bank_name).to eq("BCR")
+      end
+
+      it "skips callback for manual entries (no email account)" do
+        expense.bank_name = nil
+        expense.email_account = nil
+        expense.send(:ensure_bank_name)
+        expect(expense.bank_name).to be_nil
       end
     end
 

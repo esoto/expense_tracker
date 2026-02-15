@@ -9,7 +9,7 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
   before do
     # Mock authentication and authorization
     allow(controller).to receive(:authenticate_user!)
-    allow(controller).to receive(:current_user_email_accounts).and_return([ email_account ])
+    allow(controller).to receive(:current_user_email_accounts).and_return(EmailAccount.where(id: email_account.id))
   end
 
   describe "PATCH #update_status", integration: true do

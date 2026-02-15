@@ -4,7 +4,7 @@ class Expense < ApplicationRecord
   include SoftDelete
 
   # Associations
-  belongs_to :email_account
+  belongs_to :email_account, optional: true
   belongs_to :category, optional: true
   belongs_to :ml_suggested_category, class_name: "Category", foreign_key: "ml_suggested_category_id", optional: true
   has_many :pattern_feedbacks, dependent: :destroy
@@ -23,6 +23,7 @@ class Expense < ApplicationRecord
   validate :category_exists_if_provided
 
   # Callbacks
+  before_save :ensure_bank_name
   before_save :normalize_merchant_name
   after_commit :clear_dashboard_cache
   after_commit :trigger_metrics_refresh, on: [ :create, :update ]
@@ -41,10 +42,6 @@ class Expense < ApplicationRecord
   def formatted_amount
     symbol = crc? ? "₡" : (usd? ? "$" : "€")
     "#{symbol}#{amount.to_f.round(2)}"
-  end
-
-  def bank_name
-    email_account.bank_name
   end
 
   def category_name
@@ -217,6 +214,11 @@ class Expense < ApplicationRecord
     )
   rescue StandardError => e
     Rails.logger.error "Failed to trigger metrics refresh after deletion: #{e.message}"
+  end
+
+  def ensure_bank_name
+    return if email_account_id.nil?
+    self.bank_name = email_account.bank_name if self[:bank_name].blank?
   end
 
   def normalize_merchant_name

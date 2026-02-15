@@ -211,11 +211,11 @@ RSpec.describe Expense, type: :model, unit: true do
         expect(expense.bank_name).to eq("BCR")
       end
 
-      it "sets 'Manual' when no email account and no column value" do
+      it "skips callback for manual entries (no email account)" do
         expense.bank_name = nil
         expense.email_account = nil
         expense.send(:ensure_bank_name)
-        expect(expense.bank_name).to eq("Manual")
+        expect(expense.bank_name).to be_nil
       end
     end
 

@@ -217,7 +217,8 @@ class Expense < ApplicationRecord
   end
 
   def ensure_bank_name
-    self.bank_name = email_account&.bank_name || "Manual" if self[:bank_name].blank?
+    return if email_account_id.nil?
+    self.bank_name = email_account.bank_name if self[:bank_name].blank?
   end
 
   def normalize_merchant_name

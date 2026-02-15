@@ -72,8 +72,8 @@ RSpec.describe Services::MetricsCalculator, type: :service, performance: true do
       end
 
       it 'calculates median using SQL PERCENTILE_CONT', :unit do
-        [10, 20, 30, 40, 50].each { |amt| create(:expense, amount: amt, email_account: email_account, transaction_date: current_date) }
-        expenses = email_account.expenses.where(transaction_date: current_date.beginning_of_day..current_date.end_of_day, amount: [10, 20, 30, 40, 50])
+        [ 10, 20, 30, 40, 50 ].each { |amt| create(:expense, amount: amt, email_account: email_account, transaction_date: current_date) }
+        expenses = email_account.expenses.where(transaction_date: current_date.beginning_of_day..current_date.end_of_day, amount: [ 10, 20, 30, 40, 50 ])
         result = calculator.send(:calculate_median, expenses)
         expect(result).to eq(30.0)
       end

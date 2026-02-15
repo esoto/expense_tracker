@@ -33,6 +33,38 @@ The hook runs:
 
 To bypass the hook (not recommended): `git commit --no-verify`
 
+## Git Worktrees & Test Database Isolation
+
+When multiple Claude Code sessions (or other processes) run tests concurrently against the same PostgreSQL test database, **deadlock errors** (`PG::TRDeadlockDetected`) will occur. This is caused by competing `AccessExclusiveLock` and `RowExclusiveLock` operations on shared tables.
+
+**Solution:** Use git worktrees with a separate test database per worktree.
+
+### Setup Steps
+
+1. **Create a worktree:**
+   ```bash
+   git worktree add .worktrees/<branch-name> -b <branch-name> main
+   cd .worktrees/<branch-name>
+   ```
+
+2. **Modify `config/database.yml` in the worktree** — change the test database name:
+   ```yaml
+   test:
+     <<: *default
+     database: expense_tracker_test_worktree<%= ENV['TEST_ENV_NUMBER'] %>
+   ```
+
+3. **Create and load the isolated test database:**
+   ```bash
+   bundle install
+   RAILS_ENV=test bin/rails db:create
+   RAILS_ENV=test bin/rails db:schema:load
+   ```
+
+4. **Commit and work normally** — pre-commit hooks will use the isolated database with zero deadlocks.
+
+> **Note:** The `.worktrees/` directory is already in `.gitignore`. Do NOT commit the `database.yml` change — it's local to the worktree only.
+
 ## Architecture
 
 This is a fresh Rails 8 application with the following stack:

@@ -22,11 +22,13 @@ module RedisTestConfig
 
     config.after(:suite) do
       # Clean up the shared connection when tests finish
-      if defined?(Redis) && RedisTestConfig.instance_variable_get(:@redis_connection)
+      if defined?(Redis) && RedisTestConfig.instance_variable_defined?(:@redis_connection)
         begin
           RedisTestConfig.redis_connection.close
-        rescue StandardError
-          # Ignore close errors
+        rescue StandardError => e
+          Rails.logger.debug { "[RedisTestConfig] Error closing Redis connection: #{e.message}" }
+        ensure
+          RedisTestConfig.instance_variable_set(:@redis_connection, nil)
         end
       end
     end

@@ -9,16 +9,19 @@ if ENV['TEST_ENV_NUMBER']
   # Configure database for parallel tests
   module ParallelTestsConfiguration
     def self.configure_database
-      test_number = ENV['TEST_ENV_NUMBER'].to_i
+      test_number = ENV['TEST_ENV_NUMBER']
+
+      # Skip numeric database suffix for non-numeric test env numbers (e.g., "_worktree")
+      # These use the base test database directly
+      return unless test_number.match?(/\A\d+\z/)
 
       # Each parallel process gets its own database
-      ActiveRecord::Base.configurations.configs_for(env_name: 'test').first.configuration_hash.tap do |config|
-        config[:database] = "#{config[:database]}_#{test_number}"
-      end
+      base_config = ActiveRecord::Base.configurations.configs_for(env_name: 'test').first.configuration_hash.dup
+      base_config[:database] = "#{base_config[:database]}_#{test_number.to_i}"
 
       # Establish connection with the parallel database
       ActiveRecord::Base.establish_connection(
-        ActiveRecord::Base.configurations.configs_for(env_name: 'test').first.configuration_hash.merge(
+        base_config.merge(
           pool: 5,
           checkout_timeout: 1
         )
@@ -27,11 +30,13 @@ if ENV['TEST_ENV_NUMBER']
 
     def self.configure_redis
       # Each parallel process uses a different Redis database
-      test_number = ENV['TEST_ENV_NUMBER'].to_i
-      redis_db = test_number
+      test_number = ENV['TEST_ENV_NUMBER']
+      return unless test_number.match?(/\A\d+\z/)
+
+      redis_db = test_number.to_i
 
       # Configure Redis to use different database numbers
-      if defined?(Redis)
+      if defined?(Redis) && Redis.respond_to?(:current=)
         Redis.current = Redis.new(db: redis_db)
       end
     end

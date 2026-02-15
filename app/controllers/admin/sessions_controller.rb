@@ -3,6 +3,7 @@
 module Admin
   # Controller for admin authentication (login/logout)
   class SessionsController < ApplicationController
+    skip_before_action :authenticate_user!
     skip_before_action :verify_authenticity_token, only: [ :create ]
     before_action :redirect_if_authenticated, only: [ :new, :create ]
 

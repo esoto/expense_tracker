@@ -1,4 +1,5 @@
 class UxMockupsController < ApplicationController
+  skip_before_action :authenticate_user!
   layout "mockup", except: :index
 
   def index

@@ -1,5 +1,6 @@
 module Api
   class ClientErrorsController < ApplicationController
+    skip_before_action :authenticate_user!
     skip_before_action :verify_authenticity_token
 
     # POST /api/client_errors

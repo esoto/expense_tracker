@@ -1,5 +1,6 @@
 module Api
   class SyncSessionsController < ApplicationController
+    skip_before_action :authenticate_user!
     before_action :set_sync_session, only: [ :status ]
     skip_before_action :verify_authenticity_token, if: :json_request?
 

@@ -28,7 +28,17 @@ RSpec.describe "Budgets", type: :request, integration: true do
     }
   end
 
+  let(:admin_user) do
+    AdminUser.create!(
+      name: "Budget Test Admin",
+      email: "budget-admin@test.com",
+      password: "AdminPassword123!",
+      role: "admin"
+    )
+  end
+
   before do
+    sign_in_admin(admin_user)
     # Ensure we have an active email account
     allow(EmailAccount).to receive_message_chain(:active, :first).and_return(email_account)
   end

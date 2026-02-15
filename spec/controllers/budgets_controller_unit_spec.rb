@@ -6,6 +6,7 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
   let(:category) { build_stubbed(:category) }
 
   before do
+    allow(controller).to receive(:authenticate_user!).and_return(true)
     allow(EmailAccount).to receive_message_chain(:active, :first).and_return(email_account)
   end
 

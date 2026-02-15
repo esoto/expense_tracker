@@ -3,6 +3,7 @@
 module Admin
   # Base controller for admin functionality with secure authentication
   class BaseController < ApplicationController
+    skip_before_action :authenticate_user!
     include AdminAuthentication
 
     # Rate limiting for admin actions

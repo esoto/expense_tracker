@@ -31,12 +31,13 @@ module Services
   def calculate
     Rails.cache.fetch(cache_key, expires_in: CACHE_EXPIRY) do
       benchmark_calculation do
+        metrics = calculate_metrics
         {
           period: period,
           reference_date: reference_date,
           date_range: date_range,
-          metrics: calculate_metrics,
-          trends: calculate_trends,
+          metrics: metrics,
+          trends: calculate_trends(metrics),
           category_breakdown: calculate_category_breakdown,
           daily_breakdown: calculate_daily_breakdown,
           trend_data: calculate_trend_data,
@@ -238,8 +239,8 @@ module Services
     }
   end
 
-  def calculate_trends
-    current_metrics = calculate_metrics
+  def calculate_trends(current_metrics = nil)
+    current_metrics ||= calculate_metrics
     previous_expenses = expenses_in_previous_period
 
     previous_total = previous_expenses.sum(:amount).to_f

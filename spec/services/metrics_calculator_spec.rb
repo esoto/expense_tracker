@@ -53,6 +53,19 @@ RSpec.describe Services::MetricsCalculator, type: :service, performance: true do
   end
 
   describe '#calculate', performance: true do
+    context 'efficiency' do
+      before do
+        create(:expense, email_account: email_account, amount: 100, transaction_date: current_date)
+        create(:expense, email_account: email_account, amount: 50, transaction_date: current_date - 35.days)
+        Rails.cache.clear
+      end
+
+      it 'does not call calculate_metrics more than once', :unit do
+        expect(calculator).to receive(:calculate_metrics).once.and_call_original
+        calculator.calculate
+      end
+    end
+
     before do
       # Create expenses for current month
       create(:expense,

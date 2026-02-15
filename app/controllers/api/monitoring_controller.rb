@@ -3,6 +3,7 @@
 module Api
   # API endpoint for monitoring and dashboard metrics
   class MonitoringController < ApplicationController
+    skip_before_action :authenticate_user!
     before_action :authenticate_api_request, only: [ :metrics ]
 
     # GET /api/monitoring/metrics

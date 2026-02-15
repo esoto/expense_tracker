@@ -5,9 +5,18 @@ RSpec.describe "SyncSessions", type: :request, integration: true do
   let!(:email_account1) { create(:email_account, :bac, active: true) }
   let!(:email_account2) { create(:email_account, :gmail, active: true, email: "gmail_#{SecureRandom.hex(4)}@example.com") }
   let!(:inactive_account) { create(:email_account, active: false, email: "inactive_#{SecureRandom.hex(4)}@example.com") }
+  let(:admin_user) do
+    AdminUser.create!(
+      name: "Sync Test Admin",
+      email: "sync-admin-#{SecureRandom.hex(4)}@test.com",
+      password: "AdminPassword123!",
+      role: "admin"
+    )
+  end
 
   # Clean up before and after to ensure complete test isolation
   before(:each) do
+    sign_in_admin(admin_user)
     # Clean up any existing sync sessions to ensure test isolation
     # Need to delete in proper order due to foreign key constraints
     ConflictResolution.delete_all if defined?(ConflictResolution)

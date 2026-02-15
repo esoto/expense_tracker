@@ -1,6 +1,10 @@
 require 'rails_helper'
 
 RSpec.describe SyncPerformanceController, type: :controller do
+  before do
+    allow(controller).to receive(:authenticate_user!).and_return(true)
+  end
+
   describe "GET #index" do
     let!(:sync_session) { create(:sync_session) }
     let!(:email_account) { create(:email_account) }

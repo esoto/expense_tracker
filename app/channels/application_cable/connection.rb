@@ -50,7 +50,8 @@ module ApplicationCable
       case session_data
       when Hash
         # Rails session ID is typically stored in the session itself
-        session_data["session_id"] || session_data[:session_id]
+        value = session_data["session_id"] || session_data[:session_id]
+        value.is_a?(String) && value.present? ? value : nil
       when String
         # Invalid format
         nil

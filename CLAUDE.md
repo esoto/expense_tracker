@@ -61,7 +61,7 @@ When multiple Claude Code sessions (or other processes) run tests concurrently a
    RAILS_ENV=test bin/rails db:schema:load
    ```
 
-4. **Commit and work normally** — pre-commit hooks will use the isolated database with zero deadlocks.
+4. **Work normally in this worktree** — pre-commit hooks will use the isolated database with zero deadlocks.
 
 > **Note:** The `.worktrees/` directory is already in `.gitignore`. Do NOT commit the `database.yml` change — it's local to the worktree only.
 

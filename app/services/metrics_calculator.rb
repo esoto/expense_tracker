@@ -281,7 +281,7 @@ module Services
         Arel.sql("MAX(expenses.amount)")
       )
 
-    grand_total = rows.sum { |_, amount, *| amount.to_f }
+    grand_total = rows.sum { |_, total, *| total.to_f }
 
     rows.map do |name, total, count, avg, min, max|
         {
@@ -380,13 +380,6 @@ module Services
     return 0.0 if previous.zero?
 
     (((current - previous) / previous) * 100).round(2)
-  end
-
-  def calculate_percentage_of_total(amount)
-    total = expenses_in_period.sum(:amount).to_f
-    return 0.0 if total.zero?
-
-    ((amount / total) * 100).round(2)
   end
 
   def expenses_in_period

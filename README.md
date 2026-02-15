@@ -299,8 +299,8 @@ When running multiple development sessions concurrently (e.g., multiple Claude C
 git worktree add .worktrees/my-feature -b my-feature main
 cd .worktrees/my-feature
 
-# 2. Edit config/database.yml — change test database name
-# database: expense_tracker_test_worktree
+# 2. Edit config/database.yml — change test database name (use unique name per worktree)
+# database: expense_tracker_test_<worktree-name><%= ENV['TEST_ENV_NUMBER'] %>
 
 # 3. Set up the isolated test database
 bundle install

@@ -290,6 +290,28 @@ Follow the established patterns documented in `rules/`:
 - Follow conventional commit messages
 - Use pre-commit hooks for quality checks
 
+### Git Worktrees & Parallel Development
+
+When running multiple development sessions concurrently (e.g., multiple Claude Code instances), use **git worktrees with isolated test databases** to avoid PostgreSQL deadlocks:
+
+```bash
+# 1. Create a worktree
+git worktree add .worktrees/my-feature -b my-feature main
+cd .worktrees/my-feature
+
+# 2. Edit config/database.yml — change test database name
+# database: expense_tracker_test_worktree
+
+# 3. Set up the isolated test database
+bundle install
+RAILS_ENV=test bin/rails db:create
+RAILS_ENV=test bin/rails db:schema:load
+
+# 4. Work normally — no deadlocks with other sessions
+```
+
+> The `.worktrees/` directory is already gitignored. Don't commit the `database.yml` change.
+
 ### Branch Strategy
 - Feature branches: `epic-N-feature-description`
 - Comprehensive testing before PR

@@ -9,8 +9,10 @@ RSpec.describe Api::V1::CategoriesController, type: :controller, unit: true do
   # The around(:each) block with ActiveRecord::Rollback is removed
 
   before do
-    # Skip CSRF token verification for API tests
-    controller.class.skip_before_action :verify_authenticity_token, raise: false
+    # Mock API authentication for controller tests
+    allow(controller).to receive(:authenticate_api_token).and_return(true)
+    allow(controller).to receive(:set_default_headers).and_return(true)
+    allow(controller).to receive(:log_request).and_return(true)
   end
 
   describe "GET #index", unit: true do
@@ -109,7 +111,7 @@ RSpec.describe Api::V1::CategoriesController, type: :controller, unit: true do
 
   describe "controller inheritance and configuration", unit: true do
     it "verifies controller setup" do
-      expect(described_class.superclass).to eq(ApplicationController)
+      expect(described_class.superclass).to eq(Api::V1::BaseController)
       expect(described_class.name).to eq("Api::V1::CategoriesController")
     end
   end
@@ -120,10 +122,13 @@ RSpec.describe Api::V1::CategoriesController, type: :controller, unit: true do
         allow(Category).to receive(:all).and_raise(StandardError, "Database error")
       end
 
-      it "does not rescue the error" do
-        expect {
-          get :index, format: :json
-        }.to raise_error(StandardError, "Database error")
+      it "returns internal server error via BaseController rescue" do
+        get :index, format: :json
+
+        expect(response).to have_http_status(:internal_server_error)
+        json = JSON.parse(response.body)
+        expect(json["error"]).to eq("Internal server error")
+        expect(json["status"]).to eq(500)
       end
     end
 
@@ -132,10 +137,12 @@ RSpec.describe Api::V1::CategoriesController, type: :controller, unit: true do
         allow(Category).to receive(:all).and_return(nil)
       end
 
-      it "raises NoMethodError" do
-        expect {
-          get :index, format: :json
-        }.to raise_error(NoMethodError)
+      it "returns internal server error via BaseController rescue" do
+        get :index, format: :json
+
+        expect(response).to have_http_status(:internal_server_error)
+        json = JSON.parse(response.body)
+        expect(json["error"]).to eq("Internal server error")
       end
     end
   end

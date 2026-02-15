@@ -6,8 +6,10 @@ RSpec.describe Api::V1::CategoriesController, type: :controller, unit: true do
   let(:category2) { build_stubbed(:category, id: 2, name: "Transport", color: "#33C4FF", description: "Transportation costs") }
 
   before do
-    # Skip CSRF token verification for API tests
-    controller.class.skip_before_action :verify_authenticity_token, raise: false
+    # Mock API authentication for controller tests
+    allow(controller).to receive(:authenticate_api_token).and_return(true)
+    allow(controller).to receive(:set_default_headers).and_return(true)
+    allow(controller).to receive(:log_request).and_return(true)
   end
 
   describe "GET #index", unit: true do
@@ -128,19 +130,17 @@ RSpec.describe Api::V1::CategoriesController, type: :controller, unit: true do
   end
 
   describe "controller inheritance and configuration", unit: true do
-    it "inherits from ApplicationController" do
-      expect(described_class.superclass).to eq(ApplicationController)
+    it "inherits from Api::V1::BaseController" do
+      expect(described_class.superclass).to eq(Api::V1::BaseController)
     end
 
     it "is in the correct module namespace" do
       expect(described_class.name).to eq("Api::V1::CategoriesController")
     end
 
-    it "skips authenticity token verification" do
-      # This is configured in the controller with skip_before_action
-      expect(controller.class._process_action_callbacks.any? { |cb|
-        cb.filter == :verify_authenticity_token && cb.options[:if] == false
-      }).to be_falsy
+    it "has API token authentication in callback chain" do
+      callbacks = described_class._process_action_callbacks.map(&:filter)
+      expect(callbacks).to include(:authenticate_api_token)
     end
   end
 
@@ -150,10 +150,13 @@ RSpec.describe Api::V1::CategoriesController, type: :controller, unit: true do
         allow(Category).to receive(:all).and_raise(StandardError, "Database error")
       end
 
-      it "does not rescue the error (lets Rails handle it)" do
-        expect {
-          get :index, format: :json
-        }.to raise_error(StandardError, "Database error")
+      it "returns internal server error via BaseController rescue" do
+        get :index, format: :json
+
+        expect(response).to have_http_status(:internal_server_error)
+        json = JSON.parse(response.body)
+        expect(json["error"]).to eq("Internal server error")
+        expect(json["status"]).to eq(500)
       end
     end
 
@@ -162,10 +165,12 @@ RSpec.describe Api::V1::CategoriesController, type: :controller, unit: true do
         allow(Category).to receive(:all).and_return(nil)
       end
 
-      it "handles nil result gracefully" do
-        expect {
-          get :index, format: :json
-        }.to raise_error(NoMethodError) # Will fail when trying to call .order on nil
+      it "returns internal server error via BaseController rescue" do
+        get :index, format: :json
+
+        expect(response).to have_http_status(:internal_server_error)
+        json = JSON.parse(response.body)
+        expect(json["error"]).to eq("Internal server error")
       end
     end
   end

@@ -5,7 +5,16 @@ module RedisTestConfig
   # Reuse a single Redis connection to avoid leaking connections
   # (Redis.new per test would exhaust max clients over large suites)
   def self.redis_connection
-    @redis_connection ||= Redis.new
+    @redis_connection ||= begin
+      # Respect parallel test configuration: use the same DB as configured
+      # in parallel_tests.rb to avoid cross-process interference
+      db = if ENV["TEST_ENV_NUMBER"]&.match?(/\A\d+\z/)
+        ENV["TEST_ENV_NUMBER"].to_i
+      else
+        0
+      end
+      Redis.new(db: db)
+    end
   end
 
   def self.configure(config)

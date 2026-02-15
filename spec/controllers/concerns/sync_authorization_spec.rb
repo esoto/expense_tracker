@@ -74,13 +74,33 @@ RSpec.describe SyncAuthorization, type: :controller, unit: true do
     end
   end
 
-  describe "sync access check", unit: true do
-    it "returns true by default (placeholder implementation)" do
-      expect(controller.send(:sync_access_allowed?)).to be true
+  describe "#sync_access_allowed?", unit: true do
+    let(:admin_user) { create(:admin_user) }
+
+    context "when user is authenticated" do
+      before { allow(controller).to receive(:current_user).and_return(admin_user) }
+
+      it "returns true" do
+        expect(controller.send(:sync_access_allowed?)).to be true
+      end
+    end
+
+    context "when user is not authenticated" do
+      before { allow(controller).to receive(:current_user).and_return(nil) }
+
+      it "returns false" do
+        expect(controller.send(:sync_access_allowed?)).to be false
+      end
     end
   end
 
   describe "session owner authorization", unit: true do
+    let(:admin_user) { create(:admin_user) }
+
+    before do
+      allow(controller).to receive(:current_user).and_return(admin_user)
+    end
+
     context "when user owns the sync session" do
       before do
         allow(controller).to receive(:sync_session_owner?).and_return(true)
@@ -116,9 +136,23 @@ RSpec.describe SyncAuthorization, type: :controller, unit: true do
     end
   end
 
-  describe "session ownership check", unit: true do
-    it "returns true by default (placeholder implementation)" do
-      expect(controller.send(:sync_session_owner?)).to be true
+  describe "#sync_session_owner?", unit: true do
+    let(:admin_user) { create(:admin_user) }
+
+    context "when user is authenticated" do
+      before { allow(controller).to receive(:current_user).and_return(admin_user) }
+
+      it "returns true" do
+        expect(controller.send(:sync_session_owner?)).to be true
+      end
+    end
+
+    context "when user is not authenticated" do
+      before { allow(controller).to receive(:current_user).and_return(nil) }
+
+      it "returns false" do
+        expect(controller.send(:sync_session_owner?)).to be false
+      end
     end
   end
 end

@@ -50,6 +50,17 @@ module RedisTestConfig
         end
       end
     end
+
+    config.after(:suite) do
+      # Clean up the shared connection when tests finish
+      if defined?(Redis) && RedisTestConfig.instance_variable_get(:@redis_connection)
+        begin
+          RedisTestConfig.redis_connection.close
+        rescue StandardError
+          # Ignore close errors
+        end
+      end
+    end
   end
 end
 

@@ -53,6 +53,77 @@ RSpec.describe Services::MetricsCalculator, type: :service, performance: true do
   end
 
   describe '#calculate', performance: true do
+    context 'efficiency' do
+      before do
+        create(:expense, email_account: email_account, amount: 100, transaction_date: current_date)
+        create(:expense, email_account: email_account, amount: 50, transaction_date: current_date - 35.days)
+        Rails.cache.clear
+      end
+
+      it 'does not call calculate_metrics more than once', :unit do
+        expect(calculator).to receive(:calculate_metrics).once.and_call_original
+        calculator.calculate
+      end
+    end
+
+    context 'median calculation' do
+      before do
+        Rails.cache.clear
+      end
+
+      it 'calculates median using SQL PERCENTILE_CONT', :unit do
+        [ 10, 20, 30, 40, 50 ].each { |amt| create(:expense, amount: amt, email_account: email_account, transaction_date: current_date) }
+        expenses = email_account.expenses.where(transaction_date: current_date.beginning_of_day..current_date.end_of_day, amount: [ 10, 20, 30, 40, 50 ])
+        result = calculator.send(:calculate_median, expenses)
+        expect(result).to eq(30.0)
+      end
+
+      it 'uses PERCENTILE_CONT in SQL query', :unit do
+        create(:expense, amount: 100, email_account: email_account, transaction_date: current_date)
+        expenses = calculator.send(:expenses_in_period)
+        queries = []
+        counter = ->(*_args, payload) { queries << payload[:sql] if payload[:sql]&.include?("PERCENTILE_CONT") }
+        ActiveSupport::Notifications.subscribed(counter, "sql.active_record") do
+          calculator.send(:calculate_median, expenses)
+        end
+        expect(queries.size).to eq(1)
+      end
+    end
+
+    context 'calculate_metrics query consolidation' do
+      before do
+        create_list(:expense, 3, email_account: email_account, category: category1, transaction_date: current_date, merchant_name: 'TestMerchant')
+        Rails.cache.clear
+      end
+
+      it 'uses consolidated queries for aggregate calculations', :unit do
+        # Warm up AR caches
+        calculator.send(:expenses_in_period)
+
+        query_count = count_queries { calculator.send(:calculate_metrics) }
+        # Consolidated should need at most 7 queries (main agg + distinct merchants + distinct categories + uncategorized + status + currency + median)
+        expect(query_count).to be <= 7
+      end
+    end
+
+    context 'category breakdown query efficiency' do
+      before do
+        create(:expense, email_account: email_account, category: category1, amount: 100, transaction_date: current_date)
+        create(:expense, email_account: email_account, category: category2, amount: 50, transaction_date: current_date)
+        create(:expense, email_account: email_account, category: nil, amount: 25, transaction_date: current_date)
+        Rails.cache.clear
+      end
+
+      it 'does not fire N+1 queries for percentage calculation', :unit do
+        # Warm up AR caches
+        calculator.send(:expenses_in_period)
+
+        query_count = count_queries { calculator.send(:calculate_category_breakdown) }
+        # Should be constant (1-3 queries), not proportional to category count
+        expect(query_count).to be <= 3
+      end
+    end
+
     before do
       # Create expenses for current month
       create(:expense,

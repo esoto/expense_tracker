@@ -31,12 +31,13 @@ module Services
   def calculate
     Rails.cache.fetch(cache_key, expires_in: CACHE_EXPIRY) do
       benchmark_calculation do
+        metrics = calculate_metrics
         {
           period: period,
           reference_date: reference_date,
           date_range: date_range,
-          metrics: calculate_metrics,
-          trends: calculate_trends,
+          metrics: metrics,
+          trends: calculate_trends(metrics),
           category_breakdown: calculate_category_breakdown,
           daily_breakdown: calculate_daily_breakdown,
           trend_data: calculate_trend_data,
@@ -223,13 +224,22 @@ module Services
   def calculate_metrics
     expenses = expenses_in_period
 
+    # Single query for main aggregates
+    count, total, average, min_val, max_val = expenses.pick(
+      Arel.sql("COUNT(*)"),
+      Arel.sql("COALESCE(SUM(amount), 0)"),
+      Arel.sql("COALESCE(AVG(amount), 0)"),
+      Arel.sql("MIN(amount)"),
+      Arel.sql("MAX(amount)")
+    )
+
     {
-      total_amount: expenses.sum(:amount).to_f,
-      transaction_count: expenses.count,
-      average_amount: calculate_average(expenses),
+      total_amount: total.to_f,
+      transaction_count: count.to_i,
+      average_amount: average.to_f.round(2),
       median_amount: calculate_median(expenses),
-      min_amount: expenses.minimum(:amount)&.to_f || 0.0,
-      max_amount: expenses.maximum(:amount)&.to_f || 0.0,
+      min_amount: min_val&.to_f || 0.0,
+      max_amount: max_val&.to_f || 0.0,
       unique_merchants: expenses.distinct.count(:merchant_name),
       unique_categories: expenses.joins(:category).distinct.count("categories.id"),
       uncategorized_count: expenses.uncategorized.count,
@@ -238,8 +248,8 @@ module Services
     }
   end
 
-  def calculate_trends
-    current_metrics = calculate_metrics
+  def calculate_trends(current_metrics = nil)
+    current_metrics ||= calculate_metrics
     previous_expenses = expenses_in_previous_period
 
     previous_total = previous_expenses.sum(:amount).to_f
@@ -259,7 +269,7 @@ module Services
   end
 
   def calculate_category_breakdown
-    expenses_in_period
+    rows = expenses_in_period
       .left_joins(:category)
       .group(Arel.sql("COALESCE(categories.name, 'Uncategorized')"))
       .pluck(
@@ -270,7 +280,10 @@ module Services
         Arel.sql("MIN(expenses.amount)"),
         Arel.sql("MAX(expenses.amount)")
       )
-      .map do |name, total, count, avg, min, max|
+
+    grand_total = rows.sum { |_, total, *| total.to_f }
+
+    rows.map do |name, total, count, avg, min, max|
         {
           category: name,
           total_amount: total.to_f,
@@ -278,7 +291,7 @@ module Services
           average_amount: avg.to_f.round(2),
           min_amount: min.to_f,
           max_amount: max.to_f,
-          percentage_of_total: calculate_percentage_of_total(total.to_f)
+          percentage_of_total: grand_total.zero? ? 0.0 : ((total.to_f / grand_total) * 100).round(2)
         }
       end
       .sort_by { |item| -item[:total_amount] }
@@ -359,28 +372,14 @@ module Services
   end
 
   def calculate_median(expenses_relation)
-    amounts = expenses_relation.pluck(:amount).map(&:to_f).sort
-    return 0.0 if amounts.empty?
-
-    mid = amounts.length / 2
-    if amounts.length.odd?
-      amounts[mid]
-    else
-      ((amounts[mid - 1] + amounts[mid]) / 2.0).round(2)
-    end
+    result = expenses_relation.pick(Arel.sql("PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY amount)"))
+    result&.to_f&.round(2) || 0.0
   end
 
   def calculate_percentage_change(current, previous)
     return 0.0 if previous.zero?
 
     (((current - previous) / previous) * 100).round(2)
-  end
-
-  def calculate_percentage_of_total(amount)
-    total = expenses_in_period.sum(:amount).to_f
-    return 0.0 if total.zero?
-
-    ((amount / total) * 100).round(2)
   end
 
   def expenses_in_period

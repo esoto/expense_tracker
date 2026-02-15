@@ -366,23 +366,54 @@ RSpec.describe Admin::SessionsController, type: :controller, unit: true do
     end
   end
 
-  describe "controller configuration", unit: true do
-    it "has CSRF skip configuration" do
-      # The controller uses skip_before_action :verify_authenticity_token, only: [:create]
-      # Detailed callback testing requires integration tests
-      expect(controller.class.name).to eq("Admin::SessionsController")
+  describe "CSRF protection", unit: true do
+    it "does not skip verify_authenticity_token" do
+      # Verify the controller source does not contain skip_before_action for CSRF
+      source_file = Rails.root.join("app/controllers/admin/sessions_controller.rb")
+      source_code = File.read(source_file)
+
+      expect(source_code).not_to include("skip_before_action :verify_authenticity_token"),
+        "Expected admin sessions controller to NOT skip CSRF protection, but it does"
     end
 
+    it "enforces CSRF token verification on login" do
+      # Verify verify_authenticity_token is in the callback chain for :create
+      callbacks = described_class._process_action_callbacks.select do |cb|
+        cb.filter == :verify_authenticity_token
+      end
+
+      # Should have the callback and it should NOT be skipped for :create
+      expect(callbacks).not_to be_empty, "Expected verify_authenticity_token in callback chain"
+
+      skipped_actions = described_class._process_action_callbacks.select do |cb|
+        cb.filter == :verify_authenticity_token && cb.kind == :before && cb.instance_variable_get(:@if)&.any?
+      end
+
+      # None of the CSRF callbacks should exclude :create
+      skipped_actions.each do |cb|
+        conditions = cb.instance_variable_get(:@unless) || []
+        conditions.each do |condition|
+          expect(condition.to_s).not_to include("create"),
+            "Expected CSRF protection to NOT be skipped for :create action"
+        end
+      end
+    end
+
+    it "inherits CSRF protection from ApplicationController" do
+      # ApplicationController inherits from ActionController::Base which includes
+      # protect_from_forgery by default. Confirm the chain is intact.
+      expect(described_class.superclass).to eq(ApplicationController)
+      expect(ApplicationController.superclass).to eq(ActionController::Base)
+    end
+  end
+
+  describe "controller configuration", unit: true do
     it "has authentication and rate limiting callbacks" do
-      # The controller uses before_action for redirect_if_authenticated and check_login_rate_limit
-      # Detailed callback testing requires integration tests
       expect(controller.respond_to?(:redirect_if_authenticated, true)).to be true
       expect(controller.respond_to?(:check_login_rate_limit, true)).to be true
     end
 
     it "has layout configuration" do
-      # The controller uses layout "admin_login"
-      # Detailed layout testing requires integration tests
       expect(controller.class.name).to eq("Admin::SessionsController")
     end
 

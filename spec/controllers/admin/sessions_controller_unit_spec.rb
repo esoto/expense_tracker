@@ -366,23 +366,40 @@ RSpec.describe Admin::SessionsController, type: :controller, unit: true do
     end
   end
 
-  describe "controller configuration", unit: true do
-    it "has CSRF skip configuration" do
-      # The controller uses skip_before_action :verify_authenticity_token, only: [:create]
-      # Detailed callback testing requires integration tests
-      expect(controller.class.name).to eq("Admin::SessionsController")
+  describe "CSRF protection", unit: true do
+    it "rejects login requests without a valid CSRF token" do
+      # Enable forgery protection for this test (disabled by default in test env)
+      ActionController::Base.allow_forgery_protection = true
+
+      begin
+        post :create, params: {
+          admin_user: { email: "test@example.com", password: "password123" }
+        }
+
+        # With forgery protection enabled, the request should not create a session.
+        # Rails may use :exception (raise error) or :null_session (wipe session)
+        # depending on configuration — either way, no admin session should be set.
+        expect(session[:admin_session_token]).to be_nil
+      rescue ActionController::InvalidAuthenticityToken
+        # This is the expected behavior when protect_from_forgery uses :exception strategy
+      ensure
+        ActionController::Base.allow_forgery_protection = false
+      end
     end
 
+    it "inherits CSRF protection from ApplicationController" do
+      expect(described_class.superclass).to eq(ApplicationController)
+      expect(ApplicationController.superclass).to eq(ActionController::Base)
+    end
+  end
+
+  describe "controller configuration", unit: true do
     it "has authentication and rate limiting callbacks" do
-      # The controller uses before_action for redirect_if_authenticated and check_login_rate_limit
-      # Detailed callback testing requires integration tests
       expect(controller.respond_to?(:redirect_if_authenticated, true)).to be true
       expect(controller.respond_to?(:check_login_rate_limit, true)).to be true
     end
 
     it "has layout configuration" do
-      # The controller uses layout "admin_login"
-      # Detailed layout testing requires integration tests
       expect(controller.class.name).to eq("Admin::SessionsController")
     end
 

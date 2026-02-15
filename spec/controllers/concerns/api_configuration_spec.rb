@@ -18,6 +18,8 @@ RSpec.describe ApiConfiguration, type: :controller, unit: true do
   end
 
   before do
+    allow(controller).to receive(:authenticate_user!).and_return(true)
+
     routes.draw do
       get 'index' => 'anonymous#index'
       get 'paginated_list' => 'anonymous#paginated_list'

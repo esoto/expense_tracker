@@ -1,6 +1,10 @@
 require 'rails_helper'
 
 RSpec.describe EmailAccountsController, type: :controller, unit: true do
+  before do
+    allow(controller).to receive(:authenticate_user!).and_return(true)
+  end
+
   let(:email_account) { create(:email_account) }
   let(:valid_attributes) {
     {

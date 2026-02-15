@@ -491,6 +491,47 @@ RSpec.describe Services::Categorization::BulkCategorizationService, type: :servi
     end
   end
 
+  describe "#store_bulk_operation", :unit do
+    let(:email_account) { create(:email_account) }
+    let(:category) { create(:category, name: "Test Category") }
+    let(:expenses) { create_list(:expense, 5, email_account: email_account, category: nil) }
+    let(:service) { described_class.new(expenses: expenses, category_id: category.id) }
+
+    it "does not fire N+1 queries for amount calculation" do
+      results = expenses.map { |e| { success: true, expense_id: e.id, previous_category_id: nil } }
+
+      # Track Expense SELECT queries to detect N+1 in amount calculation
+      expense_find_queries = []
+      expense_sum_queries = []
+      counter = lambda do |_name, _start, _finish, _id, payload|
+        sql = payload[:sql].to_s
+        next unless sql.match?(/SELECT.*FROM\s+"expenses"/i)
+
+        if sql.match?(/SUM/i)
+          expense_sum_queries << sql
+        elsif sql.match?(/WHERE.*"expenses"\."id"\s*=\s*\$1.*LIMIT/i)
+          expense_find_queries << sql
+        end
+      end
+
+      ActiveSupport::Notifications.subscribed(counter, "sql.active_record") do
+        service.send(:store_bulk_operation, results)
+      end
+
+      # With the fix: 1 SUM query replaces N individual Expense.find queries
+      # The remaining individual finds are from BulkOperationItem creation (expected)
+      expect(expense_sum_queries.size).to eq(1),
+        "Expected exactly 1 SUM query for amount calculation, " \
+        "but got #{expense_sum_queries.size}"
+
+      # Should NOT have more individual finds than expenses
+      # (BulkOperationItem creation loads each expense once, which is expected)
+      expect(expense_find_queries.size).to be <= expenses.size,
+        "Expected at most #{expenses.size} individual Expense.find queries " \
+        "(from BulkOperationItem creation), but got #{expense_find_queries.size}"
+    end
+  end
+
   # Private method tests (testing via public interface)
   describe "private methods via public interface" do
     describe "#filter_changeable_expenses" do

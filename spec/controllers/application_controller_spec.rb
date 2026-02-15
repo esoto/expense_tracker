@@ -7,6 +7,10 @@ RSpec.describe ApplicationController, type: :controller, unit: true do
     end
   end
 
+  before do
+    allow(controller).to receive(:authenticate_user!).and_return(true)
+  end
+
   describe "browser version requirements", unit: true do
     it "allows modern browsers" do
       # Set a modern user agent that supports required features

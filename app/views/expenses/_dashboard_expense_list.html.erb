@@ -2,7 +2,7 @@
 <% if recent_expenses.any? %>
 <tbody class="bg-white divide-y divide-slate-100" data-dashboard-expenses-target="tableBody">
   <% recent_expenses.each do |expense| %>
-    <%= render "expenses/expense_row", expense: expense, context: 'dashboard' %>
+    <%= render "expenses/expense_row", expense: expense, context: 'dashboard', categories: (local_assigns[:categories] || @categories) %>
   <% end %>
 </tbody>
 <% else %>

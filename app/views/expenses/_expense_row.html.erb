@@ -93,7 +93,7 @@
           <div class="category-dropdown-menu w-48 bg-white rounded-lg shadow-lg border border-slate-200 hidden overflow-hidden"
                data-<%= controller_name %>-target="categoryDropdown">
             <div class="py-1 max-h-64 overflow-y-auto">
-              <% Category.all.order(:name).each do |category| %>
+              <% (local_assigns[:categories] || Category.all.order(:name)).each do |category| %>
               <button type="button"
                       class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2"
                       data-action="click-><%= controller_name %>#selectCategory"

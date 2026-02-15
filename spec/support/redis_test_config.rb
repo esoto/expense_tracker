@@ -13,7 +13,7 @@ module RedisTestConfig
       else
         0
       end
-      @redis_connection ||= Redis.new(db: db)
+      Redis.new(db: db)
     end
   end
 
@@ -23,21 +23,10 @@ module RedisTestConfig
       if defined?(Redis)
         begin
           RedisTestConfig.redis_connection.flushdb
-        rescue Redis::CannotConnectError, Redis::CommandError
+        rescue Redis::CannotConnectError
           # Skip Redis cleanup if Redis is not available in test environment
         rescue Redis::CommandError => e
           Rails.logger.debug { "[RedisTestConfig] Unexpected Redis error during flushdb: #{e.message}" }
-        end
-      end
-    end
-
-    config.after(:suite) do
-      # Clean up the shared connection when tests finish
-      if defined?(Redis) && RedisTestConfig.instance_variable_get(:@redis_connection)
-        begin
-          RedisTestConfig.redis_connection.close
-        rescue StandardError => e
-          Rails.logger.debug { "[RedisTestConfig] Error closing Redis connection: #{e.message}" }
         end
       end
     end

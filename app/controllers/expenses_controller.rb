@@ -403,11 +403,12 @@ class ExpensesController < ApplicationController
     duplicated_expense.ml_last_corrected_at = nil
 
     if duplicated_expense.save
+      @categories = Category.all.order(:name)
       respond_to do |format|
         format.html { redirect_to duplicated_expense, notice: "Gasto duplicado exitosamente" }
         format.turbo_stream do
           render turbo_stream: [
-            turbo_stream.prepend("expenses_table_body", partial: "expenses/expense_row", locals: { expense: duplicated_expense, categories: Category.all.order(:name) }),
+            turbo_stream.prepend("expenses_table_body", partial: "expenses/expense_row", locals: { expense: duplicated_expense, categories: @categories }),
             turbo_stream.update("flash_messages", partial: "shared/flash", locals: { notice: "Gasto duplicado exitosamente" })
           ]
         end

@@ -21,6 +21,16 @@ RSpec.describe "Dashboard Filter Chips AJAX", type: :request do
            currency: "crc")
   end
 
+  # Use a date within the current week but not today to avoid flakiness.
+  # When today is Monday (beginning_of_week), 1.day.ago falls in the
+  # previous week. Instead, use end_of_week to guarantee it's always
+  # in the same week. We also ensure it's different from today for the
+  # "today" filter test.
+  let(:this_week_date) do
+    eow = Date.current.end_of_week
+    eow == Date.current ? Date.current.beginning_of_week : eow
+  end
+
   let!(:transport_expense) do
     create(:expense,
            email_account: email_account,
@@ -28,7 +38,7 @@ RSpec.describe "Dashboard Filter Chips AJAX", type: :request do
            merchant_name: "Gas Station XYZ",
            amount: 30000,
            status: "processed",
-           transaction_date: 1.day.ago,
+           transaction_date: this_week_date,
            currency: "crc")
   end
 

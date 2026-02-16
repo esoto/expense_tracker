@@ -57,7 +57,7 @@ export default class extends Controller {
         labels: labels,
         datasets: [
           {
-            label: 'Accuracy %',
+            label: 'Precisión %',
             data: data.map(d => d.accuracy),
             borderColor: '#0F766E',
             backgroundColor: 'rgba(15, 118, 110, 0.1)',
@@ -65,7 +65,7 @@ export default class extends Controller {
             yAxisID: 'y'
           },
           {
-            label: 'Total Usage',
+            label: 'Uso Total',
             data: data.map(d => d.total),
             borderColor: '#D97706',
             backgroundColor: 'rgba(217, 119, 6, 0.1)',
@@ -110,7 +110,7 @@ export default class extends Controller {
             position: 'left',
             title: {
               display: true,
-              text: 'Accuracy %'
+              text: 'Precisión %'
             },
             min: 0,
             max: 100
@@ -121,7 +121,7 @@ export default class extends Controller {
             position: 'right',
             title: {
               display: true,
-              text: 'Total Usage'
+              text: 'Uso Total'
             },
             grid: {
               drawOnChartArea: false

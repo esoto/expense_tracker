@@ -193,7 +193,7 @@ export default class extends Controller {
   buildDatasets(chartData) {
     return [
       {
-        label: 'Accuracy %',
+        label: 'Precisión %',
         data: chartData.accuracy,
         borderColor: '#0F766E',
         backgroundColor: 'rgba(15, 118, 110, 0.1)',
@@ -207,7 +207,7 @@ export default class extends Controller {
         pointBorderWidth: 2
       },
       {
-        label: 'Correct Matches',
+        label: 'Coincidencias Correctas',
         data: chartData.correct,
         borderColor: '#10B981',
         backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -219,7 +219,7 @@ export default class extends Controller {
         hidden: false // Can be toggled by user
       },
       {
-        label: 'Incorrect Matches',
+        label: 'Coincidencias Incorrectas',
         data: chartData.incorrect,
         borderColor: '#F87171',
         backgroundColor: 'rgba(248, 113, 113, 0.1)',
@@ -295,7 +295,7 @@ export default class extends Controller {
         position: 'left',
         title: {
           display: true,
-          text: 'Accuracy %',
+          text: 'Precisión %',
           font: {
             size: 12
           }
@@ -314,7 +314,7 @@ export default class extends Controller {
         position: 'right',
         title: {
           display: true,
-          text: 'Match Count',
+          text: 'Cantidad de Coincidencias',
           font: {
             size: 12
           }
@@ -384,9 +384,9 @@ export default class extends Controller {
     
     // Show relative dates for recent data
     if (date.toDateString() === today.toDateString()) {
-      return 'Today'
+      return 'Hoy'
     } else if (date.toDateString() === yesterday.toDateString()) {
-      return 'Yesterday'
+      return 'Ayer'
     } else {
       return date.toLocaleDateString('en-US', { 
         month: 'short', 
@@ -464,7 +464,7 @@ export default class extends Controller {
   }
   
   // Show error state
-  showError(message = 'Unable to load chart data') {
+  showError(message = 'No se pudo cargar los datos del gráfico') {
     if (this.hasErrorTarget) {
       this.errorTarget.classList.remove('hidden')
       const errorMessage = this.errorTarget.querySelector('[data-error-message]')
@@ -481,9 +481,9 @@ export default class extends Controller {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <p class="text-slate-500">${message}</p>
-            <button class="mt-3 text-teal-600 hover:text-teal-700 text-sm font-medium" 
+            <button class="mt-3 text-teal-600 hover:text-teal-700 text-sm font-medium"
                     data-action="click->pattern-chart#loadChart">
-              Try Again
+              Intentar de nuevo
             </button>
           </div>
         </div>

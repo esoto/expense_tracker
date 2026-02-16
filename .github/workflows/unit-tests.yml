@@ -1,0 +1,88 @@
+name: Unit Tests
+
+on:
+  pull_request:
+  push:
+    branches: [ main, develop ]
+
+env:
+  RAILS_ENV: test
+  CI: true
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_USER: postgres
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  POSTGRES_DB: expense_tracker_integration_test
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.1'
+          bundler-cache: true
+
+      - name: Setup Database
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:migrate
+
+      - name: Run Unit Tests
+        run: bin/test-unit
+
+      - name: Upload Unit Coverage
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: unit-coverage
+          path: coverage/unit/
+          include-hidden-files: true
+
+  unit-coverage-validation:
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    if: always()
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.1'
+          bundler-cache: true
+
+      - name: Download Unit Coverage
+        uses: actions/download-artifact@v7
+        with:
+          name: unit-coverage
+          path: coverage/unit/
+        continue-on-error: true
+
+      - name: Validate Unit Test Coverage
+        run: bin/coverage-validate --tier unit --ci

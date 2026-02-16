@@ -27,7 +27,7 @@ export default class extends Controller {
         }
       })
       
-      if (!response.ok) throw new Error('Failed to load heatmap data')
+      if (!response.ok) throw new Error('No se pudo cargar datos del mapa de calor')
       
       const data = await response.json()
       this.renderHeatmap(data)
@@ -127,10 +127,10 @@ export default class extends Controller {
     this.element.innerHTML = `
       <div class="flex items-center justify-center h-full">
         <div class="text-center">
-          <p class="text-slate-500">Unable to load heatmap data</p>
+          <p class="text-slate-500">No se pudo cargar datos del mapa de calor</p>
           <button class="mt-2 px-4 py-2 bg-teal-700 text-white rounded-lg text-sm"
                   data-action="click->pattern-heatmap#retry">
-            Retry
+            Reintentar
           </button>
         </div>
       </div>

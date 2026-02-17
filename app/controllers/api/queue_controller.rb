@@ -254,13 +254,13 @@ module Api
       admin_key = Rails.application.credentials.dig(:admin_key) || ENV["ADMIN_KEY"]
 
       if admin_key.present?
-        # Allow access if admin key matches
+        # Allow access if admin key matches (timing-safe comparison)
         provided_key = params[:admin_key] || request.headers["X-Admin-Key"]
-        return true if provided_key == admin_key
+        return true if provided_key.present? && ActiveSupport::SecurityUtils.secure_compare(provided_key, admin_key)
       end
 
-      # Option 3: Development/test environment bypass
-      return true if Rails.env.development? || Rails.env.test?
+      # Option 3: Development environment bypass
+      return true if Rails.env.development?
 
       # Log unauthorized access attempt
       Rails.logger.warn "[SECURITY] Unauthorized queue access attempt from IP: #{request.remote_ip}, User-Agent: #{request.headers['User-Agent']}"

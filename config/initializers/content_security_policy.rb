@@ -12,7 +12,12 @@ Rails.application.configure do
     policy.object_src  :none
     policy.script_src  :self, "https://cdn.jsdelivr.net"
     policy.style_src   :self, "'unsafe-inline'" # Inline style tags in admin_login.html.erb and sync_status_mockup.html.erb require unsafe-inline
-    policy.connect_src :self, "ws://localhost:*", "wss://localhost:*" # ActionCable WebSocket
+    # ActionCable WebSocket: use localhost in dev/test, same-origin in production
+    if Rails.env.development? || Rails.env.test?
+      policy.connect_src :self, "ws://localhost:*", "wss://localhost:*"
+    else
+      policy.connect_src :self
+    end
   end
 
   # Generate per-request nonces for permitted importmap and inline scripts.
@@ -21,6 +26,6 @@ Rails.application.configure do
   config.content_security_policy_nonce_generator = ->(_request) { SecureRandom.base64(16) }
   config.content_security_policy_nonce_directives = %w[script-src]
 
-  # Start in report-only mode to identify violations before enforcing.
+  # Report CSP violations to an endpoint for monitoring before enforcement.
   config.content_security_policy_report_only = true
 end

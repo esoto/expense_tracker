@@ -246,7 +246,7 @@
 
 <% # Add smooth scroll if requested %>
 <% if @scroll_to == "expense_list" %>
-<script>
+<script nonce="<%= content_security_policy_nonce %>">
   document.addEventListener('DOMContentLoaded', function() {
     const element = document.getElementById('expense_list');
     if (element) {

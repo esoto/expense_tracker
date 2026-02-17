@@ -23,22 +23,24 @@
  */
 export function isTypingInFormField(event) {
   const target = event.target
-  if (!target) return false
+  if (!(target instanceof Element)) return false
 
   return target.matches(
-    'input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="range"]), ' +
-    'textarea, ' +
-    'select, ' +
-    '[contenteditable="true"], ' +
-    '[contenteditable=""]'
+    'input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]), textarea, select, [contenteditable]:not([contenteditable="false"])'
   )
 }
 
 /**
  * Determines whether a keyboard shortcut should be suppressed.
- * Escape is always allowed. Modifier-based shortcuts (Ctrl/Cmd) are allowed
- * in form fields (browsers rely on them for copy/paste/undo, etc.).
- * Single-key shortcuts are suppressed in form fields.
+ *
+ * Behavior:
+ * - Escape is always allowed everywhere (never suppressed).
+ * - If `allowInFormFields` is true, shortcuts are never suppressed by this helper.
+ * - Otherwise, all shortcuts are suppressed while typing in form fields.
+ *
+ * This helper does not make any special exception for modifier-based shortcuts
+ * like Ctrl/Cmd; callers that need such behavior should set `allowInFormFields`
+ * accordingly and handle those cases themselves.
  *
  * @param {KeyboardEvent} event - The keyboard event
  * @param {Object} options

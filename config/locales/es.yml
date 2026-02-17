@@ -158,3 +158,203 @@ es:
     filter: "Filtrar"
     export: "Exportar"
     import: "Importar"
+    active: "Activo"
+    inactive: "Inactivo"
+    ago: "hace"
+    
+  # Admin - Patterns
+  admin:
+    patterns:
+      title: "Patrones de Categorización"
+      subtitle: "Administra reglas de categorización automática de gastos"
+      new_pattern: "Nuevo Patrón"
+      test_patterns: "Probar Patrones"
+      import: "Importar"
+      export: "Exportar"
+      
+      # Statistics
+      stats:
+        total_patterns: "Total de Patrones"
+        active_patterns: "Patrones Activos"
+        average_success_rate: "Tasa de Éxito Promedio"
+        total_usage: "Uso Total"
+        
+      # Table headers
+      table:
+        type: "Tipo"
+        pattern: "Patrón"
+        category: "Categoría"
+        usage: "Uso"
+        success_rate: "Tasa de Éxito"
+        confidence: "Confianza"
+        status: "Estado"
+        actions: "Acciones"
+        
+      # Filters
+      filters:
+        search_placeholder: "Buscar patrones o categorías..."
+        all_types: "Todos los Tipos"
+        all_categories: "Todas las Categorías"
+        all_statuses: "Todos los Estados"
+        
+      # Form
+      form:
+        new_title: "Nuevo Patrón de Categorización"
+        new_subtitle: "Crea una nueva regla para categorización automática de gastos"
+        edit_title: "Editar Patrón de Categorización"
+        edit_subtitle: "Modifica la regla de categorización"
+        
+        pattern_type: "Tipo de Patrón"
+        pattern_type_help: "Elige cómo este patrón coincidirá con gastos"
+        pattern_type_prompt: "Selecciona un tipo de patrón..."
+        
+        pattern_value: "Valor del Patrón"
+        pattern_value_placeholder: "Ingresa el valor del patrón..."
+        
+        category: "Categoría"
+        category_help: "La categoría a asignar cuando este patrón coincide"
+        category_prompt: "Selecciona una categoría..."
+        
+        confidence_weight: "Peso de Confianza"
+        confidence_help: "Mayor peso = mayor prioridad cuando múltiples patrones coinciden"
+        
+        active: "Activo"
+        active_help: "Los patrones inactivos no se usarán para la categorización"
+        
+        test_section_title: "Probar Patrón"
+        test_input_placeholder: "Ingresa texto de prueba..."
+        test_button: "Probar Coincidencia"
+        
+        cancel: "Cancelar"
+        save_and_continue: "Guardar y Continuar Editando"
+        create: "Crear Patrón"
+        update: "Actualizar Patrón"
+        
+        errors_title: "Por favor, corrige los siguientes errores:"
+        
+        # Help text for different pattern types
+        help:
+          default: "Selecciona un tipo de patrón para ver la ayuda del formato de valor"
+          merchant: "Ingresa el nombre del comerciante para hacer coincidir (sin distinción de mayúsculas)"
+          keyword: "Ingresa una palabra clave para buscar en descripciones y nombres de comerciantes"
+          description: "Ingresa texto para hacer coincidir en descripciones de gastos"
+          amount_range: "Ingresa el rango como: mín-máx (por ejemplo, 10.00-50.00)"
+          regex: "Ingresa un patrón de expresión regular"
+          time: "Ingresa: mañana, tarde, noche, fin de semana, entre semana o rango de horas (09:00-17:00)"
+          
+      # Show page
+      show:
+        title: "Detalles del Patrón"
+        subtitle: "Ver el desempeño y detalles del patrón"
+        edit: "Editar"
+        back_to_patterns: "Volver a Patrones"
+        
+        info_title: "Información del Patrón"
+        type: "Tipo"
+        category: "Categoría"
+        pattern_value: "Valor del Patrón"
+        confidence_weight: "Peso de Confianza"
+        status: "Estado"
+        created: "Creado"
+        origin: "Origen"
+        user_created: "Creado por Usuario"
+        system_created: "Creado por Sistema"
+        
+        activity_title: "Actividad Reciente"
+        no_activity: "Sin actividad reciente"
+        correct: "Correcto"
+        incorrect: "Incorrecto"
+        
+        metrics_title: "Métricas de Desempeño"
+        success_rate: "Tasa de Éxito"
+        total_uses: "Usos Totales"
+        successful_uses: "Usos Exitosos"
+        effective_confidence: "Confianza Efectiva"
+        average_daily_uses: "Usos Diarios Promedio"
+        last_used: "Último Uso"
+        trend: "Tendencia"
+        trend_increasing: "En Aumento"
+        trend_decreasing: "En Disminución"
+        trend_stable: "Estable"
+        
+        quick_test_title: "Prueba Rápida"
+        quick_test_placeholder: "Ingresa texto para probar..."
+        quick_test_button: "Probar"
+        
+      # Test page
+      test:
+        title: "Probar Patrones de Categorización"
+        subtitle: "Prueba cómo los patrones coinciden con datos de gastos de muestra"
+        
+        input_title: "Datos de Gastos de Prueba"
+        merchant_name: "Nombre del Comerciante"
+        merchant_placeholder: "ej., Starbucks"
+        description: "Descripción"
+        description_placeholder: "ej., Café y pastel"
+        amount: "Monto"
+        transaction_date: "Fecha de Transacción"
+        test_button: "Probar Patrones"
+        
+        quick_examples: "Ejemplos Rápidos"
+        
+        results_title: "Patrones Coincidentes"
+        results_placeholder: "Ingresa datos de prueba para ver patrones coincidentes"
+        
+        reference_title: "Referencia de Patrones Activos"
+        
+      # Test results
+      test_results:
+        title: "Resultados de la Prueba"
+        found_patterns:
+          one: "Se encontró %{count} patrón coincidente"
+          other: "Se encontraron %{count} patrones coincidentes"
+        sorted_by: "Ordenado por confianza"
+        best_match: "Mejor Coincidencia"
+        pattern: "Patrón"
+        confidence: "confianza"
+        category: "Categoría"
+        success: "Éxito"
+        suggested_category: "Categoría Sugerida"
+        confidence_message: "Con %{confidence}% de confianza basado en la coincidencia de patrones."
+        no_matches: "No se encontraron patrones coincidentes"
+        no_matches_help: "Intenta ajustar los datos de prueba o crea nuevos patrones"
+        
+        match_indicator: "¡El patrón coincide!"
+        no_match_indicator: "Sin coincidencia"
+        test_text: "Texto de prueba"
+        
+        # Turbo stream results
+        found_categories:
+          one: "Se encontró %{count} categoría coincidente"
+          other: "Se encontraron %{count} categorías coincidentes"
+        patterns_matched:
+          one: "%{count} patrón"
+          other: "%{count} patrones"
+        no_matching_patterns: "No se encontraron patrones coincidentes para los datos de gastos proporcionados."
+        test_data_title: "Datos de Prueba"
+        merchant: "Comerciante"
+        date: "Fecha"
+        
+      # Import modal
+      import_modal:
+        title: "Importar Patrones desde CSV"
+        file_label: "Seleccionar Archivo CSV"
+        file_help: "El CSV debe contener: pattern_type, pattern_value, category_id, confidence_weight, active"
+        cancel: "Cancelar"
+        import: "Importar"
+        
+      # Chart
+      chart:
+        title: "Desempeño del Patrón a lo Largo del Tiempo"
+        accuracy: "Precisión %"
+        correct_matches: "Coincidencias Correctas"
+        incorrect_matches: "Coincidencias Incorrectas"
+        match_count: "Conteo de Coincidencias"
+        today: "Hoy"
+        yesterday: "Ayer"
+        error: "No se pudo cargar los datos del gráfico"
+        retry: "Intentar de Nuevo"
+        
+      # Bulk actions
+      bulk:
+        confirm_delete: "¿Estás seguro de que deseas eliminar los patrones seleccionados?"

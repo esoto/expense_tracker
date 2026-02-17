@@ -218,7 +218,7 @@
               class: "w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
               required: true %>
           <p class="mt-1 text-sm text-slate-500">
-            CSV should contain: pattern_type, pattern_value, category_id, confidence_weight, active
+            <%= t('admin.patterns.import_modal.file_help') %>
           </p>
         </div>
 
@@ -226,9 +226,9 @@
           <button type="button"
                   data-action="click->pattern-management#hideImportModal"
                   class="px-4 py-2 text-slate-700 bg-slate-200 hover:bg-slate-300 rounded-lg text-sm font-medium">
-            Cancel
+            <%= t('admin.patterns.import_modal.cancel') %>
           </button>
-          <%= f.submit "Import", class: "px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-sm font-medium" %>
+          <%= f.submit t('admin.patterns.import_modal.import'), class: "px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-sm font-medium" %>
         </div>
       <% end %>
     </div>

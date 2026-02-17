@@ -39,11 +39,11 @@
           class: "inline-flex" do %>
         <% if pattern.active? %>
           <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 cursor-pointer hover:bg-emerald-200">
-            Active
+            <%= t('common.active') %>
           </span>
         <% else %>
           <span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-500 cursor-pointer hover:bg-slate-200">
-            Inactive
+            <%= t('common.inactive') %>
           </span>
         <% end %>
       <% end %>

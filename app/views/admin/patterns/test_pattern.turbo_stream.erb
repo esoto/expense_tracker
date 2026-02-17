@@ -1,9 +1,9 @@
 <%= turbo_stream.replace "test_results" do %>
   <div class="space-y-4">
-    <h3 class="text-lg font-semibold text-slate-900">Test Results</h3>
+    <h3 class="text-lg font-semibold text-slate-900"><%= t('admin.patterns.test_results.title') %></h3>
     <% if @matching_patterns&.any? %>
       <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-        <p class="text-emerald-700 font-medium mb-3">Found <%= pluralize(@matching_patterns.length, 'matching category', 'matching categories') %>:</p>
+        <p class="text-emerald-700 font-medium mb-3"><%= t('admin.patterns.test_results.found_categories', count: @matching_patterns.length) %>:</p>
 
         <div class="space-y-3">
           <% @matching_patterns.each do |match| %>
@@ -19,13 +19,13 @@
                     <%= (match[:confidence] * 100).round(1) %>%
                   </div>
                   <div class="text-sm text-slate-600">
-                    confidence
+                    <%= t('admin.patterns.test_results.confidence') %>
                   </div>
                 </div>
               </div>
 
               <div class="text-sm text-slate-600">
-                <strong>Patterns matched:</strong> <%= pluralize(match[:pattern_count], 'pattern') %>
+                <strong><%= t('admin.patterns.test_results.patterns_matched', count: match[:pattern_count]) %>:</strong> <%= t('admin.patterns.test_results.patterns_matched', count: match[:pattern_count]) %>
               </div>
 
               <% if match[:patterns].any? %>
@@ -44,18 +44,18 @@
       </div>
     <% else %>
       <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
-        <p class="text-amber-700">No matching patterns found for the provided expense data.</p>
+        <p class="text-amber-700"><%= t('admin.patterns.test_results.no_matching_patterns') %></p>
       </div>
     <% end %>
 
     <% if @test_expense %>
       <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
-        <h4 class="font-medium text-slate-900 mb-2">Test Data:</h4>
+        <h4 class="font-medium text-slate-900 mb-2"><%= t('admin.patterns.test_results.test_data_title') %>:</h4>
         <div class="text-sm text-slate-600 space-y-1">
-          <div><strong>Merchant:</strong> <%= @test_expense.merchant_name %></div>
-          <div><strong>Description:</strong> <%= @test_expense.description %></div>
-          <div><strong>Amount:</strong> <%= number_to_currency(@test_expense.amount) if @test_expense.amount %></div>
-          <div><strong>Date:</strong> <%= @test_expense.transaction_date&.strftime('%Y-%m-%d %H:%M') %></div>
+          <div><strong><%= t('admin.patterns.test_results.merchant') %>:</strong> <%= @test_expense.merchant_name %></div>
+          <div><strong><%= t('admin.patterns.test.description') %>:</strong> <%= @test_expense.description %></div>
+          <div><strong><%= t('admin.patterns.test.amount') %>:</strong> <%= number_to_currency(@test_expense.amount) if @test_expense.amount %></div>
+          <div><strong><%= t('admin.patterns.test_results.date') %>:</strong> <%= @test_expense.transaction_date&.strftime('%Y-%m-%d %H:%M') %></div>
         </div>
       </div>
     <% end %>

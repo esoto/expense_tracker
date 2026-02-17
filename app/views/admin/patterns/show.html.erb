@@ -200,7 +200,7 @@
               <div class="flex justify-between items-center">
                 <span class="text-sm text-slate-600">Último Uso</span>
                 <span class="text-sm text-slate-900">
-                  <%= time_ago_in_words(@performance_metrics[:last_used]) %> ago
+                  <%= time_ago_in_words(@performance_metrics[:last_used]) %> <%= t('common.ago') %>
                 </span>
               </div>
             </div>

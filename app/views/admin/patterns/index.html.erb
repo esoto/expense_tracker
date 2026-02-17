@@ -2,33 +2,33 @@
   <!-- Header with Title and Actions -->
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
     <div>
-      <h1 class="text-3xl font-bold text-slate-900">Categorization Patterns</h1>
-      <p class="text-slate-600 mt-1">Manage automatic expense categorization rules</p>
+      <h1 class="text-3xl font-bold text-slate-900">Patrones de Categorización</h1>
+      <p class="text-slate-600 mt-1">Administra reglas de categorización automática de gastos</p>
     </div>
     <div class="flex flex-wrap gap-2 mt-4 sm:mt-0">
       <%= link_to new_admin_pattern_path, class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm inline-flex items-center" do %>
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
         </svg>
-        New Pattern
+        Nuevo Patrón
       <% end %>
       <%= link_to admin_patterns_test_path, class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center" do %>
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
-        Test Patterns
+        Probar Patrones
       <% end %>
       <button data-action="click->pattern-management#showImportModal" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center">
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
         </svg>
-        Import
+        Importar
       </button>
       <%= link_to admin_patterns_export_path(format: :csv), class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center" do %>
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
         </svg>
-        Export
+        Exportar
       <% end %>
     </div>
   </div>
@@ -43,7 +43,7 @@
           </svg>
         </div>
         <div class="ml-4">
-          <p class="text-sm text-slate-600">Total Patterns</p>
+          <p class="text-sm text-slate-600">Total de Patrones</p>
           <p class="text-2xl font-bold text-slate-900"><%= @total_patterns %></p>
         </div>
       </div>
@@ -57,7 +57,7 @@
           </svg>
         </div>
         <div class="ml-4">
-          <p class="text-sm text-slate-600">Active Patterns</p>
+          <p class="text-sm text-slate-600">Patrones Activos</p>
           <p class="text-2xl font-bold text-slate-900"><%= @active_patterns %></p>
         </div>
       </div>
@@ -71,7 +71,7 @@
           </svg>
         </div>
         <div class="ml-4">
-          <p class="text-sm text-slate-600">Avg Success Rate</p>
+          <p class="text-sm text-slate-600">Tasa de Éxito Promedio</p>
           <p class="text-2xl font-bold text-slate-900"><%= @average_success_rate %>%</p>
         </div>
       </div>
@@ -86,7 +86,7 @@
           </svg>
         </div>
         <div class="ml-4">
-          <p class="text-sm text-slate-600">Total Usage</p>
+          <p class="text-sm text-slate-600">Uso Total</p>
           <p class="text-2xl font-bold text-slate-900"><%= number_with_delimiter(@total_usage) %></p>
         </div>
       </div>
@@ -101,7 +101,7 @@
         <div class="lg:col-span-2">
           <%= f.text_field :search,
               value: params[:search],
-              placeholder: "Search patterns or categories...",
+              placeholder: "Buscar patrones o categorías...",
               class: "w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
               data: { action: "input->pattern-management#debounceSearch" } %>
         </div>
@@ -147,34 +147,34 @@
           <thead class="bg-slate-50">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                <%= link_to "Type", admin_patterns_path(params.permit(:search, :filter_type, :filter_category, :filter_status).merge(sort: 'type')),
+                <%= link_to "Tipo", admin_patterns_path(params.permit(:search, :filter_type, :filter_category, :filter_status).merge(sort: 'type')),
                     class: "hover:text-teal-700" %>
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                <%= link_to "Pattern", admin_patterns_path(params.permit(:search, :filter_type, :filter_category, :filter_status).merge(sort: 'value')),
+                <%= link_to "Patrón", admin_patterns_path(params.permit(:search, :filter_type, :filter_category, :filter_status).merge(sort: 'value')),
                     class: "hover:text-teal-700" %>
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                <%= link_to "Category", admin_patterns_path(params.permit(:search, :filter_type, :filter_category, :filter_status).merge(sort: 'category')),
+                <%= link_to "Categoría", admin_patterns_path(params.permit(:search, :filter_type, :filter_category, :filter_status).merge(sort: 'category')),
                     class: "hover:text-teal-700" %>
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                <%= link_to "Usage", admin_patterns_path(params.permit(:search, :filter_type, :filter_category, :filter_status).merge(sort: 'usage')),
+                <%= link_to "Uso", admin_patterns_path(params.permit(:search, :filter_type, :filter_category, :filter_status).merge(sort: 'usage')),
                     class: "hover:text-teal-700" %>
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                <%= link_to "Success Rate", admin_patterns_path(params.permit(:search, :filter_type, :filter_category, :filter_status).merge(sort: 'success')),
+                <%= link_to "Tasa de Éxito", admin_patterns_path(params.permit(:search, :filter_type, :filter_category, :filter_status).merge(sort: 'success')),
                     class: "hover:text-teal-700" %>
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                <%= link_to "Confidence", admin_patterns_path(params.permit(:search, :filter_type, :filter_category, :filter_status).merge(sort: 'confidence')),
+                <%= link_to "Confianza", admin_patterns_path(params.permit(:search, :filter_type, :filter_category, :filter_status).merge(sort: 'confidence')),
                     class: "hover:text-teal-700" %>
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                Status
+                Estado
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                Actions
+                Acciones
               </th>
             </tr>
           </thead>
@@ -195,7 +195,7 @@
 
   <!-- Performance Chart -->
   <div class="mt-6 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-    <h2 class="text-lg font-semibold text-slate-900 mb-4">Pattern Performance Over Time</h2>
+    <h2 class="text-lg font-semibold text-slate-900 mb-4">Desempeño del Patrón a lo Largo del Tiempo</h2>
     <div data-controller="pattern-chart"
          data-pattern-chart-url-value="<%= admin_patterns_performance_path(format: :json) %>"
          class="h-64">
@@ -208,11 +208,11 @@
 <div data-pattern-management-target="importModal" class="hidden fixed inset-0 bg-slate-900 bg-opacity-50 z-50 flex items-center justify-center">
   <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
     <div class="p-6">
-      <h3 class="text-lg font-semibold text-slate-900 mb-4">Import Patterns from CSV</h3>
+      <h3 class="text-lg font-semibold text-slate-900 mb-4">Importar Patrones desde CSV</h3>
 
       <%= form_with url: admin_patterns_import_path, local: true, multipart: true do |f| %>
         <div class="mb-4">
-          <label class="block text-sm font-medium text-slate-700 mb-2">Select CSV File</label>
+          <label class="block text-sm font-medium text-slate-700 mb-2">Seleccionar Archivo CSV</label>
           <%= f.file_field :file,
               accept: ".csv",
               class: "w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500",

@@ -1,7 +1,7 @@
 <%= form_with model: @pattern, url: (@pattern.persisted? ? admin_pattern_path(@pattern) : admin_patterns_path), local: true do |f| %>
   <% if @pattern.errors.any? %>
     <div class="mb-6 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg">
-      <h3 class="font-semibold mb-2">Please fix the following errors:</h3>
+      <h3 class="font-semibold mb-2">Por favor, corrige los siguientes errores:</h3>
       <ul class="list-disc list-inside">
         <% @pattern.errors.full_messages.each do |message| %>
           <li><%= message %></li>
@@ -16,13 +16,13 @@
       <%= f.label :pattern_type, class: "block text-sm font-medium text-slate-700 mb-2" %>
       <%= f.select :pattern_type,
           options_for_select(pattern_type_options, @pattern.pattern_type),
-          { prompt: 'Select pattern type...' },
+          { prompt: 'Selecciona un tipo de patrón...' },
           class: "w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
           data: {
             controller: "pattern-form",
             action: "change->pattern-form#updateValueHelp"
           } %>
-      <p class="mt-1 text-sm text-slate-500">Choose how this pattern will match expenses</p>
+      <p class="mt-1 text-sm text-slate-500">Elige cómo este patrón coincidirá con gastos</p>
     </div>
 
     <!-- Pattern Value -->
@@ -30,36 +30,36 @@
       <%= f.label :pattern_value, class: "block text-sm font-medium text-slate-700 mb-2" %>
       <%= f.text_field :pattern_value,
           class: "w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
-          placeholder: "Enter pattern value...",
+          placeholder: "Ingresa el valor del patrón...",
           data: { "pattern-form-target": "valueField" } %>
       <div data-pattern-form-target="valueHelp" class="mt-1 text-sm text-slate-500">
         <% case @pattern.pattern_type %>
         <% when 'merchant' %>
-          Enter the merchant name to match (case-insensitive)
+          Ingresa el nombre del comerciante para hacer coincidir (sin distinción de mayúsculas)
         <% when 'keyword' %>
-          Enter a keyword to search for in descriptions and merchant names
+          Ingresa una palabra clave para buscar en descripciones y nombres de comerciantes
         <% when 'description' %>
-          Enter text to match in expense descriptions
+          Ingresa texto para hacer coincidir en descripciones de gastos
         <% when 'amount_range' %>
-          Enter range as: min-max (e.g., 10.00-50.00)
+          Ingresa el rango como: mín-máx (por ejemplo, 10.00-50.00)
         <% when 'regex' %>
-          Enter a regular expression pattern
+          Ingresa un patrón de expresión regular
         <% when 'time' %>
-          Enter: morning, afternoon, evening, night, weekend, weekday, or time range (09:00-17:00)
+          Ingresa: mañana, tarde, noche, fin de semana, entre semana o rango de horas (09:00-17:00)
         <% else %>
-          Select a pattern type to see value format help
+          Selecciona un tipo de patrón para ver la ayuda del formato de valor
         <% end %>
       </div>
     </div>
 
     <!-- Category -->
     <div>
-      <%= f.label :category_id, "Category", class: "block text-sm font-medium text-slate-700 mb-2" %>
+      <%= f.label :category_id, "Categoría", class: "block text-sm font-medium text-slate-700 mb-2" %>
       <%= f.select :category_id,
           options_for_select(@categories.map { |c| [c.name, c.id] }, @pattern.category_id),
-          { prompt: 'Select category...' },
+          { prompt: 'Selecciona una categoría...' },
           class: "w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500" %>
-      <p class="mt-1 text-sm text-slate-500">The category to assign when this pattern matches</p>
+      <p class="mt-1 text-sm text-slate-500">La categoría a asignar cuando este patrón coincide</p>
     </div>
 
     <!-- Confidence Weight -->
@@ -79,30 +79,30 @@
           <%= @pattern.confidence_weight.round(1) %>
         </span>
       </div>
-      <p class="mt-1 text-sm text-slate-500">Higher weight = higher priority when multiple patterns match</p>
+      <p class="mt-1 text-sm text-slate-500">Mayor peso = mayor prioridad cuando múltiples patrones coinciden</p>
     </div>
 
     <!-- Active Status -->
     <div class="flex items-center">
       <%= f.check_box :active, class: "h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded" %>
-      <%= f.label :active, "Active", class: "ml-2 block text-sm text-slate-900" %>
-      <p class="ml-2 text-sm text-slate-500">Inactive patterns won't be used for categorization</p>
+      <%= f.label :active, "Activo", class: "ml-2 block text-sm text-slate-900" %>
+      <p class="ml-2 text-sm text-slate-500">Los patrones inactivos no se usarán para la categorización</p>
     </div>
 
     <!-- Test Pattern Section -->
     <div class="border-t pt-6">
-      <h3 class="text-lg font-semibold text-slate-900 mb-4">Test Pattern</h3>
+      <h3 class="text-lg font-semibold text-slate-900 mb-4">Probar Patrón</h3>
       <div class="bg-slate-50 rounded-lg p-4">
         <div class="mb-3">
           <input type="text"
-                 placeholder="Enter test text..."
+                 placeholder="Ingresa texto de prueba..."
                  data-pattern-form-target="testInput"
                  class="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
         </div>
         <button type="button"
                 data-action="click->pattern-form#testPattern"
                 class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-medium">
-          Test Match
+          Probar Coincidencia
         </button>
         <div data-pattern-form-target="testResult" class="mt-3"></div>
       </div>
@@ -111,16 +111,16 @@
 
   <!-- Form Actions -->
   <div class="mt-8 flex justify-between">
-    <%= link_to "Cancel", admin_patterns_path,
+    <%= link_to "Cancelar", admin_patterns_path,
         class: "px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-medium" %>
     <div class="space-x-3">
       <button type="submit"
               name="commit"
               value="save_and_continue"
               class="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-sm font-medium">
-        Save and Continue Editing
+        Guardar y Continuar Editando
       </button>
-      <%= f.submit @pattern.new_record? ? "Create Pattern" : "Update Pattern",
+      <%= f.submit @pattern.new_record? ? "Crear Patrón" : "Actualizar Patrón",
           class: "px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-sm font-medium" %>
     </div>
   </div>

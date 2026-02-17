@@ -122,7 +122,7 @@ export default class extends Controller {
   }
   
   bulkDelete() {
-    if (confirm('Are you sure you want to delete the selected patterns?')) {
+    if (confirm('¿Estás seguro de que deseas eliminar los patrones seleccionados?')) {
       this.performBulkAction('delete')
     }
   }

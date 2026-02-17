@@ -217,5 +217,5 @@ es:
       error_occurred: "Ocurrió un error. Por favor intenta de nuevo."
       select_category_preview: "Por favor selecciona una categoría para previsualizar"
       error_loading_preview: "Error al cargar la previsualización"
-      auto_categorize_confirm: "Esto categorizará automáticamente todos los coincidencias de alta confianza. ¿Continuar?"
+      auto_categorize_confirm: "Esto categorizará automáticamente todas las coincidencias de alta confianza. ¿Continuar?"
       auto_categorize_failed: "La categorización automática falló"

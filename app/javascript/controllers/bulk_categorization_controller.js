@@ -231,7 +231,7 @@ export default class extends Controller {
     .then(html => Turbo.renderStreamMessage(html))
     .catch(error => {
       console.error('Error:', error)
-      this.showNotification(this.autoCategorizeFailed Value, "error")
+      this.showNotification(this.autoCategorizeFailed Value, 'error')
     })
   }
 

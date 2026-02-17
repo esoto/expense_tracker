@@ -42,13 +42,15 @@ Each phase should produce **one PR per task** (or at most 2-3 tightly related ta
 
 ---
 
-## Phase 0: Emergency Fixes (BEFORE ANY DEPLOYMENT)
+## Phase 0: Emergency Fixes (BEFORE ANY DEPLOYMENT) ✅ COMPLETE
 
 These tickets fix critical security vulnerabilities and data-destruction bugs. Each is independently deployable and should be merged immediately.
 
+**Status: All 7 tasks merged.**
+
 ---
 
-### Task 0.1: Add Authentication to ApplicationController
+### Task 0.1: Add Authentication to ApplicationController ✅ PR #77 merged
 
 **Severity:** CRITICAL | **Refs:** S-01, S-12, S-17–S-21, UX-001
 
@@ -142,7 +144,7 @@ Controllers with their own auth (admin login, API, webhooks) skip it explicitly.
 
 ---
 
-### Task 0.2: Implement SyncAuthorization Ownership Checks
+### Task 0.2: Implement SyncAuthorization Ownership Checks ✅ PR #78 merged
 
 **Severity:** CRITICAL | **Refs:** S-02
 
@@ -245,7 +247,7 @@ sync_session_owner? verifies user owns the sync session."
 
 ---
 
-### Task 0.3: Remove Admin Login CSRF Skip
+### Task 0.3: Remove Admin Login CSRF Skip ✅ PR #79 merged
 
 **Severity:** CRITICAL | **Refs:** S-03
 
@@ -300,7 +302,7 @@ Login forms include CSRF tokens via Rails form helpers."
 
 ---
 
-### Task 0.4: Fix API v1 CategoriesController Inheritance
+### Task 0.4: Fix API v1 CategoriesController Inheritance ✅ PR #80 merged
 
 **Severity:** CRITICAL | **Refs:** S-04
 
@@ -378,7 +380,7 @@ Now requires valid Bearer token like all other API endpoints."
 
 ---
 
-### Task 0.5: Replace PatternCache flushdb with Namespaced Deletion
+### Task 0.5: Replace PatternCache flushdb with Namespaced Deletion ✅ PR #81 merged
 
 **Severity:** CRITICAL | **Refs:** P-3
 
@@ -460,7 +462,7 @@ pattern cache prefix to only delete pattern-related keys."
 
 ---
 
-### Task 0.6: Fix Manual Expense Creation Form
+### Task 0.6: Fix Manual Expense Creation Form ✅ PR #83 merged
 
 **Severity:** CRITICAL | **Refs:** UX-002
 
@@ -520,7 +522,7 @@ form option works. Manual expenses have nil email_account_id."
 
 ---
 
-### Task 0.7: Remove WebSocket SecureRandom Session Fallback
+### Task 0.7: Remove WebSocket SecureRandom Session Fallback ✅ PR #85 merged
 
 **Severity:** CRITICAL | **Refs:** S-10
 
@@ -582,13 +584,15 @@ WebSocket connections."
 
 ---
 
-## Phase 1: Critical Performance
+## Phase 1: Critical Performance ✅ COMPLETE
 
 These tickets fix the biggest performance bottlenecks — N+1 queries, duplicated calculations, and debug code left in production.
 
+**Status: 7/8 tasks merged. Task 1.7 investigated and determined not applicable (no per-expense broadcasts found).**
+
 ---
 
-### Task 1.1: Pass Metrics to calculate_trends (Eliminate Double Calculation)
+### Task 1.1: Pass Metrics to calculate_trends (Eliminate Double Calculation) ✅ PR #84 merged
 
 **Severity:** CRITICAL | **Refs:** P-1
 
@@ -667,7 +671,7 @@ recalculating. Reduces dashboard query count by ~40%."
 
 ---
 
-### Task 1.2: Fix N+1 SUM per Category in percentage_of_total
+### Task 1.2: Fix N+1 SUM per Category in percentage_of_total ✅ PR #84 merged
 
 **Severity:** CRITICAL | **Refs:** P-2
 
@@ -738,7 +742,7 @@ instead of running SUM query per category."
 
 ---
 
-### Task 1.3: Consolidate MetricsCalculator Aggregates with pick()
+### Task 1.3: Consolidate MetricsCalculator Aggregates with pick() ✅ PR #84 merged
 
 **Severity:** HIGH | **Refs:** P-6
 
@@ -816,7 +820,7 @@ pick() for COUNT, SUM, AVG, MIN, MAX in one database call."
 
 ---
 
-### Task 1.4: Fix N+1 in store_bulk_operation
+### Task 1.4: Fix N+1 in store_bulk_operation ✅ PR #86 merged
 
 **Severity:** CRITICAL | **Refs:** P-4
 
@@ -872,7 +876,7 @@ For 50 expenses this reduces from 50 queries to 1."
 
 ---
 
-### Task 1.5: Pass Categories as Local to _expense_row Partial
+### Task 1.5: Pass Categories as Local to _expense_row Partial ✅ PR #87 merged
 
 **Severity:** HIGH | **Refs:** UX-003
 
@@ -945,7 +949,7 @@ Categories are now loaded once in the controller and passed as a local."
 
 ---
 
-### Task 1.6: Use PostgreSQL PERCENTILE_CONT for Median
+### Task 1.6: Use PostgreSQL PERCENTILE_CONT for Median ✅ PR #84 merged
 
 **Severity:** HIGH | **Refs:** P-7
 
@@ -995,11 +999,13 @@ Eliminates loading all amounts into memory for large datasets."
 
 ---
 
-### Task 1.7: Batch Broadcast for Bulk Operations
+### Task 1.7: Batch Broadcast for Bulk Operations ⏭️ Not applicable
 
 **Severity:** HIGH | **Refs:** P-15
 
 **Problem:** After bulk categorization, the service broadcasts an ActionCable update per expense instead of batching them into a single broadcast.
+
+**Resolution:** Investigation found no per-expense broadcasts in the bulk categorization service. The service already broadcasts a single summary via `store_bulk_operation`. No changes needed.
 
 **Files:**
 - Modify: `app/services/categorization/bulk_categorization_service.rb` — broadcast section
@@ -1051,7 +1057,7 @@ instead of per-expense broadcasts. Reduces WebSocket traffic."
 
 ---
 
-### Task 1.8: Remove Debug puts Statements
+### Task 1.8: Remove Debug puts Statements ✅ PR #88 merged
 
 **Severity:** HIGH | **Refs:** P-13
 
@@ -1888,15 +1894,15 @@ an email account preserves its expenses with nil email_account_id."
 
 ## Summary
 
-| Phase | Tickets | Priority |
-|-------|---------|----------|
-| Phase 0 | 7 tasks | CRITICAL — do before any deployment |
-| Phase 1 | 8 tasks | CRITICAL/HIGH — performance fixes |
-| Phase 2 | 8 tasks | HIGH — security hardening |
-| Phase 3 | 10 tasks | CRITICAL/HIGH/MEDIUM — UX & design |
-| Phase 4 | 6 tasks | HIGH/MEDIUM — performance polish |
-| Phase 5 | 5 tasks | MEDIUM/LOW — cleanup |
-| **Total** | **44 tasks** | |
+| Phase | Tickets | Status | PRs |
+|-------|---------|--------|-----|
+| Phase 0 | 7 tasks | ✅ 7/7 COMPLETE | #77, #78, #79, #80, #81, #83, #85 |
+| Phase 1 | 8 tasks | ✅ 7/8 COMPLETE (1 N/A) | #84, #86, #87, #88 |
+| Phase 2 | 8 tasks | pending | |
+| Phase 3 | 10 tasks | pending | |
+| Phase 4 | 6 tasks | pending | |
+| Phase 5 | 5 tasks | pending | |
+| **Total** | **44 tasks** | | |
 
 ### Execution Order
 

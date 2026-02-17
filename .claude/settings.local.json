@@ -83,7 +83,21 @@
       "Bash(RAILS_ENV=test TEST_TIER=unit bash:*)",
       "Bash(RAILS_ENV=test bin/rails db:schema:load:*)",
       "Read(//Users/esoto/.claude/plugins/cache/superpowers-marketplace/superpowers/4.0.3/skills/subagent-driven-development/**)",
-      "Bash(TEST_ENV_NUMBER=_worktree bundle exec rspec:*)"
+      "Bash(TEST_ENV_NUMBER=_worktree bundle exec rspec:*)",
+      "Bash(git worktree add:*)",
+      "Bash(TEST_ENV_NUMBER=_csrf RAILS_ENV=test bin/rails db:create:*)",
+      "Bash(TEST_ENV_NUMBER=_csrf bundle exec rspec:*)",
+      "Bash(redis-cli client kill:*)",
+      "Bash(git commit:*)",
+      "Bash(git worktree remove:*)",
+      "Bash(RAILS_ENV=test bundle exec rails db:create:*)",
+      "Bash(RAILS_ENV=test bundle exec rails:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)",
+      "Bash(git rebase:*)",
+      "Bash(git stash:*)",
+      "Bash(git stash pop:*)",
+      "Bash(gh pr list:*)"
     ],
     "deny": []
   }

@@ -95,9 +95,34 @@
     <!-- Flash Messages -->
     <% if notice %>
       <div class="max-w-7xl mx-auto px-4 mt-4">
-        <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg relative" role="alert">
-          <span class="block sm:inline"><%= notice %></span>
-        </div>
+        <% if flash[:undo_id].present? %>
+          <!-- Flash with Undo functionality -->
+          <div data-controller="undo-manager"
+               data-undo-manager-undo-id-value="<%= flash[:undo_id] %>"
+               data-undo-manager-time-remaining-value="<%= flash[:undo_time_remaining] || 1800 %>"
+               class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg relative" 
+               role="alert">
+            <div class="flex items-center justify-between gap-4">
+              <div class="flex-1">
+                <span class="block sm:inline" data-undo-manager-target="message"><%= notice %></span>
+                <span class="text-xs text-emerald-600 mt-1 inline-block">
+                  Tiempo restante: <span data-undo-manager-target="timer" class="font-mono"></span>
+                </span>
+              </div>
+              <button type="button"
+                      data-undo-manager-target="undoButton"
+                      data-action="click->undo-manager#undo"
+                      class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-sm font-medium transition-colors whitespace-nowrap">
+                Deshacer
+              </button>
+            </div>
+          </div>
+        <% else %>
+          <!-- Regular flash without undo -->
+          <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg relative" role="alert">
+            <span class="block sm:inline"><%= notice %></span>
+          </div>
+        <% end %>
       </div>
     <% end %>
 

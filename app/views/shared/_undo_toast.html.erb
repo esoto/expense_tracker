@@ -1,0 +1,45 @@
+<%# Undo Toast Notification
+    Displays a toast notification with undo functionality and countdown timer
+    
+    Parameters:
+      - message: The message to display
+      - undo_id: The UndoHistory record ID
+      - time_remaining: Seconds remaining in the undo window
+%>
+<div data-controller="undo-manager"
+     data-undo-manager-undo-id-value="<%= undo_id %>"
+     data-undo-manager-time-remaining-value="<%= time_remaining %>"
+     class="pointer-events-auto mb-3 p-4 rounded-lg shadow-lg bg-emerald-600 text-white min-w-[320px] max-w-md transform transition-all duration-300">
+  <div class="flex items-center gap-3">
+    <!-- Success Icon -->
+    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+    </svg>
+    
+    <!-- Message -->
+    <div class="flex-1">
+      <p class="text-sm font-medium" data-undo-manager-target="message"><%= message %></p>
+      <p class="text-xs text-emerald-100 mt-1">
+        Tiempo restante: <span data-undo-manager-target="timer" class="font-mono"><%= time_remaining %>s</span>
+      </p>
+    </div>
+    
+    <!-- Undo Button -->
+    <button type="button"
+            data-undo-manager-target="undoButton"
+            data-action="click->undo-manager#undo"
+            class="bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded text-sm font-medium transition-colors">
+      Deshacer
+    </button>
+    
+    <!-- Close Button -->
+    <button type="button"
+            data-action="click->undo-manager#dismiss"
+            class="ml-2 -mr-1 rounded-lg p-1.5 inline-flex h-8 w-8 items-center justify-center hover:bg-white/20 transition-colors"
+            aria-label="Cerrar notificación">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
+  </div>
+</div>

@@ -109,9 +109,12 @@ class ExpensesController < ApplicationController
       format.turbo_stream do
         render turbo_stream: [
           turbo_stream.remove("expense_row_#{@expense.id}"),
-          turbo_stream.append("toast-container",
-            "<div data-controller='toast' data-toast-remove-delay-value='5000' class='hidden' " \
-            "data-undo-id='#{undo_entry.id}'>Gasto eliminado. Puedes deshacer esta acción.</div>")
+          turbo_stream.append("toast-container", partial: "shared/undo_toast",
+            locals: {
+              message: "Gasto eliminado. Puedes deshacer esta acción.",
+              undo_id: undo_entry.id,
+              time_remaining: undo_entry.time_remaining
+            })
         ]
       end
       format.json do

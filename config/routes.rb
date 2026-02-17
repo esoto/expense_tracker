@@ -7,7 +7,10 @@ Rails.application.routes.draw do
   if Rails.env.development?
     mount Sidekiq::Web => "/sidekiq"
   else
-    # Require credentials via environment variables — no fallback defaults
+    # Require credentials via environment variables — no fallback defaults.
+    # Required env vars:
+    #   SIDEKIQ_WEB_USERNAME - Username for Sidekiq Web UI access
+    #   SIDEKIQ_WEB_PASSWORD - Password for Sidekiq Web UI access
     Sidekiq::Web.use Rack::Auth::Basic do |username, password|
       sidekiq_username = ENV["SIDEKIQ_WEB_USERNAME"]
       sidekiq_password = ENV["SIDEKIQ_WEB_PASSWORD"]

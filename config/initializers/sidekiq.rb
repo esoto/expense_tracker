@@ -208,23 +208,8 @@ Sidekiq.strict_args!(Rails.env.production?)
 Sidekiq.default_configuration.logger = Rails.logger if Rails.logger
 Sidekiq.default_configuration.logger.level = Rails.env.production? ? Logger::INFO : Logger::DEBUG
 
-# Sidekiq Web UI authentication (for production)
-# NOTE: Primary auth is configured in config/routes.rb via Rack::Auth::Basic.
-# This block serves as defense-in-depth for the initializer path.
-if Rails.env.production?
-  Sidekiq::Web.use Rack::Auth::Basic do |username, password|
-    sidekiq_username = ENV["SIDEKIQ_WEB_USERNAME"]
-    sidekiq_password = ENV["SIDEKIQ_WEB_PASSWORD"]
-
-    if sidekiq_username.blank? || sidekiq_password.blank?
-      Rails.logger.error "[SECURITY] Sidekiq Web credentials not configured in initializer"
-      false
-    else
-      ActiveSupport::SecurityUtils.secure_compare(username, sidekiq_username) &&
-        ActiveSupport::SecurityUtils.secure_compare(password, sidekiq_password)
-    end
-  end
-end
+# Sidekiq Web UI authentication is configured in config/routes.rb.
+# Do NOT add auth middleware here — it causes duplicate prompts.
 
 # Rate limiting configuration for Sidekiq Web UI
 if defined?(Rack::Attack)

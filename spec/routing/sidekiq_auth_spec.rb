@@ -104,14 +104,29 @@ RSpec.describe "Sidekiq Web Authentication", :unit do
   end
 
   describe "no default fallback credentials" do
-    it "does not use ENV.fetch with default values for username" do
+    it "does not use ENV.fetch with default values for username in routes" do
       routes_content = File.read(Rails.root.join("config/routes.rb"))
       expect(routes_content).not_to match(/ENV\.fetch\(\s*["']SIDEKIQ_WEB_USERNAME["'].*,/)
     end
 
-    it "does not use ENV.fetch with default values for password" do
+    it "does not use ENV.fetch with default values for password in routes" do
       routes_content = File.read(Rails.root.join("config/routes.rb"))
       expect(routes_content).not_to match(/ENV\.fetch\(\s*["']SIDEKIQ_WEB_PASSWORD["'].*,/)
+    end
+
+    it "does not use ENV.fetch with default values for username in sidekiq initializer" do
+      sidekiq_content = File.read(Rails.root.join("config/initializers/sidekiq.rb"))
+      expect(sidekiq_content).not_to match(/ENV\.fetch\(\s*["']SIDEKIQ_WEB_USERNAME["']\s*,/)
+    end
+
+    it "does not use ENV.fetch with default values for password in sidekiq initializer" do
+      sidekiq_content = File.read(Rails.root.join("config/initializers/sidekiq.rb"))
+      expect(sidekiq_content).not_to match(/ENV\.fetch\(\s*["']SIDEKIQ_WEB_PASSWORD["']\s*,/)
+    end
+
+    it "does not have duplicate Rack::Auth::Basic in sidekiq initializer" do
+      sidekiq_content = File.read(Rails.root.join("config/initializers/sidekiq.rb"))
+      expect(sidekiq_content).not_to match(/Rack::Auth::Basic/)
     end
   end
 

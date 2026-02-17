@@ -97,16 +97,31 @@ class ExpensesController < ApplicationController
 
   # DELETE /expenses/1
   def destroy
-    @expense.destroy
+    @expense.soft_delete!
+    undo_entry = UndoHistory.create_for_deletion(@expense, user: current_user)
 
     respond_to do |format|
-      format.html { redirect_to expenses_url, notice: "Gasto eliminado exitosamente." }
-      format.turbo_stream do
-        # Return an empty turbo stream since the JS controller handles the row removal
-        render turbo_stream: turbo_stream.append("toast-container",
-          "<div data-controller='toast' data-toast-remove-delay-value='5000' class='hidden'>Gasto eliminado exitosamente</div>")
+      format.html do
+        redirect_to expenses_url,
+          notice: "Gasto eliminado. Puedes deshacer esta acción.",
+          flash: { undo_id: undo_entry.id, undo_time_remaining: undo_entry.time_remaining }
       end
-      format.json { render json: { success: true, message: "Gasto eliminado exitosamente" } }
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.remove("expense_row_#{@expense.id}"),
+          turbo_stream.append("toast-container",
+            "<div data-controller='toast' data-toast-remove-delay-value='5000' class='hidden' " \
+            "data-undo-id='#{undo_entry.id}'>Gasto eliminado. Puedes deshacer esta acción.</div>")
+        ]
+      end
+      format.json do
+        render json: {
+          success: true,
+          message: "Gasto eliminado. Puedes deshacer esta acción.",
+          undo_id: undo_entry.id,
+          undo_time_remaining: undo_entry.time_remaining
+        }
+      end
     end
   end
 

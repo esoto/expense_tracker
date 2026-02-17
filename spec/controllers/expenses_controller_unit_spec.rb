@@ -252,23 +252,57 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
   end
 
   describe "DELETE #destroy", unit: true do
+    let(:undo_entry) { instance_double(UndoHistory, id: 42, time_remaining: 1800) }
+
     before do
       allow(controller).to receive(:set_expense)
       controller.instance_variable_set(:@expense, expense)
-      allow(expense).to receive(:destroy)
+      allow(expense).to receive(:soft_delete!)
+      allow(UndoHistory).to receive(:create_for_deletion).and_return(undo_entry)
     end
 
-    it "destroys the expense" do
-      expect(expense).to receive(:destroy)
+    it "soft deletes the expense" do
+      expect(expense).to receive(:soft_delete!)
 
       delete :destroy, params: { id: expense.id }
     end
 
-    it "redirects to expenses index with success notice" do
+    it "creates an undo history entry" do
+      expect(UndoHistory).to receive(:create_for_deletion).with(expense, user: nil)
+
+      delete :destroy, params: { id: expense.id }
+    end
+
+    it "redirects to expenses index with undo notice" do
       delete :destroy, params: { id: expense.id }
 
       expect(response).to redirect_to(expenses_path)
-      expect(flash[:notice]).to eq("Gasto eliminado exitosamente.")
+      expect(flash[:notice]).to eq("Gasto eliminado. Puedes deshacer esta acción.")
+    end
+
+    it "includes undo_id in flash" do
+      delete :destroy, params: { id: expense.id }
+
+      expect(flash[:undo_id]).to eq(42)
+    end
+
+    it "includes undo_time_remaining in flash" do
+      delete :destroy, params: { id: expense.id }
+
+      expect(flash[:undo_time_remaining]).to eq(1800)
+    end
+
+    context "with JSON format" do
+      it "returns undo information in JSON response" do
+        delete :destroy, params: { id: expense.id }, format: :json
+
+        expect(response).to have_http_status(:ok)
+        json = JSON.parse(response.body)
+        expect(json["success"]).to eq(true)
+        expect(json["undo_id"]).to eq(42)
+        expect(json["undo_time_remaining"]).to eq(1800)
+        expect(json["message"]).to eq("Gasto eliminado. Puedes deshacer esta acción.")
+      end
     end
   end
 

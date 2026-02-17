@@ -8,7 +8,7 @@
     <% if @affected_expenses.present? %>
       <div>
         <h2 class="text-lg font-medium text-slate-800">Gastos Afectados</h2>
-        <p class="text-slate-600"><%= pluralize(@affected_expenses.count, 'gasto') %> afectados</p>
+        <p class="text-slate-600"><%= "#{@affected_expenses.count} gasto#{'s' if @affected_expenses.count != 1}" %> afectados</p>
       </div>
     <% end %>
   </div>

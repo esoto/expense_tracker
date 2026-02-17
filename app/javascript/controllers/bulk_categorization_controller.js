@@ -194,7 +194,7 @@ export default class extends Controller {
   }
 
   autoCategorizehighConfidence(event) {
-    if (!confirm('Esto categorizará automáticamente todos los coincidencias de alta confianza. ¿Continuar?')) {
+    if (!confirm('Esto categorizará automáticamente todos los gastos de alta confianza. ¿Continuar?')) {
       return
     }
     

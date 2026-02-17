@@ -47,11 +47,11 @@ RSpec.describe "Content Security Policy", type: :request do
       expect(csp_header).to include("object-src 'none'")
     end
 
-    it "sets script-src to self with nonce" do
-      expect(csp_header).to match(/script-src 'self' 'nonce-[^']+/)
+    it "sets script-src to self with CDN and nonce" do
+      expect(csp_header).to match(/script-src 'self' https:\/\/cdn\.jsdelivr\.net 'nonce-[^']+/)
     end
 
-    it "sets style-src to self with unsafe-inline for Tailwind" do
+    it "sets style-src to self with unsafe-inline for inline styles" do
       expect(csp_header).to include("style-src 'self' 'unsafe-inline'")
     end
 
@@ -69,7 +69,7 @@ RSpec.describe "Content Security Policy", type: :request do
       expect(csp_header).to match(/script-src[^;]*'nonce-[A-Za-z0-9+\/=]+'/)
     end
 
-    it "generates different nonces for different sessions" do
+    it "generates different nonces for different requests" do
       get rails_health_check_path
       first_csp = response.headers["Content-Security-Policy-Report-Only"]
       first_nonce = first_csp[/nonce-([A-Za-z0-9+\/=]+)/, 1]
@@ -80,7 +80,7 @@ RSpec.describe "Content Security Policy", type: :request do
       second_csp = response.headers["Content-Security-Policy-Report-Only"]
       second_nonce = second_csp[/nonce-([A-Za-z0-9+\/=]+)/, 1]
 
-      # Different sessions should produce different nonces
+      # Different requests should produce different nonces
       expect(first_nonce).not_to eq(second_nonce)
     end
   end

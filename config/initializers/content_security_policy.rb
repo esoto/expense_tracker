@@ -10,8 +10,8 @@ Rails.application.configure do
     policy.font_src    :self, :data
     policy.img_src     :self, :data, :https
     policy.object_src  :none
-    policy.script_src  :self
-    policy.style_src   :self, "'unsafe-inline'" # Tailwind CSS requires inline styles
+    policy.script_src  :self, "https://cdn.jsdelivr.net"
+    policy.style_src   :self, "'unsafe-inline'" # Inline style tags in admin_login.html.erb and sync_status_mockup.html.erb require unsafe-inline
     policy.connect_src :self, "ws://localhost:*", "wss://localhost:*" # ActionCable WebSocket
   end
 

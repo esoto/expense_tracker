@@ -100,7 +100,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be true
-        expect(json_response["message"]).to eq("All queues have been paused")
+        expect(json_response["message"]).to eq("Todas las colas han sido pausadas")
         expect(json_response["paused_queues"]).to eq([ "default", "high_priority" ])
       end
     end
@@ -120,7 +120,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be true
-        expect(json_response["message"]).to eq("Queue 'default' has been paused")
+        expect(json_response["message"]).to eq("La cola 'default' ha sido pausada")
         expect(json_response["paused_queues"]).to eq([ "default" ])
       end
     end
@@ -137,7 +137,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be false
-        expect(json_response["error"]).to eq("Failed to pause queue(s)")
+        expect(json_response["error"]).to eq("Error al pausar la(s) cola(s)")
       end
     end
   end
@@ -158,7 +158,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be true
-        expect(json_response["message"]).to eq("All queues have been resumed")
+        expect(json_response["message"]).to eq("Todas las colas han sido reanudadas")
         expect(json_response["paused_queues"]).to eq([])
       end
     end
@@ -178,7 +178,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be true
-        expect(json_response["message"]).to eq("Queue 'default' has been resumed")
+        expect(json_response["message"]).to eq("La cola 'default' ha sido reanudada")
       end
     end
 
@@ -194,7 +194,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be false
-        expect(json_response["error"]).to eq("Failed to resume queue(s)")
+        expect(json_response["error"]).to eq("Error al reanudar la(s) cola(s)")
       end
     end
   end
@@ -216,7 +216,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be true
-        expect(json_response["message"]).to eq("Job 123 has been queued for retry")
+        expect(json_response["message"]).to eq("El trabajo 123 ha sido encolado para reintentar")
         expect(json_response["job_id"]).to eq("123")
       end
     end
@@ -233,7 +233,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be false
-        expect(json_response["error"]).to eq("Job not found")
+        expect(json_response["error"]).to eq("Trabajo no encontrado")
       end
     end
 
@@ -251,7 +251,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be false
-        expect(json_response["error"]).to eq("Failed to retry job 123")
+        expect(json_response["error"]).to eq("Error al reintentar el trabajo 123")
       end
     end
   end
@@ -273,7 +273,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be true
-        expect(json_response["message"]).to eq("Job 123 has been cleared")
+        expect(json_response["message"]).to eq("El trabajo 123 ha sido limpiado")
         expect(json_response["job_id"]).to eq("123")
       end
     end
@@ -290,7 +290,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be false
-        expect(json_response["error"]).to eq("Job not found")
+        expect(json_response["error"]).to eq("Trabajo no encontrado")
       end
     end
   end
@@ -310,7 +310,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be true
-        expect(json_response["message"]).to eq("5 failed jobs have been queued for retry")
+        expect(json_response["message"]).to eq("5 trabajos fallidos han sido encolados para reintentar")
         expect(json_response["count"]).to eq(5)
       end
     end
@@ -327,7 +327,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be false
-        expect(json_response["error"]).to eq("No failed jobs to retry or retry operation failed")
+        expect(json_response["error"]).to eq("Sin trabajos fallidos para reintentar o la operación de reintentar falló")
       end
     end
   end
@@ -435,7 +435,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be false
-        expect(json_response["error"]).to include("Unauthorized access")
+        expect(json_response["error"]).to include("Acceso no autorizado")
       end
     end
 
@@ -503,7 +503,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
 
       it "handles broadcasting errors gracefully" do
         allow(ActionCable.server).to receive(:broadcast).and_raise(StandardError, "Connection failed")
-        expect(Rails.logger).to receive(:error).with(/Failed to broadcast queue update/)
+        expect(Rails.logger).to receive(:error).with(/Error al transmitir actualización de cola/)
 
         expect {
           controller.send(:broadcast_queue_update, "paused", "default")

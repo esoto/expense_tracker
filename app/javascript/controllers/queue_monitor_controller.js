@@ -23,7 +23,7 @@ export default class extends Controller {
   }
 
   connect() {
-    console.log("Queue monitor connected")
+    console.log("Monitor de cola conectado")
     this.isPaused = false
     this.setupActionCable()
     this.startAutoRefresh()
@@ -49,8 +49,8 @@ export default class extends Controller {
 
   // Handle real-time updates from ActionCable
   handleRealtimeUpdate(data) {
-    console.log("Received real-time queue update:", data)
-    
+    console.log("Actualización en tiempo real de la cola recibida:", data)
+
     // If it's a significant change, refresh immediately
     if (data.action === "job_failed" || data.action === "paused" || data.action === "resumed") {
       this.fetchQueueStatus()
@@ -89,7 +89,7 @@ export default class extends Controller {
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        throw new Error(`Error HTTP! estado: ${response.status}`)
       }
 
       const result = await response.json()
@@ -98,8 +98,8 @@ export default class extends Controller {
         this.updateLastRefreshTime()
       }
     } catch (error) {
-      console.error("Failed to fetch queue status:", error)
-      this.showError("Failed to load queue status")
+      console.error("Error al obtener estado de la cola:", error)
+      this.showError("Error al cargar estado de la cola")
     }
   }
 
@@ -201,20 +201,20 @@ export default class extends Controller {
   updatePerformanceMetrics(performance) {
     // Processing rate
     const rate = performance.processing_rate || 0
-    this.processingRateTarget.textContent = `${rate.toFixed(1)} jobs/min`
-    
+    this.processingRateTarget.textContent = `${rate.toFixed(1)} trabajos/min`
+
     // Estimated completion time
     if (performance.estimated_minutes) {
       const minutes = performance.estimated_minutes
       if (minutes < 60) {
-        this.estimatedTimeTarget.textContent = `~${minutes} min remaining`
+        this.estimatedTimeTarget.textContent = `~${minutes} min restantes`
       } else {
         const hours = Math.floor(minutes / 60)
         const mins = minutes % 60
-        this.estimatedTimeTarget.textContent = `~${hours}h ${mins}m remaining`
+        this.estimatedTimeTarget.textContent = `~${hours}h ${mins}m restantes`
       }
     } else {
-      this.estimatedTimeTarget.textContent = "No backlog"
+      this.estimatedTimeTarget.textContent = "Sin cola pendiente"
     }
   }
 
@@ -224,14 +224,14 @@ export default class extends Controller {
     
     if (this.isPaused) {
       this.pauseButtonTarget.className = "px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center space-x-1"
-      this.pauseTextTarget.textContent = "Resume All"
+      this.pauseTextTarget.textContent = "Reanudar Todo"
       this.pauseIconTarget.innerHTML = `
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
       `
     } else {
       this.pauseButtonTarget.className = "px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center space-x-1"
-      this.pauseTextTarget.textContent = "Pause All"
+      this.pauseTextTarget.textContent = "Pausar Todo"
       this.pauseIconTarget.innerHTML = `
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
       `
@@ -251,9 +251,9 @@ export default class extends Controller {
 
   // Render a single active job
   renderActiveJob(job) {
-    const duration = job.duration ? this.formatDuration(job.duration) : "Just started"
-    const processInfo = job.process_info ? 
-      `<span class="text-xs text-slate-500">Worker ${job.process_info.pid}@${job.process_info.hostname}</span>` : ""
+    const duration = job.duration ? this.formatDuration(job.duration) : "Recién iniciado"
+    const processInfo = job.process_info ?
+      `<span class="text-xs text-slate-500">Trabajador ${job.process_info.pid}@${job.process_info.hostname}</span>` : ""
 
     return `
       <div class="flex items-center justify-between p-3 bg-teal-50 rounded-lg">
@@ -263,7 +263,7 @@ export default class extends Controller {
             <span class="text-xs px-2 py-0.5 bg-teal-100 text-teal-700 rounded-full">${job.queue_name}</span>
           </div>
           <div class="text-xs text-slate-600 mt-1">
-            ${duration} • Priority ${job.priority}
+            ${duration} • Prioridad ${job.priority}
             ${processInfo}
           </div>
         </div>
@@ -296,18 +296,18 @@ export default class extends Controller {
               <span class="text-xs px-2 py-0.5 bg-rose-100 text-rose-700 rounded-full">${job.queue_name}</span>
             </div>
             <div class="text-xs text-rose-600 mt-1">${errorMessage}</div>
-            <div class="text-xs text-slate-500 mt-1">Failed at ${failedAt}</div>
+            <div class="text-xs text-slate-500 mt-1">Falló el ${failedAt}</div>
           </div>
           <div class="flex items-center space-x-1 ml-4">
-            <button data-job-id="${job.id}" 
+            <button data-job-id="${job.id}"
                     data-action="click->queue-monitor#retryJob"
                     class="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium rounded transition-colors">
-              Retry
+              Reintentar
             </button>
             <button data-job-id="${job.id}"
                     data-action="click->queue-monitor#clearJob"
                     class="px-2 py-1 bg-slate-600 hover:bg-slate-700 text-white text-xs font-medium rounded transition-colors">
-              Clear
+              Limpiar
             </button>
           </div>
         </div>
@@ -350,9 +350,9 @@ export default class extends Controller {
   // Toggle pause/resume
   async togglePause(event) {
     event.preventDefault()
-    
+
     const endpoint = this.isPaused ? "/api/queue/resume" : "/api/queue/pause"
-    
+
     try {
       const response = await fetch(endpoint, {
         method: "POST",
@@ -364,16 +364,16 @@ export default class extends Controller {
       })
 
       const result = await response.json()
-      
+
       if (result.success) {
         this.showSuccess(result.message)
         this.fetchQueueStatus()
       } else {
-        this.showError(result.error || "Operation failed")
+        this.showError(result.error || "Operación fallida")
       }
     } catch (error) {
-      console.error("Failed to toggle pause:", error)
-      this.showError("Failed to toggle queue pause")
+      console.error("Error al cambiar pausa:", error)
+      this.showError("Error al cambiar pausa de la cola")
     }
   }
 
@@ -381,7 +381,7 @@ export default class extends Controller {
   async retryJob(event) {
     event.preventDefault()
     const jobId = event.currentTarget.dataset.jobId
-    
+
     try {
       const response = await fetch(`/api/queue/jobs/${jobId}/retry`, {
         method: "POST",
@@ -393,16 +393,16 @@ export default class extends Controller {
       })
 
       const result = await response.json()
-      
+
       if (result.success) {
-        this.showSuccess(`Job ${jobId} queued for retry`)
+        this.showSuccess(`Trabajo ${jobId} encolado para reintentar`)
         this.fetchQueueStatus()
       } else {
-        this.showError(result.error || "Failed to retry job")
+        this.showError(result.error || "Error al reintentar trabajo")
       }
     } catch (error) {
-      console.error("Failed to retry job:", error)
-      this.showError("Failed to retry job")
+      console.error("Error al reintentar trabajo:", error)
+      this.showError("Error al reintentar trabajo")
     }
   }
 
@@ -410,7 +410,7 @@ export default class extends Controller {
   async clearJob(event) {
     event.preventDefault()
     const jobId = event.currentTarget.dataset.jobId
-    
+
     try {
       const response = await fetch(`/api/queue/jobs/${jobId}/clear`, {
         method: "POST",
@@ -422,27 +422,27 @@ export default class extends Controller {
       })
 
       const result = await response.json()
-      
+
       if (result.success) {
-        this.showSuccess(`Job ${jobId} cleared`)
+        this.showSuccess(`Trabajo ${jobId} limpiado`)
         this.fetchQueueStatus()
       } else {
-        this.showError(result.error || "Failed to clear job")
+        this.showError(result.error || "Error al limpiar trabajo")
       }
     } catch (error) {
-      console.error("Failed to clear job:", error)
-      this.showError("Failed to clear job")
+      console.error("Error al limpiar trabajo:", error)
+      this.showError("Error al limpiar trabajo")
     }
   }
 
   // Retry all failed jobs
   async retryAllFailed(event) {
     event.preventDefault()
-    
-    if (!confirm("Are you sure you want to retry all failed jobs?")) {
+
+    if (!confirm("¿Estás seguro de que deseas reintentar todos los trabajos fallidos?")) {
       return
     }
-    
+
     try {
       const response = await fetch("/api/queue/retry_all_failed", {
         method: "POST",
@@ -454,35 +454,35 @@ export default class extends Controller {
       })
 
       const result = await response.json()
-      
+
       if (result.success) {
         this.showSuccess(result.message)
         this.fetchQueueStatus()
       } else {
-        this.showError(result.error || "Failed to retry jobs")
+        this.showError(result.error || "Error al reintentar trabajos")
       }
     } catch (error) {
-      console.error("Failed to retry all jobs:", error)
-      this.showError("Failed to retry all failed jobs")
+      console.error("Error al reintentar todos los trabajos:", error)
+      this.showError("Error al reintentar todos los trabajos fallidos")
     }
   }
 
   // Clear all failed jobs (not implemented in controller, but placeholder)
   async clearAllFailed(event) {
     event.preventDefault()
-    
-    if (!confirm("Are you sure you want to clear all failed jobs? This cannot be undone.")) {
+
+    if (!confirm("¿Estás seguro de que deseas limpiar todos los trabajos fallidos? Esta acción no se puede deshacer.")) {
       return
     }
-    
-    this.showError("Clear all not yet implemented")
+
+    this.showError("Limpiar todo aún no está implementado")
   }
 
   // Update last refresh time
   updateLastRefreshTime() {
     const now = new Date()
     const timeStr = now.toLocaleTimeString()
-    this.lastUpdateTarget.textContent = `Updated ${timeStr}`
+    this.lastUpdateTarget.textContent = `Actualizado ${timeStr}`
   }
 
   // Format job class name
@@ -496,15 +496,15 @@ export default class extends Controller {
 
   // Extract error message from error JSON
   extractErrorMessage(error) {
-    if (!error) return "Unknown error"
-    
+    if (!error) return "Error desconocido"
+
     try {
       // If it's a string, try to parse it as JSON
       if (typeof error === "string") {
         const parsed = JSON.parse(error)
         return parsed.message || parsed.error || error
       }
-      return error.message || error.error || "Unknown error"
+      return error.message || error.error || "Error desconocido"
     } catch {
       // If parsing fails, return first 100 chars of the error
       return error.substring(0, 100) + (error.length > 100 ? "..." : "")

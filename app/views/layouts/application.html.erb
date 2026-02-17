@@ -99,7 +99,7 @@
           <!-- Flash with Undo functionality -->
           <div data-controller="undo-manager"
                data-undo-manager-undo-id-value="<%= flash[:undo_id] %>"
-               data-undo-manager-time-remaining-value="<%= flash[:undo_time_remaining] || 1800 %>"
+               data-undo-manager-time-remaining-value="<%= flash[:undo_time_remaining] || UndoHistory::UNDO_WINDOW.to_i %>"
                class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg relative" 
                role="alert">
             <div class="flex items-center justify-between gap-4">

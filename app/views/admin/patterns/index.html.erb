@@ -119,7 +119,7 @@
         <div>
           <%= f.select :filter_category,
               options_for_select(
-                [['All Categories', '']] + Category.order(:name).pluck(:name, :id),
+                [[I18n.t('admin.patterns.filters.all_categories'), '']] + Category.order(:name).pluck(:name, :id),
                 params[:filter_category]
               ),
               {},

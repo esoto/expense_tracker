@@ -93,37 +93,37 @@ module PatternsHelper
 
   def pattern_type_options
     [
-      [ "Merchant Name", "merchant" ],
-      [ "Keyword", "keyword" ],
-      [ "Description", "description" ],
-      [ "Amount Range", "amount_range" ],
-      [ "Regular Expression", "regex" ],
-      [ "Time Pattern", "time" ]
+      [ I18n.t('admin.patterns.types.merchant'), "merchant" ],
+      [ I18n.t('admin.patterns.types.keyword'), "keyword" ],
+      [ I18n.t('admin.patterns.types.description'), "description" ],
+      [ I18n.t('admin.patterns.types.amount_range'), "amount_range" ],
+      [ I18n.t('admin.patterns.types.regex'), "regex" ],
+      [ I18n.t('admin.patterns.types.time'), "time" ]
     ]
   end
 
   def pattern_type_filter_options
     [
-      [ "All Types", "" ],
-      [ "Merchant", "merchant" ],
-      [ "Keyword", "keyword" ],
-      [ "Description", "description" ],
-      [ "Amount Range", "amount_range" ],
-      [ "Regex", "regex" ],
-      [ "Time", "time" ]
+      [ I18n.t('admin.patterns.filter_types.all_types'), "" ],
+      [ I18n.t('admin.patterns.filter_types.merchant'), "merchant" ],
+      [ I18n.t('admin.patterns.filter_types.keyword'), "keyword" ],
+      [ I18n.t('admin.patterns.filter_types.description'), "description" ],
+      [ I18n.t('admin.patterns.filter_types.amount_range'), "amount_range" ],
+      [ I18n.t('admin.patterns.filter_types.regex'), "regex" ],
+      [ I18n.t('admin.patterns.filter_types.time'), "time" ]
     ]
   end
 
   def pattern_status_filter_options
     [
-      [ "All Status", "" ],
-      [ "Active", "active" ],
-      [ "Inactive", "inactive" ],
-      [ "User Created", "user_created" ],
-      [ "System Created", "system_created" ],
-      [ "High Confidence", "high_confidence" ],
-      [ "Successful", "successful" ],
-      [ "Frequently Used", "frequently_used" ]
+      [ I18n.t('admin.patterns.filter_statuses.all_status'), "" ],
+      [ I18n.t('admin.patterns.filter_statuses.active'), "active" ],
+      [ I18n.t('admin.patterns.filter_statuses.inactive'), "inactive" ],
+      [ I18n.t('admin.patterns.filter_statuses.user_created'), "user_created" ],
+      [ I18n.t('admin.patterns.filter_statuses.system_created'), "system_created" ],
+      [ I18n.t('admin.patterns.filter_statuses.high_confidence'), "high_confidence" ],
+      [ I18n.t('admin.patterns.filter_statuses.successful'), "successful" ],
+      [ I18n.t('admin.patterns.filter_statuses.frequently_used'), "frequently_used" ]
     ]
   end
 end

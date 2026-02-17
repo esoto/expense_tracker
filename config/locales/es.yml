@@ -197,6 +197,36 @@ es:
         all_categories: "Todas las Categorías"
         all_statuses: "Todos los Estados"
         
+      # Pattern types
+      types:
+        merchant: "Nombre del Comerciante"
+        keyword: "Palabra Clave"
+        description: "Descripción"
+        amount_range: "Rango de Monto"
+        regex: "Expresión Regular"
+        time: "Patrón de Tiempo"
+        
+      # Filter types
+      filter_types:
+        all_types: "Todos los Tipos"
+        merchant: "Comerciante"
+        keyword: "Palabra Clave"
+        description: "Descripción"
+        amount_range: "Rango de Monto"
+        regex: "Expresión Regular"
+        time: "Tiempo"
+        
+      # Filter statuses
+      filter_statuses:
+        all_status: "Todos los Estados"
+        active: "Activo"
+        inactive: "Inactivo"
+        user_created: "Creado por Usuario"
+        system_created: "Creado por Sistema"
+        high_confidence: "Alta Confianza"
+        successful: "Exitoso"
+        frequently_used: "Usado Frecuentemente"
+        
       # Form
       form:
         new_title: "Nuevo Patrón de Categorización"

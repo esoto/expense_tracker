@@ -1,5 +1,6 @@
 class ExpensesController < ApplicationController
   include Authentication
+  include Pagy::Method
   before_action :set_expense, only: [ :show, :edit, :update, :destroy, :correct_category, :accept_suggestion, :reject_suggestion, :update_status, :duplicate ]
   before_action :authorize_expense!, only: [ :edit, :update, :destroy, :correct_category, :accept_suggestion, :reject_suggestion, :update_status, :duplicate ]
 
@@ -25,8 +26,11 @@ class ExpensesController < ApplicationController
 
       # Extract metadata for UI
       @filters_applied = @result.metadata[:filters_applied]
-      @current_page = @result.metadata[:page]
-      @per_page = @result.metadata[:per_page]
+      @current_page = (@result.metadata[:page] || 1).to_i
+      @per_page = (@result.metadata[:per_page] || 50).to_i
+
+      # Build Pagy::Offset instance from the already-paginated result for navigation controls
+      @pagy = Pagy::Offset.new(count: @total_count, page: @current_page, limit: @per_page)
 
       # Calculate summary statistics from the result
       calculate_summary_from_result(@result)
@@ -34,6 +38,7 @@ class ExpensesController < ApplicationController
       # Fallback to empty result on error
       @expenses = []
       @total_count = 0
+      @pagy = Pagy::Offset.new(count: 0, page: 1, limit: 50)
       @performance_metrics = { error: true }
       flash.now[:alert] = "Error loading expenses. Please try again."
     end

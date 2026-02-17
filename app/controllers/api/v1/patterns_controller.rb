@@ -171,13 +171,23 @@ module Api
       end
 
       def pagination_meta(collection)
+        page = [ (params[:page] || 1).to_i, 1 ].max
+        per_page = collection.respond_to?(:limit_value) ? (collection.limit_value || 25) : 25
+        total = if collection.respond_to?(:except)
+                  collection.except(:limit, :offset).count
+        else
+                  collection.respond_to?(:count) ? collection.count : 0
+        end
+        total_pages = per_page.positive? ? (total.to_f / per_page).ceil : 1
+        total_pages = [ total_pages, 1 ].max
+
         {
-          current_page: collection.current_page,
-          total_pages: collection.total_pages,
-          total_count: collection.total_count,
-          per_page: collection.limit_value,
-          next_page: collection.next_page,
-          prev_page: collection.prev_page
+          current_page: page,
+          total_pages: total_pages,
+          total_count: total,
+          per_page: per_page,
+          next_page: page < total_pages ? page + 1 : nil,
+          prev_page: page > 1 ? page - 1 : nil
         }
       end
 

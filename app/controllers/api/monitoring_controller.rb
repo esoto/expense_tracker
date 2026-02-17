@@ -49,7 +49,10 @@ module Api
 
       if token.present?
         api_token = ApiToken.authenticate(token)
-        return if api_token&.valid_token?
+        if api_token&.valid_token?
+          api_token.touch_last_used!
+          return
+        end
       end
 
       render json: { error: "Unauthorized" }, status: :unauthorized

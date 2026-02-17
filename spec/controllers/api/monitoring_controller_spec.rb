@@ -52,6 +52,20 @@ RSpec.describe Api::MonitoringController, type: :controller, unit: true do
 
         expect(response).to have_http_status(:unauthorized)
       end
+
+      it "rejects requests with malformed Authorization header (no space)" do
+        request.headers["Authorization"] = "Bearerinvalid-token"
+        get :metrics, format: :json
+
+        expect(response).to have_http_status(:unauthorized)
+      end
+
+      it "rejects requests with malformed Authorization header (wrong scheme)" do
+        request.headers["Authorization"] = "Basic invalid-token"
+        get :metrics, format: :json
+
+        expect(response).to have_http_status(:unauthorized)
+      end
     end
 
     context "when a valid token is provided" do

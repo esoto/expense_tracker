@@ -45,7 +45,7 @@ module Api
     private
 
     def authenticate_api_request
-      token = request.headers["Authorization"]&.remove("Bearer ")
+      token = extract_bearer_token
 
       if token.present?
         api_token = ApiToken.authenticate(token)
@@ -53,6 +53,15 @@ module Api
       end
 
       render json: { error: "Unauthorized" }, status: :unauthorized
+    end
+
+    def extract_bearer_token
+      auth_header = request.headers["Authorization"]
+      return nil unless auth_header.present?
+
+      # Match "Bearer <token>" format (case-insensitive, with required space)
+      match = auth_header.match(/\ABearer\s+(.+)\z/i)
+      match[1] if match
     end
   end
 end

@@ -540,9 +540,9 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         end
 
         it "does not bypass authentication in test environment" do
-          # Even though we are in a test environment, once we stub test? to false
-          # and have no credentials, it should reject. This test verifies that
-          # the test env bypass has been removed from the code.
+          # Even in a test environment (test? returns true), with no credentials
+          # configured, authentication should reject the request. This verifies
+          # the test-env bypass has been removed from the code.
           allow(Rails.env).to receive(:test?).and_return(true)
 
           post :pause, format: :json

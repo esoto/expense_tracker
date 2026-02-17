@@ -1,10 +1,10 @@
 module Api
   class ClientErrorsController < ApplicationController
-    skip_before_action :authenticate_user!
     skip_before_action :verify_authenticity_token
 
     # POST /api/client_errors
     # Receives error reports from client-side JavaScript
+    # Requires a valid user session to prevent unauthenticated log flooding
     def create
       # Parse error data
       error_data = {
@@ -45,6 +45,15 @@ module Api
         # Even if logging fails, don't crash
       end
       render json: { status: "error" }, status: :ok
+    end
+
+    private
+
+    # Override to return JSON 401 instead of redirecting to login page
+    def authenticate_user!
+      unless user_signed_in?
+        render json: { error: "Authentication required" }, status: :unauthorized
+      end
     end
   end
 end

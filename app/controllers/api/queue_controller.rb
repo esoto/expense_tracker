@@ -203,10 +203,26 @@ module Api
       minutes.positive? ? minutes : nil
     end
 
-    # Broadcast queue status updates via ActionCable
+    # Extract the session ID from the current request for session-scoped broadcasting.
+    # Falls back to the Rails session ID when the encrypted cookie is not available.
+    def current_request_session_id
+      session_data = cookies.encrypted[:_expense_tracker_session]
+      session_id = session_data&.dig("session_id") || session_data&.dig(:session_id)
+      session_id.presence || request.session.id.to_s.presence
+    end
+
+    # Build the session-scoped stream name for broadcasting via ActionCable.
+    def scoped_stream_name
+      QueueChannel.stream_name_for(current_request_session_id)
+    end
+
+    # Broadcast queue status updates via ActionCable, scoped to the requesting user's session
     def broadcast_queue_update(action, queue_name)
+      stream = scoped_stream_name
+      return unless stream
+
       ActionCable.server.broadcast(
-        "queue_updates",
+        stream,
         {
           action: action,
           queue_name: queue_name,
@@ -222,10 +238,13 @@ module Api
       Rails.logger.error "Failed to broadcast queue update: #{e.message}"
     end
 
-    # Broadcast job-specific updates via ActionCable
+    # Broadcast job-specific updates via ActionCable, scoped to the requesting user's session
     def broadcast_job_update(action, job_id)
+      stream = scoped_stream_name
+      return unless stream
+
       ActionCable.server.broadcast(
-        "queue_updates",
+        stream,
         {
           action: "job_#{action}",
           job_id: job_id,

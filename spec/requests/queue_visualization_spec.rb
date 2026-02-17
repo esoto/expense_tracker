@@ -298,12 +298,12 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
   end
 
   describe "Real-time updates via ActionCable", integration: true do
-    it "broadcasts queue updates when pausing" do
+    it "broadcasts queue updates to a session-scoped channel when pausing" do
       mock_queue_monitor_service
       allow(Services::QueueMonitor).to receive(:pause_queue).and_return(true)
 
       expect(ActionCable.server).to receive(:broadcast).with(
-        "queue_updates",
+        a_string_starting_with("queue_updates_"),
         hash_including(
           action: "paused",
           timestamp: kind_of(String),
@@ -314,14 +314,14 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       post "/api/queue/pause", headers: { "Accept" => "application/json" }
     end
 
-    it "broadcasts job updates when retrying" do
+    it "broadcasts job updates to a session-scoped channel when retrying" do
       mock_queue_monitor_service
       job = instance_double(SolidQueue::Job, id: 123)
       allow(SolidQueue::Job).to receive(:find_by).and_return(job)
       allow(Services::QueueMonitor).to receive(:retry_failed_job).and_return(true)
 
       expect(ActionCable.server).to receive(:broadcast).with(
-        "queue_updates",
+        a_string_starting_with("queue_updates_"),
         hash_including(
           action: "job_retried",
           job_id: "123",
@@ -330,6 +330,16 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       )
 
       post "/api/queue/jobs/123/retry", headers: { "Accept" => "application/json" }
+    end
+
+    it "does not broadcast to the global unscoped queue_updates channel" do
+      mock_queue_monitor_service
+      allow(Services::QueueMonitor).to receive(:pause_queue).and_return(true)
+
+      expect(ActionCable.server).not_to receive(:broadcast).with("queue_updates", anything)
+      allow(ActionCable.server).to receive(:broadcast).with(a_string_starting_with("queue_updates_"), anything)
+
+      post "/api/queue/pause", headers: { "Accept" => "application/json" }
     end
   end
 

@@ -204,7 +204,7 @@ module Api
     end
 
     # Extract the session ID from the current request for session-scoped broadcasting.
-    # Falls back to the Rails session ID when the encrypted cookie is not available.
+    # Falls back to the Rails session ID when the encrypted cookie does not contain a "session_id" key.
     def current_request_session_id
       session_data = cookies.encrypted[:_expense_tracker_session]
       session_id = session_data&.dig("session_id") || session_data&.dig(:session_id)
@@ -219,7 +219,10 @@ module Api
     # Broadcast queue status updates via ActionCable, scoped to the requesting user's session
     def broadcast_queue_update(action, queue_name)
       stream = scoped_stream_name
-      return unless stream
+      unless stream
+        Rails.logger.warn "[QueueController] Skipping queue update broadcast: no valid session ID"
+        return
+      end
 
       ActionCable.server.broadcast(
         stream,
@@ -241,7 +244,10 @@ module Api
     # Broadcast job-specific updates via ActionCable, scoped to the requesting user's session
     def broadcast_job_update(action, job_id)
       stream = scoped_stream_name
-      return unless stream
+      unless stream
+        Rails.logger.warn "[QueueController] Skipping job update broadcast: no valid session ID"
+        return
+      end
 
       ActionCable.server.broadcast(
         stream,

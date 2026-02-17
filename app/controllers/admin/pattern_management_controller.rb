@@ -57,11 +57,4 @@ class Admin::PatternManagementController < Admin::BaseController
       format.html { redirect_to admin_patterns_path }
     end
   end
-
-  private
-
-  def require_pattern_management_permission
-    # Pattern management permission check
-    true
-  end
 end

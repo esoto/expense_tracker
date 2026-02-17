@@ -158,3 +158,64 @@ es:
     filter: "Filtrar"
     export: "Exportar"
     import: "Importar"
+    
+  # Bulk Categorization
+  bulk_categorizations:
+    index:
+      title: "Categorización Masiva"
+      subtitle: "Revisa y categoriza múltiples gastos similares a la vez"
+      export_report: "Exportar Reporte"
+      auto_categorize_high: "Categorizar Automáticamente Alta Confianza"
+      processing: "Procesando..."
+      completed: "completados"
+      all_caught_up: "¡Todo al día!"
+      no_expenses: "No hay gastos sin categorizar que revisar."
+      
+    statistics:
+      total_groups: "Grupos Totales"
+      total_expenses: "Gastos Totales"
+      high_confidence: "Alta Confianza"
+      total_amount: "Monto Total"
+      
+    expense_groups:
+      confidence: "confianza"
+      expenses: "gasto"
+      expenses_plural: "gastos"
+      suggested: "Sugerida"
+      apply_suggestion: "Aplicar Sugerencia"
+      select_category: "Selecciona una categoría..."
+      apply_to_all: "Aplicar a Todo"
+      preview: "Previsualizar"
+      use_group_category: "Usar categoría del grupo"
+      
+    preview_modal:
+      title: "Previsualización de Categorización"
+      will_categorize_as: "Se categorizará como:"
+      expenses_label: "Gastos"
+      total_amount: "Monto Total"
+      average_confidence: "Confianza Promedio"
+      expenses_to_categorize: "Gastos a categorizar:"
+      impact_analysis: "Análisis de Impacto"
+      will_affect_budgets: "Esto afectará"
+      budgets: "presupuesto(s)"
+      confidence_increase: "La confianza del patrón aumentará en"
+      new_patterns: "nuevo(s) patrón(es) se creará(n)"
+      loading: "Cargando previsualización..."
+      cancel: "Cancelar"
+      confirm: "Confirmar Categorización"
+      
+    show:
+      title: "Detalles de Operación Masiva"
+      operation_summary: "Resumen de Operación"
+      bulk_operation: "Operación Masiva"
+      affected_expenses: "Gastos Afectados"
+      expenses_affected: "afectados"
+      
+    messages:
+      select_category: "Por favor selecciona una categoría"
+      no_expenses_selected: "No hay gastos seleccionados"
+      error_occurred: "Ocurrió un error. Por favor intenta de nuevo."
+      select_category_preview: "Por favor selecciona una categoría para previsualizar"
+      error_loading_preview: "Error al cargar la previsualización"
+      auto_categorize_confirm: "Esto categorizará automáticamente todos los coincidencias de alta confianza. ¿Continuar?"
+      auto_categorize_failed: "La categorización automática falló"

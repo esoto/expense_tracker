@@ -1,14 +1,14 @@
 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-  <h1 class="text-xl font-semibold text-slate-900 mb-6">Detalles de Operación Masiva</h1>
+  <h1 class="text-xl font-semibold text-slate-900 mb-6"><%= t('bulk_categorizations.show.title') %></h1>
   <div class="space-y-4">
     <div>
-      <h2 class="text-lg font-medium text-slate-800">Resumen de Operación</h2>
-      <p class="text-slate-600">Operación Masiva #<%= @bulk_operation.id %></p>
+      <h2 class="text-lg font-medium text-slate-800"><%= t('bulk_categorizations.show.operation_summary') %></h2>
+      <p class="text-slate-600"><%= t('bulk_categorizations.show.bulk_operation') %> #<%= @bulk_operation.id %></p>
     </div>
     <% if @affected_expenses.present? %>
       <div>
-        <h2 class="text-lg font-medium text-slate-800">Gastos Afectados</h2>
-        <p class="text-slate-600"><%= pluralize(@affected_expenses.count, 'gasto') %> afectados</p>
+        <h2 class="text-lg font-medium text-slate-800"><%= t('bulk_categorizations.show.affected_expenses') %></h2>
+        <p class="text-slate-600"><%= pluralize(@affected_expenses.count, t('bulk_categorizations.expense_groups.expenses'), t('bulk_categorizations.expense_groups.expenses_plural')) %> <%= t('bulk_categorizations.show.expenses_affected') %></p>
       </div>
     <% end %>
   </div>

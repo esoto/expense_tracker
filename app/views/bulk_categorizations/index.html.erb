@@ -4,8 +4,8 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <div class="flex justify-between items-center">
         <div>
-          <h1 class="text-2xl font-bold text-slate-900">Categorización Masiva</h1>
-          <p class="mt-1 text-sm text-slate-600">Revisa y categoriza múltiples gastos similares a la vez</p>
+          <h1 class="text-2xl font-bold text-slate-900"><%= t('bulk_categorizations.index.title') %></h1>
+          <p class="mt-1 text-sm text-slate-600"><%= t('bulk_categorizations.index.subtitle') %></p>
         </div>
         <div class="flex gap-3">
           <%= link_to bulk_categorizations_export_path(format: :csv),
@@ -13,15 +13,16 @@
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
             </svg>
-            Exportar Reporte
+            <%= t('bulk_categorizations.index.export_report') %>
           <% end %>
 
           <button data-action="click->bulk-categorization#autoCategorizehighConfidence"
+                  data-confirm-message="<%= t('bulk_categorizations.messages.auto_categorize_confirm') %>"
                   class="inline-flex items-center px-4 py-2 bg-teal-700 text-white rounded-lg text-sm font-medium hover:bg-teal-800 transition-colors">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
             </svg>
-            Categorizar Automáticamente Alta Confianza
+            <%= t('bulk_categorizations.index.auto_categorize_high') %>
           </button>
         </div>
       </div>
@@ -42,9 +43,9 @@
     <div id="categorization_progress" class="hidden mb-6">
       <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-sm font-medium text-slate-700">Procesando...</span>
+          <span class="text-sm font-medium text-slate-700"><%= t('bulk_categorizations.index.processing') %></span>
           <span class="text-sm text-slate-500">
-            <span data-progress-target="completed">0</span> / <span data-progress-target="total">0</span> completados
+            <span data-progress-target="completed">0</span> / <span data-progress-target="total">0</span> <%= t('bulk_categorizations.index.completed') %>
           </span>
         </div>
         <div class="w-full bg-slate-200 rounded-full h-2">
@@ -54,14 +55,21 @@
     </div>
 
     <!-- Expense Groups -->
-    <div id="uncategorized_expenses" data-controller="bulk-categorization">
+    <div id="uncategorized_expenses" 
+         data-controller="bulk-categorization"
+         data-bulk-categorization-select-category-value="<%= t('bulk_categorizations.messages.select_category') %>"
+         data-bulk-categorization-no-expenses-selected-value="<%= t('bulk_categorizations.messages.no_expenses_selected') %>"
+         data-bulk-categorization-error-occurred-value="<%= t('bulk_categorizations.messages.error_occurred') %>"
+         data-bulk-categorization-select-category-preview-value="<%= t('bulk_categorizations.messages.select_category_preview') %>"
+         data-bulk-categorization-error-loading-preview-value="<%= t('bulk_categorizations.messages.error_loading_preview') %>"
+         data-bulk-categorization-auto-categorize-failed-value="<%= t('bulk_categorizations.messages.auto_categorize_failed') %>">
       <% if @grouped_expenses.empty? %>
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
           <svg class="w-16 h-16 mx-auto text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
-          <h3 class="text-lg font-semibold text-slate-900 mb-2">¡Todo al día!</h3>
-          <p class="text-slate-600">No hay gastos sin categorizar que revisar.</p>
+          <h3 class="text-lg font-semibold text-slate-900 mb-2"><%= t('bulk_categorizations.index.all_caught_up') %></h3>
+          <p class="text-slate-600"><%= t('bulk_categorizations.index.no_expenses') %></p>
         </div>
       <% else %>
         <%= render "expense_groups", grouped_expenses: @grouped_expenses %>

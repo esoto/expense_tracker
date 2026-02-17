@@ -2,10 +2,26 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["categorySelect", "expandIcon", "expenseList"]
+  static values = {
+    selectCategory: String,
+    noExpensesSelected: String,
+    errorOccurred: String,
+    selectCategoryPreview: String,
+    errorLoadingPreview: String,
+    autoCategorizeFailed: String
+  }
   
   connect() {
     this.selectedExpenses = new Map()
     this.initializeSelections()
+    
+    // Set default messages if not provided
+    this.selectCategoryValue = this.selectCategoryValue || 'Por favor selecciona una categoría'
+    this.noExpensesSelectedValue = this.noExpensesSelectedValue || 'No hay gastos seleccionados'
+    this.errorOccurredValue = this.errorOccurredValue || 'Ocurrió un error. Por favor intenta de nuevo.'
+    this.selectCategoryPreviewValue = this.selectCategoryPreviewValue || 'Por favor selecciona una categoría para previsualizar'
+    this.errorLoadingPreviewValue = this.errorLoadingPreviewValue || 'Error al cargar la previsualización'
+    this.autoCategorizeFailed Value = this.autoCategorizeFailed Value || 'La categorización automática falló'
   }
 
   initializeSelections() {
@@ -74,14 +90,14 @@ export default class extends Controller {
     const categoryId = select?.value
     
     if (!categoryId) {
-      this.showNotification('Por favor selecciona una categoría', 'error')
+      this.showNotification(this.selectCategoryValue, 'error')
       return
     }
     
     const expenseIds = Array.from(this.selectedExpenses.get(groupId) || [])
     
     if (expenseIds.length === 0) {
-      this.showNotification('No hay gastos seleccionados', 'error')
+      this.showNotification(this.noExpensesSelectedValue, 'error')
       return
     }
     
@@ -96,7 +112,7 @@ export default class extends Controller {
     const expenseIds = Array.from(this.selectedExpenses.get(groupId) || [])
     
     if (expenseIds.length === 0) {
-      this.showNotification('No hay gastos seleccionados', 'error')
+      this.showNotification(this.noExpensesSelectedValue, 'error')
       return
     }
     
@@ -134,7 +150,7 @@ export default class extends Controller {
     })
     .catch(error => {
       console.error('Error:', error)
-      this.showNotification('Ocurrió un error. Por favor intenta de nuevo.', 'error')
+      this.showNotification(this.errorOccurredValue, 'error')
       this.hideProgress()
       this.enableGroupButtons(groupId)
     })
@@ -147,14 +163,14 @@ export default class extends Controller {
     const categoryId = select?.value
     
     if (!categoryId) {
-      this.showNotification('Por favor selecciona una categoría para previsualizar', 'error')
+      this.showNotification(this.selectCategoryPreviewValue, 'error')
       return
     }
     
     const expenseIds = Array.from(this.selectedExpenses.get(groupId) || [])
     
     if (expenseIds.length === 0) {
-      this.showNotification('No hay gastos seleccionados', 'error')
+      this.showNotification(this.noExpensesSelectedValue, 'error')
       return
     }
     
@@ -175,7 +191,7 @@ export default class extends Controller {
     .then(html => Turbo.renderStreamMessage(html))
     .catch(error => {
       console.error('Error:', error)
-      this.showNotification('Error al cargar la previsualización', 'error')
+      this.showNotification(this.errorLoadingPreviewValue, 'error')
     })
   }
 
@@ -194,7 +210,9 @@ export default class extends Controller {
   }
 
   autoCategorizehighConfidence(event) {
-    if (!confirm('Esto categorizará automáticamente todos los coincidencias de alta confianza. ¿Continuar?')) {
+    const confirmMessage = event.currentTarget.dataset.confirmMessage || 'Esto categorizará automáticamente todos los coincidencias de alta confianza. ¿Continuar?'
+    
+    if (!confirm(confirmMessage)) {
       return
     }
     
@@ -213,7 +231,7 @@ export default class extends Controller {
     .then(html => Turbo.renderStreamMessage(html))
     .catch(error => {
       console.error('Error:', error)
-      this.showNotification('La categorización automática falló', 'error')
+      this.showNotification(this.autoCategorizeFailed Value, "error")
     })
   }
 

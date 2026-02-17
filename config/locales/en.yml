@@ -29,3 +29,64 @@
 
 en:
   hello: "Hello world"
+  
+  # Bulk Categorization
+  bulk_categorizations:
+    index:
+      title: "Bulk Categorization"
+      subtitle: "Review and categorize multiple similar expenses at once"
+      export_report: "Export Report"
+      auto_categorize_high: "Auto Categorize High Confidence"
+      processing: "Processing..."
+      completed: "completed"
+      all_caught_up: "All caught up!"
+      no_expenses: "No uncategorized expenses to review."
+      
+    statistics:
+      total_groups: "Total Groups"
+      total_expenses: "Total Expenses"
+      high_confidence: "High Confidence"
+      total_amount: "Total Amount"
+      
+    expense_groups:
+      confidence: "confidence"
+      expenses: "expense"
+      expenses_plural: "expenses"
+      suggested: "Suggested"
+      apply_suggestion: "Apply Suggestion"
+      select_category: "Select a category..."
+      apply_to_all: "Apply to All"
+      preview: "Preview"
+      use_group_category: "Use group category"
+      
+    preview_modal:
+      title: "Categorization Preview"
+      will_categorize_as: "Will be categorized as:"
+      expenses_label: "Expenses"
+      total_amount: "Total Amount"
+      average_confidence: "Average Confidence"
+      expenses_to_categorize: "Expenses to categorize:"
+      impact_analysis: "Impact Analysis"
+      will_affect_budgets: "This will affect"
+      budgets: "budget(s)"
+      confidence_increase: "Pattern confidence will increase by"
+      new_patterns: "new pattern(s) will be created"
+      loading: "Loading preview..."
+      cancel: "Cancel"
+      confirm: "Confirm Categorization"
+      
+    show:
+      title: "Bulk Operation Details"
+      operation_summary: "Operation Summary"
+      bulk_operation: "Bulk Operation"
+      affected_expenses: "Affected Expenses"
+      expenses_affected: "expenses affected"
+      
+    messages:
+      select_category: "Please select a category"
+      no_expenses_selected: "No expenses selected"
+      error_occurred: "An error occurred. Please try again."
+      select_category_preview: "Please select a category to preview"
+      error_loading_preview: "Error loading preview"
+      auto_categorize_confirm: "This will automatically categorize all high confidence matches. Continue?"
+      auto_categorize_failed: "Auto categorization failed"

@@ -8,7 +8,7 @@
         </svg>
       </div>
       <div>
-        <p class="text-sm text-slate-600">Grupos Totales</p>
+        <p class="text-sm text-slate-600"><%= t('bulk_categorizations.statistics.total_groups') %></p>
         <p class="text-xl font-semibold text-slate-900"><%= statistics[:total_groups] %></p>
       </div>
     </div>
@@ -21,7 +21,7 @@
         </svg>
       </div>
       <div>
-        <p class="text-sm text-slate-600">Gastos Totales</p>
+        <p class="text-sm text-slate-600"><%= t('bulk_categorizations.statistics.total_expenses') %></p>
         <p class="text-xl font-semibold text-slate-900"><%= statistics[:total_expenses] %></p>
       </div>
     </div>
@@ -34,7 +34,7 @@
         </svg>
       </div>
       <div>
-        <p class="text-sm text-slate-600">Alta Confianza</p>
+        <p class="text-sm text-slate-600"><%= t('bulk_categorizations.statistics.high_confidence') %></p>
         <p class="text-xl font-semibold text-slate-900"><%= statistics[:high_confidence_groups] %></p>
       </div>
     </div>
@@ -47,7 +47,7 @@
         </svg>
       </div>
       <div>
-        <p class="text-sm text-slate-600">Monto Total</p>
+        <p class="text-sm text-slate-600"><%= t('bulk_categorizations.statistics.total_amount') %></p>
         <p class="text-xl font-semibold text-slate-900">₡<%= number_with_delimiter(statistics[:total_amount].to_i) %></p>
       </div>
     </div>

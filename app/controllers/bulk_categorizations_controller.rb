@@ -52,9 +52,10 @@ class BulkCategorizationsController < ApplicationController
       .includes(:email_account, :category, :bulk_operation_items)
       .order(transaction_date: :desc)
 
-    # Use pagination when requested, otherwise apply performance limit
+    # Use offset pagination when requested, otherwise apply performance limit
     @uncategorized_expenses = if params[:page].present?
-      scope.page(params[:page]).per(100)
+      page = [ params[:page].to_i, 1 ].max
+      scope.limit(100).offset((page - 1) * 100)
     else
       scope.limit(500) # Only apply limit when not paginating
     end

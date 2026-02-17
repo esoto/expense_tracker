@@ -505,15 +505,13 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
   end
 
   describe "pagination and caching", unit: true do
+    let(:except_chain) { double("except_chain", count: 50) }
     let(:paginated_collection) do
-      double("paginated_collection",
-        current_page: 1,
-        total_pages: 5,
-        total_count: 50,
-        limit_value: 10,
-        next_page: 2,
-        prev_page: nil
+      coll = double("paginated_collection",
+        limit_value: 10
       )
+      allow(coll).to receive(:except).with(:limit, :offset).and_return(except_chain)
+      coll
     end
 
     describe "#pagination_meta" do

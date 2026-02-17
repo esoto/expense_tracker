@@ -26,9 +26,11 @@ RSpec.describe ApiConfiguration, type: :controller, unit: true do
     end
 
     # Set up mock collection for pagination tests
+    @paginated_result = double('paginated_result', length: 0)
+    @limit_chain = double('limit_chain')
     @test_collection = double('collection')
-    allow(@test_collection).to receive(:page).and_return(@test_collection)
-    allow(@test_collection).to receive(:per).and_return([])
+    allow(@test_collection).to receive(:limit).with(anything).and_return(@limit_chain)
+    allow(@limit_chain).to receive(:offset).with(anything).and_return(@paginated_result)
     controller.instance_variable_set(:@test_collection, @test_collection)
   end
 

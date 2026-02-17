@@ -29,10 +29,10 @@ RSpec.describe Admin::CompositePatternsController, type: :controller, unit: true
     let(:composite_patterns) { [ composite_pattern ] }
 
     before do
-      # Mock the pagination chain properly
-      paginated_result = double("paginated_result")
-      allow(paginated_result).to receive(:per).with(20).and_return(composite_patterns)
-      allow(CompositePattern).to receive_message_chain(:includes, :order).and_return(double(page: paginated_result))
+      # Mock the pagination chain properly (limit/offset based)
+      limited_result = double("limited_result")
+      allow(limited_result).to receive(:offset).with(0).and_return(composite_patterns)
+      allow(CompositePattern).to receive_message_chain(:includes, :order, :limit).and_return(limited_result)
     end
 
     it "loads composite patterns with pagination" do

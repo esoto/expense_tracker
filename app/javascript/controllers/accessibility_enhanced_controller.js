@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { shouldSuppressShortcut } from "../utilities/keyboard_shortcut_helpers"
 
 /**
  * Accessibility Enhanced Controller
@@ -125,14 +126,17 @@ export default class extends Controller {
   setupKeyboardNavigation() {
     this.keyboardHandler = (event) => {
       if (!this.keyboardNavEnabledValue) return
-      
+
+      // Don't fire shortcuts when typing in form fields (except Escape)
+      if (shouldSuppressShortcut(event)) return
+
       // Handle action button keyboard shortcuts
       if (event.altKey && event.key === 'a') {
         event.preventDefault()
         this.focusFirstAction()
       }
-      
-      // Navigate between actions with arrow keys
+
+      // Navigate between actions with arrow keys (only when in action context)
       if (this.isInActionContext(event.target)) {
         switch(event.key) {
           case 'ArrowDown':
@@ -153,13 +157,14 @@ export default class extends Controller {
             break
           case 'Escape':
             event.preventDefault()
+            event.stopPropagation()
             this.closeAllMenus()
             break
         }
       }
-      
-      // Quick action shortcuts
-      if (event.ctrlKey || event.metaKey) {
+
+      // Quick action shortcuts - only when a row is focused
+      if ((event.ctrlKey || event.metaKey) && document.activeElement.closest('tr')) {
         switch(event.key) {
           case 'e': // Edit
             event.preventDefault()
@@ -180,7 +185,7 @@ export default class extends Controller {
         }
       }
     }
-    
+
     document.addEventListener('keydown', this.keyboardHandler)
   }
   

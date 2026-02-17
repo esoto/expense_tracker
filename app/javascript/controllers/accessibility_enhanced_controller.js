@@ -493,7 +493,7 @@ export default class extends Controller {
     const action = button.dataset.action || ''
     
     if (action.includes('edit')) return 'Presiona Enter para editar este gasto'
-    if (action.includes('delete')) return 'Presiona Enter para eliminar este gasto. Podrás restaurarlo desde el historial.'
+    if (action.includes('delete')) return 'Presiona Enter para eliminar este gasto de forma permanente. Esta acción no se puede deshacer.'
     if (action.includes('duplicate')) return 'Presiona Enter para crear una copia de este gasto'
     if (action.includes('status')) return 'Presiona Enter para cambiar el estado del gasto'
     if (action.includes('category')) return 'Presiona Enter para cambiar la categoría del gasto'

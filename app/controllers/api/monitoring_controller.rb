@@ -59,9 +59,11 @@ module Api
       auth_header = request.headers["Authorization"]
       return nil unless auth_header.present?
 
-      # Match "Bearer <token>" format (case-insensitive, with required space)
-      match = auth_header.match(/\ABearer\s+(.+)\z/i)
-      match[1] if match
+      # Match "Bearer <token>" format (case-insensitive, with single space)
+      # Use fixed-length space to avoid ReDoS vulnerability
+      if auth_header.start_with?("Bearer ", "bearer ")
+        auth_header[7..]&.strip
+      end
     end
   end
 end

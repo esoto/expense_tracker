@@ -53,6 +53,7 @@ module Api
     def authenticate_user!
       unless user_signed_in?
         render json: { error: "Authentication required" }, status: :unauthorized
+        return false
       end
     end
   end

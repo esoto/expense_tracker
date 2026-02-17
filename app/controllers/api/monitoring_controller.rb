@@ -4,7 +4,8 @@ module Api
   # API endpoint for monitoring and dashboard metrics
   class MonitoringController < ApplicationController
     skip_before_action :authenticate_user!
-    before_action :authenticate_api_request, only: [ :metrics ]
+    skip_before_action :verify_authenticity_token
+    before_action :authenticate_api_request, only: [ :metrics, :strategy ]
 
     # GET /api/monitoring/metrics
     # Returns comprehensive dashboard metrics using the configured strategy
@@ -44,12 +45,14 @@ module Api
     private
 
     def authenticate_api_request
-      # Simple API token authentication
-      api_token = request.headers["X-API-Token"] || params[:api_token]
+      token = request.headers["Authorization"]&.remove("Bearer ")
 
-      unless api_token.present? && ApiToken.active.where(token: api_token).exists?
-        render json: { error: "Unauthorized" }, status: :unauthorized
+      if token.present?
+        api_token = ApiToken.authenticate(token)
+        return if api_token&.valid_token?
       end
+
+      render json: { error: "Unauthorized" }, status: :unauthorized
     end
   end
 end

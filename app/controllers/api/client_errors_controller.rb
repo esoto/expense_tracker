@@ -51,9 +51,9 @@ module Api
 
     # Override to return JSON 401 instead of redirecting to login page
     def authenticate_user!
-      unless user_signed_in?
-        render json: { error: "Authentication required" }, status: :unauthorized
-      end
+      return if user_signed_in?
+
+      render json: { error: "Authentication required" }, status: :unauthorized
     end
   end
 end

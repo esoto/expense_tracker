@@ -49,7 +49,9 @@ module Api
 
     private
 
-    # Override to return JSON 401 instead of redirecting to login page
+    # Override to return JSON 401 instead of redirecting to login page.
+    # Calling render in a before_action sets performed? to true,
+    # which prevents the controller action from executing.
     def authenticate_user!
       return if user_signed_in?
 

@@ -4,16 +4,21 @@ Rails.application.routes.draw do
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Mount Sidekiq Web UI with authentication
-  # In production, you should implement proper authentication
   if Rails.env.development?
     mount Sidekiq::Web => "/sidekiq"
   else
-    # Basic HTTP authentication for production
-    # You should replace this with your actual authentication system
+    # Require credentials via environment variables — no fallback defaults
     Sidekiq::Web.use Rack::Auth::Basic do |username, password|
-      # Use ActiveSupport::SecurityUtils.secure_compare to prevent timing attacks
-      ActiveSupport::SecurityUtils.secure_compare(username, ENV.fetch("SIDEKIQ_WEB_USERNAME", "admin")) &&
-        ActiveSupport::SecurityUtils.secure_compare(password, ENV.fetch("SIDEKIQ_WEB_PASSWORD", "change_me_in_production"))
+      sidekiq_username = ENV["SIDEKIQ_WEB_USERNAME"]
+      sidekiq_password = ENV["SIDEKIQ_WEB_PASSWORD"]
+
+      if sidekiq_username.blank? || sidekiq_password.blank?
+        Rails.logger.error "[SECURITY] Sidekiq Web credentials not configured"
+        false
+      else
+        ActiveSupport::SecurityUtils.secure_compare(username, sidekiq_username) &&
+          ActiveSupport::SecurityUtils.secure_compare(password, sidekiq_password)
+      end
     end
     mount Sidekiq::Web => "/sidekiq"
   end

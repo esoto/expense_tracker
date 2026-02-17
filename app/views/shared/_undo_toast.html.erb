@@ -7,6 +7,7 @@
       - time_remaining: Seconds remaining in the undo window
 %>
 <div data-controller="undo-manager"
+     data-undo-id="<%= undo_id %>"
      data-undo-manager-undo-id-value="<%= undo_id %>"
      data-undo-manager-time-remaining-value="<%= time_remaining %>"
      class="pointer-events-auto mb-3 p-4 rounded-lg shadow-lg bg-emerald-600 text-white min-w-[320px] max-w-md transform transition-all duration-300">

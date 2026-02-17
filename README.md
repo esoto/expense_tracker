@@ -274,6 +274,16 @@ The project maintains comprehensive test coverage:
 - Set up monitoring and logging
 - Configure backup strategies
 
+#### Required Environment Variables
+```bash
+# Sidekiq Web UI Authentication (Required in production/staging)
+SIDEKIQ_WEB_USERNAME=your_admin_username
+SIDEKIQ_WEB_PASSWORD=your_secure_password
+
+# These credentials are required to access the Sidekiq dashboard at /sidekiq
+# No default credentials are provided for security reasons
+```
+
 ## Contributing
 
 ### Development Rules
@@ -344,6 +354,8 @@ RAILS_ENV=test bin/rails db:schema:load
 - Pre-commit security scanning (Brakeman)
 - Input validation and sanitization
 - SQL injection prevention
+- Sidekiq Web UI requires explicit credentials (no defaults)
+- Timing-safe credential comparison
 
 ### Security Monitoring
 - Regular security audits

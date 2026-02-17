@@ -263,7 +263,7 @@ module Api
       return true if Rails.env.development? || Rails.env.test?
 
       # Log unauthorized access attempt
-      Rails.logger.warn "[SEGURIDAD] Intento de acceso no autorizado a la cola desde IP: #{request.remote_ip}, User-Agent: #{request.headers['User-Agent']}"
+      Rails.logger.warn "[SECURITY] Intento de acceso no autorizado a la cola desde IP: #{request.remote_ip}, User-Agent: #{request.headers['User-Agent']}"
 
       # Return error response
       render json: {

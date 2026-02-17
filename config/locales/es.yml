@@ -360,6 +360,7 @@ es:
         patterns_matched:
           one: "%{count} patrón"
           other: "%{count} patrones"
+        patterns_matched_label: "Patrones coincidentes"
         no_matching_patterns: "No se encontraron patrones coincidentes para los datos de gastos proporcionados."
         test_data_title: "Datos de Prueba"
         merchant: "Comerciante"

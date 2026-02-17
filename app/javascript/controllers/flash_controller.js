@@ -7,7 +7,10 @@ import { Controller } from "@hotwired/stimulus"
  * Cleans up timeouts on disconnect to prevent memory leaks.
  */
 export default class extends Controller {
-  static values = { delay: { type: Number, default: 5000 } }
+  static values = { 
+    delay: { type: Number, default: 5000 },
+    fadeOutDuration: { type: Number, default: 300 }
+  }
 
   connect() {
     this.timeout = setTimeout(() => this.dismiss(), this.delayValue)
@@ -26,6 +29,6 @@ export default class extends Controller {
     }
 
     this.element.classList.add("opacity-0", "transition-opacity", "duration-300")
-    setTimeout(() => this.element.remove(), 300)
+    setTimeout(() => this.element.remove(), this.fadeOutDurationValue)
   }
 }

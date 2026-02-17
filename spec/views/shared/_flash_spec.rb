@@ -89,4 +89,27 @@ RSpec.describe "shared/_flash", type: :view, unit: true do
       expect(rendered).to have_css('button[data-action="click->flash#dismiss"]', count: 2)
     end
   end
+
+  describe "error flash message" do
+    before do
+      flash[:error] = "A critical error occurred"
+      render partial: "shared/flash"
+    end
+
+    it "renders the error message text" do
+      expect(rendered).to have_content("A critical error occurred")
+    end
+
+    it "uses Financial Confidence error colors" do
+      expect(rendered).to have_css(".bg-rose-50.border-rose-200.text-rose-700")
+    end
+
+    it "includes the flash Stimulus controller" do
+      expect(rendered).to have_css('[data-controller="flash"]')
+    end
+
+    it "includes a close/dismiss button" do
+      expect(rendered).to have_css('button[data-action="click->flash#dismiss"]')
+    end
+  end
 end

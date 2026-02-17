@@ -473,6 +473,143 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         expect(response).to have_http_status(:ok)
       end
     end
+
+    describe "admin key security (S-06)" do
+      before do
+        allow(controller).to receive(:authenticate_queue_access!).and_call_original
+        allow(ApiToken).to receive(:authenticate).and_return(nil)
+        allow(Rails.env).to receive(:development?).and_return(false)
+        allow(Rails.env).to receive(:test?).and_return(false)
+      end
+
+      context "uses timing-safe comparison" do
+        let(:admin_key) { "super_secret_admin_key_123" }
+
+        before do
+          allow(Rails.application.credentials).to receive(:dig).with(:admin_key).and_return(admin_key)
+          allow(ENV).to receive(:[]).with("ADMIN_KEY").and_return(nil)
+        end
+
+        it "calls ActiveSupport::SecurityUtils.secure_compare for admin key" do
+          request.headers["X-Admin-Key"] = admin_key
+
+          expect(ActiveSupport::SecurityUtils).to receive(:secure_compare)
+            .with(admin_key, admin_key)
+            .and_call_original
+
+          allow(Services::QueueMonitor).to receive(:pause_queue).and_return(true)
+          allow(Services::QueueMonitor).to receive(:paused_queues).and_return([])
+
+          post :pause, format: :json
+
+          expect(response).to have_http_status(:ok)
+        end
+
+        it "grants access with correct admin key via header" do
+          request.headers["X-Admin-Key"] = admin_key
+
+          allow(Services::QueueMonitor).to receive(:pause_queue).and_return(true)
+          allow(Services::QueueMonitor).to receive(:paused_queues).and_return([])
+
+          post :pause, format: :json
+
+          expect(response).to have_http_status(:ok)
+        end
+
+        it "grants access with correct admin key via params" do
+          allow(Services::QueueMonitor).to receive(:pause_queue).and_return(true)
+          allow(Services::QueueMonitor).to receive(:paused_queues).and_return([])
+
+          post :pause, params: { admin_key: admin_key }, format: :json
+
+          expect(response).to have_http_status(:ok)
+        end
+
+        it "rejects incorrect admin key" do
+          request.headers["X-Admin-Key"] = "wrong_key"
+
+          post :pause, format: :json
+
+          expect(response).to have_http_status(:unauthorized)
+        end
+
+        it "rejects blank admin key" do
+          request.headers["X-Admin-Key"] = ""
+
+          post :pause, format: :json
+
+          expect(response).to have_http_status(:unauthorized)
+        end
+
+        it "rejects nil admin key (no key provided)" do
+          post :pause, format: :json
+
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
+
+      context "test environment bypass removed" do
+        before do
+          allow(Rails.application.credentials).to receive(:dig).with(:admin_key).and_return(nil)
+          allow(ENV).to receive(:[]).with("ADMIN_KEY").and_return(nil)
+        end
+
+        it "does not bypass authentication in test environment" do
+          # Even in a test environment (test? returns true), with no credentials
+          # configured, authentication should reject the request. This verifies
+          # the test-env bypass has been removed from the code.
+          allow(Rails.env).to receive(:test?).and_return(true)
+
+          post :pause, format: :json
+
+          # After fix: test env bypass is removed, so this should be unauthorized
+          expect(response).to have_http_status(:unauthorized)
+        end
+
+        it "still allows development environment bypass" do
+          allow(Rails.env).to receive(:development?).and_return(true)
+
+          allow(Services::QueueMonitor).to receive(:pause_queue).and_return(true)
+          allow(Services::QueueMonitor).to receive(:paused_queues).and_return([])
+
+          post :pause, format: :json
+
+          expect(response).to have_http_status(:ok)
+        end
+      end
+
+      context "admin key from ENV variable" do
+        let(:env_admin_key) { "env_admin_key_456" }
+
+        before do
+          allow(Rails.application.credentials).to receive(:dig).with(:admin_key).and_return(nil)
+          allow(ENV).to receive(:[]).with("ADMIN_KEY").and_return(env_admin_key)
+        end
+
+        it "authenticates with correct ENV admin key using secure_compare" do
+          request.headers["X-Admin-Key"] = env_admin_key
+
+          expect(ActiveSupport::SecurityUtils).to receive(:secure_compare)
+            .with(env_admin_key, env_admin_key)
+            .and_call_original
+
+          allow(Services::QueueMonitor).to receive(:pause_queue).and_return(true)
+          allow(Services::QueueMonitor).to receive(:paused_queues).and_return([])
+
+          post :pause, format: :json
+
+          expect(response).to have_http_status(:ok)
+        end
+
+        it "rejects incorrect key against ENV admin key" do
+          request.headers["X-Admin-Key"] = "wrong_key"
+
+          post :pause, format: :json
+
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
+    end
   end
 
   describe "private methods" do

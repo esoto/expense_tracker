@@ -4,8 +4,14 @@ require "rails_helper"
 
 RSpec.describe "Queue Visualization", type: :request, integration: true do
   let(:admin_user) { create(:admin_user, :with_session) }
+  let(:admin_key) { "test_admin_key_for_queue" }
+  let(:auth_headers) { { "Accept" => "application/json", "X-Admin-Key" => admin_key } }
 
-  before { sign_in_admin(admin_user) }
+  before do
+    sign_in_admin(admin_user)
+    allow(Rails.application.credentials).to receive(:dig).and_call_original
+    allow(Rails.application.credentials).to receive(:dig).with(:admin_key).and_return(admin_key)
+  end
 
   describe "Dashboard with queue visualization", integration: true do
     before do
@@ -53,7 +59,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       before { mock_queue_monitor_service }
 
       it "returns queue status as JSON" do
-        get "/api/queue/status", headers: { "Accept" => "application/json" }
+        get "/api/queue/status", headers: auth_headers
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -64,7 +70,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       end
 
       it "includes performance metrics" do
-        get "/api/queue/status", headers: { "Accept" => "application/json" }
+        get "/api/queue/status", headers: auth_headers
 
         json = JSON.parse(response.body)
         performance = json["data"]["performance"]
@@ -73,7 +79,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       end
 
       it "includes worker status" do
-        get "/api/queue/status", headers: { "Accept" => "application/json" }
+        get "/api/queue/status", headers: auth_headers
 
         json = JSON.parse(response.body)
         workers = json["data"]["workers"]
@@ -88,7 +94,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       it "pauses all queues" do
         expect(Services::QueueMonitor).to receive(:pause_queue).with(nil).and_return(true)
 
-        post "/api/queue/pause", headers: { "Accept" => "application/json" }
+        post "/api/queue/pause", headers: auth_headers
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -102,7 +108,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
 
         post "/api/queue/pause",
              params: { queue_name: "default" },
-             headers: { "Accept" => "application/json" }
+             headers: auth_headers
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -117,7 +123,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       it "resumes all queues" do
         expect(Services::QueueMonitor).to receive(:resume_queue).with(nil).and_return(true)
 
-        post "/api/queue/resume", headers: { "Accept" => "application/json" }
+        post "/api/queue/resume", headers: auth_headers
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -139,7 +145,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       it "retries a specific job" do
         expect(Services::QueueMonitor).to receive(:retry_failed_job).with(job_id.to_s).and_return(true)
 
-        post "/api/queue/jobs/#{job_id}/retry", headers: { "Accept" => "application/json" }
+        post "/api/queue/jobs/#{job_id}/retry", headers: auth_headers
 
         if response.status == 429
           # Rate limited - skip this test as it's likely interference from other tests
@@ -156,7 +162,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       it "returns error for non-existent job" do
         allow(SolidQueue::Job).to receive(:find_by).with(id: "999").and_return(nil)
 
-        post "/api/queue/jobs/999/retry", headers: { "Accept" => "application/json" }
+        post "/api/queue/jobs/999/retry", headers: auth_headers
 
         # The test may be rate limited due to test isolation issues
         # but we can still verify the functionality works
@@ -182,7 +188,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       it "clears a specific job" do
         expect(Services::QueueMonitor).to receive(:clear_failed_job).with(job_id.to_s).and_return(true)
 
-        post "/api/queue/jobs/#{job_id}/clear", headers: { "Accept" => "application/json" }
+        post "/api/queue/jobs/#{job_id}/clear", headers: auth_headers
 
         if response.status == 429
           pending "Rate limited due to test isolation issues"
@@ -202,7 +208,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       it "retries all failed jobs" do
         expect(Services::QueueMonitor).to receive(:retry_all_failed_jobs).and_return(5)
 
-        post "/api/queue/retry_all_failed", headers: { "Accept" => "application/json" }
+        post "/api/queue/retry_all_failed", headers: auth_headers
 
         if response.status == 429
           pending "Rate limited due to test isolation issues"
@@ -219,7 +225,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       it "returns error when no jobs to retry" do
         expect(Services::QueueMonitor).to receive(:retry_all_failed_jobs).and_return(0)
 
-        post "/api/queue/retry_all_failed", headers: { "Accept" => "application/json" }
+        post "/api/queue/retry_all_failed", headers: auth_headers
 
         if response.status == 429
           pending "Rate limited due to test isolation issues"
@@ -245,7 +251,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
 
         expect(Services::QueueMonitor).to receive(:detailed_metrics).and_return(metrics)
 
-        get "/api/queue/metrics", headers: { "Accept" => "application/json" }
+        get "/api/queue/metrics", headers: auth_headers
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -267,7 +273,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
         end
 
         it "returns ok status" do
-          get "/api/queue/health", headers: { "Accept" => "application/json" }
+          get "/api/queue/health", headers: auth_headers
 
           expect(response).to have_http_status(:ok)
           json = JSON.parse(response.body)
@@ -285,7 +291,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
         end
 
         it "returns service unavailable status" do
-          get "/api/queue/health", headers: { "Accept" => "application/json" }
+          get "/api/queue/health", headers: auth_headers
 
           expect(response).to have_http_status(:service_unavailable)
           json = JSON.parse(response.body)
@@ -311,7 +317,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
         )
       )
 
-      post "/api/queue/pause", headers: { "Accept" => "application/json" }
+      post "/api/queue/pause", headers: auth_headers
     end
 
     it "broadcasts job updates to a session-scoped channel when retrying" do
@@ -329,7 +335,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
         )
       )
 
-      post "/api/queue/jobs/123/retry", headers: { "Accept" => "application/json" }
+      post "/api/queue/jobs/123/retry", headers: auth_headers
     end
 
     it "does not broadcast to the global unscoped queue_updates channel" do

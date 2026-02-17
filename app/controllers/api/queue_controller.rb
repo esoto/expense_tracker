@@ -204,11 +204,12 @@ module Api
     end
 
     # Extract the session ID from the current request for session-scoped broadcasting.
-    # Falls back to the Rails session ID when the encrypted cookie does not contain a "session_id" key.
+    # Returns nil when the encrypted cookie does not contain a "session_id" key,
+    # ensuring consistency with QueueChannel which rejects blank session IDs.
     def current_request_session_id
       session_data = cookies.encrypted[:_expense_tracker_session]
       session_id = session_data&.dig("session_id") || session_data&.dig(:session_id)
-      session_id.presence || request.session.id.to_s.presence
+      session_id.presence
     end
 
     # Build the session-scoped stream name for broadcasting via ActionCable.

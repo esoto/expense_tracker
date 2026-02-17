@@ -513,6 +513,19 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
     end
 
     describe "#broadcast_queue_update" do
+      context "when session ID is nil" do
+        before do
+          allow(controller).to receive(:current_request_session_id).and_return(nil)
+        end
+
+        it "skips the broadcast and logs a warning" do
+          expect(ActionCable.server).not_to receive(:broadcast)
+          expect(Rails.logger).to receive(:warn).with(/Skipping queue update broadcast/)
+
+          controller.send(:broadcast_queue_update, "paused", "default")
+        end
+      end
+
       it "broadcasts queue updates to session-scoped channel via ActionCable" do
         expect(ActionCable.server).to receive(:broadcast).with(
           "queue_updates_#{test_session_id}",
@@ -545,6 +558,19 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
     end
 
     describe "#broadcast_job_update" do
+      context "when session ID is nil" do
+        before do
+          allow(controller).to receive(:current_request_session_id).and_return(nil)
+        end
+
+        it "skips the broadcast and logs a warning" do
+          expect(ActionCable.server).not_to receive(:broadcast)
+          expect(Rails.logger).to receive(:warn).with(/Skipping job update broadcast/)
+
+          controller.send(:broadcast_job_update, "retried", "123")
+        end
+      end
+
       it "broadcasts job updates to session-scoped channel via ActionCable" do
         expect(ActionCable.server).to receive(:broadcast).with(
           "queue_updates_#{test_session_id}",

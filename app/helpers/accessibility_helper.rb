@@ -143,7 +143,7 @@ module AccessibilityHelper
     help_text = options.delete(:help)
 
     label_content = if required
-      safe_join([text, content_tag(:span, " *", class: "text-rose-600", "aria-label": "obligatorio")])
+      safe_join([ text, content_tag(:span, " *", class: "text-rose-600", "aria-label": "obligatorio") ])
     else
       text
     end

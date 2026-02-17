@@ -517,39 +517,39 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
 
     describe "#data_table XSS protection" do
       it "escapes XSS in header values" do
-        result = helper.data_table(headers: [xss_payload], rows: [["safe"]])
+        result = helper.data_table(headers: [ xss_payload ], rows: [ [ "safe" ] ])
         expect(result).not_to include("<script>")
         expect(result).to include(xss_with_entities)
       end
 
       it "escapes XSS in cell values" do
-        result = helper.data_table(headers: ["Name"], rows: [[xss_payload]])
+        result = helper.data_table(headers: [ "Name" ], rows: [ [ xss_payload ] ])
         expect(result).not_to include("<script>")
         expect(result).to include(xss_with_entities)
       end
 
       it "escapes XSS in both headers and cells simultaneously" do
         result = helper.data_table(
-          headers: [xss_payload],
-          rows: [[xss_payload]]
+          headers: [ xss_payload ],
+          rows: [ [ xss_payload ] ]
         )
         expect(result).not_to include("<script>")
       end
 
       it "escapes XSS in empty message" do
-        result = helper.data_table(headers: ["Name"], rows: [], empty_message: xss_payload)
+        result = helper.data_table(headers: [ "Name" ], rows: [], empty_message: xss_payload)
         expect(result).not_to include("<script>")
       end
 
       it "returns html-safe content from data_table" do
-        result = helper.data_table(headers: ["Name"], rows: [["value"]])
+        result = helper.data_table(headers: [ "Name" ], rows: [ [ "value" ] ])
         expect(result).to be_html_safe
       end
 
       it "handles XSS in multiple rows" do
         result = helper.data_table(
-          headers: ["Name"],
-          rows: [[xss_payload], [xss_payload], ["safe"]]
+          headers: [ "Name" ],
+          rows: [ [ xss_payload ], [ xss_payload ], [ "safe" ] ]
         )
         expect(result).not_to include("<script>")
         expect(result).to include("safe")
@@ -558,7 +558,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
       it "handles XSS in multiple cells within a row" do
         result = helper.data_table(
           headers: %w[A B],
-          rows: [[xss_payload, xss_payload]]
+          rows: [ [ xss_payload, xss_payload ] ]
         )
         expect(result).not_to include("<script>")
       end
@@ -566,7 +566,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
       it "produces correct number of rows" do
         result = helper.data_table(
           headers: %w[Name],
-          rows: [["A"], ["B"], ["C"]]
+          rows: [ [ "A" ], [ "B" ], [ "C" ] ]
         )
         expect(result.scan("<tr").length).to eq(4) # 1 header + 3 body rows
       end

@@ -87,9 +87,8 @@ RSpec.describe Api::MonitoringController, type: :controller, unit: true do
       let(:raw_token) { expired_token.token }
 
       it "rejects requests with expired tokens" do
-        # expired factory sets token then updates expires_at to past via update_column,
-        # but the raw token is set during build. We need to re-set it since
-        # the :expired trait uses after(:create) which runs after token generation.
+        # expired factory sets token then updates expires_at to past via update_column.
+        # The raw token is captured from the accessor before expiration is applied.
         request.headers["Authorization"] = "Bearer #{raw_token}"
         get :metrics, format: :json
 

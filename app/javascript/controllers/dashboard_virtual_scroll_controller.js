@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import FilterStateManager from "../utilities/filter_state_manager"
+import FilterStateManager from "utilities/filter_state_manager"
 
 // Dashboard Virtual Scroll Controller for Epic 3 Task 3.7
 // Implements high-performance virtual scrolling for large expense datasets

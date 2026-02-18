@@ -3,10 +3,10 @@
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
     <div class="flex items-center justify-between">
       <div>
-        <p class="text-sm text-slate-600">Total Patterns</p>
+        <p class="text-sm text-slate-600">Total de Patrones</p>
         <p class="text-2xl font-bold text-slate-900 mt-1"><%= overall_metrics[:total_patterns] %></p>
         <p class="text-xs text-slate-500 mt-1">
-          <span class="text-teal-600"><%= overall_metrics[:active_patterns] %></span> active
+          <span class="text-teal-600"><%= overall_metrics[:active_patterns] %></span> activos
         </p>
       </div>
       <div class="bg-teal-100 p-3 rounded-lg">
@@ -21,12 +21,12 @@
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
     <div class="flex items-center justify-between">
       <div>
-        <p class="text-sm text-slate-600">Overall Accuracy</p>
+        <p class="text-sm text-slate-600">Precisión General</p>
         <p class="text-2xl font-bold <%= overall_metrics[:overall_accuracy] >= 80 ? 'text-emerald-600' : overall_metrics[:overall_accuracy] >= 60 ? 'text-amber-600' : 'text-rose-600' %> mt-1">
           <%= overall_metrics[:overall_accuracy] %>%
         </p>
         <p class="text-xs text-slate-500 mt-1">
-          <%= overall_metrics[:acceptance_rate] %>% acceptance
+          <%= overall_metrics[:acceptance_rate] %>% aceptación
         </p>
       </div>
       <div class="bg-emerald-100 p-3 rounded-lg">
@@ -41,10 +41,10 @@
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
     <div class="flex items-center justify-between">
       <div>
-        <p class="text-sm text-slate-600">Total Usage</p>
+        <p class="text-sm text-slate-600">Uso Total</p>
         <p class="text-2xl font-bold text-slate-900 mt-1"><%= number_with_delimiter(overall_metrics[:total_usage]) %></p>
         <p class="text-xs text-slate-500 mt-1">
-          <%= number_with_delimiter(overall_metrics[:total_success]) %> successful
+          <%= number_with_delimiter(overall_metrics[:total_success]) %> exitosos
         </p>
       </div>
       <div class="bg-amber-100 p-3 rounded-lg">
@@ -59,10 +59,10 @@
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
     <div class="flex items-center justify-between">
       <div>
-        <p class="text-sm text-slate-600">Avg Confidence</p>
+        <p class="text-sm text-slate-600">Confianza Promedio</p>
         <p class="text-2xl font-bold text-slate-900 mt-1"><%= overall_metrics[:average_confidence] %></p>
         <p class="text-xs text-slate-500 mt-1">
-          <%= overall_metrics[:feedback_count] %> feedbacks
+          <%= overall_metrics[:feedback_count] %> retroalimentaciones
         </p>
       </div>
       <div class="bg-rose-100 p-3 rounded-lg">

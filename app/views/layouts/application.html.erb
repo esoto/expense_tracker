@@ -93,47 +93,9 @@
     </nav>
 
     <!-- Flash Messages -->
-    <% if notice %>
-      <div class="max-w-7xl mx-auto px-4 mt-4">
-        <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg relative"
-             role="alert"
-             data-controller="flash"
-             data-flash-delay-value="5000">
-          <div class="flex items-center justify-between">
-            <span class="block sm:inline"><%= notice %></span>
-            <button type="button"
-                    data-action="click->flash#dismiss"
-                    aria-label="Cerrar notificaci&oacute;n"
-                    class="ml-4 inline-flex flex-shrink-0 text-emerald-500 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 rounded-md">
-              <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-    <% end %>
-
-    <% if alert %>
-      <div class="max-w-7xl mx-auto px-4 mt-4">
-        <div class="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg relative"
-             role="alert"
-             data-controller="flash"
-             data-flash-delay-value="5000">
-          <div class="flex items-center justify-between">
-            <span class="block sm:inline"><%= alert %></span>
-            <button type="button"
-                    data-action="click->flash#dismiss"
-                    aria-label="Cerrar notificaci&oacute;n"
-                    class="ml-4 inline-flex flex-shrink-0 text-rose-500 hover:text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 rounded-md">
-              <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-    <% end %>
+    <div class="max-w-7xl mx-auto px-4 mt-4">
+      <%= render "shared/flash" %>
+    </div>
 
     <!-- Toast Notification Container -->
     <div id="toast-container"

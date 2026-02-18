@@ -131,17 +131,17 @@ export default class extends Controller {
         headers: {
           'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
           'Content-Type': 'application/json',
-          'Accept': 'text/vnd.turbo-stream.html'
+          'Accept': 'application/json'
         }
       })
       
       if (!response.ok) throw new Error('Undo failed')
-      
-      // Success - Turbo will handle the response
+
       this.hide()
-      
-      // Show success message
       this.showSuccessMessage("Acción deshecha exitosamente")
+
+      // Reload page to show restored expense
+      setTimeout(() => window.location.reload(), 1500)
       
     } catch (error) {
       console.error('Undo error:', error)

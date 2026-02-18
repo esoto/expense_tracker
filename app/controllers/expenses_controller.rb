@@ -111,12 +111,8 @@ class ExpensesController < ApplicationController
             flash: { undo_id: undo_entry.id, undo_time_remaining: undo_entry.time_remaining }
         end
         format.turbo_stream do
-          render turbo_stream: [
-            turbo_stream.remove("expense_row_#{ERB::Util.html_escape(@expense.id.to_s)}"),
-            turbo_stream.append("toast-container",
-              "<div data-controller='toast' data-toast-remove-delay-value='5000' class='hidden' " \
-              "data-undo-id='#{ERB::Util.html_escape(undo_entry.id.to_s)}'>Gasto eliminado. Puedes deshacer esta acción.</div>")
-          ]
+          @undo_entry = undo_entry
+          # Renders app/views/expenses/destroy.turbo_stream.erb
         end
         format.json do
           render json: {

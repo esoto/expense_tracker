@@ -31,7 +31,7 @@ export default class extends Controller {
     this.timeRemainingValue = timeRemaining || 30
     
     if (this.hasMessageTarget) {
-      this.messageTarget.textContent = message || "Items deleted successfully"
+      this.messageTarget.textContent = message || "Elementos eliminados exitosamente"
     }
     
     this.show()
@@ -112,7 +112,7 @@ export default class extends Controller {
     if (this.hasUndoButtonTarget) {
       this.undoButtonTarget.disabled = true
       this.undoButtonTarget.classList.add("opacity-50", "cursor-not-allowed")
-      this.undoButtonTarget.textContent = "Expired"
+      this.undoButtonTarget.textContent = "Expirado"
     }
     
     // Auto-hide after expiration
@@ -141,11 +141,11 @@ export default class extends Controller {
       this.hide()
       
       // Show success message
-      this.showSuccessMessage("Action undone successfully")
+      this.showSuccessMessage("Acción deshecha exitosamente")
       
     } catch (error) {
       console.error('Undo error:', error)
-      this.showErrorMessage("Failed to undo action")
+      this.showErrorMessage("No se pudo deshacer la acción")
     } finally {
       this.setLoading(false)
     }
@@ -162,11 +162,11 @@ export default class extends Controller {
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        Undoing...
+        Deshaciendo...
       `
     } else {
       this.undoButtonTarget.disabled = false
-      this.undoButtonTarget.innerHTML = 'Undo'
+      this.undoButtonTarget.innerHTML = 'Deshacer'
     }
   }
 

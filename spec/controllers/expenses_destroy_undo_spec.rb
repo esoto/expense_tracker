@@ -120,6 +120,8 @@ RSpec.describe ExpensesController, "#destroy undo integration", type: :controlle
   end
 
   describe "turbo_stream format response", unit: true do
+    render_views
+
     it "returns turbo_stream response with remove action" do
       delete :destroy, params: { id: expense.id }, format: :turbo_stream
 
@@ -135,11 +137,18 @@ RSpec.describe ExpensesController, "#destroy undo integration", type: :controlle
       expect(response.body).to include("Gasto eliminado. Puedes deshacer esta acción.")
     end
 
-    it "includes undo_id data attribute in toast element" do
+    it "includes undo_id data attribute in undo notification" do
       delete :destroy, params: { id: expense.id }, format: :turbo_stream
 
       undo_entry = UndoHistory.last
-      expect(response.body).to include("data-undo-id='#{undo_entry.id}'")
+      expect(response.body).to include("data-undo-manager-undo-id-value=\"#{undo_entry.id}\"")
+    end
+
+    it "includes undo button in turbo_stream response" do
+      delete :destroy, params: { id: expense.id }, format: :turbo_stream
+
+      expect(response.body).to include("Deshacer")
+      expect(response.body).to include("undo-manager")
     end
   end
 

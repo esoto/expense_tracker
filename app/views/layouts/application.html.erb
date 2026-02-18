@@ -66,30 +66,7 @@
 
           <%# Desktop navigation links - hidden on mobile %>
           <div class="hidden md:flex items-center space-x-4">
-            <%= link_to "Dashboard", dashboard_expenses_path,
-                class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path == dashboard_expenses_path}",
-                'aria-current': (request.path == dashboard_expenses_path ? 'page' : nil) %>
-            <%= link_to "Gastos", expenses_path,
-                class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path == expenses_path}",
-                'aria-current': (request.path == expenses_path ? 'page' : nil) %>
-            <%= link_to "Categorizar", bulk_categorizations_path,
-                class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/bulk_categorizations')}",
-                'aria-current': (request.path.start_with?('/bulk_categorizations') ? 'page' : nil) %>
-            <%= link_to "Analytics", analytics_pattern_dashboard_index_path,
-                class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/analytics')}",
-                'aria-current': (request.path.start_with?('/analytics') ? 'page' : nil) %>
-            <%= link_to "Cuentas", email_accounts_path,
-                class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path == email_accounts_path}",
-                'aria-current': (request.path == email_accounts_path ? 'page' : nil) %>
-            <%= link_to "Sincronización", sync_sessions_path,
-                class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/sync_sessions')}",
-                'aria-current': (request.path.start_with?('/sync_sessions') ? 'page' : nil) %>
-            <%= link_to "Patrones", admin_patterns_path,
-                class: "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/admin')}",
-                'aria-current': (request.path.start_with?('/admin') ? 'page' : nil) %>
-            <%= link_to "Nuevo Gasto", new_expense_path,
-                class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm",
-                'aria-label': "Crear un nuevo gasto" %>
+            <%= render "layouts/nav_links", mobile: false %>
           </div>
 
           <%# Mobile hamburger button - visible only on mobile %>
@@ -106,39 +83,14 @@
           </button>
         </div>
 
-        <%# Mobile dropdown menu - hidden by default %>
+        <%# Mobile dropdown menu - hidden by default, with smooth transition %>
         <div id="mobile-menu"
-             class="hidden md:hidden border-t border-slate-200 py-3"
+             class="hidden md:hidden border-t border-slate-200 py-3 opacity-0 transition-opacity duration-200 ease-in-out"
              data-mobile-nav-target="menu"
              role="navigation"
              aria-label="Menú de navegación móvil">
           <div class="flex flex-col space-y-1">
-            <%= link_to "Dashboard", dashboard_expenses_path,
-                class: "text-slate-600 hover:text-teal-700 hover:bg-slate-50 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path == dashboard_expenses_path}",
-                'aria-current': (request.path == dashboard_expenses_path ? 'page' : nil) %>
-            <%= link_to "Gastos", expenses_path,
-                class: "text-slate-600 hover:text-teal-700 hover:bg-slate-50 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path == expenses_path}",
-                'aria-current': (request.path == expenses_path ? 'page' : nil) %>
-            <%= link_to "Categorizar", bulk_categorizations_path,
-                class: "text-slate-600 hover:text-teal-700 hover:bg-slate-50 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/bulk_categorizations')}",
-                'aria-current': (request.path.start_with?('/bulk_categorizations') ? 'page' : nil) %>
-            <%= link_to "Analytics", analytics_pattern_dashboard_index_path,
-                class: "text-slate-600 hover:text-teal-700 hover:bg-slate-50 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/analytics')}",
-                'aria-current': (request.path.start_with?('/analytics') ? 'page' : nil) %>
-            <%= link_to "Cuentas", email_accounts_path,
-                class: "text-slate-600 hover:text-teal-700 hover:bg-slate-50 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path == email_accounts_path}",
-                'aria-current': (request.path == email_accounts_path ? 'page' : nil) %>
-            <%= link_to "Sincronización", sync_sessions_path,
-                class: "text-slate-600 hover:text-teal-700 hover:bg-slate-50 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/sync_sessions')}",
-                'aria-current': (request.path.start_with?('/sync_sessions') ? 'page' : nil) %>
-            <%= link_to "Patrones", admin_patterns_path,
-                class: "text-slate-600 hover:text-teal-700 hover:bg-slate-50 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/admin')}",
-                'aria-current': (request.path.start_with?('/admin') ? 'page' : nil) %>
-            <div class="pt-2 mt-2 border-t border-slate-200">
-              <%= link_to "Nuevo Gasto", new_expense_path,
-                  class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm block text-center",
-                  'aria-label': "Crear un nuevo gasto" %>
-            </div>
+            <%= render "layouts/nav_links", mobile: true %>
           </div>
         </div>
       </div>

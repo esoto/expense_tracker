@@ -32,6 +32,11 @@ export default class extends Controller {
   open() {
     this.isOpen = true
     this.menuTarget.classList.remove("hidden")
+    // Trigger reflow before adding opacity for smooth transition
+    requestAnimationFrame(() => {
+      this.menuTarget.classList.remove("opacity-0")
+      this.menuTarget.classList.add("opacity-100")
+    })
     this.buttonTarget.setAttribute("aria-expanded", "true")
     this._addEventListeners()
     this._focusFirstLink()
@@ -39,7 +44,14 @@ export default class extends Controller {
 
   close() {
     this.isOpen = false
-    this.menuTarget.classList.add("hidden")
+    this.menuTarget.classList.remove("opacity-100")
+    this.menuTarget.classList.add("opacity-0")
+    // Wait for transition to finish before hiding
+    this.menuTarget.addEventListener("transitionend", () => {
+      if (!this.isOpen) {
+        this.menuTarget.classList.add("hidden")
+      }
+    }, { once: true })
     this.buttonTarget.setAttribute("aria-expanded", "false")
     this._removeEventListeners()
   }

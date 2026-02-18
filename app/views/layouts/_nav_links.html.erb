@@ -1,0 +1,37 @@
+<%# Navigation links partial - shared between desktop and mobile menus %>
+<% mobile = local_assigns.fetch(:mobile, false) %>
+<% base_class = mobile ? "text-slate-600 hover:text-teal-700 hover:bg-slate-50 px-3 py-2 rounded-md text-sm font-medium" : "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium" %>
+
+<%= link_to "Dashboard", dashboard_expenses_path,
+    class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path == dashboard_expenses_path}",
+    'aria-current': (request.path == dashboard_expenses_path ? 'page' : nil) %>
+<%= link_to "Gastos", expenses_path,
+    class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path == expenses_path}",
+    'aria-current': (request.path == expenses_path ? 'page' : nil) %>
+<%= link_to "Categorizar", bulk_categorizations_path,
+    class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path.start_with?('/bulk_categorizations')}",
+    'aria-current': (request.path.start_with?('/bulk_categorizations') ? 'page' : nil) %>
+<%= link_to "Analytics", analytics_pattern_dashboard_index_path,
+    class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path.start_with?('/analytics')}",
+    'aria-current': (request.path.start_with?('/analytics') ? 'page' : nil) %>
+<%= link_to "Cuentas", email_accounts_path,
+    class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path == email_accounts_path}",
+    'aria-current': (request.path == email_accounts_path ? 'page' : nil) %>
+<%= link_to "Sincronización", sync_sessions_path,
+    class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path.start_with?('/sync_sessions')}",
+    'aria-current': (request.path.start_with?('/sync_sessions') ? 'page' : nil) %>
+<%= link_to "Patrones", admin_patterns_path,
+    class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path.start_with?('/admin')}",
+    'aria-current': (request.path.start_with?('/admin') ? 'page' : nil) %>
+
+<% if mobile %>
+  <div class="pt-2 mt-2 border-t border-slate-200">
+    <%= link_to "Nuevo Gasto", new_expense_path,
+        class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm block text-center",
+        'aria-label': "Crear un nuevo gasto" %>
+  </div>
+<% else %>
+  <%= link_to "Nuevo Gasto", new_expense_path,
+      class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm",
+      'aria-label': "Crear un nuevo gasto" %>
+<% end %>

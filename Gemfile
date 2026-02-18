@@ -44,6 +44,7 @@ gem "groupdate"
 
 # Pagination
 gem "pagy"
+gem "kaminari"
 
 # Bulk insert for performance
 gem "activerecord-import"

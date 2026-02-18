@@ -108,7 +108,12 @@ module ApplicationHelper
 
   def pagination_link(text, page_number, css_class)
     url = pagination_page_url(page_number)
-    %(<a href="#{url}" class="#{css_class}" aria-label="Ir a página #{page_number}">#{text}</a>)
+    tag.a(
+      text,
+      href: url,
+      class: css_class,
+      "aria-label": "Ir a página #{page_number}"
+    )
   end
 
   def pagination_active_span(page_number)

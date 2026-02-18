@@ -97,30 +97,44 @@ class ExpensesController < ApplicationController
 
   # DELETE /expenses/1
   def destroy
-    @expense.soft_delete!
-    undo_entry = UndoHistory.create_for_deletion(@expense, user: current_user)
+    begin
+      undo_entry = nil
+      ActiveRecord::Base.transaction do
+        @expense.soft_delete!(deleted_by: current_user)
+        undo_entry = UndoHistory.create_for_deletion(@expense, user: current_user)
+      end
 
-    respond_to do |format|
-      format.html do
-        redirect_to expenses_url,
-          notice: "Gasto eliminado. Puedes deshacer esta acción.",
-          flash: { undo_id: undo_entry.id, undo_time_remaining: undo_entry.time_remaining }
+      respond_to do |format|
+        format.html do
+          redirect_to expenses_url,
+            notice: "Gasto eliminado. Puedes deshacer esta acción.",
+            flash: { undo_id: undo_entry.id, undo_time_remaining: undo_entry.time_remaining }
+        end
+        format.turbo_stream do
+          render turbo_stream: [
+            turbo_stream.remove("expense_row_#{ERB::Util.html_escape(@expense.id.to_s)}"),
+            turbo_stream.append("toast-container",
+              "<div data-controller='toast' data-toast-remove-delay-value='5000' class='hidden' " \
+              "data-undo-id='#{ERB::Util.html_escape(undo_entry.id.to_s)}'>Gasto eliminado. Puedes deshacer esta acción.</div>")
+          ]
+        end
+        format.json do
+          render json: {
+            success: true,
+            message: "Gasto eliminado. Puedes deshacer esta acción.",
+            undo_id: undo_entry.id,
+            undo_time_remaining: undo_entry.time_remaining
+          }
+        end
       end
-      format.turbo_stream do
-        render turbo_stream: [
-          turbo_stream.remove("expense_row_#{@expense.id}"),
-          turbo_stream.append("toast-container",
-            "<div data-controller='toast' data-toast-remove-delay-value='5000' class='hidden' " \
-            "data-undo-id='#{undo_entry.id}'>Gasto eliminado. Puedes deshacer esta acción.</div>")
-        ]
-      end
-      format.json do
-        render json: {
-          success: true,
-          message: "Gasto eliminado. Puedes deshacer esta acción.",
-          undo_id: undo_entry.id,
-          undo_time_remaining: undo_entry.time_remaining
-        }
+    rescue StandardError => e
+      Rails.logger.error "Error deleting expense: #{e.message}"
+      respond_to do |format|
+        format.html { redirect_to expenses_url, alert: "Error al eliminar el gasto. Por favor, inténtalo de nuevo." }
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.update("flash_messages", partial: "shared/flash", locals: { alert: "Error al eliminar el gasto. Por favor, inténtalo de nuevo." })
+        end
+        format.json { render json: { success: false, error: "Error al eliminar el gasto" }, status: :internal_server_error }
       end
     end
   end

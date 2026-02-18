@@ -81,16 +81,19 @@ RSpec.describe "Navigation mobile responsiveness", type: :controller, unit: true
       expect(response.body).to match(/id="mobile-menu"[^>]*class="hidden md:hidden/)
     end
 
-    it "has role=menu for accessibility" do
-      expect(response.body).to include('role="menu"')
+    it "has role=navigation for semantic accessibility" do
+      expect(response.body).to include('role="navigation"')
     end
 
     it "has aria-label for the mobile menu" do
       expect(response.body).to include('aria-label="Menú de navegación móvil"')
     end
 
-    it "contains role=menuitem on mobile menu links" do
-      expect(response.body).to include('role="menuitem"')
+    it "uses semantic navigation markup without menu roles" do
+      mobile_menu_match = response.body.match(/id="mobile-menu".*?<\/div>\s*<\/div>/m)
+      expect(mobile_menu_match).to be_present
+      mobile_menu_html = mobile_menu_match[0]
+      expect(mobile_menu_html).not_to include('role="menuitem"')
     end
 
     it "contains all navigation links in the mobile menu" do

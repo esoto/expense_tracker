@@ -110,41 +110,33 @@
         <div id="mobile-menu"
              class="hidden md:hidden border-t border-slate-200 py-3"
              data-mobile-nav-target="menu"
-             role="menu"
+             role="navigation"
              aria-label="Menú de navegación móvil">
           <div class="flex flex-col space-y-1">
             <%= link_to "Dashboard", dashboard_expenses_path,
                 class: "text-slate-600 hover:text-teal-700 hover:bg-slate-50 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path == dashboard_expenses_path}",
-                role: "menuitem",
                 'aria-current': (request.path == dashboard_expenses_path ? 'page' : nil) %>
             <%= link_to "Gastos", expenses_path,
                 class: "text-slate-600 hover:text-teal-700 hover:bg-slate-50 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path == expenses_path}",
-                role: "menuitem",
                 'aria-current': (request.path == expenses_path ? 'page' : nil) %>
             <%= link_to "Categorizar", bulk_categorizations_path,
                 class: "text-slate-600 hover:text-teal-700 hover:bg-slate-50 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/bulk_categorizations')}",
-                role: "menuitem",
                 'aria-current': (request.path.start_with?('/bulk_categorizations') ? 'page' : nil) %>
             <%= link_to "Analytics", analytics_pattern_dashboard_index_path,
                 class: "text-slate-600 hover:text-teal-700 hover:bg-slate-50 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/analytics')}",
-                role: "menuitem",
                 'aria-current': (request.path.start_with?('/analytics') ? 'page' : nil) %>
             <%= link_to "Cuentas", email_accounts_path,
                 class: "text-slate-600 hover:text-teal-700 hover:bg-slate-50 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path == email_accounts_path}",
-                role: "menuitem",
                 'aria-current': (request.path == email_accounts_path ? 'page' : nil) %>
             <%= link_to "Sincronización", sync_sessions_path,
                 class: "text-slate-600 hover:text-teal-700 hover:bg-slate-50 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/sync_sessions')}",
-                role: "menuitem",
                 'aria-current': (request.path.start_with?('/sync_sessions') ? 'page' : nil) %>
             <%= link_to "Patrones", admin_patterns_path,
                 class: "text-slate-600 hover:text-teal-700 hover:bg-slate-50 px-3 py-2 rounded-md text-sm font-medium #{'bg-teal-50 text-teal-700' if request.path.start_with?('/admin')}",
-                role: "menuitem",
                 'aria-current': (request.path.start_with?('/admin') ? 'page' : nil) %>
             <div class="pt-2 mt-2 border-t border-slate-200">
               <%= link_to "Nuevo Gasto", new_expense_path,
                   class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm block text-center",
-                  role: "menuitem",
                   'aria-label': "Crear un nuevo gasto" %>
             </div>
           </div>

@@ -316,43 +316,44 @@ export default class extends Controller {
   confirmDelete(event) {
     event.preventDefault()
     event.stopPropagation()
-    
+
     // Close the confirmation modal
     this.closeDeleteConfirmation()
-    
+
     const expenseId = this.element.id.replace('expense_row_', '')
-    
+
     // Disable the row during deletion
     this.element.classList.add('opacity-50', 'pointer-events-none')
-    
+
     fetch(`/expenses/${expenseId}`, {
       method: 'DELETE',
       headers: {
         'X-CSRF-Token': this.csrfToken,
-        'Accept': 'text/vnd.turbo-stream.html'
+        'Accept': 'application/json'
       }
     })
     .then(response => {
       if (response.ok) {
-        // Animate row removal
-        this.element.style.transition = 'all 300ms ease-out'
-        this.element.style.transform = 'translateX(100%)'
-        this.element.style.opacity = '0'
-        
-        setTimeout(() => {
-          this.element.remove()
-        }, 300)
-        
-        this.showToast('Gasto eliminado', 'success')
-        return response.text()
+        return response.json()
       } else {
         throw new Error('Failed to delete')
       }
     })
-    .then(turboStream => {
-      // Handle any turbo stream responses
-      if (turboStream && turboStream.includes('turbo-stream')) {
-        Turbo.renderStreamMessage(turboStream)
+    .then(data => {
+      // Animate row removal
+      this.element.style.transition = 'all 300ms ease-out'
+      this.element.style.transform = 'translateX(100%)'
+      this.element.style.opacity = '0'
+
+      setTimeout(() => {
+        this.element.remove()
+      }, 300)
+
+      // Show undo notification if undo_id is available
+      if (data.undo_id) {
+        this.showUndoNotification(data.undo_id, data.undo_time_remaining, data.message)
+      } else {
+        this.showToast('Gasto eliminado', 'success')
       }
     })
     .catch(error => {
@@ -360,6 +361,48 @@ export default class extends Controller {
       this.element.classList.remove('opacity-50', 'pointer-events-none')
       this.showToast('Error al eliminar gasto', 'error')
     })
+  }
+
+  showUndoNotification(undoId, timeRemaining, message) {
+    // Remove any existing undo notification
+    document.querySelector('.undo-notification')?.remove()
+
+    const notification = document.createElement('div')
+    notification.className = 'undo-notification slide-in-bottom'
+    notification.setAttribute('data-controller', 'undo-manager')
+    notification.setAttribute('data-undo-manager-undo-id-value', undoId)
+    notification.setAttribute('data-undo-manager-time-remaining-value', timeRemaining || 30)
+    notification.setAttribute('role', 'alert')
+    notification.setAttribute('aria-live', 'polite')
+    notification.innerHTML = `
+      <div class="flex items-center justify-between">
+        <div class="flex items-center flex-1 min-w-0">
+          <svg class="undo-notification-icon flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          <div class="ml-3">
+            <p class="undo-notification-message" data-undo-manager-target="message">${message || 'Gasto eliminado. Puedes deshacer esta acción.'}</p>
+            <p class="undo-notification-timer">Tiempo restante: <span class="undo-notification-timer-value" data-undo-manager-target="timer"></span></p>
+          </div>
+        </div>
+        <div class="undo-notification-actions">
+          <button class="undo-notification-undo-btn"
+                  data-undo-manager-target="undoButton"
+                  data-action="click->undo-manager#undo"
+                  aria-label="Deshacer eliminación">
+            Deshacer
+          </button>
+          <button class="undo-notification-dismiss-btn"
+                  data-action="click->undo-manager#dismiss"
+                  aria-label="Cerrar notificación">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    `
+    document.body.appendChild(notification)
   }
 
   showToast(message, type = 'info') {

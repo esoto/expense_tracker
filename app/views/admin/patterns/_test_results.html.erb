@@ -2,7 +2,8 @@
   <div class="space-y-3">
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-sm font-semibold text-slate-700">
-        Se encontró <%= matching_patterns.size %> patrón<%= matching_patterns.size == 1 ? '' : 'es' %> coincidente<%= 's' if matching_patterns.size > 1 %>
+        <% count = matching_patterns.size %>
+        Se <%= count == 1 ? 'encontró' : 'encontraron' %> <%= count %> <%= count == 1 ? 'patrón coincidente' : 'patrones coincidentes' %>
       </h3>
       <span class="text-xs text-slate-500">Ordenado por confianza</span>
     </div>

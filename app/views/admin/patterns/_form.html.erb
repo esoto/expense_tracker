@@ -13,7 +13,7 @@
   <div class="space-y-6">
     <!-- Pattern Type -->
     <div>
-      <%= f.label :pattern_type, class: "block text-sm font-medium text-slate-700 mb-2" %>
+      <%= f.label :pattern_type, "Tipo de Patrón", class: "block text-sm font-medium text-slate-700 mb-2" %>
       <%= f.select :pattern_type,
           options_for_select(pattern_type_options, @pattern.pattern_type),
           { prompt: 'Selecciona un tipo de patrón...' },
@@ -27,7 +27,7 @@
 
     <!-- Pattern Value -->
     <div>
-      <%= f.label :pattern_value, class: "block text-sm font-medium text-slate-700 mb-2" %>
+      <%= f.label :pattern_value, "Valor del Patrón", class: "block text-sm font-medium text-slate-700 mb-2" %>
       <%= f.text_field :pattern_value,
           class: "w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
           placeholder: "Ingresa el valor del patrón...",
@@ -45,7 +45,7 @@
         <% when 'regex' %>
           Ingresa un patrón de expresión regular
         <% when 'time' %>
-          Ingresa: mañana, tarde, noche, fin de semana, entre semana o rango de horas (09:00-17:00)
+          Ingresa: mañana, tarde, atardecer, noche, fin de semana, entre semana o rango de horas (09:00-17:00)
         <% else %>
           Selecciona un tipo de patrón para ver la ayuda del formato de valor
         <% end %>

@@ -83,7 +83,7 @@
           <div>
             <dt class="text-sm font-medium text-slate-500">Creado</dt>
             <dd class="mt-1 text-sm text-slate-900">
-              <%= @pattern.created_at.strftime("%B %d, %Y") %>
+              <%= l(@pattern.created_at, format: :long) %>
             </dd>
           </div>
 
@@ -200,7 +200,7 @@
               <div class="flex justify-between items-center">
                 <span class="text-sm text-slate-600">Último Uso</span>
                 <span class="text-sm text-slate-900">
-                  <%= time_ago_in_words(@performance_metrics[:last_used]) %> ago
+                  hace <%= time_ago_in_words(@performance_metrics[:last_used]) %>
                 </span>
               </div>
             </div>

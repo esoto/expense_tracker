@@ -38,7 +38,7 @@ export default class extends Controller {
         'time': 'ej., mañana o 09:00-17:00'
       }
       
-      this.valueFieldTarget.placeholder = placeholders[patternType] || 'Enter pattern value...'
+      this.valueFieldTarget.placeholder = placeholders[patternType] || 'Ingresa el valor del patrón...'
     }
   }
   
@@ -118,10 +118,14 @@ export default class extends Controller {
       
       case 'time':
         // For time patterns, we'd need the actual datetime
-        // This is a simplified check
-        const timePatterns = ['mañana', 'tarde', 'noche', 'fin de semana', 'entre semana', 'morning', 'afternoon', 'evening', 'night', 'weekend', 'weekday']
-        if (timePatterns.includes(value)) {
+        // This is a simplified check - supports Spanish keywords
+        const timePatterns = ['mañana', 'tarde', 'atardecer', 'noche', 'fin de semana', 'entre semana']
+        if (timePatterns.includes(value.toLowerCase())) {
           return true // Can't properly test without datetime
+        }
+        // Check for time range format (HH:MM-HH:MM)
+        if (/^\d{2}:\d{2}-\d{2}:\d{2}$/.test(value)) {
+          return true
         }
         return false
       

@@ -74,14 +74,14 @@ export default class extends Controller {
     const categoryId = select?.value
     
     if (!categoryId) {
-      this.showNotification('Please select a category', 'error')
+      this.showNotification('Por favor selecciona una categoría', 'error')
       return
     }
     
     const expenseIds = Array.from(this.selectedExpenses.get(groupId) || [])
     
     if (expenseIds.length === 0) {
-      this.showNotification('No expenses selected', 'error')
+      this.showNotification('No hay gastos seleccionados', 'error')
       return
     }
     
@@ -96,7 +96,7 @@ export default class extends Controller {
     const expenseIds = Array.from(this.selectedExpenses.get(groupId) || [])
     
     if (expenseIds.length === 0) {
-      this.showNotification('No expenses selected', 'error')
+      this.showNotification('No hay gastos seleccionados', 'error')
       return
     }
     
@@ -134,7 +134,7 @@ export default class extends Controller {
     })
     .catch(error => {
       console.error('Error:', error)
-      this.showNotification('An error occurred. Please try again.', 'error')
+      this.showNotification('Ocurrió un error. Por favor intenta de nuevo.', 'error')
       this.hideProgress()
       this.enableGroupButtons(groupId)
     })
@@ -147,14 +147,14 @@ export default class extends Controller {
     const categoryId = select?.value
     
     if (!categoryId) {
-      this.showNotification('Please select a category to preview', 'error')
+      this.showNotification('Por favor selecciona una categoría para previsualizar', 'error')
       return
     }
     
     const expenseIds = Array.from(this.selectedExpenses.get(groupId) || [])
     
     if (expenseIds.length === 0) {
-      this.showNotification('No expenses selected', 'error')
+      this.showNotification('No hay gastos seleccionados', 'error')
       return
     }
     
@@ -175,7 +175,7 @@ export default class extends Controller {
     .then(html => Turbo.renderStreamMessage(html))
     .catch(error => {
       console.error('Error:', error)
-      this.showNotification('Failed to load preview', 'error')
+      this.showNotification('Error al cargar la previsualización', 'error')
     })
   }
 
@@ -194,7 +194,7 @@ export default class extends Controller {
   }
 
   autoCategorizehighConfidence(event) {
-    if (!confirm('This will automatically categorize all high-confidence matches. Continue?')) {
+    if (!confirm('Esto categorizará automáticamente todos los gastos de alta confianza. ¿Continuar?')) {
       return
     }
     
@@ -213,7 +213,7 @@ export default class extends Controller {
     .then(html => Turbo.renderStreamMessage(html))
     .catch(error => {
       console.error('Error:', error)
-      this.showNotification('Auto-categorization failed', 'error')
+      this.showNotification('La categorización automática falló', 'error')
     })
   }
 

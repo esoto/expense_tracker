@@ -1,19 +1,20 @@
 import { Controller } from "@hotwired/stimulus"
 
 // Undo Manager Controller
-// Manages undo operations and displays notifications for recoverable actions
+// Manages undo notifications with a 30-second countdown.
+// Once the notification closes (timer expires or user dismisses), the action is permanent.
 export default class extends Controller {
-  static targets = ["notification", "message", "timer", "undoButton"]
+  static targets = ["message", "timer", "undoButton", "progressBar"]
   static values = {
     undoId: Number,
-    timeRemaining: Number,
-    autoHide: { type: Boolean, default: true },
-    hideDelay: { type: Number, default: 30000 } // 30 seconds
+    timeRemaining: { type: Number, default: 30 },
+    totalTime: { type: Number, default: 30 }
   }
 
   connect() {
     this.timerInterval = null
-    
+    this.totalTimeValue = this.timeRemainingValue
+
     if (this.hasUndoIdValue && this.undoIdValue) {
       this.startTimer()
     }
@@ -23,35 +24,29 @@ export default class extends Controller {
     this.stopTimer()
   }
 
-  // Show undo notification for a deletion
   showUndoNotification(event) {
     const { undoId, message, timeRemaining } = event.detail
-    
+
     this.undoIdValue = undoId
     this.timeRemainingValue = timeRemaining || 30
-    
+    this.totalTimeValue = this.timeRemainingValue
+
     if (this.hasMessageTarget) {
-      this.messageTarget.textContent = message || "Elementos eliminados exitosamente"
+      this.messageTarget.textContent = message || "Gasto eliminado"
     }
-    
+
     this.show()
     this.startTimer()
   }
 
-  // Show the notification
   show() {
     this.element.classList.remove("hidden")
     this.element.classList.add("slide-in-bottom")
-    
-    // Announce to screen readers
-    this.element.setAttribute("role", "alert")
-    this.element.setAttribute("aria-live", "polite")
   }
 
-  // Hide the notification
   hide() {
     this.element.classList.add("fade-out")
-    
+
     setTimeout(() => {
       this.element.classList.add("hidden")
       this.element.classList.remove("slide-in-bottom", "fade-out")
@@ -59,25 +54,25 @@ export default class extends Controller {
     }, 300)
   }
 
-  // Start countdown timer
   startTimer() {
-    this.stopTimer() // Clear any existing timer
-    
+    this.stopTimer()
+
     if (this.timeRemainingValue <= 0) return
-    
+
     this.updateTimerDisplay()
-    
+    this.updateProgressBar()
+
     this.timerInterval = setInterval(() => {
       this.timeRemainingValue--
       this.updateTimerDisplay()
-      
+      this.updateProgressBar()
+
       if (this.timeRemainingValue <= 0) {
         this.handleExpiration()
       }
     }, 1000)
   }
 
-  // Stop countdown timer
   stopTimer() {
     if (this.timerInterval) {
       clearInterval(this.timerInterval)
@@ -85,128 +80,136 @@ export default class extends Controller {
     }
   }
 
-  // Update timer display
   updateTimerDisplay() {
     if (!this.hasTimerTarget) return
-    
-    const minutes = Math.floor(this.timeRemainingValue / 60)
-    const seconds = this.timeRemainingValue % 60
-    
-    if (minutes > 0) {
-      this.timerTarget.textContent = `${minutes}m ${seconds}s`
-    } else {
-      this.timerTarget.textContent = `${seconds}s`
-    }
-    
-    // Change color as time runs out
-    if (this.timeRemainingValue <= 10) {
-      this.timerTarget.classList.add("text-rose-600")
-      this.timerTarget.classList.remove("text-slate-600")
+
+    this.timerTarget.textContent = `${this.timeRemainingValue}s`
+
+    // Urgent styling when running low
+    if (this.timeRemainingValue <= 5) {
+      this.timerTarget.style.color = "#e11d48" // rose-600
+      this.timerTarget.style.fontWeight = "700"
+    } else if (this.timeRemainingValue <= 10) {
+      this.timerTarget.style.color = "#d97706" // amber-600
+      this.timerTarget.style.fontWeight = "600"
     }
   }
 
-  // Handle timer expiration
+  updateProgressBar() {
+    if (!this.hasProgressBarTarget) return
+
+    const pct = (this.timeRemainingValue / this.totalTimeValue) * 100
+    this.progressBarTarget.style.width = `${pct}%`
+
+    // Color shifts: teal → amber → rose
+    if (this.timeRemainingValue <= 5) {
+      this.progressBarTarget.style.backgroundColor = "#e11d48" // rose-600
+    } else if (this.timeRemainingValue <= 10) {
+      this.progressBarTarget.style.backgroundColor = "#d97706" // amber-600
+    } else {
+      this.progressBarTarget.style.backgroundColor = "#0f766e" // teal-700
+    }
+  }
+
   handleExpiration() {
     this.stopTimer()
-    
+
     if (this.hasUndoButtonTarget) {
       this.undoButtonTarget.disabled = true
-      this.undoButtonTarget.classList.add("opacity-50", "cursor-not-allowed")
+      this.undoButtonTarget.style.opacity = "0.5"
+      this.undoButtonTarget.style.cursor = "not-allowed"
       this.undoButtonTarget.textContent = "Expirado"
     }
-    
-    // Auto-hide after expiration
+
+    if (this.hasTimerTarget) {
+      this.timerTarget.textContent = "sin recuperación"
+      this.timerTarget.style.color = "#e11d48"
+    }
+
     setTimeout(() => this.hide(), 2000)
   }
 
-  // Perform undo action
   async undo() {
     if (!this.undoIdValue || this.timeRemainingValue <= 0) return
-    
+
     this.setLoading(true)
-    
+
     try {
       const response = await fetch(`/undo_histories/${this.undoIdValue}/undo`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          "X-CSRF-Token": document.querySelector('[name="csrf-token"]').content,
+          "Content-Type": "application/json",
+          "Accept": "application/json"
         }
       })
-      
-      if (!response.ok) throw new Error('Undo failed')
 
+      if (!response.ok) throw new Error("Undo failed")
+
+      this.stopTimer()
       this.hide()
-      this.showSuccessMessage("Acción deshecha exitosamente")
+      this.showToast("Gasto restaurado exitosamente", "success")
 
-      // Reload page to show restored expense
       setTimeout(() => window.location.reload(), 1500)
-      
     } catch (error) {
-      console.error('Undo error:', error)
-      this.showErrorMessage("No se pudo deshacer la acción")
+      console.error("Undo error:", error)
+      this.showToast("No se pudo deshacer la acción", "error")
     } finally {
       this.setLoading(false)
     }
   }
 
-  // Set loading state
   setLoading(loading) {
     if (!this.hasUndoButtonTarget) return
-    
+
     if (loading) {
       this.undoButtonTarget.disabled = true
-      this.undoButtonTarget.innerHTML = `
-        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        Deshaciendo...
-      `
+      this.undoButtonTarget.innerHTML =
+        '<span class="undo-spinner"></span> Deshaciendo...'
     } else {
       this.undoButtonTarget.disabled = false
-      this.undoButtonTarget.innerHTML = 'Deshacer'
+      this.undoButtonTarget.textContent = "Deshacer"
     }
   }
 
-  // Show success message
-  showSuccessMessage(message) {
-    const notification = this.createNotification(message, 'success')
-    document.body.appendChild(notification)
-    
-    setTimeout(() => notification.remove(), 3000)
+  showToast(message, type) {
+    const div = document.createElement("div")
+    const isSuccess = type === "success"
+
+    Object.assign(div.style, {
+      position: "fixed",
+      bottom: "1rem",
+      right: "1rem",
+      zIndex: "60",
+      padding: "0.75rem 1rem",
+      borderRadius: "0.5rem",
+      boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
+      border: `1px solid ${isSuccess ? "#a7f3d0" : "#fecdd3"}`,
+      backgroundColor: isSuccess ? "#ecfdf5" : "#fff1f2",
+      color: isSuccess ? "#047857" : "#be123c",
+      fontSize: "0.875rem",
+      fontWeight: "500",
+      display: "flex",
+      alignItems: "center",
+      gap: "0.5rem",
+      animation: "slideInBottom 0.3s ease-out"
+    })
+
+    const icon = isSuccess
+      ? '<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+      : '<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+
+    div.innerHTML = `${icon}<span>${message}</span>`
+    document.body.appendChild(div)
+
+    setTimeout(() => {
+      div.style.animation = "fadeOut 0.3s ease-out"
+      setTimeout(() => div.remove(), 300)
+    }, 3000)
   }
 
-  // Show error message
-  showErrorMessage(message) {
-    const notification = this.createNotification(message, 'error')
-    document.body.appendChild(notification)
-    
-    setTimeout(() => notification.remove(), 3000)
-  }
-
-  // Create notification element
-  createNotification(message, type) {
-    const div = document.createElement('div')
-    div.className = `fixed bottom-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 ${
-      type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' : 'bg-rose-50 border border-rose-200 text-rose-700'
-    }`
-    div.innerHTML = `
-      <div class="flex items-center">
-        ${type === 'success' ? 
-          '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>' :
-          '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
-        }
-        <span>${message}</span>
-      </div>
-    `
-    
-    return div
-  }
-
-  // Dismiss notification
   dismiss() {
+    this.stopTimer()
     this.hide()
   }
 }

@@ -144,7 +144,7 @@ gem "rspec-rails", "~> 8.0"
 
 gem "simplecov", "~> 0.22.0", group: :test
 
-gem "shoulda-matchers", "~> 6.5", group: :test
+gem "shoulda-matchers", "~> 7.0", group: :test
 gem "rails-controller-testing", group: :test
 
 gem "rails_best_practices", "~> 1.23", group: :development

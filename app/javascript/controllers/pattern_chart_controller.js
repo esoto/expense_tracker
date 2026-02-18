@@ -388,9 +388,9 @@ export default class extends Controller {
     } else if (date.toDateString() === yesterday.toDateString()) {
       return 'Ayer'
     } else {
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric' 
+      return date.toLocaleDateString('es-ES', {
+        month: 'short',
+        day: 'numeric'
       })
     }
   }

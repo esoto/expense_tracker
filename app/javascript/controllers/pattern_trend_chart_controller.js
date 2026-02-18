@@ -88,10 +88,10 @@ export default class extends Controller {
           tooltip: {
             callbacks: {
               afterLabel: function(context) {
-                if (context.dataset.label === 'Accuracy %') {
+                if (context.dataset.label === 'Precisión %') {
                   const dataIndex = context.dataIndex
                   const item = data[dataIndex]
-                  return `Accepted: ${item.accepted}\nRejected: ${item.rejected}\nCorrected: ${item.corrected}`
+                  return `Aceptados: ${item.accepted}\nRechazados: ${item.rejected}\nCorregidos: ${item.corrected}`
                 }
                 return ''
               }
@@ -136,10 +136,10 @@ export default class extends Controller {
     this.element.innerHTML = `
       <div class="flex items-center justify-center h-full">
         <div class="text-center">
-          <p class="text-slate-500">Unable to load trend data</p>
+          <p class="text-slate-500">No se pudo cargar los datos de tendencia</p>
           <button class="mt-2 px-4 py-2 bg-teal-700 text-white rounded-lg text-sm"
                   data-action="click->pattern-trend-chart#retry">
-            Retry
+            Reintentar
           </button>
         </div>
       </div>

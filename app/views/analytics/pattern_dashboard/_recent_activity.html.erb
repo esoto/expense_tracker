@@ -4,7 +4,7 @@
     <div class="p-3 bg-slate-50 rounded-lg text-sm">
       <div class="flex items-center justify-between mb-1">
         <span class="text-xs text-slate-500">
-          <%= time_ago_in_words(activity[:created_at]) %> ago
+          hace <%= time_ago_in_words(activity[:created_at]) %>
         </span>
         <span class="text-xs px-2 py-1 rounded-full <%= activity[:feedback_type] == 'accepted' ? 'bg-emerald-100 text-emerald-700' : activity[:feedback_type] == 'rejected' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700' %>">
           <%= activity[:feedback_type].capitalize %>
@@ -24,7 +24,7 @@
       </div>
       <% if activity[:pattern_type] %>
         <div class="mt-1 text-xs text-slate-500">
-          Pattern: <%= activity[:pattern_type] %> - <%= truncate(activity[:pattern_value], length: 30) %>
+          Patrón: <%= activity[:pattern_type] %> - <%= truncate(activity[:pattern_value], length: 30) %>
         </div>
       <% end %>
     </div>

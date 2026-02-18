@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { shouldSuppressShortcut } from "../utilities/keyboard_shortcut_helpers"
 
 /**
  * View Toggle Controller
@@ -176,6 +177,9 @@ export default class extends Controller {
    * Allow toggling with keyboard shortcut (Ctrl/Cmd + Shift + V)
    */
   handleKeydown(event) {
+    // Don't fire shortcuts when typing in form fields
+    if (shouldSuppressShortcut(event)) return
+
     if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'V') {
       event.preventDefault()
       this.toggle()

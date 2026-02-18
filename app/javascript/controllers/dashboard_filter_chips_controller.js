@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import FilterStateManager from "../utilities/filter_state_manager"
+import { shouldSuppressShortcut } from "../utilities/keyboard_shortcut_helpers"
 
 // Dashboard Filter Chips Controller
 // Manages filter chip selection, state management, and real-time filtering
@@ -420,17 +421,22 @@ export default class extends Controller {
   // Keyboard navigation setup
   setupKeyboardNavigation() {
     this.element.addEventListener('keydown', (event) => {
+      // Don't fire shortcuts when typing in form fields (except Escape)
+      if (shouldSuppressShortcut(event)) return
+
       // Clear all filters with Escape key
       if (event.key === 'Escape' && this.hasActiveFilters()) {
         event.preventDefault()
+        event.stopPropagation()
         this.clearAllFilters()
+        return
       }
-      
+
       // Navigate chips with arrow keys
       if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
         this.navigateChips(event)
       }
-      
+
       // Toggle chip with Enter or Space
       if ((event.key === 'Enter' || event.key === ' ') && event.target.matches('[data-dashboard-filter-chips-target*="Chip"]')) {
         event.preventDefault()

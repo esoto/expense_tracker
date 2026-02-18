@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { shouldSuppressShortcut } from "../utilities/keyboard_shortcut_helpers"
 
 export default class extends Controller {
   static targets = ["actionsContainer", "categoryDropdown", "deleteConfirmation", "statusButton", "duplicateButton"]
@@ -50,33 +51,41 @@ export default class extends Controller {
   }
   
   handleKeyboard(event) {
-    // Handle keyboard shortcuts
+    // Don't fire shortcuts when typing in form fields (except Escape)
+    if (shouldSuppressShortcut(event)) return
+
+    // Handle Escape to close dropdowns
     if (event.key === 'Escape') {
       this.closeCategoryDropdown()
       this.closeDeleteConfirmation()
+      event.stopPropagation()
       return
     }
-    
+
     // Only handle shortcuts when row is focused/hovered
     if (!this.element.matches(':hover, :focus-within')) return
-    
+
     switch(event.key.toLowerCase()) {
       case 'c':
         event.preventDefault()
+        event.stopPropagation()
         this.toggleCategoryDropdown(event)
         break
       case 'r':
         event.preventDefault()
+        event.stopPropagation()
         this.toggleStatus(event)
         break
       case 'd':
         event.preventDefault()
+        event.stopPropagation()
         this.duplicateExpense(event)
         break
       case 'delete':
       case 'backspace':
         if (event.metaKey || event.ctrlKey) {
           event.preventDefault()
+          event.stopPropagation()
           this.showDeleteConfirmation(event)
         }
         break

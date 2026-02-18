@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { shouldSuppressShortcut } from "../utilities/keyboard_shortcut_helpers"
 
 /**
  * Batch Selection Controller
@@ -78,29 +79,41 @@ export default class extends Controller {
   setupKeyboardNavigation() {
     // Add keyboard event listener for batch operations shortcuts
     this.keydownHandler = (event) => {
-      // Ctrl/Cmd + A: Select all
-      if ((event.metaKey || event.ctrlKey) && event.key === 'a' || 
-          (event.metaKey || event.ctrlKey) && event.key === 'A') {
-        const tableElement = this.element.querySelector('table')
-        if (tableElement && (this.element.contains(document.activeElement) || this.selectionModeValue)) {
-          event.preventDefault()
-          this.selectAll()
-        }
+      // Don't fire shortcuts when typing in form fields (except Escape)
+      if (shouldSuppressShortcut(event)) return
+
+      // Only handle when this controller's element contains focus or is in selection mode
+      if (!this.element.contains(document.activeElement) && !this.selectionModeValue) {
+        return
       }
-      
+
       // Escape: Clear selection
       if (event.key === 'Escape' && this.selectedIdsValue.length > 0) {
         event.preventDefault()
+        event.stopPropagation()
         this.clearSelection()
+        return
       }
-      
+
+      // Ctrl/Cmd + A: Select all
+      if ((event.metaKey || event.ctrlKey) && (event.key === 'a' || event.key === 'A') && !event.shiftKey) {
+        const tableElement = this.element.querySelector('table')
+        if (tableElement) {
+          event.preventDefault()
+          event.stopPropagation()
+          this.selectAll()
+        }
+        return
+      }
+
       // Ctrl/Cmd + Shift + A: Toggle selection mode
-      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'A') {
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && (event.key === 'A' || event.key === 'a')) {
         event.preventDefault()
+        event.stopPropagation()
         this.toggleSelectionMode()
       }
     }
-    
+
     document.addEventListener('keydown', this.keydownHandler)
   }
 

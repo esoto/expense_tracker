@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { shouldSuppressShortcut } from "../utilities/keyboard_shortcut_helpers"
 
 // Dashboard Inline Actions Controller for Epic 3 Task 3.3
 // Handles quick actions: categorize, status toggle, duplicate, and delete
@@ -411,12 +412,21 @@ export default class extends Controller {
     this.keyboardHandler = (event) => {
       // Only handle if this row has focus or contains the focused element
       if (!this.element.contains(document.activeElement)) return
-      
+
+      // Don't fire shortcuts when typing in form fields (except Escape)
+      if (shouldSuppressShortcut(event)) return
+
       switch(event.key) {
+        case "Escape":
+          event.preventDefault()
+          event.stopPropagation()
+          this.closeAllDropdowns()
+          break
         case "c":
         case "C":
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault()
+            event.stopPropagation()
             this.toggleCategoryDropdown(event)
           }
           break
@@ -424,6 +434,7 @@ export default class extends Controller {
         case "S":
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault()
+            event.stopPropagation()
             this.toggleStatus(event)
           }
           break
@@ -431,20 +442,18 @@ export default class extends Controller {
         case "D":
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault()
+            event.stopPropagation()
             this.duplicateExpense(event)
           }
           break
         case "Delete":
           event.preventDefault()
+          event.stopPropagation()
           this.showDeleteConfirmation(event)
-          break
-        case "Escape":
-          event.preventDefault()
-          this.closeAllDropdowns()
           break
       }
     }
-    
+
     document.addEventListener("keydown", this.keyboardHandler)
   }
   

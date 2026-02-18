@@ -1,47 +1,55 @@
 import { Controller } from "@hotwired/stimulus"
+import { shouldSuppressShortcut } from "../utilities/keyboard_shortcut_helpers"
 
 export default class extends Controller {
   static targets = ["importModal", "searchField"]
-  
+
   connect() {
     // Set up keyboard shortcuts
     this.setupKeyboardShortcuts()
-    
+
     // Initialize search debounce timer
     this.searchTimer = null
   }
-  
+
   disconnect() {
     // Clean up event listeners
     document.removeEventListener('keydown', this.handleKeydown)
   }
-  
+
   setupKeyboardShortcuts() {
     this.handleKeydown = (event) => {
+      // Don't fire shortcuts when typing in form fields (except Escape)
+      if (shouldSuppressShortcut(event)) return
+
+      // Escape to close modals
+      if (event.key === 'Escape') {
+        if (this.hasImportModalTarget && !this.importModalTarget.classList.contains('hidden')) {
+          event.stopPropagation()
+          this.hideImportModal()
+        }
+        return
+      }
+
       // Cmd/Ctrl + K for search focus
       if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
         event.preventDefault()
         this.focusSearch()
       }
-      
+
       // Cmd/Ctrl + N for new pattern
       if ((event.metaKey || event.ctrlKey) && event.key === 'n') {
         event.preventDefault()
         this.createNewPattern()
       }
-      
+
       // Cmd/Ctrl + I for import
       if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
         event.preventDefault()
         this.showImportModal()
       }
-      
-      // Escape to close modals
-      if (event.key === 'Escape') {
-        this.hideImportModal()
-      }
     }
-    
+
     document.addEventListener('keydown', this.handleKeydown)
   }
   

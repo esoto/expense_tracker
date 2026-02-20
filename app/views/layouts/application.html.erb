@@ -97,21 +97,9 @@
     </nav>
 
     <!-- Flash Messages -->
-    <% if notice %>
-      <div class="max-w-7xl mx-auto px-4 mt-4">
-        <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg relative" role="alert">
-          <span class="block sm:inline"><%= notice %></span>
-        </div>
-      </div>
-    <% end %>
-
-    <% if alert %>
-      <div class="max-w-7xl mx-auto px-4 mt-4">
-        <div class="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg relative" role="alert">
-          <span class="block sm:inline"><%= alert %></span>
-        </div>
-      </div>
-    <% end %>
+    <div class="max-w-7xl mx-auto px-4 mt-4">
+      <%= render "shared/flash" %>
+    </div>
 
     <!-- Toast Notification Container -->
     <div id="toast-container"

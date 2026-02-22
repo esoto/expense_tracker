@@ -1,14 +1,14 @@
 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-  <h1 class="text-xl font-semibold text-slate-900 mb-6">Bulk Operation Details</h1>
+  <h1 class="text-xl font-semibold text-slate-900 mb-6">Detalles de Operación Masiva</h1>
   <div class="space-y-4">
     <div>
-      <h2 class="text-lg font-medium text-slate-800">Operation Summary</h2>
-      <p class="text-slate-600">Bulk Operation #<%= @bulk_operation.id %></p>
+      <h2 class="text-lg font-medium text-slate-800">Resumen de Operación</h2>
+      <p class="text-slate-600">Operación Masiva #<%= @bulk_operation.id %></p>
     </div>
     <% if @affected_expenses.present? %>
       <div>
-        <h2 class="text-lg font-medium text-slate-800">Affected Expenses</h2>
-        <p class="text-slate-600"><%= pluralize(@affected_expenses.count, 'expense') %> affected</p>
+        <h2 class="text-lg font-medium text-slate-800">Gastos Afectados</h2>
+        <p class="text-slate-600"><%= "#{@affected_expenses.count} gasto#{'s' if @affected_expenses.count != 1}" %> afectados</p>
       </div>
     <% end %>
   </div>

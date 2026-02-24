@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { createUndoNotification } from "utilities/undo_notification_helper"
 
 // Dashboard Inline Actions Controller for Epic 3 Task 3.3
 // Handles quick actions: categorize, status toggle, duplicate, and delete
@@ -454,44 +455,7 @@ export default class extends Controller {
   
   // Show undo notification with countdown timer
   showUndoNotification(undoId, timeRemaining, message) {
-    document.querySelector('.undo-notification')?.remove()
-
-    const notification = document.createElement('div')
-    notification.className = 'undo-notification slide-in-bottom'
-    notification.setAttribute('data-controller', 'undo-manager')
-    notification.setAttribute('data-undo-manager-undo-id-value', undoId)
-    notification.setAttribute('data-undo-manager-time-remaining-value', timeRemaining || 30)
-    notification.setAttribute('role', 'alert')
-    notification.setAttribute('aria-live', 'polite')
-    notification.innerHTML = `
-      <div class="flex items-center justify-between">
-        <div class="flex items-center flex-1 min-w-0">
-          <svg class="undo-notification-icon flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-          </svg>
-          <div class="ml-3">
-            <p class="undo-notification-message" data-undo-manager-target="message">${message || 'Gasto eliminado. Puedes deshacer esta acción.'}</p>
-            <p class="undo-notification-timer">Tiempo restante: <span class="undo-notification-timer-value" data-undo-manager-target="timer"></span></p>
-          </div>
-        </div>
-        <div class="undo-notification-actions">
-          <button class="undo-notification-undo-btn"
-                  data-undo-manager-target="undoButton"
-                  data-action="click->undo-manager#undo"
-                  aria-label="Deshacer eliminación">
-            Deshacer
-          </button>
-          <button class="undo-notification-dismiss-btn"
-                  data-action="click->undo-manager#dismiss"
-                  aria-label="Cerrar notificación">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    `
-    document.body.appendChild(notification)
+    createUndoNotification(undoId, timeRemaining, message)
   }
 
   // Show toast notification

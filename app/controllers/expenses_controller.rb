@@ -97,16 +97,41 @@ class ExpensesController < ApplicationController
 
   # DELETE /expenses/1
   def destroy
-    @expense.destroy
-
-    respond_to do |format|
-      format.html { redirect_to expenses_url, notice: "Gasto eliminado exitosamente." }
-      format.turbo_stream do
-        # Return an empty turbo stream since the JS controller handles the row removal
-        render turbo_stream: turbo_stream.append("toast-container",
-          "<div data-controller='toast' data-toast-remove-delay-value='5000' class='hidden'>Gasto eliminado exitosamente</div>")
+    begin
+      undo_entry = nil
+      ActiveRecord::Base.transaction do
+        @expense.soft_delete!(deleted_by: current_user)
+        undo_entry = UndoHistory.create_for_deletion(@expense, user: current_user)
       end
-      format.json { render json: { success: true, message: "Gasto eliminado exitosamente" } }
+
+      respond_to do |format|
+        format.html do
+          redirect_to expenses_url,
+            notice: "Gasto eliminado. Puedes deshacer esta acción.",
+            flash: { undo_id: undo_entry.id, undo_time_remaining: undo_entry.time_remaining }
+        end
+        format.turbo_stream do
+          @undo_entry = undo_entry
+          # Renders app/views/expenses/destroy.turbo_stream.erb
+        end
+        format.json do
+          render json: {
+            success: true,
+            message: "Gasto eliminado. Puedes deshacer esta acción.",
+            undo_id: undo_entry.id,
+            undo_time_remaining: undo_entry.time_remaining
+          }
+        end
+      end
+    rescue StandardError => e
+      Rails.logger.error "Error deleting expense: #{e.message}"
+      respond_to do |format|
+        format.html { redirect_to expenses_url, alert: "Error al eliminar el gasto. Por favor, inténtalo de nuevo." }
+        format.turbo_stream do
+          render turbo_stream: turbo_stream.update("flash_messages", partial: "shared/flash", locals: { alert: "Error al eliminar el gasto. Por favor, inténtalo de nuevo." })
+        end
+        format.json { render json: { success: false, error: "Error al eliminar el gasto" }, status: :internal_server_error }
+      end
     end
   end
 

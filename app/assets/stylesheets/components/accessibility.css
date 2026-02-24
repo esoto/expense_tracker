@@ -176,27 +176,15 @@ a {
    ARIA LIVE REGIONS
    ============================================ */
 
-/* Ensure live regions are properly positioned */
-[aria-live],
-[role="status"],
-[role="alert"] {
-  /* Keep off-screen but accessible to screen readers */
+/* Screen-reader-only live regions (hidden visually, announced by assistive tech) */
+.sr-only[aria-live],
+.sr-only[role="status"],
+.sr-only[role="alert"] {
   position: absolute;
   left: -10000px;
   width: 1px;
   height: 1px;
   overflow: hidden;
-}
-
-/* When live regions need to be visible */
-[aria-live].visible,
-[role="status"].visible,
-[role="alert"].visible {
-  position: static;
-  left: auto;
-  width: auto;
-  height: auto;
-  overflow: visible;
 }
 
 /* ============================================

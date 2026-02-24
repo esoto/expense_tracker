@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { createUndoNotification } from "utilities/undo_notification_helper"
 
 // Dashboard Inline Actions Controller for Epic 3 Task 3.3
 // Handles quick actions: categorize, status toggle, duplicate, and delete
@@ -266,7 +267,11 @@ export default class extends Controller {
     })
     .then(data => {
       this.animateRemoval()
-      this.showToast("Gasto eliminado exitosamente", "success")
+      if (data.undo_id) {
+        this.showUndoNotification(data.undo_id, data.undo_time_remaining, data.message)
+      } else {
+        this.showToast("Gasto eliminado exitosamente", "success")
+      }
     })
     .catch(error => {
       console.error("Error deleting expense:", error)
@@ -448,6 +453,11 @@ export default class extends Controller {
     document.addEventListener("keydown", this.keyboardHandler)
   }
   
+  // Show undo notification with countdown timer
+  showUndoNotification(undoId, timeRemaining, message) {
+    createUndoNotification(undoId, timeRemaining, message)
+  }
+
   // Show toast notification
   showToast(message, type = "info") {
     // Create toast element

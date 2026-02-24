@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { createUndoNotification } from "utilities/undo_notification_helper"
 
 export default class extends Controller {
   static targets = ["actionsContainer", "categoryDropdown", "deleteConfirmation", "statusButton", "duplicateButton"]
@@ -316,43 +317,44 @@ export default class extends Controller {
   confirmDelete(event) {
     event.preventDefault()
     event.stopPropagation()
-    
+
     // Close the confirmation modal
     this.closeDeleteConfirmation()
-    
+
     const expenseId = this.element.id.replace('expense_row_', '')
-    
+
     // Disable the row during deletion
     this.element.classList.add('opacity-50', 'pointer-events-none')
-    
+
     fetch(`/expenses/${expenseId}`, {
       method: 'DELETE',
       headers: {
         'X-CSRF-Token': this.csrfToken,
-        'Accept': 'text/vnd.turbo-stream.html'
+        'Accept': 'application/json'
       }
     })
     .then(response => {
       if (response.ok) {
-        // Animate row removal
-        this.element.style.transition = 'all 300ms ease-out'
-        this.element.style.transform = 'translateX(100%)'
-        this.element.style.opacity = '0'
-        
-        setTimeout(() => {
-          this.element.remove()
-        }, 300)
-        
-        this.showToast('Gasto eliminado', 'success')
-        return response.text()
+        return response.json()
       } else {
         throw new Error('Failed to delete')
       }
     })
-    .then(turboStream => {
-      // Handle any turbo stream responses
-      if (turboStream && turboStream.includes('turbo-stream')) {
-        Turbo.renderStreamMessage(turboStream)
+    .then(data => {
+      // Animate row removal
+      this.element.style.transition = 'all 300ms ease-out'
+      this.element.style.transform = 'translateX(100%)'
+      this.element.style.opacity = '0'
+
+      setTimeout(() => {
+        this.element.remove()
+      }, 300)
+
+      // Show undo notification if undo_id is available
+      if (data.undo_id) {
+        this.showUndoNotification(data.undo_id, data.undo_time_remaining, data.message)
+      } else {
+        this.showToast('Gasto eliminado', 'success')
       }
     })
     .catch(error => {
@@ -360,6 +362,10 @@ export default class extends Controller {
       this.element.classList.remove('opacity-50', 'pointer-events-none')
       this.showToast('Error al eliminar gasto', 'error')
     })
+  }
+
+  showUndoNotification(undoId, timeRemaining, message) {
+    createUndoNotification(undoId, timeRemaining, message)
   }
 
   showToast(message, type = 'info') {

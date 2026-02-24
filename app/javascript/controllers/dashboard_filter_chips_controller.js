@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import FilterStateManager from "../utilities/filter_state_manager"
+import FilterStateManager from "utilities/filter_state_manager"
 
 // Dashboard Filter Chips Controller
 // Manages filter chip selection, state management, and real-time filtering

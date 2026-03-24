@@ -207,7 +207,7 @@ export default class extends Controller {
         pointBorderWidth: 2
       },
       {
-        label: 'Coincidencias Correctas',
+        label: 'Coincidencias correctas',
         data: chartData.correct,
         borderColor: '#10B981',
         backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -219,7 +219,7 @@ export default class extends Controller {
         hidden: false // Can be toggled by user
       },
       {
-        label: 'Coincidencias Incorrectas',
+        label: 'Coincidencias incorrectas',
         data: chartData.incorrect,
         borderColor: '#F87171',
         backgroundColor: 'rgba(248, 113, 113, 0.1)',

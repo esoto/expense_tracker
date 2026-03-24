@@ -39,7 +39,7 @@ export default class extends Controller {
 
   renderHeatmap(data) {
     // Create a matrix for the heatmap
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
     const hours = Array.from({length: 24}, (_, i) => `${i}:00`)
     
     // Find max count for color scaling
@@ -98,7 +98,7 @@ export default class extends Controller {
         }
         
         // Add tooltip
-        cell.title = `${day} ${hour}: ${count} patterns used`
+        cell.title = `${day} ${hour}: ${count} patrones utilizados`
         
         grid.appendChild(cell)
       })
@@ -110,7 +110,7 @@ export default class extends Controller {
     const legend = document.createElement('div')
     legend.className = 'flex items-center gap-4 mt-4 text-xs text-slate-600'
     legend.innerHTML = `
-      <span>Less</span>
+      <span>Menos</span>
       <div class="flex gap-1">
         <div class="w-4 h-4 rounded" style="background-color: #f1f5f9"></div>
         <div class="w-4 h-4 rounded" style="background-color: #99f6e4"></div>
@@ -118,7 +118,7 @@ export default class extends Controller {
         <div class="w-4 h-4 rounded" style="background-color: #14b8a6"></div>
         <div class="w-4 h-4 rounded" style="background-color: #0f766e"></div>
       </div>
-      <span>More</span>
+      <span>Más</span>
     `
     container.appendChild(legend)
   }
@@ -127,10 +127,10 @@ export default class extends Controller {
     this.element.innerHTML = `
       <div class="flex items-center justify-center h-full">
         <div class="text-center">
-          <p class="text-slate-500">Unable to load heatmap data</p>
+          <p class="text-slate-500">No se pudieron cargar los datos del mapa de calor</p>
           <button class="mt-2 px-4 py-2 bg-teal-700 text-white rounded-lg text-sm"
                   data-action="click->pattern-heatmap#retry">
-            Retry
+            Reintentar
           </button>
         </div>
       </div>

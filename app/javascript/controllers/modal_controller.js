@@ -27,6 +27,7 @@ export default class extends Controller {
 
   handleEscape(event) {
     if (event.key === 'Escape') {
+      event.stopPropagation()
       this.close()
     }
   }

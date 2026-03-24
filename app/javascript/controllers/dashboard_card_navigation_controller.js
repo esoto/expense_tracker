@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { Turbo } from "@hotwired/turbo-rails"
+import { shouldSuppressShortcut } from "../utilities/keyboard_shortcut_helpers"
 
 /**
  * Dashboard Card Navigation Controller
@@ -75,6 +76,9 @@ export default class extends Controller {
    * Handle keyboard navigation (Enter and Space keys)
    */
   handleKeydown(event) {
+    // Don't fire shortcuts when typing in form fields
+    if (shouldSuppressShortcut(event)) return
+
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault()
       this.navigate(event)

@@ -599,14 +599,15 @@ export default class extends Controller {
       if (this.element.classList.contains('hidden')) {
         return
       }
-      
-      // Escape to close (unless processing)
+
+      // Escape to close (unless processing) - always allowed even in form fields
       if (event.key === 'Escape' && !this.isProcessingValue) {
         event.preventDefault()
+        event.stopPropagation()
         this.close()
       }
     }
-    
+
     document.addEventListener('keydown', this.keydownHandler)
   }
 

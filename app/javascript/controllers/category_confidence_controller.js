@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { shouldSuppressShortcut } from "../utilities/keyboard_shortcut_helpers"
 
 export default class extends Controller {
   static targets = ["badge", "tooltip", "correctionPanel", "correctionTrigger", "categorySelect"]
@@ -249,20 +250,28 @@ export default class extends Controller {
     if (!this.element.matches(":hover") && !this.element.contains(document.activeElement)) {
       return
     }
-    
+
+    // Don't fire shortcuts when typing in form fields (except Escape)
+    if (shouldSuppressShortcut(event)) return
+
     switch(event.key.toLowerCase()) {
+      case "escape":
+        if (this.hasCorrectionPanelTarget && !this.correctionPanelTarget.classList.contains("hidden")) {
+          event.stopPropagation()
+          this.hideCorrection()
+        }
+        break
       case "c":
         if (!event.metaKey && !event.ctrlKey) {
           event.preventDefault()
+          event.stopPropagation()
           this.showCorrection(event)
         }
-        break
-      case "escape":
-        this.hideCorrection()
         break
       case "enter":
         if (this.hasCorrectionPanelTarget && !this.correctionPanelTarget.classList.contains("hidden")) {
           event.preventDefault()
+          event.stopPropagation()
           this.applyCorrection()
         }
         break

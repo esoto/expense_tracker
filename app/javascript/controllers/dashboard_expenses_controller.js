@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { Turbo } from "@hotwired/turbo-rails"
+import { shouldSuppressShortcut } from "../utilities/keyboard_shortcut_helpers"
 
 // Dashboard Expenses Controller for Epic 3 Task 3.2
 // Manages view toggle between compact and expanded modes with responsive behavior
@@ -679,34 +680,50 @@ export default class extends Controller {
   // Initialize keyboard shortcuts
   initializeKeyboardShortcuts() {
     this.keyboardShortcutHandler = (event) => {
+      // Don't fire shortcuts when typing in form fields (except Escape)
+      if (shouldSuppressShortcut(event)) return
+
+      // Only handle shortcuts when this controller's element is relevant
+      // (contains the active element or is visible on the page)
+      if (!this.element.contains(document.activeElement) && document.activeElement !== document.body) {
+        // Allow Ctrl+Shift+V globally since it is a view toggle
+        if (!((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === "V")) {
+          return
+        }
+      }
+
       // Ctrl+Shift+V or Cmd+Shift+V for view toggle
       if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === "V") {
         event.preventDefault()
+        event.stopPropagation()
         this.toggleViewMode()
         return
       }
-      
+
       // Ctrl+A or Cmd+A for select all (when in selection mode)
       if ((event.ctrlKey || event.metaKey) && event.key === "a" && this.selectionModeValue) {
         event.preventDefault()
+        event.stopPropagation()
         this.selectAll()
         return
       }
-      
+
       // Escape to exit selection mode
       if (event.key === "Escape" && this.selectionModeValue) {
         event.preventDefault()
+        event.stopPropagation()
         this.disableSelectionMode()
         return
       }
-      
+
       // Ctrl+Shift+S or Cmd+Shift+S to toggle selection mode
       if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === "S") {
         event.preventDefault()
+        event.stopPropagation()
         this.toggleSelectionMode()
         return
       }
-      
+
       // Space to toggle selection when focused on a row
       if (event.key === " " && this.selectionModeValue) {
         const activeElement = document.activeElement
@@ -714,7 +731,7 @@ export default class extends Controller {
         const focusedRow = activeElement.closest("tr[data-expense-id]") ||
                           activeElement.closest(".dashboard-expense-row") ||
                           (activeElement.matches("[data-dashboard-expenses-target='expenseRow']") ? activeElement : null)
-        
+
         if (focusedRow) {
           event.preventDefault()
           event.stopPropagation()
@@ -729,7 +746,7 @@ export default class extends Controller {
         }
       }
     }
-    
+
     document.addEventListener("keydown", this.keyboardShortcutHandler)
   }
   
@@ -782,6 +799,9 @@ export default class extends Controller {
       }
       
       row.addEventListener("keydown", (event) => {
+        // Don't fire shortcuts when typing in form fields (except Escape)
+        if (shouldSuppressShortcut(event)) return
+
         switch(event.key) {
           case "ArrowDown":
             event.preventDefault()
@@ -1396,6 +1416,7 @@ export default class extends Controller {
     // Add escape key handler
     this.modalEscapeHandler = (e) => {
       if (e.key === 'Escape') {
+        e.stopPropagation()
         this.closeBulkModal()
       }
     }

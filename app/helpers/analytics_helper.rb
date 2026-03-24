@@ -135,20 +135,20 @@ module AnalyticsHelper
       content_tag :table, class: "min-w-full divide-y divide-slate-200" do
         content_tag(:thead, class: "bg-slate-50") do
           content_tag(:tr) do
-            headers.map do |header|
+            safe_join(headers.map do |header|
               content_tag(:th, header,
                          class: "px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider")
-            end.join.html_safe
+            end)
           end
         end +
         content_tag(:tbody, class: "bg-white divide-y divide-slate-200") do
-          rows.map do |row|
+          safe_join(rows.map do |row|
             content_tag(:tr) do
-              row.map do |cell|
+              safe_join(row.map do |cell|
                 content_tag(:td, cell, class: "px-6 py-4 whitespace-nowrap text-sm text-slate-900")
-              end.join.html_safe
+              end)
             end
-          end.join.html_safe
+          end)
         end
       end
     end

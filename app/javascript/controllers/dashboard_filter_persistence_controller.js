@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import FilterStateManager from "../utilities/filter_state_manager"
+import FilterStateManager from "utilities/filter_state_manager"
 
 // Dashboard Filter Persistence Controller for Task 3.8
 // Manages persistent filter state across browser sessions and page navigation

@@ -81,7 +81,6 @@ RSpec.describe ApplicationController, type: :controller, unit: true do
         Api::BaseController,
         Api::WebhooksController,
         Api::HealthController,
-        Api::ClientErrorsController,
         Api::QueueController,
         Api::MonitoringController,
         Api::SyncSessionsController,
@@ -124,7 +123,8 @@ RSpec.describe ApplicationController, type: :controller, unit: true do
         SyncPerformanceController,
         SyncSessionsController,
         BulkCategorizationsController,
-        BulkCategorizationActionsController
+        BulkCategorizationActionsController,
+        Api::ClientErrorsController
       ]
     end
 

@@ -55,7 +55,7 @@ jobs:
         run: bin/test-unit
 
       - name: Upload Unit Coverage
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: unit-coverage

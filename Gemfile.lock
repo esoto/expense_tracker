@@ -233,7 +233,6 @@ GEM
     matrix (0.4.3)
     memory_profiler (1.1.0)
     mini_mime (1.1.5)
-    mini_portile2 (2.8.9)
     minitest (6.0.2)
       drb (~> 2.0)
       prism (~> 1.5)
@@ -254,9 +253,6 @@ GEM
       net-protocol
     net-ssh (7.3.1)
     nio4r (2.7.5)
-    nokogiri (1.19.2)
-      mini_portile2 (~> 2.8.2)
-      racc (~> 1.4)
     nokogiri (1.19.2-aarch64-linux-gnu)
       racc (~> 1.4)
     nokogiri (1.19.2-aarch64-linux-musl)
@@ -335,6 +331,9 @@ GEM
     rails-html-sanitizer (1.7.0)
       loofah (~> 2.25)
       nokogiri (>= 1.15.7, != 1.16.7, != 1.16.6, != 1.16.5, != 1.16.4, != 1.16.3, != 1.16.2, != 1.16.1, != 1.16.0.rc1, != 1.16.0)
+    rails-i18n (8.1.0)
+      i18n (>= 0.7, < 2)
+      railties (>= 8.0.0, < 9)
     rails_best_practices (1.23.3)
       activesupport
       code_analyzer (~> 0.5.5)
@@ -537,7 +536,6 @@ PLATFORMS
   arm64-darwin-23
   arm64-darwin-24
   arm64-darwin-25
-  ruby
   x86_64-linux
   x86_64-linux-gnu
   x86_64-linux-musl
@@ -579,6 +577,7 @@ DEPENDENCIES
   rack-attack
   rails (~> 8.1.2)
   rails-controller-testing
+  rails-i18n (~> 8.0)
   rails_best_practices (~> 1.23)
   redis
   redis-namespace (~> 1.10)

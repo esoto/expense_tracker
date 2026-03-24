@@ -28,7 +28,7 @@ RSpec.describe Services::BulkCategorization::UndoService, type: :service, unit: 
     it "validates presence of bulk_operation" do
       service = described_class.new(bulk_operation: nil)
       expect(service).not_to be_valid
-      expect(service.errors[:bulk_operation]).to include("can't be blank")
+      expect(service.errors[:bulk_operation]).to include("no puede estar en blanco")
     end
   end
 

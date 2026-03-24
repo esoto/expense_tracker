@@ -31,7 +31,7 @@
             <dt class="text-sm font-medium text-slate-500">Tipo</dt>
             <dd class="mt-1 text-sm text-slate-900">
               <span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-700">
-                <%= @pattern.pattern_type.humanize %>
+                <%= PatternsHelper::PATTERN_TYPE_TRANSLATIONS[@pattern.pattern_type] || @pattern.pattern_type.humanize %>
               </span>
             </dd>
           </div>
@@ -117,7 +117,7 @@
                     <%= feedback.expense.description || feedback.expense.merchant_name %>
                   </p>
                   <p class="text-xs text-slate-500 mt-1">
-                    <%= feedback.created_at.strftime("%b %d, %Y at %I:%M %p") %>
+                    <%= l(feedback.created_at, format: :long) %>
                   </p>
                 </div>
                 <div>

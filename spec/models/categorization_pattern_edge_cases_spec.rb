@@ -308,7 +308,7 @@ RSpec.describe "Categorization Pattern Edge Cases", type: :model, performance: t
         )
 
         expect(composite).not_to be_valid
-        expect(composite.errors[:pattern_ids]).to include("can't be blank")
+        expect(composite.errors[:pattern_ids]).to include("no puede estar en blanco")
       end
 
       it "handles NOT operator with multiple patterns" do

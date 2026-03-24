@@ -128,7 +128,7 @@ RSpec.describe "sync_sessions/_status_widget", type: :view, unit: true do
       render
 
       expect(rendered).to have_content("Última sincronización:")
-      expect(rendered).to have_content("about 1 hour")
+      expect(rendered).to have_content("alrededor de 1 hora")
     end
 
     it "provides a button to start new sync" do

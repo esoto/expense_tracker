@@ -2,7 +2,7 @@
   <tr class="hover:bg-slate-50">
     <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
       <span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-700">
-        <%= pattern.pattern_type.humanize %>
+        <%= PatternsHelper::PATTERN_TYPE_TRANSLATIONS[pattern.pattern_type] || pattern.pattern_type.humanize %>
       </span>
     </td>
     <td class="px-6 py-4 text-sm text-slate-900">
@@ -39,11 +39,11 @@
           class: "inline-flex" do %>
         <% if pattern.active? %>
           <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 cursor-pointer hover:bg-emerald-200">
-            Active
+            Activo
           </span>
         <% else %>
           <span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-500 cursor-pointer hover:bg-slate-200">
-            Inactive
+            Inactivo
           </span>
         <% end %>
       <% end %>

@@ -487,6 +487,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
 
         before do
           allow(Rails.application.credentials).to receive(:dig).with(:admin_key).and_return(admin_key)
+          allow(ENV).to receive(:[]).and_call_original
           allow(ENV).to receive(:[]).with("ADMIN_KEY").and_return(nil)
         end
 
@@ -551,6 +552,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
       context "test environment bypass removed" do
         before do
           allow(Rails.application.credentials).to receive(:dig).with(:admin_key).and_return(nil)
+          allow(ENV).to receive(:[]).and_call_original
           allow(ENV).to receive(:[]).with("ADMIN_KEY").and_return(nil)
         end
 
@@ -583,6 +585,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
 
         before do
           allow(Rails.application.credentials).to receive(:dig).with(:admin_key).and_return(nil)
+          allow(ENV).to receive(:[]).and_call_original
           allow(ENV).to receive(:[]).with("ADMIN_KEY").and_return(env_admin_key)
         end
 

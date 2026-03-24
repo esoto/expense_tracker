@@ -35,6 +35,9 @@ gem "rack-attack"
 # Date and text parsing
 gem "chronic"
 
+# Spanish locale translations for Rails (dates, times, numbers)
+gem "rails-i18n", "~> 8.0"
+
 # CSV support for Ruby 3.4+
 gem "csv"
 

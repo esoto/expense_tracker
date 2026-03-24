@@ -39,7 +39,7 @@ RSpec.describe PatternFeedback, type: :model, performance: true do
       feedback = described_class.new(expense: expense, category: category)
       feedback.feedback_type = ""
       expect(feedback).not_to be_valid
-      expect(feedback.errors[:feedback_type]).to include("can't be blank")
+      expect(feedback.errors[:feedback_type]).to include("no puede estar en blanco")
     end
 
     it { should validate_inclusion_of(:feedback_type).in_array(%w[accepted rejected corrected correction]) }

@@ -10,7 +10,7 @@ RSpec.describe EmailAccount, type: :model, integration: true do
     it 'requires email' do
       email_account = build(:email_account, email: nil)
       expect(email_account).not_to be_valid
-      expect(email_account.errors[:email]).to include("can't be blank")
+      expect(email_account.errors[:email]).to include("no puede estar en blanco")
     end
 
     it 'validates email format' do
@@ -29,7 +29,7 @@ RSpec.describe EmailAccount, type: :model, integration: true do
     it 'requires provider' do
       email_account = build(:email_account, provider: nil)
       expect(email_account).not_to be_valid
-      expect(email_account.errors[:provider]).to include("can't be blank")
+      expect(email_account.errors[:provider]).to include("no puede estar en blanco")
     end
 
     it 'validates provider inclusion' do
@@ -47,7 +47,7 @@ RSpec.describe EmailAccount, type: :model, integration: true do
     it 'requires bank_name' do
       email_account = build(:email_account, bank_name: nil)
       expect(email_account).not_to be_valid
-      expect(email_account.errors[:bank_name]).to include("can't be blank")
+      expect(email_account.errors[:bank_name]).to include("no puede estar en blanco")
     end
 
     it 'validates Costa Rican bank names' do

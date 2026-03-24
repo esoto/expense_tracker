@@ -218,7 +218,8 @@ class Budget < ApplicationRecord
       unit: currency_symbol,
       separator: ",",
       delimiter: ".",
-      precision: 0
+      precision: 0,
+      format: "%u%n"
     )
   end
 
@@ -229,7 +230,8 @@ class Budget < ApplicationRecord
       unit: currency_symbol,
       separator: ",",
       delimiter: ".",
-      precision: 0
+      precision: 0,
+      format: "%u%n"
     )
   end
 

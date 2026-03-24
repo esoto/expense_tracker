@@ -36,13 +36,13 @@ RSpec.describe SyncSession, type: :model, unit: true, needs_broadcasting: true d
       it "validates presence of status" do
         subject.status = nil
         expect(subject).not_to be_valid
-        expect(subject.errors[:status]).to include("can't be blank")
+        expect(subject.errors[:status]).to include("no puede estar en blanco")
       end
 
       it "validates inclusion of status" do
         subject.status = "invalid"
         expect(subject).not_to be_valid
-        expect(subject.errors[:status]).to include("is not included in the list")
+        expect(subject.errors[:status]).to include("no está incluido en la lista")
       end
 
       it "accepts valid statuses" do

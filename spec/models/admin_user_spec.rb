@@ -9,7 +9,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
       it 'requires presence of email' do
         admin_user = build(:admin_user, email: nil)
         expect(admin_user).not_to be_valid
-        expect(admin_user.errors[:email]).to include("can't be blank")
+        expect(admin_user.errors[:email]).to include("no puede estar en blanco")
       end
 
       it 'validates email format' do
@@ -17,7 +17,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
         invalid_emails.each do |invalid_email|
           admin_user = build(:admin_user, email: invalid_email)
           expect(admin_user).not_to be_valid
-          expect(admin_user.errors[:email]).to include("is invalid")
+          expect(admin_user.errors[:email]).to include("no es válido")
         end
       end
 
@@ -33,7 +33,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
         existing_user = create(:admin_user, email: 'USER@EXAMPLE.COM')
         new_user = build(:admin_user, email: 'user@example.com')
         expect(new_user).not_to be_valid
-        expect(new_user.errors[:email]).to include("has already been taken")
+        expect(new_user.errors[:email]).to include("ya está en uso")
       end
     end
 
@@ -41,13 +41,13 @@ RSpec.describe AdminUser, type: :model, unit: true do
       it 'requires presence of name' do
         admin_user = build(:admin_user, name: nil)
         expect(admin_user).not_to be_valid
-        expect(admin_user.errors[:name]).to include("can't be blank")
+        expect(admin_user.errors[:name]).to include("no puede estar en blanco")
       end
 
       it 'validates name maximum length' do
         admin_user = build(:admin_user, name: 'a' * 101)
         expect(admin_user).not_to be_valid
-        expect(admin_user.errors[:name]).to include("is too long (maximum is 100 characters)")
+        expect(admin_user.errors[:name]).to include("es demasiado largo (100 caracteres máximo)")
       end
 
       it 'accepts names within length limit' do
@@ -60,7 +60,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
       it 'requires minimum length of 12 characters' do
         admin_user = build(:admin_user, password: 'Short1@')
         expect(admin_user).not_to be_valid
-        expect(admin_user.errors[:password]).to include("is too short (minimum is 12 characters)")
+        expect(admin_user.errors[:password]).to include("es demasiado corto (12 caracteres mínimo)")
       end
 
       it 'requires uppercase letter' do

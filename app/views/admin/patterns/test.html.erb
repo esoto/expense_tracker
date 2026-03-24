@@ -118,7 +118,7 @@
             <tr class="hover:bg-slate-50">
               <td class="px-6 py-4 whitespace-nowrap text-sm">
                 <span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-700">
-                  <%= pattern.pattern_type.humanize %>
+                  <%= PatternsHelper::PATTERN_TYPE_TRANSLATIONS[pattern.pattern_type] || pattern.pattern_type.humanize %>
                 </span>
               </td>
               <td class="px-6 py-4 text-sm text-slate-900">

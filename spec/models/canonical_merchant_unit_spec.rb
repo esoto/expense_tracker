@@ -25,7 +25,7 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
       it "requires name to be present" do
         merchant = build_canonical_merchant(name: nil)
         expect(merchant).not_to be_valid
-        expect(merchant.errors[:name]).to include("can't be blank")
+        expect(merchant.errors[:name]).to include("no puede estar en blanco")
       end
 
       it "requires name to be unique (case insensitive)" do
@@ -55,7 +55,7 @@ RSpec.describe CanonicalMerchant, type: :model, unit: true do
       it "rejects negative usage_count" do
         merchant = build_canonical_merchant(usage_count: -1)
         expect(merchant).not_to be_valid
-        expect(merchant.errors[:usage_count]).to include("must be greater than or equal to 0")
+        expect(merchant.errors[:usage_count]).to include("debe ser mayor que o igual a 0")
       end
     end
   end

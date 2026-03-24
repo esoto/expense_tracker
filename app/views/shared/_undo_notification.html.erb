@@ -1,0 +1,43 @@
+<div class="undo-notification slide-in-bottom pointer-events-auto"
+     data-controller="undo-manager"
+     data-undo-manager-undo-id-value="<%= undo_id %>"
+     data-undo-manager-time-remaining-value="<%= time_remaining %>"
+     role="alert"
+     aria-live="polite">
+  <!-- Progress bar -->
+  <div class="undo-notification-progress">
+    <div class="undo-notification-progress-bar"
+         data-undo-manager-target="progressBar"></div>
+  </div>
+
+  <div class="undo-notification-body">
+    <div class="undo-notification-content">
+      <svg class="undo-notification-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
+      <div class="undo-notification-text">
+        <p class="undo-notification-message" data-undo-manager-target="message"><%= message %></p>
+        <p class="undo-notification-timer">
+          <span data-undo-manager-target="timer"></span>
+          para deshacer
+        </p>
+      </div>
+    </div>
+
+    <div class="undo-notification-actions">
+      <button class="undo-notification-undo-btn"
+              data-undo-manager-target="undoButton"
+              data-action="click->undo-manager#undo"
+              aria-label="Deshacer eliminación">
+        Deshacer
+      </button>
+      <button class="undo-notification-dismiss-btn"
+              data-action="click->undo-manager#dismiss"
+              aria-label="Cerrar notificación">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>

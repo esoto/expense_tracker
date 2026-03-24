@@ -56,12 +56,12 @@ module AccessibilityHelper
   # Generate skip link content
   def skip_links
     content_tag :div, class: "sr-only-focusable" do
-      [
+      safe_join([
         link_to("Saltar al contenido principal", "#main-content", class: "skip-link"),
         link_to("Saltar a la navegación", "#main-navigation", class: "skip-link"),
         link_to("Saltar a los filtros", "#filter-chips-title", class: "skip-link"),
         link_to("Saltar a la lista de gastos", "#recent-expenses-title", class: "skip-link")
-      ].join.html_safe
+      ])
     end
   end
 
@@ -85,7 +85,7 @@ module AccessibilityHelper
   # Generate ARIA descriptions for complex UI
   def dashboard_help_text
     content_tag :div, class: "sr-only" do
-      [
+      safe_join([
         content_tag(:div, "Dashboard de gastos. Use Tab para navegar entre elementos o las teclas de acceso rápido:", id: "dashboard-help"),
         content_tag(:div, "Alt+1: Filtros rápidos", id: "filters-help"),
         content_tag(:div, "Alt+2: Lista de gastos", id: "expenses-help"),
@@ -93,7 +93,7 @@ module AccessibilityHelper
         content_tag(:div, "Escape: Limpiar filtros o salir de modales", id: "escape-help"),
         content_tag(:div, "Ctrl+Shift+S: Activar selección múltiple", id: "selection-mode-help"),
         content_tag(:div, "Ctrl+Shift+V: Cambiar vista", id: "view-mode-help")
-      ].join.html_safe
+      ])
     end
   end
 
@@ -132,7 +132,7 @@ module AccessibilityHelper
 
     content_tag :thead, class: "bg-slate-50" do
       content_tag :tr do
-        headers.join.html_safe
+        safe_join(headers)
       end
     end
   end
@@ -142,10 +142,13 @@ module AccessibilityHelper
     required = options.delete(:required)
     help_text = options.delete(:help)
 
-    label_text = text
-    label_text += content_tag(:span, " *", class: "text-rose-600", "aria-label": "obligatorio") if required
+    label_content = if required
+      safe_join([ text, content_tag(:span, " *", class: "text-rose-600", "aria-label": "obligatorio") ])
+    else
+      text
+    end
 
-    label_html = form.label field, label_text.html_safe, options
+    label_html = form.label field, label_content, options
 
     if help_text
       help_id = "#{field}_help"
@@ -173,9 +176,9 @@ module AccessibilityHelper
     content_tag :div, class: "sr-only", id: "keyboard-shortcuts" do
       content_tag(:h3, "Atajos de teclado disponibles:") +
       content_tag(:ul) do
-        shortcuts.map do |shortcut|
+        safe_join(shortcuts.map do |shortcut|
           content_tag :li, "#{shortcut[:key]}: #{shortcut[:description]}"
-        end.join.html_safe
+        end)
       end
     end
   end

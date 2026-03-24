@@ -157,7 +157,8 @@ RSpec.describe "Expenses Inline Actions API", type: :request do
 
       json = JSON.parse(response.body)
       expect(json["success"]).to be true
-      expect(json["message"]).to include("eliminado exitosamente")
+      expect(json["message"]).to include("Gasto eliminado")
+      expect(json["undo_id"]).to be_present
 
       expect(Expense.find_by(id: expense.id)).to be_nil
     end

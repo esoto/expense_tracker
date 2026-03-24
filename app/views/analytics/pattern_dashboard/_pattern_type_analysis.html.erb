@@ -1,4 +1,4 @@
-<h2 class="text-lg font-semibold text-slate-900 mb-4">Pattern Type Analysis</h2>
+<h2 class="text-lg font-semibold text-slate-900 mb-4">Análisis de Tipos de Patrones</h2>
 <div class="space-y-4">
   <% pattern_type_analysis.each do |type_data| %>
     <div class="border-b border-slate-100 pb-3 last:border-0">
@@ -6,7 +6,7 @@
         <div class="flex items-center gap-2">
           <span class="text-sm font-medium text-slate-900"><%= type_data[:type].humanize %></span>
           <span class="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-full">
-            <%= type_data[:count] %> patterns
+            <%= type_data[:count] %> patrones
           </span>
         </div>
         <span class="text-sm font-semibold <%= type_data[:accuracy] >= 80 ? 'text-emerald-600' : type_data[:accuracy] >= 60 ? 'text-amber-600' : 'text-rose-600' %>">
@@ -15,15 +15,15 @@
       </div>
       <div class="grid grid-cols-3 gap-2 text-xs">
         <div>
-          <span class="text-slate-500">Active:</span>
+          <span class="text-slate-500">Activos:</span>
           <span class="text-slate-700 font-medium ml-1"><%= type_data[:active_count] %></span>
         </div>
         <div>
-          <span class="text-slate-500">Usage:</span>
+          <span class="text-slate-500">Uso:</span>
           <span class="text-slate-700 font-medium ml-1"><%= number_with_delimiter(type_data[:usage_count]) %></span>
         </div>
         <div>
-          <span class="text-slate-500">Confidence:</span>
+          <span class="text-slate-500">Confianza:</span>
           <span class="text-slate-700 font-medium ml-1"><%= type_data[:average_confidence] %></span>
         </div>
       </div>

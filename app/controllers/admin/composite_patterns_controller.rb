@@ -10,10 +10,12 @@ module Admin
 
     # GET /admin/composite_patterns
     def index
+      page = [(params[:page] || 1).to_i, 1].max
+      total_count = CompositePattern.count
       @composite_patterns = CompositePattern.includes(:category)
                                            .order(created_at: :desc)
-                                           .page(params[:page])
-                                           .per(20)
+                                           .limit(20).offset((page - 1) * 20)
+      @pagy = Pagy::Offset.new(count: total_count, page: page, limit: 20)
     end
 
     # GET /admin/composite_patterns/:id

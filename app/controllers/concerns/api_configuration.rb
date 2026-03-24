@@ -64,7 +64,8 @@ module ApiConfiguration
       page_size = [ page_size, MAX_PAGE_SIZE ].min
       page_size = [ page_size, MIN_PAGE_SIZE ].max
 
-      collection.page(params[:page]).per(page_size)
+      page = [ (params[:page] || 1).to_i, 1 ].max
+      collection.limit(page_size).offset((page - 1) * page_size)
     end
   end
 end

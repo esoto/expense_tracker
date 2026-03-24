@@ -30,6 +30,9 @@ module Admin
       @patterns = build_patterns_scope
       load_statistics
 
+      page = [(params[:page] || 1).to_i, 1].max
+      @pagy = Pagy::Offset.new(count: @total_patterns || 0, page: page, limit: 20)
+
       respond_to do |format|
         format.html
         format.turbo_stream
@@ -39,11 +42,11 @@ module Admin
 
     # GET /admin/patterns/:id
     def show
+      feedback_page = [ (params[:feedback_page] || 1).to_i, 1 ].max
       @pattern_feedbacks = @pattern.pattern_feedbacks
                                    .includes(:expense)
                                    .order(created_at: :desc)
-                                   .page(params[:feedback_page])
-                                   .per(10)
+                                   .limit(10).offset((feedback_page - 1) * 10)
 
       @performance_metrics = Rails.cache.fetch(
         [ "pattern_metrics", @pattern.id, @pattern.updated_at ],
@@ -319,7 +322,8 @@ module Admin
       scope = apply_filters(scope)
       scope = apply_search(scope) if params[:search].present?
       scope = apply_sorting(scope)
-      scope.page(params[:page]).per(20)
+      page = [ (params[:page] || 1).to_i, 1 ].max
+      scope.limit(20).offset((page - 1) * 20)
     end
 
     def apply_filters(scope)
@@ -595,6 +599,11 @@ module Admin
     end
 
     def render_patterns_json
+      page = [ (params[:page] || 1).to_i, 1 ].max
+      per_page = @patterns.respond_to?(:limit_value) ? (@patterns.limit_value || 20) : 20
+      total_patterns_count = @total_patterns || 0
+      total_pages = total_patterns_count.positive? ? (total_patterns_count.to_f / per_page).ceil : 1
+
       render json: {
         patterns: @patterns.as_json(include: :category),
         meta: {
@@ -602,8 +611,8 @@ module Admin
           active: @active_patterns,
           average_success_rate: @average_success_rate,
           total_usage: @total_usage,
-          current_page: @patterns.current_page,
-          total_pages: @patterns.total_pages
+          current_page: page,
+          total_pages: total_pages
         }
       }
     end

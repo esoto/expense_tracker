@@ -192,8 +192,19 @@
     </div>
 
     <!-- Pagination -->
-    <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 text-center text-slate-600">
-      Mostrando los <%= @expenses.count %> gastos más recientes
+    <div class="px-6 py-4 bg-slate-50 border-t border-slate-200">
+      <div class="flex flex-col items-center gap-3">
+        <% if @pagy && @pagy.pages > 1 %>
+          <%= pagy_financial_nav(@pagy) %>
+          <p class="text-sm text-slate-600">
+            Mostrando <%= @pagy.from %>-<%= @pagy.to %> de <%= number_with_delimiter(@pagy.count) %> gastos
+          </p>
+        <% else %>
+          <p class="text-sm text-slate-600">
+            Mostrando <%= number_with_delimiter(@expenses.respond_to?(:size) ? @expenses.size : @expenses.length) %> gastos
+          </p>
+        <% end %>
+      </div>
     </div>
 
     <!-- Batch Selection Toolbar -->

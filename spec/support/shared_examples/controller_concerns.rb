@@ -236,22 +236,22 @@ RSpec.shared_examples "api configuration concern" do
       before { allow(controller).to receive(:params).and_return(params) }
 
       it "applies default page size when none specified" do
-        expect(collection).to receive(:page).with(nil).and_return(collection)
-        expect(collection).to receive(:per).with(25)
+        expect(collection).to receive(:limit).with(25).and_return(collection)
+        expect(collection).to receive(:offset).with(0)
         controller.send(:paginate_with_limits, collection)
       end
 
       it "respects maximum page size limit" do
         params[:per_page] = "200"
-        expect(collection).to receive(:page).with(nil).and_return(collection)
-        expect(collection).to receive(:per).with(100)
+        expect(collection).to receive(:limit).with(100).and_return(collection)
+        expect(collection).to receive(:offset).with(0)
         controller.send(:paginate_with_limits, collection)
       end
 
       it "enforces minimum page size" do
         params[:per_page] = "0"
-        expect(collection).to receive(:page).with(nil).and_return(collection)
-        expect(collection).to receive(:per).with(25)
+        expect(collection).to receive(:limit).with(25).and_return(collection)
+        expect(collection).to receive(:offset).with(0)
         controller.send(:paginate_with_limits, collection)
       end
     end

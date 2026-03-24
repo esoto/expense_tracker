@@ -14,7 +14,7 @@ class SyncConflictsController < ApplicationController
     @conflicts = @conflicts.where(conflict_type: params[:type]) if params[:type].present?
 
     # Sort and paginate
-    @conflicts = @conflicts.by_priority.page(params[:page])
+    page = [(params[:page] || 1).to_i, 1].max
 
     # Stats for UI - calculate separately to avoid GROUP BY issues
     base_scope = if @sync_session
@@ -28,11 +28,14 @@ class SyncConflictsController < ApplicationController
     base_scope = base_scope.where(conflict_type: params[:type]) if params[:type].present?
 
     @stats = {
-      total: @conflicts.total_count,
+      total: base_scope.count,
       pending: base_scope.unresolved.count,
       resolved: base_scope.resolved.count,
       by_type: base_scope.group(:conflict_type).count
     }
+
+    @conflicts = @conflicts.by_priority.limit(25).offset((page - 1) * 25)
+    @pagy = Pagy::Offset.new(count: @stats[:total], page: page, limit: 25)
 
     respond_to do |format|
       format.html

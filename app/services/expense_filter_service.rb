@@ -283,15 +283,10 @@ module Services
         pagination_meta = build_offset_pagination_meta(expenses, total)
       end
     else
-      # Use Kaminari pagination if available, otherwise manual
-      if scope.respond_to?(:page)
-        expenses = scope.page(page).per(per_page)
-        total = expenses.total_count
-      else
-        expenses = scope.limit(per_page).offset((page - 1) * per_page)
-        # Use except to avoid counting with limit/offset
-        total = scope.except(:limit, :offset).count
-      end
+      # Use offset-based pagination
+      expenses = scope.limit(per_page).offset((page - 1) * per_page)
+      # Use except to avoid counting with limit/offset
+      total = scope.except(:limit, :offset).count
       pagination_meta = build_offset_pagination_meta(expenses, total)
     end
 

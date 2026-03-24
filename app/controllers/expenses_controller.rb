@@ -25,8 +25,11 @@ class ExpensesController < ApplicationController
 
       # Extract metadata for UI
       @filters_applied = @result.metadata[:filters_applied]
-      @current_page = @result.metadata[:page]
-      @per_page = @result.metadata[:per_page]
+      @current_page = [(@result.metadata[:page] || 1).to_i, 1].max
+      @per_page = [(@result.metadata[:per_page] || 50).to_i, 1].max
+
+      # Build Pagy::Offset instance from the already-paginated result for navigation controls
+      @pagy = Pagy::Offset.new(count: @total_count, page: @current_page, limit: @per_page) if @total_count
 
       # Calculate summary statistics from the result
       calculate_summary_from_result(@result)
@@ -34,6 +37,7 @@ class ExpensesController < ApplicationController
       # Fallback to empty result on error
       @expenses = []
       @total_count = 0
+      @pagy = Pagy::Offset.new(count: 0, page: 1, limit: 50)
       @performance_metrics = { error: true }
       flash.now[:alert] = "Error loading expenses. Please try again."
     end

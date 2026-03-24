@@ -43,7 +43,7 @@ gem "chartkick"
 gem "groupdate"
 
 # Pagination
-gem "kaminari"
+gem "pagy"
 
 # Bulk insert for performance
 gem "activerecord-import"

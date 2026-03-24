@@ -1,19 +1,82 @@
 require 'rails_helper'
 
 RSpec.describe Api::ClientErrorsController, type: :controller, unit: true do
+  let(:admin_user) do
+    AdminUser.create!(
+      name: "Test User",
+      email: "client-errors-test@example.com",
+      password: "SecurePassword123!",
+      role: "admin"
+    )
+  end
+
+  let(:error_params) do
+    {
+      message: 'WebSocket connection failed',
+      data: { error_code: 'NETWORK_ERROR' },
+      sessionId: 123,
+      timestamp: 1234567890,
+      userAgent: 'Mozilla/5.0',
+      url: 'http://example.com/sync',
+      errorCount: 3,
+      pollingMode: false,
+      connectionState: 'disconnected'
+    }
+  end
+
+  describe 'authentication', unit: true do
+    context 'when unauthenticated' do
+      it 'rejects the request with 401 unauthorized' do
+        post :create, params: error_params, format: :json
+
+        expect(response).to have_http_status(:unauthorized)
+      end
+
+      it 'returns a JSON error response' do
+        post :create, params: error_params, format: :json
+
+        json = JSON.parse(response.body)
+        expect(json['error']).to be_present
+      end
+
+      it 'does not log the client error' do
+        expect(Rails.logger).not_to receive(:error).with(/CLIENT_ERROR/)
+
+        post :create, params: error_params, format: :json
+      end
+    end
+
+    context 'when authenticated via session' do
+      before do
+        admin_user.regenerate_session_token unless admin_user.session_token.present?
+        session[:admin_session_token] = admin_user.reload.session_token
+        allow(AdminUser).to receive(:find_by_valid_session)
+          .with(admin_user.session_token)
+          .and_return(admin_user)
+      end
+
+      it 'accepts the request' do
+        post :create, params: error_params, format: :json
+
+        expect(response).to have_http_status(:ok)
+      end
+
+      it 'returns a success response' do
+        post :create, params: error_params, format: :json
+
+        json = JSON.parse(response.body)
+        expect(json['status']).to eq('received')
+      end
+    end
+  end
+
   describe 'POST #create', unit: true do
-    let(:error_params) do
-      {
-        message: 'WebSocket connection failed',
-        data: { error_code: 'NETWORK_ERROR' },
-        sessionId: 123,
-        timestamp: 1234567890,
-        userAgent: 'Mozilla/5.0',
-        url: 'http://example.com/sync',
-        errorCount: 3,
-        pollingMode: false,
-        connectionState: 'disconnected'
-      }
+    before do
+      admin_user.regenerate_session_token unless admin_user.session_token.present?
+      session[:admin_session_token] = admin_user.reload.session_token
+      allow(AdminUser).to receive(:find_by_valid_session)
+        .with(admin_user.session_token)
+        .and_return(admin_user)
     end
 
     it 'accepts error reports and returns success' do

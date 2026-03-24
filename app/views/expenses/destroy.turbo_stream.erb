@@ -1,0 +1,7 @@
+<%= turbo_stream.remove "expense_row_#{@expense.id}" %>
+<%= turbo_stream.append "toast-container" do %>
+  <%= render "shared/undo_notification",
+      undo_id: @undo_entry.id,
+      time_remaining: @undo_entry.time_remaining,
+      message: "Gasto eliminado. Puedes deshacer esta acción." %>
+<% end %>

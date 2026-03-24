@@ -208,14 +208,8 @@ Sidekiq.strict_args!(Rails.env.production?)
 Sidekiq.default_configuration.logger = Rails.logger if Rails.logger
 Sidekiq.default_configuration.logger.level = Rails.env.production? ? Logger::INFO : Logger::DEBUG
 
-# Sidekiq Web UI authentication (for production)
-if Rails.env.production?
-  Sidekiq::Web.use Rack::Auth::Basic do |username, password|
-    # Use secure comparison to prevent timing attacks
-    ActiveSupport::SecurityUtils.secure_compare(username, ENV.fetch("SIDEKIQ_WEB_USERNAME", "admin")) &&
-      ActiveSupport::SecurityUtils.secure_compare(password, ENV.fetch("SIDEKIQ_WEB_PASSWORD", SecureRandom.hex(16)))
-  end
-end
+# Sidekiq Web UI authentication is configured in config/routes.rb.
+# Do NOT add auth middleware here — it causes duplicate prompts.
 
 # Rate limiting configuration for Sidekiq Web UI
 if defined?(Rack::Attack)

@@ -54,14 +54,14 @@ module Api
         render json: {
           success: true,
           message: queue_name.present? ?
-            "Queue '#{queue_name}' has been paused" :
-            "All queues have been paused",
+            "La cola '#{queue_name}' ha sido pausada" :
+            "Todas las colas han sido pausadas",
           paused_queues: Services::QueueMonitor.paused_queues
         }
       else
         render json: {
           success: false,
-          error: "Failed to pause queue(s)"
+          error: "Error al pausar la(s) cola(s)"
         }, status: :unprocessable_content
       end
     end
@@ -77,14 +77,14 @@ module Api
         render json: {
           success: true,
           message: queue_name.present? ?
-            "Queue '#{queue_name}' has been resumed" :
-            "All queues have been resumed",
+            "La cola '#{queue_name}' ha sido reanudada" :
+            "Todas las colas han sido reanudadas",
           paused_queues: Services::QueueMonitor.paused_queues
         }
       else
         render json: {
           success: false,
-          error: "Failed to resume queue(s)"
+          error: "Error al reanudar la(s) cola(s)"
         }, status: :unprocessable_content
       end
     end
@@ -97,13 +97,13 @@ module Api
 
         render json: {
           success: true,
-          message: "Job #{params[:id]} has been queued for retry",
+          message: "El trabajo #{params[:id]} ha sido encolado para reintentar",
           job_id: params[:id]
         }
       else
         render json: {
           success: false,
-          error: "Failed to retry job #{params[:id]}"
+          error: "Error al reintentar el trabajo #{params[:id]}"
         }, status: :unprocessable_content
       end
     end
@@ -116,13 +116,13 @@ module Api
 
         render json: {
           success: true,
-          message: "Job #{params[:id]} has been cleared",
+          message: "El trabajo #{params[:id]} ha sido limpiado",
           job_id: params[:id]
         }
       else
         render json: {
           success: false,
-          error: "Failed to clear job #{params[:id]}"
+          error: "Error al limpiar el trabajo #{params[:id]}"
         }, status: :unprocessable_content
       end
     end
@@ -137,13 +137,13 @@ module Api
 
         render json: {
           success: true,
-          message: "#{count} failed jobs have been queued for retry",
+          message: "#{count} trabajos fallidos han sido encolados para reintentar",
           count: count
         }
       else
         render json: {
           success: false,
-          error: "No failed jobs to retry or retry operation failed"
+          error: "Sin trabajos fallidos para reintentar o la operación de reintentar falló"
         }, status: :unprocessable_content
       end
     end
@@ -191,7 +191,7 @@ module Api
       unless @job
         render json: {
           success: false,
-          error: "Job not found"
+          error: "Trabajo no encontrado"
         }, status: :not_found
       end
     end
@@ -203,10 +203,30 @@ module Api
       minutes.positive? ? minutes : nil
     end
 
-    # Broadcast queue status updates via ActionCable
+    # Extract the session ID from the current request for session-scoped broadcasting.
+    # Returns nil when the encrypted cookie does not contain a "session_id" key,
+    # ensuring consistency with QueueChannel which rejects blank session IDs.
+    def current_request_session_id
+      session_data = cookies.encrypted[:_expense_tracker_session]
+      session_id = session_data&.dig("session_id") || session_data&.dig(:session_id)
+      session_id.presence
+    end
+
+    # Build the session-scoped stream name for broadcasting via ActionCable.
+    def scoped_stream_name
+      QueueChannel.stream_name_for(current_request_session_id)
+    end
+
+    # Broadcast queue status updates via ActionCable, scoped to the requesting user's session
     def broadcast_queue_update(action, queue_name)
+      stream = scoped_stream_name
+      unless stream
+        Rails.logger.warn "[QueueController] Skipping queue update broadcast: no valid session ID"
+        return
+      end
+
       ActionCable.server.broadcast(
-        "queue_updates",
+        stream,
         {
           action: action,
           queue_name: queue_name,
@@ -219,13 +239,19 @@ module Api
         }
       )
     rescue StandardError => e
-      Rails.logger.error "Failed to broadcast queue update: #{e.message}"
+      Rails.logger.error "Error al transmitir actualización de cola: #{e.message}"
     end
 
-    # Broadcast job-specific updates via ActionCable
+    # Broadcast job-specific updates via ActionCable, scoped to the requesting user's session
     def broadcast_job_update(action, job_id)
+      stream = scoped_stream_name
+      unless stream
+        Rails.logger.warn "[QueueController] Skipping job update broadcast: no valid session ID"
+        return
+      end
+
       ActionCable.server.broadcast(
-        "queue_updates",
+        stream,
         {
           action: "job_#{action}",
           job_id: job_id,
@@ -234,7 +260,7 @@ module Api
         }
       )
     rescue StandardError => e
-      Rails.logger.error "Failed to broadcast job update: #{e.message}"
+      Rails.logger.error "Error al transmitir actualización de trabajo: #{e.message}"
     end
 
     # Authentication for queue access - supports both API token and admin session
@@ -254,21 +280,21 @@ module Api
       admin_key = Rails.application.credentials.dig(:admin_key) || ENV["ADMIN_KEY"]
 
       if admin_key.present?
-        # Allow access if admin key matches
+        # Allow access if admin key matches (timing-safe comparison)
         provided_key = params[:admin_key] || request.headers["X-Admin-Key"]
-        return true if provided_key == admin_key
+        return true if provided_key.present? && ActiveSupport::SecurityUtils.secure_compare(provided_key, admin_key)
       end
 
-      # Option 3: Development/test environment bypass
-      return true if Rails.env.development? || Rails.env.test?
+      # Option 3: Development environment bypass
+      return true if Rails.env.development?
 
       # Log unauthorized access attempt
-      Rails.logger.warn "[SECURITY] Unauthorized queue access attempt from IP: #{request.remote_ip}, User-Agent: #{request.headers['User-Agent']}"
+      Rails.logger.warn "[SECURITY] Intento de acceso no autorizado a la cola desde IP: #{request.remote_ip}, User-Agent: #{request.headers['User-Agent']}"
 
       # Return error response
       render json: {
         success: false,
-        error: "Unauthorized access. Queue management requires admin privileges."
+        error: "Acceso no autorizado. La gestión de cola requiere privilegios de administrador."
       }, status: :unauthorized
 
       false

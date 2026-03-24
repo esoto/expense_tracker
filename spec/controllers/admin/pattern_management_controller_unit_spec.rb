@@ -3,6 +3,17 @@ require "rails_helper"
 RSpec.describe Admin::PatternManagementController, type: :controller, unit: true do
   let(:categorization_pattern) { create(:categorization_pattern) }
 
+  let(:admin_user) do
+    double("admin_user",
+      session_expired?: false,
+      extend_session: nil,
+      invalidate_session!: nil,
+      id: 1,
+      email: "admin@test.com",
+      can_manage_patterns?: true
+    )
+  end
+
   before do
     # Skip admin authentication for unit tests
     controller.class.skip_before_action :require_admin_authentication, raise: false
@@ -10,16 +21,8 @@ RSpec.describe Admin::PatternManagementController, type: :controller, unit: true
     controller.class.skip_before_action :set_security_headers, raise: false
     controller.class.skip_after_action :log_admin_activity, raise: false
     allow(controller).to receive(:log_admin_action)
-    allow(controller).to receive(:require_pattern_management_permission).and_return(true)
 
     # Mock admin authentication to allow access
-    admin_user = double("admin_user",
-      session_expired?: false,
-      extend_session: nil,
-      invalidate_session!: nil,
-      id: 1,
-      email: "admin@test.com"
-    )
     allow(controller).to receive(:current_admin_user).and_return(admin_user)
     allow(controller).to receive(:admin_signed_in?).and_return(true)
 
@@ -222,12 +225,49 @@ RSpec.describe Admin::PatternManagementController, type: :controller, unit: true
     end
   end
 
-  describe "private methods", unit: true do
+  describe "permission checks", unit: true do
     describe "#require_pattern_management_permission" do
-      it "returns true for pattern management permission check" do
-        result = controller.send(:require_pattern_management_permission)
-        expect(result).to be_truthy
+      context "when admin user can manage patterns" do
+        before do
+          allow(admin_user).to receive(:can_manage_patterns?).and_return(true)
+        end
+
+        it "allows access for authorized users" do
+          # Permission check should not render forbidden
+          expect(controller).not_to receive(:render_forbidden)
+          controller.send(:require_pattern_management_permission)
+        end
       end
+
+      context "when admin user cannot manage patterns" do
+        let(:unauthorized_user) do
+          double("admin_user",
+            session_expired?: false,
+            extend_session: nil,
+            invalidate_session!: nil,
+            id: 2,
+            email: "readonly@test.com",
+            can_manage_patterns?: false
+          )
+        end
+
+        before do
+          allow(controller).to receive(:current_admin_user).and_return(unauthorized_user)
+        end
+
+        it "renders forbidden for unauthorized users" do
+          expect(controller).to receive(:render_forbidden).with("You don't have permission to manage patterns.")
+          controller.send(:require_pattern_management_permission)
+        end
+      end
+    end
+
+    it "delegates permission check to AdminAuthentication concern" do
+      # Verify the controller does NOT define its own require_pattern_management_permission
+      # It should use the one from AdminAuthentication concern
+      own_methods = described_class.instance_methods(false) +
+                    described_class.private_instance_methods(false)
+      expect(own_methods).not_to include(:require_pattern_management_permission)
     end
   end
 

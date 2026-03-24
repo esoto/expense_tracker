@@ -1,3 +1,4 @@
+<% pattern_type_translations = { 'keyword' => 'Palabra clave', 'merchant' => 'Comercio', 'description' => 'Descripción', 'amount_range' => 'Rango de monto', 'regex' => 'Regex', 'time' => 'Hora' } %>
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
   <!-- Header with filters -->
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
@@ -41,7 +42,7 @@
           <% CategorizationPattern::PATTERN_TYPES.each do |type| %>
             <option value="<%= type %>"
                     <%= 'selected' if params[:pattern_type] == type %>>
-              <%= type.humanize %>
+              <%= pattern_type_translations[type] || type.humanize %>
             </option>
           <% end %>
         </select>
@@ -130,7 +131,7 @@
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-1">
                 <span class="text-xs px-2 py-1 bg-teal-100 text-teal-700 rounded-full font-medium">
-                  <%= pattern[:pattern_type].humanize %>
+                  <%= pattern_type_translations[pattern[:pattern_type]] || pattern[:pattern_type].humanize %>
                 </span>
                 <span class="text-xs px-2 py-1 rounded-full"
                       style="background-color: <%= pattern[:category_color] %>20; color: <%= pattern[:category_color] %>">
@@ -164,7 +165,7 @@
             <div class="flex-1">
               <div class="flex items-center gap-2 mb-1">
                 <span class="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded-full font-medium">
-                  <%= pattern[:pattern_type].humanize %>
+                  <%= pattern_type_translations[pattern[:pattern_type]] || pattern[:pattern_type].humanize %>
                 </span>
                 <span class="text-xs px-2 py-1 rounded-full"
                       style="background-color: <%= pattern[:category_color] %>20; color: <%= pattern[:category_color] %>">

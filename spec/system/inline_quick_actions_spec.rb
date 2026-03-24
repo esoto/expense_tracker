@@ -111,7 +111,7 @@ RSpec.describe "Inline Quick Actions", type: :system, js: true do
 
       # Confirmation modal should appear
       expect(page).to have_content("Confirmar eliminación")
-      expect(page).to have_content("Esta acción no se puede deshacer")
+      expect(page).to have_content("Podrás restaurarlo desde el historial")
 
       # Cancel deletion
       within '[data-inline-actions-target="deleteConfirmation"]' do

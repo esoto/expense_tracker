@@ -149,15 +149,15 @@ RSpec.describe "Bulk Operations", type: :system, js: true do
       end
 
       # Warning should appear
-      expect(page).to have_text("Esta acción no se puede deshacer")
-      expect(page).to have_text("Estás a punto de eliminar permanentemente 3 gastos")
+      expect(page).to have_text("Los gastos eliminados se pueden deshacer dentro de un tiempo limitado")
+      expect(page).to have_text("Estás a punto de eliminar 3 gastos")
 
       # Submit button should be disabled initially
       submit_button = find('[data-bulk-operations-target="submitButton"]')
       expect(submit_button).to be_disabled
 
       # Check confirmation checkbox
-      check "Confirmo que deseo eliminar estos gastos permanentemente"
+      check "Confirmo que deseo eliminar estos gastos"
 
       # Submit button should now be enabled
       expect(submit_button).not_to be_disabled

@@ -290,7 +290,7 @@ RSpec.describe "Dashboard Inline Actions", type: :system, js: true, tier: :syste
       confirmation = find('[data-dashboard-inline-actions-target="deleteConfirmation"]:not(.hidden)')
       expect(confirmation).to be_visible
       expect(confirmation).to have_content("Confirmar eliminación")
-      expect(confirmation).to have_content("Esta acción no se puede deshacer")
+      expect(confirmation).to have_content("Podrás restaurarlo desde el historial")
 
       # Should have both buttons
       within confirmation do

@@ -8,7 +8,6 @@ import { Controller } from "@hotwired/stimulus"
  */
 export default class extends Controller {
   static targets = [
-    "modal",
     "overlay",
     "form",
     "categorySelect",
@@ -41,9 +40,6 @@ export default class extends Controller {
     this.handleOpenRequest = this.handleOpenRequest.bind(this)
     // Listen for the correct event name that batch_selection_controller dispatches
     document.addEventListener('batch-selection:openBulkOperations', this.handleOpenRequest)
-    
-    // Also ensure the modal element is properly targeted
-    this.modalTarget = document.getElementById('bulk_operations_modal')
     
     // Set up keyboard navigation
     this.setupKeyboardNavigation()
@@ -81,26 +77,16 @@ export default class extends Controller {
    * Open the modal
    */
   open() {
-    // Ensure modal element exists
-    if (!this.modalTarget) {
-      this.modalTarget = document.getElementById('bulk_operations_modal')
-    }
-    
-    if (!this.modalTarget) {
-      console.error('Bulk operations modal not found')
-      return
-    }
-    
     // Show modal with animation
-    this.modalTarget.classList.remove('hidden')
-    this.modalTarget.setAttribute('aria-hidden', 'false')
-    
+    this.element.classList.remove('hidden')
+    this.element.setAttribute('aria-hidden', 'false')
+
     // Animate in
     requestAnimationFrame(() => {
       if (this.hasOverlayTarget) {
         this.overlayTarget.classList.add('opacity-100')
       }
-      const formElement = this.modalTarget.querySelector('[data-bulk-operations-target="form"]')
+      const formElement = this.element.querySelector('[data-bulk-operations-target="form"]')
       if (formElement) {
         formElement.classList.add('translate-y-0', 'opacity-100')
         formElement.classList.remove('translate-y-4', 'opacity-0')
@@ -126,14 +112,14 @@ export default class extends Controller {
     
     // Animate out
     this.overlayTarget.classList.remove('opacity-100')
-    const formElement = this.modalTarget.querySelector('[data-bulk-operations-target="form"]')
+    const formElement = this.element.querySelector('[data-bulk-operations-target="form"]')
     formElement.classList.remove('translate-y-0', 'opacity-100')
     formElement.classList.add('translate-y-4', 'opacity-0')
     
     // Hide after animation
     setTimeout(() => {
-      this.modalTarget.classList.add('hidden')
-      this.modalTarget.setAttribute('aria-hidden', 'true')
+      this.element.classList.add('hidden')
+      this.element.setAttribute('aria-hidden', 'true')
       
       // Reset form
       this.resetForm()
@@ -610,7 +596,7 @@ export default class extends Controller {
   setupKeyboardNavigation() {
     this.keydownHandler = (event) => {
       // Only handle if modal is open
-      if (this.modalTarget.classList.contains('hidden')) {
+      if (this.element.classList.contains('hidden')) {
         return
       }
       
@@ -628,7 +614,7 @@ export default class extends Controller {
    * Trap focus within modal
    */
   trapFocus() {
-    const focusableElements = this.modalTarget.querySelectorAll(
+    const focusableElements = this.element.querySelectorAll(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     )
     
@@ -651,7 +637,7 @@ export default class extends Controller {
       }
     }
     
-    this.modalTarget.addEventListener('keydown', this.focusTrapHandler)
+    this.element.addEventListener('keydown', this.focusTrapHandler)
   }
 
   /**
@@ -659,7 +645,7 @@ export default class extends Controller {
    */
   removeFocusTrap() {
     if (this.focusTrapHandler) {
-      this.modalTarget.removeEventListener('keydown', this.focusTrapHandler)
+      this.element.removeEventListener('keydown', this.focusTrapHandler)
     }
   }
 
@@ -667,7 +653,7 @@ export default class extends Controller {
    * Focus first element in modal
    */
   focusFirstElement() {
-    const firstInput = this.modalTarget.querySelector('input[type="radio"]')
+    const firstInput = this.element.querySelector('input[type="radio"]')
     if (firstInput) {
       firstInput.focus()
     } else if (this.hasCloseButtonTarget) {

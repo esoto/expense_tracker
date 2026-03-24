@@ -57,7 +57,7 @@ export default class extends Controller {
         labels: labels,
         datasets: [
           {
-            label: 'Accuracy %',
+            label: 'Precisión %',
             data: data.map(d => d.accuracy),
             borderColor: '#0F766E',
             backgroundColor: 'rgba(15, 118, 110, 0.1)',
@@ -65,7 +65,7 @@ export default class extends Controller {
             yAxisID: 'y'
           },
           {
-            label: 'Total Usage',
+            label: 'Uso Total',
             data: data.map(d => d.total),
             borderColor: '#D97706',
             backgroundColor: 'rgba(217, 119, 6, 0.1)',
@@ -88,10 +88,10 @@ export default class extends Controller {
           tooltip: {
             callbacks: {
               afterLabel: function(context) {
-                if (context.dataset.label === 'Accuracy %') {
+                if (context.dataset.label === 'Precisión %') {
                   const dataIndex = context.dataIndex
                   const item = data[dataIndex]
-                  return `Accepted: ${item.accepted}\nRejected: ${item.rejected}\nCorrected: ${item.corrected}`
+                  return `Aceptados: ${item.accepted}\nRechazados: ${item.rejected}\nCorregidos: ${item.corrected}`
                 }
                 return ''
               }
@@ -110,7 +110,7 @@ export default class extends Controller {
             position: 'left',
             title: {
               display: true,
-              text: 'Accuracy %'
+              text: 'Precisión %'
             },
             min: 0,
             max: 100
@@ -121,7 +121,7 @@ export default class extends Controller {
             position: 'right',
             title: {
               display: true,
-              text: 'Total Usage'
+              text: 'Uso Total'
             },
             grid: {
               drawOnChartArea: false
@@ -136,10 +136,10 @@ export default class extends Controller {
     this.element.innerHTML = `
       <div class="flex items-center justify-center h-full">
         <div class="text-center">
-          <p class="text-slate-500">Unable to load trend data</p>
+          <p class="text-slate-500">No se pudo cargar los datos de tendencia</p>
           <button class="mt-2 px-4 py-2 bg-teal-700 text-white rounded-lg text-sm"
                   data-action="click->pattern-trend-chart#retry">
-            Retry
+            Reintentar
           </button>
         </div>
       </div>

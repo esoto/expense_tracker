@@ -27,7 +27,7 @@ RSpec.describe "Sync Operations Performance", type: :performance do
 
       it "handles pagination efficiently" do
         create_list(:expense, 100, email_account: email_account)
-        # Use basic pagination instead of the kaminari gem
+        # Use Pagy-based limit/offset pagination
         expenses = Expense.where(email_account: email_account).limit(25).offset(0).to_a
         expect(expenses.length).to be <= 25
       end

@@ -109,9 +109,9 @@
       </div>
 
       <!-- Pagination -->
-      <% if @conflicts.respond_to?(:total_pages) && @conflicts.total_pages > 1 %>
+      <% if @pagy && @pagy.pages > 1 %>
         <div class="bg-slate-50 px-4 py-3 border-t border-slate-200">
-          <%= paginate @conflicts %>
+          <%= pagy_financial_nav(@pagy) %>
         </div>
       <% end %>
     </div>

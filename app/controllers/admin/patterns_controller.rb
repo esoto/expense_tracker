@@ -30,6 +30,9 @@ module Admin
       @patterns = build_patterns_scope
       load_statistics
 
+      page = [(params[:page] || 1).to_i, 1].max
+      @pagy = Pagy::Offset.new(count: @total_patterns || 0, page: page, limit: 20)
+
       respond_to do |format|
         format.html
         format.turbo_stream

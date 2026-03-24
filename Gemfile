@@ -20,7 +20,7 @@ gem "tailwindcss-rails"
 gem "jbuilder"
 
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
-gem "bcrypt", "~> 3.1.7"
+gem "bcrypt", "~> 3.1.21"
 
 # Email processing and parsing
 gem "mail"
@@ -44,7 +44,6 @@ gem "groupdate"
 
 # Pagination
 gem "pagy"
-gem "kaminari"
 
 # Bulk insert for performance
 gem "activerecord-import"
@@ -145,7 +144,7 @@ gem "rspec-rails", "~> 8.0"
 
 gem "simplecov", "~> 0.22.0", group: :test
 
-gem "shoulda-matchers", "~> 6.5", group: :test
+gem "shoulda-matchers", "~> 7.0", group: :test
 gem "rails-controller-testing", group: :test
 
 gem "rails_best_practices", "~> 1.23", group: :development

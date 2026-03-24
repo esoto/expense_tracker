@@ -116,7 +116,9 @@
 
     <!-- Pagination -->
     <div class="px-6 py-4 bg-slate-50 border-t border-slate-200">
-      <%= paginate @composite_patterns %>
+      <% if @pagy && @pagy.pages > 1 %>
+        <%= pagy_financial_nav(@pagy) %>
+      <% end %>
     </div>
   </div>
 </div>

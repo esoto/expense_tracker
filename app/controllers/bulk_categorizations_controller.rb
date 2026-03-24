@@ -24,7 +24,7 @@ class BulkCategorizationsController < ApplicationController
       Rails.logger.error("Bulk categorizations index failed: #{e.message}")
       @grouped_expenses = []
       @statistics = default_statistics
-      flash.now[:alert] = "Unable to group expenses. Showing ungrouped list."
+      flash.now[:alert] = "No se pudieron agrupar los gastos. Mostrando lista sin agrupar."
       respond_to do |format|
         format.html { render :index }
         format.json { render json: { error: "Unable to process expenses" }, status: :unprocessable_content }

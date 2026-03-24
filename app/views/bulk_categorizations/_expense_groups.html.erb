@@ -24,7 +24,7 @@
 
             <!-- Group Type Badge -->
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
-              <%= group[:grouping_type].to_s.humanize %>
+              <%= { exact_merchant: "Comercio exacto", fuzzy_match: "Coincidencia aproximada", amount_range: "Rango de monto", date_range: "Rango de fecha", pattern_match: "Coincidencia de patrón" }[group[:grouping_type]] || group[:grouping_type].to_s.humanize %>
             </span>
           </div>
 
@@ -140,7 +140,7 @@
                     <%= expense.display_description %>
                   </p>
                   <p class="text-xs text-slate-600">
-                    <%= expense.transaction_date.strftime("%b %d, %Y") %> •
+                    <%= expense.transaction_date.strftime("%d/%m/%Y") %> •
                     <%= expense.bank_name %>
                   </p>
                 </div>

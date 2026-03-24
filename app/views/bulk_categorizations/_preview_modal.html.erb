@@ -56,7 +56,7 @@
               <div>
                 <p class="text-sm font-medium text-slate-900"><%= expense.display_description %></p>
                 <p class="text-xs text-slate-600">
-                  <%= expense.transaction_date.strftime("%b %d, %Y") %> • <%= expense.bank_name %>
+                  <%= expense.transaction_date.strftime("%d/%m/%Y") %> • <%= expense.bank_name %>
                 </p>
               </div>
               <span class="text-sm font-semibold text-slate-900">
@@ -71,9 +71,9 @@
           <div class="mt-6 p-4 bg-amber-50 rounded-lg">
             <h4 class="text-sm font-medium text-amber-900 mb-2">Análisis de Impacto</h4>
             <ul class="space-y-1 text-sm text-amber-700">
-              <li>• This will affect <%= preview[:impact][:budget_impact] %> budget(s)</li>
-              <li>• Pattern confidence will increase by <%= preview[:impact][:pattern_confidence_increase] %>%</li>
-              <li>• <%= preview[:impact][:new_patterns] %> new pattern(s) will be created</li>
+              <li>• Esto afectará <%= preview[:impact][:budget_impact] %> presupuesto<%= "s" if preview[:impact][:budget_impact] != 1 %></li>
+              <li>• La confianza del patrón aumentará en <%= preview[:impact][:pattern_confidence_increase] %>%</li>
+              <li>• Se crearán <%= preview[:impact][:new_patterns] %> nuevo<%= "s" if preview[:impact][:new_patterns] != 1 %> patrón<%= "es" if preview[:impact][:new_patterns] != 1 %></li>
             </ul>
           </div>
         <% end %>

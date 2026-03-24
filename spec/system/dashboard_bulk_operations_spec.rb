@@ -229,7 +229,7 @@ RSpec.describe "Dashboard Bulk Operations", type: :system, js: true, tier: :syst
       within '.bulk-modal-container' do
         expect(page).to have_text('Confirmar Eliminación')
         expect(page).to have_text('2 gastos')
-        expect(page).to have_text('Esta acción no se puede deshacer')
+        expect(page).to have_text('Los gastos eliminados se pueden deshacer dentro de un tiempo limitado')
         expect(page).to have_button('Eliminar 2 Gastos')
         expect(page).to have_button('Cancelar')
       end

@@ -59,7 +59,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
       it "requires email to be present" do
         user = build_admin_user(email: nil)
         expect(user).not_to be_valid
-        expect(user.errors[:email]).to include("can't be blank")
+        expect(user.errors[:email]).to include("no puede estar en blanco")
       end
 
       it "requires email to be unique (case insensitive)" do
@@ -76,7 +76,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
         invalid_emails.each do |email|
           user = build_admin_user(email: email)
           expect(user).not_to be_valid
-          expect(user.errors[:email]).to include("is invalid")
+          expect(user.errors[:email]).to include("no es válido")
         end
       end
 
@@ -93,13 +93,13 @@ RSpec.describe AdminUser, type: :model, unit: true do
       it "requires name to be present" do
         user = build_admin_user(name: nil)
         expect(user).not_to be_valid
-        expect(user.errors[:name]).to include("can't be blank")
+        expect(user.errors[:name]).to include("no puede estar en blanco")
       end
 
       it "limits name length to 100 characters" do
         user = build_admin_user(name: "A" * 101)
         expect(user).not_to be_valid
-        expect(user.errors[:name]).to include("is too long (maximum is 100 characters)")
+        expect(user.errors[:name]).to include("es demasiado largo (100 caracteres máximo)")
       end
 
       it "accepts names up to 100 characters" do
@@ -113,7 +113,7 @@ RSpec.describe AdminUser, type: :model, unit: true do
         user = build_admin_user(password: "Short1!")
         allow(user).to receive(:password_digest_changed?).and_return(true)
         expect(user).not_to be_valid
-        expect(user.errors[:password]).to include("is too short (minimum is 12 characters)")
+        expect(user.errors[:password]).to include("es demasiado corto (12 caracteres mínimo)")
       end
 
       it "requires uppercase letter" do

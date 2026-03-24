@@ -1,6 +1,15 @@
 # frozen_string_literal: true
 
 module PatternsHelper
+  PATTERN_TYPE_TRANSLATIONS = {
+    "merchant" => "Comercio",
+    "keyword" => "Palabra clave",
+    "description" => "Descripción",
+    "amount_range" => "Rango de monto",
+    "regex" => "Regex",
+    "time" => "Hora"
+  }.freeze
+
   def pattern_type_badge(type)
     colors = {
       "merchant" => "slate",
@@ -12,8 +21,9 @@ module PatternsHelper
     }
 
     color = colors[type] || "slate"
+    label = PATTERN_TYPE_TRANSLATIONS[type] || type.humanize
 
-    content_tag :span, type.humanize,
+    content_tag :span, label,
                 class: "px-2 py-1 text-xs rounded-full bg-#{color}-100 text-#{color}-700"
   end
 
@@ -55,20 +65,20 @@ module PatternsHelper
 
   def pattern_status_badge(pattern)
     if pattern.active?
-      content_tag :span, "Active",
+      content_tag :span, "Activo",
                   class: "px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700"
     else
-      content_tag :span, "Inactive",
+      content_tag :span, "Inactivo",
                   class: "px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-500"
     end
   end
 
   def pattern_source_badge(pattern)
     if pattern.user_created?
-      content_tag :span, "User Created",
+      content_tag :span, "Creado por usuario",
                   class: "px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700"
     else
-      content_tag :span, "System",
+      content_tag :span, "Sistema",
                   class: "px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-700"
     end
   end
@@ -93,37 +103,37 @@ module PatternsHelper
 
   def pattern_type_options
     [
-      [ "Merchant Name", "merchant" ],
-      [ "Keyword", "keyword" ],
-      [ "Description", "description" ],
-      [ "Amount Range", "amount_range" ],
-      [ "Regular Expression", "regex" ],
-      [ "Time Pattern", "time" ]
+      [ "Nombre de comercio", "merchant" ],
+      [ "Palabra clave", "keyword" ],
+      [ "Descripción", "description" ],
+      [ "Rango de monto", "amount_range" ],
+      [ "Expresión regular", "regex" ],
+      [ "Patrón de hora", "time" ]
     ]
   end
 
   def pattern_type_filter_options
     [
-      [ "All Types", "" ],
-      [ "Merchant", "merchant" ],
-      [ "Keyword", "keyword" ],
-      [ "Description", "description" ],
-      [ "Amount Range", "amount_range" ],
+      [ "Todos los tipos", "" ],
+      [ "Comercio", "merchant" ],
+      [ "Palabra clave", "keyword" ],
+      [ "Descripción", "description" ],
+      [ "Rango de monto", "amount_range" ],
       [ "Regex", "regex" ],
-      [ "Time", "time" ]
+      [ "Hora", "time" ]
     ]
   end
 
   def pattern_status_filter_options
     [
-      [ "All Status", "" ],
-      [ "Active", "active" ],
-      [ "Inactive", "inactive" ],
-      [ "User Created", "user_created" ],
-      [ "System Created", "system_created" ],
-      [ "High Confidence", "high_confidence" ],
-      [ "Successful", "successful" ],
-      [ "Frequently Used", "frequently_used" ]
+      [ "Todos los estados", "" ],
+      [ "Activo", "active" ],
+      [ "Inactivo", "inactive" ],
+      [ "Creado por usuario", "user_created" ],
+      [ "Creado por sistema", "system_created" ],
+      [ "Alta confianza", "high_confidence" ],
+      [ "Exitoso", "successful" ],
+      [ "Uso frecuente", "frequently_used" ]
     ]
   end
 end

@@ -9,7 +9,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
       it 'requires presence of bank_name' do
         parsing_rule = build(:parsing_rule, bank_name: nil)
         expect(parsing_rule).not_to be_valid
-        expect(parsing_rule.errors[:bank_name]).to include("can't be blank")
+        expect(parsing_rule.errors[:bank_name]).to include("no puede estar en blanco")
       end
 
       it 'accepts any non-empty bank_name' do
@@ -23,7 +23,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
       it 'rejects empty string bank_name' do
         parsing_rule = build(:parsing_rule, bank_name: '')
         expect(parsing_rule).not_to be_valid
-        expect(parsing_rule.errors[:bank_name]).to include("can't be blank")
+        expect(parsing_rule.errors[:bank_name]).to include("no puede estar en blanco")
       end
     end
 
@@ -31,7 +31,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
       it 'requires presence of amount_pattern' do
         parsing_rule = build(:parsing_rule, amount_pattern: nil)
         expect(parsing_rule).not_to be_valid
-        expect(parsing_rule.errors[:amount_pattern]).to include("can't be blank")
+        expect(parsing_rule.errors[:amount_pattern]).to include("no puede estar en blanco")
       end
 
       it 'accepts valid regex patterns' do
@@ -50,7 +50,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
       it 'rejects empty string amount_pattern' do
         parsing_rule = build(:parsing_rule, amount_pattern: '')
         expect(parsing_rule).not_to be_valid
-        expect(parsing_rule.errors[:amount_pattern]).to include("can't be blank")
+        expect(parsing_rule.errors[:amount_pattern]).to include("no puede estar en blanco")
       end
     end
 
@@ -58,7 +58,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
       it 'requires presence of date_pattern' do
         parsing_rule = build(:parsing_rule, date_pattern: nil)
         expect(parsing_rule).not_to be_valid
-        expect(parsing_rule.errors[:date_pattern]).to include("can't be blank")
+        expect(parsing_rule.errors[:date_pattern]).to include("no puede estar en blanco")
       end
 
       it 'accepts valid regex patterns' do
@@ -77,7 +77,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
       it 'rejects empty string date_pattern' do
         parsing_rule = build(:parsing_rule, date_pattern: '')
         expect(parsing_rule).not_to be_valid
-        expect(parsing_rule.errors[:date_pattern]).to include("can't be blank")
+        expect(parsing_rule.errors[:date_pattern]).to include("no puede estar en blanco")
       end
     end
 
@@ -92,7 +92,7 @@ RSpec.describe ParsingRule, type: :model, unit: true do
       it 'rejects nil for active' do
         parsing_rule = build(:parsing_rule, active: nil)
         expect(parsing_rule).not_to be_valid
-        expect(parsing_rule.errors[:active]).to include("is not included in the list")
+        expect(parsing_rule.errors[:active]).to include("no está incluido en la lista")
       end
     end
 

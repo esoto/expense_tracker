@@ -569,7 +569,7 @@ RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
 
           expect {
             processing_service.send(:mark_email_processed, email_data)
-          }.to raise_error(ActiveRecord::RecordInvalid, /Message has already been taken/)
+          }.to raise_error(ActiveRecord::RecordInvalid, /Message ya está en uso/)
         end
       end
 
@@ -848,7 +848,7 @@ RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
 
           expect {
             processing_service.send(:create_expense, invalid_data)
-          }.to raise_error(ActiveRecord::RecordInvalid, /Amount must be greater than 0/)
+          }.to raise_error(ActiveRecord::RecordInvalid, /Amount debe ser mayor que 0/)
         end
 
         it 'handles negative amounts' do
@@ -860,7 +860,7 @@ RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
 
           expect {
             processing_service.send(:create_expense, invalid_data)
-          }.to raise_error(ActiveRecord::RecordInvalid, /Amount must be greater than 0/)
+          }.to raise_error(ActiveRecord::RecordInvalid, /Amount debe ser mayor que 0/)
         end
 
         it 'handles missing amount' do
@@ -871,7 +871,7 @@ RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
 
           expect {
             processing_service.send(:create_expense, invalid_data)
-          }.to raise_error(ActiveRecord::RecordInvalid, /Amount can't be blank/)
+          }.to raise_error(ActiveRecord::RecordInvalid, /Amount no puede estar en blanco/)
         end
 
         it 'handles invalid date formats' do

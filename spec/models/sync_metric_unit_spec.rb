@@ -48,13 +48,13 @@ RSpec.describe SyncMetric, type: :model, unit: true do
       it "validates presence of metric_type" do
         subject.metric_type = nil
         expect(subject).not_to be_valid
-        expect(subject.errors[:metric_type]).to include("can't be blank")
+        expect(subject.errors[:metric_type]).to include("no puede estar en blanco")
       end
 
       it "validates inclusion of metric_type" do
         subject.metric_type = "invalid_type"
         expect(subject).not_to be_valid
-        expect(subject.errors[:metric_type]).to include("is not included in the list")
+        expect(subject.errors[:metric_type]).to include("no está incluido en la lista")
       end
 
       it "accepts valid metric types" do
@@ -69,7 +69,7 @@ RSpec.describe SyncMetric, type: :model, unit: true do
       it "validates presence of started_at" do
         subject.started_at = nil
         expect(subject).not_to be_valid
-        expect(subject.errors[:started_at]).to include("can't be blank")
+        expect(subject.errors[:started_at]).to include("no puede estar en blanco")
       end
 
       it "accepts valid timestamps" do
@@ -82,7 +82,7 @@ RSpec.describe SyncMetric, type: :model, unit: true do
       it "validates duration is non-negative" do
         subject.duration = -100
         expect(subject).not_to be_valid
-        expect(subject.errors[:duration]).to include("must be greater than or equal to 0")
+        expect(subject.errors[:duration]).to include("debe ser mayor que o igual a 0")
       end
 
       it "allows nil duration" do
@@ -105,7 +105,7 @@ RSpec.describe SyncMetric, type: :model, unit: true do
       it "validates emails_processed is non-negative" do
         subject.emails_processed = -1
         expect(subject).not_to be_valid
-        expect(subject.errors[:emails_processed]).to include("must be greater than or equal to 0")
+        expect(subject.errors[:emails_processed]).to include("debe ser mayor que o igual a 0")
       end
 
       it "accepts zero emails_processed" do
@@ -599,7 +599,7 @@ RSpec.describe SyncMetric, type: :model, unit: true do
       it "validates metric_type against whitelist" do
         sync_metric.metric_type = "'; DROP TABLE sync_metrics; --"
         expect(sync_metric).not_to be_valid
-        expect(sync_metric.errors[:metric_type]).to include("is not included in the list")
+        expect(sync_metric.errors[:metric_type]).to include("no está incluido en la lista")
       end
 
       it "handles malicious error messages safely" do

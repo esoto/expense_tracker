@@ -19,7 +19,7 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
       it "rejects invalid feedback types" do
         feedback = build_stubbed(:pattern_feedback, feedback_type: "invalid_type")
         expect(feedback).not_to be_valid
-        expect(feedback.errors[:feedback_type]).to include("is not included in the list")
+        expect(feedback.errors[:feedback_type]).to include("no está incluido en la lista")
       end
     end
   end

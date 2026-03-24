@@ -107,7 +107,7 @@ RSpec.describe Services::BulkCategorization::ApplyService, type: :service, unit:
         category_id: category_id
       )
       expect(service).not_to be_valid
-      expect(service.errors[:expense_ids]).to include("can't be blank")
+      expect(service.errors[:expense_ids]).to include("no puede estar en blanco")
     end
 
     it "validates presence of category_id", unit: true do
@@ -116,7 +116,7 @@ RSpec.describe Services::BulkCategorization::ApplyService, type: :service, unit:
         category_id: nil
       )
       expect(service).not_to be_valid
-      expect(service.errors[:category_id]).to include("can't be blank")
+      expect(service.errors[:category_id]).to include("no puede estar en blanco")
     end
 
     it "accepts empty array for expense_ids but fails validation", unit: true do
@@ -125,7 +125,7 @@ RSpec.describe Services::BulkCategorization::ApplyService, type: :service, unit:
         category_id: category_id
       )
       expect(service).not_to be_valid
-      expect(service.errors[:expense_ids]).to include("can't be blank")
+      expect(service.errors[:expense_ids]).to include("no puede estar en blanco")
     end
   end
 
@@ -141,7 +141,7 @@ RSpec.describe Services::BulkCategorization::ApplyService, type: :service, unit:
       it "returns failure result with validation errors", unit: true do
         result = service.call
         expect(result.success?).to be false
-        expect(result.message).to match(/blank|error occurred/i)
+        expect(result.message).to match(/blank|blanco|error occurred/i)
         expect(result.bulk_operation).to be_nil
       end
 

@@ -9,13 +9,13 @@ RSpec.describe ApiToken, type: :model, unit: true do
       it 'requires presence of name' do
         api_token = build(:api_token, name: nil)
         expect(api_token).not_to be_valid
-        expect(api_token.errors[:name]).to include("can't be blank")
+        expect(api_token.errors[:name]).to include("no puede estar en blanco")
       end
 
       it 'validates name maximum length' do
         api_token = build(:api_token, name: 'a' * 256)
         expect(api_token).not_to be_valid
-        expect(api_token.errors[:name]).to include("is too long (maximum is 255 characters)")
+        expect(api_token.errors[:name]).to include("es demasiado largo (255 caracteres máximo)")
       end
 
       it 'accepts names within length limit' do
@@ -34,7 +34,7 @@ RSpec.describe ApiToken, type: :model, unit: true do
         allow(api_token).to receive(:generate_token_if_blank)
 
         expect(api_token).not_to be_valid
-        expect(api_token.errors[:token_digest]).to include("can't be blank")
+        expect(api_token.errors[:token_digest]).to include("no puede estar en blanco")
       end
 
       it 'validates uniqueness of token_digest' do
@@ -42,7 +42,7 @@ RSpec.describe ApiToken, type: :model, unit: true do
         new_token = build(:api_token)
         new_token.token_digest = existing_token.token_digest
         expect(new_token).not_to be_valid
-        expect(new_token.errors[:token_digest]).to include("has already been taken")
+        expect(new_token.errors[:token_digest]).to include("ya está en uso")
       end
     end
 
@@ -51,7 +51,7 @@ RSpec.describe ApiToken, type: :model, unit: true do
         api_token = build(:api_token)
         api_token.active = nil
         expect(api_token).not_to be_valid
-        expect(api_token.errors[:active]).to include("is not included in the list")
+        expect(api_token.errors[:active]).to include("no está incluido en la lista")
       end
 
       it 'accepts true and false for active' do

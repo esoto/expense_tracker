@@ -16,13 +16,13 @@ export default class extends Controller {
     if (!this.hasValueHelpTarget) return
     
     const helpTexts = {
-      'merchant': 'Enter the merchant name to match (case-insensitive)',
-      'keyword': 'Enter a keyword to search for in descriptions and merchant names',
-      'description': 'Enter text to match in expense descriptions',
-      'amount_range': 'Enter range as: min-max (e.g., 10.00-50.00)',
-      'regex': 'Enter a regular expression pattern',
-      'time': 'Enter: morning, afternoon, evening, night, weekend, weekday, or time range (09:00-17:00)',
-      '': 'Select a pattern type to see value format help'
+      'merchant': 'Ingresa el nombre del comerciante para hacer coincidir (sin distinción de mayúsculas)',
+      'keyword': 'Ingresa una palabra clave para buscar en descripciones y nombres de comerciantes',
+      'description': 'Ingresa texto para hacer coincidir en descripciones de gastos',
+      'amount_range': 'Ingresa el rango como: mín-máx (por ejemplo, 10.00-50.00)',
+      'regex': 'Ingresa un patrón de expresión regular',
+      'time': 'Ingresa: mañana, tarde, noche, fin de semana, entre semana o rango de horas (09:00-17:00)',
+      '': 'Selecciona un tipo de patrón para ver la ayuda del formato de valor'
     }
     
     this.valueHelpTarget.innerHTML = helpTexts[patternType] || helpTexts['']
@@ -30,15 +30,15 @@ export default class extends Controller {
     // Update placeholder
     if (this.hasValueFieldTarget) {
       const placeholders = {
-        'merchant': 'e.g., Starbucks',
-        'keyword': 'e.g., coffee',
-        'description': 'e.g., Monthly subscription',
-        'amount_range': 'e.g., 10.00-50.00',
-        'regex': 'e.g., ^UBER.*',
-        'time': 'e.g., morning or 09:00-17:00'
+        'merchant': 'ej., Starbucks',
+        'keyword': 'ej., café',
+        'description': 'ej., Suscripción mensual',
+        'amount_range': 'ej., 10.00-50.00',
+        'regex': 'ej., ^UBER.*',
+        'time': 'ej., mañana o 09:00-17:00'
       }
       
-      this.valueFieldTarget.placeholder = placeholders[patternType] || 'Enter pattern value...'
+      this.valueFieldTarget.placeholder = placeholders[patternType] || 'Ingresa el valor del patrón...'
     }
   }
   
@@ -52,7 +52,7 @@ export default class extends Controller {
     if (!testText || !patternType || !patternValue) {
       this.testResultTarget.innerHTML = `
         <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-          <p class="text-sm text-amber-700">Please enter all required fields</p>
+          <p class="text-sm text-amber-700">Por favor ingresa todos los campos requeridos</p>
         </div>
       `
       return
@@ -68,7 +68,7 @@ export default class extends Controller {
             <svg class="w-5 h-5 text-emerald-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            <span class="text-sm font-medium text-emerald-700">Pattern matches!</span>
+            <span class="text-sm font-medium text-emerald-700">¡El patrón coincide!</span>
           </div>
         </div>
       `
@@ -79,7 +79,7 @@ export default class extends Controller {
             <svg class="w-5 h-5 text-rose-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            <span class="text-sm font-medium text-rose-700">No match</span>
+            <span class="text-sm font-medium text-rose-700">Sin coincidencia</span>
           </div>
         </div>
       `
@@ -118,10 +118,14 @@ export default class extends Controller {
       
       case 'time':
         // For time patterns, we'd need the actual datetime
-        // This is a simplified check
-        const timePatterns = ['morning', 'afternoon', 'evening', 'night', 'weekend', 'weekday']
-        if (timePatterns.includes(value)) {
+        // This is a simplified check - supports Spanish keywords
+        const timePatterns = ['mañana', 'tarde', 'atardecer', 'noche', 'fin de semana', 'entre semana']
+        if (timePatterns.includes(value.toLowerCase())) {
           return true // Can't properly test without datetime
+        }
+        // Check for time range format (HH:MM-HH:MM)
+        if (/^\d{2}:\d{2}-\d{2}:\d{2}$/.test(value)) {
+          return true
         }
         return false
       

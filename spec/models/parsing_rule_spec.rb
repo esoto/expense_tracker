@@ -15,19 +15,19 @@ RSpec.describe ParsingRule, type: :model, integration: true do
     it 'requires bank_name' do
       rule = ParsingRule.new(amount_pattern: 'test', date_pattern: 'test')
       expect(rule).not_to be_valid
-      expect(rule.errors[:bank_name]).to include("can't be blank")
+      expect(rule.errors[:bank_name]).to include("no puede estar en blanco")
     end
 
     it 'requires amount_pattern' do
       rule = ParsingRule.new(bank_name: 'BAC', date_pattern: 'test')
       expect(rule).not_to be_valid
-      expect(rule.errors[:amount_pattern]).to include("can't be blank")
+      expect(rule.errors[:amount_pattern]).to include("no puede estar en blanco")
     end
 
     it 'requires date_pattern' do
       rule = ParsingRule.new(bank_name: 'BAC', amount_pattern: 'test')
       expect(rule).not_to be_valid
-      expect(rule.errors[:date_pattern]).to include("can't be blank")
+      expect(rule.errors[:date_pattern]).to include("no puede estar en blanco")
     end
 
     it 'validates active as boolean' do

@@ -21,7 +21,7 @@ RSpec.describe ConflictResolution, type: :model, unit: true do
       it "rejects invalid action values" do
         resolution = build_stubbed(:conflict_resolution, action: "invalid_action")
         expect(resolution).not_to be_valid
-        expect(resolution.errors[:action]).to include("is not included in the list")
+        expect(resolution.errors[:action]).to include("no está incluido en la lista")
       end
     end
 
@@ -40,7 +40,7 @@ RSpec.describe ConflictResolution, type: :model, unit: true do
       it "rejects invalid resolution_method values" do
         resolution = build_stubbed(:conflict_resolution, resolution_method: "invalid_method")
         expect(resolution).not_to be_valid
-        expect(resolution.errors[:resolution_method]).to include("is not included in the list")
+        expect(resolution.errors[:resolution_method]).to include("no está incluido en la lista")
       end
     end
   end

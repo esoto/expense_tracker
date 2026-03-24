@@ -37,7 +37,7 @@ RSpec.describe PatternLearningEvent, type: :model, unit: true do
       it "rejects nil value" do
         event = build_stubbed(:pattern_learning_event, was_correct: nil)
         expect(event).not_to be_valid
-        expect(event.errors[:was_correct]).to include("is not included in the list")
+        expect(event.errors[:was_correct]).to include("no está incluido en la lista")
       end
     end
 

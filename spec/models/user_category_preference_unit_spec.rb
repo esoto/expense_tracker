@@ -20,7 +20,7 @@ RSpec.describe UserCategoryPreference, type: :model, unit: true do
       it "rejects invalid context types" do
         preference = build_stubbed(:user_category_preference, context_type: "invalid_type")
         expect(preference).not_to be_valid
-        expect(preference.errors[:context_type]).to include("is not included in the list")
+        expect(preference.errors[:context_type]).to include("no está incluido en la lista")
       end
     end
 

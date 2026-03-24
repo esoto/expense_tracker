@@ -51,13 +51,13 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
       it "requires pattern_type to be present" do
         pattern = build_categorization_pattern(pattern_type: nil)
         expect(pattern).not_to be_valid
-        expect(pattern.errors[:pattern_type]).to include("can't be blank")
+        expect(pattern.errors[:pattern_type]).to include("no puede estar en blanco")
       end
 
       it "validates inclusion in PATTERN_TYPES" do
         pattern = build_categorization_pattern(pattern_type: "invalid")
         expect(pattern).not_to be_valid
-        expect(pattern.errors[:pattern_type]).to include("is not included in the list")
+        expect(pattern.errors[:pattern_type]).to include("no está incluido en la lista")
       end
 
       it "accepts valid pattern types" do
@@ -84,7 +84,7 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
       it "requires pattern_value to be present" do
         pattern = build_categorization_pattern(pattern_value: nil)
         expect(pattern).not_to be_valid
-        expect(pattern.errors[:pattern_value]).to include("can't be blank")
+        expect(pattern.errors[:pattern_value]).to include("no puede estar en blanco")
       end
 
       it "validates uniqueness scoped to category and pattern_type" do
@@ -114,13 +114,13 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
       it "rejects confidence weight below minimum" do
         pattern = build_categorization_pattern(confidence_weight: 0.05)
         expect(pattern).not_to be_valid
-        expect(pattern.errors[:confidence_weight]).to include("must be greater than or equal to 0.1")
+        expect(pattern.errors[:confidence_weight]).to include("debe ser mayor que o igual a 0.1")
       end
 
       it "rejects confidence weight above maximum" do
         pattern = build_categorization_pattern(confidence_weight: 5.1)
         expect(pattern).not_to be_valid
-        expect(pattern.errors[:confidence_weight]).to include("must be less than or equal to 5.0")
+        expect(pattern.errors[:confidence_weight]).to include("debe ser menor que o igual a 5.0")
       end
     end
 
@@ -133,7 +133,7 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
       it "rejects negative usage_count" do
         pattern = build_categorization_pattern(usage_count: -1)
         expect(pattern).not_to be_valid
-        expect(pattern.errors[:usage_count]).to include("must be greater than or equal to 0")
+        expect(pattern.errors[:usage_count]).to include("debe ser mayor que o igual a 0")
       end
 
       it "accepts zero success_count" do
@@ -144,7 +144,7 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
       it "rejects negative success_count" do
         pattern = build_categorization_pattern(success_count: -1)
         expect(pattern).not_to be_valid
-        expect(pattern.errors[:success_count]).to include("must be greater than or equal to 0")
+        expect(pattern.errors[:success_count]).to include("debe ser mayor que o igual a 0")
       end
 
       it "validates success_count not greater than usage_count" do
@@ -163,13 +163,13 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
       it "rejects negative success_rate" do
         pattern = build_categorization_pattern(success_rate: -0.1)
         expect(pattern).not_to be_valid
-        expect(pattern.errors[:success_rate]).to include("must be greater than or equal to 0.0")
+        expect(pattern.errors[:success_rate]).to include("debe ser mayor que o igual a 0.0")
       end
 
       it "rejects success_rate above 1.0" do
         pattern = build_categorization_pattern(success_rate: 1.1)
         expect(pattern).not_to be_valid
-        expect(pattern.errors[:success_rate]).to include("must be less than or equal to 1.0")
+        expect(pattern.errors[:success_rate]).to include("debe ser menor que o igual a 1.0")
       end
     end
 

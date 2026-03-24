@@ -26,7 +26,7 @@ RSpec.describe SyncSessionAccount, type: :model, unit: true do
       it "requires status to be present" do
         account = build_sync_session_account(status: nil)
         expect(account).not_to be_valid
-        expect(account.errors[:status]).to include("can't be blank")
+        expect(account.errors[:status]).to include("no puede estar en blanco")
       end
 
       it "validates inclusion in allowed values" do
@@ -40,7 +40,7 @@ RSpec.describe SyncSessionAccount, type: :model, unit: true do
       it "rejects invalid status values" do
         account = build_sync_session_account(status: "invalid")
         expect(account).not_to be_valid
-        expect(account.errors[:status]).to include("is not included in the list")
+        expect(account.errors[:status]).to include("no está incluido en la lista")
       end
     end
   end

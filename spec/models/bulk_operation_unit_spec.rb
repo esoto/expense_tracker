@@ -58,7 +58,7 @@ RSpec.describe BulkOperation, type: :model, unit: true do
       it "requires operation_type" do
         operation = build_bulk_operation(operation_type: nil)
         expect(operation).not_to be_valid
-        expect(operation.errors[:operation_type]).to include("can't be blank")
+        expect(operation.errors[:operation_type]).to include("no puede estar en blanco")
       end
     end
 
@@ -66,13 +66,13 @@ RSpec.describe BulkOperation, type: :model, unit: true do
       it "requires expense_count" do
         operation = build_bulk_operation(expense_count: nil)
         expect(operation).not_to be_valid
-        expect(operation.errors[:expense_count]).to include("must be greater than 0")
+        expect(operation.errors[:expense_count]).to include("debe ser mayor que 0")
       end
 
       it "requires expense_count to be greater than 0" do
         operation = build_bulk_operation(expense_count: 0)
         expect(operation).not_to be_valid
-        expect(operation.errors[:expense_count]).to include("must be greater than 0")
+        expect(operation.errors[:expense_count]).to include("debe ser mayor que 0")
       end
 
       it "accepts positive expense_count" do
@@ -89,7 +89,7 @@ RSpec.describe BulkOperation, type: :model, unit: true do
           total_amount: "not_a_number"
         )
         expect(operation).not_to be_valid
-        expect(operation.errors[:total_amount]).to include("is not a number")
+        expect(operation.errors[:total_amount]).to include("no es un número")
       end
 
       it "accepts zero total_amount" do
@@ -105,7 +105,7 @@ RSpec.describe BulkOperation, type: :model, unit: true do
       it "rejects negative total_amount" do
         operation = build_bulk_operation(total_amount: -100)
         expect(operation).not_to be_valid
-        expect(operation.errors[:total_amount]).to include("must be greater than or equal to 0")
+        expect(operation.errors[:total_amount]).to include("debe ser mayor que o igual a 0")
       end
     end
   end

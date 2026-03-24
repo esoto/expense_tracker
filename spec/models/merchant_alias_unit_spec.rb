@@ -34,7 +34,7 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
       it "requires raw_name to be present" do
         alias_record = build_merchant_alias(raw_name: nil)
         expect(alias_record).not_to be_valid
-        expect(alias_record.errors[:raw_name]).to include("can't be blank")
+        expect(alias_record.errors[:raw_name]).to include("no puede estar en blanco")
       end
 
       it "accepts non-empty raw_name" do
@@ -69,13 +69,13 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
       it "rejects confidence below minimum" do
         alias_record = build_merchant_alias(confidence: -0.1)
         expect(alias_record).not_to be_valid
-        expect(alias_record.errors[:confidence]).to include("must be greater than or equal to 0.0")
+        expect(alias_record.errors[:confidence]).to include("debe ser mayor que o igual a 0.0")
       end
 
       it "rejects confidence above maximum" do
         alias_record = build_merchant_alias(confidence: 1.1)
         expect(alias_record).not_to be_valid
-        expect(alias_record.errors[:confidence]).to include("must be less than or equal to 1.0")
+        expect(alias_record.errors[:confidence]).to include("debe ser menor que o igual a 1.0")
       end
     end
 
@@ -93,7 +93,7 @@ RSpec.describe MerchantAlias, type: :model, unit: true do
       it "rejects negative match_count" do
         alias_record = build_merchant_alias(match_count: -1)
         expect(alias_record).not_to be_valid
-        expect(alias_record.errors[:match_count]).to include("must be greater than or equal to 0")
+        expect(alias_record.errors[:match_count]).to include("debe ser mayor que o igual a 0")
       end
     end
   end

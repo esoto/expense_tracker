@@ -168,7 +168,7 @@ RSpec.describe SyncPerformanceHelper, type: :helper, unit: true do
       result = helper.format_timestamp(recent_time)
 
       expect(result).to include("atrás")
-      expect(result).to include("hours") # time_ago_in_words returns English
+      expect(result).to include("hora") # time_ago_in_words returns Spanish with rails-i18n
     end
 
     it "returns formatted date for older timestamps (beyond 24 hours)" do
@@ -191,7 +191,7 @@ RSpec.describe SyncPerformanceHelper, type: :helper, unit: true do
       result = helper.format_timestamp(very_recent)
 
       expect(result).to include("atrás")
-      expect(result).to include("minutes") # time_ago_in_words returns English
+      expect(result).to include("minutos") # time_ago_in_words returns Spanish with rails-i18n
     end
   end
 

@@ -5,7 +5,7 @@ RSpec.describe PatternsHelper, type: :helper, unit: true do
     it "renders merchant badge with slate color" do
       result = helper.pattern_type_badge("merchant")
 
-      expect(result).to include("Merchant")
+      expect(result).to include("Comercio")
       expect(result).to include("bg-slate-100")
       expect(result).to include("text-slate-700")
       expect(result).to include("px-2 py-1 text-xs rounded-full")
@@ -14,7 +14,7 @@ RSpec.describe PatternsHelper, type: :helper, unit: true do
     it "renders keyword badge with amber color" do
       result = helper.pattern_type_badge("keyword")
 
-      expect(result).to include("Keyword")
+      expect(result).to include("Palabra clave")
       expect(result).to include("bg-amber-100")
       expect(result).to include("text-amber-700")
     end
@@ -22,7 +22,7 @@ RSpec.describe PatternsHelper, type: :helper, unit: true do
     it "renders description badge with teal color" do
       result = helper.pattern_type_badge("description")
 
-      expect(result).to include("Description")
+      expect(result).to include("Descripción")
       expect(result).to include("bg-teal-100")
       expect(result).to include("text-teal-700")
     end
@@ -30,7 +30,7 @@ RSpec.describe PatternsHelper, type: :helper, unit: true do
     it "renders amount_range badge with emerald color" do
       result = helper.pattern_type_badge("amount_range")
 
-      expect(result).to include("Amount range")
+      expect(result).to include("Rango de monto")
       expect(result).to include("bg-emerald-100")
       expect(result).to include("text-emerald-700")
     end
@@ -46,7 +46,7 @@ RSpec.describe PatternsHelper, type: :helper, unit: true do
     it "renders time badge with indigo color" do
       result = helper.pattern_type_badge("time")
 
-      expect(result).to include("Time")
+      expect(result).to include("Hora")
       expect(result).to include("bg-indigo-100")
       expect(result).to include("text-indigo-700")
     end
@@ -179,7 +179,7 @@ RSpec.describe PatternsHelper, type: :helper, unit: true do
       pattern = double("Pattern", active?: true)
       result = helper.pattern_status_badge(pattern)
 
-      expect(result).to include("Active")
+      expect(result).to include("Activo")
       expect(result).to include("bg-emerald-100")
       expect(result).to include("text-emerald-700")
     end
@@ -188,7 +188,7 @@ RSpec.describe PatternsHelper, type: :helper, unit: true do
       pattern = double("Pattern", active?: false)
       result = helper.pattern_status_badge(pattern)
 
-      expect(result).to include("Inactive")
+      expect(result).to include("Inactivo")
       expect(result).to include("bg-slate-100")
       expect(result).to include("text-slate-500")
     end
@@ -199,7 +199,7 @@ RSpec.describe PatternsHelper, type: :helper, unit: true do
       pattern = double("Pattern", user_created?: true)
       result = helper.pattern_source_badge(pattern)
 
-      expect(result).to include("User Created")
+      expect(result).to include("Creado por usuario")
       expect(result).to include("bg-amber-100")
       expect(result).to include("text-amber-700")
     end
@@ -208,7 +208,7 @@ RSpec.describe PatternsHelper, type: :helper, unit: true do
       pattern = double("Pattern", user_created?: false)
       result = helper.pattern_source_badge(pattern)
 
-      expect(result).to include("System")
+      expect(result).to include("Sistema")
       expect(result).to include("bg-slate-100")
       expect(result).to include("text-slate-700")
     end
@@ -281,12 +281,12 @@ RSpec.describe PatternsHelper, type: :helper, unit: true do
       expect(options).to be_an(Array)
       expect(options.length).to eq(6)
 
-      expect(options).to include([ "Merchant Name", "merchant" ])
-      expect(options).to include([ "Keyword", "keyword" ])
-      expect(options).to include([ "Description", "description" ])
-      expect(options).to include([ "Amount Range", "amount_range" ])
-      expect(options).to include([ "Regular Expression", "regex" ])
-      expect(options).to include([ "Time Pattern", "time" ])
+      expect(options).to include([ "Nombre de comercio", "merchant" ])
+      expect(options).to include([ "Palabra clave", "keyword" ])
+      expect(options).to include([ "Descripción", "description" ])
+      expect(options).to include([ "Rango de monto", "amount_range" ])
+      expect(options).to include([ "Expresión regular", "regex" ])
+      expect(options).to include([ "Patrón de hora", "time" ])
     end
 
     it "has proper structure for select options" do
@@ -308,13 +308,13 @@ RSpec.describe PatternsHelper, type: :helper, unit: true do
       expect(options).to be_an(Array)
       expect(options.length).to eq(7)
 
-      expect(options.first).to eq([ "All Types", "" ])
-      expect(options).to include([ "Merchant", "merchant" ])
-      expect(options).to include([ "Keyword", "keyword" ])
-      expect(options).to include([ "Description", "description" ])
-      expect(options).to include([ "Amount Range", "amount_range" ])
+      expect(options.first).to eq([ "Todos los tipos", "" ])
+      expect(options).to include([ "Comercio", "merchant" ])
+      expect(options).to include([ "Palabra clave", "keyword" ])
+      expect(options).to include([ "Descripción", "description" ])
+      expect(options).to include([ "Rango de monto", "amount_range" ])
       expect(options).to include([ "Regex", "regex" ])
-      expect(options).to include([ "Time", "time" ])
+      expect(options).to include([ "Hora", "time" ])
     end
 
     it "has proper structure for filter select options" do
@@ -336,14 +336,14 @@ RSpec.describe PatternsHelper, type: :helper, unit: true do
       expect(options).to be_an(Array)
       expect(options.length).to eq(8)
 
-      expect(options.first).to eq([ "All Status", "" ])
-      expect(options).to include([ "Active", "active" ])
-      expect(options).to include([ "Inactive", "inactive" ])
-      expect(options).to include([ "User Created", "user_created" ])
-      expect(options).to include([ "System Created", "system_created" ])
-      expect(options).to include([ "High Confidence", "high_confidence" ])
-      expect(options).to include([ "Successful", "successful" ])
-      expect(options).to include([ "Frequently Used", "frequently_used" ])
+      expect(options.first).to eq([ "Todos los estados", "" ])
+      expect(options).to include([ "Activo", "active" ])
+      expect(options).to include([ "Inactivo", "inactive" ])
+      expect(options).to include([ "Creado por usuario", "user_created" ])
+      expect(options).to include([ "Creado por sistema", "system_created" ])
+      expect(options).to include([ "Alta confianza", "high_confidence" ])
+      expect(options).to include([ "Exitoso", "successful" ])
+      expect(options).to include([ "Uso frecuente", "frequently_used" ])
     end
 
     it "has proper structure for status filter options" do

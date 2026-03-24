@@ -68,7 +68,7 @@ RSpec.describe Services::BulkOperations::DeletionService, type: :service, unit: 
         result = service.call
 
         expect(result[:success]).to be false
-        expect(result[:errors]).to include("Expense ids can't be blank")
+        expect(result[:errors]).to include("Expense ids no puede estar en blanco")
       end
 
       it 'does not attempt deletion' do
@@ -95,7 +95,7 @@ RSpec.describe Services::BulkOperations::DeletionService, type: :service, unit: 
         result = service.call
 
         expect(result[:success]).to be false
-        expect(result[:errors]).to include("Expense ids can't be blank")
+        expect(result[:errors]).to include("Expense ids no puede estar en blanco")
       end
     end
 
@@ -660,7 +660,7 @@ RSpec.describe Services::BulkOperations::DeletionService, type: :service, unit: 
       invalid_service = described_class.new(expense_ids: nil)
 
       expect(invalid_service).not_to be_valid
-      expect(invalid_service.errors[:expense_ids]).to include("can't be blank")
+      expect(invalid_service.errors[:expense_ids]).to include("no puede estar en blanco")
     end
 
     it 'validates expense_ids is array' do

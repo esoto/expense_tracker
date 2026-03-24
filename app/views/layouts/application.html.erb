@@ -97,26 +97,14 @@
     </nav>
 
     <!-- Flash Messages -->
-    <% if notice %>
-      <% if flash[:undo_id].present? %>
-        <%= render "shared/undo_notification",
-            undo_id: flash[:undo_id],
-            time_remaining: flash[:undo_time_remaining] || 30,
-            message: notice %>
-      <% else %>
-        <div class="max-w-7xl mx-auto px-4 mt-4">
-          <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-lg relative" role="alert">
-            <span class="block sm:inline"><%= notice %></span>
-          </div>
-        </div>
-      <% end %>
-    <% end %>
-
-    <% if alert %>
+    <% if notice && flash[:undo_id].present? %>
+      <%= render "shared/undo_notification",
+          undo_id: flash[:undo_id],
+          time_remaining: flash[:undo_time_remaining] || 30,
+          message: notice %>
+    <% else %>
       <div class="max-w-7xl mx-auto px-4 mt-4">
-        <div class="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg relative" role="alert">
-          <span class="block sm:inline"><%= alert %></span>
-        </div>
+        <%= render "shared/flash" %>
       </div>
     <% end %>
 

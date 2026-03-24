@@ -1,9 +1,14 @@
 require "rails_helper"
 
 RSpec.describe Api::QueueController, type: :controller, unit: true do
+  let(:test_session_id) { "test_session_abc123" }
+
   before do
     # Mock authentication - allow access in test environment
     allow(controller).to receive(:authenticate_queue_access!).and_return(true)
+
+    # Mock session-scoped broadcasting - controller uses current_request_session_id
+    allow(controller).to receive(:current_request_session_id).and_return(test_session_id)
 
     # Mock the Services::QueueMonitor service
     allow(Services::QueueMonitor).to receive(:queue_status).and_return({
@@ -85,6 +90,8 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
   end
 
   describe "POST #pause" do
+    let(:scoped_stream) { "queue_updates_#{test_session_id}" }
+
     context "when pausing all queues" do
       before do
         allow(Services::QueueMonitor).to receive(:pause_queue).with(nil).and_return(true)
@@ -92,7 +99,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
       end
 
       it "pauses all queues successfully" do
-        expect(ActionCable.server).to receive(:broadcast).with("queue_updates", anything)
+        expect(ActionCable.server).to receive(:broadcast).with(scoped_stream, anything)
 
         post :pause, format: :json
 
@@ -100,7 +107,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be true
-        expect(json_response["message"]).to eq("All queues have been paused")
+        expect(json_response["message"]).to eq("Todas las colas han sido pausadas")
         expect(json_response["paused_queues"]).to eq([ "default", "high_priority" ])
       end
     end
@@ -112,7 +119,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
       end
 
       it "pauses specific queue successfully" do
-        expect(ActionCable.server).to receive(:broadcast).with("queue_updates", anything)
+        expect(ActionCable.server).to receive(:broadcast).with(scoped_stream, anything)
 
         post :pause, params: { queue_name: "default" }, format: :json
 
@@ -120,7 +127,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be true
-        expect(json_response["message"]).to eq("Queue 'default' has been paused")
+        expect(json_response["message"]).to eq("La cola 'default' ha sido pausada")
         expect(json_response["paused_queues"]).to eq([ "default" ])
       end
     end
@@ -137,12 +144,14 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be false
-        expect(json_response["error"]).to eq("Failed to pause queue(s)")
+        expect(json_response["error"]).to eq("Error al pausar la(s) cola(s)")
       end
     end
   end
 
   describe "POST #resume" do
+    let(:scoped_stream) { "queue_updates_#{test_session_id}" }
+
     context "when resuming all queues" do
       before do
         allow(Services::QueueMonitor).to receive(:resume_queue).with(nil).and_return(true)
@@ -150,7 +159,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
       end
 
       it "resumes all queues successfully" do
-        expect(ActionCable.server).to receive(:broadcast).with("queue_updates", anything)
+        expect(ActionCable.server).to receive(:broadcast).with(scoped_stream, anything)
 
         post :resume, format: :json
 
@@ -158,7 +167,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be true
-        expect(json_response["message"]).to eq("All queues have been resumed")
+        expect(json_response["message"]).to eq("Todas las colas han sido reanudadas")
         expect(json_response["paused_queues"]).to eq([])
       end
     end
@@ -170,7 +179,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
       end
 
       it "resumes specific queue successfully" do
-        expect(ActionCable.server).to receive(:broadcast).with("queue_updates", anything)
+        expect(ActionCable.server).to receive(:broadcast).with(scoped_stream, anything)
 
         post :resume, params: { queue_name: "default" }, format: :json
 
@@ -178,7 +187,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be true
-        expect(json_response["message"]).to eq("Queue 'default' has been resumed")
+        expect(json_response["message"]).to eq("La cola 'default' ha sido reanudada")
       end
     end
 
@@ -194,12 +203,14 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be false
-        expect(json_response["error"]).to eq("Failed to resume queue(s)")
+        expect(json_response["error"]).to eq("Error al reanudar la(s) cola(s)")
       end
     end
   end
 
   describe "POST #retry_job" do
+    let(:scoped_stream) { "queue_updates_#{test_session_id}" }
+
     context "when job exists and retry succeeds" do
       before do
         job = double("SolidQueue::Job", id: 123)
@@ -208,7 +219,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
       end
 
       it "retries job successfully" do
-        expect(ActionCable.server).to receive(:broadcast).with("queue_updates", anything)
+        expect(ActionCable.server).to receive(:broadcast).with(scoped_stream, anything)
 
         post :retry_job, params: { id: "123" }, format: :json
 
@@ -216,7 +227,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be true
-        expect(json_response["message"]).to eq("Job 123 has been queued for retry")
+        expect(json_response["message"]).to eq("El trabajo 123 ha sido encolado para reintentar")
         expect(json_response["job_id"]).to eq("123")
       end
     end
@@ -233,7 +244,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be false
-        expect(json_response["error"]).to eq("Job not found")
+        expect(json_response["error"]).to eq("Trabajo no encontrado")
       end
     end
 
@@ -251,12 +262,14 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be false
-        expect(json_response["error"]).to eq("Failed to retry job 123")
+        expect(json_response["error"]).to eq("Error al reintentar el trabajo 123")
       end
     end
   end
 
   describe "POST #clear_job" do
+    let(:scoped_stream) { "queue_updates_#{test_session_id}" }
+
     context "when job exists and clear succeeds" do
       before do
         job = double("SolidQueue::Job", id: 123)
@@ -265,7 +278,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
       end
 
       it "clears job successfully" do
-        expect(ActionCable.server).to receive(:broadcast).with("queue_updates", anything)
+        expect(ActionCable.server).to receive(:broadcast).with(scoped_stream, anything)
 
         post :clear_job, params: { id: "123" }, format: :json
 
@@ -273,7 +286,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be true
-        expect(json_response["message"]).to eq("Job 123 has been cleared")
+        expect(json_response["message"]).to eq("El trabajo 123 ha sido limpiado")
         expect(json_response["job_id"]).to eq("123")
       end
     end
@@ -290,19 +303,21 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be false
-        expect(json_response["error"]).to eq("Job not found")
+        expect(json_response["error"]).to eq("Trabajo no encontrado")
       end
     end
   end
 
   describe "POST #retry_all_failed" do
+    let(:scoped_stream) { "queue_updates_#{test_session_id}" }
+
     context "when there are failed jobs to retry" do
       before do
         allow(Services::QueueMonitor).to receive(:retry_all_failed_jobs).and_return(5)
       end
 
       it "retries all failed jobs successfully" do
-        expect(ActionCable.server).to receive(:broadcast).with("queue_updates", anything)
+        expect(ActionCable.server).to receive(:broadcast).with(scoped_stream, anything)
 
         post :retry_all_failed, format: :json
 
@@ -310,7 +325,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be true
-        expect(json_response["message"]).to eq("5 failed jobs have been queued for retry")
+        expect(json_response["message"]).to eq("5 trabajos fallidos han sido encolados para reintentar")
         expect(json_response["count"]).to eq(5)
       end
     end
@@ -327,7 +342,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be false
-        expect(json_response["error"]).to eq("No failed jobs to retry or retry operation failed")
+        expect(json_response["error"]).to eq("Sin trabajos fallidos para reintentar o la operación de reintentar falló")
       end
     end
   end
@@ -435,7 +450,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         json_response = JSON.parse(response.body)
 
         expect(json_response["success"]).to be false
-        expect(json_response["error"]).to include("Unauthorized access")
+        expect(json_response["error"]).to include("Acceso no autorizado")
       end
     end
 
@@ -456,6 +471,143 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         post :pause, format: :json
 
         expect(response).to have_http_status(:ok)
+      end
+    end
+
+    describe "admin key security (S-06)" do
+      before do
+        allow(controller).to receive(:authenticate_queue_access!).and_call_original
+        allow(ApiToken).to receive(:authenticate).and_return(nil)
+        allow(Rails.env).to receive(:development?).and_return(false)
+        allow(Rails.env).to receive(:test?).and_return(false)
+      end
+
+      context "uses timing-safe comparison" do
+        let(:admin_key) { "super_secret_admin_key_123" }
+
+        before do
+          allow(Rails.application.credentials).to receive(:dig).with(:admin_key).and_return(admin_key)
+          allow(ENV).to receive(:[]).with("ADMIN_KEY").and_return(nil)
+        end
+
+        it "calls ActiveSupport::SecurityUtils.secure_compare for admin key" do
+          request.headers["X-Admin-Key"] = admin_key
+
+          expect(ActiveSupport::SecurityUtils).to receive(:secure_compare)
+            .with(admin_key, admin_key)
+            .and_call_original
+
+          allow(Services::QueueMonitor).to receive(:pause_queue).and_return(true)
+          allow(Services::QueueMonitor).to receive(:paused_queues).and_return([])
+
+          post :pause, format: :json
+
+          expect(response).to have_http_status(:ok)
+        end
+
+        it "grants access with correct admin key via header" do
+          request.headers["X-Admin-Key"] = admin_key
+
+          allow(Services::QueueMonitor).to receive(:pause_queue).and_return(true)
+          allow(Services::QueueMonitor).to receive(:paused_queues).and_return([])
+
+          post :pause, format: :json
+
+          expect(response).to have_http_status(:ok)
+        end
+
+        it "grants access with correct admin key via params" do
+          allow(Services::QueueMonitor).to receive(:pause_queue).and_return(true)
+          allow(Services::QueueMonitor).to receive(:paused_queues).and_return([])
+
+          post :pause, params: { admin_key: admin_key }, format: :json
+
+          expect(response).to have_http_status(:ok)
+        end
+
+        it "rejects incorrect admin key" do
+          request.headers["X-Admin-Key"] = "wrong_key"
+
+          post :pause, format: :json
+
+          expect(response).to have_http_status(:unauthorized)
+        end
+
+        it "rejects blank admin key" do
+          request.headers["X-Admin-Key"] = ""
+
+          post :pause, format: :json
+
+          expect(response).to have_http_status(:unauthorized)
+        end
+
+        it "rejects nil admin key (no key provided)" do
+          post :pause, format: :json
+
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
+
+      context "test environment bypass removed" do
+        before do
+          allow(Rails.application.credentials).to receive(:dig).with(:admin_key).and_return(nil)
+          allow(ENV).to receive(:[]).with("ADMIN_KEY").and_return(nil)
+        end
+
+        it "does not bypass authentication in test environment" do
+          # Even in a test environment (test? returns true), with no credentials
+          # configured, authentication should reject the request. This verifies
+          # the test-env bypass has been removed from the code.
+          allow(Rails.env).to receive(:test?).and_return(true)
+
+          post :pause, format: :json
+
+          # After fix: test env bypass is removed, so this should be unauthorized
+          expect(response).to have_http_status(:unauthorized)
+        end
+
+        it "still allows development environment bypass" do
+          allow(Rails.env).to receive(:development?).and_return(true)
+
+          allow(Services::QueueMonitor).to receive(:pause_queue).and_return(true)
+          allow(Services::QueueMonitor).to receive(:paused_queues).and_return([])
+
+          post :pause, format: :json
+
+          expect(response).to have_http_status(:ok)
+        end
+      end
+
+      context "admin key from ENV variable" do
+        let(:env_admin_key) { "env_admin_key_456" }
+
+        before do
+          allow(Rails.application.credentials).to receive(:dig).with(:admin_key).and_return(nil)
+          allow(ENV).to receive(:[]).with("ADMIN_KEY").and_return(env_admin_key)
+        end
+
+        it "authenticates with correct ENV admin key using secure_compare" do
+          request.headers["X-Admin-Key"] = env_admin_key
+
+          expect(ActiveSupport::SecurityUtils).to receive(:secure_compare)
+            .with(env_admin_key, env_admin_key)
+            .and_call_original
+
+          allow(Services::QueueMonitor).to receive(:pause_queue).and_return(true)
+          allow(Services::QueueMonitor).to receive(:paused_queues).and_return([])
+
+          post :pause, format: :json
+
+          expect(response).to have_http_status(:ok)
+        end
+
+        it "rejects incorrect key against ENV admin key" do
+          request.headers["X-Admin-Key"] = "wrong_key"
+
+          post :pause, format: :json
+
+          expect(response).to have_http_status(:unauthorized)
+        end
       end
     end
   end
@@ -486,10 +638,34 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
       end
     end
 
+    describe "#scoped_stream_name" do
+      it "returns session-scoped stream name" do
+        expect(controller.send(:scoped_stream_name)).to eq("queue_updates_#{test_session_id}")
+      end
+
+      it "uses QueueChannel.stream_name_for to generate the name" do
+        expect(QueueChannel).to receive(:stream_name_for).with(test_session_id).and_call_original
+        controller.send(:scoped_stream_name)
+      end
+    end
+
     describe "#broadcast_queue_update" do
-      it "broadcasts queue updates via ActionCable" do
+      context "when session ID is nil" do
+        before do
+          allow(controller).to receive(:current_request_session_id).and_return(nil)
+        end
+
+        it "skips the broadcast and logs a warning" do
+          expect(ActionCable.server).not_to receive(:broadcast)
+          expect(Rails.logger).to receive(:warn).with(/Skipping queue update broadcast/)
+
+          controller.send(:broadcast_queue_update, "paused", "default")
+        end
+      end
+
+      it "broadcasts queue updates to session-scoped channel via ActionCable" do
         expect(ActionCable.server).to receive(:broadcast).with(
-          "queue_updates",
+          "queue_updates_#{test_session_id}",
           hash_including(
             action: "paused",
             queue_name: "default",
@@ -501,9 +677,16 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         controller.send(:broadcast_queue_update, "paused", "default")
       end
 
+      it "does not broadcast to the global queue_updates channel" do
+        expect(ActionCable.server).not_to receive(:broadcast).with("queue_updates", anything)
+        allow(ActionCable.server).to receive(:broadcast).with("queue_updates_#{test_session_id}", anything)
+
+        controller.send(:broadcast_queue_update, "paused", "default")
+      end
+
       it "handles broadcasting errors gracefully" do
         allow(ActionCable.server).to receive(:broadcast).and_raise(StandardError, "Connection failed")
-        expect(Rails.logger).to receive(:error).with(/Failed to broadcast queue update/)
+        expect(Rails.logger).to receive(:error).with(/Error al transmitir actualización de cola/)
 
         expect {
           controller.send(:broadcast_queue_update, "paused", "default")
@@ -512,9 +695,22 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
     end
 
     describe "#broadcast_job_update" do
-      it "broadcasts job updates via ActionCable" do
+      context "when session ID is nil" do
+        before do
+          allow(controller).to receive(:current_request_session_id).and_return(nil)
+        end
+
+        it "skips the broadcast and logs a warning" do
+          expect(ActionCable.server).not_to receive(:broadcast)
+          expect(Rails.logger).to receive(:warn).with(/Skipping job update broadcast/)
+
+          controller.send(:broadcast_job_update, "retried", "123")
+        end
+      end
+
+      it "broadcasts job updates to session-scoped channel via ActionCable" do
         expect(ActionCable.server).to receive(:broadcast).with(
-          "queue_updates",
+          "queue_updates_#{test_session_id}",
           hash_including(
             action: "job_retried",
             job_id: "123",
@@ -522,6 +718,13 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
             failed_count: 1
           )
         )
+
+        controller.send(:broadcast_job_update, "retried", "123")
+      end
+
+      it "does not broadcast to the global queue_updates channel" do
+        expect(ActionCable.server).not_to receive(:broadcast).with("queue_updates", anything)
+        allow(ActionCable.server).to receive(:broadcast).with("queue_updates_#{test_session_id}", anything)
 
         controller.send(:broadcast_job_update, "retried", "123")
       end

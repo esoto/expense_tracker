@@ -314,7 +314,7 @@ export default class extends Controller {
         position: 'right',
         title: {
           display: true,
-          text: 'Conteo de Coincidencias',
+          text: 'Cantidad de Coincidencias',
           font: {
             size: 12
           }
@@ -483,7 +483,7 @@ export default class extends Controller {
             <p class="text-slate-500">${message}</p>
             <button class="mt-3 text-teal-600 hover:text-teal-700 text-sm font-medium"
                     data-action="click->pattern-chart#loadChart">
-              Intentar de Nuevo
+              Intentar de nuevo
             </button>
           </div>
         </div>

@@ -339,7 +339,7 @@ RSpec.describe "Dashboard Inline Actions", type: :system, js: true, tier: :syste
       expect(page).not_to have_content("Pending Restaurant", wait: 3)
 
       # Success toast
-      expect(page).to have_content("Gasto eliminado exitosamente")
+      expect(page).to have_content("Gasto eliminado")
     end
 
     it "closes confirmation when pressing Escape" do

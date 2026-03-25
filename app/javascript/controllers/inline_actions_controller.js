@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
-import { shouldSuppressShortcut } from "../utilities/keyboard_shortcut_helpers"
-import { createUndoNotification } from "../utilities/undo_notification_helper"
+import { shouldSuppressShortcut } from "utilities/keyboard_shortcut_helpers"
+import { createUndoNotification } from "utilities/undo_notification_helper"
 
 export default class extends Controller {
   static targets = ["actionsContainer", "categoryDropdown", "deleteConfirmation", "statusButton", "duplicateButton"]

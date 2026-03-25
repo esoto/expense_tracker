@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import { shouldSuppressShortcut } from "../utilities/keyboard_shortcut_helpers"
+import { shouldSuppressShortcut } from "utilities/keyboard_shortcut_helpers"
 
 export default class extends Controller {
   static targets = ["importModal", "searchField"]

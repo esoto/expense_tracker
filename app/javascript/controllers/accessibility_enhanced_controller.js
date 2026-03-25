@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import { shouldSuppressShortcut } from "../utilities/keyboard_shortcut_helpers"
+import { shouldSuppressShortcut } from "utilities/keyboard_shortcut_helpers"
 
 /**
  * Accessibility Enhanced Controller

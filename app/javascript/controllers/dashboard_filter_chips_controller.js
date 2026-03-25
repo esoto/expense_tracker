@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
-import FilterStateManager from "../utilities/filter_state_manager"
-import { shouldSuppressShortcut } from "../utilities/keyboard_shortcut_helpers"
+import FilterStateManager from "utilities/filter_state_manager"
+import { shouldSuppressShortcut } from "utilities/keyboard_shortcut_helpers"
 
 // Dashboard Filter Chips Controller
 // Manages filter chip selection, state management, and real-time filtering

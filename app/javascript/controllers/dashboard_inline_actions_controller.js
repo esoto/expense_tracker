@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
-import { shouldSuppressShortcut } from "../utilities/keyboard_shortcut_helpers"
-import { createUndoNotification } from "../utilities/undo_notification_helper"
+import { shouldSuppressShortcut } from "utilities/keyboard_shortcut_helpers"
+import { createUndoNotification } from "utilities/undo_notification_helper"
 
 // Dashboard Inline Actions Controller for Epic 3 Task 3.3
 // Handles quick actions: categorize, status toggle, duplicate, and delete

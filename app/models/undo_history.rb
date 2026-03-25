@@ -4,7 +4,7 @@
 # Tracks soft deletions and enables undo functionality
 class UndoHistory < ApplicationRecord
   # Constants
-  UNDO_WINDOW = 30.seconds
+  UNDO_WINDOW = 5.minutes
   MAX_UNDO_RECORDS = 100
 
   # Associations

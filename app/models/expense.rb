@@ -22,6 +22,9 @@ class Expense < ApplicationRecord
   validates :currency, presence: true
   validate :category_exists_if_provided
 
+  # Attributes whose changes warrant dashboard cache invalidation
+  CACHE_RELEVANT_ATTRIBUTES = %w[amount category_id transaction_date status email_account_id deleted_at].freeze
+
   # Callbacks
   before_save :ensure_bank_name
   before_save :normalize_merchant_name
@@ -170,6 +173,7 @@ class Expense < ApplicationRecord
   end
 
   def clear_dashboard_cache
+    return unless saved_changes.keys.intersect?(CACHE_RELEVANT_ATTRIBUTES)
     Services::DashboardService.clear_cache
   end
 

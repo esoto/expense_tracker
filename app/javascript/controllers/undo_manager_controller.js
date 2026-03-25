@@ -1,14 +1,14 @@
 import { Controller } from "@hotwired/stimulus"
 
 // Undo Manager Controller
-// Manages undo notifications with a 30-second countdown.
+// Manages undo notifications with a 5-minute countdown.
 // Once the notification closes (timer expires or user dismisses), the action is permanent.
 export default class extends Controller {
   static targets = ["message", "timer", "undoButton", "progressBar"]
   static values = {
     undoId: Number,
-    timeRemaining: { type: Number, default: 30 },
-    totalTime: { type: Number, default: 30 }
+    timeRemaining: { type: Number, default: 300 },
+    totalTime: { type: Number, default: 300 }
   }
 
   connect() {
@@ -28,7 +28,7 @@ export default class extends Controller {
     const { undoId, message, timeRemaining } = event.detail
 
     this.undoIdValue = undoId
-    this.timeRemainingValue = timeRemaining || 30
+    this.timeRemainingValue = timeRemaining || 300
     this.totalTimeValue = this.timeRemainingValue
 
     if (this.hasMessageTarget) {
@@ -150,7 +150,7 @@ export default class extends Controller {
       this.hide()
       this.showToast("Gasto restaurado exitosamente", "success")
 
-      setTimeout(() => window.location.reload(), 1500)
+      setTimeout(() => Turbo.visit(window.location.href, { action: "replace" }), 1500)
     } catch (error) {
       console.error("Undo error:", error)
       this.showToast("No se pudo deshacer la acción", "error")

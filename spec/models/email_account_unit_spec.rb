@@ -5,7 +5,7 @@ RSpec.describe EmailAccount, type: :model, unit: true do
   subject(:email_account) { build(:email_account) }
 
   describe 'associations' do
-    it { should have_many(:expenses).dependent(:destroy) }
+    it { should have_many(:expenses).dependent(:nullify) }
     it { should have_many(:budgets).dependent(:destroy) }
     it { should have_many(:parsing_rules).with_foreign_key(:bank_name) }
     it { should have_many(:sync_session_accounts).dependent(:destroy) }

@@ -374,7 +374,22 @@ module Services
   end
 
   def cache_key
-    [ "expense_filter", generate_filters_hash, page, per_page ].join("/")
+    params_hash = Digest::MD5.hexdigest({
+      account_ids: account_ids,
+      period: period,
+      dates: [ start_date, end_date ],
+      dashboard_dates: [ date_from, date_to ],
+      categories: category_ids,
+      banks: banks,
+      amounts: [ min_amount, max_amount ],
+      status: status,
+      search: search_query,
+      sort: [ sort_by, sort_direction ],
+      page: page,
+      per_page: per_page
+    }.sort.to_s)
+    expense_version = Expense.maximum(:updated_at).to_i
+    "expense_filter:#{params_hash}:v#{expense_version}"
   end
 
   def check_index_usage(scope)

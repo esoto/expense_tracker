@@ -1,0 +1,74 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Verification script for PER-128: ExpenseFilterService caching
+# Usage: bin/rails runner bin/verify_expense_filter_cache
+
+Rails.cache.clear
+
+email_account = EmailAccount.first
+unless email_account
+  puts "ERROR: No EmailAccount found. Run bin/rails db:seed first."
+  exit 1
+end
+
+params = { account_ids: [ email_account.id ] }
+
+puts "=== ExpenseFilterService Caching Verification (PER-128) ==="
+puts
+
+# Show cache key format
+service = Services::ExpenseFilterService.new(params)
+cache_key = service.send(:cache_key)
+puts "Cache key: #{cache_key}"
+puts "  Format matches expected pattern: #{cache_key.match?(/\Aexpense_filter:[a-f0-9]{32}:v\d+\z/) ? 'YES ✓' : 'NO ✗'}"
+puts
+
+# First call — should hit the database
+puts "--- First call (should hit DB) ---"
+t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+result1 = Services::ExpenseFilterService.new(params).call
+t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+puts "  Expenses returned: #{result1.expenses.count}"
+puts "  Query time:        #{result1.performance_metrics[:query_time_ms]}ms"
+puts "  Cached flag:       #{result1.performance_metrics[:cached]}"
+puts "  Wall time:         #{((t1 - t0) * 1000).round(2)}ms"
+
+# Verify value is now in cache
+cached_value = Rails.cache.read(cache_key)
+puts "  Value in cache:    #{cached_value.present? ? 'YES ✓' : 'NO ✗'}"
+puts
+
+# Second call — should be served from cache
+puts "--- Second call (should hit cache) ---"
+t2 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+result2 = Services::ExpenseFilterService.new(params).call
+t3 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+puts "  Expenses returned: #{result2.expenses.count}"
+puts "  Wall time:         #{((t3 - t2) * 1000).round(2)}ms"
+puts "  Results consistent: #{result1.expenses.count == result2.expenses.count ? 'YES ✓' : 'NO ✗'}"
+puts
+
+# Different params — should use a different cache key
+puts "--- Different params (new cache key) ---"
+params2 = params.merge(sort_by: "amount", sort_direction: "asc")
+key2 = Services::ExpenseFilterService.new(params2).send(:cache_key)
+puts "  New cache key:   #{key2}"
+puts "  Keys differ:     #{cache_key != key2 ? 'YES ✓' : 'NO ✗'}"
+puts
+
+# Touch an expense and verify cache key changes
+puts "--- After touching an expense (cache invalidation) ---"
+expense = Expense.where(email_account_id: email_account.id).first
+if expense
+  expense.touch
+  new_key = Services::ExpenseFilterService.new(params).send(:cache_key)
+  puts "  Old cache key: #{cache_key}"
+  puts "  New cache key: #{new_key}"
+  puts "  Cache invalidated: #{cache_key != new_key ? 'YES ✓' : 'NO ✗'}"
+else
+  puts "  (No expenses found to touch)"
+end
+
+puts
+puts "=== Verification complete ==="

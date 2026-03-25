@@ -457,7 +457,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         before do
           allow(expense).to receive(:save).and_return(false)
           allow(expense).to receive(:errors).and_return(
-            instance_double(ActiveModel::Errors, full_messages: [ 'Amount is invalid' ])
+            instance_double(ActiveModel::Errors, full_messages: [ 'Amount no es válido' ])
           )
         end
 
@@ -468,7 +468,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
 
         it 'adds error message' do
           parser.send(:create_expense, parsed_data)
-          expect(parser.errors).to include('Failed to save expense: Amount is invalid')
+          expect(parser.errors).to include('Failed to save expense: Amount no es válido')
         end
       end
     end

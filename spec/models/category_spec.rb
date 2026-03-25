@@ -108,7 +108,7 @@ RSpec.describe Category, type: :model, integration: true do
       long_name = 'a' * 256
       category = build(:category, name: long_name)
       expect(category).not_to be_valid
-      expect(category.errors[:name]).to include('is too long (maximum is 255 characters)')
+      expect(category.errors[:name]).to include('es demasiado largo (255 caracteres máximo)')
     end
 
     it 'prevents deeper circular references' do

@@ -16,14 +16,14 @@ RSpec.describe EmailAccount, type: :model, integration: true do
     it 'validates email format' do
       email_account = build(:email_account, email: 'invalid-email')
       expect(email_account).not_to be_valid
-      expect(email_account.errors[:email]).to include('is invalid')
+      expect(email_account.errors[:email]).to include("no es válido")
     end
 
     it 'requires unique email' do
       create(:email_account, email: 'test@example.com')
       duplicate = build(:email_account, email: 'test@example.com')
       expect(duplicate).not_to be_valid
-      expect(duplicate.errors[:email]).to include('has already been taken')
+      expect(duplicate.errors[:email]).to include('ya está en uso')
     end
 
     it 'requires provider' do
@@ -41,7 +41,7 @@ RSpec.describe EmailAccount, type: :model, integration: true do
 
       invalid_email_account = build(:email_account, provider: 'invalid')
       expect(invalid_email_account).not_to be_valid
-      expect(invalid_email_account.errors[:provider]).to include('is not included in the list')
+      expect(invalid_email_account.errors[:provider]).to include('no está incluido en la lista')
     end
 
     it 'requires bank_name' do

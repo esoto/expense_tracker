@@ -53,8 +53,7 @@ RSpec.describe Expense, type: :model, integration: true do
       expect(invalid_expense.errors[:category]).to include("must exist")
     end
 
-    # TODO: Flaky test - order-dependent failure. See Linear PER-120
-    xit 'validates currency inclusion' do
+    it 'validates currency inclusion' do
       valid_currencies = [ 'crc', 'usd', 'eur' ]
       valid_currencies.each do |currency|
         expense = build(:expense, currency: currency)
@@ -190,8 +189,7 @@ RSpec.describe Expense, type: :model, integration: true do
 
 
     describe 'status helper methods', integration: true do
-      # TODO: Flaky test - order-dependent failure. See Linear PER-120
-      xit 'has helper methods for all statuses' do
+      it 'has helper methods for all statuses' do
         pending_expense = create(:expense, amount: 100, transaction_date: Time.current, email_account: email_account, status: 'pending')
         processed_expense = create(:expense, amount: 100, transaction_date: Time.current, email_account: email_account, status: 'processed')
         failed_expense = create(:expense, amount: 100, transaction_date: Time.current, email_account: email_account, status: 'failed')

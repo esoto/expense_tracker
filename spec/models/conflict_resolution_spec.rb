@@ -24,7 +24,7 @@ RSpec.describe ConflictResolution, type: :model, integration: true do
     it 'rejects invalid actions' do
       resolution = build(:conflict_resolution, sync_conflict: sync_conflict, action: 'invalid_action')
       expect(resolution).not_to be_valid
-      expect(resolution.errors[:action]).to include('is not included in the list')
+      expect(resolution.errors[:action]).to include('no está incluido en la lista')
     end
 
     it 'validates resolution_method inclusion when present' do
@@ -43,7 +43,7 @@ RSpec.describe ConflictResolution, type: :model, integration: true do
     it 'rejects invalid resolution_method' do
       resolution = build(:conflict_resolution, sync_conflict: sync_conflict, resolution_method: 'invalid_method')
       expect(resolution).not_to be_valid
-      expect(resolution.errors[:resolution_method]).to include('is not included in the list')
+      expect(resolution.errors[:resolution_method]).to include('no está incluido en la lista')
     end
   end
 

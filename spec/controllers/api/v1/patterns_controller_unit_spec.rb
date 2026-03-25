@@ -162,13 +162,13 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
       before do
         allow(CategorizationPattern).to receive(:new).and_return(categorization_pattern)
         allow(categorization_pattern).to receive(:save).and_return(false)
-        allow(categorization_pattern).to receive(:errors).and_return(double("errors", full_messages: [ "Pattern value can't be blank" ]))
+        allow(categorization_pattern).to receive(:errors).and_return(double("errors", full_messages: [ "Pattern value no puede estar en blanco" ]))
       end
 
       it "renders error response with validation errors" do
         expect(controller).to receive(:render_error).with(
           "Failed to create pattern",
-          [ "Pattern value can't be blank" ]
+          [ "Pattern value no puede estar en blanco" ]
         )
         post :create, params: valid_params
       end
@@ -221,13 +221,13 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
     context "with invalid parameters" do
       before do
         allow(categorization_pattern).to receive(:update).and_return(false)
-        allow(categorization_pattern).to receive(:errors).and_return(double("errors", full_messages: [ "Pattern value can't be blank" ]))
+        allow(categorization_pattern).to receive(:errors).and_return(double("errors", full_messages: [ "Pattern value no puede estar en blanco" ]))
       end
 
       it "renders error response with validation errors" do
         expect(controller).to receive(:render_error).with(
           "Failed to update pattern",
-          [ "Pattern value can't be blank" ]
+          [ "Pattern value no puede estar en blanco" ]
         )
         patch :update, params: update_params
       end

@@ -30,7 +30,7 @@ RSpec.describe FailedBroadcastStore, type: :model, integration: true do
       duplicate = build(:failed_broadcast_store, sidekiq_job_id: 'unique_job_id')
 
       expect(duplicate).not_to be_valid
-      expect(duplicate.errors[:sidekiq_job_id]).to include('has already been taken')
+      expect(duplicate.errors[:sidekiq_job_id]).to include('ya está en uso')
     end
 
     it 'allows nil sidekiq_job_id' do

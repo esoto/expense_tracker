@@ -41,7 +41,7 @@ export default class extends Controller {
 
   resumeAutoRemove() {
     if (this.timeout || !this.element.isConnected) return
-    const resumeDelay = Math.min(this.delayValue / 2, this.delayValue)
+    const resumeDelay = Math.min(this.delayValue / 2, 2000)
     this.timeout = setTimeout(() => this.dismiss(), resumeDelay)
   }
 
@@ -54,7 +54,12 @@ export default class extends Controller {
       this.timeout = null
     }
 
-    this.element.classList.add("opacity-0", "transition-opacity", `duration-${this.constructor.FADE_DURATION}`)
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      this.element.remove()
+      return
+    }
+
+    this.element.classList.add("opacity-0", "transition-opacity", "duration-300")
     setTimeout(() => this.element.remove(), this.constructor.FADE_DURATION)
   }
 }

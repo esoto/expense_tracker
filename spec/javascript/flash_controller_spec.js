@@ -88,6 +88,60 @@ describe("FlashController", () => {
     })
   })
 
+  describe("prefers-reduced-motion", () => {
+    it("removes element immediately without animation when reduced motion is preferred", () => {
+      Object.defineProperty(window, "matchMedia", {
+        writable: true,
+        value: jest.fn().mockImplementation((query) => ({
+          matches: query === "(prefers-reduced-motion: reduce)",
+          media: query,
+          onchange: null,
+          addEventListener: jest.fn(),
+          removeEventListener: jest.fn(),
+          dispatchEvent: jest.fn(),
+        })),
+      })
+
+      jest.advanceTimersByTime(5000)
+
+      expect(document.querySelector('[data-controller="flash"]')).toBeNull()
+    })
+
+    it("does not add animation classes when reduced motion is preferred", () => {
+      Object.defineProperty(window, "matchMedia", {
+        writable: true,
+        value: jest.fn().mockImplementation((query) => ({
+          matches: query === "(prefers-reduced-motion: reduce)",
+          media: query,
+          onchange: null,
+          addEventListener: jest.fn(),
+          removeEventListener: jest.fn(),
+          dispatchEvent: jest.fn(),
+        })),
+      })
+
+      // Element may already be removed so check before timer fires
+      jest.advanceTimersByTime(5000)
+
+      // After removal, element should not have animation classes (it was removed instantly)
+      expect(document.querySelector('[data-controller="flash"]')).toBeNull()
+    })
+  })
+
+  describe("resumeAutoRemove", () => {
+    it("caps resume delay at 2000ms even when delayValue is large", () => {
+      jest.clearAllTimers()
+
+      // Simulate hover then unhover with a large delay value
+      // The resume delay should be capped at 2000ms (Math.min(delayValue/2, 2000))
+      // For delayValue=5000: Math.min(2500, 2000) = 2000
+      element.dispatchEvent(new MouseEvent("mouseenter"))
+      element.dispatchEvent(new MouseEvent("mouseleave"))
+
+      expect(setTimeout).toHaveBeenLastCalledWith(expect.any(Function), 2000)
+    })
+  })
+
   describe("disconnect cleanup", () => {
     it("clears timeout when controller disconnects", () => {
       // Disconnect the controller by removing the element

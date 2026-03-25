@@ -24,7 +24,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       get dashboard_expenses_path
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("Background Job Queue")
+      expect(response.body).to include("Cola de Trabajos en Segundo Plano")
       expect(response.body).to include("queue-monitor")
     end
 
@@ -39,16 +39,16 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
     it "shows queue metrics sections" do
       get dashboard_expenses_path
 
-      expect(response.body).to include("Pending")
-      expect(response.body).to include("Processing")
-      expect(response.body).to include("Completed")
-      expect(response.body).to include("Failed")
+      expect(response.body).to include("Pendientes")
+      expect(response.body).to include("Procesando")
+      expect(response.body).to include("Completados")
+      expect(response.body).to include("Fallidos")
     end
 
     it "includes control buttons" do
       get dashboard_expenses_path
 
-      expect(response.body).to include("Pause All")
+      expect(response.body).to include("Pausar Todo")
       expect(response.body).to include("data-action=\"click->queue-monitor#togglePause\"")
       expect(response.body).to include("data-action=\"click->queue-monitor#refresh\"")
     end
@@ -100,7 +100,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
         json = JSON.parse(response.body)
 
         expect(json["success"]).to be true
-        expect(json["message"]).to include("All queues have been paused")
+        expect(json["message"]).to include("Todas las colas han sido pausadas")
       end
 
       it "pauses specific queue" do
@@ -113,7 +113,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
 
-        expect(json["message"]).to include("Queue 'default' has been paused")
+        expect(json["message"]).to include("La cola 'default' ha sido pausada")
       end
     end
 
@@ -129,7 +129,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
         json = JSON.parse(response.body)
 
         expect(json["success"]).to be true
-        expect(json["message"]).to include("All queues have been resumed")
+        expect(json["message"]).to include("Todas las colas han sido reanudadas")
       end
     end
 
@@ -155,7 +155,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
           json = JSON.parse(response.body)
 
           expect(json["success"]).to be true
-          expect(json["message"]).to include("Job #{job_id} has been queued for retry")
+          expect(json["message"]).to include("El trabajo #{job_id} ha sido encolado para reintentar")
         end
       end
 
@@ -171,7 +171,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
         if response.status == 404
           json = JSON.parse(response.body)
           expect(json["success"]).to be false
-          expect(json["error"]).to eq("Job not found")
+          expect(json["error"]).to eq("Trabajo no encontrado")
         end
       end
     end
@@ -197,7 +197,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
           json = JSON.parse(response.body)
 
           expect(json["success"]).to be true
-          expect(json["message"]).to include("Job #{job_id} has been cleared")
+          expect(json["message"]).to include("El trabajo #{job_id} ha sido limpiado")
         end
       end
     end
@@ -217,7 +217,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
           json = JSON.parse(response.body)
 
           expect(json["success"]).to be true
-          expect(json["message"]).to include("5 failed jobs have been queued for retry")
+          expect(json["message"]).to include("5 trabajos fallidos han sido encolados para reintentar")
           expect(json["count"]).to eq(5)
         end
       end
@@ -268,7 +268,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       context "when system is healthy" do
         before do
           allow(Services::QueueMonitor).to receive(:calculate_health_status).and_return(
-            { status: "healthy", message: "Queue system operating normally" }
+            { status: "healthy", message: "Queue system operando normalmente" }
           )
         end
 
@@ -279,14 +279,14 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
           json = JSON.parse(response.body)
 
           expect(json["status"]).to eq("healthy")
-          expect(json["message"]).to include("operating normally")
+          expect(json["message"]).to include("operando normalmente")
         end
       end
 
       context "when system is critical" do
         before do
           allow(Services::QueueMonitor).to receive(:calculate_health_status).and_return(
-            { status: "critical", message: "No healthy workers available" }
+            { status: "critical", message: "No hay trabajadores saludables available" }
           )
         end
 
@@ -297,7 +297,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
           json = JSON.parse(response.body)
 
           expect(json["status"]).to eq("critical")
-          expect(json["message"]).to include("No healthy workers")
+          expect(json["message"]).to include("No hay trabajadores saludables")
         end
       end
     end
@@ -392,7 +392,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       },
       health_status: {
         status: "healthy",
-        message: "Queue system operating normally"
+        message: "Queue system operando normalmente"
       }
     })
 

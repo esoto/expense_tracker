@@ -33,7 +33,7 @@ RSpec.describe ParsingRule, type: :model, integration: true do
     it 'validates active as boolean' do
       rule = ParsingRule.new(bank_name: 'BAC', amount_pattern: 'test', date_pattern: 'test', active: nil)
       expect(rule).not_to be_valid
-      expect(rule.errors[:active]).to include('is not included in the list')
+      expect(rule.errors[:active]).to include('no está incluido en la lista')
     end
   end
 

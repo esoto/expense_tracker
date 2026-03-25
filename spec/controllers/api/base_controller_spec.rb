@@ -15,7 +15,7 @@ RSpec.describe Api::BaseController, type: :controller, integration: true do
 
     def create
       expense = Expense.new
-      expense.errors.add(:base, "Name can't be blank")
+      expense.errors.add(:base, "Name no puede estar en blanco")
       raise ActiveRecord::RecordInvalid.new(expense)
     end
 

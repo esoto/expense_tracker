@@ -12,7 +12,7 @@ RSpec.describe SyncErrorHandling, type: :controller, unit: true do
 
     def validation_error
       expense = Expense.new
-      expense.errors.add(:amount, "can't be blank")
+      expense.errors.add(:amount, "no puede estar en blanco")
       expense.errors.add(:category, "must exist")
       raise ActiveRecord::RecordInvalid.new(expense)
     end
@@ -66,7 +66,7 @@ RSpec.describe SyncErrorHandling, type: :controller, unit: true do
       get :validation_error
       expect(response).to redirect_to('/sync_sessions')
       expect(flash[:alert]).to include("Error de validación:")
-      expect(flash[:alert]).to include("Amount can't be blank")
+      expect(flash[:alert]).to include("Amount no puede estar en blanco")
       expect(flash[:alert]).to include("Category must exist")
     end
 
@@ -74,7 +74,7 @@ RSpec.describe SyncErrorHandling, type: :controller, unit: true do
       get :validation_error, format: :json
       expect(response).to have_http_status(:unprocessable_content)
       errors = JSON.parse(response.body)["errors"]
-      expect(errors).to include("Amount can't be blank")
+      expect(errors).to include("Amount no puede estar en blanco")
       expect(errors).to include("Category must exist")
     end
   end

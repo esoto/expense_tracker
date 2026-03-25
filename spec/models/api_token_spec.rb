@@ -25,7 +25,7 @@ RSpec.describe ApiToken, type: :model, integration: true do
     it 'validates active as boolean' do
       token = build(:api_token, name: 'Test', expires_at: 1.year.from_now, active: nil)
       expect(token).not_to be_valid
-      expect(token.errors[:active]).to include('is not included in the list')
+      expect(token.errors[:active]).to include('no está incluido en la lista')
     end
   end
 
@@ -257,7 +257,7 @@ RSpec.describe ApiToken, type: :model, integration: true do
       long_name = 'a' * 256
       token = build(:api_token, name: long_name)
       expect(token).not_to be_valid
-      expect(token.errors[:name]).to include('is too long (maximum is 255 characters)')
+      expect(token.errors[:name]).to include('es demasiado largo (255 caracteres máximo)')
     end
 
     it 'handles token creation when token_digest already exists' do

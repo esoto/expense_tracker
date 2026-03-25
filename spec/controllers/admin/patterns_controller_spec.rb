@@ -618,7 +618,7 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
       it "handles validation errors on update" do
         allow(pattern).to receive(:update).and_return(false)
         allow(pattern).to receive(:errors).and_return(
-          double(any?: true, full_messages: [ "Pattern value can't be blank" ])
+          double(any?: true, full_messages: [ "Pattern value no puede estar en blanco" ])
         )
 
         patch :update, params: {

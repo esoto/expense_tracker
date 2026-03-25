@@ -2,11 +2,11 @@
 
 require 'rails_helper'
 
-RSpec.describe FailedBroadcastStore, type: :model, integration: true do
+RSpec.describe FailedBroadcastStore, type: :model do
   include ActiveSupport::Testing::TimeHelpers
-  let(:sync_session) { create(:sync_session) }
 
-  describe 'validations', integration: true do
+  describe 'validations' do
+    # Performance: build avoids DB for shoulda-matchers validation reflection
     subject { build(:failed_broadcast_store) }
 
     it { should validate_presence_of(:channel_name) }
@@ -59,54 +59,55 @@ RSpec.describe FailedBroadcastStore, type: :model, integration: true do
     end
   end
 
-  describe 'scopes', integration: true do
+  describe 'scopes' do
+    # Performance: shared setup — single set of scope records covers all scope tests
     let!(:unrecovered_record) { create(:failed_broadcast_store, failed_at: 10.minutes.ago) }
-    let!(:recovered_record) { create(:failed_broadcast_store, :recovered, failed_at: 30.minutes.ago) }
-    let!(:critical_record) { create(:failed_broadcast_store, :critical_priority, failed_at: 20.minutes.ago) }
-    let!(:old_record) { create(:failed_broadcast_store, failed_at: 2.days.ago) }
+    let!(:recovered_record)   { create(:failed_broadcast_store, :recovered, failed_at: 30.minutes.ago) }
+    let!(:critical_record)    { create(:failed_broadcast_store, :critical_priority, failed_at: 20.minutes.ago) }
+    let!(:old_record)         { create(:failed_broadcast_store, failed_at: 2.days.ago) }
 
-    describe '.unrecovered', integration: true do
+    describe '.unrecovered' do
       it 'returns only unrecovered records' do
         expect(described_class.unrecovered).to include(unrecovered_record, critical_record, old_record)
         expect(described_class.unrecovered).not_to include(recovered_record)
       end
     end
 
-    describe '.recovered', integration: true do
+    describe '.recovered' do
       it 'returns only recovered records' do
         expect(described_class.recovered).to include(recovered_record)
         expect(described_class.recovered).not_to include(unrecovered_record, critical_record, old_record)
       end
     end
 
-    describe '.by_priority', integration: true do
+    describe '.by_priority' do
       it 'filters by priority level' do
         expect(described_class.by_priority('critical')).to include(critical_record)
         expect(described_class.by_priority('critical')).not_to include(unrecovered_record)
       end
     end
 
-    describe '.by_channel', integration: true do
+    describe '.by_channel' do
       it 'filters by channel name' do
         expect(described_class.by_channel('SyncStatusChannel')).to include(unrecovered_record)
       end
     end
 
-    describe '.by_error_type', integration: true do
+    describe '.by_error_type' do
       it 'filters by error type' do
         expect(described_class.by_error_type('connection_timeout')).to include(unrecovered_record)
         expect(described_class.by_error_type('job_death')).to include(critical_record)
       end
     end
 
-    describe '.recent_failures', integration: true do
+    describe '.recent_failures' do
       it 'orders by failed_at descending' do
         expect(described_class.recent_failures.first).to eq(unrecovered_record)
         expect(described_class.recent_failures.last).to eq(old_record)
       end
     end
 
-    describe '.ready_for_retry', integration: true do
+    describe '.ready_for_retry' do
       let!(:max_retries_record) { create(:failed_broadcast_store, :max_retries_reached) }
 
       it 'includes unrecovered records with retry attempts remaining' do
@@ -116,7 +117,7 @@ RSpec.describe FailedBroadcastStore, type: :model, integration: true do
     end
   end
 
-  describe '.max_retry_attempts', integration: true do
+  describe '.max_retry_attempts' do
     it 'returns correct retry attempts for each priority' do
       expect(described_class.max_retry_attempts('critical')).to eq(5)
       expect(described_class.max_retry_attempts('high')).to eq(4)
@@ -126,7 +127,9 @@ RSpec.describe FailedBroadcastStore, type: :model, integration: true do
     end
   end
 
-  describe '.create_from_job_failure!', integration: true do
+  describe '.create_from_job_failure!' do
+    # Performance: share sync_session across the two create_from_job_failure tests
+    let(:sync_session) { create(:sync_session) }
     let(:job_data) do
       {
         'args' => [ 'SyncStatusChannel', sync_session.id, 'SyncSession', { status: 'processing' }, 'high' ],
@@ -167,7 +170,8 @@ RSpec.describe FailedBroadcastStore, type: :model, integration: true do
     end
   end
 
-  describe '.classify_error', integration: true do
+  describe '.classify_error' do
+    # Performance: no DB needed — pure class method tests
     it 'classifies ActiveRecord::RecordNotFound' do
       error = ActiveRecord::RecordNotFound.new
       expect(described_class.classify_error(error)).to eq('record_not_found')
@@ -196,7 +200,7 @@ RSpec.describe FailedBroadcastStore, type: :model, integration: true do
     end
   end
 
-  describe '.recovery_stats', integration: true do
+  describe '.recovery_stats' do
     before do
       travel_to 2.hours.ago do
         create(:failed_broadcast_store, error_type: 'connection_timeout', priority: 'high')
@@ -236,15 +240,15 @@ RSpec.describe FailedBroadcastStore, type: :model, integration: true do
 
       # Create records within the last hour by explicitly setting failed_at
       current_time = Time.current
-      record1 = create(:failed_broadcast_store,
-                      error_type: 'validation_error',
-                      priority: 'medium',
-                      failed_at: current_time)
+      create(:failed_broadcast_store,
+             error_type: 'validation_error',
+             priority: 'medium',
+             failed_at: current_time)
 
-      record2 = create(:failed_broadcast_store,
-                      error_type: 'connection_timeout',
-                      priority: 'high',
-                      failed_at: current_time - 30.minutes)
+      create(:failed_broadcast_store,
+             error_type: 'connection_timeout',
+             priority: 'high',
+             failed_at: current_time - 30.minutes)
 
       # Create record outside the time window (should be excluded)
       create(:failed_broadcast_store,
@@ -260,10 +264,10 @@ RSpec.describe FailedBroadcastStore, type: :model, integration: true do
     end
   end
 
-  describe '.cleanup_old_records', integration: true do
-    let!(:old_recovered) { create(:failed_broadcast_store, :recovered, recovered_at: 2.weeks.ago) }
+  describe '.cleanup_old_records' do
+    let!(:old_recovered)    { create(:failed_broadcast_store, :recovered, recovered_at: 2.weeks.ago) }
     let!(:recent_recovered) { create(:failed_broadcast_store, :recovered, recovered_at: 2.days.ago) }
-    let!(:unrecovered) { create(:failed_broadcast_store) }
+    let!(:unrecovered)      { create(:failed_broadcast_store) }
 
     it 'deletes old recovered records' do
       expect {
@@ -281,7 +285,10 @@ RSpec.describe FailedBroadcastStore, type: :model, integration: true do
     end
   end
 
-  describe '#can_retry?', integration: true do
+  describe '#can_retry?' do
+    # Performance: create only when DB constraint (uniqueness/callbacks) matters;
+    # can_retry? is a simple predicate so build suffices — but it checks recovered_at
+    # which is set by callbacks, so use create to be safe
     it 'returns true when unrecovered and under retry limit' do
       record = create(:failed_broadcast_store, retry_count: 2, priority: 'medium')
       expect(record.can_retry?).to be true
@@ -303,7 +310,7 @@ RSpec.describe FailedBroadcastStore, type: :model, integration: true do
     end
   end
 
-  describe '#mark_recovered!', integration: true do
+  describe '#mark_recovered!' do
     let(:record) { create(:failed_broadcast_store) }
 
     it 'marks record as recovered with timestamp' do
@@ -327,7 +334,9 @@ RSpec.describe FailedBroadcastStore, type: :model, integration: true do
     end
   end
 
-  describe '#retry_broadcast!', integration: true do
+  describe '#retry_broadcast!' do
+    # Performance: share sync_session across the entire retry_broadcast! describe block
+    let(:sync_session) { create(:sync_session) }
     let(:record) { create(:failed_broadcast_store, target_id: sync_session.id) }
 
     context 'when retry succeeds' do
@@ -480,7 +489,9 @@ RSpec.describe FailedBroadcastStore, type: :model, integration: true do
     end
   end
 
-  describe '#target_object', integration: true do
+  describe '#target_object' do
+    # Performance: share sync_session across target_object tests
+    let(:sync_session) { create(:sync_session) }
     let(:record) { create(:failed_broadcast_store, target_id: sync_session.id) }
 
     it 'returns target object when it exists' do
@@ -498,7 +509,8 @@ RSpec.describe FailedBroadcastStore, type: :model, integration: true do
     end
   end
 
-  describe '#target_exists?', integration: true do
+  describe '#target_exists?' do
+    let(:sync_session) { create(:sync_session) }
     let(:record) { create(:failed_broadcast_store, target_id: sync_session.id) }
 
     it 'returns true when target exists' do
@@ -511,7 +523,8 @@ RSpec.describe FailedBroadcastStore, type: :model, integration: true do
     end
   end
 
-  describe '#error_description', integration: true do
+  describe '#error_description' do
+    # Performance: build avoids DB for pure display method tests
     it 'returns specific description for record_not_found' do
       record = build(:failed_broadcast_store, :record_not_found)
       expect(record.error_description).to eq('Target object SyncSession#999 not found')
@@ -539,14 +552,14 @@ RSpec.describe FailedBroadcastStore, type: :model, integration: true do
     end
   end
 
-  describe '#age', integration: true do
+  describe '#age' do
     it 'returns time since failure' do
       record = create(:failed_broadcast_store, failed_at: 2.hours.ago)
       expect(record.age).to be_within(1.second).of(2.hours)
     end
   end
 
-  describe '#stale?', integration: true do
+  describe '#stale?' do
     it 'returns true for old recovered records' do
       record = create(:failed_broadcast_store, :recovered, failed_at: 2.weeks.ago)
       expect(record.stale?).to be true

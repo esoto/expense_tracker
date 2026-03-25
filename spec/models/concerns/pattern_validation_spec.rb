@@ -2,8 +2,8 @@
 
 require "rails_helper"
 
-RSpec.describe PatternValidation, integration: true do
-  # Create a test class that includes the concern
+RSpec.describe PatternValidation do
+  # Performance: shared test class created once; category created lazily
   let(:test_class) do
     Class.new(CategorizationPattern) do
       def self.name
@@ -12,10 +12,11 @@ RSpec.describe PatternValidation, integration: true do
     end
   end
 
+  # Performance: lazy let — only tests that touch the DB will create the category
   let(:category) { create(:category) }
   let(:pattern) { test_class.new(category: category) }
 
-  describe "normalization", integration: true do
+  describe "normalization" do
     context "text patterns" do
       it "normalizes merchant patterns to lowercase and strips whitespace" do
         pattern.pattern_type = "merchant"
@@ -74,7 +75,7 @@ RSpec.describe PatternValidation, integration: true do
     end
   end
 
-  describe "validation", integration: true do
+  describe "validation" do
     context "text pattern validation" do
       before do
         pattern.pattern_type = "merchant"
@@ -93,7 +94,6 @@ RSpec.describe PatternValidation, integration: true do
       end
 
       it "rejects control characters" do
-        # Use a control character that won't crash the database query
         pattern.pattern_value = "test\x01pattern"
         expect(pattern).not_to be_valid
         expect(pattern.errors[:pattern_value]).to include("contains invalid control characters")
@@ -241,7 +241,6 @@ RSpec.describe PatternValidation, integration: true do
         pattern.pattern_type = "regex"
         pattern.pattern_value = "((a+|b+)|(c+|d+))*((e+|f+)|(g+|h+))*"
         expect(pattern).not_to be_valid
-        # This pattern triggers ReDoS detection, not complexity score
         expect(pattern.errors[:pattern_value].first).to match(/dangerous regex pattern/)
       end
 
@@ -254,6 +253,7 @@ RSpec.describe PatternValidation, integration: true do
     end
 
     context "duplicate detection" do
+      # Performance: let! required here — the duplicate check queries the DB
       let!(:existing_pattern) do
         create(:categorization_pattern,
                category: category,
@@ -284,7 +284,8 @@ RSpec.describe PatternValidation, integration: true do
     end
   end
 
-  describe "integration with CategorizationPattern", integration: true do
+  describe "integration with CategorizationPattern" do
+    # Performance: build for the module ancestry check; only save test needs DB
     let(:pattern) { build(:categorization_pattern, category: category) }
 
     it "includes the validation concern" do

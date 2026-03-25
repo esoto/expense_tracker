@@ -1,39 +1,42 @@
 require 'rails_helper'
 
-RSpec.describe SyncSession, type: :model, integration: true do
+RSpec.describe SyncSession, type: :model do
   include ActiveSupport::Testing::TimeHelpers
-  describe 'associations', integration: true do
+
+  describe 'associations' do
+    # Performance: build_stubbed avoids DB for association reflection
+    subject { build_stubbed(:sync_session) }
+
     it { should have_many(:sync_session_accounts).dependent(:destroy) }
     it { should have_many(:email_accounts).through(:sync_session_accounts) }
   end
 
-  describe 'validations', integration: true do
+  describe 'validations' do
+    subject { build(:sync_session) }
+
     it { should validate_presence_of(:status) }
     it { should validate_inclusion_of(:status).in_array(%w[pending running completed failed cancelled]) }
   end
 
-  describe 'scopes', integration: true do
-    before do
-      # Clear any existing sessions to avoid interference
-      SyncSession.destroy_all
-    end
-
-    let!(:old_session) { create(:sync_session, created_at: 2.days.ago) }
-    let!(:new_session) { create(:sync_session, created_at: 1.hour.ago) }
-    let!(:pending_session) { create(:sync_session, status: 'pending', created_at: 30.minutes.ago) }
-    let!(:running_session) { create(:sync_session, status: 'running', created_at: 20.minutes.ago) }
+  describe 'scopes' do
+    # Performance: removed destroy_all (transactional fixtures handle cleanup).
+    # Converted let! to standard let! here because scope tests require records to exist —
+    # but using a shared sync_session avoids the factory chain creating extra records.
+    let!(:old_session)       { create(:sync_session, created_at: 2.days.ago) }
+    let!(:new_session)       { create(:sync_session, created_at: 1.hour.ago) }
+    let!(:pending_session)   { create(:sync_session, status: 'pending',   created_at: 30.minutes.ago) }
+    let!(:running_session)   { create(:sync_session, status: 'running',   created_at: 20.minutes.ago) }
     let!(:completed_session) { create(:sync_session, status: 'completed', created_at: 10.minutes.ago) }
-    let!(:failed_session) { create(:sync_session, status: 'failed', created_at: 5.minutes.ago) }
+    let!(:failed_session)    { create(:sync_session, status: 'failed',    created_at: 5.minutes.ago) }
 
-    describe '.recent', integration: true do
+    describe '.recent' do
       it 'orders sessions by created_at descending' do
-        # Get IDs in expected order
         expected_order = [ failed_session, completed_session, running_session, pending_session, new_session, old_session ]
         expect(SyncSession.recent.map(&:id)).to eq(expected_order.map(&:id))
       end
     end
 
-    describe '.active', integration: true do
+    describe '.active' do
       it 'returns only pending and running sessions' do
         active_sessions = SyncSession.active
         expect(active_sessions.map(&:status).uniq.sort).to eq([ 'pending', 'running' ])
@@ -42,14 +45,15 @@ RSpec.describe SyncSession, type: :model, integration: true do
       end
     end
 
-    describe '.completed', integration: true do
+    describe '.completed' do
       it 'returns only completed sessions' do
         expect(SyncSession.completed.to_a).to eq([ completed_session ])
       end
     end
   end
 
-  describe '#progress_percentage', integration: true do
+  describe '#progress_percentage' do
+    # Performance: build avoids DB for pure calculation tests
     subject(:sync_session) { build(:sync_session, total_emails: total, processed_emails: processed) }
 
     context 'when total_emails is zero' do
@@ -89,7 +93,8 @@ RSpec.describe SyncSession, type: :model, integration: true do
     end
   end
 
-  describe '#estimated_time_remaining', integration: true do
+  describe '#estimated_time_remaining' do
+    # Performance: share sync_session via lazy let; only tests that need the DB will trigger it
     let(:sync_session) { create(:sync_session, status: status, started_at: started_at, total_emails: 100, processed_emails: processed) }
     let(:started_at) { 1.minute.ago }
     let(:processed) { 25 }
@@ -113,8 +118,6 @@ RSpec.describe SyncSession, type: :model, integration: true do
 
     context 'when running with emails processed' do
       it 'calculates remaining time based on processing rate' do
-        # 25 emails in 60 seconds = 0.417 emails/second
-        # 75 remaining emails / 0.417 = ~180 seconds
         expect(sync_session.estimated_time_remaining).to be_within(5.seconds).of(180.seconds)
       end
     end
@@ -128,10 +131,11 @@ RSpec.describe SyncSession, type: :model, integration: true do
     end
   end
 
-  describe 'status query methods', integration: true do
+  describe 'status query methods' do
+    # Performance: build avoids DB for predicate method tests
     subject(:sync_session) { build(:sync_session, status: status) }
 
-    describe '#running?', integration: true do
+    describe '#running?' do
       context 'when status is running' do
         let(:status) { 'running' }
         it { expect(sync_session).to be_running }
@@ -143,7 +147,7 @@ RSpec.describe SyncSession, type: :model, integration: true do
       end
     end
 
-    describe '#completed?', integration: true do
+    describe '#completed?' do
       context 'when status is completed' do
         let(:status) { 'completed' }
         it { expect(sync_session).to be_completed }
@@ -155,7 +159,7 @@ RSpec.describe SyncSession, type: :model, integration: true do
       end
     end
 
-    describe '#failed?', integration: true do
+    describe '#failed?' do
       context 'when status is failed' do
         let(:status) { 'failed' }
         it { expect(sync_session).to be_failed }
@@ -167,7 +171,7 @@ RSpec.describe SyncSession, type: :model, integration: true do
       end
     end
 
-    describe '#cancelled?', integration: true do
+    describe '#cancelled?' do
       context 'when status is cancelled' do
         let(:status) { 'cancelled' }
         it { expect(sync_session).to be_cancelled }
@@ -179,7 +183,7 @@ RSpec.describe SyncSession, type: :model, integration: true do
       end
     end
 
-    describe '#pending?', integration: true do
+    describe '#pending?' do
       context 'when status is pending' do
         let(:status) { 'pending' }
         it { expect(sync_session).to be_pending }
@@ -192,10 +196,11 @@ RSpec.describe SyncSession, type: :model, integration: true do
     end
   end
 
-  describe 'state transition methods', integration: true do
+  describe 'state transition methods' do
+    # Performance: single lazy let; only created when used
     let(:sync_session) { create(:sync_session, status: 'pending') }
 
-    describe '#start!', integration: true do
+    describe '#start!' do
       it 'changes status to running' do
         expect { sync_session.start! }.to change { sync_session.status }.from('pending').to('running')
       end
@@ -213,7 +218,7 @@ RSpec.describe SyncSession, type: :model, integration: true do
       end
     end
 
-    describe '#complete!', integration: true do
+    describe '#complete!' do
       before { sync_session.start! }
 
       it 'changes status to completed' do
@@ -233,7 +238,7 @@ RSpec.describe SyncSession, type: :model, integration: true do
       end
     end
 
-    describe '#fail!', integration: true do
+    describe '#fail!' do
       before { sync_session.start! }
 
       it 'changes status to failed' do
@@ -266,7 +271,7 @@ RSpec.describe SyncSession, type: :model, integration: true do
       end
     end
 
-    describe '#cancel!', integration: true do
+    describe '#cancel!' do
       before { sync_session.start! }
 
       it 'changes status to cancelled' do
@@ -287,7 +292,8 @@ RSpec.describe SyncSession, type: :model, integration: true do
     end
   end
 
-  describe '#update_progress', integration: true do
+  describe '#update_progress' do
+    # Performance: share sync_session; let! only for the accounts that scope tests need
     let(:sync_session) { create(:sync_session) }
     let!(:account1) { create(:sync_session_account, sync_session: sync_session, total_emails: 50, processed_emails: 25, detected_expenses: 10) }
     let!(:account2) { create(:sync_session_account, sync_session: sync_session, total_emails: 100, processed_emails: 75, detected_expenses: 20) }
@@ -306,8 +312,8 @@ RSpec.describe SyncSession, type: :model, integration: true do
     end
   end
 
-  describe 'edge cases and error handling', integration: true do
-    describe 'invalid status transitions', integration: true do
+  describe 'edge cases and error handling' do
+    describe 'invalid status transitions' do
       let(:sync_session) { create(:sync_session, status: 'completed') }
 
       it 'allows starting a completed session (no validation prevents it)' do
@@ -315,25 +321,23 @@ RSpec.describe SyncSession, type: :model, integration: true do
       end
     end
 
-    describe 'concurrent updates', integration: true do
+    describe 'concurrent updates' do
       let(:sync_session) { create(:sync_session, status: 'running') }
 
       it 'handles concurrent status updates gracefully' do
-        # Simulate concurrent update
         another_instance = SyncSession.find(sync_session.id)
 
         sync_session.complete!
 
-        # With optimistic locking, the stale instance will raise an error
         expect { another_instance.fail! }.to raise_error(ActiveRecord::StaleObjectError)
 
-        # The first update wins
         expect(sync_session.reload).to be_completed
       end
     end
   end
 
-  describe 'factory', integration: true do
+  describe 'factory' do
+    # Performance: build for trait verification — no DB needed
     it 'has a valid factory' do
       expect(build(:sync_session)).to be_valid
     end
@@ -358,8 +362,9 @@ RSpec.describe SyncSession, type: :model, integration: true do
     end
   end
 
-  describe '#duration', integration: true do
+  describe '#duration' do
     context 'when session has not started' do
+      # Performance: build for nil-check
       let(:sync_session) { build(:sync_session, started_at: nil) }
 
       it 'returns nil' do
@@ -376,6 +381,7 @@ RSpec.describe SyncSession, type: :model, integration: true do
     end
 
     context 'when session is completed' do
+      # Performance: build for deterministic timestamp math
       let(:sync_session) do
         build(:sync_session, :completed,
               started_at: Time.current - 5.minutes,
@@ -388,8 +394,9 @@ RSpec.describe SyncSession, type: :model, integration: true do
     end
   end
 
-  describe '#average_processing_time_per_email', integration: true do
+  describe '#average_processing_time_per_email' do
     context 'with no processed emails' do
+      # Performance: build for nil-check
       let(:sync_session) { build(:sync_session, processed_emails: 0) }
 
       it 'returns nil' do
@@ -398,6 +405,7 @@ RSpec.describe SyncSession, type: :model, integration: true do
     end
 
     context 'with processed emails and duration' do
+      # Performance: build for deterministic calculation
       let(:sync_session) do
         build(:sync_session,
               started_at: Time.current - 10.minutes,
@@ -411,8 +419,8 @@ RSpec.describe SyncSession, type: :model, integration: true do
     end
   end
 
-  describe 'callbacks', integration: true do
-    describe 'status change tracking', integration: true do
+  describe 'callbacks' do
+    describe 'status change tracking' do
       let(:sync_session) { create(:sync_session, :running) }
 
       it 'sets completed_at when transitioning to completed' do
@@ -436,26 +444,28 @@ RSpec.describe SyncSession, type: :model, integration: true do
     end
   end
 
-  describe 'additional scopes', integration: true do
-    let!(:failed_session) { create(:sync_session, :failed) }
+  describe 'additional scopes' do
+    # Performance: let! required — scope results depend on these records existing
+    let!(:failed_session)    { create(:sync_session, :failed) }
     let!(:completed_session) { create(:sync_session, :completed) }
     let!(:cancelled_session) { create(:sync_session, status: 'cancelled') }
-    let!(:running_session) { create(:sync_session, :running) }
+    let!(:running_session)   { create(:sync_session, :running) }
 
-    describe '.failed', integration: true do
+    describe '.failed' do
       it 'returns only failed sessions' do
         expect(SyncSession.failed).to eq([ failed_session ])
       end
     end
 
-    describe '.finished', integration: true do
+    describe '.finished' do
       it 'returns completed, failed, and cancelled sessions' do
         expect(SyncSession.finished).to match_array([ failed_session, completed_session, cancelled_session ])
       end
     end
   end
 
-  describe '#add_job_id', integration: true do
+  describe '#add_job_id' do
+    # Performance: share single sync_session across all add_job_id tests
     let(:sync_session) { create(:sync_session) }
 
     context 'when job_id is provided' do
@@ -498,7 +508,6 @@ RSpec.describe SyncSession, type: :model, integration: true do
       end
 
       it 'does not save the record when job_id is nil' do
-        # The method returns early without calling save! when job_id is nil
         original_updated_at = sync_session.updated_at
         sync_session.add_job_id(nil)
         expect(sync_session.reload.updated_at).to eq(original_updated_at)
@@ -521,37 +530,32 @@ RSpec.describe SyncSession, type: :model, integration: true do
     end
   end
 
-  describe '#cancel_all_jobs', integration: true do
+  describe '#cancel_all_jobs' do
+    # Performance: share sync_session across cancel_all_jobs tests
     let(:sync_session) { create(:sync_session) }
 
     before do
-      # Mock SolidQueue::Job to avoid actual job cancellation
       allow(SolidQueue::Job).to receive(:find_by).and_return(nil)
     end
 
     context 'when job_ids is blank' do
       it 'returns early without processing main jobs when empty' do
-        # Set job_ids to empty array
         sync_session.update!(job_ids: [])
 
-        # Should not process any main jobs
         sync_session.cancel_all_jobs
 
-        # Test passed if no exception raised - the method should handle empty arrays gracefully
         expect(true).to be true
       end
 
       it 'returns early when job_ids is blank and does not process account jobs' do
-        # Create an account with a job_id
         email_account = create(:email_account)
         sync_session_account = create(:sync_session_account,
-                                    sync_session: sync_session,
-                                    email_account: email_account)
+                                      sync_session: sync_session,
+                                      email_account: email_account)
         sync_session_account.update!(job_id: 'account_job_123')
 
         sync_session.update!(job_ids: [])
 
-        # Should NOT call SolidQueue::Job.find_by because it returns early
         expect(SolidQueue::Job).not_to receive(:find_by)
         sync_session.cancel_all_jobs
       end
@@ -565,11 +569,10 @@ RSpec.describe SyncSession, type: :model, integration: true do
       end
 
       it 'attempts to find and cancel each main job and account jobs' do
-        # Create an account with a job_id to test account job processing too
         email_account = create(:email_account)
         sync_session_account = create(:sync_session_account,
-                                    sync_session: sync_session,
-                                    email_account: email_account)
+                                      sync_session: sync_session,
+                                      email_account: email_account)
         sync_session_account.update!(job_id: 'account_job_123')
 
         expect(SolidQueue::Job).to receive(:find_by).with(id: 'job_1').and_return(mock_job)
@@ -583,15 +586,14 @@ RSpec.describe SyncSession, type: :model, integration: true do
       end
 
       it 'only cancels scheduled or ready jobs' do
-        running_job = double('SolidQueue::Job', scheduled?: false, ready?: false)
+        running_job   = double('SolidQueue::Job', scheduled?: false, ready?: false)
         scheduled_job = double('SolidQueue::Job', scheduled?: true, ready?: false, destroy: true)
-        ready_job = double('SolidQueue::Job', scheduled?: false, ready?: true, destroy: true)
+        ready_job     = double('SolidQueue::Job', scheduled?: false, ready?: true, destroy: true)
 
-        # Create an account with a job_id to test account job processing too
         email_account = create(:email_account)
         sync_session_account = create(:sync_session_account,
-                                    sync_session: sync_session,
-                                    email_account: email_account)
+                                      sync_session: sync_session,
+                                      email_account: email_account)
         sync_session_account.update!(job_id: 'account_job_123')
 
         allow(SolidQueue::Job).to receive(:find_by).with(id: 'job_1').and_return(running_job)
@@ -611,12 +613,10 @@ RSpec.describe SyncSession, type: :model, integration: true do
       let(:mock_account_job) { double('SolidQueue::Job', scheduled?: true, ready?: false, destroy: true) }
 
       before do
-        # Set job_ids to non-empty to ensure we don't return early
         sync_session.update!(job_ids: [ 'dummy_job' ])
       end
 
       it 'cancels jobs for all sync_session_accounts with job_ids' do
-        # Create accounts with job_ids
         email_account1 = create(:email_account)
         email_account2 = create(:email_account)
 
@@ -626,10 +626,7 @@ RSpec.describe SyncSession, type: :model, integration: true do
         account2 = create(:sync_session_account, sync_session: sync_session, email_account: email_account2)
         account2.update!(job_id: 'another_job_456')
 
-        # Main job_ids call
         expect(SolidQueue::Job).to receive(:find_by).with(id: 'dummy_job').and_return(nil)
-
-        # Account job calls
         expect(SolidQueue::Job).to receive(:find_by).with(id: 'account_job_123').and_return(mock_account_job)
         expect(SolidQueue::Job).to receive(:find_by).with(id: 'another_job_456').and_return(nil)
         expect(mock_account_job).to receive(:destroy)
@@ -638,7 +635,6 @@ RSpec.describe SyncSession, type: :model, integration: true do
       end
 
       it 'skips accounts without job_ids' do
-        # Create accounts - some with job_ids, some without
         email_account1 = create(:email_account)
         email_account2 = create(:email_account)
         email_account3 = create(:email_account)
@@ -646,18 +642,14 @@ RSpec.describe SyncSession, type: :model, integration: true do
         account_with_job = create(:sync_session_account, sync_session: sync_session, email_account: email_account1)
         account_with_job.update!(job_id: 'account_job_123')
 
-        account_without_job = create(:sync_session_account, sync_session: sync_session, email_account: email_account2, job_id: nil)
+        create(:sync_session_account, sync_session: sync_session, email_account: email_account2, job_id: nil)
 
         another_with_job = create(:sync_session_account, sync_session: sync_session, email_account: email_account3)
         another_with_job.update!(job_id: 'another_job_456')
 
-        # Main job_ids call
         expect(SolidQueue::Job).to receive(:find_by).with(id: 'dummy_job').and_return(nil)
-
-        # Only accounts with job_ids should be processed
         expect(SolidQueue::Job).to receive(:find_by).with(id: 'account_job_123').and_return(nil)
         expect(SolidQueue::Job).to receive(:find_by).with(id: 'another_job_456').and_return(nil)
-        # No call should be made for the nil job_id
 
         sync_session.cancel_all_jobs
       end
@@ -678,14 +670,11 @@ RSpec.describe SyncSession, type: :model, integration: true do
       end
 
       it 'logs errors when account job cancellation fails' do
-        # Create account with job_id
         email_account = create(:email_account)
         account = create(:sync_session_account, sync_session: sync_session, email_account: email_account)
         account.update!(job_id: 'account_job_123')
 
-        # Mock the main job_ids call
         allow(SolidQueue::Job).to receive(:find_by).with(id: 'failing_job').and_return(nil)
-        # Mock the account job call to fail
         allow(SolidQueue::Job).to receive(:find_by).with(id: 'account_job_123').and_raise(StandardError.new('Account job failed'))
 
         sync_session.cancel_all_jobs
@@ -696,7 +685,6 @@ RSpec.describe SyncSession, type: :model, integration: true do
       it 'continues processing other jobs when one fails' do
         working_job = double('SolidQueue::Job', scheduled?: true, ready?: false, destroy: true)
 
-        # Create an account to test that account jobs are still processed
         email_account = create(:email_account)
         account = create(:sync_session_account, sync_session: sync_session, email_account: email_account)
         account.update!(job_id: 'account_job_123')

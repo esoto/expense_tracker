@@ -17,6 +17,7 @@ class ExpensesController < ApplicationController
 
     @result = filter_service.call
     @categories = Category.all.order(:name)
+    @bank_names = EmailAccount.where(active: true).distinct.pluck(:bank_name).compact.sort
 
     if @result.success?
       @expenses = @result.expenses

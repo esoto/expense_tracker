@@ -63,7 +63,8 @@
             { class: "w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" } %>
     </div>
     <div class="flex-1">
-      <%= form.select :bank, options_for_select([["Todos los bancos", ""], ["BAC", "BAC"], ["Manual Entry", "Manual Entry"]], params[:bank]),
+      <%= form.select :bank,
+            options_for_select([["Todos los bancos", ""]] + @bank_names.map { |name| [name, name] }, params[:bank]),
             {}, { class: "w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" } %>
     </div>
     <div class="flex gap-2">

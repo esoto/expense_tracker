@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Services::Categorization::Engine, "thread pool management", type: :model do
+RSpec.describe Services::Categorization::Engine, "thread pool management", :unit, type: :model do
   describe ".shared_thread_pool" do
     it "returns a Concurrent::ThreadPoolExecutor" do
       pool = described_class.shared_thread_pool
@@ -28,6 +28,11 @@ RSpec.describe Services::Categorization::Engine, "thread pool management", type:
       expect(pool.min_length).to eq(2)
     end
 
+    it "has a maximum of MAX_CONCURRENT_OPERATIONS threads" do
+      pool = described_class.shared_thread_pool
+      expect(pool.max_length).to eq(described_class::MAX_CONCURRENT_OPERATIONS)
+    end
+
     it "uses caller_runs fallback policy" do
       pool = described_class.shared_thread_pool
       expect(pool.fallback_policy).to eq(:caller_runs)
@@ -41,6 +46,15 @@ RSpec.describe Services::Categorization::Engine, "thread pool management", type:
 
       engine.shutdown!
 
+      expect(pool.running?).to be true
+    end
+
+    it "allows new engine instances to use the pool after another shuts down" do
+      engine1 = described_class.new
+      engine1.shutdown!
+
+      engine2 = described_class.new
+      pool = engine2.instance_variable_get(:@thread_pool)
       expect(pool.running?).to be true
     end
   end

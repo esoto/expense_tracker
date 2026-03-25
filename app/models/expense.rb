@@ -174,6 +174,9 @@ class Expense < ApplicationRecord
   end
 
   def trigger_metrics_refresh
+    # Skip for orphaned expenses (email account was deleted, nullified)
+    return if email_account_id.nil?
+
     # Smart refresh - only trigger if significant fields changed
     if saved_change_to_amount? || saved_change_to_transaction_date? ||
        saved_change_to_category_id? || saved_change_to_status?
@@ -206,6 +209,9 @@ class Expense < ApplicationRecord
   end
 
   def trigger_metrics_refresh_for_deletion
+    # Skip for orphaned expenses (email account was deleted, nullified)
+    return if email_account_id.nil?
+
     # Trigger metrics refresh for the deleted expense's date
     MetricsRefreshJob.enqueue_debounced(
       email_account_id,

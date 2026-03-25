@@ -11,7 +11,7 @@ Rails.application.configure do
     policy.img_src     :self, :data, :https
     policy.object_src  :none
     policy.script_src  :self, "https://cdn.jsdelivr.net"
-    policy.style_src   :self, "'unsafe-inline'" # Inline style tags in admin_login.html.erb and sync_status_mockup.html.erb require unsafe-inline
+    policy.style_src   :self, "'unsafe-inline'" # Inline style tags in admin_login.html.erb require unsafe-inline
     # ActionCable WebSocket: use localhost in dev/test, same-origin in production
     if Rails.env.development? || Rails.env.test?
       policy.connect_src :self, "ws://localhost:*", "wss://localhost:*"

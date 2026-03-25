@@ -23,5 +23,14 @@ RSpec.describe EmailAccount, "cascade behavior on destroy", :unit, type: :model 
 
       expect { email_account.destroy! }.not_to change(Expense, :count)
     end
+
+    it "allows orphaned expenses to be updated without errors" do
+      expense = create(:expense, email_account: email_account, amount: 100, transaction_date: Time.current)
+      email_account.destroy!
+      expense.reload
+
+      expect { expense.update!(amount: 200) }.not_to raise_error
+      expect(expense.reload.amount).to eq(200)
+    end
   end
 end

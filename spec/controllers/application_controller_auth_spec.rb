@@ -84,8 +84,7 @@ RSpec.describe ApplicationController, type: :controller, unit: true do
         Api::QueueController,
         Api::MonitoringController,
         Api::SyncSessionsController,
-        Api::V1::CategoriesController,
-        UxMockupsController
+        Api::V1::CategoriesController
       ]
     end
 

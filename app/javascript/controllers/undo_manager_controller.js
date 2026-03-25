@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { Turbo } from "@hotwired/turbo-rails"
 
 // Undo Manager Controller
 // Manages undo notifications with a 5-minute countdown.

@@ -23,7 +23,7 @@ class Expense < ApplicationRecord
   validate :category_exists_if_provided
 
   # Attributes whose changes warrant dashboard cache invalidation
-  CACHE_RELEVANT_ATTRIBUTES = %w[amount category_id transaction_date status email_account_id deleted_at].freeze
+  CACHE_RELEVANT_ATTRIBUTES = %w[amount currency category_id transaction_date status email_account_id deleted_at].freeze
 
   # Callbacks
   before_save :ensure_bank_name

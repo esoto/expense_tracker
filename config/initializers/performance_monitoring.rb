@@ -285,3 +285,13 @@ end
 at_exit do
   PerformanceMonitoring.stop if defined?(PerformanceMonitoring)
 end
+
+# Clean shutdown of shared categorization thread pool on process exit.
+# Prevents queued work from being silently dropped and ensures
+# database connections held by pool threads are released during deploys.
+at_exit do
+  Services::Categorization::Engine.shared_thread_pool.shutdown
+  Services::Categorization::Engine.shared_thread_pool.wait_for_termination(5)
+rescue => e
+  Rails.logger.warn "[Engine] Error shutting down thread pool: #{e.message}" if defined?(Rails.logger)
+end

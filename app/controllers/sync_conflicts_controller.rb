@@ -14,7 +14,7 @@ class SyncConflictsController < ApplicationController
     @conflicts = @conflicts.where(conflict_type: params[:type]) if params[:type].present?
 
     # Sort and paginate
-    page = [(params[:page] || 1).to_i, 1].max
+    page = [ (params[:page] || 1).to_i, 1 ].max
 
     # Stats for UI - calculate separately to avoid GROUP BY issues
     base_scope = if @sync_session

@@ -10,7 +10,7 @@ module Admin
 
     # GET /admin/composite_patterns
     def index
-      page = [(params[:page] || 1).to_i, 1].max
+      page = [ (params[:page] || 1).to_i, 1 ].max
       total_count = CompositePattern.count
       @composite_patterns = CompositePattern.includes(:category)
                                            .order(created_at: :desc)

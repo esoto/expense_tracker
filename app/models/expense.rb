@@ -173,7 +173,7 @@ class Expense < ApplicationRecord
   end
 
   def clear_dashboard_cache
-    return unless saved_changes.keys.intersect?(CACHE_RELEVANT_ATTRIBUTES)
+    return unless destroyed? || saved_changes.keys.intersect?(CACHE_RELEVANT_ATTRIBUTES)
     Services::DashboardService.clear_cache
   end
 

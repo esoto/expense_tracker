@@ -76,4 +76,11 @@ RSpec.describe Expense, "#clear_dashboard_cache conditional invalidation", type:
       expense.update!(description: "New desc", merchant_name: "New merchant")
     end
   end
+
+  context "when expense is destroyed" do
+    it "clears cache on destroy" do
+      expect(Services::DashboardService).to receive(:clear_cache).at_least(:once)
+      expense.destroy!
+    end
+  end
 end

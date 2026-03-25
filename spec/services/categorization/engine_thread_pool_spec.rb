@@ -33,4 +33,15 @@ RSpec.describe Services::Categorization::Engine, "thread pool management", type:
       expect(pool.fallback_policy).to eq(:caller_runs)
     end
   end
+
+  describe "instance shutdown! does not kill shared pool" do
+    it "keeps the shared pool running after engine shutdown" do
+      engine = described_class.new
+      pool = described_class.shared_thread_pool
+
+      engine.shutdown!
+
+      expect(pool.running?).to be true
+    end
+  end
 end

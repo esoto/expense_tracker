@@ -104,14 +104,19 @@ module Services::Categorization
     CIRCUIT_BREAKER_THRESHOLD = 5
     CIRCUIT_BREAKER_TIMEOUT = 30.seconds
 
-    # Shared thread pool — singleton across all engine instances to prevent thread leaks
-    def self.shared_thread_pool
-      @shared_thread_pool ||= Concurrent::ThreadPoolExecutor.new(
+    # Shared thread pool — singleton across all engine instances to prevent thread leaks.
+    # Uses Concurrent::Delay for guaranteed thread-safe lazy initialization.
+    SHARED_THREAD_POOL = Concurrent::Delay.new do
+      Concurrent::ThreadPoolExecutor.new(
         min_threads: 2,
         max_threads: MAX_CONCURRENT_OPERATIONS,
         max_queue: 100,
         fallback_policy: :caller_runs
       )
+    end
+
+    def self.shared_thread_pool
+      SHARED_THREAD_POOL.value
     end
 
     # Categorization thresholds
@@ -187,11 +192,9 @@ module Services::Categorization
 
         @logger.info "[Engine] Shutting down categorization engine..."
 
-        # Shutdown thread pool
-        if @thread_pool
-          @thread_pool.shutdown
-          @thread_pool.wait_for_termination(5)
-        end
+        # Do NOT shut down the shared thread pool from an instance —
+        # it is shared across all Engine instances. Pool shutdown is
+        # handled at process exit via at_exit hook.
 
         # Clear caches
         clear_all_caches

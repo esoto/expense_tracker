@@ -123,8 +123,8 @@ class PatternFeedback < ApplicationRecord
   end
 
   def invalidate_analytics_cache
-    # Clear analytics caches when feedback is recorded
-    Rails.cache.delete_matched("pattern_analytics/*") if Rails.cache.respond_to?(:delete_matched)
+    # Invalidate pattern analytics caches using O(1) version key instead of O(n) delete_matched scan
+    PatternAnalyticsCacheVersion.increment!
   rescue => e
     Rails.logger.error "[PatternFeedback] Analytics cache invalidation failed: #{e.message}"
   end

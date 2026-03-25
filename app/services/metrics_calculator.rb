@@ -61,12 +61,42 @@ module Services
     calculate
   end
 
-  # Clear all metric caches for a specific email account
+  GLOBAL_VERSION_KEY = "metrics_calculator:cache_version"
+
+  # Returns the global cache version for all metrics calculator entries.
+  def self.cache_version
+    Rails.cache.fetch(GLOBAL_VERSION_KEY) { 1 }
+  end
+
+  # Increments the global cache version, making all previously cached keys stale.
+  # O(1) operation — no key scanning required.
+  def self.increment_cache_version!
+    new_version = cache_version + 1
+    Rails.cache.write(GLOBAL_VERSION_KEY, new_version)
+    new_version
+  end
+
+  # Returns the per-account cache version for a specific email account ID.
+  def self.cache_version_for_account(account_id)
+    Rails.cache.fetch("metrics_calculator:account_#{account_id}:cache_version") { 1 }
+  end
+
+  # Increments the per-account cache version for a specific email account ID.
+  # O(1) operation — no key scanning required.
+  def self.increment_cache_version_for_account!(account_id)
+    new_version = cache_version_for_account(account_id) + 1
+    Rails.cache.write("metrics_calculator:account_#{account_id}:cache_version", new_version)
+    new_version
+  end
+
+  # Clear all metric caches using O(1) version key increment instead of O(n) delete_matched scan.
+  # When email_account is provided, only that account's version is incremented.
+  # When no email_account is given, the global version is incremented (stales all entries).
   def self.clear_cache(email_account: nil)
     if email_account
-      Rails.cache.delete_matched("metrics_calculator:account_#{email_account.id}:*")
+      increment_cache_version_for_account!(email_account.id)
     else
-      Rails.cache.delete_matched("metrics_calculator:*")
+      increment_cache_version!
     end
   end
 
@@ -150,7 +180,9 @@ module Services
   end
 
   def generate_cache_key
-    "metrics_calculator:account_#{email_account.id}:#{period}:#{reference_date.iso8601}"
+    account_version = self.class.cache_version_for_account(email_account.id)
+    global_version = self.class.cache_version
+    "metrics_calculator:account_#{email_account.id}:v#{account_version}:gv#{global_version}:#{period}:#{reference_date.iso8601}"
   end
 
   def benchmark_calculation

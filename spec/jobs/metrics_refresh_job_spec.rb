@@ -28,8 +28,10 @@ RSpec.describe MetricsRefreshJob, type: :job, integration: true do
         # Perform the job
         job.perform(email_account.id, affected_dates: [ Date.current ])
 
-        # Verify metrics were recalculated
-        cache_key = "metrics_calculator:account_#{email_account.id}:day:#{Date.current.iso8601}"
+        # Verify metrics were recalculated — the cache key now includes version numbers
+        account_version = Services::MetricsCalculator.cache_version_for_account(email_account.id)
+        global_version = Services::MetricsCalculator.cache_version
+        cache_key = "metrics_calculator:account_#{email_account.id}:v#{account_version}:gv#{global_version}:day:#{Date.current.iso8601}"
         expect(Rails.cache.exist?(cache_key)).to be true
       end
 

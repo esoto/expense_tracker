@@ -158,35 +158,26 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
     end
 
     describe "after_commit :invalidate_analytics_cache" do
-      it "invalidates pattern analytics cache" do
+      it "invalidates pattern analytics cache via version key increment" do
         feedback = build_stubbed(:pattern_feedback)
-        cache = double("cache")
-
-        allow(Rails).to receive(:cache).and_return(cache)
-        expect(cache).to receive(:respond_to?).with(:delete_matched).and_return(true)
-        expect(cache).to receive(:delete_matched).with("pattern_analytics/*")
+        Rails.cache.clear
+        version_before = PatternAnalyticsCacheVersion.current
 
         feedback.send(:invalidate_analytics_cache)
+
+        expect(PatternAnalyticsCacheVersion.current).to eq(version_before + 1)
       end
 
-      it "handles cache without delete_matched method" do
+      it "does not call delete_matched on the cache" do
         feedback = build_stubbed(:pattern_feedback)
-        cache = double("cache")
-
-        allow(Rails).to receive(:cache).and_return(cache)
-        expect(cache).to receive(:respond_to?).with(:delete_matched).and_return(false)
-        expect(cache).not_to receive(:delete_matched)
-
+        expect(Rails.cache).not_to receive(:delete_matched)
         feedback.send(:invalidate_analytics_cache)
       end
 
       it "handles cache invalidation errors gracefully" do
         feedback = build_stubbed(:pattern_feedback)
-        cache = double("cache")
 
-        allow(Rails).to receive(:cache).and_return(cache)
-        expect(cache).to receive(:respond_to?).with(:delete_matched).and_return(true)
-        expect(cache).to receive(:delete_matched).and_raise(StandardError.new("Cache error"))
+        allow(PatternAnalyticsCacheVersion).to receive(:increment!).and_raise(StandardError.new("Cache error"))
         expect(Rails.logger).to receive(:error).with(match(/Analytics cache invalidation failed/))
 
         expect { feedback.send(:invalidate_analytics_cache) }.not_to raise_error

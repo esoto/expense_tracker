@@ -1,6 +1,26 @@
 module Services
   class DashboardService
   CACHE_EXPIRY = 5.minutes
+  CACHE_VERSION_KEY = "dashboard_service:cache_version"
+
+  # Returns the current cache version integer (defaults to 1).
+  # Used to build versioned cache keys so old entries are automatically stale.
+  def self.cache_version
+    Rails.cache.fetch(CACHE_VERSION_KEY) { 1 }
+  end
+
+  # Increments the cache version, making all previously cached keys stale.
+  # O(1) operation — no key scanning required.
+  def self.increment_cache_version!
+    new_version = cache_version + 1
+    Rails.cache.write(CACHE_VERSION_KEY, new_version)
+    new_version
+  end
+
+  # Clears the dashboard cache using O(1) version increment instead of O(n) delete_matched scan.
+  def self.clear_cache
+    increment_cache_version!
+  end
 
   def initialize
   end
@@ -10,8 +30,8 @@ module Services
     sync_data = sync_info
     sync_sessions = sync_session_data
 
-    # Cache everything else
-    cached_analytics = Rails.cache.fetch("dashboard_analytics", expires_in: CACHE_EXPIRY) do
+    # Cache everything else using a versioned key
+    cached_analytics = Rails.cache.fetch(analytics_cache_key, expires_in: CACHE_EXPIRY) do
       {
         totals: calculate_totals,
         recent_expenses: recent_expenses,
@@ -27,12 +47,13 @@ module Services
     cached_analytics.merge(sync_info: sync_data, sync_sessions: sync_sessions)
   end
 
-  # Add cache clearing
-  def self.clear_cache
-    Rails.cache.delete_matched("dashboard_*")
-  end
-
   private
+
+  # Builds a versioned cache key so that after increment_cache_version! the old
+  # entry is ignored without any key-scanning (O(1) invalidation).
+  def analytics_cache_key
+    "dashboard_analytics:v#{self.class.cache_version}"
+  end
 
   def calculate_totals
     {

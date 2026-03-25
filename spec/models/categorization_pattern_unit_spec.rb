@@ -886,7 +886,7 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
 
       it "handles cache invalidation errors gracefully" do
         allow(Rails.logger).to receive(:error)
-        allow(Rails.cache).to receive(:delete_matched).and_raise(StandardError.new("Cache error"))
+        allow(PatternAnalyticsCacheVersion).to receive(:increment!).and_raise(StandardError.new("Cache error"))
 
         expect { pattern.send(:invalidate_cache) }.not_to raise_error
         expect(Rails.logger).to have_received(:error).with(/Cache invalidation failed/)
@@ -896,12 +896,14 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
         expect { pattern.send(:invalidate_cache) }.not_to raise_error
       end
 
-      it "skips Rails cache operations when delete_matched not available" do
-        cache_double = double("cache")
-        allow(Rails).to receive(:cache).and_return(cache_double)
-        allow(cache_double).to receive(:respond_to?).with(:delete_matched).and_return(false)
+      it "uses version key invalidation instead of delete_matched" do
+        Rails.cache.clear
+        version_before = PatternAnalyticsCacheVersion.current
+        expect(Rails.cache).not_to receive(:delete_matched)
 
-        expect { pattern.send(:invalidate_cache) }.not_to raise_error
+        pattern.send(:invalidate_cache)
+
+        expect(PatternAnalyticsCacheVersion.current).to be > version_before
       end
     end
   end

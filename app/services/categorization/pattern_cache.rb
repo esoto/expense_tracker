@@ -118,10 +118,10 @@ module Services::Categorization
       @all_patterns = nil
     end
 
-    # Invalidate cache for a specific category
+    # Invalidate cache for a specific category using O(1) version increment
+    # instead of O(n) delete_matched scan across all memory cache keys.
     def invalidate_category(category_id)
-      # Invalidate all cached patterns for this category
-      @memory_cache.delete_matched("#{PATTERN_KEY_PREFIX}:*")
+      increment_pattern_cache_version!
     end
 
     # Get multiple patterns by IDs efficiently
@@ -591,9 +591,26 @@ module Services::Categorization
       end
     end
 
+    # Version key for O(1) memory-cache invalidation of pattern entries.
+    # Stored inside the MemoryStore itself so it stays in-process.
+    PATTERN_CACHE_VERSION_KEY = "#{CACHE_NAMESPACE}pattern_version"
+
+    # Returns the current integer version for pattern cache keys.
+    def pattern_cache_version
+      @memory_cache.fetch(PATTERN_CACHE_VERSION_KEY) { 1 }
+    end
+
+    # Increments the in-memory pattern cache version so old pattern keys are
+    # treated as misses without needing to iterate over all cache entries.
+    def increment_pattern_cache_version!
+      new_version = pattern_cache_version + 1
+      @memory_cache.write(PATTERN_CACHE_VERSION_KEY, new_version)
+      new_version
+    end
+
     # Cache key generation methods
     def pattern_cache_key(pattern_id)
-      "#{PATTERN_KEY_PREFIX}:#{pattern_id}:#{CACHE_VERSION}"
+      "#{PATTERN_KEY_PREFIX}:#{pattern_id}:#{CACHE_VERSION}:pv#{pattern_cache_version}"
     end
 
     def type_cache_key(pattern_type)

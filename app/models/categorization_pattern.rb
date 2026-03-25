@@ -406,8 +406,8 @@ class CategorizationPattern < ApplicationRecord
     # Invalidate pattern cache
     Services::Categorization::PatternCache.instance.invalidate(self) if defined?(Services::Categorization::PatternCache)
 
-    # Invalidate analytics caches
-    Rails.cache.delete_matched("pattern_analytics/*") if Rails.cache.respond_to?(:delete_matched)
+    # Invalidate analytics caches using O(1) version key instead of O(n) delete_matched scan
+    PatternAnalyticsCacheVersion.increment!
   rescue => e
     Rails.logger.error "[CategorizationPattern] Cache invalidation failed: #{e.message}"
   end

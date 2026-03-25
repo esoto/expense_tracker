@@ -154,10 +154,17 @@ RSpec.describe Services::DashboardService, integration: true do
       Rails.cache.clear
     end
 
-    it 'caches analytics data' do
-      # First call should write to cache
-      expect(Rails.cache).to receive(:fetch).with("dashboard_analytics", expires_in: 5.minutes).and_call_original
+    it 'caches analytics data using a versioned key' do
+      # Analytics should be served from cache on the second call
       service.analytics
+      # Second call should not hit the database; result should be identical
+      result_from_cache = service.analytics
+
+      expect(result_from_cache).to include(:totals, :recent_expenses, :category_breakdown)
+
+      # The cache key includes the version number
+      version = Services::DashboardService.cache_version
+      expect(Rails.cache.exist?("dashboard_analytics:v#{version}")).to be true
     end
 
     it 'does not cache sync_info' do
@@ -173,14 +180,14 @@ RSpec.describe Services::DashboardService, integration: true do
   end
 
   describe '.clear_cache', integration: true do
-    before do
-      Rails.cache.write('dashboard_analytics', { test: 'data' })
-      Rails.cache.write('dashboard_other', { test: 'data' })
-      Rails.cache.write('other_key', { test: 'data' })
+    it 'increments the cache version instead of scanning with delete_matched' do
+      version_before = Services::DashboardService.cache_version
+      Services::DashboardService.clear_cache
+      expect(Services::DashboardService.cache_version).to eq(version_before + 1)
     end
 
-    it 'clears all dashboard cache keys' do
-      expect(Rails.cache).to receive(:delete_matched).with("dashboard_*")
+    it 'does not call delete_matched on the cache' do
+      expect(Rails.cache).not_to receive(:delete_matched)
       Services::DashboardService.clear_cache
     end
   end

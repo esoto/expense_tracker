@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
-This is a Ruby on Rails 8.0.2 application. Key commands:
+This is a Ruby on Rails 8.1.2 application. Key commands:
 
 - `bin/rails server` or `bin/rails s` - Start the Rails development server
 - `bin/rails console` or `bin/rails c` - Start the Rails console
@@ -67,35 +67,38 @@ When multiple Claude Code sessions (or other processes) run tests concurrently a
 
 ## Architecture
 
-This is a fresh Rails 8 application with the following stack:
+This is a mature Rails 8.1.2 expense tracking application with the following stack:
 
 **Backend:**
-- Rails 8.0.2 with PostgreSQL database
+- Rails 8.1.2 with PostgreSQL database (pg_trgm and unaccent extensions)
 - Solid Cache, Queue, and Cable for performance
+- Sidekiq for additional background job processing
 - Puma web server
 
 **Frontend:**
-- Turbo and Stimulus (Hotwire) for SPA-like behavior
-- Tailwind CSS for styling
+- Turbo and Stimulus (Hotwire) for SPA-like behavior — 49 Stimulus controllers
+- Tailwind CSS for styling (Financial Confidence color palette)
 - Import maps for JavaScript modules
 - Propshaft asset pipeline
+- Chart.js for data visualization
 
 **Testing:**
-- RSpec configured alongside default Rails test framework
+- RSpec with 7,400+ unit tests (all tagged `:unit`, 100% pass rate)
 - Capybara and Selenium for system testing
+- FactoryBot, WebMock, VCR, DatabaseCleaner
+- Separate configurations: `.rspec-unit`, `.rspec-integration`, `.rspec-performance`
 
 **Key Directories:**
-- `app/models/` - ActiveRecord models (currently only ApplicationRecord base class)
-- `app/controllers/` - Rails controllers (currently only ApplicationController base class)
-- `app/views/` - ERB templates
-- `app/javascript/` - Stimulus controllers and JavaScript
-- `app/services/` - Domain-organized service objects:
-  - `email/` - Email processing and synchronization services
-  - `categorization/` - Expense categorization engines and utilities
-  - `infrastructure/` - Cross-cutting concerns (monitoring, broadcasting)
+- `app/models/` - 28 ActiveRecord models (Expense, Category, Budget, AdminUser, CategorizationPattern, etc.)
+- `app/controllers/` - 38 controllers across main, admin, analytics, and API namespaces
+- `app/views/` - ERB templates with Turbo Frame integration
+- `app/javascript/` - 49 Stimulus controllers and utility modules
+- `app/services/` - 80+ domain-organized service objects across 12+ domains
+- `app/jobs/` - 15 background jobs (email processing, categorization, metrics, broadcast recovery)
 - `config/` - Application configuration
-- `db/` - Database schema and migrations
-- `spec/` - RSpec tests (mirroring service organization)
+- `db/` - 44 migrations, comprehensive strategic indexing
+- `spec/` - 350+ test files mirroring service organization
+- `docs/` - Plans, roadmaps, and implementation documentation
 
 **Service Architecture:**
 The application follows Domain-Driven Design principles with services organized by business domain:
@@ -103,32 +106,58 @@ The application follows Domain-Driven Design principles with services organized 
 - **Email Domain** (`Services::Email::*`)
   - `ProcessingService` - Email fetching, parsing, and expense extraction
   - `SyncService` - Synchronization orchestration and conflict management
+  - `EncodingService` - Email encoding/decoding
 
-- **Categorization Domain** (`Services::Categorization::*`)
+- **Categorization Domain** (`Services::Categorization::*`) — 18+ services
+  - `Engine` / `Orchestrator` - Core categorization logic and workflow coordination
+  - `PatternLearner` / `ConfidenceCalculator` - ML-powered pattern learning and confidence scoring
+  - `PatternCache` - High-performance LRU pattern caching
   - `BulkCategorizationService` - Bulk operations for expense categorization
-  - Multiple sub-modules for pattern matching, caching, and ML-based categorization
+  - `Matchers/*` - Multiple pattern matching implementations
+  - `Monitoring/*` - 10+ monitoring and metrics services
 
-- **Infrastructure Domain** (`Services::Infrastructure::*`)
-  - `BroadcastService` - WebSocket broadcasting with reliability features
-  - `MonitoringService` - System health, metrics, and error tracking
+- **Broadcast Domain** (root-level services)
+  - `CoreBroadcastService` - Base WebSocket broadcasting
+  - `BroadcastReliabilityService` - Delivery guarantees and retry orchestration
+  - `BroadcastAnalytics` / `BroadcastErrorHandler` / `BroadcastRateLimiter`
+
+- **Bulk Operations Domain** (`BulkOperations::*`)
+  - `BaseService`, `CategorizationService`, `DeletionService`, `StatusUpdateService`
+
+- **Analytics Domain**
+  - `DashboardExporter`, `PatternPerformanceAnalyzer`
+  - `DashboardExpenseFilterService` extending `ExpenseFilterService`
+
+- **Infrastructure** — Cross-cutting concerns
+  - `ErrorTrackingService`, `MetricsCalculator`, `QueueMonitor`
+  - `SyncMetricsCollector`, `RedisAnalyticsService`
 
 **Current State:**
-- Fully functional expense tracking Rails application with comprehensive models and services
-- Core models: Category, EmailAccount, Expense, ParsingRule, ApiToken (all with full validation and associations)
-- Domain-organized service layer with clear separation of concerns
-- API endpoints for iPhone Shortcuts integration via webhooks controller
+- Fully functional expense tracking application with 28 models, 80+ services, 49 Stimulus controllers
+- Core models: Category, EmailAccount, Expense, Budget, AdminUser, CategorizationPattern, CompositePattern, CanonicalMerchant, and more
+- ML-powered categorization with pattern learning, confidence scoring, and user feedback loops
+- Real-time sync with conflict detection/resolution and undo support
+- Full API layer for iPhone Shortcuts integration (webhooks, categories, patterns, health)
+- Admin panel with pattern management, testing, import/export, and analytics
 - Database seeded with Costa Rican bank data and expense categories
-- Background job processing with Solid Queue
-- Comprehensive test suite: 236 examples with 100% pass rate (148 model tests, 88 service tests)
-- Production-ready security with encrypted credentials and API token authentication
+- Background job processing with Solid Queue and Sidekiq
+- 7,400+ unit tests with 100% pass rate
+- Production-ready security with encrypted credentials, API token authentication, and CSP headers
+- Spanish localization (i18n) in progress across all interfaces
 
-**Epic 3 Implementation Complete:**
-- **Task 3.2**: View toggle system (compact/expanded) with persistent user preferences
-- **Task 3.3**: Inline quick actions (95/100 QA score) with keyboard navigation
-- **Task 3.4**: Batch selection system with full accessibility compliance and keyboard shortcuts
-- **Enhanced Dashboard**: Improved UX with DashboardExpenseFilterService extending ExpenseFilterService
-- **Performance Optimized**: <50ms query performance with strategic database indexing
-- **Financial Confidence Design**: Complete color palette implementation across all components
+**Completed Epics:**
+- **Epic 1**: Core expense tracking (models, controllers, views, API)
+- **Epic 2**: Advanced categorization (ML patterns, bulk operations, analytics)
+- **Epic 3**: UX/Dashboard enhancements (view toggle, inline actions, batch selection, keyboard navigation)
+
+**QA Remediation (In Progress):**
+- Phase 0 (Emergency Fixes): Complete — 7/7 tasks merged
+- Phase 1 (Critical Performance): Complete — 7/8 tasks merged
+- Phase 2 (Security Hardening): Complete — 8/8 tasks merged
+- Phase 3 (UX & Design): In progress — 10 tasks (mobile nav, i18n translations, pagination, undo, flash dismiss, keyboard shortcuts)
+- Phase 4 (Performance Polish): Pending — 6 tasks
+- Phase 5 (Cleanup & Polish): Pending — 5 tasks
+- Full plan: `docs/plans/2026-02-14-qa-remediation-plan.md`
 
 ## Development Rules
 

@@ -1,6 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { Turbo } from "@hotwired/turbo-rails"
-import { shouldSuppressShortcut } from "../utilities/keyboard_shortcut_helpers"
+import { shouldSuppressShortcut } from "utilities/keyboard_shortcut_helpers"
 
 // Dashboard Expenses Controller for Epic 3 Task 3.2
 // Manages view toggle between compact and expanded modes with responsive behavior

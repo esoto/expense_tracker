@@ -268,7 +268,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       context "when system is healthy" do
         before do
           allow(Services::QueueMonitor).to receive(:calculate_health_status).and_return(
-            { status: "healthy", message: "Queue system operando normalmente" }
+            { status: "healthy", message: "Queue system operating normally" }
           )
         end
 
@@ -279,14 +279,14 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
           json = JSON.parse(response.body)
 
           expect(json["status"]).to eq("healthy")
-          expect(json["message"]).to include("operando normalmente")
+          expect(json["message"]).to include("operating normally")
         end
       end
 
       context "when system is critical" do
         before do
           allow(Services::QueueMonitor).to receive(:calculate_health_status).and_return(
-            { status: "critical", message: "No hay trabajadores saludables available" }
+            { status: "critical", message: "No healthy workers available" }
           )
         end
 
@@ -297,7 +297,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
           json = JSON.parse(response.body)
 
           expect(json["status"]).to eq("critical")
-          expect(json["message"]).to include("No hay trabajadores saludables")
+          expect(json["message"]).to include("No healthy workers")
         end
       end
     end
@@ -392,7 +392,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
       },
       health_status: {
         status: "healthy",
-        message: "Queue system operando normalmente"
+        message: "Queue system operating normally"
       }
     })
 

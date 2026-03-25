@@ -25,8 +25,8 @@ class ExpensesController < ApplicationController
 
       # Extract metadata for UI
       @filters_applied = @result.metadata[:filters_applied]
-      @current_page = [(@result.metadata[:page] || 1).to_i, 1].max
-      @per_page = [(@result.metadata[:per_page] || 50).to_i, 1].max
+      @current_page = [ (@result.metadata[:page] || 1).to_i, 1 ].max
+      @per_page = [ (@result.metadata[:per_page] || 50).to_i, 1 ].max
 
       # Build Pagy::Offset instance from the already-paginated result for navigation controls
       @pagy = Pagy::Offset.new(count: @total_count, page: @current_page, limit: @per_page) if @total_count

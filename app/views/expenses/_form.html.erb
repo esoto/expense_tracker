@@ -78,9 +78,9 @@
 
   <!-- Submit Buttons -->
   <div class="flex items-center justify-end space-x-3 pt-6 border-t border-slate-200">
-    <%= link_to "Cancelar", expense.persisted? ? expense : expenses_path,
+    <%= link_to t("common.cancel"), expense.persisted? ? expense : expenses_path,
         class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-6 py-2 rounded-lg font-medium" %>
-    <%= form.submit expense.persisted? ? "Actualizar Gasto" : "Crear Gasto",
+    <%= form.submit expense.persisted? ? t("expenses.actions.update") : t("expenses.actions.create"),
         class: "bg-teal-700 hover:bg-teal-800 text-white px-6 py-2 rounded-lg font-medium shadow-sm" %>
   </div>
 <% end %>

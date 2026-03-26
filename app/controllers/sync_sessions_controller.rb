@@ -38,7 +38,7 @@ class SyncSessionsController < ApplicationController
             partial: "sync_sessions/unified_widget")
         end
         format.html do
-          redirect_to sync_sessions_path, notice: "Sincronización iniciada exitosamente"
+          redirect_to sync_sessions_path, notice: t("sync_sessions.flash.started")
         end
         format.json { render json: { id: @sync_session.id, status: @sync_session.status }, status: :created }
       end
@@ -49,18 +49,18 @@ class SyncSessionsController < ApplicationController
 
   def cancel
     unless @sync_session.active?
-      return redirect_to sync_sessions_path, alert: "Esta sincronización no está activa"
+      return redirect_to sync_sessions_path, alert: t("sync_sessions.flash.not_active")
     end
 
     @sync_session.cancel!
 
     respond_to do |format|
-      format.html { redirect_to sync_sessions_path, notice: "Sincronización cancelada exitosamente" }
+      format.html { redirect_to sync_sessions_path, notice: t("sync_sessions.flash.cancelled") }
       format.json { render json: { status: @sync_session.status }, status: :ok }
     end
   rescue => e
     Rails.logger.error "Error cancelling sync session #{@sync_session.id}: #{e.message}"
-    redirect_to sync_sessions_path, alert: "Error al cancelar la sincronización"
+    redirect_to sync_sessions_path, alert: t("sync_sessions.flash.cancel_error")
   end
 
   def retry
@@ -69,7 +69,7 @@ class SyncSessionsController < ApplicationController
     if result.success?
       new_session = result.sync_session
       respond_to do |format|
-        format.html { redirect_to sync_sessions_path, notice: "Sincronización reiniciada exitosamente" }
+        format.html { redirect_to sync_sessions_path, notice: t("sync_sessions.flash.restarted") }
         format.json { render json: { id: new_session.id, status: new_session.status }, status: :created }
       end
     else
@@ -142,7 +142,7 @@ class SyncSessionsController < ApplicationController
         when :account_not_found
           redirect_to sync_sessions_path, alert: result.message
         else
-          redirect_to sync_sessions_path, alert: result.message || "Error al crear la sincronización"
+          redirect_to sync_sessions_path, alert: result.message || t("sync_sessions.flash.create_error")
         end
       end
       format.json { render json: { error: result.message }, status: :unprocessable_content }

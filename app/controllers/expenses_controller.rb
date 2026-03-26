@@ -81,7 +81,7 @@ class ExpensesController < ApplicationController
     @expense.crc! if @expense.currency.blank? # Default to CRC if no currency specified
 
     if @expense.save
-      redirect_to @expense, notice: "Gasto creado exitosamente."
+      redirect_to @expense, notice: t("expenses.flash.created")
     else
       @categories = Category.all.order(:name)
       @email_accounts = EmailAccount.all.order(:email)
@@ -92,7 +92,7 @@ class ExpensesController < ApplicationController
   # PATCH/PUT /expenses/1
   def update
     if @expense.update(expense_params)
-      redirect_to @expense, notice: "Gasto actualizado exitosamente."
+      redirect_to @expense, notice: t("expenses.flash.updated")
     else
       @categories = Category.all.order(:name)
       @email_accounts = EmailAccount.all.order(:email)
@@ -112,7 +112,7 @@ class ExpensesController < ApplicationController
       respond_to do |format|
         format.html do
           redirect_to expenses_url,
-            notice: "Gasto eliminado. Puedes deshacer esta acción.",
+            notice: t("expenses.flash.deleted"),
             flash: { undo_id: undo_entry.id, undo_time_remaining: undo_entry.time_remaining }
         end
         format.turbo_stream do
@@ -122,7 +122,7 @@ class ExpensesController < ApplicationController
         format.json do
           render json: {
             success: true,
-            message: "Gasto eliminado. Puedes deshacer esta acción.",
+            message: t("expenses.flash.deleted"),
             undo_id: undo_entry.id,
             undo_time_remaining: undo_entry.time_remaining
           }
@@ -131,9 +131,9 @@ class ExpensesController < ApplicationController
     rescue StandardError => e
       Rails.logger.error "Error deleting expense: #{e.message}"
       respond_to do |format|
-        format.html { redirect_to expenses_url, alert: "Error al eliminar el gasto. Por favor, inténtalo de nuevo." }
+        format.html { redirect_to expenses_url, alert: t("expenses.flash.delete_error") }
         format.turbo_stream do
-          render turbo_stream: turbo_stream.update("flash_messages", partial: "shared/flash", locals: { alert: "Error al eliminar el gasto. Por favor, inténtalo de nuevo." })
+          render turbo_stream: turbo_stream.update("flash_messages", partial: "shared/flash", locals: { alert: t("expenses.flash.delete_error") })
         end
         format.json { render json: { success: false, error: "Error al eliminar el gasto" }, status: :internal_server_error }
       end
@@ -254,7 +254,7 @@ class ExpensesController < ApplicationController
     redirect_to dashboard_expenses_path, alert: e.message
   rescue StandardError => e
     Rails.logger.error "Error starting email sync: #{e.message}"
-    redirect_to dashboard_expenses_path, alert: "Error al iniciar la sincronización. Por favor, inténtalo de nuevo."
+    redirect_to dashboard_expenses_path, alert: t("expenses.flash.sync_error")
   end
 
   # POST /expenses/:id/correct_category
@@ -266,7 +266,7 @@ class ExpensesController < ApplicationController
       # Ensure the category exists (using id: to be explicit for Brakeman)
       unless Category.exists?(id: new_category_id)
         respond_to do |format|
-          format.html { redirect_back(fallback_location: @expense, alert: "Categoría inválida") }
+          format.html { redirect_back(fallback_location: @expense, alert: t("expenses.flash.category_invalid")) }
           format.json { render json: { success: false, error: "Invalid category ID" }, status: :unprocessable_content }
         end
         return
@@ -275,7 +275,7 @@ class ExpensesController < ApplicationController
       @expense.reject_ml_suggestion!(new_category_id)
 
       respond_to do |format|
-        format.html { redirect_back(fallback_location: @expense, notice: "Categoría actualizada correctamente") }
+        format.html { redirect_back(fallback_location: @expense, notice: t("expenses.flash.category_updated")) }
         format.turbo_stream { render turbo_stream: turbo_stream.replace("expense_#{@expense.id}_category", partial: "expenses/category_with_confidence", locals: { expense: @expense }) }
         format.json {
           render json: {
@@ -287,14 +287,14 @@ class ExpensesController < ApplicationController
       end
     else
       respond_to do |format|
-        format.html { redirect_back(fallback_location: @expense, alert: "Por favor selecciona una categoría") }
+        format.html { redirect_back(fallback_location: @expense, alert: t("expenses.flash.category_blank")) }
         format.json { render json: { success: false, error: "Category ID required" }, status: :unprocessable_content }
       end
     end
   rescue StandardError => e
     Rails.logger.error "Error correcting category: #{e.message}"
     respond_to do |format|
-      format.html { redirect_back(fallback_location: @expense, alert: "Error al actualizar la categoría") }
+      format.html { redirect_back(fallback_location: @expense, alert: t("expenses.flash.category_error")) }
       format.json { render json: { success: false, error: e.message }, status: :internal_server_error }
     end
   end
@@ -303,20 +303,20 @@ class ExpensesController < ApplicationController
   def accept_suggestion
     if @expense.accept_ml_suggestion!
       respond_to do |format|
-        format.html { redirect_back(fallback_location: @expense, notice: "Sugerencia aceptada") }
+        format.html { redirect_back(fallback_location: @expense, notice: t("expenses.flash.suggestion_accepted")) }
         format.turbo_stream { render turbo_stream: turbo_stream.replace("expense_#{@expense.id}_category", partial: "expenses/category_with_confidence", locals: { expense: @expense }) }
         format.json { render json: { success: true, expense: expense_json(@expense) } }
       end
     else
       respond_to do |format|
-        format.html { redirect_back(fallback_location: @expense, alert: "No hay sugerencia disponible") }
+        format.html { redirect_back(fallback_location: @expense, alert: t("expenses.flash.suggestion_none")) }
         format.json { render json: { success: false, error: "No suggestion available" }, status: :unprocessable_content }
       end
     end
   rescue StandardError => e
     Rails.logger.error "Error accepting suggestion: #{e.message}"
     respond_to do |format|
-      format.html { redirect_back(fallback_location: @expense, alert: "Error al aceptar la sugerencia") }
+      format.html { redirect_back(fallback_location: @expense, alert: t("expenses.flash.suggestion_accept_error")) }
       format.json { render json: { success: false, error: e.message }, status: :internal_server_error }
     end
   end
@@ -326,14 +326,14 @@ class ExpensesController < ApplicationController
     @expense.update!(ml_suggested_category_id: nil)
 
     respond_to do |format|
-      format.html { redirect_back(fallback_location: @expense, notice: "Sugerencia rechazada") }
+      format.html { redirect_back(fallback_location: @expense, notice: t("expenses.flash.suggestion_rejected")) }
       format.turbo_stream { render turbo_stream: turbo_stream.replace("expense_#{@expense.id}_category", partial: "expenses/category_with_confidence", locals: { expense: @expense }) }
       format.json { render json: { success: true, expense: expense_json(@expense) } }
     end
   rescue StandardError => e
     Rails.logger.error "Error rejecting suggestion: #{e.message}"
     respond_to do |format|
-      format.html { redirect_back(fallback_location: @expense, alert: "Error al rechazar la sugerencia") }
+      format.html { redirect_back(fallback_location: @expense, alert: t("expenses.flash.suggestion_reject_error")) }
       format.json { render json: { success: false, error: e.message }, status: :internal_server_error }
     end
   end
@@ -345,7 +345,7 @@ class ExpensesController < ApplicationController
     # Validate status parameter
     unless %w[pending processed failed duplicate].include?(new_status)
       respond_to do |format|
-        format.html { redirect_back(fallback_location: @expense, alert: "Estado inválido") }
+        format.html { redirect_back(fallback_location: @expense, alert: t("expenses.flash.status_invalid")) }
         format.json { render json: { success: false, error: "Invalid status" }, status: :unprocessable_content }
       end
       return
@@ -353,7 +353,7 @@ class ExpensesController < ApplicationController
 
     if @expense.update(status: new_status)
       respond_to do |format|
-        format.html { redirect_back(fallback_location: @expense, notice: "Estado actualizado exitosamente") }
+        format.html { redirect_back(fallback_location: @expense, notice: t("expenses.flash.status_updated")) }
         format.turbo_stream do
           render turbo_stream: [
             turbo_stream.replace("expense_#{@expense.id}_status", partial: "expenses/status_badge", locals: { expense: @expense }),
@@ -364,7 +364,7 @@ class ExpensesController < ApplicationController
       end
     else
       respond_to do |format|
-        format.html { redirect_back(fallback_location: @expense, alert: "Error al actualizar el estado") }
+        format.html { redirect_back(fallback_location: @expense, alert: t("expenses.flash.status_error")) }
         format.json { render json: { success: false, errors: @expense.errors.full_messages }, status: :unprocessable_content }
       end
     end
@@ -435,7 +435,7 @@ class ExpensesController < ApplicationController
     if duplicated_expense.save
       @categories = Category.all.order(:name)
       respond_to do |format|
-        format.html { redirect_to duplicated_expense, notice: "Gasto duplicado exitosamente" }
+        format.html { redirect_to duplicated_expense, notice: t("expenses.flash.duplicated") }
         format.turbo_stream do
           render turbo_stream: [
             turbo_stream.prepend("expenses_table_body", partial: "expenses/expense_row", locals: { expense: duplicated_expense, categories: @categories }),
@@ -578,12 +578,12 @@ class ExpensesController < ApplicationController
   def set_expense
     @expense = current_user_expenses.find(params[:id])
   rescue ActiveRecord::RecordNotFound
-    redirect_to expenses_path, alert: "Gasto no encontrado o no tienes permiso para verlo."
+    redirect_to expenses_path, alert: t("expenses.flash.not_found")
   end
 
   def authorize_expense!
     unless can_modify_expense?(@expense)
-      redirect_to expenses_path, alert: "No tienes permiso para modificar este gasto."
+      redirect_to expenses_path, alert: t("expenses.flash.not_authorized")
     end
   end
 
@@ -880,8 +880,8 @@ class ExpensesController < ApplicationController
   def authorize_bulk_operation!
     unless user_signed_in?
       respond_to do |format|
-        format.json { render json: { success: false, message: "No autorizado" }, status: :unauthorized }
-        format.html { redirect_to root_path, alert: "No autorizado" }
+        format.json { render json: { success: false, message: t("common.unauthorized") }, status: :unauthorized }
+        format.html { redirect_to root_path, alert: t("common.unauthorized") }
       end
       return false
     end

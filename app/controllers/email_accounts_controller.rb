@@ -39,7 +39,7 @@ class EmailAccountsController < ApplicationController
     end
 
     if @email_account.save
-      redirect_to email_account_url(@email_account), notice: "Cuenta de correo creada exitosamente."
+      redirect_to email_account_url(@email_account), notice: t("email_accounts.flash.created")
     else
       render :new, status: :unprocessable_content
     end
@@ -62,7 +62,7 @@ class EmailAccountsController < ApplicationController
     end
 
     if @email_account.update(email_account_params.except(:password, :server, :port))
-      redirect_to email_account_url(@email_account), notice: "Cuenta de correo actualizada exitosamente."
+      redirect_to email_account_url(@email_account), notice: t("email_accounts.flash.updated")
     else
       render :edit, status: :unprocessable_content
     end
@@ -71,7 +71,7 @@ class EmailAccountsController < ApplicationController
   # DELETE /email_accounts/1
   def destroy
     @email_account.destroy
-    redirect_to email_accounts_url, notice: "Cuenta de correo eliminada exitosamente."
+    redirect_to email_accounts_url, notice: t("email_accounts.flash.deleted")
   end
 
   private

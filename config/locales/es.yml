@@ -6,10 +6,16 @@ es:
   
   # Navigation
   nav:
-    dashboard: "Panel de Control"
+    dashboard: "Dashboard"
     expenses: "Gastos"
+    categorize: "Categorizar"
+    analytics: "Analytics"
+    accounts: "Cuentas"
     sync: "Sincronización"
+    patterns: "Patrones"
     settings: "Configuración"
+    new_expense: "Nuevo Gasto"
+    new_expense_aria: "Crear un nuevo gasto"
     
   # Sync Status Widget
   sync:
@@ -119,6 +125,11 @@ es:
       
   # Email accounts
   email_accounts:
+    flash:
+      created: "Cuenta de correo creada exitosamente."
+      updated: "Cuenta de correo actualizada exitosamente."
+      deleted: "Cuenta de correo eliminada exitosamente."
+
     bank_names:
       bac: "BAC San José"
       bcr: "Banco de Costa Rica"
@@ -129,6 +140,45 @@ es:
       
   # Expenses
   expenses:
+    titles:
+      index: "Gastos - Expense Tracker"
+      dashboard: "Dashboard - Expense Tracker"
+      new: "Nuevo Gasto - Expense Tracker"
+      edit: "Editar %{name} - Expense Tracker"
+      show: "%{name} - Expense Tracker"
+      show_no_merchant: "Sin comercio - Expense Tracker"
+
+    flash:
+      created: "Gasto creado exitosamente."
+      updated: "Gasto actualizado exitosamente."
+      deleted: "Gasto eliminado. Puedes deshacer esta acción."
+      delete_error: "Error al eliminar el gasto. Por favor, inténtalo de nuevo."
+      duplicated: "Gasto duplicado exitosamente"
+      sync_error: "Error al iniciar la sincronización. Por favor, inténtalo de nuevo."
+      not_found: "Gasto no encontrado o no tienes permiso para verlo."
+      not_authorized: "No tienes permiso para modificar este gasto."
+      category_invalid: "Categoría inválida"
+      category_updated: "Categoría actualizada correctamente"
+      category_blank: "Por favor selecciona una categoría"
+      category_error: "Error al actualizar la categoría"
+      suggestion_accepted: "Sugerencia aceptada"
+      suggestion_none: "No hay sugerencia disponible"
+      suggestion_accept_error: "Error al aceptar la sugerencia"
+      suggestion_rejected: "Sugerencia rechazada"
+      suggestion_reject_error: "Error al rechazar la sugerencia"
+      status_invalid: "Estado inválido"
+      status_updated: "Estado actualizado exitosamente"
+      status_error: "Error al actualizar el estado"
+
+    actions:
+      back_to_dashboard: "← Volver al Dashboard"
+      new: "Nuevo Gasto"
+      create: "Crear Gasto"
+      update: "Actualizar Gasto"
+      delete_confirm: "¿Estás seguro de que quieres eliminar este gasto?"
+      delete_title: "Eliminar gasto (Delete)"
+      delete_aria: "Eliminar gasto"
+
     categories:
       food: "Alimentación"
       transport: "Transporte"
@@ -143,11 +193,24 @@ es:
       confirmed: "Confirmado"
       rejected: "Rechazado"
       
+  # Sync sessions
+  sync_sessions:
+    flash:
+      started: "Sincronización iniciada exitosamente"
+      not_active: "Esta sincronización no está activa"
+      cancelled: "Sincronización cancelada exitosamente"
+      cancel_error: "Error al cancelar la sincronización"
+      restarted: "Sincronización reiniciada exitosamente"
+      create_error: "Error al crear la sincronización"
+      not_found: "Sincronización no encontrada"
+      unexpected_error: "Ocurrió un error inesperado. Por favor intenta nuevamente."
+
   # Common
   common:
     loading: "Cargando..."
     saving: "Guardando..."
     saved: "Guardado"
+    save: "Guardar"
     cancel: "Cancelar"
     confirm: "Confirmar"
     delete: "Eliminar"
@@ -158,3 +221,6 @@ es:
     filter: "Filtrar"
     export: "Exportar"
     import: "Importar"
+    view: "Ver"
+    are_you_sure: "¿Estás seguro?"
+    unauthorized: "No autorizado"

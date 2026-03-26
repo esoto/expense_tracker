@@ -465,30 +465,55 @@ RSpec.describe Services::MetricsCalculator, type: :service, performance: true do
   end
 
   describe '.clear_cache', performance: true do
-    it 'clears all metrics calculator caches when no email_account specified' do
-      Rails.cache.write('metrics_calculator:account_1:month:2025-08-10', 'test1')
-      Rails.cache.write('metrics_calculator:account_2:week:2025-08-10', 'test2')
-      Rails.cache.write('other_cache_key', 'test3')
+    before { Rails.cache.clear }
+
+    it 'increments the global version key when no email_account is specified' do
+      before_version = Rails.cache.read(described_class::GLOBAL_VERSION_KEY).to_i
 
       described_class.clear_cache
 
-      expect(Rails.cache.read('metrics_calculator:account_1:month:2025-08-10')).to be_nil
-      expect(Rails.cache.read('metrics_calculator:account_2:week:2025-08-10')).to be_nil
-      expect(Rails.cache.read('other_cache_key')).to eq('test3')
+      after_version = Rails.cache.read(described_class::GLOBAL_VERSION_KEY).to_i
+      expect(after_version).to be > before_version
     end
 
-    it 'clears only specific email_account caches when email_account provided' do
-      Rails.cache.write("metrics_calculator:account_#{email_account.id}:month:2025-08-10", 'test1')
-      Rails.cache.write("metrics_calculator:account_#{email_account.id}:week:2025-08-10", 'test2')
-      Rails.cache.write("metrics_calculator:account_#{other_email_account.id}:month:2025-08-10", 'test3')
-      Rails.cache.write('other_cache_key', 'test4')
+    it 'increments only the account-specific version key when email_account is provided' do
+      global_before = Rails.cache.read(described_class::GLOBAL_VERSION_KEY).to_i
+      account_before = Rails.cache.read(described_class.account_version_key(email_account.id)).to_i
+      other_account_before = Rails.cache.read(described_class.account_version_key(other_email_account.id)).to_i
 
       described_class.clear_cache(email_account: email_account)
 
-      expect(Rails.cache.read("metrics_calculator:account_#{email_account.id}:month:2025-08-10")).to be_nil
-      expect(Rails.cache.read("metrics_calculator:account_#{email_account.id}:week:2025-08-10")).to be_nil
-      expect(Rails.cache.read("metrics_calculator:account_#{other_email_account.id}:month:2025-08-10")).to eq('test3')
-      expect(Rails.cache.read('other_cache_key')).to eq('test4')
+      expect(Rails.cache.read(described_class.account_version_key(email_account.id)).to_i).to be > account_before
+      # Global and other-account versions must NOT change
+      expect(Rails.cache.read(described_class::GLOBAL_VERSION_KEY).to_i).to eq(global_before)
+      expect(Rails.cache.read(described_class.account_version_key(other_email_account.id)).to_i).to eq(other_account_before)
+    end
+
+    it 'causes a new cache key to be generated after clearing global cache' do
+      key_before = described_class.new(email_account: email_account, period: :month, reference_date: current_date).cache_key
+
+      described_class.clear_cache
+
+      key_after = described_class.new(email_account: email_account, period: :month, reference_date: current_date).cache_key
+      expect(key_after).not_to eq(key_before)
+    end
+
+    it 'causes a new cache key to be generated after clearing account-specific cache' do
+      key_before = described_class.new(email_account: email_account, period: :month, reference_date: current_date).cache_key
+
+      described_class.clear_cache(email_account: email_account)
+
+      key_after = described_class.new(email_account: email_account, period: :month, reference_date: current_date).cache_key
+      expect(key_after).not_to eq(key_before)
+    end
+
+    it 'does not change the cache key for other accounts when clearing one account' do
+      key_other_before = described_class.new(email_account: other_email_account, period: :month, reference_date: current_date).cache_key
+
+      described_class.clear_cache(email_account: email_account)
+
+      key_other_after = described_class.new(email_account: other_email_account, period: :month, reference_date: current_date).cache_key
+      expect(key_other_after).to eq(key_other_before)
     end
   end
 

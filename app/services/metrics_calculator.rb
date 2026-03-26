@@ -11,6 +11,15 @@ module Services
   CACHE_EXPIRY = 1.hour
   SUPPORTED_PERIODS = %i[day week month year].freeze
 
+  # Version key prefixes — appended to cache keys so that an atomic increment
+  # instantly obsoletes all entries for an account (or globally) without needing
+  # delete_matched pattern scanning.
+  GLOBAL_VERSION_KEY = "metrics_calculator:global_version"
+
+  def self.account_version_key(account_id)
+    "metrics_calculator:account_version:#{account_id}"
+  end
+
   class InvalidPeriodError < StandardError; end
   class CalculationError < StandardError; end
   class MissingEmailAccountError < StandardError; end
@@ -61,14 +70,35 @@ module Services
     calculate
   end
 
-  # Clear all metric caches for a specific email account
+  # Invalidate metric caches for a specific email account (or all accounts).
+  #
+  # Atomically increments a version counter that is embedded in every cache key.
+  # Old entries become unreachable immediately — no delete_matched scan needed.
   def self.clear_cache(email_account: nil)
     if email_account
-      Rails.cache.delete_matched("metrics_calculator:account_#{email_account.id}:*")
+      atomic_increment(account_version_key(email_account.id))
     else
-      Rails.cache.delete_matched("metrics_calculator:*")
+      atomic_increment(GLOBAL_VERSION_KEY)
     end
   end
+
+  # Atomic increment helper that works for both MemoryStore (test/dev) and
+  # distributed cache backends (Redis/Memcache).
+  def self.atomic_increment(key)
+    if Rails.cache.is_a?(ActiveSupport::Cache::MemoryStore)
+      @version_mutex ||= Mutex.new
+      @version_mutex.synchronize do
+        current = Rails.cache.read(key) || 0
+        Rails.cache.write(key, current + 1)
+      end
+    else
+      Rails.cache.increment(key, 1, initial: 1) ||
+        Rails.cache.write(key, 1)
+    end
+  rescue => e
+    Rails.logger.error "[MetricsCalculator] Failed to increment version key #{key}: #{e.message}"
+  end
+  private_class_method :atomic_increment
 
   # Pre-calculate metrics for common periods for a specific email account
   def self.pre_calculate_all(email_account: nil, reference_date: Date.current)
@@ -150,7 +180,9 @@ module Services
   end
 
   def generate_cache_key
-    "metrics_calculator:account_#{email_account.id}:#{period}:#{reference_date.iso8601}"
+    global_v = Rails.cache.read(GLOBAL_VERSION_KEY) || 0
+    account_v = Rails.cache.read(self.class.account_version_key(email_account.id)) || 0
+    "metrics_calculator:account_#{email_account.id}:#{period}:#{reference_date.iso8601}:gv#{global_v}:av#{account_v}"
   end
 
   def benchmark_calculation
@@ -224,14 +256,22 @@ module Services
   def calculate_metrics
     expenses = expenses_in_period
 
-    # Single query for main aggregates
-    count, total, average, min_val, max_val = expenses.pick(
-      Arel.sql("COUNT(*)"),
-      Arel.sql("COALESCE(SUM(amount), 0)"),
-      Arel.sql("COALESCE(AVG(amount), 0)"),
-      Arel.sql("MIN(amount)"),
-      Arel.sql("MAX(amount)")
-    )
+    # Single consolidated query for all scalar aggregates
+    # Previously: COUNT(*), SUM, AVG, MIN, MAX were combined but unique_merchants,
+    # uncategorized_count were separate queries. Now all in one round-trip.
+    count, total, average, min_val, max_val, unique_merchants, uncategorized =
+      expenses.pick(
+        Arel.sql("COUNT(*)"),
+        Arel.sql("COALESCE(SUM(amount), 0)"),
+        Arel.sql("COALESCE(AVG(amount), 0)"),
+        Arel.sql("MIN(amount)"),
+        Arel.sql("MAX(amount)"),
+        Arel.sql("COUNT(DISTINCT merchant_name)"),
+        Arel.sql("COUNT(*) FILTER (WHERE category_id IS NULL)")
+      )
+
+    # Separate query for unique categories (requires JOIN so kept standalone)
+    unique_categories = expenses.joins(:category).distinct.count("categories.id")
 
     {
       total_amount: total.to_f,
@@ -240,9 +280,9 @@ module Services
       median_amount: calculate_median(expenses),
       min_amount: min_val&.to_f || 0.0,
       max_amount: max_val&.to_f || 0.0,
-      unique_merchants: expenses.distinct.count(:merchant_name),
-      unique_categories: expenses.joins(:category).distinct.count("categories.id"),
-      uncategorized_count: expenses.uncategorized.count,
+      unique_merchants: unique_merchants.to_i,
+      unique_categories: unique_categories,
+      uncategorized_count: uncategorized.to_i,
       by_status: calculate_status_breakdown(expenses),
       by_currency: calculate_currency_breakdown(expenses)
     }
@@ -252,9 +292,14 @@ module Services
     current_metrics ||= calculate_metrics
     previous_expenses = expenses_in_previous_period
 
-    previous_total = previous_expenses.sum(:amount).to_f
-    previous_count = previous_expenses.count
-    previous_average = calculate_average(previous_expenses)
+    # Consolidated: single query for previous period totals (was: sum + count + sum + count)
+    previous_count, previous_sum = previous_expenses.pick(
+      Arel.sql("COUNT(*)"),
+      Arel.sql("COALESCE(SUM(amount), 0)")
+    )
+    previous_total = previous_sum.to_f
+    previous_count = previous_count.to_i
+    previous_average = previous_count.zero? ? 0.0 : (previous_total / previous_count).round(2)
 
     {
       amount_change: calculate_percentage_change(current_metrics[:total_amount], previous_total),

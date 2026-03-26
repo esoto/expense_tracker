@@ -1,0 +1,77 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Verification script for PER-128: ExpenseFilterService caching
+# Run with: bin/rails runner bin/verify_expense_filter_cache
+
+puts "=" * 60
+puts "PER-128: ExpenseFilterService Caching Verification"
+puts "=" * 60
+
+# Check cache is enabled
+cache_enabled = Rails.configuration.respond_to?(:expense_filter_cache_enabled) &&
+                Rails.configuration.expense_filter_cache_enabled
+puts "\n[1] Cache enabled flag: #{cache_enabled ? 'YES' : 'NO'}"
+abort "ERROR: Cache not enabled in #{Rails.env} environment" unless cache_enabled
+
+# Find or create a test account
+account = EmailAccount.first
+abort "ERROR: No EmailAccount found. Please seed the database." unless account
+
+puts "\n[2] Using account: #{account.email} (id=#{account.id})"
+puts "    Expense count for account: #{Expense.where(email_account_id: account.id).count}"
+
+Rails.cache.clear
+puts "\n[3] Cache cleared"
+
+# First call — should NOT be cached
+puts "\n[4] First call..."
+service1 = Services::ExpenseFilterService.new(account_ids: [ account.id ])
+result1 = service1.call
+puts "    Total count: #{result1.total_count}"
+puts "    cached: #{result1.performance_metrics[:cached]}"
+puts "    query_time_ms: #{result1.performance_metrics[:query_time_ms]}"
+raise "FAIL: First call should NOT be cached" if result1.performance_metrics[:cached]
+
+# Second call — should be cached
+puts "\n[5] Second call (should be cached)..."
+service2 = Services::ExpenseFilterService.new(account_ids: [ account.id ])
+result2 = service2.call
+puts "    Total count: #{result2.total_count}"
+puts "    cached: #{result2.performance_metrics[:cached]}"
+raise "FAIL: Second call SHOULD be cached" unless result2.performance_metrics[:cached]
+raise "FAIL: Cached result total_count mismatch" unless result2.total_count == result1.total_count
+
+# Verify different params produce different keys
+key1 = Services::ExpenseFilterService.new(account_ids: [ account.id ], min_amount: 10).send(:cache_key)
+key2 = Services::ExpenseFilterService.new(account_ids: [ account.id ], min_amount: 9999).send(:cache_key)
+puts "\n[6] Different filter params -> different keys: #{key1 != key2 ? 'OK' : 'FAIL'}"
+raise "FAIL: Same cache key for different min_amount values" if key1 == key2
+
+# Verify cache key uses generate_filters_hash
+service_k = Services::ExpenseFilterService.new(account_ids: [ account.id ])
+key = service_k.send(:cache_key)
+filters_hash = service_k.send(:generate_filters_hash)
+puts "\n[7] Cache key includes generate_filters_hash: #{key.include?(filters_hash) ? 'OK' : 'FAIL'}"
+raise "FAIL: Cache key does not include generate_filters_hash" unless key.include?(filters_hash)
+
+# Verify scoped version: touching another account's expense should NOT bust cache
+other_account = EmailAccount.where.not(id: account.id).first
+if other_account && Expense.where(email_account_id: other_account.id).exists?
+  puts "\n[8] Cross-tenant isolation test..."
+  Rails.cache.clear
+  r1 = Services::ExpenseFilterService.new(account_ids: [ account.id ]).call
+  raise "FAIL: r1 should not be cached" if r1.performance_metrics[:cached]
+
+  Expense.where(email_account_id: other_account.id).first.touch
+  r2 = Services::ExpenseFilterService.new(account_ids: [ account.id ]).call
+  puts "    After touching other account expense, cached: #{r2.performance_metrics[:cached]}"
+  raise "FAIL: Cache should still be valid after other account update" unless r2.performance_metrics[:cached]
+  puts "    Cross-tenant isolation: OK"
+else
+  puts "\n[8] Cross-tenant isolation test: SKIPPED (no other account with expenses found)"
+end
+
+puts "\n" + "=" * 60
+puts "ALL CHECKS PASSED — PER-128 caching is working correctly"
+puts "=" * 60

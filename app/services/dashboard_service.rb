@@ -2,6 +2,10 @@ module Services
   class DashboardService
   CACHE_EXPIRY = 5.minutes
 
+  # Version key incremented atomically on invalidation.  Embedding this in the
+  # cache key makes stale entries unreachable without any delete_matched scan.
+  DASHBOARD_VERSION_KEY = "dashboard:version"
+
   def initialize
   end
 
@@ -11,7 +15,7 @@ module Services
     sync_sessions = sync_session_data
 
     # Cache everything else
-    cached_analytics = Rails.cache.fetch("dashboard_analytics", expires_in: CACHE_EXPIRY) do
+    cached_analytics = Rails.cache.fetch(dashboard_cache_key, expires_in: CACHE_EXPIRY) do
       {
         totals: calculate_totals,
         recent_expenses: recent_expenses,
@@ -27,32 +31,64 @@ module Services
     cached_analytics.merge(sync_info: sync_data, sync_sessions: sync_sessions)
   end
 
-  # Add cache clearing
+  # Atomically increment the dashboard version key so all callers reading
+  # dashboard_cache_key will compute a new key and get fresh data.
+  # No delete_matched needed.
   def self.clear_cache
-    Rails.cache.delete_matched("dashboard_*")
+    if Rails.cache.is_a?(ActiveSupport::Cache::MemoryStore)
+      @version_mutex ||= Mutex.new
+      @version_mutex.synchronize do
+        current = Rails.cache.read(DASHBOARD_VERSION_KEY) || 0
+        Rails.cache.write(DASHBOARD_VERSION_KEY, current + 1)
+      end
+    else
+      Rails.cache.increment(DASHBOARD_VERSION_KEY, 1, initial: 1) ||
+        Rails.cache.write(DASHBOARD_VERSION_KEY, 1)
+    end
+  rescue => e
+    Rails.logger.error "[DashboardService] Failed to increment version key: #{e.message}"
   end
 
   private
 
+  def dashboard_cache_key
+    version = Rails.cache.read(DASHBOARD_VERSION_KEY) || 0
+    "dashboard_analytics:v#{version}"
+  end
+
   def calculate_totals
+    # Consolidated: single query for all-time sum + count (was 2 separate queries)
+    all_time_count, all_time_sum = Expense.pick(
+      Arel.sql("COUNT(*)"),
+      Arel.sql("COALESCE(SUM(amount), 0)")
+    )
+
+    # Single query for both monthly totals using conditional aggregation (was 2 queries)
+    today = Date.current
+    current_month_start  = today.beginning_of_month
+    current_month_end    = today.end_of_month
+    last_month_start     = 1.month.ago.to_date.beginning_of_month
+    last_month_end       = 1.month.ago.to_date.end_of_month
+
+    current_filter_sql = ActiveRecord::Base.sanitize_sql_array([
+      "COALESCE(SUM(amount) FILTER (WHERE transaction_date BETWEEN ? AND ?), 0)",
+      current_month_start, current_month_end
+    ])
+    last_filter_sql = ActiveRecord::Base.sanitize_sql_array([
+      "COALESCE(SUM(amount) FILTER (WHERE transaction_date BETWEEN ? AND ?), 0)",
+      last_month_start, last_month_end
+    ])
+
+    current_total, last_total = Expense
+      .where(transaction_date: last_month_start..current_month_end)
+      .pick(Arel.sql(current_filter_sql), Arel.sql(last_filter_sql))
+
     {
-      total_expenses: Expense.sum(:amount),
-      expense_count: Expense.count,
-      current_month_total: current_month_total,
-      last_month_total: last_month_total
+      total_expenses: all_time_sum.to_f,
+      expense_count: all_time_count.to_i,
+      current_month_total: current_total.to_f,
+      last_month_total: last_total.to_f
     }
-  end
-
-  def current_month_total
-    Expense.where(
-      transaction_date: Date.current.beginning_of_month..Date.current.end_of_month
-    ).sum(:amount)
-  end
-
-  def last_month_total
-    Expense.where(
-      transaction_date: 1.month.ago.beginning_of_month..1.month.ago.end_of_month
-    ).sum(:amount)
   end
 
   def recent_expenses

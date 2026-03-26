@@ -89,7 +89,10 @@ module Services
   end
 
   def call
-    return cached_result if cache_enabled? && cached_result.present?
+    if cache_enabled?
+      cached = load_cached_result
+      return cached if cached.present?
+    end
 
     start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
@@ -365,8 +368,17 @@ module Services
       Rails.configuration.expense_filter_cache_enabled
   end
 
-  def cached_result
-    @cached_result ||= Rails.cache.read(cache_key)
+  def load_cached_result
+    stored = Rails.cache.read(cache_key)
+    return nil unless stored.present?
+
+    # Return a new Result with cached: true in performance_metrics
+    Result.new(
+      expenses: stored.expenses,
+      total_count: stored.total_count,
+      metadata: stored.metadata,
+      performance_metrics: stored.performance_metrics.merge(cached: true)
+    )
   end
 
   def cache_result(result)
@@ -374,7 +386,11 @@ module Services
   end
 
   def cache_key
-    [ "expense_filter", generate_filters_hash, page, per_page ].join("/")
+    "expense_filter:#{generate_filters_hash}:#{page}:#{per_page}:v#{expense_version}"
+  end
+
+  def expense_version
+    Expense.where(email_account_id: account_ids).maximum(:updated_at).to_i
   end
 
   def check_index_usage(scope)

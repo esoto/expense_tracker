@@ -431,10 +431,10 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
   end
 
   describe "#activity_indicator", unit: true do
-    it "returns 'Never' for nil activity" do
+    it "returns 'Nunca' for nil activity" do
       result = helper.activity_indicator(nil)
 
-      expect(result).to include("Never")
+      expect(result).to include("Nunca")
       expect(result).to include("text-slate-400")
     end
 
@@ -442,7 +442,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
       recent_time = 30.minutes.ago
       result = helper.activity_indicator(recent_time)
 
-      expect(result).to include("Active")
+      expect(result).to include("Activo")
       expect(result).to include("text-emerald-600")
       expect(result).to include("bg-emerald-500")
       expect(result).to include("animate-pulse")
@@ -453,7 +453,7 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
       result = helper.activity_indicator(recent_time)
 
       expect(result).to include("text-slate-600")
-      expect(result).not_to include("Active")
+      expect(result).not_to include("Activo")
     end
 
     it "shows muted indicator for old activity" do

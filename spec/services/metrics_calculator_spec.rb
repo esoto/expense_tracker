@@ -101,8 +101,42 @@ RSpec.describe Services::MetricsCalculator, type: :service, performance: true do
         calculator.send(:expenses_in_period)
 
         query_count = count_queries { calculator.send(:calculate_metrics) }
-        # Consolidated should need at most 7 queries (main agg + distinct merchants + distinct categories + uncategorized + status + currency + median)
-        expect(query_count).to be <= 7
+        # PER-124 optimization: combined unique_merchants + uncategorized_count into the main
+        # aggregate query. Now needs at most 5: combined scalar agg, unique_categories join,
+        # status breakdown, currency breakdown, and median PERCENTILE_CONT.
+        expect(query_count).to be <= 5
+      end
+
+      it 'computes unique_merchants and uncategorized_count in a single SQL round-trip', :unit do
+        calculator.send(:expenses_in_period)
+
+        queries = []
+        listener = ->(*_args, payload) { queries << payload[:sql] if payload[:sql]&.include?('FILTER') }
+        ActiveSupport::Notifications.subscribed(listener, 'sql.active_record') do
+          calculator.send(:calculate_metrics)
+        end
+        # The consolidated query must include FILTER clause (PostgreSQL conditional aggregate)
+        expect(queries).not_to be_empty
+      end
+    end
+
+    context 'calculate_trends query consolidation' do
+      before do
+        create(:expense, email_account: email_account, category: category1,
+               amount: 100, transaction_date: current_date)
+        create(:expense, email_account: email_account, category: category1,
+               amount: 80, transaction_date: current_date - 40.days)
+        Rails.cache.clear
+      end
+
+      it 'fetches previous period total and count in a single query', :unit do
+        current_metrics = { total_amount: 100.0, transaction_count: 1, average_amount: 100.0 }
+        calculator.send(:expenses_in_previous_period) # warm up AR cache
+
+        query_count = count_queries { calculator.send(:calculate_trends, current_metrics) }
+        # PER-124: was 3 queries (sum + count + sum + count via calculate_average).
+        # Now 1 query with COUNT(*) + SUM in a single pick.
+        expect(query_count).to be <= 1
       end
     end
 
@@ -465,30 +499,55 @@ RSpec.describe Services::MetricsCalculator, type: :service, performance: true do
   end
 
   describe '.clear_cache', performance: true do
-    it 'clears all metrics calculator caches when no email_account specified' do
-      Rails.cache.write('metrics_calculator:account_1:month:2025-08-10', 'test1')
-      Rails.cache.write('metrics_calculator:account_2:week:2025-08-10', 'test2')
-      Rails.cache.write('other_cache_key', 'test3')
+    before { Rails.cache.clear }
+
+    it 'increments the global version key when no email_account is specified' do
+      before_version = Rails.cache.read(described_class::GLOBAL_VERSION_KEY).to_i
 
       described_class.clear_cache
 
-      expect(Rails.cache.read('metrics_calculator:account_1:month:2025-08-10')).to be_nil
-      expect(Rails.cache.read('metrics_calculator:account_2:week:2025-08-10')).to be_nil
-      expect(Rails.cache.read('other_cache_key')).to eq('test3')
+      after_version = Rails.cache.read(described_class::GLOBAL_VERSION_KEY).to_i
+      expect(after_version).to be > before_version
     end
 
-    it 'clears only specific email_account caches when email_account provided' do
-      Rails.cache.write("metrics_calculator:account_#{email_account.id}:month:2025-08-10", 'test1')
-      Rails.cache.write("metrics_calculator:account_#{email_account.id}:week:2025-08-10", 'test2')
-      Rails.cache.write("metrics_calculator:account_#{other_email_account.id}:month:2025-08-10", 'test3')
-      Rails.cache.write('other_cache_key', 'test4')
+    it 'increments only the account-specific version key when email_account is provided' do
+      global_before = Rails.cache.read(described_class::GLOBAL_VERSION_KEY).to_i
+      account_before = Rails.cache.read(described_class.account_version_key(email_account.id)).to_i
+      other_account_before = Rails.cache.read(described_class.account_version_key(other_email_account.id)).to_i
 
       described_class.clear_cache(email_account: email_account)
 
-      expect(Rails.cache.read("metrics_calculator:account_#{email_account.id}:month:2025-08-10")).to be_nil
-      expect(Rails.cache.read("metrics_calculator:account_#{email_account.id}:week:2025-08-10")).to be_nil
-      expect(Rails.cache.read("metrics_calculator:account_#{other_email_account.id}:month:2025-08-10")).to eq('test3')
-      expect(Rails.cache.read('other_cache_key')).to eq('test4')
+      expect(Rails.cache.read(described_class.account_version_key(email_account.id)).to_i).to be > account_before
+      # Global and other-account versions must NOT change
+      expect(Rails.cache.read(described_class::GLOBAL_VERSION_KEY).to_i).to eq(global_before)
+      expect(Rails.cache.read(described_class.account_version_key(other_email_account.id)).to_i).to eq(other_account_before)
+    end
+
+    it 'causes a new cache key to be generated after clearing global cache' do
+      key_before = described_class.new(email_account: email_account, period: :month, reference_date: current_date).cache_key
+
+      described_class.clear_cache
+
+      key_after = described_class.new(email_account: email_account, period: :month, reference_date: current_date).cache_key
+      expect(key_after).not_to eq(key_before)
+    end
+
+    it 'causes a new cache key to be generated after clearing account-specific cache' do
+      key_before = described_class.new(email_account: email_account, period: :month, reference_date: current_date).cache_key
+
+      described_class.clear_cache(email_account: email_account)
+
+      key_after = described_class.new(email_account: email_account, period: :month, reference_date: current_date).cache_key
+      expect(key_after).not_to eq(key_before)
+    end
+
+    it 'does not change the cache key for other accounts when clearing one account' do
+      key_other_before = described_class.new(email_account: other_email_account, period: :month, reference_date: current_date).cache_key
+
+      described_class.clear_cache(email_account: email_account)
+
+      key_other_after = described_class.new(email_account: other_email_account, period: :month, reference_date: current_date).cache_key
+      expect(key_other_after).to eq(key_other_before)
     end
   end
 

@@ -46,8 +46,16 @@ class PatternLearningEvent < ApplicationRecord
   private
 
   def invalidate_analytics_cache
-    # Clear analytics caches when learning events are recorded
-    Rails.cache.delete_matched("pattern_analytics/*") if Rails.cache.respond_to?(:delete_matched)
+    # Atomically bump the shared analytics version key.  The analytics
+    # controller embeds this value in every cache key, so any entry written
+    # with the previous version becomes unreachable — no delete_matched needed.
+    if Rails.cache.is_a?(ActiveSupport::Cache::MemoryStore)
+      current = Rails.cache.read(Analytics::PatternDashboardController::ANALYTICS_VERSION_KEY) || 0
+      Rails.cache.write(Analytics::PatternDashboardController::ANALYTICS_VERSION_KEY, current + 1)
+    else
+      Rails.cache.increment(Analytics::PatternDashboardController::ANALYTICS_VERSION_KEY, 1, initial: 1) ||
+        Rails.cache.write(Analytics::PatternDashboardController::ANALYTICS_VERSION_KEY, 1)
+    end
   rescue => e
     Rails.logger.error "[PatternLearningEvent] Analytics cache invalidation failed: #{e.message}"
   end

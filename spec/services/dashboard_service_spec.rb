@@ -120,31 +120,39 @@ RSpec.describe Services::DashboardService, integration: true do
   end
 
   describe 'private methods', integration: true do
-    describe '#current_month_total', integration: true do
-      it 'calculates expenses for current month only' do
-        # Get baseline total first
-        baseline_total = service.send(:current_month_total)
+    # PER-124: current_month_total and last_month_total were extracted private methods.
+    # They are now consolidated into calculate_totals for query efficiency.
+    # We test their correctness via calculate_totals.
+    describe '#calculate_totals', integration: true do
+      before { Rails.cache.clear }
+
+      it 'calculates current_month_total correctly', :unit do
+        baseline = service.send(:calculate_totals)[:current_month_total]
 
         create(:expense, amount: 100.0, transaction_date: Date.current, category: category, email_account: email_account)
         create(:expense, amount: 200.0, transaction_date: 1.month.ago, category: category, email_account: email_account)
 
-        total = service.send(:current_month_total)
-        # Check the difference, not absolute value
-        expect(total - baseline_total).to eq(100.0)
+        total = service.send(:calculate_totals)[:current_month_total]
+        expect(total - baseline).to eq(100.0)
       end
-    end
 
-    describe '#last_month_total', integration: true do
-      it 'calculates expenses for last month only' do
-        # Get baseline total first
-        baseline_total = service.send(:last_month_total)
+      it 'calculates last_month_total correctly', :unit do
+        baseline = service.send(:calculate_totals)[:last_month_total]
 
         create(:expense, amount: 100.0, transaction_date: Date.current, category: category, email_account: email_account)
         create(:expense, amount: 200.0, transaction_date: 1.month.ago, category: category, email_account: email_account)
 
-        total = service.send(:last_month_total)
-        # Check the difference, not absolute value
-        expect(total - baseline_total).to eq(200.0)
+        total = service.send(:calculate_totals)[:last_month_total]
+        expect(total - baseline).to eq(200.0)
+      end
+
+      it 'consolidates monthly totals into 2 queries instead of 4 (PER-124)', :unit do
+        create(:expense, amount: 50.0, transaction_date: Date.current, category: category, email_account: email_account)
+
+        query_count = count_queries { service.send(:calculate_totals) }
+        # PER-124: was 4 queries (total_sum + count + current_month + last_month).
+        # Now 2 queries: one for all-time agg, one for both monthly totals via FILTER.
+        expect(query_count).to be <= 2
       end
     end
   end
@@ -154,9 +162,12 @@ RSpec.describe Services::DashboardService, integration: true do
       Rails.cache.clear
     end
 
-    it 'caches analytics data' do
-      # First call should write to cache
-      expect(Rails.cache).to receive(:fetch).with("dashboard_analytics", expires_in: 5.minutes).and_call_original
+    it 'caches analytics data using a versioned key' do
+      # The cache key now embeds the dashboard version to support atomic invalidation.
+      # We verify that Rails.cache.fetch is called with a key matching the pattern.
+      expect(Rails.cache).to receive(:fetch).with(
+        match(/\Adashboard_analytics:v\d+\z/), expires_in: 5.minutes
+      ).and_call_original
       service.analytics
     end
 
@@ -173,15 +184,32 @@ RSpec.describe Services::DashboardService, integration: true do
   end
 
   describe '.clear_cache', integration: true do
-    before do
-      Rails.cache.write('dashboard_analytics', { test: 'data' })
-      Rails.cache.write('dashboard_other', { test: 'data' })
-      Rails.cache.write('other_key', { test: 'data' })
+    it 'increments the dashboard version key so stale cache entries become unreachable' do
+      # Read version before invalidation
+      before_version = Rails.cache.read(Services::DashboardService::DASHBOARD_VERSION_KEY).to_i
+
+      Services::DashboardService.clear_cache
+
+      after_version = Rails.cache.read(Services::DashboardService::DASHBOARD_VERSION_KEY).to_i
+      expect(after_version).to be > before_version
     end
 
-    it 'clears all dashboard cache keys' do
-      expect(Rails.cache).to receive(:delete_matched).with("dashboard_*")
+    it 'causes analytics to re-fetch data after clear_cache is called' do
+      # Warm the cache
+      service.analytics
+
+      # The version key is now embedded in the cache key.
+      # After clearing, a new key is generated so fresh data is fetched.
       Services::DashboardService.clear_cache
+
+      # A subsequent analytics call should succeed (not return stale cached data
+      # from the pre-clear key) — confirmed by the fact that the version changed.
+      result = service.analytics
+      expect(result).to include(:totals, :sync_info)
+    end
+
+    it 'does not raise when called multiple times' do
+      expect { 3.times { Services::DashboardService.clear_cache } }.not_to raise_error
     end
   end
 

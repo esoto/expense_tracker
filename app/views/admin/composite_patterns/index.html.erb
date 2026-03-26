@@ -2,18 +2,18 @@
   <!-- Header -->
   <div class="flex justify-between items-center mb-6">
     <div>
-      <h1 class="text-3xl font-bold text-slate-900">Composite Patterns</h1>
-      <p class="text-slate-600 mt-1">Complex rules combining multiple patterns</p>
+      <h1 class="text-3xl font-bold text-slate-900">Patrones Compuestos</h1>
+      <p class="text-slate-600 mt-1">Reglas complejas que combinan múltiples patrones</p>
     </div>
     <div class="flex space-x-2">
       <%= link_to new_admin_composite_pattern_path, class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center" do %>
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
         </svg>
-        New Composite Pattern
+        Nuevo Patrón Compuesto
       <% end %>
       <%= link_to admin_patterns_path, class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium" do %>
-        Simple Patterns
+        Patrones Simples
       <% end %>
     </div>
   </div>
@@ -23,13 +23,13 @@
     <table class="min-w-full divide-y divide-slate-200">
       <thead class="bg-slate-50">
         <tr>
-          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Name</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Operator</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Category</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Patterns</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Success Rate</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nombre</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Operador</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Categoría</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Patrones</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tasa de Éxito</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Estado</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-slate-200">
@@ -50,7 +50,7 @@
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
-                <%= pattern.pattern_ids.size %> patterns
+                <%= pattern.pattern_ids.size %> patrones
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm">
                 <div class="flex items-center">
@@ -68,11 +68,11 @@
                     class: "inline-flex" do %>
                   <% if pattern.active? %>
                     <span class="px-2 py-1 text-xs rounded-full bg-emerald-100 text-emerald-700 cursor-pointer hover:bg-emerald-200">
-                      Active
+                      Activo
                     </span>
                   <% else %>
                     <span class="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-500 cursor-pointer hover:bg-slate-200">
-                      Inactive
+                      Inactivo
                     </span>
                   <% end %>
                 <% end %>
@@ -81,7 +81,7 @@
                 <div class="flex space-x-2">
                   <%= link_to admin_composite_pattern_path(pattern),
                       class: "text-teal-600 hover:text-teal-900",
-                      title: "View" do %>
+                      title: "Ver" do %>
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -89,7 +89,7 @@
                   <% end %>
                   <%= link_to edit_admin_composite_pattern_path(pattern),
                       class: "text-amber-600 hover:text-amber-900",
-                      title: "Edit" do %>
+                      title: "Editar" do %>
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                     </svg>
@@ -98,10 +98,10 @@
                       method: :delete,
                       data: {
                         turbo_method: :delete,
-                        turbo_confirm: "Are you sure?"
+                        turbo_confirm: "¿Estás seguro?"
                       },
                       class: "text-rose-600 hover:text-rose-900",
-                      title: "Delete" do %>
+                      title: "Eliminar" do %>
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                     </svg>

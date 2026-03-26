@@ -57,24 +57,38 @@ module Services
   end
 
   def calculate_totals
+    # Consolidated: single query for all-time sum + count (was 2 separate queries)
+    all_time_count, all_time_sum = Expense.pick(
+      Arel.sql("COUNT(*)"),
+      Arel.sql("COALESCE(SUM(amount), 0)")
+    )
+
+    # Single query for both monthly totals using conditional aggregation (was 2 queries)
+    today = Date.current
+    current_month_start  = today.beginning_of_month
+    current_month_end    = today.end_of_month
+    last_month_start     = 1.month.ago.to_date.beginning_of_month
+    last_month_end       = 1.month.ago.to_date.end_of_month
+
+    current_filter_sql = ActiveRecord::Base.sanitize_sql_array([
+      "COALESCE(SUM(amount) FILTER (WHERE transaction_date BETWEEN ? AND ?), 0)",
+      current_month_start, current_month_end
+    ])
+    last_filter_sql = ActiveRecord::Base.sanitize_sql_array([
+      "COALESCE(SUM(amount) FILTER (WHERE transaction_date BETWEEN ? AND ?), 0)",
+      last_month_start, last_month_end
+    ])
+
+    current_total, last_total = Expense
+      .where(transaction_date: last_month_start..current_month_end)
+      .pick(Arel.sql(current_filter_sql), Arel.sql(last_filter_sql))
+
     {
-      total_expenses: Expense.sum(:amount),
-      expense_count: Expense.count,
-      current_month_total: current_month_total,
-      last_month_total: last_month_total
+      total_expenses: all_time_sum.to_f,
+      expense_count: all_time_count.to_i,
+      current_month_total: current_total.to_f,
+      last_month_total: last_total.to_f
     }
-  end
-
-  def current_month_total
-    Expense.where(
-      transaction_date: Date.current.beginning_of_month..Date.current.end_of_month
-    ).sum(:amount)
-  end
-
-  def last_month_total
-    Expense.where(
-      transaction_date: 1.month.ago.beginning_of_month..1.month.ago.end_of_month
-    ).sum(:amount)
   end
 
   def recent_expenses

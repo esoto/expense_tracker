@@ -70,4 +70,7 @@ Rails.application.configure do
   # Optimize encryption for test performance
   config.active_record.encryption.hash_digest_class = OpenSSL::Digest::SHA1  # Faster than SHA256
   config.active_record.encryption.support_sha1_for_non_deterministic_encryption = true
+
+  # Enable ExpenseFilterService caching
+  config.expense_filter_cache_enabled = true
 end

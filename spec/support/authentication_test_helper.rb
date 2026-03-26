@@ -47,7 +47,7 @@ module SystemAuthenticationHelper
     visit admin_login_path
     fill_in "admin_user[email]", with: admin_user.email
     fill_in "admin_user[password]", with: password
-    click_button "Sign In"
+    click_button "Iniciar Sesión"
   end
 end
 

@@ -195,19 +195,19 @@ module AnalyticsHelper
 
   # Returns activity indicator
   def activity_indicator(last_activity)
-    return content_tag(:span, "Never", class: "text-slate-400") if last_activity.nil?
+    return content_tag(:span, "Nunca", class: "text-slate-400") if last_activity.nil?
 
     time_ago = time_ago_in_words(last_activity)
 
     if last_activity > 1.hour.ago
       content_tag :span, class: "flex items-center" do
         content_tag(:span, "", class: "w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse") +
-        content_tag(:span, "Active #{time_ago} ago", class: "text-emerald-600 text-sm")
+        content_tag(:span, "Activo hace #{time_ago}", class: "text-emerald-600 text-sm")
       end
     elsif last_activity > 1.day.ago
-      content_tag :span, "#{time_ago} ago", class: "text-slate-600 text-sm"
+      content_tag :span, "hace #{time_ago}", class: "text-slate-600 text-sm"
     else
-      content_tag :span, "#{time_ago} ago", class: "text-slate-400 text-sm"
+      content_tag :span, "hace #{time_ago}", class: "text-slate-400 text-sm"
     end
   end
 

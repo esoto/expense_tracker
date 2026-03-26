@@ -224,14 +224,22 @@ module Services
   def calculate_metrics
     expenses = expenses_in_period
 
-    # Single query for main aggregates
-    count, total, average, min_val, max_val = expenses.pick(
-      Arel.sql("COUNT(*)"),
-      Arel.sql("COALESCE(SUM(amount), 0)"),
-      Arel.sql("COALESCE(AVG(amount), 0)"),
-      Arel.sql("MIN(amount)"),
-      Arel.sql("MAX(amount)")
-    )
+    # Single consolidated query for all scalar aggregates
+    # Previously: COUNT(*), SUM, AVG, MIN, MAX were combined but unique_merchants,
+    # uncategorized_count were separate queries. Now all in one round-trip.
+    count, total, average, min_val, max_val, unique_merchants, uncategorized =
+      expenses.pick(
+        Arel.sql("COUNT(*)"),
+        Arel.sql("COALESCE(SUM(amount), 0)"),
+        Arel.sql("COALESCE(AVG(amount), 0)"),
+        Arel.sql("MIN(amount)"),
+        Arel.sql("MAX(amount)"),
+        Arel.sql("COUNT(DISTINCT merchant_name)"),
+        Arel.sql("COUNT(*) FILTER (WHERE category_id IS NULL)")
+      )
+
+    # Separate query for unique categories (requires JOIN so kept standalone)
+    unique_categories = expenses.joins(:category).distinct.count("categories.id")
 
     {
       total_amount: total.to_f,
@@ -240,9 +248,9 @@ module Services
       median_amount: calculate_median(expenses),
       min_amount: min_val&.to_f || 0.0,
       max_amount: max_val&.to_f || 0.0,
-      unique_merchants: expenses.distinct.count(:merchant_name),
-      unique_categories: expenses.joins(:category).distinct.count("categories.id"),
-      uncategorized_count: expenses.uncategorized.count,
+      unique_merchants: unique_merchants.to_i,
+      unique_categories: unique_categories,
+      uncategorized_count: uncategorized.to_i,
       by_status: calculate_status_breakdown(expenses),
       by_currency: calculate_currency_breakdown(expenses)
     }
@@ -252,9 +260,14 @@ module Services
     current_metrics ||= calculate_metrics
     previous_expenses = expenses_in_previous_period
 
-    previous_total = previous_expenses.sum(:amount).to_f
-    previous_count = previous_expenses.count
-    previous_average = calculate_average(previous_expenses)
+    # Consolidated: single query for previous period totals (was: sum + count + sum + count)
+    previous_count, previous_sum = previous_expenses.pick(
+      Arel.sql("COUNT(*)"),
+      Arel.sql("COALESCE(SUM(amount), 0)")
+    )
+    previous_total = previous_sum.to_f
+    previous_count = previous_count.to_i
+    previous_average = previous_count.zero? ? 0.0 : (previous_total / previous_count).round(2)
 
     {
       amount_change: calculate_percentage_change(current_metrics[:total_amount], previous_total),

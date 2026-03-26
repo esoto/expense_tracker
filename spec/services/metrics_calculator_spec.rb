@@ -101,8 +101,42 @@ RSpec.describe Services::MetricsCalculator, type: :service, performance: true do
         calculator.send(:expenses_in_period)
 
         query_count = count_queries { calculator.send(:calculate_metrics) }
-        # Consolidated should need at most 7 queries (main agg + distinct merchants + distinct categories + uncategorized + status + currency + median)
-        expect(query_count).to be <= 7
+        # PER-124 optimization: combined unique_merchants + uncategorized_count into the main
+        # aggregate query. Now needs at most 5: combined scalar agg, unique_categories join,
+        # status breakdown, currency breakdown, and median PERCENTILE_CONT.
+        expect(query_count).to be <= 5
+      end
+
+      it 'computes unique_merchants and uncategorized_count in a single SQL round-trip', :unit do
+        calculator.send(:expenses_in_period)
+
+        queries = []
+        listener = ->(*_args, payload) { queries << payload[:sql] if payload[:sql]&.include?('FILTER') }
+        ActiveSupport::Notifications.subscribed(listener, 'sql.active_record') do
+          calculator.send(:calculate_metrics)
+        end
+        # The consolidated query must include FILTER clause (PostgreSQL conditional aggregate)
+        expect(queries).not_to be_empty
+      end
+    end
+
+    context 'calculate_trends query consolidation' do
+      before do
+        create(:expense, email_account: email_account, category: category1,
+               amount: 100, transaction_date: current_date)
+        create(:expense, email_account: email_account, category: category1,
+               amount: 80, transaction_date: current_date - 40.days)
+        Rails.cache.clear
+      end
+
+      it 'fetches previous period total and count in a single query', :unit do
+        current_metrics = { total_amount: 100.0, transaction_count: 1, average_amount: 100.0 }
+        calculator.send(:expenses_in_previous_period) # warm up AR cache
+
+        query_count = count_queries { calculator.send(:calculate_trends, current_metrics) }
+        # PER-124: was 3 queries (sum + count + sum + count via calculate_average).
+        # Now 1 query with COUNT(*) + SUM in a single pick.
+        expect(query_count).to be <= 1
       end
     end
 

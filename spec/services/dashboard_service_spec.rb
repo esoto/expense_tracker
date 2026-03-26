@@ -120,31 +120,39 @@ RSpec.describe Services::DashboardService, integration: true do
   end
 
   describe 'private methods', integration: true do
-    describe '#current_month_total', integration: true do
-      it 'calculates expenses for current month only' do
-        # Get baseline total first
-        baseline_total = service.send(:current_month_total)
+    # PER-124: current_month_total and last_month_total were extracted private methods.
+    # They are now consolidated into calculate_totals for query efficiency.
+    # We test their correctness via calculate_totals.
+    describe '#calculate_totals', integration: true do
+      before { Rails.cache.clear }
+
+      it 'calculates current_month_total correctly', :unit do
+        baseline = service.send(:calculate_totals)[:current_month_total]
 
         create(:expense, amount: 100.0, transaction_date: Date.current, category: category, email_account: email_account)
         create(:expense, amount: 200.0, transaction_date: 1.month.ago, category: category, email_account: email_account)
 
-        total = service.send(:current_month_total)
-        # Check the difference, not absolute value
-        expect(total - baseline_total).to eq(100.0)
+        total = service.send(:calculate_totals)[:current_month_total]
+        expect(total - baseline).to eq(100.0)
       end
-    end
 
-    describe '#last_month_total', integration: true do
-      it 'calculates expenses for last month only' do
-        # Get baseline total first
-        baseline_total = service.send(:last_month_total)
+      it 'calculates last_month_total correctly', :unit do
+        baseline = service.send(:calculate_totals)[:last_month_total]
 
         create(:expense, amount: 100.0, transaction_date: Date.current, category: category, email_account: email_account)
         create(:expense, amount: 200.0, transaction_date: 1.month.ago, category: category, email_account: email_account)
 
-        total = service.send(:last_month_total)
-        # Check the difference, not absolute value
-        expect(total - baseline_total).to eq(200.0)
+        total = service.send(:calculate_totals)[:last_month_total]
+        expect(total - baseline).to eq(200.0)
+      end
+
+      it 'consolidates monthly totals into 2 queries instead of 4 (PER-124)', :unit do
+        create(:expense, amount: 50.0, transaction_date: Date.current, category: category, email_account: email_account)
+
+        query_count = count_queries { service.send(:calculate_totals) }
+        # PER-124: was 4 queries (total_sum + count + current_month + last_month).
+        # Now 2 queries: one for all-time agg, one for both monthly totals via FILTER.
+        expect(query_count).to be <= 2
       end
     end
   end

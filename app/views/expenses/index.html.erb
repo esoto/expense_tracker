@@ -95,8 +95,30 @@
   </div>
   <% end %>
 
+  <!-- Mobile Card View (visible < md:) -->
+  <div id="expense_cards" class="md:hidden space-y-3">
+    <div class="px-4 py-3 flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-slate-900">Lista de Gastos</h2>
+      <span class="text-sm text-slate-500"><%= @expense_count %> gastos</span>
+    </div>
+    <div class="px-3 space-y-2">
+      <% @expenses.each do |expense| %>
+        <%= render "expense_card", expense: expense, categories: @categories %>
+      <% end %>
+    </div>
+    <!-- Mobile Pagination -->
+    <div class="px-4 py-4">
+      <% if @pagy && @pagy.pages > 1 %>
+        <%= pagy_financial_nav(@pagy) %>
+        <p class="text-sm text-slate-600 text-center mt-2">
+          Mostrando <%= @pagy.from %>-<%= @pagy.to %> de <%= number_with_delimiter(@pagy.count) %> gastos
+        </p>
+      <% end %>
+    </div>
+  </div>
+
   <!-- Expenses Table -->
-  <div id="expense_list" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
+  <div id="expense_list" class="hidden md:block bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
        data-controller="view-toggle batch-selection virtual-scroll"
        data-action="keydown@window->view-toggle#handleKeydown resize@window->view-toggle#handleResize"
        data-virtual-scroll-threshold-value="<%= @expenses.count %>"

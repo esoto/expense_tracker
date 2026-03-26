@@ -2,6 +2,10 @@ module Services
   class DashboardService
   CACHE_EXPIRY = 5.minutes
 
+  # Version key incremented atomically on invalidation.  Embedding this in the
+  # cache key makes stale entries unreachable without any delete_matched scan.
+  DASHBOARD_VERSION_KEY = "dashboard:version"
+
   def initialize
   end
 
@@ -11,7 +15,7 @@ module Services
     sync_sessions = sync_session_data
 
     # Cache everything else
-    cached_analytics = Rails.cache.fetch("dashboard_analytics", expires_in: CACHE_EXPIRY) do
+    cached_analytics = Rails.cache.fetch(dashboard_cache_key, expires_in: CACHE_EXPIRY) do
       {
         totals: calculate_totals,
         recent_expenses: recent_expenses,
@@ -27,12 +31,30 @@ module Services
     cached_analytics.merge(sync_info: sync_data, sync_sessions: sync_sessions)
   end
 
-  # Add cache clearing
+  # Atomically increment the dashboard version key so all callers reading
+  # dashboard_cache_key will compute a new key and get fresh data.
+  # No delete_matched needed.
   def self.clear_cache
-    Rails.cache.delete_matched("dashboard_*")
+    if Rails.cache.is_a?(ActiveSupport::Cache::MemoryStore)
+      @version_mutex ||= Mutex.new
+      @version_mutex.synchronize do
+        current = Rails.cache.read(DASHBOARD_VERSION_KEY) || 0
+        Rails.cache.write(DASHBOARD_VERSION_KEY, current + 1)
+      end
+    else
+      Rails.cache.increment(DASHBOARD_VERSION_KEY, 1, initial: 1) ||
+        Rails.cache.write(DASHBOARD_VERSION_KEY, 1)
+    end
+  rescue => e
+    Rails.logger.error "[DashboardService] Failed to increment version key: #{e.message}"
   end
 
   private
+
+  def dashboard_cache_key
+    version = Rails.cache.read(DASHBOARD_VERSION_KEY) || 0
+    "dashboard_analytics:v#{version}"
+  end
 
   def calculate_totals
     {

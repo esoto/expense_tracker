@@ -158,35 +158,30 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
     end
 
     describe "after_commit :invalidate_analytics_cache" do
-      it "invalidates pattern analytics cache" do
-        feedback = build_stubbed(:pattern_feedback)
-        cache = double("cache")
+      let(:version_key) { Analytics::PatternDashboardController::ANALYTICS_VERSION_KEY }
 
-        allow(Rails).to receive(:cache).and_return(cache)
-        expect(cache).to receive(:respond_to?).with(:delete_matched).and_return(true)
-        expect(cache).to receive(:delete_matched).with("pattern_analytics/*")
+      it "increments the analytics version key atomically" do
+        feedback = build_stubbed(:pattern_feedback)
+        before_version = Rails.cache.read(version_key).to_i
 
         feedback.send(:invalidate_analytics_cache)
+
+        after_version = Rails.cache.read(version_key).to_i
+        expect(after_version).to be > before_version
       end
 
-      it "handles cache without delete_matched method" do
+      it "does not use delete_matched" do
         feedback = build_stubbed(:pattern_feedback)
-        cache = double("cache")
 
-        allow(Rails).to receive(:cache).and_return(cache)
-        expect(cache).to receive(:respond_to?).with(:delete_matched).and_return(false)
-        expect(cache).not_to receive(:delete_matched)
-
+        expect(Rails.cache).not_to receive(:delete_matched)
         feedback.send(:invalidate_analytics_cache)
       end
 
       it "handles cache invalidation errors gracefully" do
         feedback = build_stubbed(:pattern_feedback)
-        cache = double("cache")
 
-        allow(Rails).to receive(:cache).and_return(cache)
-        expect(cache).to receive(:respond_to?).with(:delete_matched).and_return(true)
-        expect(cache).to receive(:delete_matched).and_raise(StandardError.new("Cache error"))
+        allow(Rails.cache).to receive(:is_a?).and_return(true)  # MemoryStore branch
+        allow(Rails.cache).to receive(:read).and_raise(StandardError.new("Cache error"))
         expect(Rails.logger).to receive(:error).with(match(/Analytics cache invalidation failed/))
 
         expect { feedback.send(:invalidate_analytics_cache) }.not_to raise_error

@@ -3,6 +3,9 @@
 module Analytics
   # Controller for pattern analytics dashboard with secure access controls
   class PatternDashboardController < Admin::BaseController
+    # Version key used by models to signal analytics cache invalidation.
+    # Increment this key atomically instead of using delete_matched.
+    ANALYTICS_VERSION_KEY = "pattern_analytics:version"
     # Authorization check for analytics access
     before_action :require_analytics_permission
     before_action :set_filters
@@ -166,7 +169,8 @@ module Analytics
         @time_range.last.to_time.to_i,
         @category_id,
         @pattern_type,
-        cache_version_key
+        cache_version_key,
+        analytics_invalidation_version
       ].compact.join("/")
     end
 
@@ -177,6 +181,13 @@ module Analytics
         PatternFeedback.maximum(:updated_at)&.to_i,
         PatternLearningEvent.maximum(:updated_at)&.to_i
       ].compact.join("-")
+    end
+
+    # Reads the atomic version counter that is incremented by models whenever
+    # analytics-relevant data changes.  Embedding this in the cache key makes
+    # all stale entries unreachable without any delete_matched scan.
+    def analytics_invalidation_version
+      Rails.cache.read(ANALYTICS_VERSION_KEY) || 1
     end
 
     def require_analytics_permission

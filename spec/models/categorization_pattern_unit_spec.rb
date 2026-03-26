@@ -883,24 +883,32 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
 
     describe "#invalidate_cache" do
       let(:pattern) { build_categorization_pattern }
+      let(:version_key) { Analytics::PatternDashboardController::ANALYTICS_VERSION_KEY }
+
+      it "increments the analytics version key atomically" do
+        before_version = Rails.cache.read(version_key).to_i
+
+        pattern.send(:invalidate_cache)
+
+        after_version = Rails.cache.read(version_key).to_i
+        expect(after_version).to be > before_version
+      end
+
+      it "does not use delete_matched" do
+        expect(Rails.cache).not_to receive(:delete_matched)
+        pattern.send(:invalidate_cache)
+      end
 
       it "handles cache invalidation errors gracefully" do
         allow(Rails.logger).to receive(:error)
-        allow(Rails.cache).to receive(:delete_matched).and_raise(StandardError.new("Cache error"))
+        allow(Rails.cache).to receive(:is_a?).and_return(true)  # MemoryStore branch
+        allow(Rails.cache).to receive(:read).and_raise(StandardError.new("Cache error"))
 
         expect { pattern.send(:invalidate_cache) }.not_to raise_error
         expect(Rails.logger).to have_received(:error).with(/Cache invalidation failed/)
       end
 
       it "skips pattern cache when not defined" do
-        expect { pattern.send(:invalidate_cache) }.not_to raise_error
-      end
-
-      it "skips Rails cache operations when delete_matched not available" do
-        cache_double = double("cache")
-        allow(Rails).to receive(:cache).and_return(cache_double)
-        allow(cache_double).to receive(:respond_to?).with(:delete_matched).and_return(false)
-
         expect { pattern.send(:invalidate_cache) }.not_to raise_error
       end
     end

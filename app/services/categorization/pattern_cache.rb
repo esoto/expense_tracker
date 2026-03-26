@@ -41,6 +41,9 @@ module Services::Categorization
     USER_PREF_KEY_PREFIX = "#{CACHE_NAMESPACE}user_pref"
     METRICS_KEY = "#{CACHE_NAMESPACE}metrics"
 
+    # Version key stored in Rails.cache for atomic cross-process increment
+    PATTERN_VERSION_KEY = "#{CACHE_NAMESPACE}pattern_cache_version"
+
     class << self
       # Get or create a default instance (for services that haven't migrated to DI yet)
       def instance
@@ -58,6 +61,7 @@ module Services::Categorization
       @redis_available = redis_available?
       @metrics_collector = MetricsCollector.new
       @lock = Mutex.new
+      @version_mutex = Mutex.new
       @logger = options.fetch(:logger, Rails.logger)
       @healthy = true
 
@@ -118,10 +122,11 @@ module Services::Categorization
       @all_patterns = nil
     end
 
-    # Invalidate cache for a specific category
+    # Invalidate cache for a specific category by bumping the pattern cache version.
+    # All keys embed the version, so stale entries are simply ignored — no
+    # delete_matched scan required.
     def invalidate_category(category_id)
-      # Invalidate all cached patterns for this category
-      @memory_cache.delete_matched("#{PATTERN_KEY_PREFIX}:*")
+      increment_pattern_cache_version
     end
 
     # Get multiple patterns by IDs efficiently
@@ -202,7 +207,7 @@ module Services::Categorization
     def get_all_active_patterns
       benchmark_with_metrics("get_all_active_patterns") do
         fetch_with_tiered_cache(
-          "#{PATTERN_KEY_PREFIX}:all:active:#{CACHE_VERSION}",
+          all_active_cache_key,
           memory_ttl: 1.minute, # Short TTL for large collections
           redis_ttl: 5.minutes
         ) do
@@ -554,7 +559,7 @@ module Services::Categorization
       invalidate_key(type_key)
 
       # Invalidate all patterns cache
-      invalidate_key("#{PATTERN_KEY_PREFIX}:all:active:#{CACHE_VERSION}")
+      invalidate_key(all_active_cache_key)
     end
 
     def invalidate_composite(composite)
@@ -591,13 +596,19 @@ module Services::Categorization
       end
     end
 
-    # Cache key generation methods
+    # Cache key generation methods — every key embeds the dynamic pattern version
+    # so that incrementing the version atomically invalidates all pattern-related
+    # entries without any delete_matched scan.
     def pattern_cache_key(pattern_id)
-      "#{PATTERN_KEY_PREFIX}:#{pattern_id}:#{CACHE_VERSION}"
+      "#{PATTERN_KEY_PREFIX}:#{pattern_id}:#{CACHE_VERSION}:pv#{pattern_cache_version}"
     end
 
     def type_cache_key(pattern_type)
-      "#{PATTERN_KEY_PREFIX}:type:#{pattern_type}:#{CACHE_VERSION}"
+      "#{PATTERN_KEY_PREFIX}:type:#{pattern_type}:#{CACHE_VERSION}:pv#{pattern_cache_version}"
+    end
+
+    def all_active_cache_key
+      "#{PATTERN_KEY_PREFIX}:all:active:#{CACHE_VERSION}:pv#{pattern_cache_version}"
     end
 
     def composite_cache_key(composite_id)
@@ -606,6 +617,34 @@ module Services::Categorization
 
     def user_pref_cache_key(merchant_name)
       "#{USER_PREF_KEY_PREFIX}:#{merchant_name}:#{CACHE_VERSION}"
+    end
+
+    # Returns the current pattern cache version integer, reading from Rails.cache
+    # so the value is shared across all processes/threads.
+    # Initializes to 0 if absent; increment_pattern_cache_version bumps it to ≥1.
+    def pattern_cache_version
+      Rails.cache.read(PATTERN_VERSION_KEY) || 0
+    end
+
+    # Atomically increment the pattern cache version.
+    #
+    # Rails.cache.increment is atomic for Memcache/Redis backends.
+    # For MemoryStore (tests / single-process dev) we fall back to a
+    # Mutex-protected read-write so the increment is still race-free
+    # within a single process.
+    def increment_pattern_cache_version
+      if Rails.cache.is_a?(ActiveSupport::Cache::MemoryStore)
+        @version_mutex.synchronize do
+          current = Rails.cache.read(PATTERN_VERSION_KEY) || 0
+          Rails.cache.write(PATTERN_VERSION_KEY, current + 1)
+        end
+      else
+        # Redis/Memcache: increment is atomic; seed value if key is missing
+        Rails.cache.increment(PATTERN_VERSION_KEY, 1, initial: 1) ||
+          Rails.cache.write(PATTERN_VERSION_KEY, 1)
+      end
+    rescue => e
+      @logger.error "[PatternCache] Failed to increment version key: #{e.message}"
     end
 
     # Serialization methods for Redis storage

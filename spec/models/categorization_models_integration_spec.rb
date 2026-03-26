@@ -217,8 +217,10 @@ RSpec.describe "Categorization Models Integration", type: :model, integration: t
       )
 
       # Check indexes exist
+      # Note: index_categorization_patterns_on_pattern_value was removed in PER-126 as an
+      # exact duplicate of idx_patterns_value_trgm (both are GIN gin_trgm_ops on pattern_value)
       indexes = ActiveRecord::Base.connection.indexes(:categorization_patterns)
-      expect(indexes.map(&:name)).to include("index_categorization_patterns_on_pattern_value")
+      expect(indexes.map(&:name)).to include("idx_patterns_value_trgm")
     end
   end
 end

@@ -48,12 +48,18 @@ module Services
     last_month_start     = 1.month.ago.to_date.beginning_of_month
     last_month_end       = 1.month.ago.to_date.end_of_month
 
+    current_filter_sql = ActiveRecord::Base.sanitize_sql_array([
+      "COALESCE(SUM(amount) FILTER (WHERE transaction_date BETWEEN ? AND ?), 0)",
+      current_month_start, current_month_end
+    ])
+    last_filter_sql = ActiveRecord::Base.sanitize_sql_array([
+      "COALESCE(SUM(amount) FILTER (WHERE transaction_date BETWEEN ? AND ?), 0)",
+      last_month_start, last_month_end
+    ])
+
     current_total, last_total = Expense
       .where(transaction_date: last_month_start..current_month_end)
-      .pick(
-        Arel.sql("COALESCE(SUM(amount) FILTER (WHERE transaction_date BETWEEN '#{current_month_start}' AND '#{current_month_end}'), 0)"),
-        Arel.sql("COALESCE(SUM(amount) FILTER (WHERE transaction_date BETWEEN '#{last_month_start}' AND '#{last_month_end}'), 0)")
-      )
+      .pick(Arel.sql(current_filter_sql), Arel.sql(last_filter_sql))
 
     {
       total_expenses: all_time_sum.to_f,

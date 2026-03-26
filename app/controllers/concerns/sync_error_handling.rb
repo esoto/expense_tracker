@@ -13,7 +13,7 @@ module SyncErrorHandling
 
   def handle_not_found
     respond_to do |format|
-      format.html { redirect_to sync_sessions_path, alert: "Sincronización no encontrada" }
+      format.html { redirect_to sync_sessions_path, alert: t("sync_sessions.flash.not_found") }
       format.json { render json: { error: "Not found" }, status: :not_found }
     end
   end
@@ -35,7 +35,7 @@ module SyncErrorHandling
 
     respond_to do |format|
       format.html do
-        redirect_to sync_sessions_path, alert: "Ocurrió un error inesperado. Por favor intenta nuevamente."
+        redirect_to sync_sessions_path, alert: t("sync_sessions.flash.unexpected_error")
       end
       format.json do
         render json: { error: "Internal server error" }, status: :internal_server_error

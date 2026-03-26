@@ -45,8 +45,8 @@
                   <% end %>
                 </td>
                 <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                  <%= link_to "Editar", edit_email_account_path(email_account), class: "text-teal-600 hover:text-teal-800" %>
-                  <%= button_to "Eliminar", email_account_path(email_account), method: :delete, data: { turbo_confirm: "¿Estás seguro?" }, class: "ml-4 text-rose-600 hover:text-rose-800 inline" %>
+                  <%= link_to t("common.edit"), edit_email_account_path(email_account), class: "text-teal-600 hover:text-teal-800" %>
+                  <%= button_to t("common.delete"), email_account_path(email_account), method: :delete, data: { turbo_confirm: t("common.are_you_sure") }, class: "ml-4 text-rose-600 hover:text-rose-800 inline" %>
                 </td>
               </tr>
               <% end %>

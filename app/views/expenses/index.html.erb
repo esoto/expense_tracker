@@ -1,4 +1,4 @@
-<% content_for :title, "Gastos - Expense Tracker" %>
+<% content_for :title, t("expenses.titles.index") %>
 
 <% # Navigation bar for dashboard navigation %>
 <% if @from_dashboard %>
@@ -74,7 +74,7 @@
             class: "rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
     </div>
     <div class="flex gap-2">
-      <%= form.submit "Filtrar", class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg shadow-sm" %>
+      <%= form.submit t("common.filter"), class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg shadow-sm" %>
       <%= link_to "Limpiar", expenses_path, class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg" %>
     </div>
     <% end %>

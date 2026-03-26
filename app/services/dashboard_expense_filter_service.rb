@@ -402,7 +402,8 @@ class DashboardExpenseFilterService < ExpenseFilterService
   end
 
   def dashboard_cache_key
-    [ "dashboard_expense_filter", generate_filters_hash, @view_mode, page, per_page ].join("/")
+    cursor_segment = @cursor.present? ? Digest::SHA256.hexdigest(@cursor)[0, 8] : "nocursor"
+    [ "dashboard_expense_filter", generate_filters_hash, @view_mode, page, per_page, cursor_segment ].join("/")
   end
 
   def log_dashboard_performance(result)

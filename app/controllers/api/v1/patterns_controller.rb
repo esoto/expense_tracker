@@ -22,8 +22,8 @@ module Api
         # Paginate results
         patterns = paginate(patterns)
 
-        # Handle conditional GET with ETag
-        handle_conditional_get(patterns)
+        # Handle conditional GET with ETag (PER-176: return early on 304)
+        return unless handle_conditional_get(patterns)
 
         render_success({
           patterns: serialize_patterns(patterns),
@@ -33,8 +33,12 @@ module Api
 
       # GET /api/v1/patterns/:id
       def show
-        # Handle conditional GET with ETag
-        fresh_when(@pattern, public: true)
+        # stale? sets ETag/Last-Modified headers and returns false when the
+        # client's If-None-Match matches, causing Rails to send 304 and halt
+        # further rendering. Using fresh_when here caused a DoubleRenderError
+        # (PER-176) because render_success would still be called after the
+        # response was already committed as 304.
+        return unless stale?(@pattern, public: true)
 
         render_success({
           pattern: serialize_pattern(@pattern)

@@ -15,19 +15,24 @@ module ApiCaching
       end
     end
 
-    # Set ETag and handle conditional GET (excluding HEAD)
+    # Set ETag and handle conditional GET (excluding HEAD).
+    # Returns true if the resource is stale (caller should render),
+    # false if fresh (304 already sent — caller should return).
+    # PER-176: Use stale? instead of fresh_when to prevent DoubleRenderError.
     def handle_conditional_get(resource)
-      return unless request.get? && !request.head?
+      return true unless request.get? && !request.head?
 
       if resource.respond_to?(:cache_key_with_version)
-        fresh_when(resource, public: true)
+        stale?(resource, public: true)
       elsif resource.respond_to?(:maximum)
         # For collections
-        fresh_when(
+        stale?(
           etag: generate_collection_etag(resource),
           last_modified: resource.maximum(:updated_at),
           public: true
         )
+      else
+        true
       end
     end
 

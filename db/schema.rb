@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_26_113713) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_27_050533) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -281,6 +281,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_26_113713) do
     t.integer "ml_correction_count", default: 0
     t.datetime "ml_last_corrected_at", precision: nil
     t.integer "ml_suggested_category_id"
+    t.text "notes"
     t.text "parsed_data"
     t.text "raw_email_content"
     t.integer "status", default: 0, null: false
@@ -625,6 +626,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_26_113713) do
   end
 
   create_table "sync_sessions", force: :cascade do |t|
+    t.bigint "admin_user_id"
     t.datetime "completed_at"
     t.datetime "created_at", null: false
     t.integer "detected_expenses", default: 0
@@ -639,6 +641,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_26_113713) do
     t.string "status", default: "pending", null: false
     t.integer "total_emails", default: 0
     t.datetime "updated_at", null: false
+    t.index ["admin_user_id"], name: "index_sync_sessions_on_admin_user_id"
     t.index ["created_at"], name: "index_sync_sessions_on_created_at"
     t.index ["metadata"], name: "index_sync_sessions_on_metadata", using: :gin
     t.index ["session_token"], name: "index_sync_sessions_on_session_token", unique: true
@@ -719,6 +722,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_26_113713) do
   add_foreign_key "sync_metrics", "sync_sessions"
   add_foreign_key "sync_session_accounts", "email_accounts"
   add_foreign_key "sync_session_accounts", "sync_sessions"
+  add_foreign_key "sync_sessions", "admin_users"
   add_foreign_key "user_category_preferences", "categories"
   add_foreign_key "user_category_preferences", "email_accounts"
 end

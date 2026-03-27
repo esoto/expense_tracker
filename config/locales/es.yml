@@ -148,6 +148,22 @@ es:
       show: "%{name} - Expense Tracker"
       show_no_merchant: "Sin comercio - Expense Tracker"
 
+    card:
+      no_merchant: "Sin comercio"
+      no_category: "Sin categoría"
+      status:
+        pending: "Pendiente"
+        duplicate: "Duplicado"
+        failed: "Fallido"
+        unknown: "Desconocido"
+      actions:
+        categorize_label: "Categorizar gasto"
+        categorize: "Categoría"
+        status_label: "Cambiar estado del gasto"
+        status: "Estado"
+        edit_label: "Editar gasto"
+        delete_label: "Eliminar gasto"
+
     flash:
       created: "Gasto creado exitosamente."
       updated: "Gasto actualizado exitosamente."

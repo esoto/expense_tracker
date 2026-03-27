@@ -3,6 +3,8 @@
 module Admin
   # Base controller for admin functionality with secure authentication
   class BaseController < ApplicationController
+    layout "admin"
+
     skip_before_action :authenticate_user!
     include AdminAuthentication
 

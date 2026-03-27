@@ -11,7 +11,7 @@ import { Controller } from "@hotwired/stimulus"
  * - Dispatches custom events for category picker, status toggle, and delete
  */
 export default class extends Controller {
-  static targets = ["actions", "checkbox"]
+  static targets = ["actions", "checkbox", "categoryDropdown"]
 
   static values = {
     expenseId: Number,
@@ -108,9 +108,46 @@ export default class extends Controller {
 
   openCategoryPicker(event) {
     event.stopPropagation()
-    this.dispatch("openCategoryPicker", {
-      detail: { expenseId: this.expenseIdValue },
-      bubbles: true
+    if (this.hasCategoryDropdownTarget) {
+      this.categoryDropdownTarget.classList.toggle("hidden")
+    }
+  }
+
+  selectCategory(event) {
+    event.stopPropagation()
+
+    const categoryId = event.currentTarget.dataset.categoryId
+    const categoryName = event.currentTarget.dataset.categoryName
+
+    // Close the dropdown immediately for responsive feel
+    if (this.hasCategoryDropdownTarget) {
+      this.categoryDropdownTarget.classList.add("hidden")
+    }
+
+    fetch(`/expenses/${this.expenseIdValue}/correct_category`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": this._csrfToken,
+        "Accept": "text/vnd.turbo-stream.html"
+      },
+      body: JSON.stringify({ category_id: categoryId })
+    })
+    .then(response => {
+      if (response.ok) {
+        this._showToast("Categoría actualizada", "success")
+        return response.text()
+      } else {
+        throw new Error("Failed to update category")
+      }
+    })
+    .then(turboStream => {
+      if (turboStream) {
+        Turbo.renderStreamMessage(turboStream)
+      }
+    })
+    .catch(_error => {
+      this._showToast("Error al actualizar categoría", "error")
     })
   }
 
@@ -253,6 +290,14 @@ export default class extends Controller {
     if (navigator.vibrate) {
       navigator.vibrate(duration)
     }
+  }
+
+  _showToast(message, type = "info") {
+    const event = new CustomEvent("toast:show", {
+      bubbles: true,
+      detail: { message, type }
+    })
+    document.dispatchEvent(event)
   }
 
   get _csrfToken() {

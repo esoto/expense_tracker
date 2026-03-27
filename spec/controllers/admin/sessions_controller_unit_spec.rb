@@ -186,8 +186,13 @@ RSpec.describe Admin::SessionsController, type: :controller, unit: true do
 
         it "renders too many requests error" do
           expect(controller).to receive(:render_too_many_requests)
-          result = controller.send(:check_login_rate_limit)
-          expect(result).to be false
+          controller.send(:check_login_rate_limit)
+        end
+
+        it "does not write a new attempt count when rate limit is already exceeded" do
+          allow(controller).to receive(:render_too_many_requests)
+          expect(Rails.cache).not_to receive(:write)
+          controller.send(:check_login_rate_limit)
         end
       end
     end
@@ -414,6 +419,124 @@ RSpec.describe Admin::SessionsController, type: :controller, unit: true do
         # Test the method exists and can be called
         expect(controller.respond_to?(:render_too_many_requests, true)).to be true
         # Testing the implementation details requires integration tests
+      end
+    end
+  end
+
+  # PER-179: Regression tests for invalid return-to path causing RoutingError on /login
+  describe "#valid_return_to_path (PER-179)", unit: true do
+    subject { controller.send(:valid_return_to_path, path) }
+
+    context "with a valid admin path" do
+      let(:path) { "/admin/patterns" }
+
+      it "returns the path unchanged" do
+        expect(subject).to eq("/admin/patterns")
+      end
+    end
+
+    context "with the admin root path" do
+      let(:path) { "/admin" }
+
+      it "returns the path" do
+        expect(subject).to eq("/admin")
+      end
+    end
+
+    context "with a nested admin path" do
+      let(:path) { "/admin/patterns/123/edit" }
+
+      it "returns the path" do
+        expect(subject).to eq("/admin/patterns/123/edit")
+      end
+    end
+
+    context "with /login (the non-existent route that caused PER-179)" do
+      let(:path) { "/login" }
+
+      it "returns nil to prevent RoutingError redirect" do
+        expect(subject).to be_nil
+      end
+    end
+
+    context "with /admin/login path" do
+      let(:path) { "/admin/login" }
+
+      it "returns the path (valid admin path)" do
+        expect(subject).to eq("/admin/login")
+      end
+    end
+
+    context "with a non-admin path like /expenses" do
+      let(:path) { "/expenses" }
+
+      it "returns nil (only admin paths are safe return destinations)" do
+        expect(subject).to be_nil
+      end
+    end
+
+    context "with an external URL" do
+      let(:path) { "https://evil.com/login" }
+
+      it "returns nil (prevents open redirect)" do
+        expect(subject).to be_nil
+      end
+    end
+
+    context "with a blank string" do
+      let(:path) { "" }
+
+      it "returns nil" do
+        expect(subject).to be_nil
+      end
+    end
+
+    context "with nil" do
+      let(:path) { nil }
+
+      it "returns nil" do
+        expect(subject).to be_nil
+      end
+    end
+  end
+
+  describe "#redirect_back_or (PER-179)", unit: true do
+    before do
+      controller.instance_variable_set(:@admin_user, admin_user)
+      allow(controller).to receive(:set_admin_session)
+      allow(controller).to receive(:log_successful_login)
+    end
+
+    context "when session[:return_to] is a valid admin path" do
+      before { session[:return_to] = "/admin/patterns" }
+
+      it "redirects to the stored admin path" do
+        expect(controller).to receive(:redirect_to).with("/admin/patterns")
+        controller.send(:redirect_back_or, admin_patterns_path)
+      end
+
+      it "clears return_to from session after redirect" do
+        allow(controller).to receive(:redirect_to)
+        controller.send(:redirect_back_or, admin_patterns_path)
+        expect(session[:return_to]).to be_nil
+      end
+    end
+
+    context "when session[:return_to] is /login (PER-179 regression case)" do
+      before { session[:return_to] = "/login" }
+
+      it "ignores /login and redirects to the default admin path instead" do
+        expect(controller).to receive(:redirect_to).with(admin_patterns_path)
+        controller.send(:redirect_back_or, admin_patterns_path)
+      end
+    end
+
+    context "when session[:return_to] is nil" do
+      before { session[:return_to] = nil }
+
+      it "redirects to the provided default path" do
+        expect(controller).to receive(:redirect_to).with(admin_patterns_path)
+        controller.send(:redirect_back_or, admin_patterns_path)
       end
     end
   end

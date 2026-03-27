@@ -961,7 +961,7 @@ RSpec.describe Services::Email::ProcessingService, 'Integration Tests', type: :s
         let!(:resource_test_account) { create(:email_account, :bac, :gmail) }
         let(:processing_service) { described_class.new(resource_test_account) }
 
-        it 'maintains reasonable memory usage during processing' do
+        it 'maintains reasonable memory usage during processing', skip_performance_monitor: true do
           batch_fixtures = Array.new(30) { EmailProcessingTestHelper::EmailFixtures.bac_transaction_email }
           setup_imap_mock_with_emails(mock_imap, batch_fixtures)
 

@@ -77,30 +77,6 @@ RSpec.configure do |config|
     config.include PerformanceHelpers
   end
 
-  # Scoped hooks for performance tests (must be outside when_first_matching to avoid global registration)
-  config.around(:each, :performance) do |example|
-    old_fixtures = config.use_transactional_fixtures
-    config.use_transactional_fixtures = false
-    DatabaseCleaner.strategy = :truncation
-    DatabaseCleaner.cleaning do
-      example.run
-    end
-  ensure
-    config.use_transactional_fixtures = old_fixtures
-  end
-
-  # Scoped hooks for system tests
-  config.around(:each, :system) do |example|
-    old_fixtures = config.use_transactional_fixtures
-    config.use_transactional_fixtures = false
-    DatabaseCleaner.strategy = :truncation
-    DatabaseCleaner.cleaning do
-      example.run
-    end
-  ensure
-    config.use_transactional_fixtures = old_fixtures
-  end
-
   # FILTERING AND EXCLUSIONS
   # ========================
 
@@ -144,9 +120,6 @@ RSpec.configure do |config|
   # =====
 
   config.before(:suite) do
-    # Ensure clean database state before running tests
-    DatabaseCleaner.clean_with(:truncation) if defined?(DatabaseCleaner)
-
     # Print test tier information
     tier = ENV['TEST_TIER'] || 'all'
     puts "\n" + "="*60

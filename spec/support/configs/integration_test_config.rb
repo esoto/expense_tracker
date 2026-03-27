@@ -6,26 +6,6 @@
 require 'database_cleaner/active_record'
 
 RSpec.configure do |config|
-  # Configure DatabaseCleaner for integration tests
-  # Note: We don't load seeds here - categories persist from db:test:prepare
-  # This avoids the overhead of loading seeds on every test run
-
-  # For integration tests, use truncation to ensure complete isolation
-  # This is slower but more reliable for integration tests
-  config.before(:each, integration: true) do
-    if defined?(DatabaseCleaner)
-      DatabaseCleaner.strategy = :truncation, {
-        except: %w[ar_internal_metadata schema_migrations categories]
-      }
-      DatabaseCleaner.start
-    end
-  end
-
-  # Clean up after each integration test
-  config.after(:each, integration: true) do
-    DatabaseCleaner.clean if defined?(DatabaseCleaner)
-  end
-
   # Helper method to ensure predictable test data
   config.before(:each, integration: true) do |_example|
     # Clear Rails cache to avoid stale data

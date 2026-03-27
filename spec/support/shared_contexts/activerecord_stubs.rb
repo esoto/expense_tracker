@@ -51,9 +51,14 @@ RSpec.shared_context "activerecord stubs" do
     pool = double("ConnectionPool")
     connections = []
 
+    mock_lock = Mutex.new
+
     connections_count.times do |i|
       conn = double("Connection#{i}")
       allow(conn).to receive(:in_use?).and_return(i < busy)
+      # DatabaseCleaner::ActiveRecord::Transaction#clean calls lock.synchronize on each connection
+      allow(conn).to receive(:lock).and_return(mock_lock)
+      allow(conn).to receive(:open_transactions).and_return(0)
       connections << conn
     end
 
@@ -69,6 +74,7 @@ RSpec.shared_context "activerecord stubs" do
     allow(pool).to receive(:connections).and_return(connections)
     allow(pool).to receive(:schema_cache).and_return(schema_cache)
     allow(pool).to receive(:with_connection).and_yield(connections.first)
+    allow(pool).to receive(:release_connection)
 
     pool
   end

@@ -836,7 +836,8 @@ RSpec.describe Budget, type: :model, unit: true do
 
     describe "concurrent update scenarios" do
       it "handles concurrent spend calculations safely" do
-        budget = create(:budget, email_account: email_account)
+        unique_category = create(:category, name: "concurrent-test-#{SecureRandom.hex(4)}")
+        budget = create(:budget, email_account: email_account, category: unique_category)
 
         # Simulate concurrent updates
         budget.instance_variable_set(:@calculating_spend, true)

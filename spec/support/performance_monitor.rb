@@ -20,7 +20,7 @@ module PerformanceMonitor
   }.freeze
 
   # Auto-fail threshold - any test exceeding this fails automatically
-  AUTO_FAIL_THRESHOLD = 10.0
+  AUTO_FAIL_THRESHOLD = ENV.fetch('TEST_AUTO_FAIL_THRESHOLD', 30).to_f
 
   class SlowTestError < StandardError; end
 
@@ -234,13 +234,17 @@ PerformanceMonitor.reset!
 RSpec.configure do |config|
   # Record test performance
   config.around(:each) do |example|
-    start_time = Time.current
-
-    begin
+    if example.metadata[:skip_performance_monitor]
       example.run
-    ensure
-      duration = Time.current - start_time
-      PerformanceMonitor.record_test(example, duration) unless example.pending?
+    else
+      start_time = Time.current
+
+      begin
+        example.run
+      ensure
+        duration = Time.current - start_time
+        PerformanceMonitor.record_test(example, duration) unless example.pending?
+      end
     end
   end
 

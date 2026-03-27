@@ -55,17 +55,6 @@ RSpec.configure do |config|
       ActiveRecord::Base.logger = Logger.new(STDOUT) if Rails.env.development?
     end
   end
-
-  # Use truncation strategy only for tests that explicitly need it
-  # (tests that need to test after_commit hooks)
-  config.before(:each, :needs_commit) do
-    DatabaseCleaner.strategy = :truncation if defined?(DatabaseCleaner)
-  end
-
-  config.after(:each, :needs_commit) do
-    DatabaseCleaner.clean if defined?(DatabaseCleaner)
-    DatabaseCleaner.strategy = :transaction if defined?(DatabaseCleaner)
-  end
 end
 
 # Monkey-patch FactoryBot to prefer build_stubbed for performance

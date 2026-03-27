@@ -438,6 +438,7 @@ RSpec.describe Api::QueueController, type: :controller, unit: true do
         allow(controller).to receive(:authenticate_queue_access!).and_call_original
         allow(ApiToken).to receive(:authenticate).and_return(nil)
         allow(Rails.application.credentials).to receive(:dig).with(:admin_key).and_return(nil)
+        allow(ENV).to receive(:[]).and_call_original
         allow(ENV).to receive(:[]).with("ADMIN_KEY").and_return(nil)
         allow(Rails.env).to receive(:development?).and_return(false)
         allow(Rails.env).to receive(:test?).and_return(false)

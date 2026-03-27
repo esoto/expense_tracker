@@ -51,7 +51,10 @@ module Admin
     end
 
     def handle_successful_login
+      # Capture return_to before reset_session clears it (PER-180)
+      return_to = session[:return_to]
       set_admin_session(@admin_user)
+      session[:return_to] = return_to if return_to.present?
       log_successful_login
 
       redirect_back_or(admin_patterns_path)

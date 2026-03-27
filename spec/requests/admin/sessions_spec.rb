@@ -209,6 +209,87 @@ RSpec.describe "Admin::Sessions", type: :request do
     end
   end
 
+  describe "POST /admin/login redirect-back after auth (PER-180)", :unit do
+    context "when the user requested a protected admin path before logging in" do
+      it "redirects to the originally requested admin path after successful login" do
+        # Step 1: visit a protected resource (unauthenticated)
+        get admin_patterns_path
+        expect(response).to redirect_to(admin_login_path)
+
+        # Step 2: follow the redirect to login page (session[:return_to] is now stored)
+        follow_redirect!
+
+        # Step 3: login — should redirect back to the originally requested path
+        post admin_login_path, params: {
+          admin_user: {
+            email: admin_user.email,
+            password: "AdminPassword123!"
+          }
+        }
+        expect(response).to redirect_to(admin_patterns_path)
+        expect(response).not_to redirect_to(admin_login_path)
+      end
+
+      it "stores the originally requested path before redirecting to login" do
+        get admin_patterns_path
+        # The unauthenticated request should redirect to login
+        expect(response).to redirect_to(admin_login_path)
+      end
+
+      it "redirects to a nested admin resource path after successful login" do
+        # Step 1: visit a nested protected resource
+        get admin_patterns_path
+        expect(response).to redirect_to(admin_login_path)
+
+        # Step 2: follow redirect (sets session cookie with return_to)
+        follow_redirect!
+
+        # Step 3: login
+        post admin_login_path, params: {
+          admin_user: {
+            email: admin_user.email,
+            password: "AdminPassword123!"
+          }
+        }
+        # Should land at the stored admin path, not just the default
+        expect(response).to have_http_status(:redirect)
+        expect(response.location).to start_with("http://www.example.com/admin/")
+      end
+    end
+
+    context "when there is no stored return path (direct login)" do
+      it "redirects to the default admin destination" do
+        post admin_login_path, params: {
+          admin_user: {
+            email: admin_user.email,
+            password: "AdminPassword123!"
+          }
+        }
+        expect(response).to redirect_to(admin_patterns_path)
+      end
+    end
+
+    context "when session[:return_to] is cleared by reset_session before redirect (PER-180 regression)" do
+      it "preserves return_to across reset_session and redirects correctly" do
+        # Simulate: user visits protected page, gets redirected to login
+        get admin_patterns_path
+        follow_redirect!
+
+        # Now login — the bug was that reset_session wiped session[:return_to]
+        post admin_login_path, params: {
+          admin_user: {
+            email: admin_user.email,
+            password: "AdminPassword123!"
+          }
+        }
+
+        # Must redirect to the originally requested path, NOT just the default
+        expect(response).to redirect_to(admin_patterns_path)
+        expect(response).not_to have_http_status(:unprocessable_content)
+      end
+    end
+  end
+
   describe "POST /admin/login redirect-back safety (PER-179)", :unit do
     context "when session[:return_to] contains a valid admin path" do
       it "redirects to the stored admin path after successful login" do

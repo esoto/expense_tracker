@@ -6,9 +6,8 @@ class Api::WebhooksController < ApplicationController
   rescue_from ActionController::ParameterMissing do |exception|
     render json: {
       status: "error",
-      message: exception.message,
-      errors: [ exception.message ]
-    }, status: :unprocessable_entity
+      message: exception.message
+    }, status: :unprocessable_content
   end
 
   def process_emails

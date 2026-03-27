@@ -83,21 +83,20 @@ module Admin
 
       if attempts >= 10
         render_too_many_requests
-        return false
+        return
       end
 
       Rails.cache.write(ip_key, attempts + 1, expires_in: 15.minutes)
-      true
     end
 
     def render_too_many_requests
+      flash.now[:alert] = "Too many login attempts. Please try again later."
+      @admin_user = AdminUser.new
+
       respond_to do |format|
-        format.html do
-          flash.now[:alert] = "Too many login attempts. Please try again later."
-          @admin_user = AdminUser.new
-          render :new, status: :too_many_requests
-        end
+        format.html { render :new, status: :too_many_requests }
         format.json { render json: { error: "Too many requests" }, status: :too_many_requests }
+        format.any  { render :new, status: :too_many_requests }
       end
     end
 
@@ -138,8 +137,19 @@ module Admin
     end
 
     def redirect_back_or(default)
-      redirect_to(session[:return_to] || default)
-      session.delete(:return_to)
+      return_to = valid_return_to_path(session.delete(:return_to))
+      redirect_to(return_to || default)
+    end
+
+    # Only redirect back to safe admin paths to prevent open redirect and
+    # routing errors caused by stale or external session[:return_to] values.
+    # This fixes PER-179: stale session[:return_to] could hold "/login"
+    # (non-existent route), causing RoutingError after successful login.
+    def valid_return_to_path(path)
+      return nil if path.blank?
+      return nil unless path.start_with?("/admin/") || path == "/admin"
+
+      path
     end
 
     def log_admin_action(action, details = {})

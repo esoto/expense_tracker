@@ -17,4 +17,5 @@
  *= require components/batch_selection
  *= require components/dashboard_expenses
  *= require components/dashboard_virtual_scroll
+ *= require components/mobile_cards
  */

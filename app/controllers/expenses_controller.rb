@@ -548,7 +548,7 @@ class ExpensesController < ApplicationController
           render json: {
             success: false,
             message: t("expenses.flash.bulk_destroy_empty")
-          }, status: :unprocessable_entity
+          }, status: :unprocessable_content
         end
         format.html { redirect_to expenses_path, alert: t("expenses.flash.bulk_destroy_empty") }
       end

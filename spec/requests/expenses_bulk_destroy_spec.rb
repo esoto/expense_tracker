@@ -64,6 +64,34 @@ RSpec.describe "Expenses Bulk Destroy", :unit, type: :request do
         expect(response).not_to have_http_status(:internal_server_error)
         expect(response).to have_http_status(:ok)
       end
+
+      # PER-208: undo_id must not be null in bulk_destroy JSON response
+      it "returns a non-null undo_id in the JSON response", :unit do
+        delete bulk_destroy_expenses_path,
+               params: { expense_ids: [ expense1.id, expense2.id ] },
+               headers: { "Accept" => "application/json" }
+
+        expect(response).to have_http_status(:ok)
+
+        json = JSON.parse(response.body)
+        expect(json["undo_id"]).not_to be_nil,
+          "Expected undo_id to be present but got nil — PER-208 regression"
+      end
+
+      it "returns an undo_id that matches the created UndoHistory record", :unit do
+        expect {
+          delete bulk_destroy_expenses_path,
+                 params: { expense_ids: [ expense1.id, expense2.id ] },
+                 headers: { "Accept" => "application/json" }
+        }.to change(UndoHistory, :count).by(1)
+
+        expect(response).to have_http_status(:ok)
+
+        json = JSON.parse(response.body)
+        undo_record = UndoHistory.last
+        expect(json["undo_id"]).to eq(undo_record.id),
+          "Expected undo_id #{json['undo_id'].inspect} to match UndoHistory##{undo_record.id}"
+      end
     end
   end
 end

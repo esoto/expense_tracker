@@ -375,6 +375,21 @@ RSpec.describe Services::ExpenseFilterService, type: :service, performance: true
         expect(result.metadata[:page]).to eq(1)
       end
     end
+
+    context "when page is 'abc' (non-numeric string)" do
+      it "clamps to page 1 (.to_i returns 0 → clamped to 1)" do
+        service = described_class.new(
+          account_ids: [ email_account.id ],
+          page: "abc",
+          per_page: 2
+        )
+        result = service.call
+
+        expect(result.success?).to be true
+        expect(result.expenses.count).to eq(2)
+        expect(result.metadata[:page]).to eq(1)
+      end
+    end
   end
 
   describe "#set_defaults page coercion (PER-183)", :unit do
@@ -405,6 +420,11 @@ RSpec.describe Services::ExpenseFilterService, type: :service, performance: true
 
     it "converts integer 0 to page 1" do
       service = described_class.new(account_ids: [ email_account.id ], page: 0)
+      expect(service.page).to eq(1)
+    end
+
+    it "converts non-numeric string 'abc' to page 1 (.to_i returns 0)" do
+      service = described_class.new(account_ids: [ email_account.id ], page: "abc")
       expect(service.page).to eq(1)
     end
 

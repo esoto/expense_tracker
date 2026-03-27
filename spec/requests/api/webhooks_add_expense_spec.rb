@@ -27,18 +27,18 @@ RSpec.describe "POST /api/webhooks/add_expense", type: :request do
     end
 
     context "when expense key is present but body is empty" do
-      it "returns 422 JSON with model validation errors" do
+      it "returns 422 JSON with error message (empty hash triggers ParameterMissing)" do
         post "/api/webhooks/add_expense",
              params: { expense: {} }.to_json,
              headers: auth_headers
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(response.media_type).to eq("application/json")
 
         json = JSON.parse(response.body)
         expect(json["status"]).to eq("error")
-        expect(json["errors"]).to be_an(Array)
-        expect(json["errors"]).not_to be_empty
+        expect(json["message"]).to be_present
+        expect(json).not_to have_key("errors")
       end
     end
 

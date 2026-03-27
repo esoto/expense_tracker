@@ -838,6 +838,46 @@ RSpec.describe Admin::PatternsController, type: :controller, unit: true do
         expect(result[:total_uses]).to eq(0)
         expect(result[:successful_uses]).to eq(0)
       end
+
+      # PER-203: success_rate is stored as a decimal (0.0–1.0) and must be converted
+      # exactly once (×100) so the view can display it directly without re-multiplying.
+      it "returns success_rate as a percentage value (0–100), not a decimal (PER-203)" do
+        pattern_with_usage = create(
+          :categorization_pattern,
+          usage_count: 100,
+          success_count: 98
+        )
+        # The model calculates success_rate as 0.98 (decimal stored in DB)
+        expect(pattern_with_usage.success_rate).to be_within(0.001).of(0.98)
+
+        result = controller.send(:calculate_performance_metrics, pattern_with_usage)
+
+        # The controller converts to percentage: 0.98 * 100 = 98.0
+        # The view must NOT multiply again — if it did, it would show 9800%
+        expect(result[:success_rate]).to be_within(0.1).of(98.0)
+        expect(result[:success_rate]).to be < 100
+        expect(result[:success_rate]).to be >= 0
+      end
+
+      it "returns a success_rate of 0 for patterns with zero usage (PER-203)" do
+        unused_pattern = create(:categorization_pattern, usage_count: 0, success_count: 0)
+
+        result = controller.send(:calculate_performance_metrics, unused_pattern)
+
+        expect(result[:success_rate]).to eq(0)
+      end
+
+      it "returns a success_rate of 100 for patterns with perfect accuracy (PER-203)" do
+        perfect_pattern = create(
+          :categorization_pattern,
+          usage_count: 50,
+          success_count: 50
+        )
+
+        result = controller.send(:calculate_performance_metrics, perfect_pattern)
+
+        expect(result[:success_rate]).to be_within(0.1).of(100.0)
+      end
     end
 
     describe "#calculate_average_daily_uses" do

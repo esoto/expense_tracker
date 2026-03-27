@@ -44,7 +44,8 @@ export default class extends Controller {
   
   testPattern() {
     if (!this.hasTestInputTarget || !this.hasTestResultTarget) return
-    
+    if (!this.hasValueFieldTarget) return
+
     const testText = this.testInputTarget.value
     const patternType = this.element.querySelector('select[name*="pattern_type"]').value
     const patternValue = this.valueFieldTarget.value

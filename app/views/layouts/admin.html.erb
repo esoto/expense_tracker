@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <title><%= content_for(:title) || "Administrador - Expense Tracker" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%# Force a full page reload when navigating away from admin pages.
+        This prevents Turbo Drive from preserving admin Stimulus controllers
+        (e.g. pattern-form, pattern-management) in memory, which would cause
+        them to intercept actions on unrelated non-admin pages (PER-174). %>
+    <meta name="turbo-visit-control" content="reload">
+
+    <%= yield :head %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+
+    <!-- Security headers for admin area -->
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+  </head>
+
+  <body class="bg-slate-50 min-h-screen">
+    <!-- Admin Navigation -->
+    <nav class="bg-white shadow-sm border-b border-slate-200"
+         role="navigation"
+         aria-label="Navegación de administrador">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="flex justify-between items-center py-4">
+          <div class="flex items-center space-x-4">
+            <div class="bg-teal-700 text-white p-2 rounded-lg shadow-sm">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+              </svg>
+            </div>
+            <span class="text-xl font-bold text-slate-900">Admin - Expense Tracker</span>
+          </div>
+
+          <div class="flex items-center space-x-3">
+            <%= link_to "Patrones", admin_patterns_path,
+                class: "text-sm font-medium text-slate-600 hover:text-teal-700 transition-colors" %>
+            <%= link_to "Patrones Compuestos", admin_composite_patterns_path,
+                class: "text-sm font-medium text-slate-600 hover:text-teal-700 transition-colors" %>
+            <%= link_to "← Volver a la App", expenses_path,
+                class: "text-sm font-medium text-slate-600 hover:text-teal-700 transition-colors" %>
+            <%= link_to "Cerrar Sesión",
+                admin_logout_path,
+                data: { turbo_method: :delete },
+                class: "text-sm font-medium text-rose-600 hover:text-rose-700 transition-colors" %>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    <div class="max-w-7xl mx-auto px-4 mt-4">
+      <%= render "shared/flash" %>
+    </div>
+
+    <!-- Main Content -->
+    <main id="main-content"
+          class="max-w-7xl mx-auto px-4 py-6"
+          role="main">
+      <%= yield %>
+    </main>
+  </body>
+</html>

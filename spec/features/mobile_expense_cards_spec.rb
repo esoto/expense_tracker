@@ -96,20 +96,20 @@ RSpec.describe "Mobile Expense Cards", type: :view, unit: true do
       expect(template_source).to include("Filtrar")
     end
 
-    it "has collapsible-filter controller on filters" do
-      expect(template_source).to include("data-controller=\"collapsible-filter\"")
+    it "has collapsible controller on filters" do
+      expect(template_source).to include("data-controller=\"collapsible\"")
     end
 
     it "has a collapsible content target wrapping the filter form" do
-      expect(template_source).to include("data-collapsible-filter-target=\"content\"")
+      expect(template_source).to include("data-collapsible-target=\"content\"")
     end
 
-    it "has a toggle button action wired to the collapsible-filter controller" do
-      expect(template_source).to include("click->collapsible-filter#toggle")
+    it "has a toggle button action wired to the collapsible controller" do
+      expect(template_source).to include("click->collapsible#toggle")
     end
 
     it "collapsible content div is hidden by default on mobile" do
-      expect(template_source).to match(/data-collapsible-filter-target="content"[^>]*class="hidden md:block"|class="hidden md:block"[^>]*data-collapsible-filter-target="content"/)
+      expect(template_source).to match(/data-collapsible-target="content"[^>]*class="hidden md:block"|class="hidden md:block"[^>]*data-collapsible-target="content"/)
     end
   end
 
@@ -120,8 +120,8 @@ RSpec.describe "Mobile Expense Cards", type: :view, unit: true do
       expect(template_source).to include("Ver resumen")
     end
 
-    it "has collapsible-filter controller on category summary section" do
-      # The category summary section reuses the same collapsible-filter controller
+    it "has collapsible controller on category summary section" do
+      # The category summary section reuses the same collapsible controller
       expect(template_source).to include("Resumen por Categoría")
     end
 

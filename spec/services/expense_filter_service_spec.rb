@@ -240,4 +240,177 @@ RSpec.describe Services::ExpenseFilterService, type: :service, performance: true
       )
     end
   end
+
+  # PER-183: Pagination page 2 shows 0 expenses despite records existing
+  # Root cause: page param arrives as String from HTTP params; "2" - 1 raises TypeError
+  describe "pagination with string page params (PER-183)", :unit do
+    before do
+      # Ensure we have 3 expenses (1 from outer before + 2 more here)
+      # to test page 2 with per_page: 2
+      Expense.create!(
+        email_account: email_account,
+        amount: 75.00,
+        transaction_date: 2.weeks.ago,
+        merchant_name: "Extra Store D",
+        status: "processed",
+        currency: "crc"
+      )
+    end
+
+    context "when page is a string from HTTP params" do
+      it "handles page: '1' without error" do
+        service = described_class.new(
+          account_ids: [ email_account.id ],
+          page: "1",
+          per_page: 2
+        )
+        result = service.call
+
+        expect(result.success?).to be true
+        expect(result.expenses.count).to eq(2)
+        expect(result.total_count).to eq(4)
+        expect(result.metadata[:page]).to eq(1)
+        expect(result.performance_metrics[:error]).not_to be true
+      end
+
+      it "handles page: '2' without raising TypeError" do
+        service = described_class.new(
+          account_ids: [ email_account.id ],
+          page: "2",
+          per_page: 2
+        )
+        result = service.call
+
+        expect(result.success?).to be true
+        expect(result.expenses.count).to eq(2)
+        expect(result.total_count).to eq(4)
+        expect(result.performance_metrics[:error]).not_to be true
+      end
+
+      it "does NOT return 0 expenses on page 2 when records exist (the bug)" do
+        service = described_class.new(
+          account_ids: [ email_account.id ],
+          page: "2",
+          per_page: 2
+        )
+        result = service.call
+
+        # Before fix: "2" - 1 raised TypeError → rescue → total_count: 0
+        expect(result.total_count).not_to eq(0)
+        expect(result.expenses).not_to be_empty
+      end
+    end
+
+    context "when page is nil" do
+      it "defaults to page 1" do
+        service = described_class.new(
+          account_ids: [ email_account.id ],
+          page: nil,
+          per_page: 2
+        )
+        result = service.call
+
+        expect(result.success?).to be true
+        expect(result.expenses.count).to eq(2)
+        expect(result.metadata[:page]).to eq(1)
+      end
+    end
+
+    context "when page is '0' (invalid boundary)" do
+      it "clamps to page 1" do
+        service = described_class.new(
+          account_ids: [ email_account.id ],
+          page: "0",
+          per_page: 2
+        )
+        result = service.call
+
+        expect(result.success?).to be true
+        expect(result.expenses.count).to eq(2)
+        expect(result.metadata[:page]).to eq(1)
+      end
+    end
+
+    context "when page is '-1' (negative string)" do
+      it "clamps to page 1" do
+        service = described_class.new(
+          account_ids: [ email_account.id ],
+          page: "-1",
+          per_page: 2
+        )
+        result = service.call
+
+        expect(result.success?).to be true
+        expect(result.expenses.count).to eq(2)
+        expect(result.metadata[:page]).to eq(1)
+      end
+    end
+
+    context "when page is 0 (integer zero)" do
+      it "clamps to page 1" do
+        service = described_class.new(
+          account_ids: [ email_account.id ],
+          page: 0,
+          per_page: 2
+        )
+        result = service.call
+
+        expect(result.success?).to be true
+        expect(result.expenses.count).to eq(2)
+        expect(result.metadata[:page]).to eq(1)
+      end
+    end
+
+    context "when page is -1 (negative integer)" do
+      it "clamps to page 1" do
+        service = described_class.new(
+          account_ids: [ email_account.id ],
+          page: -1,
+          per_page: 2
+        )
+        result = service.call
+
+        expect(result.success?).to be true
+        expect(result.expenses.count).to eq(2)
+        expect(result.metadata[:page]).to eq(1)
+      end
+    end
+  end
+
+  describe "#set_defaults page coercion (PER-183)", :unit do
+    it "converts string page to integer" do
+      service = described_class.new(account_ids: [ email_account.id ], page: "3")
+      expect(service.page).to eq(3)
+    end
+
+    it "converts string '0' to minimum page 1" do
+      service = described_class.new(account_ids: [ email_account.id ], page: "0")
+      expect(service.page).to eq(1)
+    end
+
+    it "converts nil page to 1" do
+      service = described_class.new(account_ids: [ email_account.id ], page: nil)
+      expect(service.page).to eq(1)
+    end
+
+    it "converts negative string page to 1" do
+      service = described_class.new(account_ids: [ email_account.id ], page: "-5")
+      expect(service.page).to eq(1)
+    end
+
+    it "converts negative integer page to 1" do
+      service = described_class.new(account_ids: [ email_account.id ], page: -3)
+      expect(service.page).to eq(1)
+    end
+
+    it "converts integer 0 to page 1" do
+      service = described_class.new(account_ids: [ email_account.id ], page: 0)
+      expect(service.page).to eq(1)
+    end
+
+    it "keeps valid integer pages unchanged" do
+      service = described_class.new(account_ids: [ email_account.id ], page: 5)
+      expect(service.page).to eq(5)
+    end
+  end
 end

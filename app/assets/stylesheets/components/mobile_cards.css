@@ -1,0 +1,34 @@
+/* Mobile Card Styles for Expense List (PER-133) */
+
+/* Card base — smooth transitions */
+[data-controller="mobile-card"] {
+  @apply transition-all duration-200;
+}
+
+/* Selected card in batch selection mode */
+[data-controller="mobile-card"].selected {
+  @apply bg-teal-50 border-teal-300 ring-1 ring-teal-200;
+}
+
+/* Expanded card with action drawer open */
+[data-controller="mobile-card"][data-mobile-card-expanded-value="true"] {
+  @apply shadow-md border-teal-200;
+}
+
+/* Action buttons — WCAG 44px touch targets */
+[data-mobile-card-target="actions"] button,
+[data-mobile-card-target="actions"] a {
+  min-height: 44px;
+}
+
+/* Long press visual feedback */
+@media (hover: none) and (pointer: coarse) {
+  [data-controller="mobile-card"]:active {
+    @apply scale-[0.98] transition-transform duration-100;
+  }
+}
+
+/* Checkbox animation when entering selection mode */
+[data-mobile-card-target="checkbox"] {
+  @apply transition-all duration-200;
+}

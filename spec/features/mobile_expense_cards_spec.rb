@@ -55,8 +55,8 @@ RSpec.describe "Mobile Expense Cards", type: :view, unit: true do
         expect(rendered).to have_css('[data-controller="mobile-card"]')
       end
 
-      it "has accessible role=article" do
-        expect(rendered).to have_css('[role="article"]')
+      it "has tabindex=0 for keyboard accessibility" do
+        expect(rendered).to have_css('[tabindex="0"]')
       end
 
       it "has the actions container hidden by default" do
@@ -191,8 +191,8 @@ RSpec.describe "Mobile Expense Cards", type: :view, unit: true do
       expect(partial_source).to include('data-controller="mobile-card"')
     end
 
-    it "has card target attribute" do
-      expect(partial_source).to include('data-mobile-card-target="card"')
+    it "has tabindex=0 for keyboard accessibility" do
+      expect(partial_source).to include('tabindex="0"')
     end
 
     it "has actions target attribute" do
@@ -209,8 +209,9 @@ RSpec.describe "Mobile Expense Cards", type: :view, unit: true do
       expect(partial_source).to include("touchend->mobile-card#touchEnd")
     end
 
-    it "has role=article for accessibility" do
-      expect(partial_source).to include('role="article"')
+    it "has keyboard action handlers for accessibility" do
+      expect(partial_source).to include("keydown.enter->mobile-card#toggleActions")
+      expect(partial_source).to include("keydown.escape->mobile-card#collapseActions")
     end
 
     it "actions container element includes both hidden class and actions target" do

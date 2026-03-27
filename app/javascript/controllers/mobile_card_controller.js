@@ -11,7 +11,7 @@ import { Controller } from "@hotwired/stimulus"
  * - Dispatches custom events for category picker, status toggle, and delete
  */
 export default class extends Controller {
-  static targets = ["card", "actions", "checkbox"]
+  static targets = ["actions", "checkbox"]
 
   static values = {
     expenseId: Number,
@@ -23,6 +23,7 @@ export default class extends Controller {
     this._longPressTimer = null
     this._touchStartX = 0
     this._touchStartY = 0
+    this._ignoreNextClick = false
   }
 
   disconnect() {
@@ -34,6 +35,14 @@ export default class extends Controller {
   // ---------------------------------------------------------------------------
 
   toggleActions(event) {
+    // Guard against click events fired immediately after a long-press on mobile.
+    // On touch devices, touchstart → touchend → click all fire for a single tap.
+    // After a long press enters selection mode the trailing click would undo it.
+    if (this._ignoreNextClick) {
+      this._ignoreNextClick = false
+      return
+    }
+
     // In selection mode, tapping the card toggles the checkbox instead
     if (this.selectionModeValue) {
       this._toggleCheckbox()
@@ -53,6 +62,12 @@ export default class extends Controller {
     }
   }
 
+  collapseActions() {
+    if (this.expandedValue) {
+      this._collapse()
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Touch events: long press for selection mode
   // ---------------------------------------------------------------------------
@@ -64,7 +79,8 @@ export default class extends Controller {
     this._touchStartY = event.touches[0].clientY
 
     this._longPressTimer = setTimeout(() => {
-      this._enterSelectionMode()
+      this._ignoreNextClick = true
+      this.enterSelectionMode()
       this._toggleCheckbox()
       this._vibrate(50)
     }, 500)
@@ -87,7 +103,7 @@ export default class extends Controller {
   }
 
   // ---------------------------------------------------------------------------
-  // Action dispatchers — called from action buttons inside the card
+  // Action handlers — called from action buttons inside the card
   // ---------------------------------------------------------------------------
 
   openCategoryPicker(event) {
@@ -98,20 +114,50 @@ export default class extends Controller {
     })
   }
 
-  toggleStatus(event) {
+  async toggleStatus(event) {
     event.stopPropagation()
-    this.dispatch("toggleStatus", {
-      detail: { expenseId: this.expenseIdValue },
-      bubbles: true
+    const response = await fetch(`/expenses/${this.expenseIdValue}/update_status`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": this._csrfToken,
+        "Accept": "text/vnd.turbo-stream.html"
+      },
+      body: JSON.stringify({ status: this._nextStatus() })
     })
+    if (response.ok) {
+      const turboStream = await response.text()
+      if (turboStream) {
+        Turbo.renderStreamMessage(turboStream)
+      }
+    }
   }
 
   confirmDelete(event) {
     event.stopPropagation()
-    this.dispatch("confirmDelete", {
-      detail: { expenseId: this.expenseIdValue },
-      bubbles: true
-    })
+    if (confirm("¿Estás seguro de eliminar este gasto?")) {
+      this.element.classList.add("opacity-50", "pointer-events-none")
+      fetch(`/expenses/${this.expenseIdValue}`, {
+        method: "DELETE",
+        headers: {
+          "X-CSRF-Token": this._csrfToken,
+          "Accept": "application/json"
+        }
+      })
+      .then(response => {
+        if (response.ok) {
+          this.element.style.transition = "all 300ms ease-out"
+          this.element.style.transform = "translateX(100%)"
+          this.element.style.opacity = "0"
+          setTimeout(() => { this.element.remove() }, 300)
+        } else {
+          this.element.classList.remove("opacity-50", "pointer-events-none")
+        }
+      })
+      .catch(() => {
+        this.element.classList.remove("opacity-50", "pointer-events-none")
+      })
+    }
   }
 
   toggleCheckbox(event) {
@@ -142,9 +188,11 @@ export default class extends Controller {
       const controller = this.application.getControllerForElementAndIdentifier(el, "mobile-card")
       if (controller) controller.selectionModeValue = false
     })
+    // Hide checkboxes and uncheck their inputs
     document.querySelectorAll("[data-mobile-card-target='checkbox']").forEach(cb => {
       cb.classList.add("hidden")
-      cb.checked = false
+      const input = cb.querySelector("input[type='checkbox']")
+      if (input) input.checked = false
     })
     this.dispatch("selectionModeExited", { detail: { active: false } })
   }
@@ -181,7 +229,7 @@ export default class extends Controller {
 
   _toggleCheckbox() {
     if (this.hasCheckboxTarget) {
-      const input = this.checkboxTarget.querySelector('input[type="checkbox"]')
+      const input = this.checkboxTarget.querySelector("input[type='checkbox']")
       if (input) {
         input.checked = !input.checked
         input.dispatchEvent(new Event("change", { bubbles: true }))
@@ -189,27 +237,9 @@ export default class extends Controller {
     }
   }
 
-  _enterSelectionMode() {
-    this.selectionModeValue = true
-    // Show checkboxes on all cards
-    document.querySelectorAll('[data-mobile-card-target="checkbox"]').forEach((el) => {
-      el.classList.remove("hidden")
-    })
-    // Collapse any open action drawers
-    this._collapse()
-    // Notify other controllers (e.g., batch-selection toolbar)
-    this.dispatch("selectionModeEntered", { bubbles: true })
-  }
-
-  _exitSelectionMode() {
-    this.selectionModeValue = false
-    // Hide all checkboxes and uncheck them
-    document.querySelectorAll('[data-mobile-card-target="checkbox"]').forEach((el) => {
-      el.classList.add("hidden")
-      const input = el.querySelector('input[type="checkbox"]')
-      if (input) input.checked = false
-    })
-    this.dispatch("selectionModeExited", { bubbles: true })
+  _nextStatus() {
+    const currentStatus = this.element.dataset.currentStatus || "pending"
+    return currentStatus === "pending" ? "processed" : "pending"
   }
 
   _clearLongPressTimer() {
@@ -223,5 +253,9 @@ export default class extends Controller {
     if (navigator.vibrate) {
       navigator.vibrate(duration)
     }
+  }
+
+  get _csrfToken() {
+    return document.querySelector("meta[name='csrf-token']")?.content || ""
   }
 }

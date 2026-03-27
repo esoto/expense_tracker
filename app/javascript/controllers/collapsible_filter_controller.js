@@ -7,5 +7,8 @@ export default class extends Controller {
   toggle() {
     this.openValue = !this.openValue
     this.contentTarget.classList.toggle("hidden", !this.openValue)
+    if (this.hasToggleButtonTarget) {
+      this.toggleButtonTarget.setAttribute("aria-expanded", this.openValue)
+    }
   }
 }

@@ -103,8 +103,8 @@ RSpec.describe "expenses/_expense_card.html.erb", type: :view, unit: true do
       expect(rendered).to have_css('[data-controller="mobile-card"]')
     end
 
-    it "has card target attribute" do
-      expect(rendered).to have_css('[data-mobile-card-target~="card"]')
+    it "is keyboard focusable with tabindex=0" do
+      expect(rendered).to have_css('[tabindex="0"]')
     end
 
     it "has hidden actions container with actions target" do
@@ -134,6 +134,15 @@ RSpec.describe "expenses/_expense_card.html.erb", type: :view, unit: true do
         '[data-action*="touchend->mobile-card#touchEnd"]'
       )
     end
+
+    it "has keyboard action attributes for accessibility" do
+      expect(rendered).to have_css(
+        '[data-action*="keydown.enter->mobile-card#toggleActions"]'
+      )
+      expect(rendered).to have_css(
+        '[data-action*="keydown.escape->mobile-card#collapseActions"]'
+      )
+    end
   end
 
   describe "accessibility" do
@@ -142,8 +151,8 @@ RSpec.describe "expenses/_expense_card.html.erb", type: :view, unit: true do
              locals: { expense: processed_expense, categories: categories }
     end
 
-    it "has role=article on the card element" do
-      expect(rendered).to have_css('[role="article"]')
+    it "has tabindex=0 for keyboard accessibility" do
+      expect(rendered).to have_css('[tabindex="0"]')
     end
 
     it "has an aria-label containing merchant and amount" do

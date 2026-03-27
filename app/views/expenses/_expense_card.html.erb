@@ -3,14 +3,13 @@
 %>
 <article class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
          id="expense_card_<%= expense.id %>"
-         role="article"
+         tabindex="0"
          aria-label="<%= expense.merchant_name || 'Sin comercio' %> <%= number_with_delimiter(expense.amount.to_i) %>"
          data-controller="mobile-card"
          data-mobile-card-expense-id-value="<%= expense.id %>"
          data-mobile-card-expanded-value="false"
          data-mobile-card-selection-mode-value="false"
-         data-mobile-card-target="card"
-         data-action="click->mobile-card#toggleActions touchstart->mobile-card#touchStart touchend->mobile-card#touchEnd touchmove->mobile-card#touchMove">
+         data-action="click->mobile-card#toggleActions touchstart->mobile-card#touchStart touchend->mobile-card#touchEnd touchmove->mobile-card#touchMove keydown.enter->mobile-card#toggleActions keydown.space->mobile-card#toggleActions keydown.escape->mobile-card#collapseActions">
 
   <%# Batch selection checkbox — hidden by default, shown in selection mode %>
   <div class="hidden px-4 pt-3" data-mobile-card-target="checkbox">

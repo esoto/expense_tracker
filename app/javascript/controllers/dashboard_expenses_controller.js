@@ -1092,6 +1092,7 @@ export default class extends Controller {
     
     // Fetch categories for the dropdown
     fetch('/categories.json', {
+      credentials: 'same-origin',
       headers: {
         'Accept': 'application/json',
         'X-Requested-With': 'XMLHttpRequest'

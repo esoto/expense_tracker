@@ -13,8 +13,12 @@ module Authentication
 
   def authenticate_user!
     unless user_signed_in?
-      store_location
-      redirect_to admin_login_path, alert: "Please sign in to continue."
+      if request.format.json? || request.xhr?
+        render json: { error: "Authentication required" }, status: :unauthorized
+      else
+        store_location
+        redirect_to admin_login_path, alert: "Please sign in to continue."
+      end
     end
   end
 

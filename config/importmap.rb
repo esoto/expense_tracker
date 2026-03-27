@@ -9,5 +9,12 @@ pin_all_from "app/javascript/utilities", under: "utilities"
 pin "@rails/actioncable", to: "actioncable.esm.js"
 pin "progress_throttler", to: "progress_throttler.js"
 pin "chart.js", to: "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm"
-pin "chartjs-adapter-date-fns", to: "https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"
+# chartjs-adapter-date-fns is NOT pinned here.
+# The old .bundle.min.js variant is a UMD build that relies on window.Chart, which is
+# never set when Chart.js loads as an ESM module. This caused a TypeError on page load.
+# The +esm variant from jsDelivr hardcodes an import to chart.js@4.0.1, creating a
+# duplicate Chart.js instance that breaks Chart.register().
+# Resolution: none of our controllers use type:'time' chart axes, so the adapter is unused.
+# To re-enable in the future, pin the ESM build AND ensure its internal import resolves
+# to the same chart.js instance (requires a CDN that rewrites bare specifiers, e.g. esm.sh).
 pin "chartkick", to: "https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js"

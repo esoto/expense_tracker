@@ -101,6 +101,37 @@ RSpec.describe "Api::V1::Patterns", type: :request, integration: true do
 
       expect(response).to have_http_status(:not_found)
     end
+
+    context "ETag conditional GET (PER-176)", unit: true do
+      it "returns 200 with ETag on first request" do
+        get "/api/v1/patterns/#{pattern.id}", headers: headers
+
+        expect(response).to have_http_status(:ok)
+        expect(response.headers["ETag"]).to be_present
+      end
+
+      it "returns 304 Not Modified when If-None-Match matches current ETag" do
+        # First request to obtain the ETag
+        get "/api/v1/patterns/#{pattern.id}", headers: headers
+        expect(response).to have_http_status(:ok)
+        etag = response.headers["ETag"]
+
+        # Second request with matching ETag must return 304, never 500
+        get "/api/v1/patterns/#{pattern.id}", headers: headers.merge("If-None-Match" => etag)
+
+        expect(response).to have_http_status(:not_modified)
+      end
+
+      it "returns 200 when If-None-Match does not match (stale ETag)" do
+        get "/api/v1/patterns/#{pattern.id}",
+            headers: headers.merge("If-None-Match" => '"stale-etag-value"')
+
+        expect(response).to have_http_status(:ok)
+        json = JSON.parse(response.body)
+        expect(json["status"]).to eq("success")
+        expect(json["pattern"]["id"]).to eq(pattern.id)
+      end
+    end
   end
 
   describe "POST /api/v1/patterns", integration: true do

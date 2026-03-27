@@ -22,8 +22,8 @@ module Api
         # Paginate results
         patterns = paginate(patterns)
 
-        # Handle conditional GET with ETag
-        handle_conditional_get(patterns)
+        # Handle conditional GET with ETag (PER-176: return early on 304)
+        return unless handle_conditional_get(patterns)
 
         render_success({
           patterns: serialize_patterns(patterns),

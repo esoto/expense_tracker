@@ -4,10 +4,12 @@ export default class extends Controller {
   static targets = ["button", "menu"]
 
   connect() {
-    this.close()
+    if (this.hasMenuTarget) this.close()
   }
 
   toggle() {
+    if (!this.hasMenuTarget) return
+
     if (this.menuTarget.classList.contains("hidden")) {
       this.open()
     } else {
@@ -16,18 +18,28 @@ export default class extends Controller {
   }
 
   open() {
+    if (!this.hasMenuTarget) return
+
     this.menuTarget.classList.remove("hidden")
-    this.buttonTarget.setAttribute("aria-expanded", "true")
-    
+
+    if (this.hasButtonTarget) {
+      this.buttonTarget.setAttribute("aria-expanded", "true")
+    }
+
     // Add click outside listener
     this.clickOutside = this.clickOutside.bind(this)
     document.addEventListener("click", this.clickOutside)
   }
 
   close() {
+    if (!this.hasMenuTarget) return
+
     this.menuTarget.classList.add("hidden")
-    this.buttonTarget.setAttribute("aria-expanded", "false")
-    
+
+    if (this.hasButtonTarget) {
+      this.buttonTarget.setAttribute("aria-expanded", "false")
+    }
+
     // Remove click outside listener
     document.removeEventListener("click", this.clickOutside)
   }

@@ -4,7 +4,7 @@
 <article class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
          id="expense_card_<%= expense.id %>"
          tabindex="0"
-         aria-label="<%= expense.merchant_name || 'Sin comercio' %> <%= number_with_delimiter(expense.amount.to_i) %>"
+         aria-label="<%= expense.merchant_name || t('expenses.card.no_merchant') %> <%= number_with_delimiter(expense.amount.to_i) %>"
          data-controller="mobile-card"
          data-mobile-card-expense-id-value="<%= expense.id %>"
          data-mobile-card-expanded-value="false"
@@ -30,7 +30,7 @@
              title="<%= expense.category.name %>"></div>
       <% else %>
         <div class="w-3 h-3 rounded-full bg-slate-400 flex-shrink-0"
-             title="Sin categoría"></div>
+             title="<%= t('expenses.card.no_category') %>"></div>
       <% end %>
 
       <%# Merchant name (truncated) %>
@@ -38,7 +38,7 @@
         <% if expense.merchant_name? %>
           <%= expense.merchant_name %>
         <% else %>
-          <span class="text-rose-600 italic">Sin comercio</span>
+          <span class="text-rose-600 italic"><%= t('expenses.card.no_merchant') %></span>
         <% end %>
       </span>
 
@@ -66,19 +66,19 @@
           <% case expense.status %>
           <% when "pending" %>
             <span class="inline-flex px-1.5 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-800">
-              Pendiente
+              <%= t('expenses.card.status.pending') %>
             </span>
           <% when "duplicate" %>
             <span class="inline-flex px-1.5 py-0.5 text-xs font-medium rounded-full bg-rose-100 text-rose-800">
-              Duplicado
+              <%= t('expenses.card.status.duplicate') %>
             </span>
           <% when "failed" %>
             <span class="inline-flex px-1.5 py-0.5 text-xs font-medium rounded-full bg-rose-100 text-rose-800">
-              Fallido
+              <%= t('expenses.card.status.failed') %>
             </span>
           <% else %>
             <span class="inline-flex px-1.5 py-0.5 text-xs font-medium rounded-full bg-slate-100 text-slate-800">
-              <%= expense.status&.capitalize || "Desconocido" %>
+              <%= expense.status&.capitalize || t('expenses.card.status.unknown') %>
             </span>
           <% end %>
         </span>

@@ -56,7 +56,7 @@
 
       <% if expense.category %>
         <span class="text-xs text-slate-400">&middot;</span>
-        <span class="text-xs text-slate-600"><%= expense.category.name %></span>
+        <span id="expense_<%= expense.id %>_category" class="text-xs text-slate-600"><%= expense.category.name %></span>
       <% end %>
 
       <%# Status badge — hidden when processed %>
@@ -91,15 +91,33 @@
        data-mobile-card-target="actions">
     <div class="flex items-center justify-between gap-2">
       <%# Categorizar %>
-      <button type="button"
-              class="flex-1 inline-flex flex-col items-center gap-1 py-2 px-3 rounded-lg text-xs font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 transition-colors"
-              aria-label="<%= t('expenses.card.actions.categorize_label') %>"
-              data-action="click->mobile-card#openCategoryPicker:stop">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-        </svg>
-        <%= t('expenses.card.actions.categorize') %>
-      </button>
+      <div class="flex-1 relative">
+        <button type="button"
+                class="w-full inline-flex flex-col items-center gap-1 py-2 px-3 rounded-lg text-xs font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 transition-colors"
+                aria-label="<%= t('expenses.card.actions.categorize_label') %>"
+                data-action="click->mobile-card#openCategoryPicker:stop">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+          </svg>
+          <%= t('expenses.card.actions.categorize') %>
+        </button>
+
+        <%# Dropdown de categorías — oculto por defecto %>
+        <div class="hidden absolute left-0 top-full mt-1 z-10 bg-white rounded-lg shadow-lg border border-slate-200 max-h-48 overflow-y-auto w-48"
+             data-mobile-card-target="categoryDropdown">
+          <% local_assigns[:categories].each do |cat| %>
+            <button type="button"
+                    class="w-full px-3 py-2.5 text-left text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                    data-action="click->mobile-card#selectCategory:stop"
+                    data-category-id="<%= cat.id %>"
+                    data-category-name="<%= cat.name %>"
+                    role="option">
+              <span class="inline-block w-3 h-3 rounded-full flex-shrink-0" style="background-color: <%= cat.color %>"></span>
+              <%= cat.name %>
+            </button>
+          <% end %>
+        </div>
+      </div>
 
       <%# Estado %>
       <button type="button"

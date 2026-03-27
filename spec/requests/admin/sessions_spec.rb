@@ -95,6 +95,33 @@ RSpec.describe "Admin::Sessions", type: :request do
         }
         expect(response.body).to include("Invalid email or password")
       end
+
+      # PER-181: Password must never be reflected back in the response body
+      it "does NOT include the submitted password value in the response body (PER-181)" do
+        submitted_password = "wrong_password_per181"
+        post admin_login_path, params: {
+          admin_user: {
+            email: admin_user.email,
+            password: submitted_password
+          }
+        }
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).not_to include(submitted_password)
+      end
+
+      it "renders the password field with an empty value on re-render (PER-181)" do
+        post admin_login_path, params: {
+          admin_user: {
+            email: admin_user.email,
+            password: "secret_password_should_not_appear"
+          }
+        }
+        expect(response).to have_http_status(:unprocessable_content)
+        # The password input must not carry the submitted value
+        expect(response.body).not_to include("secret_password_should_not_appear")
+        # The password field should be present but empty (value="" or no value attribute)
+        expect(response.body).to match(/type="password"/)
+      end
     end
 
     context "with non-existent email" do

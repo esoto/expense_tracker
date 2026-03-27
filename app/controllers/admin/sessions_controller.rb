@@ -61,6 +61,8 @@ module Admin
       log_failed_login
 
       flash.now[:alert] = login_error_message
+      # PER-181: Deliberately exclude :password so it is never re-populated.
+      # The view also forces value="" as defense-in-depth.
       @admin_user = AdminUser.new(email: session_params[:email])
       render :new, status: :unprocessable_content
     end

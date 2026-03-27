@@ -3,6 +3,14 @@ class Api::WebhooksController < ApplicationController
   skip_before_action :verify_authenticity_token
   before_action :authenticate_api_token
 
+  rescue_from ActionController::ParameterMissing do |exception|
+    render json: {
+      status: "error",
+      message: exception.message,
+      errors: [ exception.message ]
+    }, status: :unprocessable_entity
+  end
+
   def process_emails
     email_account_id = params[:email_account_id]
     since = parse_since_parameter

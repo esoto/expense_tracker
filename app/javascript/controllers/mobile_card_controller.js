@@ -24,10 +24,24 @@ export default class extends Controller {
     this._touchStartX = 0
     this._touchStartY = 0
     this._ignoreNextClick = false
+    this._selectingCategory = false
+
+    this._outsideClickHandler = (event) => {
+      if (this.hasCategoryDropdownTarget &&
+          !this.categoryDropdownTarget.classList.contains("hidden") &&
+          !this.categoryDropdownTarget.contains(event.target) &&
+          !event.target.closest('[data-action*="openCategoryPicker"]')) {
+        this.categoryDropdownTarget.classList.add("hidden")
+      }
+    }
+    document.addEventListener("click", this._outsideClickHandler)
   }
 
   disconnect() {
     this._clearLongPressTimer()
+    if (this._outsideClickHandler) {
+      document.removeEventListener("click", this._outsideClickHandler)
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -116,6 +130,9 @@ export default class extends Controller {
   selectCategory(event) {
     event.stopPropagation()
 
+    if (this._selectingCategory) return
+    this._selectingCategory = true
+
     const categoryId = event.currentTarget.dataset.categoryId
     const categoryName = event.currentTarget.dataset.categoryName
 
@@ -146,8 +163,12 @@ export default class extends Controller {
         Turbo.renderStreamMessage(turboStream)
       }
     })
-    .catch(_error => {
+    .catch(error => {
+      console.error("[mobile-card] selectCategory failed:", error)
       this._showToast("Error al actualizar categoría", "error")
+    })
+    .finally(() => {
+      this._selectingCategory = false
     })
   }
 

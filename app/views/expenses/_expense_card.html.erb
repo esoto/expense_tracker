@@ -56,7 +56,7 @@
 
       <% if expense.category %>
         <span class="text-xs text-slate-400">&middot;</span>
-        <span class="text-xs text-slate-600"><%= expense.category.name %></span>
+        <span id="expense_<%= expense.id %>_category" class="text-xs text-slate-600"><%= expense.category.name %></span>
       <% end %>
 
       <%# Status badge — hidden when processed %>
@@ -105,7 +105,7 @@
         <%# Dropdown de categorías — oculto por defecto %>
         <div class="hidden absolute left-0 top-full mt-1 z-10 bg-white rounded-lg shadow-lg border border-slate-200 max-h-48 overflow-y-auto w-48"
              data-mobile-card-target="categoryDropdown">
-          <% (local_assigns[:categories] || Category.all.order(:name)).each do |cat| %>
+          <% local_assigns[:categories].each do |cat| %>
             <button type="button"
                     class="w-full px-3 py-2.5 text-left text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
                     data-action="click->mobile-card#selectCategory:stop"

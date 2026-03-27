@@ -245,7 +245,44 @@ RSpec.describe "expenses/_expense_card.html.erb", type: :view, unit: true do
     end
 
     it "wires the category button to openCategoryPicker" do
-      expect(rendered).to have_css("[data-action*='mobile-card#openCategoryPicker']")
+      expect(rendered).to have_css("[data-action*='mobile-card#openCategoryPicker']", visible: :all)
+    end
+  end
+
+  describe "Turbo Stream category update target" do
+    context "when expense has a category" do
+      before do
+        render partial: "expenses/expense_card",
+               locals: { expense: processed_expense, categories: categories }
+      end
+
+      it "renders the category name span with the Turbo Stream target ID" do
+        expect(rendered).to have_css("#expense_#{processed_expense.id}_category")
+      end
+
+      it "the Turbo Stream target ID element shows the category name" do
+        expect(rendered).to have_css("#expense_#{processed_expense.id}_category", text: "Alimentación")
+      end
+    end
+
+    context "when expense has no category" do
+      let(:uncategorized_expense) do
+        create(:expense,
+          merchant_name: "Unknown Store",
+          amount: 500.00,
+          transaction_date: Date.new(2026, 3, 10),
+          status: "pending",
+          category: nil)
+      end
+
+      before do
+        render partial: "expenses/expense_card",
+               locals: { expense: uncategorized_expense, categories: categories }
+      end
+
+      it "does not render the Turbo Stream category target ID when no category" do
+        expect(rendered).not_to have_css("#expense_#{uncategorized_expense.id}_category")
+      end
     end
   end
 

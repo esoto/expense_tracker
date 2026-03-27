@@ -185,6 +185,7 @@ es:
       status_invalid: "Estado inválido"
       status_updated: "Estado actualizado exitosamente"
       status_error: "Error al actualizar el estado"
+      bulk_destroy_empty: "Debes seleccionar al menos un gasto para eliminar."
 
     actions:
       back_to_dashboard: "← Volver al Dashboard"

@@ -539,10 +539,25 @@ class ExpensesController < ApplicationController
 
     # Use strong parameters
     permitted = bulk_destroy_params
+    expense_ids = Array(permitted[:expense_ids]).reject(&:blank?)
+
+    # Guard: reject empty or missing expense_ids early to avoid service-layer errors
+    if expense_ids.empty?
+      respond_to do |format|
+        format.json do
+          render json: {
+            success: false,
+            message: t("expenses.flash.bulk_destroy_empty")
+          }, status: :unprocessable_entity
+        end
+        format.html { redirect_to expenses_path, alert: t("expenses.flash.bulk_destroy_empty") }
+      end
+      return
+    end
 
     # Use the new service object for better performance
     service = Services::BulkOperations::DeletionService.new(
-      expense_ids: permitted[:expense_ids],
+      expense_ids: expense_ids,
       user: current_user_for_bulk_operations,
       options: {
         broadcast_updates: true,

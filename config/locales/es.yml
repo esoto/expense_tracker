@@ -156,6 +156,13 @@ es:
         duplicate: "Duplicado"
         failed: "Fallido"
         unknown: "Desconocido"
+      actions:
+        categorize_label: "Categorizar gasto"
+        categorize: "Categoría"
+        status_label: "Cambiar estado del gasto"
+        status: "Estado"
+        edit_label: "Editar gasto"
+        delete_label: "Eliminar gasto"
 
     flash:
       created: "Gasto creado exitosamente."

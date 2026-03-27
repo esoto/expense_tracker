@@ -51,12 +51,12 @@
     </div>
 
     <!-- Filters -->
-    <div data-controller="collapsible-filter">
+    <div data-controller="collapsible">
       <%# Mobile filter toggle %>
       <div class="md:hidden mb-3">
         <button type="button"
-                data-collapsible-filter-target="toggleButton"
-                data-action="click->collapsible-filter#toggle"
+                data-collapsible-target="toggleButton"
+                data-action="click->collapsible#toggle"
                 aria-expanded="false"
                 class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -65,14 +65,14 @@
           Filtrar
           <% active_count = [params[:category], params[:bank], params[:start_date], params[:end_date]].count(&:present?) %>
           <% if active_count > 0 %>
-            <span data-collapsible-filter-target="badge"
+            <span data-collapsible-target="badge"
                   class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-teal-600 rounded-full">
               <%= active_count %>
             </span>
           <% end %>
         </button>
       </div>
-      <div data-collapsible-filter-target="content" class="hidden md:block">
+      <div data-collapsible-target="content" class="hidden md:block">
         <%= form_with url: expenses_path, method: :get,
                       class: "space-y-4 md:space-y-0 md:flex md:gap-4",
                       local: true,
@@ -107,17 +107,17 @@
   <!-- Category Summary (when not filtered) -->
   <% if params[:category].blank? && @categories_summary.any? %>
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
-       data-controller="collapsible-filter">
+       data-controller="collapsible">
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg font-semibold text-slate-900">Resumen por Categoría</h2>
       <button type="button"
-              data-action="click->collapsible-filter#toggle"
+              data-action="click->collapsible#toggle"
               aria-expanded="false"
               class="md:hidden text-sm text-teal-700 font-medium hover:text-teal-800">
         Ver resumen
       </button>
     </div>
-    <div data-collapsible-filter-target="content" class="hidden md:block">
+    <div data-collapsible-target="content" class="hidden md:block">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <% @categories_summary.first(6).each do |category_name, amount| %>
         <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">

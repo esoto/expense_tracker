@@ -29,3 +29,6 @@
 
 en:
   hello: "Hello world"
+  expenses:
+    flash:
+      bulk_destroy_empty: "You must select at least one expense to delete."

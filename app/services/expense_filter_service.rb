@@ -167,7 +167,8 @@ module Services
   end
 
   def set_defaults
-    @page ||= 1
+    @page = (@page || 1).to_i
+    @page = 1 if @page < 1
     @per_page = [ @per_page.to_i, MAX_PER_PAGE ].min if @per_page
     @per_page ||= DEFAULT_PER_PAGE
     @sort_by ||= "transaction_date"

@@ -124,11 +124,29 @@ export default class extends Controller {
   // ---------------------------------------------------------------------------
 
   enterSelectionMode() {
-    this._enterSelectionMode()
+    // Set ALL cards to selection mode so tapping any card toggles its checkbox
+    document.querySelectorAll("[data-controller='mobile-card']").forEach(el => {
+      const controller = this.application.getControllerForElementAndIdentifier(el, "mobile-card")
+      if (controller) controller.selectionModeValue = true
+    })
+    // Show all checkboxes
+    document.querySelectorAll("[data-mobile-card-target='checkbox']").forEach(cb => {
+      cb.classList.remove("hidden")
+    })
+    this.dispatch("selectionModeEntered", { detail: { active: true } })
   }
 
   exitSelectionMode() {
-    this._exitSelectionMode()
+    // Clear selection mode on ALL cards
+    document.querySelectorAll("[data-controller='mobile-card']").forEach(el => {
+      const controller = this.application.getControllerForElementAndIdentifier(el, "mobile-card")
+      if (controller) controller.selectionModeValue = false
+    })
+    document.querySelectorAll("[data-mobile-card-target='checkbox']").forEach(cb => {
+      cb.classList.add("hidden")
+      cb.checked = false
+    })
+    this.dispatch("selectionModeExited", { detail: { active: false } })
   }
 
   // ---------------------------------------------------------------------------

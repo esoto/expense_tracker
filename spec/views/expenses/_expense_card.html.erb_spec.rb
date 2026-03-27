@@ -119,6 +119,10 @@ RSpec.describe "expenses/_expense_card.html.erb", type: :view, unit: true do
       expect(rendered).to have_css("[data-mobile-card-expense-id-value='#{processed_expense.id}']")
     end
 
+    it "has selection-mode-value attribute defaulting to false" do
+      expect(rendered).to have_css("[data-mobile-card-selection-mode-value='false']")
+    end
+
     it "has touch and click action attributes" do
       expect(rendered).to have_css(
         '[data-action*="click->mobile-card#toggleActions"]'
@@ -159,21 +163,19 @@ RSpec.describe "expenses/_expense_card.html.erb", type: :view, unit: true do
     end
 
     it "renders a Categoría action button" do
-      expect(rendered).to have_css('[data-mobile-card-target="actions"]') do
-        have_content("Categoría")
-      end
+      expect(rendered).to have_css('[data-mobile-card-target="actions"]', text: /Categoría/)
+    end
+
+    it "renders an Estado action button" do
+      expect(rendered).to have_css('[data-mobile-card-target="actions"]', text: /Estado/)
     end
 
     it "renders an Editar action button" do
-      expect(rendered).to have_css('[data-mobile-card-target="actions"]') do
-        have_content("Editar")
-      end
+      expect(rendered).to have_css('[data-mobile-card-target="actions"]', text: /Editar/)
     end
 
     it "renders an Eliminar action button" do
-      expect(rendered).to have_css('[data-mobile-card-target="actions"]') do
-        have_content("Eliminar")
-      end
+      expect(rendered).to have_css('[data-mobile-card-target="actions"]', text: /Eliminar/)
     end
   end
 

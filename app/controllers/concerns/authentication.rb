@@ -13,11 +13,14 @@ module Authentication
 
   def authenticate_user!
     unless user_signed_in?
-      if request.format.json? || request.format.csv? || request.xhr?
-        render json: { error: "Authentication required" }, status: :unauthorized
-      else
+      # Allowlist pattern: only redirect HTML requests. All other formats
+      # (JSON, CSV, turbo_stream, XML, etc.) get a 401 JSON response.
+      # This is future-proof — no need to enumerate formats. (PER-212 review)
+      if request.format.html? && !request.xhr?
         store_location
         redirect_to admin_login_path, alert: "Please sign in to continue."
+      else
+        render json: { error: "Authentication required" }, status: :unauthorized
       end
     end
   end

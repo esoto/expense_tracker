@@ -22,6 +22,20 @@ RSpec.configure do |config|
     DatabaseCleaner.strategy = :deletion
   end
 
+  # System tests need committed data visible to the browser thread
+  config.before(:each, type: :system) do
+    self.class.use_transactional_tests = false
+  end
+
+  config.after(:each, type: :system) do
+    self.class.use_transactional_tests = true
+  end
+
+  # Performance tests may use before(:all) with persistent data
+  config.before(:each, :performance) do
+    DatabaseCleaner.strategy = :deletion
+  end
+
   config.before(:each) do
     DatabaseCleaner.start
   end
@@ -29,6 +43,8 @@ RSpec.configure do |config|
   config.after(:each) do
     DatabaseCleaner.clean
   rescue StandardError, RSpec::Mocks::MockExpectationError
-    # Silently ignore cleanup errors caused by tests that stub the connection pool
+    # Tests that stub DB connections (health_controller, dashboard_helper) raise
+    # StandardError during cleanup. RSpec mock errors need separate rescue since
+    # MockExpectationError inherits from Exception, not StandardError.
   end
 end

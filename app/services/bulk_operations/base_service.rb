@@ -128,12 +128,15 @@ module Services::BulkOperations
 
     def process_operation_result(result)
       if result.is_a?(Hash)
-        @results = results.merge(
+        merged = {
           success: true,
           affected_count: result[:success_count] || 0,
           failures: result[:failures] || [],
           message: success_message(result[:success_count] || 0)
-        )
+        }
+        merged[:undo_id] = result[:undo_id] if result.key?(:undo_id)
+        merged[:undo_time_remaining] = result[:undo_time_remaining] if result.key?(:undo_time_remaining)
+        @results = results.merge(merged)
       else
         @results = results.merge(
           success: true,

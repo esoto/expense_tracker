@@ -13,7 +13,7 @@ module Authentication
 
   def authenticate_user!
     unless user_signed_in?
-      if request.format.json? || request.xhr?
+      if request.format.json? || request.format.csv? || request.xhr?
         render json: { error: "Authentication required" }, status: :unauthorized
       else
         store_location

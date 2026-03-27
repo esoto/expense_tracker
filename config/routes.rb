@@ -205,15 +205,16 @@ Rails.application.routes.draw do
 
   resources :email_accounts
 
-  # Bulk categorization routes
-  resources :bulk_categorizations, only: [ :index, :show ]
-
-  # Bulk categorization actions
+  # Bulk categorization routes — action routes must come before resources to avoid
+  # :id wildcard capturing static segments like "export" (PER-212)
   post "bulk_categorizations/categorize", to: "bulk_categorization_actions#categorize"
   post "bulk_categorizations/suggest", to: "bulk_categorization_actions#suggest"
   post "bulk_categorizations/preview", to: "bulk_categorization_actions#preview"
   post "bulk_categorizations/auto_categorize", to: "bulk_categorization_actions#auto_categorize"
   get "bulk_categorizations/export", to: "bulk_categorization_actions#export"
+
+  resources :bulk_categorizations, only: [ :index, :show ]
+
   post "bulk_categorizations/:id/undo", to: "bulk_categorization_actions#undo", as: :undo_bulk_categorization
 
   # Analytics routes

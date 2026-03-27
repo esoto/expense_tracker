@@ -51,46 +51,79 @@
     </div>
 
     <!-- Filters -->
-    <%= form_with url: expenses_path, method: :get,
-                  class: "space-y-4 md:space-y-0 md:flex md:gap-4",
-                  local: true,
-                  data: {
-                    "filter-persistence-target": "filterForm"
-                  } do |form| %>
-    <div class="flex-1">
-      <%= form.select :category, options_from_collection_for_select(Category.all, :name, :name, params[:category]),
-            { include_blank: "Todas las categorías" },
-            { class: "w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" } %>
+    <div data-controller="collapsible-filter">
+      <%# Mobile filter toggle %>
+      <div class="md:hidden mb-3">
+        <button type="button"
+                data-collapsible-filter-target="toggleButton"
+                data-action="click->collapsible-filter#toggle"
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+          </svg>
+          Filtrar
+          <% active_count = [params[:category], params[:bank], params[:start_date], params[:end_date]].count(&:present?) %>
+          <% if active_count > 0 %>
+            <span data-collapsible-filter-target="badge"
+                  class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-teal-600 rounded-full">
+              <%= active_count %>
+            </span>
+          <% end %>
+        </button>
+      </div>
+      <div data-collapsible-filter-target="content" class="hidden md:block">
+        <%= form_with url: expenses_path, method: :get,
+                      class: "space-y-4 md:space-y-0 md:flex md:gap-4",
+                      local: true,
+                      data: {
+                        "filter-persistence-target": "filterForm"
+                      } do |form| %>
+        <div class="flex-1">
+          <%= form.select :category, options_from_collection_for_select(Category.all, :name, :name, params[:category]),
+                { include_blank: "Todas las categorías" },
+                { class: "w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" } %>
+        </div>
+        <div class="flex-1">
+          <%= form.select :bank,
+                options_for_select([["Todos los bancos", ""]] + @bank_names.map { |name| [name, name] }, params[:bank]),
+                {}, { class: "w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" } %>
+        </div>
+        <div class="flex gap-2">
+          <%= form.date_field :start_date, value: params[:start_date], placeholder: "Fecha inicio",
+                class: "rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
+          <%= form.date_field :end_date, value: params[:end_date], placeholder: "Fecha fin",
+                class: "rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
+        </div>
+        <div class="flex gap-2">
+          <%= form.submit t("common.filter"), class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg shadow-sm" %>
+          <%= link_to "Limpiar", expenses_path, class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg" %>
+        </div>
+        <% end %>
+      </div>
     </div>
-    <div class="flex-1">
-      <%= form.select :bank,
-            options_for_select([["Todos los bancos", ""]] + @bank_names.map { |name| [name, name] }, params[:bank]),
-            {}, { class: "w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" } %>
-    </div>
-    <div class="flex gap-2">
-      <%= form.date_field :start_date, value: params[:start_date], placeholder: "Fecha inicio",
-            class: "rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
-      <%= form.date_field :end_date, value: params[:end_date], placeholder: "Fecha fin",
-            class: "rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
-    </div>
-    <div class="flex gap-2">
-      <%= form.submit t("common.filter"), class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg shadow-sm" %>
-      <%= link_to "Limpiar", expenses_path, class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg" %>
-    </div>
-    <% end %>
   </div>
 
   <!-- Category Summary (when not filtered) -->
   <% if params[:category].blank? && @categories_summary.any? %>
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-    <h2 class="text-lg font-semibold text-slate-900 mb-4">Resumen por Categoría</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <% @categories_summary.first(6).each do |category_name, amount| %>
-      <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-        <span class="font-medium text-slate-700"><%= category_name %></span>
-        <span class="font-bold text-slate-900">₡<%= number_with_delimiter(amount.to_i) %></span>
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
+       data-controller="collapsible-filter">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-slate-900">Resumen por Categoría</h2>
+      <button type="button"
+              data-action="click->collapsible-filter#toggle"
+              class="md:hidden text-sm text-teal-700 font-medium hover:text-teal-800">
+        Ver resumen
+      </button>
+    </div>
+    <div data-collapsible-filter-target="content" class="hidden md:block">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <% @categories_summary.first(6).each do |category_name, amount| %>
+        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+          <span class="font-medium text-slate-700"><%= category_name %></span>
+          <span class="font-bold text-slate-900">₡<%= number_with_delimiter(amount.to_i) %></span>
+        </div>
+        <% end %>
       </div>
-      <% end %>
     </div>
   </div>
   <% end %>

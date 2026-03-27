@@ -89,6 +89,47 @@ RSpec.describe "Mobile Expense Cards", type: :view, unit: true do
   # Tests the structure of index.html.erb directly from source
   # rather than rendering it (full render requires browser-level tests)
   # ============================================================
+  describe "collapsible filters" do
+    let(:template_source) { File.read(Rails.root.join("app/views/expenses/index.html.erb")) }
+
+    it "renders filter toggle button for mobile" do
+      expect(template_source).to include("Filtrar")
+    end
+
+    it "has collapsible-filter controller on filters" do
+      expect(template_source).to include("data-controller=\"collapsible-filter\"")
+    end
+
+    it "has a collapsible content target wrapping the filter form" do
+      expect(template_source).to include("data-collapsible-filter-target=\"content\"")
+    end
+
+    it "has a toggle button action wired to the collapsible-filter controller" do
+      expect(template_source).to include("click->collapsible-filter#toggle")
+    end
+
+    it "collapsible content div is hidden by default on mobile" do
+      expect(template_source).to match(/data-collapsible-filter-target="content"[^>]*class="hidden md:block"|class="hidden md:block"[^>]*data-collapsible-filter-target="content"/)
+    end
+  end
+
+  describe "collapsible category summary" do
+    let(:template_source) { File.read(Rails.root.join("app/views/expenses/index.html.erb")) }
+
+    it "renders summary toggle button" do
+      expect(template_source).to include("Ver resumen")
+    end
+
+    it "has collapsible-filter controller on category summary section" do
+      # The category summary section reuses the same collapsible-filter controller
+      expect(template_source).to include("Resumen por Categoría")
+    end
+
+    it "wraps category grid in a collapsible content target" do
+      expect(template_source).to match(/Ver resumen/)
+    end
+  end
+
   describe "expenses/index.html.erb template source" do
     let(:template_path) do
       Rails.root.join("app/views/expenses/index.html.erb")

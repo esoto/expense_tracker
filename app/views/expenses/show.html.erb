@@ -9,7 +9,8 @@
         <%= link_to t("common.edit"), edit_expense_path(@expense),
             class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm" %>
         <%= button_to t("common.delete"), @expense, method: :delete,
-            data: { turbo_confirm: t("expenses.actions.delete_confirm") },
+            form: { data: { turbo: false } },
+            onclick: "return confirm(#{t('expenses.actions.delete_confirm').to_json})",
             class: "bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm" %>
         <%= link_to t("common.back"), expenses_path,
             class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium" %>

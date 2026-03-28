@@ -51,7 +51,13 @@ class SyncConflictsController < ApplicationController
     @resolutions = @sync_conflict.conflict_resolutions.recent.limit(10)
 
     respond_to do |format|
-      format.html
+      format.html do
+        if request.xhr? || request.headers["Turbo-Frame"].present?
+          render partial: "sync_conflicts/modal", locals: { sync_conflict: @sync_conflict }, layout: false
+        else
+          render :show
+        end
+      end
       format.json {
         render json: {
           conflict: @sync_conflict,

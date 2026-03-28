@@ -255,6 +255,53 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
         expect(json_response).to have_key('resolutions')
       end
     end
+
+    context 'XHR request (conflict modal fetch)' do
+      before do
+        allow(controller).to receive(:authenticate_user!).and_return(true)
+        allow(controller).to receive(:current_user).and_return(create(:admin_user))
+        request.env['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest'
+        request.env['HTTP_ACCEPT'] = 'text/html'
+        get :show, params: { id: conflict_with_resolutions.id }
+      end
+
+      it 'returns http success' do
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'renders the modal partial without layout' do
+        expect(response).to render_template(partial: '_modal')
+        expect(response).not_to render_template('layouts/application')
+      end
+
+      it 'does not include full page HTML structure' do
+        expect(response.body).not_to include('<html')
+        expect(response.body).not_to include('<head')
+      end
+
+      it 'renders the modal partial (content rendered via view)' do
+        expect(response).to render_template(partial: '_modal')
+      end
+    end
+
+    context 'Turbo-Frame request (conflict modal fetch)' do
+      before do
+        allow(controller).to receive(:authenticate_user!).and_return(true)
+        allow(controller).to receive(:current_user).and_return(create(:admin_user))
+        request.headers['Turbo-Frame'] = 'conflict_modal'
+        request.env['HTTP_ACCEPT'] = 'text/html'
+        get :show, params: { id: conflict_with_resolutions.id }
+      end
+
+      it 'returns http success' do
+        expect(response).to have_http_status(:success)
+      end
+
+      it 'renders the modal partial without layout' do
+        expect(response).to render_template(partial: '_modal')
+        expect(response).not_to render_template('layouts/application')
+      end
+    end
   end
 
   describe 'POST #resolve', performance: true do

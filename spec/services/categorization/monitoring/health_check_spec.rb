@@ -176,6 +176,24 @@ RSpec.describe Services::Categorization::Monitoring::HealthCheck, performance: t
       expect(cache_check[:hit_rate]).to eq(0.2)
       expect(cache_check[:warning]).to include("Low cache hit rate")
     end
+
+    it "reports degraded (not unhealthy) when cache is empty on app start" do
+      cache = instance_double(Services::Categorization::PatternCache)
+      allow(Services::Categorization::PatternCache).to receive(:instance).and_return(cache)
+      allow(cache).to receive(:stats).and_return({
+        entries: 0,
+        memory_bytes: 0,
+        hits: 0,
+        misses: 0,
+        evictions: 0
+      })
+
+      health_check.check_pattern_cache
+      cache_check = health_check.checks[:pattern_cache]
+
+      expect(cache_check[:status]).to eq(:degraded)
+      expect(cache_check[:entries]).to eq(0)
+    end
   end
 
   describe "#check_service_metrics", performance: true do

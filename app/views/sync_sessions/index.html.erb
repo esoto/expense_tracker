@@ -57,7 +57,7 @@
               <span class="text-sm font-medium text-slate-900"><%= account.email_account.bank_name %></span>
               <span class="text-xs px-2 py-1 rounded-full <%= account.processing? ? 'bg-teal-100 text-teal-700' : 'bg-emerald-100 text-emerald-700' %>"
                     data-status-badge>
-                <%= account.status.humanize %>
+                <%= t("sync_sessions.statuses.#{account.status}", default: account.status.humanize) %>
               </span>
             </div>
             <p class="text-xs text-slate-600 mb-2"><%= account.email_account.email %></p>
@@ -166,7 +166,7 @@
                       session.cancelled? ? 'bg-amber-100 text-amber-800' :
                       session.running? ? 'bg-teal-100 text-teal-800 animate-pulse' :
                       'bg-slate-100 text-slate-800' %>">
-                  <%= session.status == 'running' ? 'Sincronizando' : session.status.humanize %>
+                  <%= t("sync_sessions.statuses.#{session.status}", default: session.status.humanize) %>
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">

@@ -130,6 +130,11 @@ es:
       updated: "Cuenta de correo actualizada exitosamente."
       deleted: "Cuenta de correo eliminada exitosamente."
 
+    providers:
+      gmail: "Gmail"
+      outlook: "Outlook"
+      custom: "Personalizado"
+
     bank_names:
       bac: "BAC San José"
       bcr: "Banco de Costa Rica"
@@ -212,6 +217,14 @@ es:
       
   # Sync sessions
   sync_sessions:
+    statuses:
+      pending: "Pendiente"
+      running: "En ejecución"
+      completed: "Completado"
+      failed: "Fallido"
+      cancelled: "Cancelado"
+      processing: "Procesando"
+
     flash:
       started: "Sincronización iniciada exitosamente"
       not_active: "Esta sincronización no está activa"
@@ -249,3 +262,10 @@ es:
     view: "Ver"
     are_you_sure: "¿Estás seguro?"
     unauthorized: "No autorizado"
+
+  # ActiveRecord attribute translations
+  activerecord:
+    attributes:
+      email_account:
+        provider: "Proveedor"
+        bank_name: "Nombre del banco"

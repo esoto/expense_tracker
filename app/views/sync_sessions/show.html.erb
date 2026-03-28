@@ -119,7 +119,7 @@
                 <% if @sync_session.running? %>
                   <div class="animate-pulse w-2 h-2 bg-teal-600 rounded-full mr-2"></div>
                 <% end %>
-                <%= @sync_session.status == 'running' ? 'Sincronizando' : @sync_session.status.humanize %>
+                <%= t("sync_sessions.statuses.#{@sync_session.status}", default: @sync_session.status.humanize) %>
               </span>
             </dd>
           </div>
@@ -229,7 +229,7 @@
                       account.processing? ? 'bg-teal-100 text-teal-800' :
                       'bg-slate-100 text-slate-800' %>"
                       data-account-status>
-                  <%= account.status.humanize %>
+                  <%= t("sync_sessions.statuses.#{account.status}", default: account.status.humanize) %>
                 </span>
               </div>
 

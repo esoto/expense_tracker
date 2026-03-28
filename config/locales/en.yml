@@ -38,3 +38,21 @@ en:
   expenses:
     flash:
       bulk_destroy_empty: "You must select at least one expense to delete."
+  email_accounts:
+    providers:
+      gmail: "Gmail"
+      outlook: "Outlook"
+      custom: "Custom"
+  sync_sessions:
+    statuses:
+      pending: "Pending"
+      running: "Running"
+      completed: "Completed"
+      failed: "Failed"
+      cancelled: "Cancelled"
+      processing: "Processing"
+  activerecord:
+    attributes:
+      email_account:
+        provider: "Provider"
+        bank_name: "Bank name"

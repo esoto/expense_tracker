@@ -13,7 +13,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, integrati
     before do
       # Mock the session-based authentication
       allow(controller).to receive(:session).and_return({ admin_session_token: 'valid_token' })
-      allow(AdminUser).to receive(:find_by_valid_session).with('valid_token').and_return(admin_user)
+      allow(AdminUser).to receive(:find_by_valid_session).with('valid_token', extend: false).and_return(admin_user)
       allow(controller).to receive(:authenticate_user!).and_return(true)
       allow(controller).to receive(:current_user).and_return(admin_user)
 

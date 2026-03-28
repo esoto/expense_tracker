@@ -131,6 +131,9 @@ module Admin
     end
 
     def admin_signed_in?
+      # PER-213: The sessions controller checks sign-in to redirect away from
+      # the login page when already authenticated. Use default extend: true since
+      # visiting the login page while already logged in is genuine user activity.
       session[:admin_session_token].present? &&
         AdminUser.find_by_valid_session(session[:admin_session_token]).present?
     end

@@ -8,6 +8,9 @@ module AdminAuthentication
     before_action :require_admin_authentication
     before_action :check_session_expiry
     before_action :set_security_headers
+    # PER-213: Refresh CSRF token on every admin request so Turbo Drive always
+    # has a fresh token in the meta tag after navigation.
+    before_action :refresh_csrf_token_for_turbo
 
     helper_method :current_admin_user, :admin_signed_in?
 
@@ -19,28 +22,75 @@ module AdminAuthentication
 
   def require_admin_authentication
     unless admin_signed_in?
-      store_location
-      redirect_to admin_login_path, alert: "Please sign in to continue."
+      # PER-213: Check whether this is an expired session (token present but
+      # session_expires_at in the past) vs. a truly anonymous request.  We
+      # distinguish these so we can:
+      #   a) Delete only the stale session keys (not reset_session) to avoid
+      #      CSRF token rotation.
+      #   b) Return 303 See Other for Turbo Drive requests on expiry so Turbo
+      #      forces a full-page visit rather than swapping cached content.
+      if session_token_present_but_expired?
+        # Clear stale auth keys without rotating the CSRF token.
+        clean_expired_session_keys
+        redirect_to admin_login_path,
+          alert: "Your session has expired. Please sign in again.",
+          status: turbo_drive_request? ? :see_other : :found
+      else
+        store_location
+        redirect_to admin_login_path, alert: "Please sign in to continue."
+      end
     end
   end
 
   def check_session_expiry
     return unless current_admin_user
 
-    if current_admin_user.session_expired?
-      current_admin_user.invalidate_session!
-      reset_session
-      redirect_to admin_login_path, alert: "Your session has expired. Please sign in again."
-    else
-      # Extend session on activity
-      current_admin_user.extend_session
-    end
+    # At this point find_by_valid_session already confirmed the session is not
+    # expired (it returns nil otherwise).  We only need to extend the session
+    # for real user activity — skip for prefetch requests.
+    current_admin_user.extend_session unless turbo_prefetch_request?
+  end
+
+  # PER-213: Returns true when a session token is stored in the cookie but the
+  # corresponding DB record has expired (or the token was already invalidated).
+  def session_token_present_but_expired?
+    return false unless session[:admin_session_token].present?
+
+    user = AdminUser.find_by(session_token: session[:admin_session_token])
+    user.present? && user.session_expired?
+  end
+
+  # PER-213: Remove stale admin session keys without calling reset_session.
+  # reset_session would rotate the CSRF token, causing Turbo Drive's cached
+  # page to send a stale token on the next form submission → 422 → lockout.
+  def clean_expired_session_keys
+    session.delete(:admin_session_token)
+    session.delete(:admin_user_id)
+  end
+
+  # PER-213: Ensure the CSRF token is consistent for the current response so
+  # Turbo Drive page-cache restorations send a valid token.  This is a no-op
+  # for non-GET requests.
+  def refresh_csrf_token_for_turbo
+    # Only relevant on full-page GET responses that Turbo Drive may cache.
+    return unless request.get? || request.head?
+    # Skip for prefetch — the prefetched response is discarded and we don't
+    # want to advance the token counter for a speculative request.
+    return if turbo_prefetch_request?
+
+    # Calling form_authenticity_token memoizes the masked token for this
+    # request, ensuring that the csrf-token meta tag written by csrf_meta_tags
+    # in the layout matches any form tokens on the same page.
+    form_authenticity_token
   end
 
   def current_admin_user
     @current_admin_user ||= begin
       if session[:admin_session_token].present?
-        AdminUser.find_by_valid_session(session[:admin_session_token])
+        # PER-213: Skip session extension for prefetch requests — they are
+        # speculative and should not count as real user activity. Extension
+        # is handled explicitly in check_session_expiry for non-prefetch requests.
+        AdminUser.find_by_valid_session(session[:admin_session_token], extend: false)
       end
     end
   end
@@ -50,8 +100,24 @@ module AdminAuthentication
   end
 
   def store_location
-    # Store location only for GET requests (not HEAD)
+    # Store location only for GET requests (not HEAD).
+    # PER-213: Skip for Turbo Drive prefetch requests.
+    return if turbo_prefetch_request?
+
     session[:return_to] = request.fullpath if request.get? && !request.head?
+  end
+
+  # PER-213: Returns true when the request was initiated by Turbo Drive.
+  def turbo_drive_request?
+    request.headers["Turbo-Frame"].present? ||
+      request.headers["X-Turbo-Request-Id"].present? ||
+      request.accept.to_s.include?("text/vnd.turbo-stream.html")
+  end
+
+  # PER-213: Returns true for browser-initiated prefetch requests.
+  def turbo_prefetch_request?
+    request.headers["Sec-Purpose"].to_s.include?("prefetch") ||
+      request.headers["Purpose"].to_s.include?("prefetch")
   end
 
   def redirect_back_or(default)

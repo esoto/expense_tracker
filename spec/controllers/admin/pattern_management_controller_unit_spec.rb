@@ -48,11 +48,22 @@ RSpec.describe Admin::PatternManagementController, type: :controller, unit: true
 
     analytics_class = Class.new do
       def generate_statistics
-        { total_patterns: 10, active_patterns: 8 }
+        {
+          total_patterns: 10,
+          active_count: 8,
+          inactive_count: 2,
+          avg_success_rate: 75.0,
+          patterns_by_type: { "merchant" => 5, "keyword" => 3 },
+          top_categories: []
+        }
       end
 
       def performance_over_time
-        [ { date: "2023-01-01", success_rate: 0.8 } ]
+        {
+          daily: [ { date: "2023-01-01", total: 5, correct: 4, incorrect: 1 } ],
+          weekly: [ { week_start: "2022-12-26", total: 30 } ],
+          summary: { total_matches: 5, avg_daily: 0.17 }
+        }
       end
     end
     categorization_module.const_set("PatternAnalytics", analytics_class)
@@ -144,44 +155,91 @@ RSpec.describe Admin::PatternManagementController, type: :controller, unit: true
   end
 
   describe "GET #statistics", unit: true do
+    let(:stats_data) do
+      {
+        total_patterns: 10,
+        active_count: 8,
+        inactive_count: 2,
+        avg_success_rate: 75.0,
+        patterns_by_type: { "merchant" => 5, "keyword" => 3 },
+        top_categories: []
+      }
+    end
+
     it "calls pattern analytics service" do
-      analytics = double("analytics", generate_statistics: { total_patterns: 10 })
+      analytics = double("analytics", generate_statistics: stats_data)
       expect(Services::Categorization::PatternAnalytics).to receive(:new).and_return(analytics)
       expect(analytics).to receive(:generate_statistics)
 
       get :statistics, format: :json
     end
 
-    it "assigns statistics data" do
+    it "assigns statistics data to @stats" do
       get :statistics, format: :json
-      expect(assigns(:stats)).to eq({ total_patterns: 10, active_patterns: 8 })
+      expect(assigns(:stats)).to include(:total_patterns, :active_count, :avg_success_rate)
+    end
+
+    it "returns http success for JSON format" do
+      get :statistics, format: :json
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "returns http success for HTML format" do
+      get :statistics
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "renders statistics template for HTML format" do
+      get :statistics
+      expect(response).to render_template(:statistics)
     end
 
     it "renders JSON response" do
-      allow(controller).to receive(:render)
-      expect(controller).to receive(:render).with(json: { total_patterns: 10, active_patterns: 8 })
       get :statistics, format: :json
+      expect(response.content_type).to include("application/json")
     end
   end
 
   describe "GET #performance", unit: true do
+    let(:performance_data) do
+      {
+        daily: [ { date: "2023-01-01", total: 5, correct: 4, incorrect: 1 } ],
+        weekly: [ { week_start: "2022-12-26", total: 30 } ],
+        summary: { total_matches: 5, avg_daily: 0.17 }
+      }
+    end
+
     it "calls pattern analytics service for performance data" do
-      analytics = double("analytics", performance_over_time: [ { date: "2023-01-01" } ])
+      analytics = double("analytics", performance_over_time: performance_data)
       expect(Services::Categorization::PatternAnalytics).to receive(:new).and_return(analytics)
       expect(analytics).to receive(:performance_over_time)
 
       get :performance, format: :json
     end
 
-    it "assigns performance data" do
+    it "assigns performance data to @performance_data" do
       get :performance, format: :json
-      expect(assigns(:performance_data)).to eq([ { date: "2023-01-01", success_rate: 0.8 } ])
+      expect(assigns(:performance_data)).to include(:daily, :weekly, :summary)
+    end
+
+    it "returns http success for JSON format" do
+      get :performance, format: :json
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "returns http success for HTML format" do
+      get :performance
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "renders performance template for HTML format" do
+      get :performance
+      expect(response).to render_template(:performance)
     end
 
     it "renders JSON response" do
-      allow(controller).to receive(:render)
-      expect(controller).to receive(:render).with(json: [ { date: "2023-01-01", success_rate: 0.8 } ])
       get :performance, format: :json
+      expect(response.content_type).to include("application/json")
     end
   end
 

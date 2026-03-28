@@ -24,6 +24,9 @@
       </div>
     </div>
 
+    <!-- bulk-actions controller wraps toolbar + table so all targets are in scope -->
+    <div data-controller="bulk-actions" data-bulk-actions-url-value="<%= bulk_resolve_sync_conflicts_path %>">
+
     <!-- Filters and Actions Bar -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
       <div class="flex items-center justify-between">
@@ -53,8 +56,8 @@
           </div>
         </div>
 
-        <!-- Bulk Actions -->
-        <div class="flex items-center space-x-2" data-controller="bulk-actions" data-bulk-actions-url-value="<%= bulk_resolve_sync_conflicts_path %>">
+        <!-- Bulk Actions toolbar (no controller here — lives on the outer wrapper) -->
+        <div class="flex items-center space-x-2">
           <button data-action="click->bulk-actions#selectAll"
                   class="px-4 py-2 text-sm font-medium text-slate-700 hover:text-teal-700">
             Seleccionar todo
@@ -115,6 +118,8 @@
         </div>
       <% end %>
     </div>
+
+    </div><!-- end bulk-actions wrapper -->
   </div>
 </div>
 

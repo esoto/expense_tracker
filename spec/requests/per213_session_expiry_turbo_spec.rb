@@ -36,35 +36,46 @@ RSpec.describe "PER-213 Session expiry during Turbo Drive navigation", type: :re
     follow_redirect!
   end
 
+  # Helper: Simulate session expiry by traveling past the session_expires_at
+  # time stored in both the DB record and the session cookie.
+  # The session cookie's admin_session_expires_at was set to SESSION_DURATION
+  # from the login time, so traveling 3 hours forward guarantees both are past.
+  def with_expired_session(&block)
+    travel_to(AdminUser::SESSION_DURATION.from_now + 1.hour, &block)
+  end
+
   # ─── CSRF token preservation ────────────────────────────────────────────────
 
   describe "CSRF token after session expiry", :unit do
     it "does NOT call reset_session when the session expires" do
       sign_in_admin
-      # Force the cached admin_user to look expired
-      admin_user.update!(session_expires_at: 1.hour.ago)
 
-      # A normal GET from Turbo Drive (no prefetch)
-      get admin_patterns_path
+      # Travel past the session duration so both the session-cookie expiry and
+      # the DB record are in the past — this is how expiry naturally occurs.
+      with_expired_session do
+        # A normal GET (no prefetch)
+        get admin_patterns_path
 
-      # The controller should have cleared individual session keys, not
-      # wiped the whole session (which would rotate CSRF token).
-      # Verify we redirected gracefully without a full session reset.
-      expect(response).to redirect_to(admin_login_path)
-      expect(flash[:alert]).to eq("Your session has expired. Please sign in again.")
+        # The controller should have cleared individual session keys, not
+        # wiped the whole session (which would rotate CSRF token).
+        # Verify we redirected gracefully without a full session reset.
+        expect(response).to redirect_to(admin_login_path)
+        expect(flash[:alert]).to eq("Your session has expired. Please sign in again.")
+      end
     end
 
     it "preserves the CSRF token cookie across a session-expiry redirect" do
       sign_in_admin
       csrf_token_before = session[:_csrf_token]
 
-      admin_user.update!(session_expires_at: 1.hour.ago)
-      get admin_patterns_path
+      with_expired_session do
+        get admin_patterns_path
 
-      # After the redirect the cookie-based session should still carry the
-      # same CSRF token (it was not rotated by reset_session).
-      csrf_token_after = session[:_csrf_token]
-      expect(csrf_token_after).to eq(csrf_token_before)
+        # After the redirect the cookie-based session should still carry the
+        # same CSRF token (it was not rotated by reset_session).
+        csrf_token_after = session[:_csrf_token]
+        expect(csrf_token_after).to eq(csrf_token_before)
+      end
     end
   end
 
@@ -73,22 +84,24 @@ RSpec.describe "PER-213 Session expiry during Turbo Drive navigation", type: :re
   describe "session-expiry redirect status for Turbo Drive requests", :unit do
     it "returns 303 See Other for Turbo Drive requests on session expiry" do
       sign_in_admin
-      admin_user.update!(session_expires_at: 1.hour.ago)
 
-      get admin_patterns_path, headers: { "X-Turbo-Request-Id" => "test-id-123" }
+      with_expired_session do
+        get admin_patterns_path, headers: { "X-Turbo-Request-Id" => "test-id-123" }
 
-      expect(response).to have_http_status(:see_other)
-      expect(response).to redirect_to(admin_login_path)
+        expect(response).to have_http_status(:see_other)
+        expect(response).to redirect_to(admin_login_path)
+      end
     end
 
     it "returns 302 Found for regular browser requests on session expiry" do
       sign_in_admin
-      admin_user.update!(session_expires_at: 1.hour.ago)
 
-      get admin_patterns_path  # no Turbo headers
+      with_expired_session do
+        get admin_patterns_path  # no Turbo headers
 
-      expect(response).to have_http_status(:found)
-      expect(response).to redirect_to(admin_login_path)
+        expect(response).to have_http_status(:found)
+        expect(response).to redirect_to(admin_login_path)
+      end
     end
   end
 

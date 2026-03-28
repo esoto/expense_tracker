@@ -52,20 +52,31 @@ module AdminAuthentication
   end
 
   # PER-213: Returns true when a session token is stored in the cookie but the
-  # corresponding DB record has expired (or the token was already invalidated).
+  # session-stored expiry timestamp is in the past.
+  # Uses the session-stored expiry rather than a DB lookup to avoid creating
+  # a timing oracle on every unauthenticated request.
   def session_token_present_but_expired?
     return false unless session[:admin_session_token].present?
 
-    user = AdminUser.find_by(session_token: session[:admin_session_token])
-    user.present? && user.session_expired?
+    expires_at = session[:admin_session_expires_at]
+    return false unless expires_at.present?
+
+    Time.zone.parse(expires_at.to_s) < Time.current
   end
 
   # PER-213: Remove stale admin session keys without calling reset_session.
   # reset_session would rotate the CSRF token, causing Turbo Drive's cached
   # page to send a stale token on the next form submission → 422 → lockout.
+  # Calls invalidate_session! to nullify the DB token (server-side revocation)
+  # without touching the CSRF token (invalidate_session! is a model method,
+  # not a controller method, so it does NOT call reset_session).
   def clean_expired_session_keys
+    if session[:admin_session_token].present?
+      AdminUser.find_by(session_token: session[:admin_session_token])&.invalidate_session!
+    end
     session.delete(:admin_session_token)
     session.delete(:admin_user_id)
+    session.delete(:admin_session_expires_at)
   end
 
   # PER-213: Ensure the CSRF token is consistent for the current response so
@@ -73,7 +84,9 @@ module AdminAuthentication
   # for non-GET requests.
   def refresh_csrf_token_for_turbo
     # Only relevant on full-page GET responses that Turbo Drive may cache.
-    return unless request.get? || request.head?
+    # HEAD responses carry no body so the memoized token is never delivered;
+    # intentionally excluded (Fix 5 of PER-213 security review).
+    return unless request.get?
     # Skip for prefetch — the prefetched response is discarded and we don't
     # want to advance the token counter for a speculative request.
     return if turbo_prefetch_request?
@@ -107,6 +120,10 @@ module AdminAuthentication
     session[:return_to] = request.fullpath if request.get? && !request.head?
   end
 
+  # NOTE: These headers are user-controlled and spoofable. This method is used
+  # ONLY for UX decisions (redirect status code), never for security decisions.
+  # Security-sensitive actions (session revocation, auth checks) must not branch
+  # on this value.
   # PER-213: Returns true when the request was initiated by Turbo Drive.
   def turbo_drive_request?
     request.headers["Turbo-Frame"].present? ||
@@ -129,6 +146,7 @@ module AdminAuthentication
     reset_session # Prevent session fixation
     session[:admin_session_token] = admin_user.session_token
     session[:admin_user_id] = admin_user.id
+    session[:admin_session_expires_at] = admin_user.session_expires_at&.iso8601
   end
 
   def clear_admin_session

@@ -18,17 +18,12 @@ module Authentication
       # This is future-proof — no need to enumerate formats. (PER-212 review)
       if request.format.html? && !request.xhr?
         store_location
-        # PER-213: For Turbo Drive navigation, return a response that tells
-        # Turbo Drive to do a full page reload to the login path rather than
-        # swapping content, avoiding stale CSRF token issues.
-        if turbo_drive_request?
-          response.set_header("X-Turbo-Location", admin_login_path)
-          redirect_to admin_login_path, alert: t("authentication.session_expired",
-            default: "Please sign in to continue.")
-        else
-          redirect_to admin_login_path, alert: t("authentication.session_expired",
-            default: "Please sign in to continue.")
-        end
+        # PER-213: Use 303 See Other for Turbo Drive requests so Turbo forces a
+        # full-page visit rather than swapping cached content. Plain browser
+        # requests use the standard 302 Found.
+        redirect_to admin_login_path,
+          alert: t("authentication.session_expired", default: "Please sign in to continue."),
+          status: turbo_drive_request? ? :see_other : :found
       else
         render json: { error: "Authentication required" }, status: :unauthorized
       end

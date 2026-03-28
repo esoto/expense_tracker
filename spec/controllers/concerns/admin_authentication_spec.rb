@@ -214,6 +214,14 @@ RSpec.describe AdminAuthentication, type: :controller, unit: true do
       expect(session[:admin_user_id]).to eq(admin_user.id)
     end
 
+    it "stores session expiry timestamp in session on login" do
+      allow(controller).to receive(:reset_session)
+
+      controller.send(:set_admin_session, admin_user)
+
+      expect(session[:admin_session_expires_at]).to eq(admin_user.session_expires_at&.iso8601)
+    end
+
     it "clears admin session completely" do
       session[:admin_session_token] = admin_user.session_token
       session[:admin_user_id] = admin_user.id

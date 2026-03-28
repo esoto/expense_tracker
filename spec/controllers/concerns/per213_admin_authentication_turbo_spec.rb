@@ -64,38 +64,59 @@ RSpec.describe AdminAuthentication, type: :controller, unit: true do
       expect(controller.send(:session_token_present_but_expired?)).to be false
     end
 
-    it "returns false when session token maps to no DB record" do
-      session[:admin_session_token] = "ghost_token"
-      # No DB record for this token
-      allow(AdminUser).to receive(:find_by).and_return(nil)
+    it "returns false when session token is present but no expiry is stored in session" do
+      session[:admin_session_token] = "some_token"
+      # No admin_session_expires_at stored — treat as not-yet-expired (legacy session)
       expect(controller.send(:session_token_present_but_expired?)).to be false
     end
 
-    it "returns true when session token maps to an expired record" do
+    it "returns true when session-stored expiry is in the past" do
       session[:admin_session_token] = admin_user.session_token
-      allow(AdminUser).to receive(:find_by).and_return(admin_user)
-      allow(admin_user).to receive(:session_expired?).and_return(true)
+      session[:admin_session_expires_at] = 1.hour.ago.iso8601
       expect(controller.send(:session_token_present_but_expired?)).to be true
     end
 
-    it "returns false when session token maps to a valid (non-expired) record" do
+    it "returns false when session-stored expiry is in the future" do
       session[:admin_session_token] = admin_user.session_token
-      allow(AdminUser).to receive(:find_by).and_return(admin_user)
-      allow(admin_user).to receive(:session_expired?).and_return(false)
+      session[:admin_session_expires_at] = 2.hours.from_now.iso8601
       expect(controller.send(:session_token_present_but_expired?)).to be false
+    end
+
+    it "does NOT perform a DB query to determine expiry" do
+      session[:admin_session_token] = admin_user.session_token
+      session[:admin_session_expires_at] = 1.hour.ago.iso8601
+      expect(AdminUser).not_to receive(:find_by)
+      controller.send(:session_token_present_but_expired?)
     end
   end
 
   describe "#clean_expired_session_keys", unit: true do
-    it "removes admin_session_token from session without calling reset_session" do
+    it "removes admin_session_token and related keys from session without calling reset_session" do
       session[:admin_session_token] = "some_token"
       session[:admin_user_id] = 42
+      session[:admin_session_expires_at] = 1.hour.ago.iso8601
       expect(controller).not_to receive(:reset_session)
+      allow(AdminUser).to receive(:find_by).and_return(nil)
 
       controller.send(:clean_expired_session_keys)
 
       expect(session[:admin_session_token]).to be_nil
       expect(session[:admin_user_id]).to be_nil
+      expect(session[:admin_session_expires_at]).to be_nil
+    end
+
+    it "calls invalidate_session! on the matching AdminUser record (server-side revocation)" do
+      session[:admin_session_token] = admin_user.session_token
+      session[:admin_session_expires_at] = 1.hour.ago.iso8601
+      allow(AdminUser).to receive(:find_by).with(session_token: admin_user.session_token).and_return(admin_user)
+      expect(admin_user).to receive(:invalidate_session!)
+
+      controller.send(:clean_expired_session_keys)
+    end
+
+    it "does NOT call invalidate_session! when there is no session token" do
+      expect(AdminUser).not_to receive(:find_by)
+      controller.send(:clean_expired_session_keys)
     end
   end
 

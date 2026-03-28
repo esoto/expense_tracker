@@ -142,6 +142,7 @@ module Admin
       reset_session # Prevent session fixation
       session[:admin_session_token] = admin_user.session_token
       session[:admin_user_id] = admin_user.id
+      session[:admin_session_expires_at] = admin_user.session_expires_at&.iso8601
     end
 
     def redirect_back_or(default)

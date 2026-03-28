@@ -117,7 +117,7 @@ class Rack::Attack
   #   POST /admin/patterns/test_pattern   (pattern_testing#test_pattern)
   #   GET  /admin/patterns/:id/test_single (pattern_testing#test_single)
   throttle("patterns/test/ip", limit: 30, period: 1.minute) do |req|
-    if req.path.match?(%r{/admin/patterns/(?:test|[^/]+/test_single)}) && (req.get? || req.post?)
+    if req.path.match?(%r{/admin/patterns/(?:test(?:_pattern)?|[^/]+/test_single)}) && (req.get? || req.post?)
       req.ip
     end
   end

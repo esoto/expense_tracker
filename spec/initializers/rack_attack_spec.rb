@@ -11,7 +11,7 @@ RSpec.describe "Rack::Attack throttle path matching", :unit do
     #   GET  /admin/patterns/test
     #   POST /admin/patterns/test_pattern
     #   GET  /admin/patterns/:id/test_single
-    let(:pattern) { %r{/admin/patterns/(?:test|[^/]+/test_single)} }
+    let(:pattern) { %r{/admin/patterns/(?:test(?:_pattern)?|[^/]+/test_single)} }
 
     context "GET /admin/patterns/test" do
       it "matches the test page route" do

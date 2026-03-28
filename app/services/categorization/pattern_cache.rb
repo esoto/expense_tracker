@@ -6,6 +6,7 @@ module Services::Categorization
   # Ensures < 1ms response times for pattern lookups with monitoring capabilities
   class PatternCache
     include ActiveSupport::Benchmarkable
+    include CacheVersioning
 
     # Cache configuration constants (use centralized config if available)
     MEMORY_CACHE_MAX_SIZE = if defined?(Services::Infrastructure::PerformanceConfig)
@@ -61,7 +62,6 @@ module Services::Categorization
       @redis_available = redis_available?
       @metrics_collector = MetricsCollector.new
       @lock = Mutex.new
-      @version_mutex = Mutex.new
       @logger = options.fetch(:logger, Rails.logger)
       @healthy = true
 
@@ -626,25 +626,11 @@ module Services::Categorization
       Rails.cache.read(PATTERN_VERSION_KEY) || 0
     end
 
-    # Atomically increment the pattern cache version.
-    #
-    # Rails.cache.increment is atomic for Memcache/Redis backends.
-    # For MemoryStore (tests / single-process dev) we fall back to a
-    # Mutex-protected read-write so the increment is still race-free
-    # within a single process.
+    # Atomically increment the pattern cache version using the shared
+    # CacheVersioning concern, which handles both MemoryStore and
+    # distributed cache backends (Redis/Memcache) safely.
     def increment_pattern_cache_version
-      if Rails.cache.is_a?(ActiveSupport::Cache::MemoryStore)
-        @version_mutex.synchronize do
-          current = Rails.cache.read(PATTERN_VERSION_KEY) || 0
-          Rails.cache.write(PATTERN_VERSION_KEY, current + 1)
-        end
-      else
-        # Redis/Memcache: increment is atomic; seed value if key is missing
-        Rails.cache.increment(PATTERN_VERSION_KEY, 1, initial: 1) ||
-          Rails.cache.write(PATTERN_VERSION_KEY, 1)
-      end
-    rescue => e
-      @logger.error "[PatternCache] Failed to increment version key: #{e.message}"
+      atomic_cache_increment(PATTERN_VERSION_KEY, log_tag: "[PatternCache]")
     end
 
     # Serialization methods for Redis storage

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class PatternFeedback < ApplicationRecord
+  include CacheVersioning
   belongs_to :categorization_pattern, optional: true
   belongs_to :expense
   belongs_to :category # The correct category from the migration schema
@@ -126,14 +127,9 @@ class PatternFeedback < ApplicationRecord
     # Atomically bump the shared analytics version key.  The analytics
     # controller embeds this value in every cache key, so any entry written
     # with the previous version becomes unreachable — no delete_matched needed.
-    if Rails.cache.is_a?(ActiveSupport::Cache::MemoryStore)
-      current = Rails.cache.read(Analytics::PatternDashboardController::ANALYTICS_VERSION_KEY) || 0
-      Rails.cache.write(Analytics::PatternDashboardController::ANALYTICS_VERSION_KEY, current + 1)
-    else
-      Rails.cache.increment(Analytics::PatternDashboardController::ANALYTICS_VERSION_KEY, 1, initial: 1) ||
-        Rails.cache.write(Analytics::PatternDashboardController::ANALYTICS_VERSION_KEY, 1)
-    end
-  rescue => e
-    Rails.logger.error "[PatternFeedback] Analytics cache invalidation failed: #{e.message}"
+    atomic_cache_increment(
+      Analytics::PatternDashboardController::ANALYTICS_VERSION_KEY,
+      log_tag: "[PatternFeedback]"
+    )
   end
 end

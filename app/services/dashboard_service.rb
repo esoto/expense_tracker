@@ -1,5 +1,7 @@
 module Services
   class DashboardService
+  include CacheVersioning
+
   CACHE_EXPIRY = 5.minutes
 
   # Version key incremented atomically on invalidation.  Embedding this in the
@@ -35,18 +37,7 @@ module Services
   # dashboard_cache_key will compute a new key and get fresh data.
   # No delete_matched needed.
   def self.clear_cache
-    if Rails.cache.is_a?(ActiveSupport::Cache::MemoryStore)
-      @version_mutex ||= Mutex.new
-      @version_mutex.synchronize do
-        current = Rails.cache.read(DASHBOARD_VERSION_KEY) || 0
-        Rails.cache.write(DASHBOARD_VERSION_KEY, current + 1)
-      end
-    else
-      Rails.cache.increment(DASHBOARD_VERSION_KEY, 1, initial: 1) ||
-        Rails.cache.write(DASHBOARD_VERSION_KEY, 1)
-    end
-  rescue => e
-    Rails.logger.error "[DashboardService] Failed to increment version key: #{e.message}"
+    atomic_cache_increment(DASHBOARD_VERSION_KEY, log_tag: "[DashboardService]")
   end
 
   private

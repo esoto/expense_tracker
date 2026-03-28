@@ -901,11 +901,10 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
 
       it "handles cache invalidation errors gracefully" do
         allow(Rails.logger).to receive(:error)
-        allow(Rails.cache).to receive(:is_a?).and_return(true)  # MemoryStore branch
-        allow(Rails.cache).to receive(:read).and_raise(StandardError.new("Cache error"))
+        allow(Rails.cache).to receive(:is_a?).and_raise(StandardError.new("Cache error"))
 
         expect { pattern.send(:invalidate_cache) }.not_to raise_error
-        expect(Rails.logger).to have_received(:error).with(/Cache invalidation failed/)
+        expect(Rails.logger).to have_received(:error).with(/Failed to increment cache version key/)
       end
 
       it "skips pattern cache when not defined" do

@@ -114,9 +114,8 @@ RSpec.describe PatternLearningEvent, type: :model, unit: true do
       it "handles cache invalidation errors gracefully" do
         event = build_stubbed(:pattern_learning_event)
 
-        allow(Rails.cache).to receive(:is_a?).and_return(true)  # MemoryStore branch
-        allow(Rails.cache).to receive(:read).and_raise(StandardError.new("Cache error"))
-        expect(Rails.logger).to receive(:error).with(match(/Analytics cache invalidation failed/))
+        allow(Rails.cache).to receive(:is_a?).and_raise(StandardError.new("Cache error"))
+        expect(Rails.logger).to receive(:error).with(match(/Failed to increment cache version key/))
 
         expect { event.send(:invalidate_analytics_cache) }.not_to raise_error
       end

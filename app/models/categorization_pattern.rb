@@ -8,6 +8,7 @@
 # to continuously improve categorization accuracy.
 class CategorizationPattern < ApplicationRecord
   include PatternValidation
+  include CacheVersioning
   # Constants
   PATTERN_TYPES = %w[merchant keyword description amount_range regex time].freeze
   DEFAULT_CONFIDENCE_WEIGHT = 1.0
@@ -408,14 +409,9 @@ class CategorizationPattern < ApplicationRecord
 
     # Atomically bump the shared analytics version key instead of using
     # delete_matched, which is not atomic and not supported by all cache stores.
-    if Rails.cache.is_a?(ActiveSupport::Cache::MemoryStore)
-      current = Rails.cache.read(Analytics::PatternDashboardController::ANALYTICS_VERSION_KEY) || 0
-      Rails.cache.write(Analytics::PatternDashboardController::ANALYTICS_VERSION_KEY, current + 1)
-    else
-      Rails.cache.increment(Analytics::PatternDashboardController::ANALYTICS_VERSION_KEY, 1, initial: 1) ||
-        Rails.cache.write(Analytics::PatternDashboardController::ANALYTICS_VERSION_KEY, 1)
-    end
-  rescue => e
-    Rails.logger.error "[CategorizationPattern] Cache invalidation failed: #{e.message}"
+    atomic_cache_increment(
+      Analytics::PatternDashboardController::ANALYTICS_VERSION_KEY,
+      log_tag: "[CategorizationPattern]"
+    )
   end
 end

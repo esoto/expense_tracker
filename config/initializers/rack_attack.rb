@@ -112,8 +112,12 @@ class Rack::Attack
   end
 
   # Throttle pattern testing (resource intensive)
+  # Covers actual routes:
+  #   GET  /admin/patterns/test           (pattern_testing#test)
+  #   POST /admin/patterns/test_pattern   (pattern_testing#test_pattern)
+  #   GET  /admin/patterns/:id/test_single (pattern_testing#test_single)
   throttle("patterns/test/ip", limit: 30, period: 1.minute) do |req|
-    if req.path.match?(%r{/admin/patterns/.*/test}) && req.post?
+    if req.path.match?(%r{/admin/patterns/(?:test|[^/]+/test_single)}) && (req.get? || req.post?)
       req.ip
     end
   end
@@ -125,8 +129,8 @@ class Rack::Attack
     end
   end
 
-  # Throttle CSV exports
-  throttle("exports/ip", limit: 10, period: 1.hour) do |req|
+  # Throttle CSV exports (limit: 5/hour per PER-205)
+  throttle("exports/ip", limit: 5, period: 1.hour) do |req|
     if req.path.match?(/\.csv$/) || req.path.match?(/\/export/)
       req.ip
     end
@@ -271,13 +275,18 @@ class Rack::Attack
   end
 end
 
-# Enable Rack::Attack in production and staging
-if Rails.env.production? || Rails.env.staging?
+# Enable Rack::Attack in all non-test environments.
+# Development: middleware is active but the localhost safelist prevents local IPs
+# from being rate limited, so development workflow is unaffected.
+# This allows throttle rules to be exercised in development without deploying.
+unless Rails.env.test?
   Rails.application.config.middleware.use Rack::Attack
 
-  # Log attacks
-  ActiveSupport::Notifications.subscribe("rack.attack") do |name, start, finish, request_id, payload|
-    req = payload[:request]
-    Rails.logger.info "[Rack::Attack] #{req.env['rack.attack.match_type']} #{req.ip} #{req.request_method} #{req.fullpath}"
+  # Log attacks in production and staging
+  if Rails.env.production? || Rails.env.staging?
+    ActiveSupport::Notifications.subscribe("rack.attack") do |name, start, finish, request_id, payload|
+      req = payload[:request]
+      Rails.logger.info "[Rack::Attack] #{req.env['rack.attack.match_type']} #{req.ip} #{req.request_method} #{req.fullpath}"
+    end
   end
 end

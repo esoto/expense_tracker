@@ -76,27 +76,27 @@ This is a mature Rails 8.1.2 expense tracking application with the following sta
 - Puma web server
 
 **Frontend:**
-- Turbo and Stimulus (Hotwire) for SPA-like behavior — 49 Stimulus controllers
+- Turbo and Stimulus (Hotwire) for SPA-like behavior — 48 Stimulus controllers
 - Tailwind CSS for styling (Financial Confidence color palette)
 - Import maps for JavaScript modules
 - Propshaft asset pipeline
 - Chart.js for data visualization
 
 **Testing:**
-- RSpec with 7,400+ unit tests (all tagged `:unit`, 100% pass rate)
+- RSpec with 8,000+ unit tests (all tagged `:unit`, 100% pass rate)
 - Capybara and Selenium for system testing
 - FactoryBot, WebMock, VCR, DatabaseCleaner
 - Separate configurations: `.rspec-unit`, `.rspec-integration`, `.rspec-performance`
 
 **Key Directories:**
-- `app/models/` - 28 ActiveRecord models (Expense, Category, Budget, AdminUser, CategorizationPattern, etc.)
+- `app/models/` - 26 ActiveRecord models (Expense, Category, Budget, AdminUser, CategorizationPattern, etc.)
 - `app/controllers/` - 38 controllers across main, admin, analytics, and API namespaces
 - `app/views/` - ERB templates with Turbo Frame integration
-- `app/javascript/` - 49 Stimulus controllers and utility modules
-- `app/services/` - 80+ domain-organized service objects across 12+ domains
+- `app/javascript/` - 48 Stimulus controllers and utility modules
+- `app/services/` - 86 domain-organized service objects across 12+ domains
 - `app/jobs/` - 15 background jobs (email processing, categorization, metrics, broadcast recovery)
 - `config/` - Application configuration
-- `db/` - 44 migrations, comprehensive strategic indexing
+- `db/` - 46 migrations, comprehensive strategic indexing
 - `spec/` - 350+ test files mirroring service organization
 - `docs/` - Plans, roadmaps, and implementation documentation
 
@@ -133,7 +133,7 @@ The application follows Domain-Driven Design principles with services organized 
   - `SyncMetricsCollector`, `RedisAnalyticsService`
 
 **Current State:**
-- Fully functional expense tracking application with 28 models, 80+ services, 49 Stimulus controllers
+- Fully functional expense tracking application with 26 models, 86 services, 48 Stimulus controllers
 - Core models: Category, EmailAccount, Expense, Budget, AdminUser, CategorizationPattern, CompositePattern, CanonicalMerchant, and more
 - ML-powered categorization with pattern learning, confidence scoring, and user feedback loops
 - Real-time sync with conflict detection/resolution and undo support
@@ -141,7 +141,7 @@ The application follows Domain-Driven Design principles with services organized 
 - Admin panel with pattern management, testing, import/export, and analytics
 - Database seeded with Costa Rican bank data and expense categories
 - Background job processing with Solid Queue and Sidekiq
-- 7,400+ unit tests with 100% pass rate
+- 8,000+ unit tests with 100% pass rate
 - Production-ready security with encrypted credentials, API token authentication, and CSP headers
 - Spanish localization (i18n) in progress across all interfaces
 
@@ -154,10 +154,9 @@ The application follows Domain-Driven Design principles with services organized 
 - Phase 0 (Emergency Fixes): Complete — 7/7 tasks merged
 - Phase 1 (Critical Performance): Complete — 7/8 tasks merged
 - Phase 2 (Security Hardening): Complete — 8/8 tasks merged
-- Phase 3 (UX & Design): In progress — 10 tasks (mobile nav, i18n translations, pagination, undo, flash dismiss, keyboard shortcuts)
-- Phase 4 (Performance Polish): Pending — 6 tasks
+- Phase 3 (UX & Design): Complete — 31 tickets closed
+- Phase 4 (Performance Polish): In progress — 6 tasks
 - Phase 5 (Cleanup & Polish): Pending — 5 tasks
-- Full plan: `docs/plans/2026-02-14-qa-remediation-plan.md`
 
 ## Development Rules
 
@@ -175,6 +174,7 @@ The following rules and guidelines should be followed when working on this proje
 - [Context Prime](rules/context-prime.md) - Prime Claude with comprehensive Rails project understanding
 - [Create Command](rules/create-command.md) - Guide for creating new custom Claude commands with proper structure
 - [Continuous Improvement](rules/continuous-improvement.md) - Systematic approach for improving Claude Rails development rules
+- [Style Guide](rules/style-guide.md) - UI/UX style guidelines and design system reference
 
 ## Design System - Financial Confidence Color Palette
 

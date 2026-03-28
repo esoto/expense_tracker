@@ -54,6 +54,42 @@ en:
       cancelled: "Cancelled"
       processing: "Processing"
       waiting: "Waiting"
+  admin:
+    composite_patterns:
+      new:
+        title: "New Composite Pattern"
+        subtitle: "Create a new rule combining multiple patterns with logical operators"
+      edit:
+        title: "Edit Composite Pattern"
+        subtitle: "Modify the configuration of"
+        usage_warning_title: "Pattern in active use"
+        usage_warning_body: "This pattern has been used %{count} times with a success rate of %{rate}%%. Changes may affect automatic categorization."
+      form:
+        name_label: "Name"
+        name_hint: "Unique descriptive name to identify this composite pattern"
+        category_label: "Category"
+        category_hint: "The category assigned when this composite pattern matches"
+        category_prompt: "Select a category..."
+        operator_label: "Logical Operator"
+        operator_hint: "Determines how the selected patterns are combined"
+        operator_and: "AND — All patterns must match"
+        operator_or: "OR — Any pattern must match"
+        operator_not: "NOT — No pattern must match"
+        patterns_label: "Component Patterns"
+        patterns_hint: "Select simple patterns that will form this composite pattern."
+        patterns_multiselect_hint: "Hold Ctrl (or Cmd on Mac) to select multiple patterns"
+        patterns_category_warning: "Note: all patterns must belong to the same category."
+        confidence_label: "Confidence Weight"
+        confidence_hint: "Higher weight = higher priority when multiple patterns match"
+        active_label: "Active"
+        active_hint: "Inactive patterns will not be used for categorization"
+        submit_create: "Create Composite Pattern"
+        submit_update: "Update Composite Pattern"
+        cancel: "Cancel"
+        errors_title: "Please correct the following errors:"
+      breadcrumb:
+        new: "New"
+        edit: "Edit"
   activerecord:
     attributes:
       email_account:

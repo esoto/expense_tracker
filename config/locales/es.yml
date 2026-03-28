@@ -266,6 +266,44 @@ es:
     are_you_sure: "¿Estás seguro?"
     unauthorized: "No autorizado"
 
+  # Admin Composite Patterns
+  admin:
+    composite_patterns:
+      new:
+        title: "Nuevo Patrón Compuesto"
+        subtitle: "Crea una nueva regla que combina múltiples patrones con operadores lógicos"
+      edit:
+        title: "Editar Patrón Compuesto"
+        subtitle: "Modifica la configuración de"
+        usage_warning_title: "Patrón en uso activo"
+        usage_warning_body: "Este patrón ha sido utilizado %{count} veces con una tasa de éxito del %{rate}%%. Los cambios pueden afectar la categorización automática."
+      form:
+        name_label: "Nombre"
+        name_hint: "Nombre descriptivo único para identificar este patrón compuesto"
+        category_label: "Categoría"
+        category_hint: "La categoría que se asignará cuando este patrón compuesto coincida"
+        category_prompt: "Selecciona una categoría..."
+        operator_label: "Operador Lógico"
+        operator_hint: "Determina cómo se combinan los patrones seleccionados"
+        operator_and: "AND — Todos los patrones deben coincidir"
+        operator_or: "OR — Cualquier patrón debe coincidir"
+        operator_not: "NOT — Ningún patrón debe coincidir"
+        patterns_label: "Patrones Componentes"
+        patterns_hint: "Selecciona los patrones simples que formarán este patrón compuesto."
+        patterns_multiselect_hint: "Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples patrones"
+        patterns_category_warning: "Nota: todos los patrones deben pertenecer a la misma categoría."
+        confidence_label: "Peso de Confianza"
+        confidence_hint: "Mayor peso = mayor prioridad cuando múltiples patrones coinciden"
+        active_label: "Activo"
+        active_hint: "Los patrones inactivos no se usarán para la categorización"
+        submit_create: "Crear Patrón Compuesto"
+        submit_update: "Actualizar Patrón Compuesto"
+        cancel: "Cancelar"
+        errors_title: "Por favor, corrige los siguientes errores:"
+      breadcrumb:
+        new: "Nuevo"
+        edit: "Editar"
+
   # ActiveRecord attribute translations
   activerecord:
     attributes:

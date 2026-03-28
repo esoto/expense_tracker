@@ -31,6 +31,12 @@ module Api
         })
       end
 
+      # GET /api/v1/patterns/statistics
+      def statistics
+        stats = Services::Categorization::PatternAnalytics.new.generate_statistics
+        render_success(stats)
+      end
+
       # GET /api/v1/patterns/:id
       def show
         # stale? sets ETag/Last-Modified headers and returns false when the

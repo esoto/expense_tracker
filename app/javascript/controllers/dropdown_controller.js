@@ -26,9 +26,14 @@ export default class extends Controller {
       this.buttonTarget.setAttribute("aria-expanded", "true")
     }
 
-    // Add click outside listener
+    // Defer adding the close-on-click handler to the next animation frame so the
+    // current click event (which triggered open()) finishes bubbling to the document
+    // before the listener is attached. Without this, the opening click would
+    // immediately fire clickOutside and close the menu.
     this.clickOutside = this.clickOutside.bind(this)
-    document.addEventListener("click", this.clickOutside)
+    requestAnimationFrame(() => {
+      document.addEventListener("click", this.clickOutside)
+    })
   }
 
   close() {

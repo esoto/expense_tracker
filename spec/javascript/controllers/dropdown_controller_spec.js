@@ -133,13 +133,46 @@ describe("DropdownController", () => {
       expect(menu.classList.contains("hidden")).toBe(false)
     })
 
-    it("attaches click-outside listener", () => {
+    it("attaches click-outside listener after the next animation frame", async () => {
+      // open() defers addEventListener via requestAnimationFrame so the opening
+      // click does not immediately trigger clickOutside and close the menu.
       const addSpy = jest.spyOn(document, "addEventListener")
       const button = document.querySelector("[data-dropdown-target='button']")
       button.click() // open
 
+      // Flush the requestAnimationFrame queue by waiting one microtask cycle
+      await new Promise((resolve) => setTimeout(resolve, 0))
+
       expect(addSpy).toHaveBeenCalledWith("click", expect.any(Function))
       addSpy.mockRestore()
+    })
+  })
+
+  describe("PER-223 regression: opening click must not immediately close the menu", () => {
+    // Bug: open() added the document click listener synchronously, so the same click
+    // event that triggered open() would bubble to document and immediately call close().
+    // Fix: open() defers the listener attachment via requestAnimationFrame.
+    beforeEach(() => {
+      startWith(`
+        <div data-controller="dropdown">
+          <button data-dropdown-target="button"
+                  data-action="click->dropdown#toggle"
+                  aria-expanded="false">Toggle</button>
+          <ul data-dropdown-target="menu" class="hidden">
+            <li>Item</li>
+          </ul>
+        </div>
+      `)
+    })
+
+    it("menu remains open immediately after the toggle click (no premature close)", () => {
+      const button = document.querySelector("[data-dropdown-target='button']")
+      button.click() // open — listener NOT yet attached
+
+      // Without the rAF fix the document listener would have already fired and
+      // closed the menu. Assert it is still open right after the click.
+      const menu = document.querySelector("[data-dropdown-target='menu']")
+      expect(menu.classList.contains("hidden")).toBe(false)
     })
   })
 
@@ -204,9 +237,12 @@ describe("DropdownController", () => {
       element = document.querySelector("[data-controller='dropdown']")
     })
 
-    it("closes the menu when clicking outside the controller element", () => {
+    it("closes the menu when clicking outside the controller element", async () => {
       const button = element.querySelector("[data-dropdown-target='button']")
       button.click() // open
+
+      // Wait for requestAnimationFrame to attach the click-outside listener
+      await new Promise((resolve) => setTimeout(resolve, 0))
 
       const outside = document.getElementById("outside")
       outside.dispatchEvent(new MouseEvent("click", { bubbles: true }))
@@ -215,9 +251,12 @@ describe("DropdownController", () => {
       expect(menu.classList.contains("hidden")).toBe(true)
     })
 
-    it("keeps menu open when clicking inside the controller element", () => {
+    it("keeps menu open when clicking inside the controller element", async () => {
       const button = element.querySelector("[data-dropdown-target='button']")
       button.click() // open
+
+      // Wait for requestAnimationFrame to attach the click-outside listener
+      await new Promise((resolve) => setTimeout(resolve, 0))
 
       const menu = element.querySelector("[data-dropdown-target='menu']")
       menu.dispatchEvent(new MouseEvent("click", { bubbles: true }))

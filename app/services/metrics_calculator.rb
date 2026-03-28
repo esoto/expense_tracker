@@ -8,6 +8,8 @@ require "benchmark"
 # SECURITY: All metrics are scoped to a specific email_account for data isolation
 module Services
   class MetricsCalculator
+  include CacheVersioning
+
   CACHE_EXPIRY = 1.hour
   SUPPORTED_PERIODS = %i[day week month year].freeze
 
@@ -76,29 +78,11 @@ module Services
   # Old entries become unreachable immediately — no delete_matched scan needed.
   def self.clear_cache(email_account: nil)
     if email_account
-      atomic_increment(account_version_key(email_account.id))
+      atomic_cache_increment(account_version_key(email_account.id), log_tag: "[MetricsCalculator]")
     else
-      atomic_increment(GLOBAL_VERSION_KEY)
+      atomic_cache_increment(GLOBAL_VERSION_KEY, log_tag: "[MetricsCalculator]")
     end
   end
-
-  # Atomic increment helper that works for both MemoryStore (test/dev) and
-  # distributed cache backends (Redis/Memcache).
-  def self.atomic_increment(key)
-    if Rails.cache.is_a?(ActiveSupport::Cache::MemoryStore)
-      @version_mutex ||= Mutex.new
-      @version_mutex.synchronize do
-        current = Rails.cache.read(key) || 0
-        Rails.cache.write(key, current + 1)
-      end
-    else
-      Rails.cache.increment(key, 1, initial: 1) ||
-        Rails.cache.write(key, 1)
-    end
-  rescue => e
-    Rails.logger.error "[MetricsCalculator] Failed to increment version key #{key}: #{e.message}"
-  end
-  private_class_method :atomic_increment
 
   # Pre-calculate metrics for common periods for a specific email account
   def self.pre_calculate_all(email_account: nil, reference_date: Date.current)

@@ -36,16 +36,19 @@ export default class extends Controller {
   connect() {
     // Initialize with empty selections
     this.selectedIdsValue = []
-    
+
     // Initialize timeout tracking for announcements
     this.announcementTimeout = null
-    
+
+    // Track pending animation frame to allow cancellation
+    this.toolbarAnimationFrame = null
+
     // Set up keyboard navigation
     this.setupKeyboardNavigation()
-    
+
     // Count total visible expenses
     this.updateTotalCount()
-    
+
     // Initialize UI state
     this.updateUI()
     
@@ -62,14 +65,20 @@ export default class extends Controller {
     // Clean up event listeners
     document.removeEventListener('view-toggle:toggled', this.handleViewToggleChange)
     document.removeEventListener('bulk-operations:completed', this.handleBulkOperationsCompleted)
-    
+
     // Clean up keyboard navigation listeners
     this.disconnectKeyboardNavigation()
-    
+
     // Clear any pending announcement timeouts
     if (this.announcementTimeout) {
       clearTimeout(this.announcementTimeout)
       this.announcementTimeout = null
+    }
+
+    // Cancel any pending toolbar animation frame
+    if (this.toolbarAnimationFrame) {
+      cancelAnimationFrame(this.toolbarAnimationFrame)
+      this.toolbarAnimationFrame = null
     }
   }
 
@@ -260,13 +269,19 @@ export default class extends Controller {
       this.masterCheckboxTarget.indeterminate = false
     }
     
+    // Cancel any pending toolbar animation frame to prevent race condition
+    if (this.toolbarAnimationFrame) {
+      cancelAnimationFrame(this.toolbarAnimationFrame)
+      this.toolbarAnimationFrame = null
+    }
+
     // Immediately hide toolbar before updating UI
     if (this.hasSelectionToolbarTarget) {
       this.selectionToolbarTarget.classList.remove('flex', 'animate-slide-up')
       this.selectionToolbarTarget.classList.add('hidden')
       this.selectionToolbarTarget.style.display = 'none'
     }
-    
+
     // Force update UI to ensure all elements are hidden
     this.updateUI()
     
@@ -308,16 +323,32 @@ export default class extends Controller {
     // Update selection toolbar visibility
     if (this.hasSelectionToolbarTarget) {
       if (selectedCount > 0) {
+        // Cancel any pending hide-state animation frame to avoid race conditions
+        if (this.toolbarAnimationFrame) {
+          cancelAnimationFrame(this.toolbarAnimationFrame)
+          this.toolbarAnimationFrame = null
+        }
+
         // Remove any forced display style
         this.selectionToolbarTarget.style.display = ''
         this.selectionToolbarTarget.classList.remove('hidden')
         this.selectionToolbarTarget.classList.add('flex')
-        
+
         // Animate toolbar appearance
-        requestAnimationFrame(() => {
-          this.selectionToolbarTarget.classList.add('animate-slide-up')
+        this.toolbarAnimationFrame = requestAnimationFrame(() => {
+          this.toolbarAnimationFrame = null
+          // Only add animation class if toolbar is still supposed to be visible
+          if (this.selectedIdsValue.length > 0) {
+            this.selectionToolbarTarget.classList.add('animate-slide-up')
+          }
         })
       } else {
+        // Cancel any pending show animation frame to prevent race condition
+        if (this.toolbarAnimationFrame) {
+          cancelAnimationFrame(this.toolbarAnimationFrame)
+          this.toolbarAnimationFrame = null
+        }
+
         // Ensure toolbar is completely hidden
         this.selectionToolbarTarget.classList.remove('flex', 'animate-slide-up')
         this.selectionToolbarTarget.classList.add('hidden')

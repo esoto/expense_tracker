@@ -238,16 +238,90 @@ describe("BatchSelectionController", () => {
 
     it("enables bulk actions button when items selected", () => {
       const button = element.querySelector('[data-batch-selection-target="bulkActionsButton"]')
-      
+
       // Initially disabled
       expect(button.disabled).toBe(true)
-      
+
       // Select an item
       const checkbox = element.querySelector('[data-expense-id="1"]')
       checkbox.checked = true
       checkbox.dispatchEvent(new Event("change", { bubbles: true }))
 
       expect(button.disabled).toBe(false)
+    })
+
+    // PER-187: toolbar hidden and buttons disabled when 0 items selected
+    it("keeps toolbar hidden on initial connect with 0 items selected", () => {
+      const toolbar = element.querySelector('[data-batch-selection-target="selectionToolbar"]')
+      expect(toolbar.classList.contains("hidden")).toBe(true)
+      expect(toolbar.classList.contains("flex")).toBe(false)
+    })
+
+    it("keeps bulk actions button disabled on initial connect with 0 items selected", () => {
+      const button = element.querySelector('[data-batch-selection-target="bulkActionsButton"]')
+      expect(button.disabled).toBe(true)
+      expect(button.classList.contains("opacity-50")).toBe(true)
+      expect(button.classList.contains("cursor-not-allowed")).toBe(true)
+    })
+
+    it("keeps toolbar hidden after deselecting all items via checkbox", () => {
+      const toolbar = element.querySelector('[data-batch-selection-target="selectionToolbar"]')
+      const checkbox = element.querySelector('[data-expense-id="1"]')
+
+      // Select
+      checkbox.checked = true
+      checkbox.dispatchEvent(new Event("change", { bubbles: true }))
+      expect(toolbar.classList.contains("hidden")).toBe(false)
+
+      // Deselect
+      checkbox.checked = false
+      checkbox.dispatchEvent(new Event("change", { bubbles: true }))
+
+      expect(toolbar.classList.contains("hidden")).toBe(true)
+      expect(toolbar.classList.contains("flex")).toBe(false)
+    })
+
+    it("re-disables bulk actions button and adds opacity when count returns to 0", () => {
+      const button = element.querySelector('[data-batch-selection-target="bulkActionsButton"]')
+      const checkbox = element.querySelector('[data-expense-id="1"]')
+
+      // Select → button enabled
+      checkbox.checked = true
+      checkbox.dispatchEvent(new Event("change", { bubbles: true }))
+      expect(button.disabled).toBe(false)
+      expect(button.classList.contains("opacity-50")).toBe(false)
+
+      // Deselect → button disabled again
+      checkbox.checked = false
+      checkbox.dispatchEvent(new Event("change", { bubbles: true }))
+      expect(button.disabled).toBe(true)
+      expect(button.classList.contains("opacity-50")).toBe(true)
+      expect(button.classList.contains("cursor-not-allowed")).toBe(true)
+    })
+
+    it("does not show toolbar after clearSelection cancels pending animation frame", () => {
+      const toolbar = element.querySelector('[data-batch-selection-target="selectionToolbar"]')
+
+      // Select to trigger show (which queues a requestAnimationFrame)
+      const checkbox = element.querySelector('[data-expense-id="1"]')
+      checkbox.checked = true
+      checkbox.dispatchEvent(new Event("change", { bubbles: true }))
+
+      // Immediately clear selection before animation frame fires
+      controller.clearSelection()
+
+      // Toolbar must be hidden even if rAF fires after this point
+      expect(toolbar.classList.contains("hidden")).toBe(true)
+      expect(toolbar.style.display).toBe("none")
+    })
+
+    it("sets toolbar style.display to none when 0 items selected", () => {
+      const toolbar = element.querySelector('[data-batch-selection-target="selectionToolbar"]')
+
+      controller.selectAll()
+      controller.clearSelection()
+
+      expect(toolbar.style.display).toBe("none")
     })
   })
 

@@ -1,0 +1,131 @@
+<div class="container mx-auto px-4 max-w-4xl">
+  <div class="mb-6">
+    <div class="flex items-center space-x-2 text-sm text-slate-500 mb-3">
+      <%= link_to t("admin.composite_patterns.breadcrumb.index"), admin_composite_patterns_path, class: "hover:text-teal-600" %>
+      <span>/</span>
+      <span class="text-slate-700"><%= @composite_pattern.name %></span>
+    </div>
+    <div class="flex items-start justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-slate-900"><%= @composite_pattern.name %></h1>
+        <p class="text-slate-600 mt-1"><%= @composite_pattern.description %></p>
+      </div>
+      <div class="flex items-center space-x-3">
+        <%= link_to t("admin.composite_patterns.actions.edit"), edit_admin_composite_pattern_path(@composite_pattern),
+            class: "px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-sm font-medium" %>
+        <%= link_to t("admin.composite_patterns.actions.back"), admin_composite_patterns_path,
+            class: "px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-medium" %>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <!-- Details Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-lg font-semibold text-slate-900 mb-4"><%= t("admin.composite_patterns.show.details_title") %></h2>
+      <dl class="space-y-3">
+        <div class="flex justify-between">
+          <dt class="text-sm font-medium text-slate-500"><%= t("admin.composite_patterns.show.category_label") %></dt>
+          <dd class="text-sm text-slate-900"><%= @composite_pattern.category.name %></dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-sm font-medium text-slate-500"><%= t("admin.composite_patterns.show.operator_label") %></dt>
+          <dd class="text-sm text-slate-900 font-mono bg-slate-100 px-2 py-0.5 rounded"><%= @composite_pattern.operator %></dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-sm font-medium text-slate-500"><%= t("admin.composite_patterns.show.confidence_label") %></dt>
+          <dd class="text-sm text-slate-900"><%= @composite_pattern.confidence_weight %></dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-sm font-medium text-slate-500"><%= t("admin.composite_patterns.show.status_label") %></dt>
+          <dd>
+            <% if @composite_pattern.active? %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                <%= t("admin.composite_patterns.show.active") %>
+              </span>
+            <% else %>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                <%= t("admin.composite_patterns.show.inactive") %>
+              </span>
+            <% end %>
+          </dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-sm font-medium text-slate-500"><%= t("admin.composite_patterns.show.created_by_label") %></dt>
+          <dd class="text-sm text-slate-900">
+            <%= @composite_pattern.user_created? ? t("admin.composite_patterns.show.user") : t("admin.composite_patterns.show.system") %>
+          </dd>
+        </div>
+      </dl>
+    </div>
+
+    <!-- Performance Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-lg font-semibold text-slate-900 mb-4"><%= t("admin.composite_patterns.show.performance_title") %></h2>
+      <dl class="space-y-3">
+        <div class="flex justify-between">
+          <dt class="text-sm font-medium text-slate-500"><%= t("admin.composite_patterns.show.usage_count_label") %></dt>
+          <dd class="text-sm text-slate-900"><%= number_with_delimiter(@composite_pattern.usage_count) %></dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-sm font-medium text-slate-500"><%= t("admin.composite_patterns.show.success_count_label") %></dt>
+          <dd class="text-sm text-slate-900"><%= number_with_delimiter(@composite_pattern.success_count) %></dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-sm font-medium text-slate-500"><%= t("admin.composite_patterns.show.success_rate_label") %></dt>
+          <dd class="text-sm text-slate-900"><%= number_to_percentage(@composite_pattern.success_rate * 100, precision: 1) %></dd>
+        </div>
+        <div class="flex justify-between">
+          <dt class="text-sm font-medium text-slate-500"><%= t("admin.composite_patterns.show.effective_confidence_label") %></dt>
+          <dd class="text-sm text-slate-900"><%= @composite_pattern.effective_confidence.round(3) %></dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+
+  <!-- Component Patterns -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <h2 class="text-lg font-semibold text-slate-900 mb-4">
+      <%= t("admin.composite_patterns.show.component_patterns_title") %>
+      <span class="ml-2 text-sm font-normal text-slate-500">(<%= @component_patterns.count %>)</span>
+    </h2>
+    <% if @component_patterns.any? %>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-200">
+              <th class="text-left py-2 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider"><%= t("admin.composite_patterns.show.pattern_type_col") %></th>
+              <th class="text-left py-2 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider"><%= t("admin.composite_patterns.show.pattern_value_col") %></th>
+              <th class="text-left py-2 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider"><%= t("admin.composite_patterns.show.pattern_category_col") %></th>
+              <th class="text-left py-2 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider"><%= t("admin.composite_patterns.show.pattern_confidence_col") %></th>
+              <th class="text-left py-2 px-3 text-xs font-medium text-slate-500 uppercase tracking-wider"><%= t("admin.composite_patterns.show.pattern_status_col") %></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <% @component_patterns.each do |pattern| %>
+              <tr class="hover:bg-slate-50">
+                <td class="py-2 px-3 text-slate-600"><%= pattern.pattern_type %></td>
+                <td class="py-2 px-3 font-mono text-slate-900"><%= pattern.pattern_value %></td>
+                <td class="py-2 px-3 text-slate-600"><%= pattern.category&.name %></td>
+                <td class="py-2 px-3 text-slate-600"><%= pattern.confidence_weight %></td>
+                <td class="py-2 px-3">
+                  <% if pattern.active? %>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                      <%= t("admin.composite_patterns.show.active") %>
+                    </span>
+                  <% else %>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                      <%= t("admin.composite_patterns.show.inactive") %>
+                    </span>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <p class="text-slate-500 text-sm"><%= t("admin.composite_patterns.show.no_patterns") %></p>
+    <% end %>
+  </div>
+</div>

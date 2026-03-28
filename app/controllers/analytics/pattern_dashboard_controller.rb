@@ -117,6 +117,10 @@ module Analytics
           partial: "analytics/pattern_dashboard/recent_activity",
           locals: { recent_activity: @recent_activity }
         )
+      when nil, ""
+        # No component specified — refresh all components via full page redirect
+        redirect_to analytics_pattern_dashboard_index_path(request.query_parameters.except("_method")),
+                    notice: t("analytics.refresh_success", default: "Dashboard actualizado")
       else
         head :unprocessable_content
       end

@@ -46,6 +46,7 @@ class CompositePattern < ApplicationRecord
   scope :for_category, ->(category) { where(category: category) }
 
   # Callbacks
+  before_validation :normalize_pattern_ids
   before_save :calculate_success_rate
   after_commit :invalidate_cache
 
@@ -157,6 +158,10 @@ class CompositePattern < ApplicationRecord
 
   private
 
+  def normalize_pattern_ids
+    self.pattern_ids = Array(pattern_ids).map(&:to_i).reject(&:zero?).uniq if pattern_ids.present?
+  end
+
   def calculate_success_rate
     self.success_rate = if usage_count.positive?
                           success_count.to_f / usage_count
@@ -168,9 +173,10 @@ class CompositePattern < ApplicationRecord
   def pattern_ids_exist
     return if pattern_ids.blank?
 
-    patterns = CategorizationPattern.where(id: pattern_ids)
+    integer_pattern_ids = pattern_ids.map(&:to_i)
+    patterns = CategorizationPattern.where(id: integer_pattern_ids)
     existing_ids = patterns.pluck(:id)
-    missing_ids = pattern_ids - existing_ids
+    missing_ids = integer_pattern_ids - existing_ids
 
     if missing_ids.any?
       errors.add(:pattern_ids, "contains non-existent pattern IDs: #{missing_ids.join(', ')}")

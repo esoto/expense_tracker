@@ -303,6 +303,33 @@ es:
       breadcrumb:
         new: "Nuevo"
         edit: "Editar"
+        index: "Patrones Compuestos"
+      actions:
+        edit: "Editar"
+        back: "Volver"
+      show:
+        details_title: "Detalles del Patrón"
+        performance_title: "Rendimiento"
+        component_patterns_title: "Patrones Componentes"
+        category_label: "Categoría"
+        operator_label: "Operador"
+        confidence_label: "Peso de Confianza"
+        status_label: "Estado"
+        created_by_label: "Creado por"
+        usage_count_label: "Veces Usado"
+        success_count_label: "Éxitos"
+        success_rate_label: "Tasa de Éxito"
+        effective_confidence_label: "Confianza Efectiva"
+        pattern_type_col: "Tipo"
+        pattern_value_col: "Valor"
+        pattern_category_col: "Categoría"
+        pattern_confidence_col: "Confianza"
+        pattern_status_col: "Estado"
+        active: "Activo"
+        inactive: "Inactivo"
+        user: "Usuario"
+        system: "Sistema"
+        no_patterns: "No hay patrones componentes asociados."
 
   # ActiveRecord attribute translations
   activerecord:

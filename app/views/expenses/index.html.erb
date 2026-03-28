@@ -2,22 +2,22 @@
 
 <% # Navigation bar for dashboard navigation %>
 <% if @from_dashboard %>
-  <div class="bg-teal-50 border-b border-teal-200 px-6 py-3 mb-6">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center space-x-2">
-        <%= link_to dashboard_expenses_path, class: "text-teal-700 hover:text-teal-800 font-medium" do %>
+  <div class="bg-teal-50 border-b border-teal-200 px-4 py-3 mb-6">
+    <div class="flex items-center justify-between min-w-0">
+      <div class="flex items-center gap-2 min-w-0 overflow-hidden">
+        <%= link_to dashboard_expenses_path, class: "text-teal-700 hover:text-teal-800 font-medium flex-shrink-0" do %>
           ← Volver al Dashboard
         <% end %>
         <% if @filter_description %>
-          <span class="text-slate-600">|</span>
-          <span class="text-slate-700"><%= @filter_description %></span>
+          <span class="text-slate-600 flex-shrink-0">|</span>
+          <span class="text-slate-700 truncate"><%= @filter_description %></span>
         <% end %>
       </div>
     </div>
   </div>
 <% end %>
 
-<div class="space-y-6" data-controller="accessibility-enhanced">
+<div class="space-y-6 overflow-x-hidden" data-controller="accessibility-enhanced">
   <!-- Filter Chips Display -->
   <div data-controller="filter-chips"
        data-filter-chips-base-url-value="/expenses"
@@ -89,13 +89,13 @@
                 options_for_select([["Todos los bancos", ""]] + @bank_names.map { |name| [name, name] }, params[:bank]),
                 {}, { class: "w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" } %>
         </div>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
           <%= form.date_field :start_date, value: params[:start_date], placeholder: "Fecha inicio",
-                class: "rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
+                class: "flex-1 min-w-0 rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
           <%= form.date_field :end_date, value: params[:end_date], placeholder: "Fecha fin",
-                class: "rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
+                class: "flex-1 min-w-0 rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
         </div>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
           <%= form.submit t("common.filter"), class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg shadow-sm" %>
           <%= link_to "Limpiar", expenses_path, class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg" %>
         </div>

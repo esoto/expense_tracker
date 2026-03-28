@@ -81,8 +81,21 @@ RSpec.describe "PER-184: Chart.js date-fns adapter regression guard", type: :req
       expect(application_js_content).not_to match(/^\s*import\s+"chartjs-adapter-date-fns"/)
     end
 
-    it "imports chart.js" do
-      expect(application_js_content).to include('import "chart.js"')
+    it "imports chart.js (named export with registerables for ESM tree-shakeable build)" do
+      # PER-222: The +esm build requires named imports and explicit Chart.register()
+      # The old bare `import "chart.js"` did not register scales/controllers,
+      # causing "linear is not a registered scale" errors.
+      expect(application_js_content).to match(/from "chart\.js"/)
+    end
+
+    it "registers all Chart.js components via Chart.register" do
+      # PER-222: The +esm tree-shakeable build requires explicit registration
+      expect(application_js_content).to include("Chart.register(...registerables)")
+    end
+
+    it "sets window.Chart so chartkick ESM can detect the library" do
+      # PER-222: Chartkick ESM detects Chart.js only via window.Chart
+      expect(application_js_content).to include("window.Chart = Chart")
     end
 
     it "imports chartkick" do

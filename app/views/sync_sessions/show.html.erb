@@ -7,7 +7,7 @@
     <ol class="inline-flex items-center space-x-1 md:space-x-3">
       <li class="inline-flex items-center">
         <%= link_to sync_sessions_path, class: "inline-flex items-center text-slate-600 hover:text-teal-700" do %>
-          <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+          <svg aria-hidden="true" class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
             <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
           </svg>
           Centro de Sincronización
@@ -15,7 +15,7 @@
       </li>
       <li>
         <div class="flex items-center">
-          <svg class="w-6 h-6 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+          <svg aria-hidden="true" class="w-6 h-6 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
           </svg>
           <span class="ml-1 text-slate-700 font-medium">Sesión #<%= @sync_session.id %></span>
@@ -34,7 +34,7 @@
       <% if @sync_session.active? %>
         <%= button_to cancel_sync_session_path(@sync_session), method: :post,
             class: "inline-flex items-center px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-medium rounded-lg shadow-sm transition-colors" do %>
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
           Cancelar Sincronización
@@ -42,7 +42,7 @@
       <% elsif @sync_session.failed? || @sync_session.cancelled? %>
         <%= button_to retry_sync_session_path(@sync_session), method: :post,
             class: "inline-flex items-center px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white font-medium rounded-lg shadow-sm transition-colors" do %>
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
           </svg>
           Reintentar
@@ -214,7 +214,7 @@
               <div class="bg-slate-50 px-6 py-4 flex items-center justify-between">
                 <div class="flex items-center gap-4">
                   <div class="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-                    <svg class="w-6 h-6 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg aria-hidden="true" class="w-6 h-6 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
                     </svg>
                   </div>

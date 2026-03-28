@@ -14,7 +14,7 @@
                     class="inline-flex items-center px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-teal-500"
                     data-dropdown-target="button"
                     data-action="click->dropdown#toggle">
-              <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg aria-hidden="true" class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
               </svg>
               <%= period_label(@period) %>
@@ -35,7 +35,7 @@
           <!-- Export button -->
           <%= link_to sync_performance_export_path(period: @period, format: :csv),
                       class: "inline-flex items-center px-4 py-2 bg-teal-700 text-white rounded-lg hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-500" do %>
-            <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
             </svg>
             Exportar CSV
@@ -54,7 +54,7 @@
             <p class="mt-2 text-3xl font-bold text-slate-900"><%= number_with_delimiter(@metrics_summary[:total_syncs]) %></p>
           </div>
           <div class="p-3 bg-teal-100 rounded-lg">
-            <svg class="h-6 w-6 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" class="h-6 w-6 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
             </svg>
           </div>
@@ -71,7 +71,7 @@
             </p>
           </div>
           <div class="p-3 <%= success_rate_bg(@metrics_summary[:success_rate]) %> rounded-lg">
-            <svg class="h-6 w-6 <%= success_rate_icon_color(@metrics_summary[:success_rate]) %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" class="h-6 w-6 <%= success_rate_icon_color(@metrics_summary[:success_rate]) %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
           </div>
@@ -86,7 +86,7 @@
             <p class="mt-2 text-3xl font-bold text-slate-900"><%= @metrics_summary[:average_duration] %></p>
           </div>
           <div class="p-3 bg-amber-100 rounded-lg">
-            <svg class="h-6 w-6 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" class="h-6 w-6 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
           </div>
@@ -102,7 +102,7 @@
             <p class="text-sm text-slate-500">correos/seg</p>
           </div>
           <div class="p-3 bg-slate-100 rounded-lg">
-            <svg class="h-6 w-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" class="h-6 w-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
             </svg>
           </div>

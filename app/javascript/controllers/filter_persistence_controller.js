@@ -265,9 +265,15 @@ export default class extends Controller {
    * Apply filters to the page
    */
   applyFilters(filters) {
+    const ALLOWED_KEYS = new Set([
+      'category', 'bank', 'status', 'start_date', 'end_date', 'period',
+      'min_amount', 'max_amount', 'search_query', 'sort_by', 'sort_direction',
+      'category_ids[]', 'banks[]'
+    ])
     const params = new URLSearchParams()
-    
+
     Object.entries(filters).forEach(([key, value]) => {
+      if (!ALLOWED_KEYS.has(key)) return
       if (Array.isArray(value)) {
         value.forEach(v => params.append(key, v))
       } else {

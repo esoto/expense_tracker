@@ -61,22 +61,27 @@ export default class extends Controller {
    * Set up auto-save functionality
    */
   setupAutoSave() {
-    // Debounced save on input changes
-    if (this.hasFilterInputTarget) {
-      this.filterInputTargets.forEach(input => {
-        input.addEventListener('change', () => this.debouncedSave())
-        
-        // For text inputs, save on input with longer debounce
-        if (input.type === 'text' || input.type === 'search') {
-          input.addEventListener('input', () => this.debouncedSave(1000))
-        }
-      })
-    }
-    
-    // Save on form submit
+    // Debounced save on input changes — listen to filterInput targets if declared,
+    // otherwise fall back to all form inputs inside filterForm targets
+    const inputs = this.hasFilterInputTarget
+      ? this.filterInputTargets
+      : this.hasFilterFormTarget
+        ? Array.from(this.filterFormTarget.querySelectorAll('select, input'))
+        : []
+
+    inputs.forEach(input => {
+      input.addEventListener('change', () => this.debouncedSave())
+
+      // For text inputs, save on input with longer debounce
+      if (input.type === 'text' || input.type === 'search') {
+        input.addEventListener('input', () => this.debouncedSave(1000))
+      }
+    })
+
+    // Save on form submit — capture form field values BEFORE navigation
     if (this.hasFilterFormTarget) {
-      this.filterFormTarget.addEventListener('submit', (e) => {
-        this.saveFilters()
+      this.filterFormTarget.addEventListener('submit', () => {
+        this.saveFiltersFromForm(this.filterFormTarget)
       })
     }
   }
@@ -94,6 +99,65 @@ export default class extends Controller {
     }, delay)
   }
   
+  /**
+   * Save filters captured directly from a form element (called before form navigation)
+   * This ensures we capture the user's intent before the URL changes.
+   */
+  saveFiltersFromForm(form) {
+    const filters = this.getFiltersFromForm(form)
+
+    if (Object.keys(filters).length === 0) {
+      this.clearStoredFilters()
+      return
+    }
+
+    const data = {
+      filters: filters,
+      timestamp: Date.now(),
+      url: window.location.pathname
+    }
+
+    try {
+      this.storage.setItem(this.storageKeyValue, JSON.stringify(data))
+      this.updateRestoreButtonVisibility()
+      this.dispatch('filtersSaved', { detail: { filters } })
+    } catch (error) {
+      console.error('Error saving filters from form:', error)
+    }
+  }
+
+  /**
+   * Extract filter values from a form element
+   */
+  getFiltersFromForm(form) {
+    const filters = {}
+    const filterParams = [
+      'category', 'bank', 'status',
+      'start_date', 'end_date', 'period',
+      'min_amount', 'max_amount',
+      'search_query', 'sort_by', 'sort_direction'
+    ]
+
+    filterParams.forEach(param => {
+      const field = form.querySelector(`[name="${param}"]`)
+      if (field && field.value) {
+        filters[param] = field.value
+      }
+    })
+
+    // Handle array-style inputs
+    const arrayParams = ['category_ids[]', 'banks[]']
+    arrayParams.forEach(param => {
+      const fields = form.querySelectorAll(`[name="${param}"]`)
+      const values = Array.from(fields).map(f => f.value).filter(Boolean)
+      if (values.length > 0) {
+        filters[param] = values
+      }
+    })
+
+    return filters
+  }
+
   /**
    * Save current filters to storage
    */
@@ -201,9 +265,15 @@ export default class extends Controller {
    * Apply filters to the page
    */
   applyFilters(filters) {
+    const ALLOWED_KEYS = new Set([
+      'category', 'bank', 'status', 'start_date', 'end_date', 'period',
+      'min_amount', 'max_amount', 'search_query', 'sort_by', 'sort_direction',
+      'category_ids[]', 'banks[]'
+    ])
     const params = new URLSearchParams()
-    
+
     Object.entries(filters).forEach(([key, value]) => {
+      if (!ALLOWED_KEYS.has(key)) return
       if (Array.isArray(value)) {
         value.forEach(v => params.append(key, v))
       } else {

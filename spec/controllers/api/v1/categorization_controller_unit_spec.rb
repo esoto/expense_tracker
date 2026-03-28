@@ -6,10 +6,11 @@ RSpec.describe Api::V1::CategorizationController, type: :controller, unit: true 
   let(:categorization_service) { double("Services::Categorization::EnhancedCategorizationService") }
 
   before do
-    # Skip authentication and other base controller concerns for unit tests
-    controller.class.skip_before_action :authenticate_api_token, raise: false
-    controller.class.skip_before_action :set_default_headers, raise: false
-    controller.class.skip_before_action :log_request, raise: false
+    # Stub authentication at the instance level to avoid mutating the controller
+    # class permanently (class-level skip_before_action leaks to request specs).
+    allow(controller).to receive(:authenticate_api_token).and_return(true)
+    allow(controller).to receive(:set_default_headers).and_return(nil)
+    allow(controller).to receive(:log_request).and_return(nil)
 
     # Mock the categorization service initialization
     allow(Services::Categorization::EnhancedCategorizationService).to receive(:new).and_return(categorization_service)

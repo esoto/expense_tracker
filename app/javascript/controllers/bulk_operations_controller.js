@@ -109,12 +109,19 @@ export default class extends Controller {
     if (this.isProcessingValue) {
       return
     }
-    
+
+    // Ensure close and cancel buttons are enabled before closing
+    this.enableCloseButtons()
+
     // Animate out
-    this.overlayTarget.classList.remove('opacity-100')
+    if (this.hasOverlayTarget) {
+      this.overlayTarget.classList.remove('opacity-100')
+    }
     const formElement = this.element.querySelector('[data-bulk-operations-target="form"]')
-    formElement.classList.remove('translate-y-0', 'opacity-100')
-    formElement.classList.add('translate-y-4', 'opacity-0')
+    if (formElement) {
+      formElement.classList.remove('translate-y-0', 'opacity-100')
+      formElement.classList.add('translate-y-4', 'opacity-0')
+    }
     
     // Hide after animation
     setTimeout(() => {
@@ -557,36 +564,59 @@ export default class extends Controller {
   }
 
   /**
-   * Disable form elements during processing
+   * Disable form elements during processing (preserves close/cancel buttons)
    */
   disableFormElements() {
-    const elements = this.formTarget.querySelectorAll('input, select, button')
+    if (!this.hasFormTarget) return
+
+    const elements = this.formTarget.querySelectorAll('input, select')
     elements.forEach(el => {
       el.disabled = true
       el.classList.add('opacity-50', 'cursor-not-allowed')
     })
+
+    // Only disable submit button, not close/cancel buttons
+    if (this.hasSubmitButtonTarget) {
+      this.submitButtonTarget.disabled = true
+      this.submitButtonTarget.classList.add('opacity-50', 'cursor-not-allowed')
+    }
   }
 
   /**
-   * Enable form elements
+   * Enable form elements after processing
    */
   enableFormElements() {
+    if (!this.hasFormTarget) return
+
     const elements = this.formTarget.querySelectorAll('input, select')
     elements.forEach(el => {
       el.disabled = false
       el.classList.remove('opacity-50', 'cursor-not-allowed')
     })
-    
+
     // Enable buttons conditionally
     if (this.hasSubmitButtonTarget) {
-      const shouldDisable = this.currentOperationValue === 'delete' && 
+      const shouldDisable = this.currentOperationValue === 'delete' &&
                            (!this.hasConfirmCheckboxTarget || !this.confirmCheckboxTarget.checked)
       this.submitButtonTarget.disabled = shouldDisable || !this.currentOperationValue
     }
-    
+
+    // Always ensure close and cancel buttons are enabled
+    this.enableCloseButtons()
+  }
+
+  /**
+   * Enable the close (X) and cancel buttons unconditionally
+   */
+  enableCloseButtons() {
     if (this.hasCancelButtonTarget) {
       this.cancelButtonTarget.disabled = false
       this.cancelButtonTarget.classList.remove('opacity-50', 'cursor-not-allowed')
+    }
+
+    if (this.hasCloseButtonTarget) {
+      this.closeButtonTarget.disabled = false
+      this.closeButtonTarget.classList.remove('opacity-50', 'cursor-not-allowed')
     }
   }
 

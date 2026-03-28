@@ -32,16 +32,6 @@
            data-action="click->mobile-card#toggleCheckbox:stop">
   </div>
 
-  <%# Desktop selection checkbox (hidden in card column) %>
-  <div class="checkbox-cell hidden px-4 py-4 md:flex md:items-center">
-    <input type="checkbox"
-           data-batch-selection-target="checkbox"
-           data-action="change->batch-selection#toggleSelection click->batch-selection#toggleSelection:stop"
-           data-expense-id="<%= expense.id %>"
-           class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded"
-           aria-label="Seleccionar gasto <%= expense.merchant_name || 'sin comercio' %> de <%= expense.amount %>">
-  </div>
-
   <%# ——————————————————————————————————————————————————————————
       MOBILE LAYOUT (visible on < md)
       Card style: color dot + merchant + amount, then date + category + status
@@ -112,7 +102,17 @@
       DESKTOP LAYOUT (visible on md+)
       Table-row style: date | merchant | category | amount | bank | status | actions
       ——————————————————————————————————————————————————————————— %>
-  <div class="hidden md:grid md:grid-cols-[120px_1fr_200px_120px_100px_120px_auto] md:items-center md:gap-0">
+  <div class="hidden md:grid md:grid-cols-[40px_120px_1fr_200px_120px_100px_120px_auto] md:items-center md:gap-0">
+    <%# Checkbox %>
+    <div class="checkbox-cell px-4 py-4 flex items-center">
+      <input type="checkbox"
+             data-batch-selection-target="checkbox"
+             data-action="change->batch-selection#toggleSelection click->batch-selection#toggleSelection:stop"
+             data-expense-id="<%= expense.id %>"
+             class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded"
+             aria-label="Seleccionar gasto <%= expense.merchant_name || 'sin comercio' %> de <%= expense.amount %>">
+    </div>
+
     <%# Date %>
     <div class="px-6 py-4 text-sm text-slate-900 whitespace-nowrap">
       <%= expense.transaction_date.strftime("%d/%m/%Y") %>

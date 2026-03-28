@@ -391,10 +391,10 @@ describe("BatchSelectionController", () => {
   describe("selection mode", () => {
     it("toggles selection mode", () => {
       expect(controller.selectionModeValue).toBe(false)
-      
+
       controller.toggleSelectionMode()
       expect(controller.selectionModeValue).toBe(true)
-      
+
       controller.toggleSelectionMode()
       expect(controller.selectionModeValue).toBe(false)
     })
@@ -402,10 +402,132 @@ describe("BatchSelectionController", () => {
     it("clears selection when exiting selection mode", () => {
       controller.selectionModeValue = true
       controller.selectAll()
-      
+
       controller.toggleSelectionMode() // Exit selection mode
-      
+
       expect(controller.selectedIdsValue).toEqual([])
+    })
+
+    // PER-189 Bug 3: selection-mode-active CSS class must be managed on the container
+    it("adds selection-mode-active class when entering selection mode", () => {
+      expect(element.classList.contains("selection-mode-active")).toBe(false)
+
+      controller.toggleSelectionMode()
+
+      expect(element.classList.contains("selection-mode-active")).toBe(true)
+    })
+
+    it("removes selection-mode-active class when exiting selection mode", () => {
+      controller.toggleSelectionMode() // enter
+      expect(element.classList.contains("selection-mode-active")).toBe(true)
+
+      controller.toggleSelectionMode() // exit
+      expect(element.classList.contains("selection-mode-active")).toBe(false)
+    })
+
+    it("removes selection-mode-active class after bulk operations complete", () => {
+      controller.toggleSelectionMode() // enter
+      expect(element.classList.contains("selection-mode-active")).toBe(true)
+
+      const event = new CustomEvent("bulk-operations:completed", {
+        detail: { success: true },
+        bubbles: true
+      })
+      document.dispatchEvent(event)
+
+      expect(element.classList.contains("selection-mode-active")).toBe(false)
+    })
+
+    it("hides checkboxes when selection mode is off", () => {
+      controller.toggleSelectionMode() // enter — show checkboxes
+      controller.toggleSelectionMode() // exit — hide checkboxes
+
+      const checkboxCells = element.querySelectorAll(".checkbox-cell")
+      checkboxCells.forEach(cell => {
+        expect(cell.classList.contains("hidden")).toBe(true)
+      })
+    })
+  })
+
+  // PER-189 Bug 1: selection counter must show full "X de Y gastos seleccionados" format
+  describe("selection counter format", () => {
+    it("shows full 'X de Y gastos seleccionados' format when items are selected", () => {
+      const counter = element.querySelector('[data-batch-selection-target="selectionCounter"]')
+
+      const cb1 = element.querySelector('[data-expense-id="1"]')
+      const cb2 = element.querySelector('[data-expense-id="2"]')
+
+      cb1.checked = true
+      cb1.dispatchEvent(new Event("change", { bubbles: true }))
+      cb2.checked = true
+      cb2.dispatchEvent(new Event("change", { bubbles: true }))
+
+      expect(counter.textContent).toBe("2 de 3 gastos seleccionados")
+      expect(counter.classList.contains("hidden")).toBe(false)
+    })
+
+    it("hides counter when no items are selected", () => {
+      const counter = element.querySelector('[data-batch-selection-target="selectionCounter"]')
+
+      const checkbox = element.querySelector('[data-expense-id="1"]')
+      checkbox.checked = true
+      checkbox.dispatchEvent(new Event("change", { bubbles: true }))
+      checkbox.checked = false
+      checkbox.dispatchEvent(new Event("change", { bubbles: true }))
+
+      expect(counter.classList.contains("hidden")).toBe(true)
+    })
+
+    it("updates counter format after select all", () => {
+      const counter = element.querySelector('[data-batch-selection-target="selectionCounter"]')
+
+      controller.selectAll()
+
+      // selectAll uses requestAnimationFrame; verify format after sync call
+      expect(counter.textContent).toBe("3 de 3 gastos seleccionados")
+    })
+  })
+
+  // PER-189 Bug 2: aria-selected must be set on the row element
+  describe("aria-selected state management", () => {
+    it("sets aria-selected='true' on the row when a checkbox is checked", () => {
+      const checkbox = element.querySelector('[data-expense-id="1"]')
+      const row = element.querySelector("#expense_row_1")
+
+      checkbox.checked = true
+      checkbox.dispatchEvent(new Event("change", { bubbles: true }))
+
+      expect(row.getAttribute("aria-selected")).toBe("true")
+    })
+
+    it("sets aria-selected='false' on the row when a checkbox is unchecked", () => {
+      const checkbox = element.querySelector('[data-expense-id="1"]')
+      const row = element.querySelector("#expense_row_1")
+
+      checkbox.checked = true
+      checkbox.dispatchEvent(new Event("change", { bubbles: true }))
+
+      checkbox.checked = false
+      checkbox.dispatchEvent(new Event("change", { bubbles: true }))
+
+      expect(row.getAttribute("aria-selected")).toBe("false")
+    })
+
+    it("sets aria-selected='true' on all rows after select all", () => {
+      controller.selectAll()
+
+      element.querySelectorAll("tr").forEach(row => {
+        expect(row.getAttribute("aria-selected")).toBe("true")
+      })
+    })
+
+    it("sets aria-selected='false' on all rows after clear selection", () => {
+      controller.selectAll()
+      controller.clearSelection()
+
+      element.querySelectorAll("tr").forEach(row => {
+        expect(row.getAttribute("aria-selected")).toBe("false")
+      })
     })
   })
 

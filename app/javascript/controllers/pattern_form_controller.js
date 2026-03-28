@@ -11,8 +11,10 @@ export default class extends Controller {
   }
   
   updateValueHelp() {
-    const patternType = this.element.querySelector('select[name*="pattern_type"]').value
-    
+    const patternTypeSelect = this.element.querySelector('select[name*="pattern_type"]')
+    if (!patternTypeSelect) return
+    const patternType = patternTypeSelect.value
+
     if (!this.hasValueHelpTarget) return
     
     const helpTexts = {

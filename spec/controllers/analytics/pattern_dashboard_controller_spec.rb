@@ -474,9 +474,14 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
         expect(response).to have_http_status(:unprocessable_content)
       end
 
-      it "returns unprocessable_content when component parameter missing" do
+      it "redirects to index when component parameter missing" do
         post :refresh
-        expect(response).to have_http_status(:unprocessable_content)
+        expect(response).to redirect_to(analytics_pattern_dashboard_index_path)
+      end
+
+      it "redirects to index when component parameter is empty string" do
+        post :refresh, params: { component: "" }
+        expect(response).to redirect_to(analytics_pattern_dashboard_index_path)
       end
     end
 
@@ -796,6 +801,11 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
       it "validates component parameter in refresh" do
         post :refresh, params: { component: "invalid_component" }
         expect(response).to have_http_status(:unprocessable_content)
+      end
+
+      it "redirects to index when component is missing" do
+        post :refresh
+        expect(response).to redirect_to(analytics_pattern_dashboard_index_path)
       end
 
       it "accepts valid components" do

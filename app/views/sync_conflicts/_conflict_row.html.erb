@@ -3,6 +3,7 @@
     <% if conflict.can_bulk_resolve? %>
       <input type="checkbox"
              data-bulk-actions-target="checkbox"
+             data-action="change->bulk-actions#checkboxChanged"
              data-conflict-id="<%= conflict.id %>"
              class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded">
     <% end %>

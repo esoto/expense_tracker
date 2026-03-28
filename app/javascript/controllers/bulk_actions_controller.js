@@ -10,12 +10,16 @@ export default class extends Controller {
   }
 
   selectAll(event) {
-    const isChecked = event.currentTarget.checked || !this.allChecked()
-    
+    // When triggered from the header checkbox, use its checked state directly.
+    // When triggered from a button (no .checked property), toggle based on current state.
+    const isCheckbox = event.currentTarget.type === "checkbox"
+    const isChecked = isCheckbox ? event.currentTarget.checked : !this.allChecked()
+
     this.checkboxTargets.forEach(checkbox => {
       checkbox.checked = isChecked
     })
-    
+
+    this.updateSelectAllState()
     this.updateButtonState()
   }
 

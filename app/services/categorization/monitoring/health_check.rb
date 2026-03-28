@@ -351,7 +351,8 @@ module Services::Categorization
       end
 
       def determine_cache_status(stats, hit_rate)
-        return :unhealthy if stats[:entries].zero?
+        # Empty cache is normal on fresh app start — treat as degraded, not unhealthy
+        return :degraded if stats[:entries].zero?
         return :degraded if hit_rate < THRESHOLDS[:cache_min_hit_rate]
         :healthy
       end

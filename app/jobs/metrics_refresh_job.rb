@@ -35,8 +35,8 @@ class MetricsRefreshJob < ApplicationJob
 
       Rails.logger.info "Refreshing metrics for account #{email_account_id}, periods: #{periods_to_refresh.keys}"
 
-      # Clear existing cache for affected periods
-      clear_affected_cache(email_account, periods_to_refresh)
+      # Cache invalidation is handled by version-key atomics (PR #182).
+      # The old clear_affected_cache method was dead code — removed.
 
       # Recalculate metrics for affected periods
       refresh_count = 0
@@ -153,15 +153,6 @@ class MetricsRefreshJob < ApplicationJob
     end
 
     periods
-  end
-
-  def clear_affected_cache(email_account, periods_to_refresh)
-    periods_to_refresh.each do |period, dates|
-      dates.each do |date|
-        cache_key = "metrics_calculator:account_#{email_account.id}:#{period}:#{date.iso8601}"
-        Rails.cache.delete(cache_key)
-      end
-    end
   end
 
   def track_job_metrics(email_account_id, elapsed_time, refresh_count, status)

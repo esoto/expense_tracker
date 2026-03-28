@@ -191,20 +191,8 @@ RSpec.describe MetricsRefreshJob, type: :job, integration: true do
     end
   end
 
-  describe "cache clearing", integration: true do
-    it "clears cache for affected periods" do
-      job = described_class.new
-
-      # Pre-populate cache
-      cache_key = "metrics_calculator:account_#{email_account.id}:day:#{Date.current.iso8601}"
-      Rails.cache.write(cache_key, { test: "data" })
-
-      periods_to_refresh = { day: [ Date.current ] }
-      job.send(:clear_affected_cache, email_account, periods_to_refresh)
-
-      expect(Rails.cache.read(cache_key)).to be_nil
-    end
-  end
+  # cache clearing test removed — clear_affected_cache was dead code
+  # (used old key format pre-PR#182, version-key invalidation handles cache busting)
 
   describe "integration with ActiveJob", integration: true do
     it "can be enqueued and performed" do

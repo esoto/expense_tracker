@@ -131,13 +131,14 @@ export default class extends Controller {
    */
   toggleSelectionMode() {
     this.selectionModeValue = !this.selectionModeValue
-    
+
     if (!this.selectionModeValue) {
       // Clear selections when exiting selection mode
       this.clearSelection()
     }
-    
+
     this.updateCheckboxVisibility()
+    this.updateSelectionModeClass()
     this.dispatch('selectionModeChanged', {
       detail: { enabled: this.selectionModeValue }
     })
@@ -210,6 +211,7 @@ export default class extends Controller {
     if (!this.selectionModeValue) {
       this.selectionModeValue = true
       this.updateCheckboxVisibility()
+      this.updateSelectionModeClass()
     }
     
     const newSelectedIds = []
@@ -427,6 +429,17 @@ export default class extends Controller {
   }
 
   /**
+   * Apply or remove selection-mode-active class from container element
+   */
+  updateSelectionModeClass() {
+    if (this.selectionModeValue) {
+      this.element.classList.add('selection-mode-active')
+    } else {
+      this.element.classList.remove('selection-mode-active')
+    }
+  }
+
+  /**
    * Update checkbox column visibility
    */
   updateCheckboxVisibility() {
@@ -524,14 +537,15 @@ export default class extends Controller {
    */
   handleBulkOperationsCompleted(event) {
     const { success } = event.detail
-    
+
     if (success) {
       // Clear selection after successful bulk operation
       this.clearSelection()
-      
+
       // Exit selection mode
       this.selectionModeValue = false
       this.updateCheckboxVisibility()
+      this.updateSelectionModeClass()
     }
   }
 

@@ -245,4 +245,39 @@ RSpec.describe "Api::V1::Patterns", type: :request, integration: true do
       expect(response.status).to be_in([ 400, 422 ]) # Bad request or unprocessable
     end
   end
+
+  describe "GET /api/v1/patterns/statistics", unit: true do
+    it "returns statistics with 200 OK" do
+      get "/api/v1/patterns/statistics", headers: headers
+
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "returns JSON with statistics keys" do
+      get "/api/v1/patterns/statistics", headers: headers
+
+      json = JSON.parse(response.body)
+      expect(json["status"]).to eq("success")
+      expect(json).to have_key("total_patterns")
+      expect(json).to have_key("active_count")
+      expect(json).to have_key("inactive_count")
+      expect(json).to have_key("avg_success_rate")
+      expect(json).to have_key("patterns_by_type")
+      expect(json).to have_key("top_categories")
+    end
+
+    it "returns 401 without authentication" do
+      get "/api/v1/patterns/statistics"
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "does not route to the show action (PER-233)" do
+      get "/api/v1/patterns/statistics", headers: headers
+
+      # Must not return 404 (which would indicate show tried to find id="statistics")
+      expect(response).not_to have_http_status(:not_found)
+      expect(response).to have_http_status(:ok)
+    end
+  end
 end

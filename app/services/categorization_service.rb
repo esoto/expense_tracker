@@ -1,6 +1,31 @@
 # frozen_string_literal: true
 
 module Services
+  # @deprecated Use Services::Categorization::Engine (via EngineFactory.default) instead.
+  #
+  # CategorizationService is the original, monolithic categorization implementation.
+  # It performs inline pattern matching against CategorizationPattern and CompositePattern
+  # records without caching, thread-safety, circuit breaking, or structured result objects.
+  #
+  # == Why it still exists
+  # This class is not directly called by any production code path as of PER-169. It is
+  # retained for reference during the migration period and because some test helpers and
+  # scripts may still depend on its interface.
+  #
+  # == Do NOT use this class for new code
+  # All new callers should go through Services::Categorization::Engine (production
+  # background jobs, email processing) or Services::Categorization::EnhancedCategorizationService
+  # (API endpoints). See the canonical entry-point guide below.
+  #
+  # == Canonical entry-point guide
+  #
+  # | Use case                                          | Entry point                                             |
+  # |---------------------------------------------------|---------------------------------------------------------|
+  # | Single expense categorization (jobs / email)      | Services::Categorization::Engine.create (or EngineFactory.default) |
+  # | API endpoint — suggest / feedback / stats         | Services::Categorization::EnhancedCategorizationService |
+  # | Batch / bulk operations                           | Services::Categorization::BulkCategorizationService     |
+  # | Categorization with full DI + circuit breaker     | Services::Categorization::Orchestrator (via OrchestratorFactory) |
+  #
   class CategorizationService
   def categorize_expense(expense)
     return { category: nil, confidence: 0, method: "no_match", error: "Invalid expense" } if expense.nil?

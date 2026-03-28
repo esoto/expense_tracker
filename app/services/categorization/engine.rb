@@ -71,20 +71,43 @@ module Services::Categorization
     end
   end
 
-  # Production-ready orchestrator service for expense categorization
-  # Uses dependency injection for better testability and flexibility
+  # == Canonical entry point for background jobs and email processing
   #
-  # Key features:
-  # - Dependency injection for all services
-  # - Thread-safe operations with concurrent-ruby primitives
-  # - Memory-bounded caching with LRU eviction and TTL
-  # - Efficient database queries with batching and proper indexes
-  # - Specific error handling with recovery mechanisms
-  # - Asynchronous processing support for non-critical operations
-  # - Circuit breaker pattern for external dependencies
+  # Engine is the primary production categorization service used by:
+  # - Services::Email::ProcessingService  (single-expense categorization during email sync)
+  # - Services::BulkCategorization::*    (bulk operations via EngineFactory.default)
+  #
+  # It is the recommended entry point whenever you need to categorize an expense
+  # in a background job, Sidekiq worker, or any server-side non-API context.
+  #
+  # == How to instantiate
+  #   # Preferred — shared, lazily initialized instance managed by the factory:
+  #   engine = Services::Categorization::EngineFactory.default
+  #
+  #   # Preferred for email processing (creates a fresh, short-lived instance):
+  #   engine = Services::Categorization::Engine.create
+  #
+  # == Key features
+  # - Dependency injection for all sub-services (via ServiceRegistry)
+  # - Thread-safe operations with concurrent-ruby atomic primitives
+  # - Memory-bounded LRU caching with TTL
+  # - Batched database queries (avoids loading all patterns into memory)
+  # - Async expense updates via a shared thread pool
+  # - Circuit breakers for DB, cache, and the main categorization path
   # - Comprehensive logging with correlation IDs
   #
-  # Performance target: <10ms per categorization with bounded resource usage
+  # == Return value
+  # Every public method returns a CategorizationResult (or LearningResult for
+  # learn_from_correction). Results carry #successful?, #high_confidence?,
+  # #processing_time_ms, and #category attributes.
+  #
+  # == Performance target
+  # <10ms per categorization with bounded resource usage.
+  #
+  # == See also
+  # - Services::Categorization::Orchestrator  — alternative with pure-orchestration design
+  # - Services::Categorization::EnhancedCategorizationService — for API endpoints
+  # - Services::CategorizationService  — legacy monolith (deprecated, do not use)
   class Engine
     include ActiveSupport::Benchmarkable
     include MlConfidenceIntegration

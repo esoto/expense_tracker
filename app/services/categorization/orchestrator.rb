@@ -4,20 +4,56 @@ require "concurrent"
 require "timeout"
 
 module Services::Categorization
-  # Clean orchestrator service for expense categorization
-  # Follows single responsibility principle - orchestrates categorization workflow
-  # Delegates all implementation details to specialized services
+  # == Alternative entry point — full dependency injection + clean orchestration
   #
-  # Key Principles:
-  # - Pure orchestration logic only
-  # - No infrastructure concerns (caching, threading, etc.)
-  # - Clear service boundaries and contracts
-  # - Dependency injection for all services
-  # - Rails 8 patterns and conventions
-  # - Thread-safe operations with proper synchronization
-  # - Production-ready error handling and monitoring
+  # Orchestrator is a second-generation categorization coordinator that prioritises
+  # separation of concerns: it delegates every sub-task (caching, matching, confidence
+  # scoring, learning) to injected services and never owns infrastructure itself.
   #
-  # Performance Target: <10ms per categorization
+  # It is *not* the primary entry point for most production code. Use it when you need:
+  # - Full dependency injection (e.g., testing with swapped-in fakes)
+  # - Environment-specific configurations via OrchestratorFactory
+  # - The built-in Orchestrator::CircuitBreaker (separate from Engine's circuit breaker)
+  # - Timeout protection around the entire categorization workflow (25ms default)
+  #
+  # == How to instantiate
+  #   # Production — via factory (preferred):
+  #   orchestrator = Services::Categorization::OrchestratorFactory.create_production
+  #
+  #   # Test — via factory:
+  #   orchestrator = Services::Categorization::OrchestratorFactory.create_test
+  #
+  #   # Custom DI (for integration tests or special use cases):
+  #   orchestrator = Services::Categorization::Orchestrator.new(
+  #     pattern_cache: my_cache,
+  #     matcher: my_matcher,
+  #     confidence_calculator: my_calculator,
+  #     ...
+  #   )
+  #
+  # == Differences from Engine
+  # | Concern              | Engine                    | Orchestrator                     |
+  # |----------------------|---------------------------|----------------------------------|
+  # | Caching strategy     | Internal LRU + PatternCache | Delegates to injected PatternCache |
+  # | Thread pool          | Shared SHARED_THREAD_POOL | Per-instance Thread.new          |
+  # | Circuit breaker      | Internal SimpleCircuitBreaker | Inner CircuitBreaker class    |
+  # | Timeout              | None (async guards only)  | Timeout::timeout 25ms            |
+  # | Primary callers      | Email processing, bulk jobs | Tests, performance specs       |
+  #
+  # == Key features
+  # - Pure orchestration — no infrastructure ownership
+  # - Full dependency injection for all services
+  # - Built-in CircuitBreaker (inner class) with half-open recovery
+  # - Configurable 25ms timeout for production stability
+  # - Parallel batch processing (opt-in via options[:parallel])
+  #
+  # == Return value
+  # Same CategorizationResult / LearningResult as Engine.
+  #
+  # == See also
+  # - Services::Categorization::Engine  — canonical entry point for production jobs
+  # - Services::Categorization::OrchestratorFactory  — factory with environment presets
+  # - Services::Categorization::EnhancedCategorizationService — for API endpoints
   class Orchestrator
     include ActiveSupport::Benchmarkable
     include Infrastructure::MonitoringService if defined?(Infrastructure::MonitoringService)

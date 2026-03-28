@@ -1,8 +1,40 @@
 # frozen_string_literal: true
 
 module Services::Categorization
-  # Enhanced categorization service that integrates fuzzy matching
-  # with the existing pattern-based categorization system
+  # == Canonical entry point for API endpoints
+  #
+  # EnhancedCategorizationService is the categorization service used by the REST API
+  # (Api::V1::CategorizationController). It is the right choice when:
+  # - You need to suggest categories for a given merchant / description in real time
+  # - You need to record user feedback (was_correct) at the individual pattern level
+  # - You want a simple, synchronous return value (Category object, not CategorizationResult)
+  # - The caller does NOT need circuit breaking, thread pools, or structured result objects
+  #
+  # == How to instantiate
+  #   # Direct construction — it uses singleton pattern_cache and fuzzy_matcher internally:
+  #   service = Services::Categorization::EnhancedCategorizationService.new
+  #   category = service.categorize(expense)
+  #
+  # == Key features
+  # - Uses PatternCache.instance and Matchers::FuzzyMatcher.instance (singletons)
+  # - Includes CanonicalMerchant look-up for better merchant normalisation
+  # - #suggest_categories returns ranked suggestions with reason strings (useful for UX)
+  # - #learn_from_feedback writes UserCategoryPreference and PatternLearningEvent records
+  # - Returns a plain Category object (or nil) rather than a CategorizationResult struct
+  #
+  # == Differences from Engine / Orchestrator
+  # | Concern            | EnhancedCategorizationService   | Engine                          |
+  # |--------------------|---------------------------------|---------------------------------|
+  # | Primary caller     | API controller                  | Email processing, bulk jobs     |
+  # | Return type        | Category (or nil)               | CategorizationResult struct     |
+  # | Circuit breaker    | None                            | Yes                             |
+  # | Thread safety      | Relies on singleton services    | Full concurrent-ruby primitives |
+  # | Canonical merchant | Yes (CanonicalMerchant lookup)  | No                              |
+  #
+  # == See also
+  # - Services::Categorization::Engine  — canonical entry point for background jobs
+  # - Services::Categorization::Orchestrator  — DI-focused alternative
+  # - Services::CategorizationService  — legacy monolith (deprecated, do not use)
   class EnhancedCategorizationService
     include ActiveSupport::Benchmarkable
 

@@ -184,7 +184,8 @@ RSpec.describe Authentication, type: :controller, unit: true do
       session[:admin_session_token] = admin_user.session_token
       allow(AdminUser).to receive(:find_by_valid_session).with(anything, extend: false).and_return(admin_user)
       allow(Rails.logger).to receive(:info)
-      allow(controller).to receive(:request).and_return(double(remote_ip: '127.0.0.1'))
+      mock_headers = double("headers", :[] => nil)
+      allow(controller).to receive(:request).and_return(double(remote_ip: '127.0.0.1', headers: mock_headers))
       allow(controller).to receive(:controller_name).and_return('test')
       allow(controller).to receive(:action_name).and_return('index')
     end

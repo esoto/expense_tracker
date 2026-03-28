@@ -99,7 +99,7 @@ RSpec.describe AdminAuthentication, type: :controller, unit: true do
       end
 
       it "extends session on activity" do
-        expect(admin_user).to receive(:extend_session)
+        expect(admin_user).to receive(:extend_session).at_least(:once)
         get :index
       end
     end

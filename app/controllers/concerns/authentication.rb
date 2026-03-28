@@ -33,10 +33,13 @@ module Authentication
   def current_user
     @current_user ||= begin
       if session[:admin_session_token].present?
-        # PER-213: Session extension is managed in check_session_expiry
-        # (AdminAuthentication) based on whether the request is a prefetch.
-        # Use extend: false here so the model lookup is side-effect free.
-        AdminUser.find_by_valid_session(session[:admin_session_token], extend: false)
+        # PER-213: Use extend: false for the lookup, then extend explicitly
+        # unless this is a prefetch request. Controllers using Authentication
+        # (not AdminAuthentication) don't have check_session_expiry, so
+        # extension must happen here.
+        user = AdminUser.find_by_valid_session(session[:admin_session_token], extend: false)
+        user&.extend_session unless turbo_prefetch_request?
+        user
       end
     end
   end

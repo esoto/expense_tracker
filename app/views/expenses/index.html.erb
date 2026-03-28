@@ -111,10 +111,13 @@
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg font-semibold text-slate-900">Resumen por Categoría</h2>
       <button type="button"
+              data-collapsible-target="toggleButton"
               data-action="click->collapsible#toggle"
               aria-expanded="false"
               class="md:hidden text-sm text-teal-700 font-medium hover:text-teal-800">
-        Ver resumen
+        <span data-collapsible-label
+              data-collapsible-label-closed="Ver resumen"
+              data-collapsible-label-open="Ocultar resumen">Ver resumen</span>
       </button>
     </div>
     <div data-collapsible-target="content" class="hidden md:block">

@@ -17,7 +17,7 @@
       <h2 class="text-lg font-semibold text-slate-900">Sincronización de Correos</h2>
       <% if @active_sync_session %>
       <div class="flex items-center text-teal-700">
-        <svg class="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <svg aria-hidden="true" class="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
@@ -87,7 +87,7 @@
           <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
             <div class="flex">
               <div class="flex-shrink-0">
-                <svg class="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <svg aria-hidden="true" class="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                 </svg>
               </div>
@@ -127,7 +127,7 @@
           <div class="text-right">
             <div data-status-icon>
               <% if @active_sync_session && @active_sync_session.sync_session_accounts.joins(:email_account).where(email_accounts: { id: account.id }).exists? %>
-              <svg class="animate-spin h-4 w-4 text-teal-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg aria-hidden="true" class="animate-spin h-4 w-4 text-teal-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
@@ -155,7 +155,7 @@
       <% if @last_sync_info&.dig(:has_running_jobs) %>
       <div class="bg-teal-50 border border-teal-200 rounded-lg p-3">
         <div class="flex items-center">
-          <svg class="animate-spin h-4 w-4 text-teal-700 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <svg aria-hidden="true" class="animate-spin h-4 w-4 text-teal-700 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
@@ -187,7 +187,7 @@
 <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
   <div class="flex items-center justify-between">
     <div class="flex items-center">
-      <svg class="w-5 h-5 text-amber-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg aria-hidden="true" class="w-5 h-5 text-amber-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
       </svg>
       <div>
@@ -219,7 +219,7 @@
         </div>
       </div>
       <div class="p-4 bg-white/10 rounded-xl backdrop-blur-sm">
-        <svg class="w-10 h-10 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden="true" class="w-10 h-10 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
         </svg>
       </div>
@@ -229,12 +229,12 @@
     <div class="flex items-center justify-between mt-6">
       <div data-animated-metric-target="trend" class="flex items-center">
         <% if @month_metrics[:trends][:is_increase] %>
-        <svg class="w-5 h-5 text-rose-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden="true" class="w-5 h-5 text-rose-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
         </svg>
         <span class="text-rose-300 font-semibold">↑ +<%= @month_metrics[:trends][:amount_change].round(1) %>%</span>
         <% else %>
-        <svg class="w-5 h-5 text-emerald-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden="true" class="w-5 h-5 text-emerald-300 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
         </svg>
         <span class="text-emerald-300 font-semibold">↓ <%= @month_metrics[:trends][:amount_change].round(1) %>%</span>
@@ -294,7 +294,7 @@
     <div id="month-metric-card" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative" role="button" tabindex="0" aria-label="Ver gastos de este mes" data-controller="animated-metric tooltip dashboard-card-navigation" data-animated-metric-container-target="container" data-animated-metric-to-value="<%= @month_metrics[:metrics][:total_amount] %>" data-animated-metric-prefix-value="₡" data-tooltip-trend-data-value='<%= @month_metrics[:trend_data].to_json %>' data-tooltip-metric-label-value="Gastos del Mes" data-tooltip-position-value="top" data-dashboard-card-navigation-period-value="month" data-dashboard-card-navigation-date-from-value="<%= @month_metrics[:date_range].first %>" data-dashboard-card-navigation-date-to-value="<%= @month_metrics[:date_range].last %>" data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
       <div class="flex items-center justify-between mb-3">
         <div class="p-2 rounded-lg bg-amber-100">
-          <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
           </svg>
         </div>
@@ -325,7 +325,7 @@
     <div id="week-metric-card" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative" role="button" tabindex="0" aria-label="Ver gastos de esta semana" data-controller="animated-metric tooltip dashboard-card-navigation" data-animated-metric-container-target="container" data-animated-metric-to-value="<%= @week_metrics[:metrics][:total_amount] %>" data-animated-metric-prefix-value="₡" data-tooltip-trend-data-value='<%= @week_metrics[:trend_data].to_json %>' data-tooltip-metric-label-value="Gastos de la Semana" data-tooltip-position-value="top" data-dashboard-card-navigation-period-value="week" data-dashboard-card-navigation-date-from-value="<%= @week_metrics[:date_range].first %>" data-dashboard-card-navigation-date-to-value="<%= @week_metrics[:date_range].last %>" data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
       <div class="flex items-center justify-between mb-3">
         <div class="p-2 rounded-lg bg-teal-100">
-          <svg class="w-6 h-6 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" class="w-6 h-6 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
           </svg>
         </div>
@@ -356,7 +356,7 @@
     <div id="day-metric-card" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative" role="button" tabindex="0" aria-label="Ver gastos de hoy" data-controller="animated-metric tooltip dashboard-card-navigation" data-animated-metric-container-target="container" data-animated-metric-to-value="<%= @day_metrics[:metrics][:total_amount] %>" data-animated-metric-prefix-value="₡" data-tooltip-trend-data-value='<%= @day_metrics[:trend_data].to_json %>' data-tooltip-metric-label-value="Gastos de Hoy" data-tooltip-position-value="top" data-dashboard-card-navigation-period-value="day" data-dashboard-card-navigation-date-from-value="<%= @day_metrics[:date_range].first %>" data-dashboard-card-navigation-date-to-value="<%= @day_metrics[:date_range].last %>" data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
       <div class="flex items-center justify-between mb-3">
         <div class="p-2 rounded-lg bg-emerald-100">
-          <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
@@ -490,13 +490,13 @@
         <!-- View Toggle (Task 3.2: Dashboard Compact View Toggle) -->
         <div class="dashboard-expenses-toggle" role="group" aria-label="Vista" title="Atajo: Ctrl+Shift+V">
           <button type="button" class="<%= @expense_view_mode == 'compact' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900' %>" data-action="click->dashboard-expenses#setViewMode" data-mode="compact" data-dashboard-expenses-target="compactButton" aria-pressed="<%= @expense_view_mode == 'compact' %>" aria-label="Vista compacta">
-            <svg class="view-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" class="view-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
             <span class="view-label">Compacta</span>
           </button>
           <button type="button" class="<%= @expense_view_mode == 'expanded' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900' %>" data-action="click->dashboard-expenses#setViewMode" data-mode="expanded" data-dashboard-expenses-target="expandedButton" aria-pressed="<%= @expense_view_mode == 'expanded' %>" aria-label="Vista expandida">
-            <svg class="view-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" class="view-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h8m-8 4h16M4 18h11"></path>
             </svg>
             <span class="view-label">Expandida</span>
@@ -527,7 +527,7 @@
 
       <% if @expense_filter_result && @expense_filter_result.metadata[:filters_applied].to_i > 0 %>
       <button type="button" class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors" data-action="click->dashboard-expenses#clearFilters">
-        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden="true" class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
         Limpiar filtros
@@ -573,21 +573,21 @@
       <!-- Bulk Actions -->
       <div class="flex items-center space-x-2">
         <button type="button" class="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" data-action="click->dashboard-expenses#bulkCategorize" title="Categorizar seleccionados">
-          <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
           </svg>
           Categorizar
         </button>
 
         <button type="button" class="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" data-action="click->dashboard-expenses#bulkUpdateStatus" title="Actualizar estado">
-          <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
           Estado
         </button>
 
         <button type="button" class="px-3 py-1.5 text-sm font-medium text-white bg-rose-600 border border-rose-600 rounded-lg hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" data-action="click->dashboard-expenses#bulkDelete" title="Eliminar seleccionados">
-          <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
           </svg>
           Eliminar
@@ -652,11 +652,11 @@
                   role="button"
                   tabindex="0">
             <% if status[:status] == 'pending' %>
-            <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <% else %>
-            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <% end %>
@@ -680,7 +680,7 @@
                   aria-pressed="false"
                   role="button"
                   tabindex="0">
-            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
             </svg>
             <span><%= period[:label] %></span>
@@ -696,7 +696,7 @@
                 data-dashboard-filter-chips-target="clearButton"
                 data-action="click->dashboard-filter-chips#clearAllFilters"
                 title="Limpiar todos los filtros (Esc)">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
           <span>Limpiar filtros</span>
@@ -762,14 +762,14 @@
 
         <!-- Loading indicators -->
         <div class="virtual-scroll-loading virtual-scroll-loading-top hidden" data-dashboard-virtual-scroll-target="loadingTop">
-          <svg class="virtual-scroll-spinner" fill="none" viewBox="0 0 24 24">
+          <svg aria-hidden="true" class="virtual-scroll-spinner" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
         </div>
 
         <div class="virtual-scroll-loading virtual-scroll-loading-bottom hidden" data-dashboard-virtual-scroll-target="loadingBottom">
-          <svg class="virtual-scroll-spinner" fill="none" viewBox="0 0 24 24">
+          <svg aria-hidden="true" class="virtual-scroll-spinner" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
@@ -836,7 +836,7 @@
     <% else %>
     <!-- Empty State -->
     <div class="dashboard-expenses-empty p-6">
-      <svg class="dashboard-expenses-empty-icon mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg aria-hidden="true" class="dashboard-expenses-empty-icon mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
       </svg>
       <h3 class="dashboard-expenses-empty-title mt-3 text-sm font-medium text-slate-900">No hay gastos</h3>

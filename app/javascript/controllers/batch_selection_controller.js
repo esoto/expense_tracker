@@ -105,9 +105,10 @@ export default class extends Controller {
       }
 
       // Ctrl/Cmd + A: Select all
+      // Support both div-based lists ([data-expense-item]) and legacy tables
       if ((event.metaKey || event.ctrlKey) && (event.key === 'a' || event.key === 'A') && !event.shiftKey) {
-        const tableElement = this.element.querySelector('table')
-        if (tableElement) {
+        const listElement = this.element.querySelector('[data-expense-item]') || this.element.querySelector('table')
+        if (listElement) {
           event.preventDefault()
           event.stopPropagation()
           this.selectAll()
@@ -149,7 +150,7 @@ export default class extends Controller {
   toggleSelection(event) {
     const checkbox = event.currentTarget
     const expenseId = parseInt(checkbox.dataset.expenseId)
-    const row = checkbox.closest('tr')
+    const row = this.closestExpenseRow(checkbox)
     
     if (checkbox.checked) {
       this.addToSelection(expenseId, row)
@@ -218,8 +219,8 @@ export default class extends Controller {
     // Batch collect all updates
     this.checkboxTargets.forEach(checkbox => {
       const expenseId = parseInt(checkbox.dataset.expenseId)
-      const row = checkbox.closest('tr')
-      
+      const row = this.closestExpenseRow(checkbox)
+
       newSelectedIds.push(expenseId)
       updates.push({ checkbox, row })
     })
@@ -254,8 +255,8 @@ export default class extends Controller {
     // Clear all checkboxes and row styles
     this.checkboxTargets.forEach(checkbox => {
       checkbox.checked = false
-      const row = checkbox.closest('tr')
-      
+      const row = this.closestExpenseRow(checkbox)
+
       if (row) {
         row.classList.remove('bg-teal-50', 'border-teal-200')
         row.classList.add('hover:bg-slate-50')
@@ -469,8 +470,8 @@ export default class extends Controller {
     // Re-apply selection highlighting after view change
     this.checkboxTargets.forEach(checkbox => {
       const expenseId = parseInt(checkbox.dataset.expenseId)
-      const row = checkbox.closest('tr')
-      
+      const row = this.closestExpenseRow(checkbox)
+
       if (this.selectedIdsValue.includes(expenseId)) {
         checkbox.checked = true
         if (row) {
@@ -542,5 +543,15 @@ export default class extends Controller {
     if (this.keydownHandler) {
       document.removeEventListener('keydown', this.keydownHandler)
     }
+  }
+
+  /**
+   * Find the closest expense row element.
+   * Supports both div-based unified items ([data-expense-item]) and legacy table rows (tr).
+   * @param {Element} element - starting element to search from
+   * @returns {Element|null} the row element, or null if not found
+   */
+  closestExpenseRow(element) {
+    return element.closest('[data-expense-item]') || element.closest('tr')
   }
 }

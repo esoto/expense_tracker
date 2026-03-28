@@ -130,51 +130,40 @@ RSpec.describe "Mobile Expense Cards", type: :view, unit: true do
     end
   end
 
+  # PER-167: The double-render (expense_cards + expense_list) has been replaced
+  # by a single unified list. These tests verify the new responsive single-loop structure.
   describe "expenses/index.html.erb template source" do
     let(:template_path) do
       Rails.root.join("app/views/expenses/index.html.erb")
     end
     let(:template_source) { File.read(template_path) }
 
-    it "contains a mobile card container with id expense_cards" do
-      expect(template_source).to include('id="expense_cards"')
+    it "renders the unified expense_item partial (single loop replaces double render)" do
+      expect(template_source).to include('render "expense_item"')
     end
 
-    it "hides mobile card container on md+ screens with md:hidden" do
-      expect(template_source).to match(/id="expense_cards"[^>]*md:hidden/)
-    end
-
-    it "renders expense_card partial inside the mobile container" do
-      expect(template_source).to include('render "expense_card"')
-    end
-
-    it "passes expense and categories locals to expense_card" do
+    it "passes expense and categories locals to expense_item" do
       expect(template_source).to include('expense: expense, categories: @categories')
     end
 
-    it "shows expense_count in mobile container header" do
-      expect(template_source).to include('@expense_count')
-    end
-
-    it "has desktop table container with id expense_list" do
+    it "has the unified expense_list container" do
       expect(template_source).to include('id="expense_list"')
     end
 
-    it "adds hidden class to desktop table container so it is hidden on mobile" do
-      expect(template_source).to match(/id="expense_list"[^>]*hidden md:block/)
-    end
-
-    it "has md:block on the desktop table container for medium+ screens" do
-      expect(template_source).to match(/id="expense_list"[^>]*md:block/)
-    end
-
-    it "includes Lista de Gastos heading in mobile section" do
-      # The mobile header for the card list
+    it "includes Lista de Gastos heading" do
       expect(template_source).to include("Lista de Gastos")
     end
 
-    it "includes mobile pagination block" do
-      expect(template_source).to include("Mobile Pagination")
+    it "no longer uses the old separate mobile expense_cards container" do
+      expect(template_source).not_to include('id="expense_cards"')
+    end
+
+    it "no longer double-renders expense_card" do
+      expect(template_source).not_to include('render "expense_card"')
+    end
+
+    it "no longer double-renders expense_row" do
+      expect(template_source).not_to include('render "expense_row"')
     end
   end
 

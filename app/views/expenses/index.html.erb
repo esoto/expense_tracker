@@ -133,35 +133,13 @@
   </div>
   <% end %>
 
-  <!-- Mobile Card View (visible < md:) -->
-  <div id="expense_cards" class="md:hidden space-y-3">
-    <div class="px-4 py-3 flex items-center justify-between">
-      <h2 class="text-lg font-semibold text-slate-900">Lista de Gastos</h2>
-      <span class="text-sm text-slate-500"><%= @expense_count %> gastos</span>
-    </div>
-    <div class="px-3 space-y-2">
-      <% @expenses.each do |expense| %>
-        <%= render "expense_card", expense: expense, categories: @categories %>
-      <% end %>
-    </div>
-    <!-- Mobile Pagination -->
-    <div class="px-4 py-4">
-      <% if @pagy && @pagy.pages > 1 %>
-        <%= pagy_financial_nav(@pagy) %>
-        <p class="text-sm text-slate-600 text-center mt-2">
-          Mostrando <%= @pagy.from %>-<%= @pagy.to %> de <%= number_with_delimiter(@pagy.count) %> gastos
-        </p>
-      <% end %>
-    </div>
-  </div>
-
-  <!-- Expenses Table -->
-  <div id="expense_list" class="hidden md:block bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
+  <!-- Unified Expense List (responsive: card on mobile, row layout on desktop) -->
+  <div id="expense_list" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
        data-controller="view-toggle batch-selection virtual-scroll"
        data-action="keydown@window->view-toggle#handleKeydown resize@window->view-toggle#handleResize"
        data-virtual-scroll-threshold-value="<%= @expenses.count %>"
        data-virtual-scroll-enabled-value="<%= @expenses.count > 500 %>"
-       role="grid">
+       role="list">
     <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
@@ -173,11 +151,11 @@
             0 gastos seleccionados
           </span>
 
-          <!-- View Toggle Button -->
+          <!-- View Toggle Button (desktop only) -->
           <button type="button"
                   data-view-toggle-target="toggleButton"
                   data-action="click->view-toggle#toggle"
-                  class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                  class="hidden md:inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
                   aria-label="Cambiar modo de vista"
                   title="Cambiar entre vista compacta y expandida (Ctrl+Shift+V)">
 
@@ -194,10 +172,10 @@
             <span data-view-toggle-target="buttonText">Vista Compacta</span>
           </button>
 
-          <!-- Batch Selection Mode Toggle -->
+          <!-- Batch Selection Mode Toggle (desktop only) -->
           <button type="button"
                   data-action="click->batch-selection#toggleSelectionMode"
-                  class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                  class="hidden md:inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
                   aria-label="Activar modo de selección"
                   title="Activar selección múltiple (Ctrl+Shift+A)">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -223,33 +201,30 @@
       </div>
     </div>
 
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-slate-200" data-view-toggle-target="table">
-        <thead class="bg-slate-50">
-          <tr>
-            <!-- Master Checkbox Column -->
-            <th class="checkbox-header hidden px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-              <input type="checkbox"
-                     data-batch-selection-target="masterCheckbox"
-                     data-action="change->batch-selection#toggleMasterSelection"
-                     class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded"
-                     aria-label="Seleccionar todos los gastos visibles">
-            </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Fecha</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Comercio</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Categoría</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Monto</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" data-view-toggle-target="expandedColumns">Banco</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" data-view-toggle-target="expandedColumns">Estado</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" data-view-toggle-target="expandedColumns">Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="expenses_table_body" class="bg-white divide-y divide-slate-100">
-          <% @expenses.each do |expense| %>
-            <%= render "expense_row", expense: expense, categories: @categories %>
-          <% end %>
-        </tbody>
-      </table>
+    <!-- Desktop column headers (hidden on mobile) -->
+    <div class="hidden md:grid md:grid-cols-[40px_120px_1fr_200px_120px_100px_120px_auto] bg-slate-50 border-b border-slate-200 px-0">
+      <!-- Master Checkbox Column -->
+      <div class="checkbox-header hidden px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+        <input type="checkbox"
+               data-batch-selection-target="masterCheckbox"
+               data-action="change->batch-selection#toggleMasterSelection"
+               class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded"
+               aria-label="Seleccionar todos los gastos visibles">
+      </div>
+      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Fecha</div>
+      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Comercio</div>
+      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Categoría</div>
+      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Monto</div>
+      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" data-view-toggle-target="expandedColumns">Banco</div>
+      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" data-view-toggle-target="expandedColumns">Estado</div>
+      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" data-view-toggle-target="expandedColumns">Acciones</div>
+    </div>
+
+    <!-- Unified expense items list (single loop — eliminates double render) -->
+    <div id="expenses_list_body" class="divide-y divide-slate-100" data-view-toggle-target="itemList">
+      <% @expenses.each do |expense| %>
+        <%= render "expense_item", expense: expense, categories: @categories %>
+      <% end %>
     </div>
 
     <!-- Pagination -->

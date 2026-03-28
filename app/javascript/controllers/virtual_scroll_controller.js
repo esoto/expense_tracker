@@ -75,15 +75,16 @@ export default class extends Controller {
    * Check if virtual scrolling should be enabled
    */
   checkIfVirtualScrollingNeeded() {
-    const rows = this.element.querySelectorAll('tbody tr')
+    // Support both div-based unified items ([data-expense-item]) and legacy table rows (tbody tr)
+    const rows = this.element.querySelectorAll('[data-expense-item], tbody tr')
     this.totalItemsValue = rows.length
-    
+
     // Only enable virtual scrolling for large datasets
     if (this.totalItemsValue < this.thresholdValue) {
       this.enabledValue = false
       return
     }
-    
+
     // Store initial items
     this.items = Array.from(rows).map((row, index) => ({
       id: row.dataset.expenseId || index,

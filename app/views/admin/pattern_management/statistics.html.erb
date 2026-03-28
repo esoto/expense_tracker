@@ -1,0 +1,148 @@
+<div class="container mx-auto px-4">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-900">Estadísticas de Patrones</h1>
+      <p class="text-slate-600 mt-1">Resumen general del desempeño y distribución de patrones de categorización</p>
+    </div>
+    <div class="flex flex-wrap gap-2 mt-4 sm:mt-0">
+      <%= link_to admin_patterns_performance_path, class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center" do %>
+        <svg aria-hidden="true" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+        </svg>
+        Ver Rendimiento
+      <% end %>
+      <%= link_to admin_patterns_path, class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center" do %>
+        <svg aria-hidden="true" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        Volver a Patrones
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Overview Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+      <div class="flex items-center">
+        <div class="bg-teal-100 text-teal-700 p-3 rounded-lg">
+          <svg aria-hidden="true" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm text-slate-600">Total de Patrones</p>
+          <p class="text-2xl font-bold text-slate-900"><%= number_with_delimiter(@stats[:total_patterns]) %></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+      <div class="flex items-center">
+        <div class="bg-emerald-100 text-emerald-700 p-3 rounded-lg">
+          <svg aria-hidden="true" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm text-slate-600">Patrones Activos</p>
+          <p class="text-2xl font-bold text-slate-900"><%= number_with_delimiter(@stats[:active_count]) %></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+      <div class="flex items-center">
+        <div class="bg-amber-100 text-amber-700 p-3 rounded-lg">
+          <svg aria-hidden="true" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm text-slate-600">Tasa de Éxito Promedio</p>
+          <p class="text-2xl font-bold text-slate-900"><%= @stats[:avg_success_rate] %>%</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+      <div class="flex items-center">
+        <div class="bg-slate-100 text-slate-700 p-3 rounded-lg">
+          <svg aria-hidden="true" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <p class="text-sm text-slate-600">Patrones Inactivos</p>
+          <p class="text-2xl font-bold text-slate-900"><%= number_with_delimiter(@stats[:inactive_count]) %></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Patterns by Type -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-lg font-semibold text-slate-900 mb-4">Distribución por Tipo</h2>
+      <% if @stats[:patterns_by_type].any? %>
+        <% total = @stats[:patterns_by_type].values.sum.to_f %>
+        <div class="space-y-3">
+          <% @stats[:patterns_by_type].sort_by { |_, count| -count }.each do |type, count| %>
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-sm font-medium text-slate-700"><%= type&.humanize %></span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-slate-500"><%= number_with_delimiter(count) %> patrones</span>
+                  <span class="text-xs font-semibold text-teal-700 bg-teal-100 px-2 py-0.5 rounded-full">
+                    <%= total > 0 ? (count / total * 100).round(1) : 0 %>%
+                  </span>
+                </div>
+              </div>
+              <div class="w-full bg-slate-200 rounded-full h-2">
+                <div class="bg-teal-500 h-2 rounded-full"
+                     style="width: <%= total > 0 ? [(count / total * 100).round, 100].min : 0 %>%"></div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-sm text-slate-500">Sin datos de tipos disponibles.</p>
+      <% end %>
+    </div>
+
+    <!-- Top Categories -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <h2 class="text-lg font-semibold text-slate-900 mb-4">Principales Categorías</h2>
+      <% if @stats[:top_categories].any? %>
+        <div class="space-y-2">
+          <% @stats[:top_categories].each_with_index do |cat, index| %>
+            <div class="flex items-center justify-between py-2 <%= index < @stats[:top_categories].size - 1 ? 'border-b border-slate-100' : '' %>">
+              <div class="flex items-center min-w-0">
+                <span class="text-slate-400 text-xs w-6 flex-shrink-0">#<%= index + 1 %></span>
+                <span class="text-sm font-medium text-slate-900 ml-2 truncate"><%= cat[:name] %></span>
+              </div>
+              <div class="flex items-center gap-3 flex-shrink-0 ml-4">
+                <span class="text-xs text-slate-500"><%= number_with_delimiter(cat[:pattern_count]) %> patrones</span>
+                <span class="text-sm font-semibold <%= cat[:avg_success_rate] >= 70 ? 'text-emerald-600' : cat[:avg_success_rate] >= 40 ? 'text-amber-600' : 'text-rose-600' %>">
+                  <%= cat[:avg_success_rate] %>%
+                </span>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-sm text-slate-500">Sin categorías disponibles.</p>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- JSON API Link -->
+  <div class="bg-slate-50 rounded-xl border border-slate-200 p-4">
+    <p class="text-sm text-slate-600">
+      Datos en formato JSON disponibles en:
+      <%= link_to admin_patterns_statistics_path(format: :json), class: "text-teal-700 hover:text-teal-800 font-mono text-xs underline" do %>
+        GET /admin/patterns/statistics.json
+      <% end %>
+    </p>
+  </div>
+</div>

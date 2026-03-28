@@ -36,6 +36,7 @@ class Admin::PatternManagementController < Admin::BaseController
     @stats = Services::Categorization::PatternAnalytics.new.generate_statistics
 
     respond_to do |format|
+      format.html
       format.json { render json: @stats }
     end
   end
@@ -44,6 +45,7 @@ class Admin::PatternManagementController < Admin::BaseController
     @performance_data = Services::Categorization::PatternAnalytics.new.performance_over_time
 
     respond_to do |format|
+      format.html
       format.json { render json: @performance_data }
     end
   end

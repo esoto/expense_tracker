@@ -1,0 +1,15 @@
+<div class="container mx-auto px-4 max-w-4xl">
+  <div class="mb-6">
+    <div class="flex items-center space-x-2 text-sm text-slate-500 mb-3">
+      <%= link_to "Patrones Compuestos", admin_composite_patterns_path, class: "hover:text-teal-600" %>
+      <span>/</span>
+      <span class="text-slate-700"><%= t("admin.composite_patterns.breadcrumb.new") %></span>
+    </div>
+    <h1 class="text-3xl font-bold text-slate-900"><%= t("admin.composite_patterns.new.title") %></h1>
+    <p class="text-slate-600 mt-1"><%= t("admin.composite_patterns.new.subtitle") %></p>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <%= render 'form' %>
+  </div>
+</div>

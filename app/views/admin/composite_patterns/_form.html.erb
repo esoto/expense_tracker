@@ -1,0 +1,119 @@
+<%= form_with model: @composite_pattern, url: (@composite_pattern.persisted? ? admin_composite_pattern_path(@composite_pattern) : admin_composite_patterns_path), local: true do |f| %>
+  <% if @composite_pattern.errors.any? %>
+    <div class="mb-6 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg">
+      <h3 class="font-semibold mb-2"><%= t("admin.composite_patterns.form.errors_title") %></h3>
+      <ul class="list-disc list-inside">
+        <% @composite_pattern.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="space-y-6">
+    <!-- Name -->
+    <div>
+      <%= f.label :name, t("admin.composite_patterns.form.name_label"), class: "block text-sm font-medium text-slate-700 mb-2" %>
+      <%= f.text_field :name,
+          class: "w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
+          placeholder: "Ej: Uber o Lyft en mañana" %>
+      <p class="mt-1 text-sm text-slate-500"><%= t("admin.composite_patterns.form.name_hint") %></p>
+    </div>
+
+    <!-- Category -->
+    <div>
+      <%= f.label :category_id, t("admin.composite_patterns.form.category_label"), class: "block text-sm font-medium text-slate-700 mb-2" %>
+      <%= f.select :category_id,
+          options_for_select(@categories.map { |c| [c.name, c.id] }, @composite_pattern.category_id),
+          { prompt: t("admin.composite_patterns.form.category_prompt") },
+          class: "w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500" %>
+      <p class="mt-1 text-sm text-slate-500"><%= t("admin.composite_patterns.form.category_hint") %></p>
+    </div>
+
+    <!-- Operator -->
+    <div>
+      <%= f.label :operator, t("admin.composite_patterns.form.operator_label"), class: "block text-sm font-medium text-slate-700 mb-2" %>
+      <%= f.select :operator,
+          options_for_select(
+            [
+              [t("admin.composite_patterns.form.operator_and"), "AND"],
+              [t("admin.composite_patterns.form.operator_or"), "OR"],
+              [t("admin.composite_patterns.form.operator_not"), "NOT"]
+            ],
+            @composite_pattern.operator
+          ),
+          {},
+          class: "w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500" %>
+      <p class="mt-1 text-sm text-slate-500"><%= t("admin.composite_patterns.form.operator_hint") %></p>
+    </div>
+
+    <!-- Pattern IDs (multi-select) -->
+    <div>
+      <label class="block text-sm font-medium text-slate-700 mb-2">
+        <%= t("admin.composite_patterns.form.patterns_label") %>
+        <span class="text-rose-600">*</span>
+      </label>
+      <div class="border border-slate-200 rounded-lg overflow-hidden">
+        <div class="bg-slate-50 px-3 py-2 border-b border-slate-200 text-xs text-slate-500">
+          <%= t("admin.composite_patterns.form.patterns_multiselect_hint") %>
+        </div>
+        <div class="max-h-64 overflow-y-auto">
+          <%= f.select :pattern_ids,
+              options_for_select(
+                @available_patterns.map { |p| ["#{p.pattern_type}: #{p.pattern_value} (#{p.category&.name})", p.id] },
+                @composite_pattern.pattern_ids
+              ),
+              {},
+              multiple: true,
+              size: 10,
+              class: "w-full px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 border-0" %>
+        </div>
+      </div>
+      <p class="mt-1 text-sm text-slate-500">
+        <%= t("admin.composite_patterns.form.patterns_hint") %>
+        <% if @composite_pattern.persisted? %>
+          <span class="text-amber-600"><%= t("admin.composite_patterns.form.patterns_category_warning") %></span>
+        <% end %>
+      </p>
+    </div>
+
+    <!-- Confidence Weight -->
+    <div>
+      <%= f.label :confidence_weight, t("admin.composite_patterns.form.confidence_label"), class: "block text-sm font-medium text-slate-700 mb-2" %>
+      <div class="flex items-center space-x-4" data-controller="range-display">
+        <%= f.range_field :confidence_weight,
+            min: CompositePattern::MIN_CONFIDENCE_WEIGHT,
+            max: CompositePattern::MAX_CONFIDENCE_WEIGHT,
+            step: 0.1,
+            class: "flex-1",
+            data: {
+              "range-display-target": "slider",
+              action: "input->range-display#updateValue"
+            } %>
+        <span data-range-display-target="value" class="text-lg font-semibold text-slate-900 w-12 text-center">
+          <%= @composite_pattern.confidence_weight.to_f.round(1) %>
+        </span>
+      </div>
+      <div class="flex justify-between text-xs text-slate-400 mt-1">
+        <span><%= CompositePattern::MIN_CONFIDENCE_WEIGHT %> (mín)</span>
+        <span class="text-slate-500"><%= t("admin.composite_patterns.form.confidence_hint") %></span>
+        <span><%= CompositePattern::MAX_CONFIDENCE_WEIGHT %> (máx)</span>
+      </div>
+    </div>
+
+    <!-- Active Status -->
+    <div class="flex items-center">
+      <%= f.check_box :active, class: "h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded" %>
+      <%= f.label :active, t("admin.composite_patterns.form.active_label"), class: "ml-2 block text-sm text-slate-900 font-medium" %>
+      <p class="ml-2 text-sm text-slate-500"><%= t("admin.composite_patterns.form.active_hint") %></p>
+    </div>
+  </div>
+
+  <!-- Form Actions -->
+  <div class="mt-8 flex justify-between border-t border-slate-200 pt-6">
+    <%= link_to t("admin.composite_patterns.form.cancel"), admin_composite_patterns_path,
+        class: "px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-medium" %>
+    <%= f.submit @composite_pattern.new_record? ? t("admin.composite_patterns.form.submit_create") : t("admin.composite_patterns.form.submit_update"),
+        class: "px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-sm font-medium cursor-pointer" %>
+  </div>
+<% end %>

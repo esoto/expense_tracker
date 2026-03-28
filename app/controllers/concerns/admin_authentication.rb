@@ -137,9 +137,21 @@ module AdminAuthentication
       request.headers["Purpose"].to_s.include?("prefetch")
   end
 
+  # PER-219: Validate return_to path before redirecting to prevent RoutingError
+  # from non-existent routes (e.g. /login) and open-redirect attacks.
+  # Only admin paths are safe return destinations after authentication.
   def redirect_back_or(default)
-    redirect_to(session[:return_to] || default)
-    session.delete(:return_to)
+    return_to = valid_return_to_path(session.delete(:return_to))
+    redirect_to(return_to || default)
+  end
+
+  # Only redirect back to safe admin paths to prevent open redirect and
+  # routing errors caused by stale or external session[:return_to] values.
+  def valid_return_to_path(path)
+    return nil if path.blank?
+    return nil unless path.start_with?("/admin/") || path == "/admin"
+
+    path
   end
 
   def set_admin_session(admin_user)

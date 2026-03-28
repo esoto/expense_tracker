@@ -66,9 +66,9 @@ module Services
     # Single query for both monthly totals using conditional aggregation (was 2 queries)
     today = Date.current
     current_month_start  = today.beginning_of_month
-    current_month_end    = today.end_of_month
+    current_month_end    = today.end_of_month.end_of_day
     last_month_start     = 1.month.ago.to_date.beginning_of_month
-    last_month_end       = 1.month.ago.to_date.end_of_month
+    last_month_end       = 1.month.ago.to_date.end_of_month.end_of_day
 
     current_filter_sql = ActiveRecord::Base.sanitize_sql_array([
       "COALESCE(SUM(amount) FILTER (WHERE transaction_date BETWEEN ? AND ?), 0)",
@@ -111,7 +111,7 @@ module Services
 
   def monthly_trend
     Expense.where(
-      transaction_date: 6.months.ago.beginning_of_month..Date.current.end_of_month
+      transaction_date: 6.months.ago.beginning_of_month..Date.current.end_of_month.end_of_day
     ).group_by_month(:transaction_date)
      .sum(:amount)
      .transform_values(&:to_f)

@@ -3,7 +3,8 @@
   <div class="flex justify-between items-center mb-6">
     <h1 class="text-3xl font-bold text-slate-900">Presupuestos</h1>
     <%= link_to "Nuevo Presupuesto", new_budget_path,
-        class: "bg-teal-700 hover:bg-teal-800 text-white font-medium px-4 py-2 rounded-lg shadow-sm transition-colors" %>
+        class: "bg-teal-700 hover:bg-teal-800 text-white font-medium px-4 py-2 rounded-lg shadow-sm transition-colors",
+        data: { turbo_frame: "_top" } %>
   </div>
 
   <% if @budgets.any? %>

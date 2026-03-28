@@ -62,15 +62,19 @@ class AdminUser < ApplicationRecord
     end
   end
 
-  def self.find_by_valid_session(token)
+  # Looks up a user by session token, returning nil if expired.
+  # PER-213: Session extension is opt-in via `extend: true` (default true for
+  # backward compatibility).  Pass `extend: false` for read-only lookups such
+  # as Turbo Drive prefetch requests, where no user activity has occurred.
+  def self.find_by_valid_session(token, extend: true)
     return nil if token.blank?
 
     user = find_by(session_token: token)
     return nil unless user
     return nil if user.session_expired?
 
-    # Extend session on activity
-    user.extend_session
+    # Extend session on activity (skipped for prefetch / read-only lookups)
+    user.extend_session if extend
     user
   end
 

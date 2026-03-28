@@ -296,6 +296,13 @@ RSpec.describe AdminUser, type: :model, unit: true do
         result = AdminUser.find_by_valid_session("valid_token")
         expect(result).to eq(user)
       end
+
+      it "does NOT extend session when extend: false (PER-213)" do
+        allow(user).to receive(:session_expired?).and_return(false)
+        expect(user).not_to receive(:extend_session)
+        result = AdminUser.find_by_valid_session("valid_token", extend: false)
+        expect(result).to eq(user)
+      end
     end
 
     context "when user not found" do

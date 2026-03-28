@@ -18,7 +18,12 @@ module Authentication
       # This is future-proof — no need to enumerate formats. (PER-212 review)
       if request.format.html? && !request.xhr?
         store_location
-        redirect_to admin_login_path, alert: "Please sign in to continue."
+        # PER-213: Use 303 See Other for Turbo Drive requests so Turbo forces a
+        # full-page visit rather than swapping cached content. Plain browser
+        # requests use the standard 302 Found.
+        redirect_to admin_login_path,
+          alert: t("authentication.session_expired", default: "Please sign in to continue."),
+          status: turbo_drive_request? ? :see_other : :found
       else
         render json: { error: "Authentication required" }, status: :unauthorized
       end
@@ -28,7 +33,13 @@ module Authentication
   def current_user
     @current_user ||= begin
       if session[:admin_session_token].present?
-        AdminUser.find_by_valid_session(session[:admin_session_token])
+        # PER-213: Use extend: false for the lookup, then extend explicitly
+        # unless this is a prefetch request. Controllers using Authentication
+        # (not AdminAuthentication) don't have check_session_expiry, so
+        # extension must happen here.
+        user = AdminUser.find_by_valid_session(session[:admin_session_token], extend: false)
+        user&.extend_session unless turbo_prefetch_request?
+        user
       end
     end
   end
@@ -42,8 +53,30 @@ module Authentication
   end
 
   def store_location
-    # Store location only for GET requests (not HEAD)
+    # Store location only for GET requests (not HEAD).
+    # PER-213: Skip storing location for Turbo Drive prefetch requests — these
+    # are speculative and not initiated by the user.
+    return if turbo_prefetch_request?
+
     session[:return_to] = request.fullpath if request.get? && !request.head?
+  end
+
+  # PER-213: Returns true when the request was initiated by Turbo Drive.
+  # Turbo Drive sets the Turbo-Frame header for frame requests and
+  # X-Requested-With for XHR, but the canonical signal for a full Turbo Drive
+  # visit is the Accept header including "text/vnd.turbo-stream.html".
+  def turbo_drive_request?
+    request.headers["Turbo-Frame"].present? ||
+      request.headers["X-Turbo-Request-Id"].present? ||
+      request.accept.to_s.include?("text/vnd.turbo-stream.html")
+  end
+
+  # PER-213: Returns true for browser-initiated prefetch requests that should
+  # not have any side effects (session refresh, audit logging, etc.).
+  # Modern browsers send "Sec-Purpose: prefetch" or "Purpose: prefetch".
+  def turbo_prefetch_request?
+    request.headers["Sec-Purpose"].to_s.include?("prefetch") ||
+      request.headers["Purpose"].to_s.include?("prefetch")
   end
 
   # Helper method to check if user has specific role

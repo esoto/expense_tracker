@@ -55,7 +55,7 @@ RSpec.describe Authentication, type: :controller, unit: true do
   describe "authentication enforcement", unit: true do
     it "allows access when user is authenticated" do
       session[:admin_session_token] = admin_user.session_token
-      allow(AdminUser).to receive(:find_by_valid_session).and_return(admin_user)
+      allow(AdminUser).to receive(:find_by_valid_session).with(anything, extend: false).and_return(admin_user)
 
       get :index
       expect(response).to have_http_status(:ok)
@@ -76,7 +76,7 @@ RSpec.describe Authentication, type: :controller, unit: true do
     context "with valid session" do
       before do
         session[:admin_session_token] = admin_user.session_token
-        allow(AdminUser).to receive(:find_by_valid_session).with(admin_user.session_token).and_return(admin_user)
+        allow(AdminUser).to receive(:find_by_valid_session).with(admin_user.session_token, extend: false).and_return(admin_user)
       end
 
       it "finds current user from session" do
@@ -110,7 +110,7 @@ RSpec.describe Authentication, type: :controller, unit: true do
   describe "admin authorization", unit: true do
     before do
       session[:admin_session_token] = admin_user.session_token
-      allow(AdminUser).to receive(:find_by_valid_session).and_return(admin_user)
+      allow(AdminUser).to receive(:find_by_valid_session).with(anything, extend: false).and_return(admin_user)
     end
 
     it "allows access when user is admin" do
@@ -131,7 +131,7 @@ RSpec.describe Authentication, type: :controller, unit: true do
   describe "permission checking", unit: true do
     before do
       session[:admin_session_token] = admin_user.session_token
-      allow(AdminUser).to receive(:find_by_valid_session).and_return(admin_user)
+      allow(AdminUser).to receive(:find_by_valid_session).with(anything, extend: false).and_return(admin_user)
     end
 
     it "handles permission method delegation" do
@@ -182,9 +182,10 @@ RSpec.describe Authentication, type: :controller, unit: true do
   describe "audit logging", unit: true do
     before do
       session[:admin_session_token] = admin_user.session_token
-      allow(AdminUser).to receive(:find_by_valid_session).and_return(admin_user)
+      allow(AdminUser).to receive(:find_by_valid_session).with(anything, extend: false).and_return(admin_user)
       allow(Rails.logger).to receive(:info)
-      allow(controller).to receive(:request).and_return(double(remote_ip: '127.0.0.1'))
+      mock_headers = double("headers", :[] => nil)
+      allow(controller).to receive(:request).and_return(double(remote_ip: '127.0.0.1', headers: mock_headers))
       allow(controller).to receive(:controller_name).and_return('test')
       allow(controller).to receive(:action_name).and_return('index')
     end

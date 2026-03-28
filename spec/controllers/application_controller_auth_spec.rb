@@ -52,7 +52,7 @@ RSpec.describe ApplicationController, type: :controller, unit: true do
       admin_user.regenerate_session_token unless admin_user.session_token.present?
       session[:admin_session_token] = admin_user.reload.session_token
       allow(AdminUser).to receive(:find_by_valid_session)
-        .with(admin_user.session_token)
+        .with(admin_user.session_token, extend: false)
         .and_return(admin_user)
     end
 

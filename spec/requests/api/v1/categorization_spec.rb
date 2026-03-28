@@ -86,9 +86,7 @@ RSpec.describe "Api::V1::Categorization", type: :request, integration: true do
     context "without authentication" do
       before { reset! }
 
-      # TODO: Flaky — passes in isolation, fails with random seed ordering.
-      # Tracked in PER-217. Skipping to unblock pre-commit hooks.
-      it "returns 401", skip: "Flaky: state leakage from prior tests (PER-217)" do
+      it "returns 401" do
         post "/api/v1/categorization/suggest", params: {}.to_json
 
         expect(response).to have_http_status(:unauthorized)

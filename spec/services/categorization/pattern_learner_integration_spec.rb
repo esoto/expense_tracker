@@ -237,6 +237,8 @@ RSpec.describe "Pattern Learning Integration", type: :integration do
 
     before do
       # Ensure no stale pattern data leaks from earlier tests in other files
+      # Delete feedbacks first to avoid FK violations
+      PatternFeedback.delete_all
       PatternLearningEvent.delete_all
       CategorizationPattern.delete_all
 

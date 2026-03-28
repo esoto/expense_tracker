@@ -111,7 +111,7 @@ module Services
 
   def monthly_trend
     Expense.where(
-      transaction_date: 6.months.ago.beginning_of_month..Date.current.end_of_month
+      transaction_date: 6.months.ago.beginning_of_month..Date.current.end_of_month.end_of_day
     ).group_by_month(:transaction_date)
      .sum(:amount)
      .transform_values(&:to_f)

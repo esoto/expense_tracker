@@ -1,6 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe "sync_sessions/show", type: :view, unit: true do
+  around { |example| I18n.with_locale(:es) { example.run } }
+
   let(:email_account) { build_stubbed(:email_account, email: "user@example.com", bank_name: "BAC") }
 
   let(:session_account) do
@@ -37,7 +39,7 @@ RSpec.describe "sync_sessions/show", type: :view, unit: true do
 
     it "does not display English 'Completed'" do
       render
-      expect(rendered).not_to have_content("Completed")
+      expect(rendered).not_to have_content(/\bCompleted\b/)
     end
   end
 
@@ -101,9 +103,8 @@ RSpec.describe "sync_sessions/show", type: :view, unit: true do
 
     it "does not display raw English account status" do
       render
-      expect(rendered).not_to have_content("Completed\n")
-      # The translated status badge should appear
       expect(rendered).to have_content("Completado")
+      expect(rendered).not_to have_content(/\bCompleted\b/)
     end
   end
 end

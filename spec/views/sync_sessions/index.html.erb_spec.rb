@@ -1,6 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe "sync_sessions/index", type: :view, unit: true do
+  around { |example| I18n.with_locale(:es) { example.run } }
+
   let(:email_account) { build_stubbed(:email_account, email: "user@example.com", bank_name: "BAC") }
 
   let(:running_session) { build_stubbed(:sync_session, :running, id: 1) }
@@ -52,10 +54,11 @@ RSpec.describe "sync_sessions/index", type: :view, unit: true do
 
   it "does not display raw English status values" do
     render
-    expect(rendered).not_to have_content("Completed")
-    expect(rendered).not_to have_content("Failed")
-    expect(rendered).not_to have_content("Cancelled")
-    expect(rendered).not_to have_content("Pending")
+    # Use word-boundary regex to avoid substring collision (e.g. "Completed" inside "Completado")
+    expect(rendered).not_to have_content(/\bCompleted\b/)
+    expect(rendered).not_to have_content(/\bFailed\b/)
+    expect(rendered).not_to have_content(/\bCancelled\b/)
+    expect(rendered).not_to have_content(/\bPending\b/)
   end
 
   context "with an active running session" do
@@ -80,10 +83,10 @@ RSpec.describe "sync_sessions/index", type: :view, unit: true do
       allow(view).to receive(:cancel_sync_session_path).with(running_session).and_return("/sync_sessions/1/cancel")
     end
 
-    it "displays 'Sincronizando' for running account status" do
+    it "displays translated status for processing account" do
       render
-      # Account status in the active session card should be translated
-      expect(rendered).not_to have_content("Processing")
+      expect(rendered).to have_content("Procesando")
+      expect(rendered).not_to have_content(/\bProcessing\b/)
     end
   end
 end

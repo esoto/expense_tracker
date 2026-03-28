@@ -1,6 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe "email_accounts/show", type: :view, unit: true do
+  around { |example| I18n.with_locale(:es) { example.run } }
+
   let(:email_account) do
     build_stubbed(:email_account,
       email: "user@example.com",

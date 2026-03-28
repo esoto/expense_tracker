@@ -133,7 +133,9 @@ es:
     providers:
       gmail: "Gmail"
       outlook: "Outlook"
+      yahoo: "Yahoo"
       custom: "Personalizado"
+      manual: "Manual"
 
     bank_names:
       bac: "BAC San José"
@@ -224,6 +226,7 @@ es:
       failed: "Fallido"
       cancelled: "Cancelado"
       processing: "Procesando"
+      waiting: "En espera"
 
     flash:
       started: "Sincronización iniciada exitosamente"

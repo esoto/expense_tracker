@@ -42,7 +42,9 @@ en:
     providers:
       gmail: "Gmail"
       outlook: "Outlook"
+      yahoo: "Yahoo"
       custom: "Custom"
+      manual: "Manual"
   sync_sessions:
     statuses:
       pending: "Pending"
@@ -51,6 +53,7 @@ en:
       failed: "Failed"
       cancelled: "Cancelled"
       processing: "Processing"
+      waiting: "Waiting"
   activerecord:
     attributes:
       email_account:

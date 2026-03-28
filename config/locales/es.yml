@@ -222,6 +222,14 @@ es:
       not_found: "Sincronización no encontrada"
       unexpected_error: "Ocurrió un error inesperado. Por favor intenta nuevamente."
 
+  # Budgets
+  budgets:
+    periods:
+      daily: "Diario"
+      weekly: "Semanal"
+      monthly: "Mensual"
+      yearly: "Anual"
+
   # Common
   common:
     loading: "Cargando..."

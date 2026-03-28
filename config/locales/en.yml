@@ -29,6 +29,12 @@
 
 en:
   hello: "Hello world"
+  budgets:
+    periods:
+      daily: "Daily"
+      weekly: "Weekly"
+      monthly: "Monthly"
+      yearly: "Yearly"
   expenses:
     flash:
       bulk_destroy_empty: "You must select at least one expense to delete."

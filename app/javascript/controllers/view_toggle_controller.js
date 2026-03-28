@@ -13,6 +13,7 @@ export default class extends Controller {
     "expandedIcon",
     "buttonText",
     "table",
+    "itemList",
     "compactColumns",
     "expandedColumns"
   ]
@@ -80,31 +81,35 @@ export default class extends Controller {
       column.classList.add('hidden')
       column.classList.add('md:hidden')
     })
-    
-    // Update row styling for compact mode
-    const rows = this.tableTarget.querySelectorAll('tbody tr')
+
+    // Resolve the list container: prefer itemList target (div-based), fall back to table
+    const listContainer = this.hasItemListTarget ? this.itemListTarget : (this.hasTableTarget ? this.tableTarget : null)
+    if (!listContainer) return
+
+    // Support both div-based items ([data-expense-item]) and legacy table rows (tbody tr)
+    const rows = listContainer.querySelectorAll('[data-expense-item], tbody tr')
     rows.forEach(row => {
       row.classList.add('h-12') // Reduced height
       row.classList.remove('h-16')
-      
+
       // Hide description lines in merchant column
       const descriptions = row.querySelectorAll('.expense-description')
       descriptions.forEach(desc => desc.classList.add('hidden'))
-      
+
       // Compact the category display
       const categoryFrames = row.querySelectorAll('[data-controller="category-confidence"]')
       categoryFrames.forEach(frame => {
         const badges = frame.querySelectorAll('.confidence-badge')
         badges.forEach(badge => badge.classList.add('hidden'))
       })
-      
+
       // Inline actions are hidden via CSS in compact mode
       // No JavaScript manipulation needed
     })
-    
-    // Add compact mode class to table
-    this.tableTarget.classList.add('compact-mode')
-    this.tableTarget.classList.remove('expanded-mode')
+
+    // Add compact mode class to list container
+    listContainer.classList.add('compact-mode')
+    listContainer.classList.remove('expanded-mode')
   }
 
   /**
@@ -116,31 +121,35 @@ export default class extends Controller {
     this.expandedColumnsTargets.forEach(column => {
       column.classList.remove('hidden', 'md:hidden')
     })
-    
-    // Update row styling for expanded mode
-    const rows = this.tableTarget.querySelectorAll('tbody tr')
+
+    // Resolve the list container: prefer itemList target (div-based), fall back to table
+    const listContainer = this.hasItemListTarget ? this.itemListTarget : (this.hasTableTarget ? this.tableTarget : null)
+    if (!listContainer) return
+
+    // Support both div-based items ([data-expense-item]) and legacy table rows (tbody tr)
+    const rows = listContainer.querySelectorAll('[data-expense-item], tbody tr')
     rows.forEach(row => {
       row.classList.remove('h-12')
       row.classList.add('h-16') // Standard height
-      
+
       // Show description lines in merchant column
       const descriptions = row.querySelectorAll('.expense-description')
       descriptions.forEach(desc => desc.classList.remove('hidden'))
-      
+
       // Expand the category display
       const categoryFrames = row.querySelectorAll('[data-controller="category-confidence"]')
       categoryFrames.forEach(frame => {
         const badges = frame.querySelectorAll('.confidence-badge')
         badges.forEach(badge => badge.classList.remove('hidden'))
       })
-      
+
       // Inline actions are shown via CSS in expanded mode
       // No JavaScript manipulation needed
     })
-    
-    // Add expanded mode class to table
-    this.tableTarget.classList.remove('compact-mode')
-    this.tableTarget.classList.add('expanded-mode')
+
+    // Add expanded mode class to list container
+    listContainer.classList.remove('compact-mode')
+    listContainer.classList.add('expanded-mode')
   }
 
   /**

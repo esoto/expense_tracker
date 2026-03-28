@@ -164,7 +164,8 @@ export default class extends Controller {
       }
 
       // Quick action shortcuts - only when a row is focused
-      if ((event.ctrlKey || event.metaKey) && document.activeElement.closest('tr')) {
+      // Support both div-based unified items ([data-expense-item]) and legacy table rows (tr)
+      if ((event.ctrlKey || event.metaKey) && (document.activeElement.closest('[data-expense-item]') || document.activeElement.closest('tr'))) {
         switch(event.key) {
           case 'e': // Edit
             event.preventDefault()
@@ -377,16 +378,17 @@ export default class extends Controller {
     }
     
     // Mark each expense row as an article
-    this.element.querySelectorAll('tbody tr').forEach((row, index) => {
+    // Support both div-based unified items ([data-expense-item]) and legacy table rows (tbody tr)
+    this.element.querySelectorAll('[data-expense-item], tbody tr').forEach((row, index) => {
       row.setAttribute('role', 'article')
       row.setAttribute('aria-posinset', index + 1)
       row.setAttribute('tabindex', '0')
-      
-      // Add descriptive label
-      const date = row.querySelector('td:first-child')?.textContent.trim()
-      const merchant = row.querySelector('td:nth-child(2)')?.textContent.trim()
-      const amount = row.querySelector('td:nth-child(4)')?.textContent.trim()
-      
+
+      // Add descriptive label (works for both div items and table rows)
+      const date = (row.querySelector('td:first-child') || row.querySelector('[data-date]'))?.textContent.trim()
+      const merchant = (row.querySelector('td:nth-child(2)') || row.querySelector('[data-merchant]'))?.textContent.trim()
+      const amount = (row.querySelector('td:nth-child(4)') || row.querySelector('[data-amount]'))?.textContent.trim()
+
       if (date && merchant && amount) {
         row.setAttribute('aria-label', `Gasto: ${merchant} el ${date} por ${amount}`)
       }
@@ -507,7 +509,8 @@ export default class extends Controller {
   }
   
   triggerQuickAction(type) {
-    const focusedRow = document.activeElement.closest('tr')
+    // Support both div-based unified items ([data-expense-item]) and legacy table rows (tr)
+    const focusedRow = document.activeElement.closest('[data-expense-item]') || document.activeElement.closest('tr')
     if (!focusedRow) return
     
     const actionButton = focusedRow.querySelector(`button[data-action*="${type}"]`)

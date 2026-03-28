@@ -438,7 +438,7 @@ class ExpensesController < ApplicationController
         format.html { redirect_to duplicated_expense, notice: t("expenses.flash.duplicated") }
         format.turbo_stream do
           render turbo_stream: [
-            turbo_stream.prepend("expenses_table_body", partial: "expenses/expense_row", locals: { expense: duplicated_expense, categories: @categories }),
+            turbo_stream.prepend("expenses_list_body", partial: "expenses/expense_item", locals: { expense: duplicated_expense, categories: @categories }),
             turbo_stream.update("flash_messages", partial: "shared/flash", locals: { notice: "Gasto duplicado exitosamente" })
           ]
         end

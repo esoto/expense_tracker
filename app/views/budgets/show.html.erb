@@ -17,7 +17,7 @@
       <div class="grid md:grid-cols-2 gap-4">
         <div>
           <p class="text-sm text-slate-500">Período</p>
-          <p class="font-medium text-slate-900"><%= @budget.period.humanize %></p>
+          <p class="font-medium text-slate-900"><%= t("budgets.periods.#{@budget.period}", default: @budget.period.humanize) %></p>
         </div>
 
         <div>

@@ -35,7 +35,7 @@
                   <%= email_account.bank_name %>
                 </td>
                 <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
-                  <%= email_account.provider.capitalize %>
+                  <%= t("email_accounts.providers.#{email_account.provider}", default: email_account.provider.capitalize) %>
                 </td>
                 <td class="whitespace-nowrap px-3 py-4 text-sm">
                   <% if email_account.active? %>

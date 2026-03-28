@@ -240,6 +240,62 @@ RSpec.describe AdminAuthentication, type: :controller, unit: true do
 
       expect(session[:return_to]).to be_nil
     end
+
+    describe "#redirect_back_or path validation (PER-219)", unit: true do
+      context "when session[:return_to] is a valid admin path" do
+        it "redirects to the stored admin path" do
+          session[:return_to] = '/admin/patterns'
+          expect(controller).to receive(:redirect_to).with('/admin/patterns')
+          controller.send(:redirect_back_or, '/admin')
+        end
+
+        it "clears session[:return_to] after redirect" do
+          session[:return_to] = '/admin/patterns'
+          allow(controller).to receive(:redirect_to)
+          controller.send(:redirect_back_or, '/admin')
+          expect(session[:return_to]).to be_nil
+        end
+      end
+
+      context "when session[:return_to] is /login (PER-219 regression — non-existent route)" do
+        it "ignores /login and redirects to the default admin path instead" do
+          session[:return_to] = '/login'
+          expect(controller).to receive(:redirect_to).with('/admin')
+          controller.send(:redirect_back_or, '/admin')
+        end
+
+        it "clears the invalid return_to from session" do
+          session[:return_to] = '/login'
+          allow(controller).to receive(:redirect_to)
+          controller.send(:redirect_back_or, '/admin')
+          expect(session[:return_to]).to be_nil
+        end
+      end
+
+      context "when session[:return_to] is a non-admin path" do
+        it "ignores the non-admin path and redirects to the default" do
+          session[:return_to] = '/expenses'
+          expect(controller).to receive(:redirect_to).with('/admin')
+          controller.send(:redirect_back_or, '/admin')
+        end
+      end
+
+      context "when session[:return_to] contains an external URL (open redirect prevention)" do
+        it "ignores the external URL and redirects to the default" do
+          session[:return_to] = 'https://evil.com/steal-tokens'
+          expect(controller).to receive(:redirect_to).with('/admin')
+          controller.send(:redirect_back_or, '/admin')
+        end
+      end
+
+      context "when session[:return_to] is nil" do
+        it "redirects to the provided default path" do
+          session[:return_to] = nil
+          expect(controller).to receive(:redirect_to).with('/admin/patterns')
+          controller.send(:redirect_back_or, '/admin/patterns')
+        end
+      end
+    end
   end
 
   describe "audit logging", unit: true do

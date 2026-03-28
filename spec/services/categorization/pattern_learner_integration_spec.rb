@@ -236,6 +236,10 @@ RSpec.describe "Pattern Learning Integration", type: :integration do
     let(:metrics_learner) { Services::Categorization::PatternLearner.new }
 
     before do
+      # Ensure no stale pattern data leaks from earlier tests in other files
+      PatternLearningEvent.delete_all
+      CategorizationPattern.delete_all
+
       # Perform various learning operations with unique merchants
       10.times do |i|
         expense = create(:expense,

@@ -83,10 +83,14 @@ RSpec.describe "Api::V1::Categorization", type: :request, integration: true do
       end
     end
 
-    it "returns 401 without authentication" do
-      post "/api/v1/categorization/suggest", params: {}.to_json
+    context "without authentication" do
+      before { reset! }
 
-      expect(response).to have_http_status(:unauthorized)
+      it "returns 401" do
+        post "/api/v1/categorization/suggest", params: {}.to_json
+
+        expect(response).to have_http_status(:unauthorized)
+      end
     end
   end
 

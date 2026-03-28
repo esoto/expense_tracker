@@ -136,7 +136,7 @@ RSpec.describe Services::DashboardService, integration: true do
         expect(total - baseline).to eq(100.0)
       end
 
-      it 'calculates last_month_total correctly', :unit do
+      it 'calculates last_month_total correctly' do
         baseline = service.send(:calculate_totals)[:last_month_total]
 
         create(:expense, amount: 100.0, transaction_date: Date.current, category: category, email_account: email_account)

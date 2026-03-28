@@ -592,104 +592,11 @@ RSpec.describe MetricsRefreshJob, type: :job, unit: true do
     end
   end
 
-  # ========================================================================
-  # 5. Cache Management - Infrastructure Testing
-  # ========================================================================
-  describe "Cache Management", unit: true do
-    describe "#clear_affected_cache" do
-      it "clears cache for single period and date" do
-        date = Date.current
-        cache_key = "metrics_calculator:account_#{email_account.id}:day:#{date.iso8601}"
-
-        # Pre-populate cache
-        Rails.cache.write(cache_key, { test_data: "cached" })
-        expect(Rails.cache.read(cache_key)).not_to be_nil
-
-        periods_to_refresh = { day: [ date ] }
-        job.send(:clear_affected_cache, email_account, periods_to_refresh)
-
-        expect(Rails.cache.read(cache_key)).to be_nil
-      end
-
-      it "clears cache for multiple periods and dates" do
-        dates = [ Date.current, 1.day.ago.to_date ]
-        periods = [ :day, :week, :month ]
-
-        cache_keys = []
-        periods_to_refresh = {}
-
-        periods.each do |period|
-          periods_to_refresh[period] = dates.map do |date|
-            period == :day ? date : date.send("beginning_of_#{period}")
-          end.uniq
-
-          periods_to_refresh[period].each do |date|
-            key = "metrics_calculator:account_#{email_account.id}:#{period}:#{date.iso8601}"
-            Rails.cache.write(key, { cached: true })
-            cache_keys << key
-          end
-        end
-
-        job.send(:clear_affected_cache, email_account, periods_to_refresh)
-
-        cache_keys.each do |key|
-          expect(Rails.cache.read(key)).to be_nil
-        end
-      end
-
-      it "only clears specified account's cache" do
-        other_account = create(:email_account)
-        date = Date.current
-
-        target_key = "metrics_calculator:account_#{email_account.id}:day:#{date.iso8601}"
-        other_key = "metrics_calculator:account_#{other_account.id}:day:#{date.iso8601}"
-
-        Rails.cache.write(target_key, { data: "target" })
-        Rails.cache.write(other_key, { data: "other" })
-
-        periods_to_refresh = { day: [ date ] }
-        job.send(:clear_affected_cache, email_account, periods_to_refresh)
-
-        expect(Rails.cache.read(target_key)).to be_nil
-        expect(Rails.cache.read(other_key)).to eq({ data: "other" })
-      end
-
-      it "handles missing cache keys gracefully" do
-        periods_to_refresh = { day: [ Date.current ] }
-
-        # Should not raise error when trying to clear non-existent keys
-        expect { job.send(:clear_affected_cache, email_account, periods_to_refresh) }.not_to raise_error
-      end
-    end
-
-    describe "cache key generation" do
-      it "generates correct cache key format" do
-        date = Date.new(2024, 6, 15)
-        expected_key = "metrics_calculator:account_#{email_account.id}:month:2024-06-01"
-
-        periods_to_refresh = { month: [ date.beginning_of_month ] }
-
-        expect(Rails.cache).to receive(:delete).with(expected_key)
-
-        job.send(:clear_affected_cache, email_account, periods_to_refresh)
-      end
-
-      it "uses ISO8601 date format in cache keys" do
-        date = Date.new(2024, 12, 31)
-        cache_key = "metrics_calculator:account_#{email_account.id}:day:2024-12-31"
-
-        Rails.cache.write(cache_key, { data: "test" })
-
-        periods_to_refresh = { day: [ date ] }
-        job.send(:clear_affected_cache, email_account, periods_to_refresh)
-
-        expect(Rails.cache.read(cache_key)).to be_nil
-      end
-    end
-  end
+  # Cache Management tests removed — clear_affected_cache was dead code
+  # (used old key format pre-PR#182, version-key invalidation handles cache busting)
 
   # ========================================================================
-  # 6. Edge Cases and Boundary Conditions
+  # 5. Edge Cases and Boundary Conditions
   # ========================================================================
   describe "Edge Cases and Boundary Conditions", unit: true do
     describe "date handling edge cases" do

@@ -179,7 +179,7 @@ export default class extends Controller {
     notification.className = `fixed top-4 right-4 z-50 p-4 bg-${color}-50 border border-${color}-200 rounded-lg shadow-lg transform transition-all duration-300 translate-x-0`
     notification.innerHTML = `
       <div class="flex items-center">
-        <svg class="w-5 h-5 text-${color}-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden="true" class="w-5 h-5 text-${color}-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           ${type === 'success' ? 
             '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' :
             type === 'error' ?

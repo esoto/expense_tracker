@@ -68,7 +68,7 @@ export default class extends Controller {
       this.testResultTarget.innerHTML = `
         <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
           <div class="flex items-center">
-            <svg class="w-5 h-5 text-emerald-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" class="w-5 h-5 text-emerald-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <span class="text-sm font-medium text-emerald-700">¡El patrón coincide!</span>
@@ -79,7 +79,7 @@ export default class extends Controller {
       this.testResultTarget.innerHTML = `
         <div class="p-3 bg-rose-50 border border-rose-200 rounded-lg">
           <div class="flex items-center">
-            <svg class="w-5 h-5 text-rose-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" class="w-5 h-5 text-rose-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <span class="text-sm font-medium text-rose-700">Sin coincidencia</span>

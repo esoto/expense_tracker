@@ -703,7 +703,7 @@ export default class extends Controller {
       case 'processing':
       case 'running':
         element.innerHTML = `
-          <svg class="animate-spin h-4 w-4 text-teal-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <svg aria-hidden="true" class="animate-spin h-4 w-4 text-teal-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
@@ -711,14 +711,14 @@ export default class extends Controller {
         break
       case 'completed':
         element.innerHTML = `
-          <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
           </svg>
         `
         break
       case 'failed':
         element.innerHTML = `
-          <svg class="h-4 w-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" class="h-4 w-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
         `
@@ -788,7 +788,7 @@ export default class extends Controller {
     // Update button UI
     if (this.hasPauseButtonTarget) {
       this.pauseButtonTarget.innerHTML = `
-        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden="true" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
@@ -826,7 +826,7 @@ export default class extends Controller {
     // Update button UI
     if (this.hasPauseButtonTarget) {
       this.pauseButtonTarget.innerHTML = `
-        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden="true" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
         Pausar
@@ -1249,7 +1249,7 @@ export default class extends Controller {
     indicator.id = 'polling-indicator'
     indicator.className = 'fixed bottom-4 left-4 px-3 py-2 bg-amber-100 text-amber-700 rounded-lg text-sm flex items-center space-x-2 shadow-sm border border-amber-200'
     indicator.innerHTML = `
-      <svg class="animate-pulse h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg aria-hidden="true" class="animate-pulse h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
       </svg>
       <span>Modo de actualización periódica</span>

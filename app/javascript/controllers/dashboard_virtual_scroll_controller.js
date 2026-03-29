@@ -959,7 +959,7 @@ export default class extends Controller {
     indicator.className = 'fixed bottom-4 left-4 px-3 py-2 bg-teal-50 text-teal-700 text-sm rounded-lg shadow-md z-40'
     indicator.innerHTML = `
       <div class="flex items-center space-x-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"></path>
         </svg>
         <span>Posición restaurada</span>

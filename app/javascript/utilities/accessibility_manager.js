@@ -246,7 +246,7 @@ export default class AccessibilityManager {
           <button type="button" 
                   class="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
                   aria-label="Cerrar ayuda">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
           </button>

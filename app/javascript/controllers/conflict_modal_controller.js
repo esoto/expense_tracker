@@ -50,7 +50,7 @@ export default class extends Controller {
     notification.className = 'fixed top-4 right-4 z-50 p-4 bg-rose-50 border border-rose-200 rounded-lg shadow-lg'
     notification.innerHTML = `
       <div class="flex items-center">
-        <svg class="w-5 h-5 text-rose-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden="true" class="w-5 h-5 text-rose-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
         <span class="text-rose-700">${message}</span>

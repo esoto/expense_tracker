@@ -630,7 +630,7 @@ module Services::Categorization
     # CacheVersioning concern, which handles both MemoryStore and
     # distributed cache backends (Redis/Memcache) safely.
     def increment_pattern_cache_version
-      atomic_cache_increment(PATTERN_VERSION_KEY, log_tag: "[PatternCache]")
+      atomic_cache_increment(PATTERN_VERSION_KEY, log_tag: "[PatternCache]", logger: @logger)
     end
 
     # Serialization methods for Redis storage

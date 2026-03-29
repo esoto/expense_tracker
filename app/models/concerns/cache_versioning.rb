@@ -33,7 +33,7 @@ module CacheVersioning
     # @param key [String] the version key to increment
     # @param log_tag [String] label used in error log messages (e.g. "[DashboardService]")
     # @return [Integer, nil] the new version value, or nil if an error occurs
-    def atomic_cache_increment(key, log_tag: name)
+    def atomic_cache_increment(key, log_tag: name, logger: Rails.logger)
       if Rails.cache.is_a?(ActiveSupport::Cache::MemoryStore)
         MEMORY_STORE_MUTEX.synchronize do
           current = Rails.cache.read(key) || 0
@@ -45,7 +45,7 @@ module CacheVersioning
           Rails.cache.write(key, 1)
       end
     rescue => e
-      Rails.logger.error "#{log_tag} Failed to increment cache version key #{key}: #{e.message}"
+      logger.error "#{log_tag} Failed to increment cache version key #{key}: #{e.message}"
       nil
     end
   end
@@ -54,8 +54,9 @@ module CacheVersioning
   #
   # @param key [String] the version key to increment
   # @param log_tag [String] label used in error log messages
+  # @param logger [Logger] logger instance (defaults to Rails.logger)
   # @return [Integer, nil]
-  def atomic_cache_increment(key, log_tag: self.class.name)
-    self.class.atomic_cache_increment(key, log_tag: log_tag)
+  def atomic_cache_increment(key, log_tag: self.class.name, logger: Rails.logger)
+    self.class.atomic_cache_increment(key, log_tag: log_tag, logger: logger)
   end
 end

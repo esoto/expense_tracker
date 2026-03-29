@@ -121,7 +121,7 @@ RSpec.describe CacheVersioning, type: :model, unit: true do
       end
 
       it "delegates to the class method" do
-        expect(host_class).to receive(:atomic_cache_increment).with(test_key, log_tag: "TestHostClass")
+        expect(host_class).to receive(:atomic_cache_increment).with(test_key, log_tag: "TestHostClass", logger: Rails.logger)
         host_instance.atomic_cache_increment(test_key)
       end
 

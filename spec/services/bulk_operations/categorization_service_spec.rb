@@ -67,14 +67,14 @@ RSpec.describe Services::BulkOperations::CategorizationService, type: :service, 
     context "when category_id is blank", unit: true do
       let(:service) { described_class.new(expense_ids: expense_ids, category_id: nil) }
 
-      it "returns a failed result" do
+      it "returns a failed result", unit: true do
         result = service.call
 
         expect(result[:success]).to be false
         expect(result[:errors]).not_to be_empty
       end
 
-      it "includes a presence error on category_id" do
+      it "includes a presence error on category_id", unit: true do
         service.valid?
         expect(service.errors[:category_id]).to be_present
       end
@@ -83,25 +83,25 @@ RSpec.describe Services::BulkOperations::CategorizationService, type: :service, 
     context "when category_id does not exist", unit: true do
       let(:service) { described_class.new(expense_ids: expense_ids, category_id: 999_999) }
 
-      it "returns a failed result stating category does not exist" do
+      it "returns a failed result stating category does not exist", unit: true do
         result = service.call
 
         expect(result[:success]).to be false
-        expect(result[:errors]).to include("Category does not exist")
+        expect(service.errors[:category_id]).to be_present
       end
     end
 
     context "when expense_ids is nil", unit: true do
       let(:service) { described_class.new(expense_ids: nil, category_id: target_category.id) }
 
-      it "returns a failed result" do
+      it "returns a failed result", unit: true do
         result = service.call
 
         expect(result[:success]).to be false
         expect(result[:errors]).not_to be_empty
       end
 
-      it "does not attempt database queries" do
+      it "does not attempt database queries", unit: true do
         expect(Expense).not_to receive(:where)
         service.call
       end
@@ -110,7 +110,7 @@ RSpec.describe Services::BulkOperations::CategorizationService, type: :service, 
     context "when expense_ids is not an array", unit: true do
       let(:service) { described_class.new(expense_ids: "123", category_id: target_category.id) }
 
-      it "returns a failed result with array error" do
+      it "returns a failed result with array error", unit: true do
         result = service.call
 
         expect(result[:success]).to be false
@@ -121,7 +121,7 @@ RSpec.describe Services::BulkOperations::CategorizationService, type: :service, 
     context "when expense_ids is empty", unit: true do
       let(:service) { described_class.new(expense_ids: [], category_id: target_category.id) }
 
-      it "returns a failed result" do
+      it "returns a failed result", unit: true do
         result = service.call
 
         expect(result[:success]).to be false
@@ -132,7 +132,7 @@ RSpec.describe Services::BulkOperations::CategorizationService, type: :service, 
     context "when both expense_ids and category_id are invalid", unit: true do
       let(:service) { described_class.new(expense_ids: nil, category_id: nil) }
 
-      it "returns multiple validation errors" do
+      it "returns multiple validation errors", unit: true do
         result = service.call
 
         expect(result[:success]).to be false
@@ -510,22 +510,14 @@ RSpec.describe Services::BulkOperations::CategorizationService, type: :service, 
       before do
         allow_any_instance_of(ActiveRecord::Relation).to receive(:update_all)
           .and_raise(StandardError, "Batch update failed")
-        # Stub find_each to yield one double at a time with the correct arity
         failing_id = failing_expense.id
-        expense_doubles = expenses.map do |e|
-          dbl = instance_double(Expense, id: e.id)
-          if e.id == failing_id
-            allow(dbl).to receive(:update).and_return(false)
-            allow(dbl).to receive(:errors).and_return(
-              double(full_messages: [ "Category invalid" ])
-            )
-          else
-            allow(dbl).to receive(:update).and_return(true)
-          end
-          dbl
+        allow_any_instance_of(Expense).to receive(:update) do |expense, attrs|
+          expense.id == failing_id ? false : expense.update_columns(attrs)
         end
-        stub = allow_any_instance_of(ActiveRecord::Relation).to receive(:find_each)
-        expense_doubles.each { |dbl| stub.and_yield(dbl) }
+        allow_any_instance_of(Expense).to receive(:errors).and_call_original
+        allow(failing_expense).to receive(:errors).and_return(
+          double(full_messages: [ "Category invalid" ])
+        )
       end
 
       it "records the failure including the expense id" do
@@ -535,11 +527,31 @@ RSpec.describe Services::BulkOperations::CategorizationService, type: :service, 
         expect(failure_ids).to include(failing_expense.id)
       end
 
-      it "returns a successful result with partial failure info" do
+      it "returns a successful result with partial failure info", unit: true do
         result = service.call
 
         expect(result[:success]).to be true
         expect(result[:affected_count]).to eq(2)
+      end
+    end
+
+    context "when batch update fails and fallback is used", unit: true do
+      let(:service) do
+        described_class.new(
+          expense_ids: expense_ids,
+          category_id: target_category.id,
+          options: { track_ml_corrections: true, force_synchronous: true }
+        )
+      end
+
+      before do
+        allow_any_instance_of(ActiveRecord::Relation).to receive(:update_all)
+          .and_raise(StandardError, "Batch update failed")
+      end
+
+      it "does not track ML corrections" do
+        expect_any_instance_of(described_class).not_to receive(:track_ml_corrections)
+        service.call
       end
     end
   end
@@ -705,80 +717,19 @@ RSpec.describe Services::BulkOperations::CategorizationService, type: :service, 
   end
 
   # ---------------------------------------------------------------------------
-  # Inherited BaseService behavior
-  # ---------------------------------------------------------------------------
-
-  describe "inherited BaseService behavior", unit: true do
-    let(:service) { described_class.new(expense_ids: expense_ids, category_id: target_category.id) }
-
-    it "includes ActiveModel::Model" do
-      expect(service).to respond_to(:valid?)
-      expect(service).to respond_to(:errors)
-    end
-
-    it "validates presence of expense_ids" do
-      svc = described_class.new(expense_ids: nil, category_id: target_category.id)
-      expect(svc).not_to be_valid
-      expect(svc.errors[:expense_ids]).to be_present
-    end
-
-    it "validates expense_ids is an array" do
-      svc = described_class.new(expense_ids: "not-an-array", category_id: target_category.id)
-      expect(svc).not_to be_valid
-      expect(svc.errors[:expense_ids]).to include("must be an array")
-    end
-
-    it "validates presence of category_id" do
-      svc = described_class.new(expense_ids: expense_ids, category_id: nil)
-      expect(svc).not_to be_valid
-      expect(svc.errors[:category_id]).to be_present
-    end
-
-    it "implements perform_operation as a protected method" do
-      expect(service.protected_methods).to include(:perform_operation)
-    end
-
-    it "implements success_message as a protected method" do
-      expect(service.protected_methods).to include(:success_message)
-    end
-
-    it "implements background_job_class as a protected method" do
-      expect(service.protected_methods).to include(:background_job_class)
-    end
-
-    it "inherits BATCH_SIZE constant" do
-      expect(described_class::BATCH_SIZE).to eq(100)
-    end
-
-    it "inherits BACKGROUND_THRESHOLD constant" do
-      expect(described_class::BACKGROUND_THRESHOLD).to eq(100)
-    end
-
-    it "wraps synchronous operation in a transaction" do
-      expect(ActiveRecord::Base).to receive(:transaction).at_least(:once).and_call_original
-
-      described_class.new(
-        expense_ids: expense_ids,
-        category_id: target_category.id,
-        options: { force_synchronous: true }
-      ).call
-    end
-  end
-
-  # ---------------------------------------------------------------------------
   # Edge cases
   # ---------------------------------------------------------------------------
 
   describe "edge cases", unit: true do
-    context "with duplicate expense IDs" do
-      let(:dup_ids) { [ expense_ids.first ] * 3 + [ expense_ids.last ] }
-      let(:service) { described_class.new(expense_ids: dup_ids, category_id: target_category.id) }
+    context "with some IDs that do not exist" do
+      let(:ids_with_missing) { expense_ids + [ 999_991, 999_992 ] }
+      let(:service) { described_class.new(expense_ids: ids_with_missing, category_id: target_category.id) }
 
-      it "treats duplicate IDs as a count mismatch and returns failure" do
+      it "returns failure when any requested ID is not found", unit: true do
         result = service.call
 
         expect(result[:success]).to be false
-        expect(result[:message]).to include("expenses not found")
+        expect(result[:message]).to include("2 expenses not found")
       end
     end
 

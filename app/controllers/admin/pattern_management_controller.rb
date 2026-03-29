@@ -53,9 +53,25 @@ class Admin::PatternManagementController < Admin::BaseController
   def toggle_active
     @pattern = CategorizationPattern.find(params[:id])
     @pattern.update!(active: !@pattern.active)
+    log_admin_action("pattern_toggled", pattern_id: @pattern.id, active: @pattern.active)
 
     respond_to do |format|
-      format.turbo_stream { render "admin/patterns/toggle_active" }
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.replace(
+            dom_id(@pattern, :row),
+            partial: "admin/patterns/pattern_row",
+            locals: { pattern: @pattern }
+          ),
+          turbo_stream.replace(
+            "flash",
+            partial: "shared/flash",
+            locals: {
+              notice: @pattern.active? ? t(".pattern_activated") : t(".pattern_deactivated")
+            }
+          )
+        ]
+      end
       format.html { redirect_to admin_patterns_path }
     end
   end

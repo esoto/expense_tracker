@@ -90,6 +90,10 @@ en:
       breadcrumb:
         new: "New"
         edit: "Edit"
+    pattern_management:
+      toggle_active:
+        pattern_activated: "Pattern activated"
+        pattern_deactivated: "Pattern deactivated"
   activerecord:
     attributes:
       email_account:

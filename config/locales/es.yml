@@ -330,6 +330,10 @@ es:
         user: "Usuario"
         system: "Sistema"
         no_patterns: "No hay patrones componentes asociados."
+    pattern_management:
+      toggle_active:
+        pattern_activated: "Patrón activado"
+        pattern_deactivated: "Patrón desactivado"
 
   # ActiveRecord attribute translations
   activerecord:

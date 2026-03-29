@@ -55,7 +55,22 @@ class Admin::PatternManagementController < Admin::BaseController
     @pattern.update!(active: !@pattern.active)
 
     respond_to do |format|
-      format.turbo_stream { render "admin/patterns/toggle_active" }
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.replace(
+            ActionView::RecordIdentifier.dom_id(@pattern, :row),
+            partial: "admin/patterns/pattern_row",
+            locals: { pattern: @pattern }
+          ),
+          turbo_stream.replace(
+            "flash",
+            partial: "shared/flash",
+            locals: {
+              notice: @pattern.active? ? "Pattern activated" : "Pattern deactivated"
+            }
+          )
+        ]
+      end
       format.html { redirect_to admin_patterns_path }
     end
   end

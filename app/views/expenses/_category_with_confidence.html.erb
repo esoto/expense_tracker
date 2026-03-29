@@ -55,7 +55,7 @@
                 data-category-confidence-target="correctionTrigger"
                 title="Corregir categoría (Presiona 'C')"
                 aria-label="Corregir categoría">
-          <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
           </svg>
         </button>
@@ -85,7 +85,7 @@
                           class: "inline-flex items-center justify-center w-6 h-6 bg-emerald-600 text-white rounded hover:bg-emerald-700",
                           title: "Aceptar sugerencia",
                           data: { turbo_frame: "expense_#{expense.id}_category" } do %>
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
               </svg>
             <% end %>
@@ -97,7 +97,7 @@
                             turbo_frame: "expense_#{expense.id}_category",
                             action: "click->category-confidence#showCorrection"
                           } do %>
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
               </svg>
             <% end %>

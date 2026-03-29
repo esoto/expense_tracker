@@ -402,7 +402,7 @@ export default class extends Controller {
     toast.className = 'fixed bottom-4 right-4 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg shadow-lg z-50'
     toast.innerHTML = `
       <div class="flex items-center gap-2">
-        <svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden="true" class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
         <span>${message}</span>
@@ -472,7 +472,7 @@ export default class extends Controller {
     const indicator = document.createElement('div')
     indicator.className = 'inline-flex items-center px-2 py-1 bg-teal-50 text-teal-700 text-xs rounded-full ml-2'
     indicator.innerHTML = `
-      <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg aria-hidden="true" class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
       </svg>
       Filtros restaurados

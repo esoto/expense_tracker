@@ -181,7 +181,7 @@ export default class extends Controller {
     this.restoreNotificationTarget.innerHTML = `
       <div class="flex items-center justify-between p-3 bg-teal-50 border border-teal-200 rounded-lg">
         <div class="flex items-center space-x-2">
-          <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
           <span class="text-sm text-teal-800">${message}</span>
@@ -254,7 +254,7 @@ export default class extends Controller {
     notification.innerHTML = `
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-2">
-          <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
           </svg>
           <span class="text-sm text-amber-800">
@@ -446,7 +446,7 @@ export default class extends Controller {
     notification.className = 'fixed bottom-4 right-4 p-3 bg-slate-50 border border-slate-200 rounded-lg shadow-lg z-50'
     notification.innerHTML = `
       <div class="flex items-center space-x-2">
-        <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden="true" class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
         </svg>
         <span class="text-sm text-slate-700">Filtros actualizados desde otra pestaña</span>
@@ -547,7 +547,7 @@ export default class extends Controller {
     if (hasFilters) {
       this.persistenceIndicatorTarget.innerHTML = `
         <div class="flex items-center space-x-1 text-xs text-teal-600">
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
           </svg>
           <span>${filterCount} filtros guardados</span>

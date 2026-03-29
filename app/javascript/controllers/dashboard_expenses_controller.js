@@ -955,7 +955,7 @@ export default class extends Controller {
           <div class="bulk-modal-header bg-rose-50 border-rose-200">
             <h3 class="text-lg font-semibold text-rose-900">Confirmar Eliminación</h3>
             <button type="button" class="bulk-modal-close" data-action="click->dashboard-expenses#closeBulkModal">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
               </svg>
             </button>
@@ -1113,7 +1113,7 @@ export default class extends Controller {
               <div class="bulk-modal-header bg-teal-50 border-teal-200">
                 <h3 class="text-lg font-semibold text-teal-900">Categorizar Gastos</h3>
                 <button type="button" class="bulk-modal-close" data-action="click->dashboard-expenses#closeBulkModal">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                   </svg>
                 </button>
@@ -1271,7 +1271,7 @@ export default class extends Controller {
           <div class="bulk-modal-header bg-amber-50 border-amber-200">
             <h3 class="text-lg font-semibold text-amber-900">Actualizar Estado</h3>
             <button type="button" class="bulk-modal-close" data-action="click->dashboard-expenses#closeBulkModal">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
               </svg>
             </button>
@@ -1551,7 +1551,7 @@ export default class extends Controller {
         ${message}
       </div>
       <button type="button" class="ml-3 -mr-1 flex-shrink-0" onclick="this.parentElement.remove()">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
       </button>
@@ -1692,7 +1692,7 @@ export default class extends Controller {
             <button type="button"
                     class="p-1 text-slate-400 hover:text-slate-600 transition-colors"
                     data-action="click->undo-manager#dismiss">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
               </svg>
             </button>

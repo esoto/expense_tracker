@@ -205,8 +205,10 @@ export default class extends Controller {
         return false
       }
       
-      // Check if we're on the same page
-      if (data.url && data.url !== window.location.pathname) {
+      // Only restore when we are on the exact page where the filters were saved.
+      // Using !data.url as a guard means filters saved without a url (legacy entries)
+      // are not applied on arbitrary pages.
+      if (!data.url || data.url !== window.location.pathname) {
         return false
       }
       

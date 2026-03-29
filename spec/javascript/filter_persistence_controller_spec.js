@@ -294,6 +294,33 @@ describe("FilterPersistenceController", () => {
       expect(assignSpy).not.toHaveBeenCalled()
     })
 
+    it("does NOT restore when stored filters have no url field (PER-236 guard)", () => {
+      // Filters saved by legacy code or a missing url field must not restore on
+      // arbitrary pages — this was the root cause of the PER-236 redirect bug.
+      const stored = {
+        filters: { category: "Supermercado" },
+        timestamp: Date.now()
+        // url is intentionally absent
+      }
+      sessionStorage.setItem("expense_filters", JSON.stringify(stored))
+
+      const assignSpy = jest.fn()
+      Object.defineProperty(window, "location", {
+        value: {
+          search: "",
+          pathname: "/expenses",
+          href: "http://localhost/expenses",
+          set href(url) { assignSpy(url) }
+        },
+        writable: true
+      })
+
+      buildDOM()
+      startApplication()
+
+      expect(assignSpy).not.toHaveBeenCalled()
+    })
+
     it("clears stored filters when they are expired", () => {
       const expired = {
         filters: { category: "Supermercado" },

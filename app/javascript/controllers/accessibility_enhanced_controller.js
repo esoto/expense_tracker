@@ -108,7 +108,7 @@ export default class extends Controller {
       liveRegion.className = 'sr-only'
       liveRegion.setAttribute('data-accessibility-enhanced-target', 'liveRegion')
       document.body.appendChild(liveRegion)
-      this.liveRegionTarget = liveRegion
+      this._liveRegion = liveRegion
     }
     
     // Create assertive region for urgent announcements
@@ -464,7 +464,7 @@ export default class extends Controller {
    * Announce message to screen readers
    */
   announce(message, priority = 'polite') {
-    const region = priority === 'assertive' ? this.assertiveRegion : this.liveRegionTarget
+    const region = priority === 'assertive' ? this.assertiveRegion : (this._liveRegion || (this.hasLiveRegionTarget ? this.liveRegionTarget : null))
     
     if (region) {
       region.textContent = message

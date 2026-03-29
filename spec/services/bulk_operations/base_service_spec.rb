@@ -3,8 +3,10 @@
 require "rails_helper"
 
 # Concrete subclass for testing the abstract BaseService.
+# Named TestBulkServiceBase to avoid collision with the TestBulkService
+# defined in the main-branch spec when both files load in the same RSpec run.
 # Implements all abstract methods so we can exercise the base class logic directly.
-class TestBulkService < Services::BulkOperations::BaseService
+class TestBulkServiceBase < Services::BulkOperations::BaseService
   attr_reader :last_operated_expenses
 
   def perform_operation(expenses)
@@ -21,7 +23,7 @@ class TestBulkService < Services::BulkOperations::BaseService
   end
 end
 
-# Minimal job stub used as the background_job_class for TestBulkService.
+# Minimal job stub used as the background_job_class for TestBulkServiceBase.
 # Defined at the class level so instance_double works in specs.
 class FakeBackgroundJob
   def self.perform_later(**_args)
@@ -43,11 +45,7 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
   # Constants
   # ---------------------------------------------------------------------------
 
-  describe "constants", unit: true do
-    it "defines BATCH_SIZE as 100" do
-      expect(described_class::BATCH_SIZE).to eq(100)
-    end
-
+  describe "constants" do
     it "defines BACKGROUND_THRESHOLD as 100" do
       expect(described_class::BACKGROUND_THRESHOLD).to eq(100)
     end
@@ -57,41 +55,41 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
   # #initialize
   # ---------------------------------------------------------------------------
 
-  describe "#initialize", unit: true do
+  describe "#initialize" do
     it "sets expense_ids" do
-      service = TestBulkService.new(expense_ids: expense_ids)
+      service = TestBulkServiceBase.new(expense_ids: expense_ids)
 
       expect(service.expense_ids).to eq(expense_ids)
     end
 
     it "sets user when provided" do
       user = double("User", id: 1)
-      service = TestBulkService.new(expense_ids: expense_ids, user: user)
+      service = TestBulkServiceBase.new(expense_ids: expense_ids, user: user)
 
       expect(service.user).to eq(user)
     end
 
     it "defaults user to nil when not provided" do
-      service = TestBulkService.new(expense_ids: expense_ids)
+      service = TestBulkServiceBase.new(expense_ids: expense_ids)
 
       expect(service.user).to be_nil
     end
 
     it "sets options when provided" do
       opts = { force_synchronous: true, broadcast_updates: false }
-      service = TestBulkService.new(expense_ids: expense_ids, options: opts)
+      service = TestBulkServiceBase.new(expense_ids: expense_ids, options: opts)
 
       expect(service.options).to eq(opts)
     end
 
     it "defaults options to empty hash when not provided" do
-      service = TestBulkService.new(expense_ids: expense_ids)
+      service = TestBulkServiceBase.new(expense_ids: expense_ids)
 
       expect(service.options).to eq({})
     end
 
     it "initializes results hash with default values" do
-      service = TestBulkService.new(expense_ids: expense_ids)
+      service = TestBulkServiceBase.new(expense_ids: expense_ids)
 
       expect(service.results).to include(
         success: false,
@@ -103,11 +101,11 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
     end
 
     it "initializes with nil expense_ids without raising" do
-      expect { TestBulkService.new(expense_ids: nil) }.not_to raise_error
+      expect { TestBulkServiceBase.new(expense_ids: nil) }.not_to raise_error
     end
 
     it "initializes with non-array expense_ids without raising" do
-      expect { TestBulkService.new(expense_ids: "not-an-array") }.not_to raise_error
+      expect { TestBulkServiceBase.new(expense_ids: "not-an-array") }.not_to raise_error
     end
   end
 
@@ -115,54 +113,54 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
   # Validation: expense_ids_must_be_array
   # ---------------------------------------------------------------------------
 
-  describe "expense_ids_must_be_array validation", unit: true do
+  describe "expense_ids_must_be_array validation" do
     it "is invalid when expense_ids is a string" do
-      service = TestBulkService.new(expense_ids: "invalid")
+      service = TestBulkServiceBase.new(expense_ids: "invalid")
 
       expect(service).not_to be_valid
       expect(service.errors[:expense_ids]).to include("must be an array")
     end
 
     it "is invalid when expense_ids is an integer" do
-      service = TestBulkService.new(expense_ids: 123)
+      service = TestBulkServiceBase.new(expense_ids: 123)
 
       expect(service).not_to be_valid
       expect(service.errors[:expense_ids]).to include("must be an array")
     end
 
     it "is invalid when expense_ids is a hash" do
-      service = TestBulkService.new(expense_ids: { id: 1 })
+      service = TestBulkServiceBase.new(expense_ids: { id: 1 })
 
       expect(service).not_to be_valid
       expect(service.errors[:expense_ids]).to include("must be an array")
     end
 
     it "is valid when expense_ids is an array" do
-      service = TestBulkService.new(expense_ids: expense_ids)
+      service = TestBulkServiceBase.new(expense_ids: expense_ids)
 
       service.valid?
       expect(service.errors[:expense_ids]).not_to include("must be an array")
     end
 
     it "is invalid when expense_ids is nil (fails presence and array check)" do
-      service = TestBulkService.new(expense_ids: nil)
+      service = TestBulkServiceBase.new(expense_ids: nil)
 
       expect(service).not_to be_valid
       # nil fails presence validation; array check only adds when non-nil non-array
     end
 
     it "returns failure with array error message when called with non-array" do
-      result = TestBulkService.new(expense_ids: "string").call
+      result = TestBulkServiceBase.new(expense_ids: "string").call
 
       expect(result[:success]).to be false
       expect(result[:errors]).to include("Expense ids must be an array")
     end
 
     it "returns failure with presence error message when called with nil" do
-      result = TestBulkService.new(expense_ids: nil).call
+      result = TestBulkServiceBase.new(expense_ids: nil).call
 
       expect(result[:success]).to be false
-      expect(result[:errors]).not_to be_empty
+      expect(result[:errors]).to include("Expense ids no puede estar en blanco")
     end
   end
 
@@ -170,47 +168,47 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
   # Private method: should_process_in_background?
   # ---------------------------------------------------------------------------
 
-  describe "should_process_in_background? threshold logic", unit: true do
+  describe "should_process_in_background? threshold logic" do
     let(:threshold) { described_class::BACKGROUND_THRESHOLD }
 
     it "processes in background when expense count equals threshold" do
       ids = Array.new(threshold) { |i| i + 1 }
-      service = TestBulkService.new(expense_ids: ids)
+      service = TestBulkServiceBase.new(expense_ids: ids)
 
       expect(service.send(:should_process_in_background?)).to be true
     end
 
     it "processes in background when expense count exceeds threshold" do
       ids = Array.new(threshold + 10) { |i| i + 1 }
-      service = TestBulkService.new(expense_ids: ids)
+      service = TestBulkServiceBase.new(expense_ids: ids)
 
       expect(service.send(:should_process_in_background?)).to be true
     end
 
     it "processes synchronously when expense count is below threshold" do
       ids = Array.new(threshold - 1) { |i| i + 1 }
-      service = TestBulkService.new(expense_ids: ids)
+      service = TestBulkServiceBase.new(expense_ids: ids)
 
       expect(service.send(:should_process_in_background?)).to be false
     end
 
     it "processes synchronously when force_synchronous is true even at threshold" do
       ids = Array.new(threshold) { |i| i + 1 }
-      service = TestBulkService.new(expense_ids: ids, options: { force_synchronous: true })
+      service = TestBulkServiceBase.new(expense_ids: ids, options: { force_synchronous: true })
 
       expect(service.send(:should_process_in_background?)).to be false
     end
 
     it "processes synchronously when force_synchronous is true above threshold" do
       ids = Array.new(threshold + 50) { |i| i + 1 }
-      service = TestBulkService.new(expense_ids: ids, options: { force_synchronous: true })
+      service = TestBulkServiceBase.new(expense_ids: ids, options: { force_synchronous: true })
 
       expect(service.send(:should_process_in_background?)).to be false
     end
 
     it "processes in background when force_synchronous is false at threshold" do
       ids = Array.new(threshold) { |i| i + 1 }
-      service = TestBulkService.new(expense_ids: ids, options: { force_synchronous: false })
+      service = TestBulkServiceBase.new(expense_ids: ids, options: { force_synchronous: false })
 
       expect(service.send(:should_process_in_background?)).to be true
     end
@@ -220,9 +218,9 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
   # Private method: process_synchronously
   # ---------------------------------------------------------------------------
 
-  describe "process_synchronously", unit: true do
+  describe "process_synchronously" do
     context "happy path — all expenses found" do
-      let(:service) { TestBulkService.new(expense_ids: expense_ids, options: { force_synchronous: true }) }
+      let(:service) { TestBulkServiceBase.new(expense_ids: expense_ids, options: { force_synchronous: true }) }
 
       it "returns success result" do
         result = service.call
@@ -247,17 +245,11 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
 
         expect(service.last_operated_expenses.map(&:id)).to match_array(expense_ids)
       end
-
-      it "wraps operation in a database transaction" do
-        expect(ActiveRecord::Base).to receive(:transaction).and_call_original
-
-        service.call
-      end
     end
 
     context "missing expenses path — not all IDs found" do
       let(:missing_ids) { expense_ids + [ 999_999 ] }
-      let(:service) { TestBulkService.new(expense_ids: missing_ids, options: { force_synchronous: true }) }
+      let(:service) { TestBulkServiceBase.new(expense_ids: missing_ids, options: { force_synchronous: true }) }
 
       it "returns failure" do
         result = service.call
@@ -287,7 +279,7 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
     end
 
     context "when perform_operation raises a StandardError" do
-      let(:service) { TestBulkService.new(expense_ids: expense_ids, options: { force_synchronous: true }) }
+      let(:service) { TestBulkServiceBase.new(expense_ids: expense_ids, options: { force_synchronous: true }) }
 
       before do
         allow(service).to receive(:perform_operation).and_raise(StandardError, "db write failed")
@@ -311,18 +303,42 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
         expect(result[:message]).to eq("Error processing operation")
       end
     end
+
+    context "when perform_operation raises after a partial write" do
+      it "rolls back the transaction so no partial writes persist" do
+        expense = expenses.first
+        original_description = expense.description
+
+        writing_service_class = Class.new(Services::BulkOperations::BaseService) do
+          def perform_operation(exps)
+            # Modify the first expense, then raise to trigger rollback
+            exps.first.update_columns(description: "MODIFIED_BY_PARTIAL_WRITE")
+            raise StandardError, "simulated failure after partial write"
+          end
+
+          def success_message(count) = "#{count} done"
+          def background_job_class = raise(NotImplementedError)
+        end
+
+        service = writing_service_class.new(expense_ids: expense_ids, options: { force_synchronous: true })
+        result = service.call
+
+        expect(result[:success]).to be false
+        expect(expense.reload.description).to eq(original_description)
+      end
+    end
   end
 
   # ---------------------------------------------------------------------------
   # Private method: enqueue_background_job
   # ---------------------------------------------------------------------------
 
-  describe "enqueue_background_job delegation", unit: true do
+  describe "enqueue_background_job delegation" do
     let(:threshold) { described_class::BACKGROUND_THRESHOLD }
     let(:large_ids) { Array.new(threshold) { |i| i + 1 } }
 
     it "delegates to background_job_class.perform_later" do
-      service = TestBulkService.new(expense_ids: large_ids)
+      service = TestBulkServiceBase.new(expense_ids: large_ids)
       job_double = instance_double(FakeBackgroundJob, job_id: "job-abc")
 
       expect(FakeBackgroundJob).to receive(:perform_later).with(
@@ -336,7 +352,7 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
 
     it "passes user_id from the user object" do
       user = double("User", id: 42)
-      service = TestBulkService.new(expense_ids: large_ids, user: user)
+      service = TestBulkServiceBase.new(expense_ids: large_ids, user: user)
       job_double = instance_double(FakeBackgroundJob, job_id: "job-abc")
 
       expect(FakeBackgroundJob).to receive(:perform_later).with(
@@ -350,7 +366,7 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
 
     it "passes options to the background job" do
       opts = { notify: true }
-      service = TestBulkService.new(expense_ids: large_ids, options: opts)
+      service = TestBulkServiceBase.new(expense_ids: large_ids, options: opts)
       job_double = instance_double(FakeBackgroundJob, job_id: "job-abc")
 
       expect(FakeBackgroundJob).to receive(:perform_later).with(
@@ -363,7 +379,7 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
     end
 
     it "returns success: true in the result" do
-      service = TestBulkService.new(expense_ids: large_ids)
+      service = TestBulkServiceBase.new(expense_ids: large_ids)
       allow(FakeBackgroundJob).to receive(:perform_later).and_return(
         instance_double(FakeBackgroundJob, job_id: "job-123")
       )
@@ -374,7 +390,7 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
     end
 
     it "returns background: true in the result" do
-      service = TestBulkService.new(expense_ids: large_ids)
+      service = TestBulkServiceBase.new(expense_ids: large_ids)
       allow(FakeBackgroundJob).to receive(:perform_later).and_return(
         instance_double(FakeBackgroundJob, job_id: "job-123")
       )
@@ -385,7 +401,7 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
     end
 
     it "returns the job_id from the enqueued job" do
-      service = TestBulkService.new(expense_ids: large_ids)
+      service = TestBulkServiceBase.new(expense_ids: large_ids)
       allow(FakeBackgroundJob).to receive(:perform_later).and_return(
         instance_double(FakeBackgroundJob, job_id: "job-xyz")
       )
@@ -396,7 +412,7 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
     end
 
     it "returns a message mentioning the expense count" do
-      service = TestBulkService.new(expense_ids: large_ids)
+      service = TestBulkServiceBase.new(expense_ids: large_ids)
       allow(FakeBackgroundJob).to receive(:perform_later).and_return(
         instance_double(FakeBackgroundJob, job_id: "job-123")
       )
@@ -408,7 +424,7 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
 
     context "when perform_later raises a StandardError" do
       it "returns failure with the error message" do
-        service = TestBulkService.new(expense_ids: large_ids)
+        service = TestBulkServiceBase.new(expense_ids: large_ids)
         allow(FakeBackgroundJob).to receive(:perform_later).and_raise(StandardError, "queue full")
 
         result = service.call
@@ -418,7 +434,7 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
       end
 
       it "logs the error" do
-        service = TestBulkService.new(expense_ids: large_ids)
+        service = TestBulkServiceBase.new(expense_ids: large_ids)
         allow(FakeBackgroundJob).to receive(:perform_later).and_raise(StandardError, "queue full")
 
         expect(Rails.logger).to receive(:error).with(/queue full/)
@@ -432,14 +448,14 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
   # Private method: find_authorized_expenses
   # ---------------------------------------------------------------------------
 
-  describe "find_authorized_expenses", unit: true do
+  describe "find_authorized_expenses" do
     context "without a user" do
       it "returns all matching expenses regardless of email_account" do
         other_account = create(:email_account)
         other_expenses = create_list(:expense, 2, email_account: other_account, category: category)
         all_ids = expense_ids + other_expenses.map(&:id)
 
-        service = TestBulkService.new(expense_ids: all_ids, user: nil, options: { force_synchronous: true })
+        service = TestBulkServiceBase.new(expense_ids: all_ids, user: nil, options: { force_synchronous: true })
         result = service.call
 
         expect(result[:success]).to be true
@@ -451,7 +467,7 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
       let(:user) { instance_double(AdminUser, id: 1) }
 
       it "does not scope expenses to email_accounts" do
-        service = TestBulkService.new(expense_ids: expense_ids, user: user, options: { force_synchronous: true })
+        service = TestBulkServiceBase.new(expense_ids: expense_ids, user: user, options: { force_synchronous: true })
         result = service.call
 
         expect(result[:success]).to be true
@@ -466,7 +482,7 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
         user = double("User", id: 99, email_accounts: EmailAccount.where(id: other_account.id))
 
         # Request expenses from email_account, but user only owns other_account
-        service = TestBulkService.new(expense_ids: expense_ids, user: user, options: { force_synchronous: true })
+        service = TestBulkServiceBase.new(expense_ids: expense_ids, user: user, options: { force_synchronous: true })
         result = service.call
 
         expect(result[:success]).to be false
@@ -476,7 +492,7 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
       it "returns expenses when user owns the correct email account" do
         user = double("User", id: 99, email_accounts: EmailAccount.where(id: email_account.id))
 
-        service = TestBulkService.new(expense_ids: expense_ids, user: user, options: { force_synchronous: true })
+        service = TestBulkServiceBase.new(expense_ids: expense_ids, user: user, options: { force_synchronous: true })
         result = service.call
 
         expect(result[:success]).to be true
@@ -489,8 +505,8 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
   # Private method: handle_error
   # ---------------------------------------------------------------------------
 
-  describe "handle_error", unit: true do
-    let(:service) { TestBulkService.new(expense_ids: expense_ids, options: { force_synchronous: true }) }
+  describe "handle_error" do
+    let(:service) { TestBulkServiceBase.new(expense_ids: expense_ids, options: { force_synchronous: true }) }
 
     it "logs the error message with Rails.logger.error" do
       allow(service).to receive(:perform_operation).and_raise(StandardError, "something exploded")
@@ -538,8 +554,8 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
   # Private method: process_operation_result
   # ---------------------------------------------------------------------------
 
-  describe "process_operation_result", unit: true do
-    let(:service) { TestBulkService.new(expense_ids: expense_ids, options: { force_synchronous: true }) }
+  describe "process_operation_result" do
+    let(:service) { TestBulkServiceBase.new(expense_ids: expense_ids, options: { force_synchronous: true }) }
 
     context "when perform_operation returns a Hash" do
       it "sets affected_count from success_count key" do
@@ -682,7 +698,7 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
   # Abstract methods: NotImplementedError contract
   # ---------------------------------------------------------------------------
 
-  describe "#perform_operation (abstract)", unit: true do
+  describe "#perform_operation (abstract)" do
     it "raises NotImplementedError when called on the base class directly" do
       service = described_class.new(expense_ids: expense_ids)
 
@@ -693,7 +709,7 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
     end
   end
 
-  describe "#background_job_class (abstract)", unit: true do
+  describe "#background_job_class (abstract)" do
     it "raises NotImplementedError when called on the base class directly" do
       service = described_class.new(expense_ids: expense_ids)
 
@@ -704,7 +720,7 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
     end
   end
 
-  describe "#success_message (base implementation)", unit: true do
+  describe "#success_message (base implementation)" do
     it "returns a string containing the count" do
       service = described_class.new(expense_ids: expense_ids)
 
@@ -724,27 +740,27 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
   # ActiveModel::Model inclusion
   # ---------------------------------------------------------------------------
 
-  describe "ActiveModel::Model integration", unit: true do
+  describe "ActiveModel::Model integration" do
     it "responds to valid?" do
-      service = TestBulkService.new(expense_ids: expense_ids)
+      service = TestBulkServiceBase.new(expense_ids: expense_ids)
 
       expect(service).to respond_to(:valid?)
     end
 
     it "responds to errors" do
-      service = TestBulkService.new(expense_ids: expense_ids)
+      service = TestBulkServiceBase.new(expense_ids: expense_ids)
 
       expect(service).to respond_to(:errors)
     end
 
     it "is valid with a proper array of expense_ids" do
-      service = TestBulkService.new(expense_ids: expense_ids)
+      service = TestBulkServiceBase.new(expense_ids: expense_ids)
 
       expect(service).to be_valid
     end
 
     it "is invalid without expense_ids" do
-      service = TestBulkService.new(expense_ids: nil)
+      service = TestBulkServiceBase.new(expense_ids: nil)
 
       expect(service).not_to be_valid
     end
@@ -754,9 +770,9 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
   # #call — top-level routing and edge cases
   # ---------------------------------------------------------------------------
 
-  describe "#call routing", unit: true do
+  describe "#call routing" do
     it "routes to process_synchronously when below threshold" do
-      service = TestBulkService.new(expense_ids: expense_ids)
+      service = TestBulkServiceBase.new(expense_ids: expense_ids)
 
       expect(service).to receive(:process_synchronously).and_call_original
 
@@ -765,7 +781,7 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
 
     it "routes to enqueue_background_job when at or above threshold" do
       large_ids = Array.new(described_class::BACKGROUND_THRESHOLD) { |i| i + 1 }
-      service = TestBulkService.new(expense_ids: large_ids)
+      service = TestBulkServiceBase.new(expense_ids: large_ids)
       allow(FakeBackgroundJob).to receive(:perform_later).and_return(
         instance_double(FakeBackgroundJob, job_id: "j1")
       )
@@ -778,14 +794,14 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
     it "short-circuits on validation failure before touching expenses" do
       expect(Expense).not_to receive(:where)
 
-      TestBulkService.new(expense_ids: nil).call
+      TestBulkServiceBase.new(expense_ids: nil).call
     end
 
-    it "returns failure for empty array (presence validation fails)" do
-      result = TestBulkService.new(expense_ids: []).call
+    it "returns failure for empty array (presence validation fails with blank error)" do
+      result = TestBulkServiceBase.new(expense_ids: []).call
 
       expect(result[:success]).to be false
-      expect(result[:errors]).not_to be_empty
+      expect(result[:errors]).to include("Expense ids no puede estar en blanco")
     end
   end
 end

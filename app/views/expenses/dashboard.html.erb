@@ -3,7 +3,7 @@
 <!-- Subscribe to Turbo Stream broadcasts for real-time updates -->
 <%= turbo_stream_from "dashboard_sync_updates" %>
 
-<div class="space-y-6">
+<div class="space-y-6 overflow-x-hidden">
   <!-- Header -->
   <div class="text-center">
     <h1 class="text-3xl font-bold text-slate-900">Dashboard de Gastos</h1>
@@ -169,6 +169,8 @@
 </div>
 </div>
 <% end %>
+
+<div class="overflow-x-hidden">
 
 <!-- Sync Status Widget -->
 <div class="mb-6">

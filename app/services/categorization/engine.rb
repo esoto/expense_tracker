@@ -545,6 +545,9 @@ module Services::Categorization
         calculate_duration(start_time)
       )
 
+      # Step 6.5: Record pattern usage for matched patterns
+      record_pattern_usage(best_match[:patterns], result, opts[:correlation_id])
+
       # Step 7: Auto-update expense if configured
       if opts[:auto_update] && result.high_confidence?
         if Rails.env.test?
@@ -727,6 +730,24 @@ module Services::Categorization
         update_expense_with_ml_confidence(expense, result)
       rescue => e
         log_error(correlation_id, "Failed to update expense #{expense.id}", e)
+      end
+    end
+
+    def record_pattern_usage(patterns, result, correlation_id)
+      return if patterns.blank?
+
+      was_successful = result.high_confidence?
+
+      if Rails.env.test?
+        patterns.each { |pattern| pattern.record_usage(was_successful) }
+      else
+        @thread_pool.post do
+          with_circuit_breaker(:database) do
+            patterns.each { |pattern| pattern.record_usage(was_successful) }
+          end
+        rescue => e
+          log_error(correlation_id, "Failed to record pattern usage", e)
+        end
       end
     end
 

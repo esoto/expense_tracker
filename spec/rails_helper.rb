@@ -155,8 +155,7 @@ RSpec.configure do |config|
     # Disable ActionCable logs
     ActionCable.server.config.logger&.level = Logger::ERROR if defined?(ActionCable)
 
-    # Disable Sidekiq logs
-    Sidekiq.logger&.level = Logger::ERROR if defined?(Sidekiq)
+
   end
 
   # You can uncomment this line to turn off ActiveRecord support entirely.

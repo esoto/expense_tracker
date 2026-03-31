@@ -651,15 +651,14 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
     end
   end
 
-  describe 'Sidekiq 8+ compatibility' do
-    it 'is configured for Sidekiq 8+ retry behavior' do
-      # The comment indicates this is for Sidekiq 8+ compatibility
-      # Line 2: # Configure default retry behavior for Sidekiq 8+ compatibility
+  describe 'ActiveJob retry configuration' do
+    it 'is configured with default retry behavior' do
+      # Verify retry handlers are configured for ActiveJob/Solid Queue
       expect(ApplicationJob.rescue_handlers).not_to be_empty
     end
 
-    it 'follows Sidekiq retry patterns' do
-      # Verify the retry configuration aligns with Sidekiq patterns
+    it 'follows ActiveJob retry patterns' do
+      # Verify the retry configuration aligns with ActiveJob patterns
       handlers = ApplicationJob.rescue_handlers.map(&:first)
       expect(handlers).to include('StandardError')
       expect(handlers).to include('ActiveRecord::Deadlocked')

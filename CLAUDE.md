@@ -72,7 +72,6 @@ This is a mature Rails 8.1.2 expense tracking application with the following sta
 **Backend:**
 - Rails 8.1.2 with PostgreSQL database (pg_trgm and unaccent extensions)
 - Solid Cache, Queue, and Cable for performance
-- Sidekiq for additional background job processing
 - Puma web server
 
 **Frontend:**
@@ -140,7 +139,7 @@ The application follows Domain-Driven Design principles with services organized 
 - Full API layer for iPhone Shortcuts integration (webhooks, categories, patterns, health)
 - Admin panel with pattern management, testing, import/export, and analytics
 - Database seeded with Costa Rican bank data and expense categories
-- Background job processing with Solid Queue and Sidekiq
+- Background job processing with Solid Queue
 - 8,000+ unit tests with 100% pass rate
 - Production-ready security with encrypted credentials, API token authentication, and CSP headers
 - Spanish localization (i18n) in progress across all interfaces

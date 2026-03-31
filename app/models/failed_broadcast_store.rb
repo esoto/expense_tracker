@@ -12,7 +12,7 @@
 # - error_message: Detailed error message
 # - failed_at: When the broadcast failed
 # - retry_count: Number of retry attempts
-# - sidekiq_job_id: Sidekiq job ID if applicable
+# - sidekiq_job_id: Background job ID (legacy column name)
 # - recovered_at: When the broadcast was successfully recovered
 # - recovery_notes: Manual notes about recovery process
 class FailedBroadcastStore < ApplicationRecord
@@ -71,7 +71,7 @@ class FailedBroadcastStore < ApplicationRecord
     end
 
     # Create from broadcast job failure
-    # @param job [Hash] Sidekiq job data
+    # @param job [Hash] Job data hash
     # @param error [StandardError] Error that caused failure
     # @return [FailedBroadcastStore] Created record
     def create_from_job_failure!(job, error)

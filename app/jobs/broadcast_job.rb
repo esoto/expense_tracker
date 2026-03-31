@@ -5,7 +5,7 @@
 # functionality for failed broadcasts.
 #
 # Usage:
-#   BroadcastJob.set(queue: 'high').perform_async(
+#   BroadcastJob.set(queue: 'high').perform_later(
 #     'SyncStatusChannel',
 #     123,
 #     'SyncSession',

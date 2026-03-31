@@ -13,7 +13,7 @@
 #     priority: :medium
 #   )
 #
-#   # Queued broadcasting via Sidekiq
+#   # Queued broadcasting via Solid Queue
 #   Services::BroadcastReliabilityService.queue_broadcast(
 #     channel: 'SyncStatusChannel',
 #     target_id: sync_session.id,

@@ -21,7 +21,7 @@ production:
       batch_size: 1000       # Larger batch size for better throughput
   workers:
     # High priority queue for critical jobs (email processing, sync monitoring)
-    - queues: [ email_processing, default ]
+    - queues: [ critical, high, email_processing, default ]
       threads: <%= ENV.fetch("HIGH_PRIORITY_THREADS", 5) %>
       processes: <%= ENV.fetch("HIGH_PRIORITY_PROCESSES", 2) %>
       polling_interval: 0.1

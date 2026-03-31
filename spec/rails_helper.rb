@@ -154,8 +154,6 @@ RSpec.configure do |config|
 
     # Disable ActionCable logs
     ActionCable.server.config.logger&.level = Logger::ERROR if defined?(ActionCable)
-
-
   end
 
   # You can uncomment this line to turn off ActiveRecord support entirely.

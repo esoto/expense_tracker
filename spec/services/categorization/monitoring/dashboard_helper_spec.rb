@@ -48,15 +48,8 @@ RSpec.describe Services::Categorization::Monitoring::DashboardHelper, type: :ser
     # Mock PatternCache singleton
     allow(Services::Categorization::PatternCache).to receive(:instance).and_return(mock_pattern_cache)
 
-    # Mock PerformanceTracker singleton - Note: PerformanceTracker doesn't actually have .instance method,
-    # but DashboardHelper tries to call it. This is likely a bug that should be fixed.
-    # We'll define the method temporarily for testing
-    test_instance = mock_performance_tracker
-    unless Services::Categorization::PerformanceTracker.respond_to?(:instance)
-      Services::Categorization::PerformanceTracker.define_singleton_method(:instance) { test_instance }
-    else
-      allow(Services::Categorization::PerformanceTracker).to receive(:instance).and_return(mock_performance_tracker)
-    end
+    # Mock PerformanceTracker singleton
+    allow(Services::Categorization::PerformanceTracker).to receive(:instance).and_return(mock_performance_tracker)
 
     # Use shared context helper to mock connection pool
     allow(ActiveRecord::Base).to receive(:connection_pool).and_return(mock_connection_pool)
@@ -64,10 +57,6 @@ RSpec.describe Services::Categorization::Monitoring::DashboardHelper, type: :ser
 
   after do
     travel_back
-    # Clean up the singleton method we added
-    if Services::Categorization::PerformanceTracker.singleton_class.method_defined?(:instance)
-      Services::Categorization::PerformanceTracker.singleton_class.remove_method(:instance)
-    end
   end
 
   describe ".metrics_summary" do

@@ -3,15 +3,28 @@
 require "rails_helper"
 
 RSpec.describe Services::Categorization::PerformanceTracker, type: :service do
-  subject(:tracker) { described_class.new(logger: logger) }
+  subject(:tracker) { described_class.instance }
 
   let(:logger) { instance_double(ActiveSupport::Logger, info: nil, warn: nil, error: nil) }
+
+  before do
+    # Restore a real logger first so reset! doesn't hit a stale instance_double
+    described_class.instance.instance_variable_set(:@logger, Rails.logger)
+    # Reset singleton state for test isolation
+    described_class.instance.reset!
+    # Now inject the test double logger
+    described_class.instance.instance_variable_set(:@logger, logger)
+  end
+
+  after do
+    # Restore real logger so other examples/hooks don't hit a stale double
+    described_class.instance.instance_variable_set(:@logger, Rails.logger)
+  end
 
   describe "#initialize" do
     it "sets start_time on creation", unit: true do
       freeze_time do
-        t = described_class.new
-        expect(t.start_time).to be_within(1.second).of(Time.current)
+        expect(described_class.instance.start_time).to be_within(1.second).of(Time.current)
       end
     end
   end
@@ -268,8 +281,29 @@ RSpec.describe Services::Categorization::PerformanceTracker, type: :service do
       allow(Process).to receive(:clock_gettime).and_return(0.0, 0.005)
       tracker.track_categorization { categorization_result(successful: true) }
 
-      # Reset memoized @healthy flag
-      tracker.instance_variable_set(:@healthy, nil)
+      expect(tracker.healthy?).to be true
+    end
+
+    it "returns false when error rate exceeds threshold", unit: true do
+      allow(Process).to receive(:clock_gettime).and_return(0.0, 0.001)
+      3.times do
+        tracker.track_categorization { raise "error" } rescue nil
+      end
+
+      expect(tracker.healthy?).to be false
+    end
+
+    it "transitions from unhealthy back to healthy after recovery (regression: memoization bug)", unit: true do
+      allow(Process).to receive(:clock_gettime).and_return(0.0, 0.001)
+
+      # Drive into unhealthy state
+      3.times do
+        tracker.track_categorization { raise "error" } rescue nil
+      end
+      expect(tracker.healthy?).to be false
+
+      # Recover with successful categorizations
+      10.times { tracker.track_categorization { categorization_result(successful: true) } }
       expect(tracker.healthy?).to be true
     end
   end

@@ -145,7 +145,7 @@ module Services::Categorization
           matcher: services[:matcher] || Matchers::FuzzyMatcher.new,
           confidence_calculator: services[:confidence_calculator] || ConfidenceCalculator.new,
           pattern_learner: services[:pattern_learner] || PatternLearner.new,
-          performance_tracker: services[:performance_tracker] || PerformanceTracker.new,
+          performance_tracker: services[:performance_tracker] || PerformanceTracker.instance,
           circuit_breaker: services[:circuit_breaker] || Orchestrator::CircuitBreaker.new
         }
       end
@@ -183,9 +183,7 @@ module Services::Categorization
       end
 
       def build_production_performance_tracker
-        PerformanceTracker.new(
-          logger: Rails.logger
-        )
+        PerformanceTracker.instance
       end
 
       def build_production_circuit_breaker
@@ -247,10 +245,7 @@ module Services::Categorization
       end
 
       def build_development_performance_tracker
-        # PerformanceTracker only accepts logger option
-        PerformanceTracker.new(
-          logger: Rails.logger
-        )
+        PerformanceTracker.instance
       end
 
       def build_development_circuit_breaker

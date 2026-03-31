@@ -46,7 +46,7 @@ module CategorizationTestHelper
     service_registry.register(:fuzzy_matcher, Services::Categorization::Matchers::FuzzyMatcher.new)
     service_registry.register(:confidence_calculator, Services::Categorization::ConfidenceCalculator.new)
     service_registry.register(:pattern_learner, Services::Categorization::PatternLearner.new(pattern_cache: pattern_cache))
-    service_registry.register(:performance_tracker, Services::Categorization::PerformanceTracker.new)
+    service_registry.register(:performance_tracker, Services::Categorization::PerformanceTracker.instance)
     service_registry.register(:lru_cache, Services::Categorization::LruCache.new(
       max_size: Services::Categorization::Engine::MAX_PATTERN_CACHE_SIZE,
       ttl_seconds: 300

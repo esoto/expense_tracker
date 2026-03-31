@@ -28,7 +28,8 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
     end
 
     performance_tracker_class = Class.new do
-      def initialize(*args, **kwargs); end
+      include Singleton
+      def initialize(*args, **kwargs); end # rubocop:disable Lint/MissingSuper
     end
 
     lru_cache_class = Class.new do
@@ -49,7 +50,7 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
     allow(Services::Categorization::Matchers::FuzzyMatcher).to receive(:new).and_call_original
     allow(Services::Categorization::ConfidenceCalculator).to receive(:new).and_call_original
     allow(Services::Categorization::PatternLearner).to receive(:new).and_call_original
-    allow(Services::Categorization::PerformanceTracker).to receive(:new).and_call_original
+    allow(Services::Categorization::PerformanceTracker).to receive(:instance).and_call_original
     allow(Services::Categorization::LruCache).to receive(:new).and_call_original
   end
 
@@ -402,7 +403,7 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
         }
 
         expect(Services::Categorization::ConfidenceCalculator).to receive(:new)
-        expect(Services::Categorization::PerformanceTracker).to receive(:new)
+        expect(Services::Categorization::PerformanceTracker).to receive(:instance)
         expect(Services::Categorization::LruCache).to receive(:new)
 
         registry.build_defaults(options)

@@ -283,6 +283,29 @@ RSpec.describe Services::Categorization::PerformanceTracker, type: :service do
 
       expect(tracker.healthy?).to be true
     end
+
+    it "returns false when error rate exceeds threshold", unit: true do
+      allow(Process).to receive(:clock_gettime).and_return(0.0, 0.001)
+      3.times do
+        tracker.track_categorization { raise "error" } rescue nil
+      end
+
+      expect(tracker.healthy?).to be false
+    end
+
+    it "transitions from unhealthy back to healthy after recovery (regression: memoization bug)", unit: true do
+      allow(Process).to receive(:clock_gettime).and_return(0.0, 0.001)
+
+      # Drive into unhealthy state
+      3.times do
+        tracker.track_categorization { raise "error" } rescue nil
+      end
+      expect(tracker.healthy?).to be false
+
+      # Recover with successful categorizations
+      10.times { tracker.track_categorization { categorization_result(successful: true) } }
+      expect(tracker.healthy?).to be true
+    end
   end
 
   describe "performance health states" do

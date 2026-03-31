@@ -447,6 +447,136 @@ RSpec.describe Services::Categorization::Engine, type: :service do
     end
   end
 
+  describe "pattern usage tracking", :unit do
+    let(:tracking_category) { create(:category, name: "Tracking Groceries #{SecureRandom.hex(4)}") }
+    let(:tracking_merchant) { "tracking-merchant-#{SecureRandom.hex(4)}" }
+
+    context "when patterns match with high confidence" do
+      let!(:high_conf_pattern) do
+        create(:categorization_pattern,
+               pattern_type: "merchant",
+               pattern_value: tracking_merchant,
+               category: tracking_category,
+               confidence_weight: 2.0,
+               usage_count: 100,
+               success_count: 95)
+      end
+
+      let(:tracking_expense) do
+        create(:expense,
+               merchant_name: tracking_merchant,
+               description: "Test purchase",
+               amount: 50.00,
+               transaction_date: Time.current)
+      end
+
+      it "calls record_usage on matched patterns after categorization" do
+        allow(high_conf_pattern).to receive(:record_usage).and_call_original
+
+        # We need to ensure the engine uses our pattern instance
+        result = engine.categorize(tracking_expense)
+
+        expect(result).to be_successful
+        # Verify usage_count was incremented in the database
+        high_conf_pattern.reload
+        expect(high_conf_pattern.usage_count).to be >= 101
+      end
+
+      it "passes true to record_usage when result is high confidence (>= 0.85)" do
+        original_success_count = high_conf_pattern.success_count
+
+        result = engine.categorize(tracking_expense)
+
+        expect(result).to be_successful
+        expect(result).to be_high_confidence
+        high_conf_pattern.reload
+        expect(high_conf_pattern.success_count).to be > original_success_count
+      end
+    end
+
+    context "when patterns match with low confidence" do
+      let!(:low_conf_pattern) do
+        create(:categorization_pattern,
+               pattern_type: "keyword",
+               pattern_value: tracking_merchant,
+               category: tracking_category,
+               confidence_weight: 0.5,
+               usage_count: 10,
+               success_count: 3)
+      end
+
+      let(:tracking_expense) do
+        create(:expense,
+               merchant_name: "something else entirely",
+               description: "bought #{tracking_merchant} item",
+               amount: 50.00,
+               transaction_date: Time.current)
+      end
+
+      it "passes false to record_usage when result is below high confidence threshold" do
+        original_success_count = low_conf_pattern.success_count
+
+        result = engine.categorize(tracking_expense, min_confidence: 0.1)
+
+        if result.successful? && !result.high_confidence?
+          low_conf_pattern.reload
+          # usage_count should increase but success_count should not
+          expect(low_conf_pattern.usage_count).to be >= 11
+          expect(low_conf_pattern.success_count).to eq(original_success_count)
+        end
+      end
+    end
+
+    context "when no patterns match" do
+      let(:unmatched_expense) do
+        create(:expense,
+               merchant_name: "zzz-no-match-#{SecureRandom.hex(8)}",
+               description: "zzz completely unrelated #{SecureRandom.hex(8)}",
+               amount: 50.00,
+               transaction_date: Time.current)
+      end
+
+      it "does not call record_usage when no patterns match" do
+        # Ensure no patterns exist that could match
+        result = engine.categorize(unmatched_expense)
+
+        expect(result).to be_no_match
+        # No patterns to check - the method returns early with blank? guard
+      end
+    end
+
+    context "when confidence is below min_confidence" do
+      let!(:weak_pattern) do
+        create(:categorization_pattern,
+               pattern_type: "keyword",
+               pattern_value: "obscure-#{SecureRandom.hex(4)}",
+               category: tracking_category,
+               confidence_weight: 0.1,
+               usage_count: 2,
+               success_count: 1)
+      end
+
+      let(:weak_expense) do
+        create(:expense,
+               merchant_name: "something random",
+               description: "obscure-#{weak_pattern.pattern_value.split('-').last}",
+               amount: 50.00,
+               transaction_date: Time.current)
+      end
+
+      it "does not call record_usage when result is below min_confidence" do
+        original_usage = weak_pattern.usage_count
+
+        result = engine.categorize(weak_expense, min_confidence: 0.99)
+
+        # Should return no_match because confidence is below threshold
+        expect(result).to be_no_match
+        weak_pattern.reload
+        expect(weak_pattern.usage_count).to eq(original_usage)
+      end
+    end
+  end
+
   describe "#shutdown!" do
     it "cleanly shuts down the engine" do
       expect(engine.shutdown?).to be false

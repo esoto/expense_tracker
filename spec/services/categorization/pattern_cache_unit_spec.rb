@@ -4,98 +4,64 @@ require "rails_helper"
 
 RSpec.describe Services::Categorization::PatternCache, :unit do
   describe "#invalidate_all" do
-    let(:mock_redis) { instance_double(Redis) }
-
-    before do
-      allow(mock_redis).to receive(:ping).and_return("PONG")
-      allow(Redis).to receive(:new).and_return(mock_redis)
-    end
-
-    it "uses namespaced SCAN+DEL instead of flushdb" do
+    it "increments the pattern cache version instead of scanning Redis keys" do
       cache = described_class.new
-      cache.instance_variable_set(:@redis_available, true)
-
-      expect(mock_redis).not_to receive(:flushdb)
-      expect(mock_redis).to receive(:scan)
-        .with("0", match: "cat:*", count: 100)
-        .and_return([ "0", [ "cat:pattern:1:v1", "cat:composite:2:v1" ] ])
-      expect(mock_redis).to receive(:del).with("cat:pattern:1:v1", "cat:composite:2:v1")
-
-      cache.invalidate_all
-    end
-
-    it "deletes all namespaced keys and preserves non-namespaced keys" do
-      cache = described_class.new
-      cache.instance_variable_set(:@redis_available, true)
-
-      allow(mock_redis).to receive(:scan)
-        .with("0", match: "cat:*", count: 100)
-        .and_return([ "0", [ "cat:pattern:5:v1", "cat:user_pref:starbucks:v1" ] ])
-      allow(mock_redis).to receive(:del).with("cat:pattern:5:v1", "cat:user_pref:starbucks:v1")
+      version_before = Rails.cache.read(described_class::PATTERN_VERSION_KEY).to_i
 
       cache.invalidate_all
 
-      expect(mock_redis).to have_received(:del).with("cat:pattern:5:v1", "cat:user_pref:starbucks:v1")
+      version_after = Rails.cache.read(described_class::PATTERN_VERSION_KEY).to_i
+      expect(version_after).to be > version_before
     end
 
-    it "handles multiple SCAN iterations for large key sets" do
+    it "clears the memory cache" do
       cache = described_class.new
-      cache.instance_variable_set(:@redis_available, true)
-
-      allow(mock_redis).to receive(:scan)
-        .with("0", match: "cat:*", count: 100)
-        .and_return([ "42", [ "cat:pattern:1:v1", "cat:pattern:2:v1" ] ])
-
-      allow(mock_redis).to receive(:scan)
-        .with("42", match: "cat:*", count: 100)
-        .and_return([ "0", [ "cat:pattern:3:v1" ] ])
-
-      allow(mock_redis).to receive(:del)
+      memory_cache = cache.instance_variable_get(:@memory_cache)
+      memory_cache.write("cat:test_key", "test_value")
 
       cache.invalidate_all
 
-      expect(mock_redis).to have_received(:del).with("cat:pattern:1:v1", "cat:pattern:2:v1")
-      expect(mock_redis).to have_received(:del).with("cat:pattern:3:v1")
+      expect(memory_cache.read("cat:test_key")).to be_nil
     end
 
-    it "handles empty SCAN result gracefully" do
+    it "does not use Redis SCAN+DEL" do
       cache = described_class.new
-      cache.instance_variable_set(:@redis_available, true)
 
-      allow(mock_redis).to receive(:scan)
-        .with("0", match: "cat:*", count: 100)
-        .and_return([ "0", [] ])
-      allow(mock_redis).to receive(:del)
-
+      # Ensure no Redis client methods are called
+      expect(cache).not_to respond_to(:redis_client)
       cache.invalidate_all
-
-      expect(mock_redis).not_to have_received(:del)
     end
   end
 
   describe "#reset!" do
-    let(:mock_redis) { instance_double(Redis) }
-
-    before do
-      allow(mock_redis).to receive(:ping).and_return("PONG")
-      allow(Redis).to receive(:new).and_return(mock_redis)
-    end
-
-    it "uses namespaced SCAN+DEL instead of flushdb" do
+    it "increments the pattern cache version instead of scanning Redis keys" do
       cache = described_class.new
-      cache.instance_variable_set(:@redis_available, true)
-
-      expect(mock_redis).not_to receive(:flushdb)
-
-      allow(mock_redis).to receive(:scan)
-        .with("0", match: "cat:*", count: 100)
-        .and_return([ "0", [ "cat:pattern:1:v1" ] ])
-      allow(mock_redis).to receive(:del).with("cat:pattern:1:v1")
+      version_before = Rails.cache.read(described_class::PATTERN_VERSION_KEY).to_i
 
       cache.reset!
 
-      expect(mock_redis).to have_received(:scan).with("0", match: "cat:*", count: 100)
-      expect(mock_redis).to have_received(:del).with("cat:pattern:1:v1")
+      version_after = Rails.cache.read(described_class::PATTERN_VERSION_KEY).to_i
+      expect(version_after).to be > version_before
+    end
+
+    it "clears the memory cache" do
+      cache = described_class.new
+      memory_cache = cache.instance_variable_get(:@memory_cache)
+      memory_cache.write("cat:test_key", "test_value")
+
+      cache.reset!
+
+      expect(memory_cache.read("cat:test_key")).to be_nil
+    end
+
+    it "resets the metrics collector" do
+      cache = described_class.new
+      old_collector = cache.instance_variable_get(:@metrics_collector)
+
+      cache.reset!
+
+      new_collector = cache.instance_variable_get(:@metrics_collector)
+      expect(new_collector).not_to equal(old_collector)
     end
   end
 
@@ -175,6 +141,102 @@ RSpec.describe Services::Categorization::PatternCache, :unit do
 
       final_version = Rails.cache.read(described_class::PATTERN_VERSION_KEY).to_i
       expect(final_version).to eq(10), "all 10 increments must be reflected (no lost updates)"
+    end
+  end
+
+  describe "L2 cache via Rails.cache" do
+    it "uses Rails.cache.fetch for L2 tier reads and writes" do
+      cache = described_class.new
+
+      expect(Rails.cache).to receive(:fetch).and_call_original
+      # Trigger a cache miss to exercise L2
+      cache.send(:fetch_with_tiered_cache, "test:key", memory_ttl: 1.minute, l2_ttl: 5.minutes) do
+        "test_value"
+      end
+    end
+
+    it "promotes L2 hits to memory cache (L1)" do
+      cache = described_class.new
+      test_key = "test:l2_promote"
+
+      # Write directly to Rails.cache (L2) bypassing L1
+      Rails.cache.write(test_key, "l2_value", expires_in: 1.hour)
+
+      # Clear L1 so the value is only in L2
+      cache.instance_variable_get(:@memory_cache).clear
+
+      result = cache.send(:fetch_with_tiered_cache, test_key, memory_ttl: 1.minute, l2_ttl: 5.minutes) do
+        "db_fallback_value"
+      end
+
+      expect(result).to eq("l2_value")
+      # Verify it was promoted to L1
+      expect(cache.instance_variable_get(:@memory_cache).read(test_key)).to eq("l2_value")
+    end
+  end
+
+  describe "#metrics" do
+    it "includes l2_cache_available instead of redis_available" do
+      cache = described_class.new
+      metrics = cache.metrics
+
+      expect(metrics).to have_key(:l2_cache_available)
+      expect(metrics).not_to have_key(:redis_available)
+      expect(metrics[:l2_cache_available]).to be true
+    end
+
+    it "includes l2_ttl in configuration instead of redis_ttl" do
+      cache = described_class.new
+      metrics = cache.metrics
+
+      expect(metrics[:configuration]).to have_key(:l2_ttl)
+      expect(metrics[:configuration]).not_to have_key(:redis_ttl)
+    end
+  end
+
+  describe "TTL constants" do
+    it "has DEFAULT_MEMORY_TTL of 15 minutes" do
+      expect(described_class::DEFAULT_MEMORY_TTL).to eq(15.minutes)
+    end
+
+    it "has DEFAULT_L2_TTL of 1 hour" do
+      expect(described_class::DEFAULT_L2_TTL).to eq(1.hour)
+    end
+
+    it "does not define DEFAULT_REDIS_TTL" do
+      expect(described_class.const_defined?(:DEFAULT_REDIS_TTL)).to be false
+    end
+  end
+
+  describe "no Redis dependency" do
+    it "does not have a redis_client method" do
+      cache = described_class.new
+      expect(cache.respond_to?(:redis_client, true)).to be false
+    end
+
+    it "does not have a redis_available? method" do
+      cache = described_class.new
+      expect(cache.respond_to?(:redis_available?, true)).to be false
+    end
+
+    it "does not have a @redis_available instance variable" do
+      cache = described_class.new
+      expect(cache.instance_variable_defined?(:@redis_available)).to be false
+    end
+
+    it "does not have fetch_from_redis method" do
+      cache = described_class.new
+      expect(cache.respond_to?(:fetch_from_redis, true)).to be false
+    end
+
+    it "does not have write_to_redis method" do
+      cache = described_class.new
+      expect(cache.respond_to?(:write_to_redis, true)).to be false
+    end
+
+    it "does not have delete_namespaced_keys method" do
+      cache = described_class.new
+      expect(cache.respond_to?(:delete_namespaced_keys, true)).to be false
     end
   end
 end

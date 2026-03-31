@@ -28,12 +28,9 @@ RSpec.describe "Cache store configuration", :unit do
     end
   end
 
-  describe "redis.rb does not override Rails.cache" do
-    it "only tests Redis connectivity without setting cache_store" do
-      content = File.read(Rails.root.join("config", "initializers", "redis.rb"))
-
-      expect(content).not_to match(/config\.cache_store\s*=/),
-        "redis.rb should not set config.cache_store — Redis is for PatternCache L2, not Rails.cache"
+  describe "redis.rb removed (PER-315)" do
+    it "redis.rb initializer no longer exists" do
+      expect(File.exist?(Rails.root.join("config", "initializers", "redis.rb"))).to be false
     end
   end
 

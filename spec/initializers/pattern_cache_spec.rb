@@ -31,13 +31,13 @@ RSpec.describe "PatternCache initializer", :unit do
   end
 
   describe "TTL configuration defaults" do
-    it "configures memory TTL with default of 5 minutes" do
-      expect(content).to include('ENV.fetch("PATTERN_CACHE_MEMORY_TTL", 5)')
+    it "configures memory TTL with default of 15 minutes" do
+      expect(content).to include('ENV.fetch("PATTERN_CACHE_MEMORY_TTL", 15)')
       expect(content).to include(".to_i.minutes")
     end
 
-    it "configures redis TTL with default of 24 hours" do
-      expect(content).to include('ENV.fetch("PATTERN_CACHE_REDIS_TTL", 24)')
+    it "configures L2 TTL with default of 1 hour" do
+      expect(content).to include('ENV.fetch("PATTERN_CACHE_L2_TTL", 1)')
       expect(content).to include(".to_i.hours")
     end
 
@@ -45,17 +45,22 @@ RSpec.describe "PatternCache initializer", :unit do
       expect(content).to include("config.pattern_cache_memory_ttl")
     end
 
-    it "sets pattern_cache_redis_ttl on app config" do
-      expect(content).to include("config.pattern_cache_redis_ttl")
+    it "sets pattern_cache_l2_ttl on app config" do
+      expect(content).to include("config.pattern_cache_l2_ttl")
+    end
+
+    it "does not reference redis_ttl in config" do
+      expect(content).not_to include("pattern_cache_redis_ttl")
+      expect(content).not_to include("PATTERN_CACHE_REDIS_TTL")
     end
 
     context "runtime config values" do
-      it "has memory_ttl set to 5 minutes by default" do
-        expect(Rails.application.config.pattern_cache_memory_ttl).to eq(5.minutes)
+      it "has memory_ttl set to 15 minutes by default" do
+        expect(Rails.application.config.pattern_cache_memory_ttl).to eq(15.minutes)
       end
 
-      it "has redis_ttl set to 24 hours by default" do
-        expect(Rails.application.config.pattern_cache_redis_ttl).to eq(24.hours)
+      it "has l2_ttl set to 1 hour by default" do
+        expect(Rails.application.config.pattern_cache_l2_ttl).to eq(1.hours)
       end
     end
   end
@@ -108,7 +113,6 @@ RSpec.describe "PatternCache initializer", :unit do
     it "logs backtrace on failure" do
       expect(content).to include("e.backtrace.join")
     end
-
   end
 
   describe "config logging block" do
@@ -121,10 +125,15 @@ RSpec.describe "PatternCache initializer", :unit do
       expect(logging_section).to include("if defined?(Services::Categorization::PatternCache)")
     end
 
-    it "logs cache configuration including memory_ttl, redis_ttl, and redis_available" do
+    it "logs cache configuration including memory_ttl and l2_ttl" do
       expect(content).to include("memory_ttl:")
-      expect(content).to include("redis_ttl:")
-      expect(content).to include("redis_available:")
+      expect(content).to include("l2_ttl:")
+    end
+
+    it "does not log redis_available or redis_ttl" do
+      logging_section = content[/cache_config = \{.*?\}/m]
+      expect(logging_section).not_to include("redis_available:")
+      expect(logging_section).not_to include("redis_ttl:")
     end
 
     it "uses fully qualified namespace in defined? guard" do
@@ -135,5 +144,4 @@ RSpec.describe "PatternCache initializer", :unit do
       end
     end
   end
-
 end

@@ -157,9 +157,9 @@ class PatternCacheWarmerJob < ApplicationJob
       Rails.logger.warn "[PatternCacheWarmer] High memory cache entries: #{memory_entries} (warning: >#{warning_threshold})"
     end
 
-    # Check Redis availability
-    unless metrics[:redis_available]
-      Rails.logger.warn "[PatternCacheWarmer] Redis is not available - using memory cache only"
+    # Check L2 cache availability
+    unless metrics[:l2_cache_available]
+      Rails.logger.warn "[PatternCacheWarmer] L2 cache is not available - using memory cache only"
     end
   end
 

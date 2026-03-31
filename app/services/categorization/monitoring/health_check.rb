@@ -6,7 +6,6 @@ module Services::Categorization
     class HealthCheck
       THRESHOLDS = {
         database_response_ms: 100,
-        redis_response_ms: 10,
         min_patterns: 10,
         min_success_rate: 0.5,
         max_error_rate: 0.1,
@@ -27,7 +26,6 @@ module Services::Categorization
         @errors = []
 
         check_database
-        check_redis
         check_pattern_cache
         check_service_metrics
         check_data_quality
@@ -66,38 +64,6 @@ module Services::Categorization
           error: e.message
         }
         @errors << "Database check failed: #{e.message}"
-      end
-
-      # Check Redis connectivity and performance
-      def check_redis
-        return unless redis_configured?
-
-        start = Time.current
-
-        # Test Redis connectivity
-        redis_client.ping
-        duration_ms = (Time.current - start) * 1000
-
-        # Check memory usage
-        info = redis_client.info("memory")
-        memory_used = info["used_memory_human"] rescue "unknown"
-
-        @checks[:redis] = {
-          status: duration_ms < THRESHOLDS[:redis_response_ms] ? :healthy : :degraded,
-          response_time_ms: duration_ms.round(2),
-          threshold_ms: THRESHOLDS[:redis_response_ms],
-          connected: true,
-          memory_used: memory_used
-        }
-
-        check_redis_cache_stats
-      rescue => e
-        @checks[:redis] = {
-          status: :unhealthy,
-          connected: false,
-          error: e.message
-        }
-        @errors << "Redis check failed: #{e.message}"
       end
 
       # Check pattern cache status
@@ -259,28 +225,6 @@ module Services::Categorization
       end
 
       private
-
-      def redis_configured?
-        Rails.configuration.x.categorization&.dig(:cache, :redis_enabled) || false
-      end
-
-      def redis_client
-        @redis_client ||= Redis.new(
-          url: Rails.configuration.x.categorization&.dig(:cache, :redis_url) || "redis://localhost:6379/1"
-        )
-      end
-
-      def check_redis_cache_stats
-        return unless @checks[:redis][:connected]
-
-        # Get cache statistics from Redis
-        keys = redis_client.keys("categorization:*")
-
-        @checks[:redis][:cache_keys] = keys.count
-        @checks[:redis][:cache_patterns] = keys.count { |k| k.include?("pattern") }
-      rescue => e
-        @checks[:redis][:cache_stats_error] = e.message
-      end
 
       def check_rails_cache
         start = Time.current

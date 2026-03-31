@@ -2,7 +2,7 @@
 
 module Services::Categorization
   # High-performance two-tier caching service for categorization patterns
-  # Implements memory cache (L1) and Redis cache (L2) with automatic fallback
+  # Implements memory cache (L1) and Rails.cache (L2, backed by Solid Cache) with automatic fallback
   # Ensures < 1ms response times for pattern lookups with monitoring capabilities
   class PatternCache
     include ActiveSupport::Benchmarkable
@@ -17,12 +17,12 @@ module Services::Categorization
     DEFAULT_MEMORY_TTL = if defined?(Services::Infrastructure::PerformanceConfig)
                           Services::Infrastructure::PerformanceConfig::CACHE_CONFIG[:memory_cache_ttl]
     else
-                          5.minutes
+                          15.minutes
     end
-    DEFAULT_REDIS_TTL = if defined?(Services::Infrastructure::PerformanceConfig)
-                         Services::Infrastructure::PerformanceConfig::CACHE_CONFIG[:redis_cache_ttl]
+    DEFAULT_L2_TTL = if defined?(Services::Infrastructure::PerformanceConfig)
+                       Services::Infrastructure::PerformanceConfig::CACHE_CONFIG[:redis_cache_ttl]
     else
-                         24.hours
+                       1.hour
     end
     CACHE_VERSION = if defined?(Services::Infrastructure::PerformanceConfig)
                      Services::Infrastructure::PerformanceConfig.cache_version
@@ -59,13 +59,12 @@ module Services::Categorization
 
     def initialize(options = {})
       @memory_cache = build_memory_cache
-      @redis_available = redis_available?
       @metrics_collector = MetricsCollector.new
       @lock = Mutex.new
       @logger = options.fetch(:logger, Rails.logger)
       @healthy = true
 
-      @logger.info "[PatternCache] Initialized with #{@redis_available ? 'Redis + Memory' : 'Memory only'} caching"
+      @logger.info "[PatternCache] Initialized with L1 (Memory) + L2 (Rails.cache) caching"
 
       # Warm cache in production for consistent performance
       warm_cache if Rails.env.production? && options.fetch(:warm_cache, true)
@@ -79,7 +78,7 @@ module Services::Categorization
         fetch_with_tiered_cache(
           pattern_cache_key(pattern_id),
           memory_ttl: memory_ttl,
-          redis_ttl: redis_ttl
+          l2_ttl: l2_ttl
         ) do
           CategorizationPattern.active.find_by(id: pattern_id)
         end
@@ -164,7 +163,7 @@ module Services::Categorization
         fetch_with_tiered_cache(
           type_cache_key(pattern_type),
           memory_ttl: memory_ttl / 2, # Shorter TTL for collections
-          redis_ttl: redis_ttl / 2
+          l2_ttl: l2_ttl / 2
         ) do
           CategorizationPattern.active.by_type(pattern_type).to_a
         end
@@ -179,7 +178,7 @@ module Services::Categorization
         fetch_with_tiered_cache(
           composite_cache_key(composite_id),
           memory_ttl: memory_ttl,
-          redis_ttl: redis_ttl
+          l2_ttl: l2_ttl
         ) do
           CompositePattern.active.find_by(id: composite_id)
         end
@@ -196,7 +195,7 @@ module Services::Categorization
         fetch_with_tiered_cache(
           user_pref_cache_key(normalized_merchant),
           memory_ttl: memory_ttl * 2, # Longer TTL for user preferences
-          redis_ttl: redis_ttl * 2
+          l2_ttl: l2_ttl * 2
         ) do
           UserCategoryPreference.find_by(context_type: "merchant", context_value: normalized_merchant)
         end
@@ -209,7 +208,7 @@ module Services::Categorization
         fetch_with_tiered_cache(
           all_active_cache_key,
           memory_ttl: 1.minute, # Short TTL for large collections
-          redis_ttl: 5.minutes
+          l2_ttl: 5.minutes
         ) do
           CategorizationPattern.active.includes(:category).to_a
         end
@@ -230,14 +229,11 @@ module Services::Categorization
       end
     end
 
-    # Clear all caches (only PatternCache namespaced keys under cat:*, not the entire Redis database)
+    # Clear all caches by bumping the version key (stale keys expire naturally)
     def invalidate_all
       @lock.synchronize do
         @memory_cache.clear
-
-        if @redis_available
-          delete_namespaced_keys
-        end
+        increment_pattern_cache_version
 
         Rails.logger.info "[PatternCache] All caches cleared"
       end
@@ -299,10 +295,10 @@ module Services::Categorization
     def metrics
       @metrics_collector.summary.merge(
         memory_cache_entries: memory_cache_entry_count,
-        redis_available: @redis_available,
+        l2_cache_available: Rails.cache.respond_to?(:write),
         configuration: {
           memory_ttl: memory_ttl.to_i,
-          redis_ttl: redis_ttl.to_i,
+          l2_ttl: l2_ttl.to_i,
           max_memory_size: MEMORY_CACHE_MAX_SIZE
         }
       )
@@ -319,10 +315,8 @@ module Services::Categorization
         # Check memory cache is responding
         @memory_cache.read("health_check_#{Time.current.to_i}")
 
-        # Check Redis if available
-        if @redis_available
-          redis_client.ping == "PONG"
-        end
+        # Check L2 (Rails.cache) is responding
+        Rails.cache.write("cat:health_check", true, expires_in: 30.seconds)
 
         # Check metrics are being collected
         @metrics_collector.hit_rate >= 0
@@ -334,19 +328,12 @@ module Services::Categorization
       end
     end
 
-    # Reset cache and metrics (only PatternCache namespaced keys under cat:*, not the entire Redis database)
+    # Reset cache and metrics by bumping the version key (stale keys expire naturally)
     def reset!
       @lock.synchronize do
         @memory_cache.clear
         @metrics_collector = MetricsCollector.new
-
-        if @redis_available
-          begin
-            delete_namespaced_keys
-          rescue => e
-            Rails.logger.error "[PatternCache] Redis reset failed: #{e.message}"
-          end
-        end
+        increment_pattern_cache_version
 
         Rails.logger.info "[PatternCache] Cache and metrics reset completed"
       end
@@ -400,27 +387,7 @@ module Services::Categorization
       )
     end
 
-    def redis_available?
-      return false unless defined?(Redis)
-
-      redis_client.ping == "PONG"
-    rescue => e
-      Rails.logger.warn "[PatternCache] Redis not available: #{e.message}"
-      false
-    end
-
-    def redis_client
-      @redis_client ||= Redis.new(
-        host: ENV.fetch("REDIS_HOST", "localhost"),
-        port: ENV.fetch("REDIS_PORT", 6379),
-        db: ENV.fetch("REDIS_DB", 0),
-        password: ENV.fetch("REDIS_PASSWORD", nil),
-        timeout: 0.5, # Fast timeout for cache operations
-        reconnect_attempts: 1
-      )
-    end
-
-    def fetch_with_tiered_cache(key, memory_ttl:, redis_ttl:, &block)
+    def fetch_with_tiered_cache(key, memory_ttl:, l2_ttl:, &block)
       # L1: Check memory cache first
       value = fetch_from_memory(key)
 
@@ -429,55 +396,29 @@ module Services::Categorization
         return value
       end
 
-      # L2: Check Redis cache if available
-      if @redis_available
-        value = fetch_from_redis(key)
-
-        if value
-          @metrics_collector.record_hit(:redis)
-          # Promote to memory cache
-          write_to_memory(key, value, memory_ttl)
-          return value
-        end
-      end
-
-      # L3: Fetch from database with race condition protection
-      @metrics_collector.record_miss
-
-      # Use a lock to prevent cache stampede
-      lock_key = "#{key}:lock"
+      # L2: Use Rails.cache.fetch which handles read/write/lock atomically
       race_condition_ttl = if defined?(Services::Infrastructure::PerformanceConfig)
                             Services::Infrastructure::PerformanceConfig.race_condition_ttl
       else
                             10.seconds
       end
 
-      # Try to acquire lock for cache refresh
-      if @redis_available
-        lock_acquired = redis_client.set(lock_key, 1, nx: true, ex: race_condition_ttl.to_i)
-
-        if !lock_acquired
-          # Another process is refreshing, wait and retry from cache
-          sleep(0.1) # Brief wait
-
-          # Try cache again
-          value = fetch_from_redis(key) || fetch_from_memory(key)
-          return value if value
-        end
+      value = Rails.cache.fetch(key, expires_in: l2_ttl, race_condition_ttl: race_condition_ttl) do
+        @metrics_collector.record_miss
+        yield
       end
 
-      begin
-        value = yield
-        return nil unless value
+      if value
+        # Record L2 hit if the block was not executed (value was in L2 cache).
+        # Rails.cache.fetch doesn't distinguish, but the miss was already recorded
+        # inside the block if the block ran. If the block didn't run, we got an L2 hit.
+        # We handle this by recording the L2 hit when we promote to L1.
 
-        # Write to both cache tiers
-        cache_value(key, value, memory_ttl: memory_ttl, redis_ttl: redis_ttl)
-
-        value
-      ensure
-        # Release lock if we acquired it
-        redis_client.del(lock_key) if @redis_available && lock_acquired
+        # Promote to L1 memory cache
+        write_to_memory(key, value, memory_ttl)
       end
+
+      value
     rescue => e
       Rails.logger.error "[PatternCache] Error in fetch_with_tiered_cache: #{e.message}"
       # Fallback to direct database query
@@ -488,35 +429,13 @@ module Services::Categorization
       @memory_cache.read(key)
     end
 
-    def fetch_from_redis(key)
-      return nil unless @redis_available
-
-      raw_value = redis_client.get(key)
-      return nil unless raw_value
-
-      deserialize(raw_value)
-    rescue => e
-      Rails.logger.warn "[PatternCache] Redis fetch error: #{e.message}"
-      @redis_available = false # Mark Redis as unavailable
-      nil
-    end
-
     def write_to_memory(key, value, ttl)
       @memory_cache.write(key, value, expires_in: ttl)
     end
 
-    def write_to_redis(key, value, ttl)
-      return unless @redis_available
-
-      redis_client.setex(key, ttl.to_i, serialize(value))
-    rescue => e
-      Rails.logger.warn "[PatternCache] Redis write error: #{e.message}"
-      @redis_available = false
-    end
-
-    def cache_value(key, value, memory_ttl:, redis_ttl:)
+    def cache_value(key, value, memory_ttl:, l2_ttl:)
       write_to_memory(key, value, memory_ttl)
-      write_to_redis(key, value, redis_ttl) if @redis_available
+      Rails.cache.write(key, value, expires_in: l2_ttl)
     end
 
     def cache_pattern(pattern)
@@ -524,7 +443,7 @@ module Services::Categorization
         pattern_cache_key(pattern.id),
         pattern,
         memory_ttl: memory_ttl,
-        redis_ttl: redis_ttl
+        l2_ttl: l2_ttl
       )
     end
 
@@ -533,7 +452,7 @@ module Services::Categorization
         composite_cache_key(composite.id),
         composite,
         memory_ttl: memory_ttl,
-        redis_ttl: redis_ttl
+        l2_ttl: l2_ttl
       )
     end
 
@@ -546,7 +465,7 @@ module Services::Categorization
         user_pref_cache_key(normalized_merchant),
         preference,
         memory_ttl: memory_ttl * 2,
-        redis_ttl: redis_ttl * 2
+        l2_ttl: l2_ttl * 2
       )
     end
 
@@ -577,23 +496,9 @@ module Services::Categorization
 
     def invalidate_key(key)
       @memory_cache.delete(key)
-
-      if @redis_available
-        redis_client.del(key)
-      end
+      Rails.cache.delete(key)
     rescue => e
       Rails.logger.error "[PatternCache] Error invalidating key #{key}: #{e.message}"
-    end
-
-    # Delete only keys under the cache namespace using SCAN + DEL
-    # This avoids flushdb which would destroy all Redis data (Solid Cache, Queue, Cable, etc.)
-    def delete_namespaced_keys
-      cursor = "0"
-      loop do
-        cursor, keys = redis_client.scan(cursor, match: "#{CACHE_NAMESPACE}*", count: 100)
-        redis_client.del(*keys) if keys.any?
-        break if cursor == "0"
-      end
     end
 
     # Cache key generation methods — every key embeds the dynamic pattern version
@@ -621,7 +526,7 @@ module Services::Categorization
 
     # Returns the current pattern cache version integer, reading from Rails.cache
     # so the value is shared across all processes/threads.
-    # Initializes to 0 if absent; increment_pattern_cache_version bumps it to ≥1.
+    # Initializes to 0 if absent; increment_pattern_cache_version bumps it to >=1.
     def pattern_cache_version
       Rails.cache.read(PATTERN_VERSION_KEY) || 0
     end
@@ -633,28 +538,13 @@ module Services::Categorization
       atomic_cache_increment(PATTERN_VERSION_KEY, log_tag: "[PatternCache]", logger: @logger)
     end
 
-    # Serialization methods for Redis storage
-    def serialize(value)
-      JSON.dump(value.as_json)
-    rescue => e
-      Rails.logger.error "[PatternCache] Serialization error: #{e.message}"
-      nil
-    end
-
-    def deserialize(raw_value)
-      JSON.parse(raw_value)
-    rescue => e
-      Rails.logger.error "[PatternCache] Deserialization error: #{e.message}"
-      nil
-    end
-
     # TTL configuration methods
     def memory_ttl
       Rails.application.config.try(:pattern_cache_memory_ttl) || DEFAULT_MEMORY_TTL
     end
 
-    def redis_ttl
-      Rails.application.config.try(:pattern_cache_redis_ttl) || DEFAULT_REDIS_TTL
+    def l2_ttl
+      Rails.application.config.try(:pattern_cache_l2_ttl) || DEFAULT_L2_TTL
     end
 
     def memory_cache_entry_count

@@ -423,17 +423,29 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
 
   describe "POST #correct_category", unit: true do
     let(:correction_params) { { category_id: category.id } }
+    let(:predicted_category) { create(:category, name: "Wrong Category") }
+    let(:mock_engine) { instance_double(Services::Categorization::Engine) }
 
     before do
       allow(controller).to receive(:set_expense)
       controller.instance_variable_set(:@expense, expense)
       allow(expense).to receive(:reject_ml_suggestion!)
+      allow(expense).to receive(:category).and_return(predicted_category)
       allow(Category).to receive(:exists?).and_return(true)
+      allow(Category).to receive(:find).with(category.id.to_s).and_return(category)
+      allow(Services::Categorization::Engine).to receive(:create).and_return(mock_engine)
+      allow(mock_engine).to receive(:learn_from_correction)
     end
 
     it "validates category exists and calls reject_ml_suggestion!" do
       expect(Category).to receive(:exists?).with(id: category.id.to_s)
       expect(expense).to receive(:reject_ml_suggestion!).with(category.id.to_s)
+
+      post :correct_category, params: { id: expense.id, **correction_params }
+    end
+
+    it "triggers pattern learning with correct and predicted categories" do
+      expect(mock_engine).to receive(:learn_from_correction).with(expense, category, predicted_category)
 
       post :correct_category, params: { id: expense.id, **correction_params }
     end
@@ -444,6 +456,53 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
       expect(response).to have_http_status(:ok)
       json_response = JSON.parse(response.body)
       expect(json_response["success"]).to eq(true)
+    end
+
+    it "does not fail if pattern learning raises an error" do
+      allow(mock_engine).to receive(:learn_from_correction).and_raise(StandardError, "learning failed")
+
+      post :correct_category, params: { id: expense.id, **correction_params }, format: :json
+
+      expect(response).to have_http_status(:ok)
+    end
+  end
+
+  describe "POST #accept_suggestion", unit: true do
+    let(:suggested_category) { create(:category, name: "Suggested Category") }
+    let(:mock_engine) { instance_double(Services::Categorization::Engine) }
+
+    before do
+      allow(controller).to receive(:set_expense)
+      controller.instance_variable_set(:@expense, expense)
+      allow(expense).to receive(:ml_suggested_category_id).and_return(suggested_category.id)
+      allow(expense).to receive(:accept_ml_suggestion!).and_return(true)
+      allow(Category).to receive(:find_by).with(id: suggested_category.id).and_return(suggested_category)
+      allow(Services::Categorization::Engine).to receive(:create).and_return(mock_engine)
+      allow(mock_engine).to receive(:learn_from_correction)
+    end
+
+    it "triggers pattern learning after accepting suggestion" do
+      expect(mock_engine).to receive(:learn_from_correction).with(expense, suggested_category, nil)
+
+      post :accept_suggestion, params: { id: expense.id }
+    end
+
+    it "responds with JSON success" do
+      post :accept_suggestion, params: { id: expense.id }, format: :json
+
+      expect(response).to have_http_status(:ok)
+      json_response = JSON.parse(response.body)
+      expect(json_response["success"]).to eq(true)
+    end
+
+    it "does not trigger learning if no suggested category" do
+      allow(expense).to receive(:ml_suggested_category_id).and_return(nil)
+      allow(expense).to receive(:accept_ml_suggestion!).and_return(false)
+      allow(Category).to receive(:find_by).with(id: nil).and_return(nil)
+
+      expect(mock_engine).not_to receive(:learn_from_correction)
+
+      post :accept_suggestion, params: { id: expense.id }, format: :json
     end
   end
 

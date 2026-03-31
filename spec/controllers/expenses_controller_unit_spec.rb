@@ -506,6 +506,28 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
     end
   end
 
+  describe "POST #reject_suggestion", unit: true do
+    before do
+      allow(controller).to receive(:set_expense)
+      controller.instance_variable_set(:@expense, expense)
+      allow(expense).to receive(:dismiss_ml_suggestion!).and_return(true)
+    end
+
+    it "calls dismiss_ml_suggestion! on the expense" do
+      expect(expense).to receive(:dismiss_ml_suggestion!)
+
+      post :reject_suggestion, params: { id: expense.id }
+    end
+
+    it "responds with JSON success" do
+      post :reject_suggestion, params: { id: expense.id }, format: :json
+
+      expect(response).to have_http_status(:ok)
+      json_response = JSON.parse(response.body)
+      expect(json_response["success"]).to eq(true)
+    end
+  end
+
   describe "POST #bulk_categorize", unit: true do
     let(:bulk_params) do
       {

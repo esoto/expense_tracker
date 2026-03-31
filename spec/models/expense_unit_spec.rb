@@ -466,6 +466,70 @@ RSpec.describe Expense, type: :model, unit: true do
         expense.reject_ml_suggestion!(new_category.id)
       end
     end
+
+    describe "#dismiss_ml_suggestion!" do
+      let(:expense) { create(:expense, email_account: real_email_account, category: real_category) }
+
+      before do
+        expense.ml_suggested_category_id = real_ml_category.id
+        expense.ml_correction_count = 1
+        expense.save!
+      end
+
+      it "clears the suggested category" do
+        expense.dismiss_ml_suggestion!
+
+        expect(expense.ml_suggested_category_id).to be_nil
+      end
+
+      it "preserves the current category" do
+        expense.dismiss_ml_suggestion!
+
+        expect(expense.category_id).to eq(real_category.id)
+      end
+
+      it "increments correction count" do
+        expense.dismiss_ml_suggestion!
+        expect(expense.ml_correction_count).to eq(2)
+      end
+
+      it "sets last corrected timestamp" do
+        freeze_time do
+          expense.dismiss_ml_suggestion!
+          expect(expense.ml_last_corrected_at).to eq(Time.current)
+        end
+      end
+
+      it "creates a negative learning event" do
+        expect {
+          expense.dismiss_ml_suggestion!
+        }.to change(PatternLearningEvent, :count).by(1)
+
+        event = PatternLearningEvent.last
+        expect(event.category_id).to eq(real_category.id)
+        expect(event.pattern_used).to eq("dismissed_suggestion")
+        expect(event.was_correct).to be false
+        expect(event.confidence_score).to eq(0.0)
+      end
+
+      it "captures dismissed category in context_data" do
+        expense.dismiss_ml_suggestion!
+
+        event = PatternLearningEvent.last
+        expect(event.context_data["dismissed_suggested_category_id"]).to eq(real_ml_category.id)
+      end
+
+      it "returns false when no suggestion present" do
+        expense.ml_suggested_category_id = nil
+        expect(expense.dismiss_ml_suggestion!).to be false
+      end
+
+      it "uses transaction for atomicity" do
+        expect(expense).to receive(:transaction).and_yield
+        allow(expense.pattern_learning_events).to receive(:create!)
+        expense.dismiss_ml_suggestion!
+      end
+    end
   end
 
   describe "class methods" do

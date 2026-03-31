@@ -564,6 +564,7 @@ RSpec.describe Services::Infrastructure::MonitoringService::SystemHealth, type: 
       allow(Rails).to receive(:cache).and_return(cache_mock)
       allow(cache_mock).to receive(:write)
       allow(cache_mock).to receive(:read)
+      allow(cache_mock).to receive(:delete)
 
       start_time = current_time
       end_time = current_time + 0.0025 # 2.5ms
@@ -574,6 +575,7 @@ RSpec.describe Services::Infrastructure::MonitoringService::SystemHealth, type: 
       expect(result).to eq(2.5)
       expect(cache_mock).to have_received(:write).with("health_check:ping", "pong", expires_in: 5.seconds)
       expect(cache_mock).to have_received(:read).with("health_check:ping")
+      expect(cache_mock).to have_received(:delete).with("health_check:ping")
     end
 
     it "does not call Rails.cache.redis" do
@@ -581,6 +583,7 @@ RSpec.describe Services::Infrastructure::MonitoringService::SystemHealth, type: 
       allow(Rails).to receive(:cache).and_return(cache_mock)
       allow(cache_mock).to receive(:write)
       allow(cache_mock).to receive(:read)
+      allow(cache_mock).to receive(:delete)
 
       expect(cache_mock).not_to receive(:redis)
 
@@ -592,6 +595,7 @@ RSpec.describe Services::Infrastructure::MonitoringService::SystemHealth, type: 
       allow(Rails).to receive(:cache).and_return(cache_mock)
       allow(cache_mock).to receive(:write)
       allow(cache_mock).to receive(:read)
+      allow(cache_mock).to receive(:delete)
 
       result = described_class.send(:measure_cache_response_time)
 
@@ -603,6 +607,7 @@ RSpec.describe Services::Infrastructure::MonitoringService::SystemHealth, type: 
       allow(Rails).to receive(:cache).and_return(cache_mock)
       allow(cache_mock).to receive(:write)
       allow(cache_mock).to receive(:read)
+      allow(cache_mock).to receive(:delete)
 
       start_time = current_time
       end_time = current_time + 0.1 # 100ms

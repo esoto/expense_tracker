@@ -512,6 +512,7 @@ module Services::Infrastructure
             start = Time.current
             Rails.cache.write("health_check:ping", "pong", expires_in: 5.seconds)
             Rails.cache.read("health_check:ping")
+            Rails.cache.delete("health_check:ping")
             ((Time.current - start) * 1000).round(2)
           end
         end

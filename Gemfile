@@ -59,9 +59,6 @@ gem "solid_cache"
 gem "solid_queue"
 gem "solid_cable"
 
-# Background job processing for broadcast reliability
-gem "sidekiq"
-
 # Concurrent programming support for batch collection
 gem "concurrent-ruby"
 
@@ -139,8 +136,6 @@ group :test do
   # Enhanced collection matchers
   gem "rspec-collection_matchers"
 
-  # Background job testing utilities
-  gem "rspec-sidekiq" # Will adapt for Solid Queue
 end
 
 gem "rspec-rails", "~> 8.0"

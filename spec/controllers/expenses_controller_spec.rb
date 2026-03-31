@@ -25,12 +25,18 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
       )
 
       # Use a date that's definitely in the current week but not today
+      # Must also stay within the current month to satisfy month-filter tests
       week_date = if Date.current.wday == 0  # Sunday
                     Date.current - 1.day  # Saturday
       else
                     Date.current.beginning_of_week + 2.days  # Tuesday of current week
       end
       week_date = Date.current - 1.day if week_date == Date.current  # Ensure it's not today
+      if week_date.month != Date.current.month
+        week_date = (Date.current.beginning_of_week..Date.current.end_of_week)
+                      .select { |d| d.month == Date.current.month && d != Date.current }
+                      .first || Date.current
+      end
 
       @week_expense = create(:expense,
         email_account: email_account,

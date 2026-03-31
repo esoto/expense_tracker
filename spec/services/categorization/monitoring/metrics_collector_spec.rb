@@ -12,6 +12,12 @@ RSpec.describe Services::Categorization::Monitoring::MetricsCollector, type: :se
     described_class.instance.instance_variable_set(:@client, nil)
   end
 
+  after do
+    # Prevent mock doubles from leaking to other specs via the singleton
+    described_class.instance.instance_variable_set(:@enabled, false)
+    described_class.instance.instance_variable_set(:@client, nil)
+  end
+
   describe "constants" do
     it "defines confidence buckets covering 0..1", unit: true do
       buckets = described_class::CONFIDENCE_BUCKETS

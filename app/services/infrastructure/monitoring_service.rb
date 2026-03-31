@@ -400,7 +400,7 @@ module Services::Infrastructure
           def check
             {
               database: check_database,
-              redis: check_redis,
+              cache: check_cache,
               disk_space: check_disk_space,
               memory: check_memory,
               services: check_services,
@@ -417,9 +417,17 @@ module Services::Infrastructure
             { status: "unhealthy", error: e.message }
           end
 
-          def check_redis
-            Rails.cache.redis.ping == "PONG"
-            { status: "healthy", response_time: measure_redis_response_time }
+          def check_cache
+            test_key = "health_check:#{SecureRandom.hex(4)}"
+            Rails.cache.write(test_key, "ok", expires_in: 10.seconds)
+            result = Rails.cache.read(test_key)
+            Rails.cache.delete(test_key)
+
+            if result == "ok"
+              { status: "healthy", response_time: measure_cache_response_time }
+            else
+              { status: "degraded", error: "Cache write/read mismatch" }
+            end
           rescue StandardError => e
             { status: "unhealthy", error: e.message }
           end
@@ -467,7 +475,11 @@ module Services::Infrastructure
 
             # Check critical services
             services[:solid_queue] = SolidQueue::Process.any? ? "running" : "stopped"
-            services[:action_cable] = ActionCable.server.pubsub.redis_connection_for_subscriptions.ping rescue "unknown"
+            services[:action_cable] = begin
+              ActionCable.server.pubsub ? "running" : "stopped"
+            rescue StandardError
+              "unknown"
+            end
 
             services
           end
@@ -476,7 +488,7 @@ module Services::Infrastructure
             # Simple health calculation
             checks = [
               check_database[:status],
-              check_redis[:status],
+              check_cache[:status],
               check_disk_space[:status],
               check_memory[:status]
             ]
@@ -496,9 +508,11 @@ module Services::Infrastructure
             ((Time.current - start) * 1000).round(2)
           end
 
-          def measure_redis_response_time
+          def measure_cache_response_time
             start = Time.current
-            Rails.cache.redis.ping
+            Rails.cache.write("health_check:ping", "pong", expires_in: 5.seconds)
+            Rails.cache.read("health_check:ping")
+            Rails.cache.delete("health_check:ping")
             ((Time.current - start) * 1000).round(2)
           end
         end

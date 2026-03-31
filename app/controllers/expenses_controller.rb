@@ -272,7 +272,10 @@ class ExpensesController < ApplicationController
         return
       end
 
+      predicted_category = @expense.category
       @expense.reject_ml_suggestion!(new_category_id)
+      correct_category_record = Category.find(new_category_id)
+      trigger_pattern_learning(@expense, correct_category_record, predicted_category)
 
       respond_to do |format|
         format.html { redirect_back(fallback_location: @expense, notice: t("expenses.flash.category_updated")) }
@@ -301,7 +304,9 @@ class ExpensesController < ApplicationController
 
   # POST /expenses/:id/accept_suggestion
   def accept_suggestion
+    suggested_category = Category.find_by(id: @expense.ml_suggested_category_id)
     if @expense.accept_ml_suggestion!
+      trigger_pattern_learning(@expense, suggested_category, nil) if suggested_category
       respond_to do |format|
         format.html { redirect_back(fallback_location: @expense, notice: t("expenses.flash.suggestion_accepted")) }
         format.turbo_stream { render turbo_stream: turbo_stream.replace("expense_#{@expense.id}_category", partial: "expenses/category_with_confidence", locals: { expense: @expense }) }
@@ -589,6 +594,13 @@ class ExpensesController < ApplicationController
   end
 
   private
+
+  def trigger_pattern_learning(expense, correct_category, predicted_category)
+    engine = Services::Categorization::Engine.create
+    engine.learn_from_correction(expense, correct_category, predicted_category)
+  rescue => e
+    Rails.logger.error "Pattern learning failed for expense #{expense.id}: #{e.message}"
+  end
 
   def set_expense
     @expense = current_user_expenses.find(params[:id])

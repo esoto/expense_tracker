@@ -13,7 +13,7 @@ Rails.application.configure do
       PerformanceMonitoring.start if defined?(Services::Infrastructure::MonitoringService)
 
       # Configure cache performance tracking
-      PerformanceMonitoring.configure_cache if defined?(Categorization::PatternCache)
+      PerformanceMonitoring.configure_cache if defined?(Services::Categorization::PatternCache)
 
       # Set up performance alerts
       PerformanceMonitoring.configure_alerts if Rails.env.production?

@@ -78,7 +78,7 @@ module Services::Categorization
   # - Services::BulkCategorization::*    (bulk operations via EngineFactory.default)
   #
   # It is the recommended entry point whenever you need to categorize an expense
-  # in a background job, Sidekiq worker, or any server-side non-API context.
+  # in a background job worker or any server-side non-API context.
   #
   # == How to instantiate
   #   # Preferred — shared, lazily initialized instance managed by the factory:

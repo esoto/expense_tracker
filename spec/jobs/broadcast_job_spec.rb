@@ -310,27 +310,28 @@ RSpec.describe BroadcastJob, type: :job, integration: true do
   end
 
   describe '.stats', integration: true do
-    let(:critical_queue) { double('Queue', size: 2) }
-    let(:high_queue) { double('Queue', size: 5) }
-    let(:default_queue) { double('Queue', size: 10) }
-    let(:low_queue) { double('Queue', size: 3) }
-
     before do
-      # Stub Sidekiq module and Queue class properly
-      sidekiq_module = Module.new
-      queue_class = Class.new do
-        def initialize(name)
-          @name = name
+      # Stub SolidQueue::Job queries for each queue
+      critical_relation = double('critical_relation', count: 2)
+      high_relation = double('high_relation', count: 5)
+      default_relation = double('default_relation', count: 10)
+      low_relation = double('low_relation', count: 3)
+
+      unfinished_relation = double('unfinished_relation')
+
+      allow(SolidQueue::Job).to receive(:where) do |args|
+        if args[:queue_name] == 'critical' && args[:finished_at].nil?
+          critical_relation
+        elsif args[:queue_name] == 'high' && args[:finished_at].nil?
+          high_relation
+        elsif args[:queue_name] == 'default' && args[:finished_at].nil?
+          default_relation
+        elsif args[:queue_name] == 'low' && args[:finished_at].nil?
+          low_relation
+        else
+          unfinished_relation
         end
       end
-
-      stub_const('Sidekiq', sidekiq_module)
-      stub_const('Sidekiq::Queue', queue_class)
-
-      allow(Sidekiq::Queue).to receive(:new).with('critical').and_return(critical_queue)
-      allow(Sidekiq::Queue).to receive(:new).with('high').and_return(high_queue)
-      allow(Sidekiq::Queue).to receive(:new).with('default').and_return(default_queue)
-      allow(Sidekiq::Queue).to receive(:new).with('low').and_return(low_queue)
     end
 
     it 'returns comprehensive job statistics' do

@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-# BroadcastJob handles reliable broadcasting of ActionCable messages via Sidekiq.
+# BroadcastJob handles reliable broadcasting of ActionCable messages via Solid Queue.
 # This job provides retry mechanisms with exponential backoff and dead letter queue
 # functionality for failed broadcasts.
 #
 # Usage:
-#   BroadcastJob.set(queue: 'high').perform_async(
+#   BroadcastJob.set(queue: 'high').perform_later(
 #     'SyncStatusChannel',
 #     123,
 #     'SyncSession',
@@ -21,13 +21,12 @@ class BroadcastJob < ApplicationJob
     low: "low"
   }.freeze
 
-  # Sidekiq 8.x compatible retry configuration
+  # Solid Queue retry configuration
   # We manually handle ActiveRecord::RecordNotFound for immediate failure recording
   # Other errors get automatic retries via ActiveJob
 
-  # Retry connection and Redis errors automatically
+  # Retry connection errors automatically
   retry_on ActiveRecord::ConnectionNotEstablished, wait: 5.seconds, attempts: 3
-  retry_on Redis::BaseError, wait: 5.seconds, attempts: 3
 
   # Retry general errors with exponential backoff
   retry_on StandardError, wait: 15.seconds, attempts: 5 do |job, error|
@@ -252,13 +251,11 @@ class BroadcastJob < ApplicationJob
   # Get total enqueued jobs across all broadcast queues
   # @return [Integer] Total enqueued jobs
   def self.total_enqueued_jobs
-    return 0 unless defined?(Sidekiq)
+    return 0 unless defined?(SolidQueue)
 
-    require "sidekiq/api"
-    Sidekiq::Queue.new("critical").size +
-    Sidekiq::Queue.new("high").size +
-    Sidekiq::Queue.new("default").size +
-    Sidekiq::Queue.new("low").size
+    QUEUE_MAPPING.values.sum do |queue_name|
+      SolidQueue::Job.where(queue_name: queue_name, finished_at: nil).count
+    end
   rescue StandardError
     0
   end
@@ -266,14 +263,13 @@ class BroadcastJob < ApplicationJob
   # Get current queue sizes
   # @return [Hash] Queue sizes by priority
   def self.queue_sizes
-    return { critical: 0, high: 0, default: 0, low: 0 } unless defined?(Sidekiq)
+    return { critical: 0, high: 0, default: 0, low: 0 } unless defined?(SolidQueue)
 
-    require "sidekiq/api"
     {
-      critical: Sidekiq::Queue.new("critical").size,
-      high: Sidekiq::Queue.new("high").size,
-      default: Sidekiq::Queue.new("default").size,
-      low: Sidekiq::Queue.new("low").size
+      critical: SolidQueue::Job.where(queue_name: "critical", finished_at: nil).count,
+      high: SolidQueue::Job.where(queue_name: "high", finished_at: nil).count,
+      default: SolidQueue::Job.where(queue_name: "default", finished_at: nil).count,
+      low: SolidQueue::Job.where(queue_name: "low", finished_at: nil).count
     }
   rescue StandardError
     { critical: 0, high: 0, default: 0, low: 0 }

@@ -1,5 +1,5 @@
 class ApplicationJob < ActiveJob::Base
-  # Configure default retry behavior for Sidekiq 8+ compatibility
+  # Configure default retry behavior for ActiveJob/Solid Queue
   retry_on StandardError, wait: 10.seconds, attempts: 3
 
   # Automatically retry jobs that encountered a deadlock

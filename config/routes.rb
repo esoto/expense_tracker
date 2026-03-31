@@ -1,30 +1,5 @@
-require "sidekiq/web"
-
 Rails.application.routes.draw do
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
-
-  # Mount Sidekiq Web UI with authentication
-  if Rails.env.development?
-    mount Sidekiq::Web => "/sidekiq"
-  else
-    # Require credentials via environment variables — no fallback defaults.
-    # Required env vars:
-    #   SIDEKIQ_WEB_USERNAME - Username for Sidekiq Web UI access
-    #   SIDEKIQ_WEB_PASSWORD - Password for Sidekiq Web UI access
-    Sidekiq::Web.use Rack::Auth::Basic do |username, password|
-      sidekiq_username = ENV["SIDEKIQ_WEB_USERNAME"]
-      sidekiq_password = ENV["SIDEKIQ_WEB_PASSWORD"]
-
-      if sidekiq_username.blank? || sidekiq_password.blank?
-        Rails.logger.error "[SECURITY] Sidekiq Web credentials not configured"
-        false
-      else
-        ActiveSupport::SecurityUtils.secure_compare(username, sidekiq_username) &&
-          ActiveSupport::SecurityUtils.secure_compare(password, sidekiq_password)
-      end
-    end
-    mount Sidekiq::Web => "/sidekiq"
-  end
 
   # Mount ActionCable for WebSocket connections
   mount ActionCable.server => "/cable"

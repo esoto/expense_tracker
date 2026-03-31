@@ -1,0 +1,2 @@
+[    7924ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-44dd3c95.js:1137
+[    7925ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-44dd3c95.js:1137

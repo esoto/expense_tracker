@@ -1056,11 +1056,13 @@ RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
             }
           end
 
+          call_count = 0
           allow(processing_service).to receive(:email_already_processed?).and_return(false)
           allow(processing_service).to receive(:promotional_email?).and_return(false)
           allow(processing_service).to receive(:parse_email) do
+            call_count += 1
             [ {
-              amount: 25.00,
+              amount: 25.00 + call_count,
               description: 'Performance test',
               date: Date.current,
               merchant: 'Test Store'

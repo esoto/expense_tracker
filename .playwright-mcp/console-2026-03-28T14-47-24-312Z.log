@@ -1,0 +1,22 @@
+[     154ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at LineChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at LineChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new LineChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2342:11)
+    at createChart (http://localhost:3000/expenses/dashboard:980:36)
+    at https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2555:12
+[     155ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at PieChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at PieChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new PieChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2362:11)
+    at createChart (http://localhost:3000/expenses/dashboard:1000:36)
+    at https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2555:12
+[     139ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-48b948c7.js:1137
+[     139ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-48b948c7.js:1137

@@ -97,7 +97,15 @@
       "Bash(git rebase:*)",
       "Bash(git stash:*)",
       "Bash(git stash pop:*)",
-      "Bash(gh pr list:*)"
+      "Bash(gh pr list:*)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f''''additions={d[\"\"additions\"\"]} deletions={d[\"\"deletions\"\"]} total={d[\"\"additions\"\"]+d[\"\"deletions\"\"]}''''\\)\")",
+      "Bash(xxd)",
+      "Bash(gh pr:*)",
+      "mcp__claude_ai_Linear__get_issue",
+      "Bash(cp app/views/expenses/index.html.erb /tmp/pr-review-224/source/app/views/expenses/index.html.erb)",
+      "Bash(mkdir -p /tmp/pr-review-224/source/app/views/expenses)",
+      "Bash(git branch:*)",
+      "Bash(psql -U esoto -d postgres -c \"SELECT count\\(*\\) FROM pg_stat_activity WHERE datname LIKE ''''expense_tracker_test%'''';\")"
     ],
     "deny": []
   }

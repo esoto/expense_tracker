@@ -59,6 +59,32 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
       end
     end
 
+    context 'when conflict_type is duplicate' do
+      before { existing_expense }
+
+      it 'saves the new expense with deleted_at set' do
+        conflict = service.detect_conflict_for_expense(new_expense_data)
+
+        expect(conflict).to be_present
+        expect(conflict.conflict_type).to eq('duplicate')
+        expect(conflict.new_expense.deleted_at).to be_present
+      end
+    end
+
+    context 'when conflict_type is similar' do
+      before do
+        existing_expense.update(amount: 95.00)
+      end
+
+      it 'saves the new expense with deleted_at set' do
+        conflict = service.detect_conflict_for_expense(new_expense_data)
+
+        expect(conflict).to be_present
+        expect(conflict.conflict_type).to eq('similar')
+        expect(conflict.new_expense.deleted_at).to be_present
+      end
+    end
+
     context 'when no similar expense exists' do
       before do
         existing_expense.update(

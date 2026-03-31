@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_27_050533) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_31_232426) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -304,7 +304,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_27_050533) do
     t.index ["category_id", "transaction_date"], name: "index_expenses_on_category_id_and_transaction_date"
     t.index ["created_at", "transaction_date"], name: "index_expenses_on_created_and_transaction_date"
     t.index ["currency"], name: "index_expenses_on_currency"
-    t.index ["email_account_id", "amount", "transaction_date", "merchant_name"], name: "idx_expenses_duplicate_check", comment: "Index for detecting duplicate transactions"
+    t.index ["email_account_id", "amount", "transaction_date", "merchant_name"], name: "idx_expenses_duplicate_check", unique: true, where: "((deleted_at IS NULL) AND (merchant_name IS NOT NULL) AND (email_account_id IS NOT NULL))", comment: "Unique constraint for detecting duplicate active transactions"
     t.index ["email_account_id", "deleted_at", "transaction_date", "category_id", "status"], name: "idx_expenses_primary_composite", where: "(deleted_at IS NULL)", comment: "Primary composite index for filtering operations"
     t.index ["email_account_id", "transaction_date", "deleted_at"], name: "idx_expenses_primary_filter", where: "(deleted_at IS NULL)", comment: "Primary index for common filtering operations"
     t.index ["merchant_normalized", "category_id"], name: "idx_expenses_merchant_category", where: "(merchant_normalized IS NOT NULL)"

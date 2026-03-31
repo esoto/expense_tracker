@@ -1,0 +1,4 @@
+[      54ms] [ERROR] X-Frame-Options may only be set via an HTTP header sent along with a document. It may not be set inside <meta>. @ http://localhost:3000/admin/login:153
+[    4926ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:3000/email_accounts:0
+[    6038ms] [ERROR] Failed to load resource: the server responded with a status of 406 (Not Acceptable) @ http://localhost:3000/admin/patterns?filter_status=inactive:0
+[    6094ms] [ERROR] X-Frame-Options may only be set via an HTTP header sent along with a document. It may not be set inside <meta>. @ http://localhost:3000/admin/patterns:161

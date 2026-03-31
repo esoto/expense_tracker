@@ -19,7 +19,7 @@ RSpec.describe EmailAccount, "cascade behavior on destroy", :unit, type: :model 
     end
 
     it "preserves all expenses when account is deleted" do
-      create_list(:expense, 3, email_account: email_account, amount: 50, transaction_date: Time.current)
+      create_list(:expense, 3, email_account: email_account, transaction_date: Time.current)
 
       expect { email_account.destroy! }.not_to change(Expense, :count)
     end

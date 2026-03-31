@@ -1,0 +1,4 @@
+[     146ms] [ERROR] X-Frame-Options may only be set via an HTTP header sent along with a document. It may not be set inside <meta>. @ http://localhost:3000/analytics/pattern_dashboard:161
+[     218ms] [ERROR] Error loading trend data: TypeError: this.element.getContext is not a function
+    at t.renderChart (http://localhost:3000/assets/controllers/pattern_trend_chart_controller-b3e21c73.js:46:30)
+    at t.loadChartData (http://localhost:3000/assets/controllers/pattern_trend_chart_controller-b3e21c73.js:38:12) @ http://localhost:3000/assets/controllers/pattern_trend_chart_controller-b3e21c73.js:39

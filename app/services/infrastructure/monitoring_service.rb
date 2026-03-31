@@ -543,7 +543,7 @@ module Services::Infrastructure
               total_hits: cache_metrics[:hits],
               total_misses: cache_metrics[:misses],
               memory_entries: cache_metrics[:memory_cache_entries],
-              redis_available: cache_metrics[:redis_available],
+              l2_cache_available: cache_metrics[:l2_cache_available],
               average_lookup_time_ms: cache_metrics[:average_lookup_time_ms] || 0,
               warmup_status: warmup_status
             }
@@ -677,7 +677,7 @@ module Services::Infrastructure
 
             issues << "Low hit rate (#{metrics[:hit_rate]}%)" if metrics[:hit_rate].to_f < 80
             issues << "High memory usage (#{metrics[:memory_entries]} entries)" if metrics[:memory_entries].to_i > 10_000
-            issues << "Redis unavailable" unless metrics[:redis_available]
+            issues << "L2 cache unavailable" unless metrics[:l2_cache_available]
             issues << "Slow lookups (#{metrics[:average_lookup_time_ms]}ms)" if metrics[:average_lookup_time_ms].to_f > 5
 
             issues
@@ -696,7 +696,7 @@ module Services::Infrastructure
             end
 
             unless rails_cache_health[:available]
-              recommendations << "Critical: Rails cache is unavailable - check Redis/Solid Cache configuration"
+              recommendations << "Critical: Rails cache is unavailable - check Solid Cache configuration"
             end
 
             recommendations

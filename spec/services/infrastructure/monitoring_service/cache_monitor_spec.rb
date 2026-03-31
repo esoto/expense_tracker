@@ -54,7 +54,7 @@ RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor, type: 
           hits: 1200,
           misses: 180,
           memory_cache_entries: 650,
-          redis_available: true,
+          l2_cache_available: true,
           average_lookup_time_ms: 3.2
         })
 
@@ -72,7 +72,7 @@ RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor, type: 
           total_hits: 1200,
           total_misses: 180,
           memory_entries: 650,
-          redis_available: true,
+          l2_cache_available: true,
           average_lookup_time_ms: 3.2,
           warmup_status: {
             status: "recent",
@@ -88,7 +88,7 @@ RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor, type: 
           hits: 800,
           misses: 100,
           memory_cache_entries: 400,
-          redis_available: true,
+          l2_cache_available: true,
           average_lookup_time_ms: nil
         })
 
@@ -406,7 +406,7 @@ RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor, type: 
         allow(cache_monitor).to receive(:pattern_cache_metrics).and_return({
           hit_rate: 90.0,
           memory_entries: 500,
-          redis_available: true,
+          l2_cache_available: true,
           average_lookup_time_ms: 2.0
         })
         allow(cache_monitor).to receive(:identify_pattern_cache_issues).and_return([])
@@ -486,7 +486,7 @@ RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor, type: 
       metrics = {
         hit_rate: 90.0,
         memory_entries: 500,
-        redis_available: true,
+        l2_cache_available: true,
         average_lookup_time_ms: 2.0
       }
 
@@ -499,7 +499,7 @@ RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor, type: 
       metrics = {
         hit_rate: 65.0,
         memory_entries: 500,
-        redis_available: true,
+        l2_cache_available: true,
         average_lookup_time_ms: 2.0
       }
 
@@ -512,7 +512,7 @@ RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor, type: 
       metrics = {
         hit_rate: 90.0,
         memory_entries: 15000,
-        redis_available: true,
+        l2_cache_available: true,
         average_lookup_time_ms: 2.0
       }
 
@@ -521,24 +521,24 @@ RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor, type: 
       expect(result).to include("High memory usage (15000 entries)")
     end
 
-    it "identifies Redis unavailability issue" do
+    it "identifies L2 cache unavailability issue" do
       metrics = {
         hit_rate: 90.0,
         memory_entries: 500,
-        redis_available: false,
+        l2_cache_available: false,
         average_lookup_time_ms: 2.0
       }
 
       result = cache_monitor.send(:identify_pattern_cache_issues, metrics)
 
-      expect(result).to include("Redis unavailable")
+      expect(result).to include("L2 cache unavailable")
     end
 
     it "identifies slow lookup issue" do
       metrics = {
         hit_rate: 90.0,
         memory_entries: 500,
-        redis_available: true,
+        l2_cache_available: true,
         average_lookup_time_ms: 8.5
       }
 
@@ -551,7 +551,7 @@ RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor, type: 
       metrics = {
         hit_rate: 60.0,
         memory_entries: 12000,
-        redis_available: false,
+        l2_cache_available: false,
         average_lookup_time_ms: 7.0
       }
 
@@ -559,7 +559,7 @@ RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor, type: 
 
       expect(result).to include("Low hit rate (60.0%)")
       expect(result).to include("High memory usage (12000 entries)")
-      expect(result).to include("Redis unavailable")
+      expect(result).to include("L2 cache unavailable")
       expect(result).to include("Slow lookups (7.0ms)")
       expect(result.length).to eq(4)
     end
@@ -600,7 +600,7 @@ RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor, type: 
 
       result = cache_monitor.send(:generate_cache_recommendations, pattern_health, rails_health)
 
-      expect(result).to include("Critical: Rails cache is unavailable - check Redis/Solid Cache configuration")
+      expect(result).to include("Critical: Rails cache is unavailable - check Solid Cache configuration")
     end
 
     it "combines multiple recommendations" do
@@ -612,7 +612,7 @@ RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor, type: 
       expect(result).to include("Consider increasing cache warming frequency")
       expect(result).to include("Review pattern matching logic for optimization")
       expect(result).to include("Consider implementing cache eviction for old patterns")
-      expect(result).to include("Critical: Rails cache is unavailable - check Redis/Solid Cache configuration")
+      expect(result).to include("Critical: Rails cache is unavailable - check Solid Cache configuration")
       expect(result.length).to eq(4)
     end
   end
@@ -653,7 +653,7 @@ RSpec.describe Services::Infrastructure::MonitoringService::CacheMonitor, type: 
     it "returns 0% for all failed operations" do
       data = [
         { error: "Connection timeout" },
-        { error: "Redis unavailable" },
+        { error: "Cache unavailable" },
         { error: "Memory error" }
       ]
 

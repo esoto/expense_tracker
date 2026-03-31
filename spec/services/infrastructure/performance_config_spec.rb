@@ -304,7 +304,7 @@ RSpec.describe Services::Infrastructure::PerformanceConfig, unit: true do
         # TTL values should be ActiveSupport::Duration
         expect(cache_config[:race_condition_ttl]).to be_a(ActiveSupport::Duration)
         expect(cache_config[:memory_cache_ttl]).to be_a(ActiveSupport::Duration)
-        expect(cache_config[:redis_cache_ttl]).to be_a(ActiveSupport::Duration)
+        expect(cache_config[:l2_cache_ttl]).to be_a(ActiveSupport::Duration)
 
         # Warming interval should be duration
         expect(cache_config[:pattern_cache_warming][:interval]).to be_a(ActiveSupport::Duration)

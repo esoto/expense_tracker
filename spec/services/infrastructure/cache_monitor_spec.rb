@@ -29,7 +29,7 @@ if false # rubocop:disable Lint/LiteralAsCondition
           hits: 1000,
           misses: 170,
           memory_cache_entries: 500,
-          redis_available: true,
+          l2_cache_available: true,
           average_lookup_time_ms: 0.8
         }
       end
@@ -48,7 +48,7 @@ if false # rubocop:disable Lint/LiteralAsCondition
           total_hits: 1000,
           total_misses: 170,
           memory_entries: 500,
-          redis_available: true,
+          l2_cache_available: true,
           average_lookup_time_ms: 0.8,
           warmup_status: { status: "recent" }
         )
@@ -166,7 +166,7 @@ if false # rubocop:disable Lint/LiteralAsCondition
       allow(pattern_cache).to receive(:metrics).and_return({
         hit_rate: 92,
         memory_cache_entries: 500,
-        redis_available: true
+        l2_cache_available: true
       })
       allow(Rails.cache).to receive(:write).and_return(true)
     end
@@ -187,7 +187,7 @@ if false # rubocop:disable Lint/LiteralAsCondition
         allow(pattern_cache).to receive(:metrics).and_return({
           hit_rate: 65,
           memory_cache_entries: 15000,
-          redis_available: false
+          l2_cache_available: false
         })
       end
 

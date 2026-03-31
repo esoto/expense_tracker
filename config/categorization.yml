@@ -7,9 +7,6 @@ default: &default
     enabled: true
     ttl_seconds: 3600
     max_entries: 10000
-    redis_enabled: false
-    redis_url: redis://localhost:6379/1
-    
   # Pattern matching configuration
   matching:
     fuzzy_enabled: true
@@ -69,7 +66,6 @@ development:
     enabled: true
     ttl_seconds: 1800
     max_entries: 5000
-    redis_enabled: false
   learning:
     enabled: true
     min_occurrences: 2
@@ -105,9 +101,6 @@ production:
     enabled: true
     ttl_seconds: 7200
     max_entries: 50000
-    redis_enabled: true
-    redis_url: <%= ENV.fetch('REDIS_URL', 'redis://localhost:6379/1') %>
-    
   matching:
     fuzzy_enabled: true
     fuzzy_threshold: 0.88

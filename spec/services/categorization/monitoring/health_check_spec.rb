@@ -27,7 +27,6 @@ RSpec.describe Services::Categorization::Monitoring::HealthCheck, performance: t
           database: { status: :healthy, connected: true }
         ))
       end
-      allow(health_check).to receive(:check_redis).and_return(nil)
       allow(health_check).to receive(:check_pattern_cache) do
         health_check.instance_variable_set(:@checks, health_check.instance_variable_get(:@checks).merge(
           pattern_cache: { status: :healthy, entries: 100 }
@@ -50,6 +49,37 @@ RSpec.describe Services::Categorization::Monitoring::HealthCheck, performance: t
       expect(result[:healthy]).to be true
     end
 
+    it "does not include :redis in check results" do
+      allow(health_check).to receive(:check_database) do
+        health_check.instance_variable_set(:@checks, health_check.instance_variable_get(:@checks).merge(
+          database: { status: :healthy, connected: true }
+        ))
+      end
+      allow(health_check).to receive(:check_pattern_cache) do
+        health_check.instance_variable_set(:@checks, health_check.instance_variable_get(:@checks).merge(
+          pattern_cache: { status: :healthy, entries: 100 }
+        ))
+      end
+      allow(health_check).to receive(:check_service_metrics) do
+        health_check.instance_variable_set(:@checks, health_check.instance_variable_get(:@checks).merge(
+          service_metrics: { status: :healthy }
+        ))
+      end
+      allow(health_check).to receive(:check_dependencies) do
+        health_check.instance_variable_set(:@checks, health_check.instance_variable_get(:@checks).merge(
+          dependencies: { status: :healthy }
+        ))
+      end
+
+      result = health_check.check_all
+
+      expect(result[:checks]).not_to have_key(:redis)
+    end
+
+    it "does not respond to check_redis" do
+      expect(health_check).not_to respond_to(:check_redis)
+    end
+
     it "returns degraded status when non-critical checks fail" do
       # Mock the individual check methods to set the checks hash
       allow(health_check).to receive(:check_database) do
@@ -57,7 +87,6 @@ RSpec.describe Services::Categorization::Monitoring::HealthCheck, performance: t
           database: { status: :healthy, connected: true }
         ))
       end
-      allow(health_check).to receive(:check_redis).and_return(nil)
       allow(health_check).to receive(:check_pattern_cache) do
         health_check.instance_variable_set(:@checks, health_check.instance_variable_get(:@checks).merge(
           pattern_cache: { status: :healthy, entries: 100 }
@@ -87,7 +116,6 @@ RSpec.describe Services::Categorization::Monitoring::HealthCheck, performance: t
           database: { status: :unhealthy, connected: false, error: "Connection failed" }
         ))
       end
-      allow(health_check).to receive(:check_redis).and_return(nil)
       allow(health_check).to receive(:check_pattern_cache) do
         health_check.instance_variable_set(:@checks, health_check.instance_variable_get(:@checks).merge(
           pattern_cache: { status: :healthy, entries: 100 }

@@ -5,8 +5,8 @@
 
 Rails.application.configure do
   # Configure TTL values for pattern cache
-  config.pattern_cache_memory_ttl = ENV.fetch("PATTERN_CACHE_MEMORY_TTL", 5).to_i.minutes
-  config.pattern_cache_redis_ttl = ENV.fetch("PATTERN_CACHE_REDIS_TTL", 24).to_i.hours
+  config.pattern_cache_memory_ttl = ENV.fetch("PATTERN_CACHE_MEMORY_TTL", 15).to_i.minutes
+  config.pattern_cache_l2_ttl = ENV.fetch("PATTERN_CACHE_L2_TTL", 1).to_i.hours
 end
 
 # Warm cache on startup in production and staging
@@ -35,8 +35,7 @@ unless Rails.env.test?
     if defined?(Services::Categorization::PatternCache)
       cache_config = {
         memory_ttl: Rails.application.config.pattern_cache_memory_ttl,
-        redis_ttl: Rails.application.config.pattern_cache_redis_ttl,
-        redis_available: Services::Categorization::PatternCache.instance.instance_variable_get(:@redis_available)
+        l2_ttl: Rails.application.config.pattern_cache_l2_ttl
       }
 
       Rails.logger.info "[PatternCache] Configuration: #{cache_config.inspect}"

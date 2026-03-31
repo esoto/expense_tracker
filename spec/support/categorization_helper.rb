@@ -19,18 +19,8 @@ module CategorizationTestHelper
       end
     end
 
-    # Clear Rails cache
+    # Clear Rails cache (covers both memory and Solid Cache L2)
     Rails.cache.clear
-
-    # Reset Redis if available (skip connection errors in test environment)
-    begin
-      redis = Redis.new
-      redis.flushdb if redis.connected?
-    rescue Redis::CannotConnectError, Redis::ConnectionError, Redis::TimeoutError => e
-      Rails.logger.debug "[Test] Redis not available for cleanup: #{e.message}"
-    rescue => e
-      Rails.logger.warn "[Test] Unexpected Redis error: #{e.message}"
-    end
 
     # Optional garbage collection (can cause performance issues if overused)
     GC.start if force_gc || ENV['FORCE_GC_IN_TESTS']

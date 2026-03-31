@@ -84,7 +84,7 @@ module MonitoringServiceTestHelper
         hits: 1000,
         misses: 200,
         memory_cache_entries: 500,
-        redis_available: true,
+        l2_cache_available: true,
         average_lookup_time_ms: 2.5
       }
 

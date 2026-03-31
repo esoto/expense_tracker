@@ -40,20 +40,9 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
       expect(cache.instance_variable_get(:@memory_cache)).to be_present
     end
 
-    it "detects Redis availability" do
-      skip "Redis not available in test" unless defined?(Redis)
-
-      allow_any_instance_of(Redis).to receive(:ping).and_return("PONG")
+    it "does not depend on Redis" do
       new_cache = described_class.new
-      expect(new_cache.instance_variable_get(:@redis_available)).to be true
-    end
-
-    it "handles Redis unavailability gracefully" do
-      skip "Redis not available in test" unless defined?(Redis)
-
-      allow_any_instance_of(Redis).to receive(:ping).and_raise(StandardError, "Connection failed")
-      new_cache = described_class.new
-      expect(new_cache.instance_variable_get(:@redis_available)).to be false
+      expect(new_cache.instance_variable_defined?(:@redis_available)).to be false
     end
   end
 
@@ -373,7 +362,7 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
         :hit_rate,
         :operations,
         :memory_cache_entries,
-        :redis_available,
+        :l2_cache_available,
         :configuration
       )
     end
@@ -462,43 +451,18 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
     end
   end
 
-  describe "Redis fallback behavior", performance: true do
-    context "when Redis becomes unavailable" do
-      before do
-        skip "Redis not available in test" unless defined?(Redis)
-
-        allow_any_instance_of(Redis).to receive(:ping).and_return("PONG")
-        @cache_with_redis = described_class.new
-      end
-
-      it "falls back to memory-only cache when Redis fails" do
-        skip "Redis not available in test" unless defined?(Redis)
-
-        # Simulate Redis failure
-        allow_any_instance_of(Redis).to receive(:get).and_raise(StandardError, "Connection error")
-
-        # Should still work with memory cache
-        result = @cache_with_redis.get_pattern(pattern.id)
-        expect(result).to eq(pattern)
-
-        # Redis should be marked as unavailable
-        expect(@cache_with_redis.instance_variable_get(:@redis_available)).to be false
-      end
-    end
-  end
-
   describe "TTL configuration", performance: true do
     it "respects configured TTL values" do
       allow(Rails.application.config).to receive(:pattern_cache_memory_ttl).and_return(10.seconds)
-      allow(Rails.application.config).to receive(:pattern_cache_redis_ttl).and_return(1.hour)
+      allow(Rails.application.config).to receive(:pattern_cache_l2_ttl).and_return(1.hour)
 
       expect(cache.send(:memory_ttl)).to eq(10.seconds)
-      expect(cache.send(:redis_ttl)).to eq(1.hour)
+      expect(cache.send(:l2_ttl)).to eq(1.hour)
     end
 
     it "uses default TTL values when not configured" do
       expect(cache.send(:memory_ttl)).to eq(Services::Categorization::PatternCache::DEFAULT_MEMORY_TTL)
-      expect(cache.send(:redis_ttl)).to eq(Services::Categorization::PatternCache::DEFAULT_REDIS_TTL)
+      expect(cache.send(:l2_ttl)).to eq(Services::Categorization::PatternCache::DEFAULT_L2_TTL)
     end
   end
 end

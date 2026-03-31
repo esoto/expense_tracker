@@ -28,7 +28,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
         {
           hit_rate: 92.5,
           memory_cache_entries: 500,
-          redis_available: true
+          l2_cache_available: true
         }
       end
 
@@ -127,7 +127,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
           {
             hit_rate: 92.5,
             memory_cache_entries: 15000,
-            redis_available: true
+            l2_cache_available: true
           }
         end
 
@@ -244,7 +244,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
         {
           hit_rate: 85.0,
           memory_cache_entries: 500,
-          redis_available: true
+          l2_cache_available: true
         }
       end
 
@@ -320,13 +320,13 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
       {
         hit_rate: hit_rate,
         memory_cache_entries: memory_entries,
-        redis_available: redis_available
+        l2_cache_available: l2_cache_available
       }
     end
 
     let(:hit_rate) { 85.0 }
     let(:memory_entries) { 5000 }
-    let(:redis_available) { true }
+    let(:l2_cache_available) { true }
 
     before do
       allow(cache).to receive(:metrics).and_return(cache_metrics)
@@ -386,20 +386,20 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
       end
     end
 
-    context 'when Redis is unavailable' do
-      let(:redis_available) { false }
+    context 'when L2 cache is unavailable' do
+      let(:l2_cache_available) { false }
 
       it 'logs a warning' do
-        expect(Rails.logger).to receive(:warn).with(/Redis is not available - using memory cache only/)
+        expect(Rails.logger).to receive(:warn).with(/L2 cache is not available - using memory cache only/)
         job.send(:check_cache_health, cache)
       end
     end
 
-    context 'with nil Redis availability' do
-      let(:redis_available) { nil }
+    context 'with nil L2 cache availability' do
+      let(:l2_cache_available) { nil }
 
       it 'logs a warning treating nil as unavailable' do
-        expect(Rails.logger).to receive(:warn).with(/Redis is not available/)
+        expect(Rails.logger).to receive(:warn).with(/L2 cache is not available/)
         job.send(:check_cache_health, cache)
       end
     end
@@ -414,7 +414,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
     context 'with perfect metrics' do
       let(:hit_rate) { 100.0 }
       let(:memory_entries) { 100 }
-      let(:redis_available) { true }
+      let(:l2_cache_available) { true }
 
       it 'does not log any warnings' do
         expect(Rails.logger).not_to receive(:warn)
@@ -445,7 +445,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
 
       it 'handles missing keys gracefully' do
         expect(Rails.logger).to receive(:warn).with(/Low cache hit rate: 0%/)
-        expect(Rails.logger).to receive(:warn).with(/Redis is not available/)
+        expect(Rails.logger).to receive(:warn).with(/L2 cache is not available/)
         job.send(:check_cache_health, cache)
       end
     end
@@ -545,7 +545,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
           # The job should handle nil thresholds by using defaults
           # But currently it doesn't, so this test will fail
           # This is a bug in the implementation that should be fixed
-          allow(cache).to receive(:metrics).and_return(hit_rate: 79.0, memory_cache_entries: 11000, redis_available: true)
+          allow(cache).to receive(:metrics).and_return(hit_rate: 79.0, memory_cache_entries: 11000, l2_cache_available: true)
           # The implementation has a bug - it doesn't handle nil properly
           expect { job.send(:check_cache_health, cache) }.to raise_error(ArgumentError)
         end
@@ -558,22 +558,22 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
       end
 
       it 'uses default hit rate threshold of 80.0' do
-        allow(cache).to receive(:metrics).and_return(hit_rate: 79.0, memory_cache_entries: 100, redis_available: true)
+        allow(cache).to receive(:metrics).and_return(hit_rate: 79.0, memory_cache_entries: 100, l2_cache_available: true)
         expect(Rails.logger).to receive(:warn).with(/Low cache hit rate: 79.0%.*target: 80.0%/)
         job.send(:check_cache_health, cache)
       end
 
       it 'uses default memory threshold of 10000' do
-        allow(cache).to receive(:metrics).and_return(hit_rate: 85.0, memory_cache_entries: 11000, redis_available: true)
+        allow(cache).to receive(:metrics).and_return(hit_rate: 85.0, memory_cache_entries: 11000, l2_cache_available: true)
         expect(Rails.logger).to receive(:warn).with(/High memory cache entries: 11000.*warning: >10000/)
         job.send(:check_cache_health, cache)
       end
 
       it 'handles both thresholds being exceeded' do
-        allow(cache).to receive(:metrics).and_return(hit_rate: 70.0, memory_cache_entries: 15000, redis_available: false)
+        allow(cache).to receive(:metrics).and_return(hit_rate: 70.0, memory_cache_entries: 15000, l2_cache_available: false)
         expect(Rails.logger).to receive(:warn).with(/Low cache hit rate: 70.0%/)
         expect(Rails.logger).to receive(:warn).with(/High memory cache entries: 15000/)
-        expect(Rails.logger).to receive(:warn).with(/Redis is not available/)
+        expect(Rails.logger).to receive(:warn).with(/L2 cache is not available/)
         job.send(:check_cache_health, cache)
       end
     end
@@ -797,7 +797,7 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
       {
         memory_cache_entries: memory_entries,
         hit_rate: 85.0,
-        redis_available: true
+        l2_cache_available: true
       }
     end
     let(:memory_entries) { 5000 }

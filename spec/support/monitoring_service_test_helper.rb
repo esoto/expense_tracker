@@ -145,7 +145,7 @@ module MonitoringServiceTestHelper
       redis_mock
     end
 
-    # ActionCable mocking
+    # ActionCable mocking (legacy — uses Redis-based pubsub adapter)
     def mock_action_cable(status: "running")
       pubsub = double("ActionCable::SubscriptionAdapter::Redis")
       redis_connection = double("Redis")
@@ -160,6 +160,19 @@ module MonitoringServiceTestHelper
 
       server = double("ActionCable::Server::Base")
       allow(server).to receive(:pubsub).and_return(pubsub)
+
+      allow(ActionCable).to receive(:server).and_return(server)
+    end
+
+    # ActionCable adapter-agnostic mocking (works with Solid Cable, Redis, or any adapter)
+    def mock_action_cable_adapter(available: true)
+      pubsub = available ? double("ActionCable::SubscriptionAdapter") : nil
+      server = double("ActionCable::Server::Base")
+      allow(server).to receive(:pubsub).and_return(pubsub)
+
+      if !available
+        allow(server).to receive(:pubsub).and_raise(StandardError.new("ActionCable unavailable"))
+      end
 
       allow(ActionCable).to receive(:server).and_return(server)
     end

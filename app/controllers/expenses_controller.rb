@@ -328,7 +328,7 @@ class ExpensesController < ApplicationController
 
   # POST /expenses/:id/reject_suggestion
   def reject_suggestion
-    @expense.update!(ml_suggested_category_id: nil)
+    @expense.dismiss_ml_suggestion!
 
     respond_to do |format|
       format.html { redirect_back(fallback_location: @expense, notice: t("expenses.flash.suggestion_rejected")) }

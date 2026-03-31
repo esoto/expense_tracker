@@ -148,6 +148,32 @@ class Expense < ApplicationRecord
     end
   end
 
+  def dismiss_ml_suggestion!
+    return false unless ml_suggested_category_id.present?
+
+    dismissed_category_id = ml_suggested_category_id
+
+    transaction do
+      self.ml_correction_count = (ml_correction_count || 0) + 1
+      self.ml_last_corrected_at = Time.current
+      self.ml_suggested_category_id = nil
+
+      pattern_learning_events.create!(
+        category_id: category_id || dismissed_category_id,
+        pattern_used: "dismissed_suggestion",
+        was_correct: false,
+        confidence_score: 0.0,
+        context_data: {
+          dismissed_suggested_category_id: dismissed_category_id,
+          merchant: merchant_name,
+          description: description
+        }
+      )
+
+      save!
+    end
+  end
+
   # Class methods
   def self.total_amount_for_period(start_date, end_date)
     by_date_range(start_date, end_date).sum(:amount)

@@ -9,17 +9,12 @@ class BulkDeletionJob < BulkOperations::BaseJob
   protected
 
   def execute_operation
-    service = Services::BulkOperations::DeletionService.new(
-      expense_ids: @expense_ids,
-      user: @user,
-      options: @options.merge(force_synchronous: true)
-    )
+    return { success: true, message: "No expenses to delete", affected_count: 0 } if @expense_ids.empty?
 
-    # Track progress during operation
     total = @expense_ids.size
     processed = 0
+    last_result = nil
 
-    # Process in batches with progress updates
     @expense_ids.each_slice(50) do |batch_ids|
       batch_service = Services::BulkOperations::DeletionService.new(
         expense_ids: batch_ids,
@@ -27,7 +22,7 @@ class BulkDeletionJob < BulkOperations::BaseJob
         options: @options.merge(force_synchronous: true)
       )
 
-      batch_result = batch_service.call
+      last_result = batch_service.call
       processed += batch_ids.size
 
       percentage = (processed.to_f / total * 100).round
@@ -37,7 +32,7 @@ class BulkDeletionJob < BulkOperations::BaseJob
       sleep 0.1 if total > 100
     end
 
-    service.call
+    last_result
   end
 
   def service_class

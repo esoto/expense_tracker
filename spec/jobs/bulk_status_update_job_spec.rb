@@ -11,8 +11,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
   let(:options) { { broadcast_updates: true } }
   let(:merged_options) { options.merge(force_synchronous: true) }
 
-  # Mock services for different calls
-  let(:main_service) { double('MainService', call: { success: true, message: 'Status update completed', affected_count: 120 }) }
+  # Mock services
   let(:batch_service) { double('BatchService', call: { success: true }) }
 
   before do
@@ -39,16 +38,9 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
   describe '#perform' do
     context 'with valid status and multiple batches' do
       it 'sets the status and calls parent perform' do
-        # This test verifies the basic flow
-        # Mock the redundant service at the end
-        allow(Services::BulkOperations::StatusUpdateService).to receive(:new)
-          .with(expense_ids: expense_ids, status: status, user: user, options: merged_options)
-          .and_return(main_service)
-
         expect(job).to receive(:track_progress).with(0, "Starting bulk operation...")
-        expect(main_service).to receive(:call).and_return({ success: true, message: 'Completed', affected_count: 120 })
 
-        result = job.perform(expense_ids: expense_ids, status: status, user_id: user.id, options: options)
+        job.perform(expense_ids: expense_ids, status: status, user_id: user.id, options: options)
 
         expect(job.instance_variable_get(:@status)).to eq('processed')
       end
@@ -70,15 +62,9 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
           .with(expense_ids: expense_ids[100...120], status: status, user: user, options: merged_options)
           .and_return(batch3_service)
 
-        # Mock the main service call at the end (the BUG!)
-        allow(Services::BulkOperations::StatusUpdateService).to receive(:new)
-          .with(expense_ids: expense_ids, status: status, user: user, options: merged_options)
-          .and_return(main_service)
-
         expect(batch1_service).to receive(:call).once
         expect(batch2_service).to receive(:call).once
         expect(batch3_service).to receive(:call).once
-        expect(main_service).to receive(:call).once # This is the redundant call!
 
         job.perform(expense_ids: expense_ids, status: status, user_id: user.id, options: options)
       end
@@ -101,77 +87,33 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
       end
     end
 
-    context 'BUG: redundant service call on line 43' do
-      it 'makes an unnecessary duplicate call to StatusUpdateService after batch processing' do
-        # This test specifically highlights the BUG where the service is called
-        # TWICE for all expenses - once in batches and once for the full set
-
-        batch1_service = double('Batch1Service', call: { success: true })
-        batch2_service = double('Batch2Service', call: { success: true })
-        batch3_service = double('Batch3Service', call: { success: true })
-        initial_service = double('InitialService (line 13)', call: { success: true, message: 'Redundant call', affected_count: 120 })
-
-        # Track which services are created
-        service_creation_order = []
-        creation_count = 0
-
-        allow(Services::BulkOperations::StatusUpdateService).to receive(:new) do |args|
-          creation_count += 1
-          service_creation_order << args[:expense_ids].size
-
-          # First call is on line 13 (creates service with ALL expense_ids)
-          if creation_count == 1
-            initial_service  # This service is created but not used in batches!
-          else
-            # Subsequent calls are for batches (lines 26-31)
-            case args[:expense_ids].size
-            when 50
-              if service_creation_order.count(50) == 1
-                batch1_service
-              else
-                batch2_service
-              end
-            when 20
-              batch3_service
-            end
-          end
-        end
-
-        # All batches are called
-        expect(batch1_service).to receive(:call).once
-        expect(batch2_service).to receive(:call).once
-        expect(batch3_service).to receive(:call).once
-
-        # BUG: The initial service (line 13) is finally called on line 43!
-        expect(initial_service).to receive(:call).once
-
-        job.perform(expense_ids: expense_ids, status: status, user_id: user.id, options: options)
-
-        # Verify the service was instantiated 4 times (1 initial + 3 batches)
-        expect(service_creation_order).to eq([ 120, 50, 50, 20 ])
-        #                                      ^^^ Initial service with ALL expenses (line 13)
-        #                                           ^^^^^^^^^^^ Batch processing
-        # The BUG: Initial service (120) is called AGAIN on line 43!
-      end
-
-      it 'demonstrates performance impact of the redundant call' do
-        # This test shows that expenses are processed TWICE
+    context 'processes each expense exactly once' do
+      it 'does not double-process expenses' do
         processed_expense_ids = []
 
         allow(Services::BulkOperations::StatusUpdateService).to receive(:new) do |args|
-          # Track which expense IDs are being processed
           processed_expense_ids.concat(args[:expense_ids])
           batch_service
         end
 
         job.perform(expense_ids: expense_ids, status: status, user_id: user.id, options: options)
 
-        # BUG: Each expense ID appears TWICE in the processed list
         expense_id_frequency = processed_expense_ids.group_by(&:itself).transform_values(&:count)
-
-        # Every expense is processed exactly twice (once in batch, once in redundant call)
-        expect(expense_id_frequency.values.uniq).to eq([ 2 ])
+        expect(expense_id_frequency.values.uniq).to eq([ 1 ])
         expect(expense_id_frequency.size).to eq(120)
+      end
+
+      it 'creates services only for batches, not for the full set' do
+        service_creation_sizes = []
+
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new) do |args|
+          service_creation_sizes << args[:expense_ids].size
+          batch_service
+        end
+
+        job.perform(expense_ids: expense_ids, status: status, user_id: user.id, options: options)
+
+        expect(service_creation_sizes).to eq([ 50, 50, 20 ])
       end
     end
 
@@ -195,8 +137,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
           .with(expense_ids: expense_ids, status: status, user: user, options: merged_options)
           .and_return(single_batch_service)
 
-        # BUG: Even with a single batch, the service is called twice!
-        expect(single_batch_service).to receive(:call).twice # Batch call + redundant final call
+        expect(single_batch_service).to receive(:call).once
         expect(job).not_to receive(:sleep) # No sleep for jobs with <= 100 items
 
         job.perform(expense_ids: expense_ids, status: status, user_id: user.id, options: options)
@@ -206,15 +147,14 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
     context 'with exactly 50 expenses (single batch boundary)' do
       let(:expense_ids) { (1..50).to_a }
 
-      it 'processes in one batch but still makes redundant call' do
+      it 'processes in one batch' do
         boundary_service = double('BoundaryService', call: { success: true })
 
         allow(Services::BulkOperations::StatusUpdateService).to receive(:new)
           .with(expense_ids: expense_ids, status: status, user: user, options: merged_options)
           .and_return(boundary_service)
 
-        # BUG: Service called twice even for perfect batch size
-        expect(boundary_service).to receive(:call).twice
+        expect(boundary_service).to receive(:call).once
         expect(job).not_to receive(:sleep)
 
         job.perform(expense_ids: expense_ids, status: status, user_id: user.id, options: options)
@@ -224,7 +164,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
     context 'with exactly 100 expenses (double batch boundary)' do
       let(:expense_ids) { (1..100).to_a }
 
-      it 'processes in exactly 2 batches plus redundant call' do
+      it 'processes in exactly 2 batches' do
         batch_services = []
 
         allow(Services::BulkOperations::StatusUpdateService).to receive(:new) do |args|
@@ -235,10 +175,8 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
 
         job.perform(expense_ids: expense_ids, status: status, user_id: user.id, options: options)
 
-        # Should create services for: initial (100), batch1 (50), batch2 (50)
-        # The initial service (line 13) is called on line 43
         sizes = batch_services.map { |b| b[:size] }
-        expect(sizes).to eq([ 100, 50, 50 ]) # Initial service + 2 batches
+        expect(sizes).to eq([ 50, 50 ])
 
         # No sleep since total == 100 (not > 100)
         expect(job).not_to have_received(:sleep)
@@ -260,14 +198,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
       let(:expense_ids) { [] }
 
       it 'completes successfully without processing batches' do
-        empty_service = double('EmptyService', call: { success: true, message: 'No expenses to update', affected_count: 0 })
-
-        allow(Services::BulkOperations::StatusUpdateService).to receive(:new)
-          .with(expense_ids: [], status: status, user: user, options: merged_options)
-          .and_return(empty_service)
-
-        # Only the redundant final call happens (no batches to process)
-        expect(empty_service).to receive(:call).once
+        expect(Services::BulkOperations::StatusUpdateService).not_to receive(:new)
         expect(job).not_to receive(:sleep)
 
         job.perform(expense_ids: expense_ids, status: status, user_id: user.id, options: options)
@@ -277,15 +208,14 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
     context 'with single expense' do
       let(:expense_ids) { [ 42 ] }
 
-      it 'processes single expense but still makes redundant call' do
+      it 'processes single expense exactly once' do
         single_service = double('SingleService', call: { success: true })
 
         allow(Services::BulkOperations::StatusUpdateService).to receive(:new)
           .with(expense_ids: [ 42 ], status: status, user: user, options: merged_options)
           .and_return(single_service)
 
-        # BUG: Even a single expense is processed twice
-        expect(single_service).to receive(:call).twice
+        expect(single_service).to receive(:call).once
         expect(job).not_to receive(:sleep)
 
         job.perform(expense_ids: expense_ids, status: status, user_id: user.id, options: options)
@@ -315,8 +245,8 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
 
       it 'proceeds with nil user' do
         allow(Services::BulkOperations::StatusUpdateService).to receive(:new)
-          .with(expense_ids: expense_ids, status: status, user: nil, options: merged_options)
-          .and_return(main_service)
+          .with(expense_ids: anything, status: status, user: nil, options: merged_options)
+          .and_return(batch_service)
 
         expect { job.perform(expense_ids: expense_ids, status: status, user_id: user.id, options: options) }
           .not_to raise_error
@@ -325,10 +255,9 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
 
     context 'when status is not provided' do
       it 'allows nil status but may cause issues in service' do
-        # The job itself doesn't validate status, but the service might
         allow(Services::BulkOperations::StatusUpdateService).to receive(:new)
-          .with(expense_ids: expense_ids, status: nil, user: user, options: merged_options)
-          .and_return(main_service)
+          .with(expense_ids: anything, status: nil, user: user, options: merged_options)
+          .and_return(batch_service)
 
         expect { job.perform(expense_ids: expense_ids, status: nil, user_id: user.id, options: options) }
           .not_to raise_error
@@ -348,49 +277,36 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
       job.instance_variable_set(:@options, options)
     end
 
-    it 'creates main service and batch services with correct parameters' do
+    it 'creates service only for each batch, not for full set' do
       expect(Services::BulkOperations::StatusUpdateService).to receive(:new)
         .with(expense_ids: expense_ids, status: status, user: user, options: merged_options)
-        .and_return(main_service).twice # Once for initial, once for redundant call
+        .once
+        .and_return(batch_service)
 
-      expect(main_service).to receive(:call).twice # BUG: Called twice!
+      expect(batch_service).to receive(:call).once
 
       job.send(:execute_operation)
     end
 
-    it 'demonstrates the redundant final call bug' do
-      # This test explicitly shows the BUG on line 43
-      # The service is instantiated at line 13 but never used until line 43
-
-      initial_service = double('InitialService')
-      batch_service = double('BatchService', call: { success: true })
-
-      # Track service instantiation
-      instantiation_count = 0
+    it 'processes each expense exactly once' do
+      processed_expense_ids = []
 
       allow(Services::BulkOperations::StatusUpdateService).to receive(:new) do |args|
-        instantiation_count += 1
-        if instantiation_count == 1
-          # Line 13: Service created but NEVER USED in batch processing
-          initial_service
-        else
-          # Lines 26-31: New services created for each batch
-          batch_service
-        end
+        processed_expense_ids.concat(args[:expense_ids])
+        batch_service
       end
 
-      # The initial service is created but its reference is lost!
-      expect(initial_service).to receive(:call).once # Line 43: Finally used!
-      expect(batch_service).to receive(:call).once   # Batch processing
-
       job.send(:execute_operation)
+
+      expense_id_frequency = processed_expense_ids.group_by(&:itself).transform_values(&:count)
+      expect(expense_id_frequency.values.uniq).to eq([ 1 ])
     end
 
     context 'with large batch requiring throttling' do
       let(:expense_ids) { (1..150).to_a }
 
       it 'calls sleep after each batch for large jobs' do
-        allow(Services::BulkOperations::StatusUpdateService).to receive(:new).and_return(batch_service, main_service)
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new).and_return(batch_service)
 
         job.send(:execute_operation)
 
@@ -403,7 +319,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
       let(:expense_ids) { (1..75).to_a } # Will create 2 batches: 50, 25
 
       it 'calculates correct progress percentages' do
-        allow(Services::BulkOperations::StatusUpdateService).to receive(:new).and_return(batch_service, main_service)
+        allow(Services::BulkOperations::StatusUpdateService).to receive(:new).and_return(batch_service)
 
         job.send(:execute_operation)
 
@@ -443,7 +359,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
       job.instance_variable_set(:@status, status)
       job.instance_variable_set(:@user, user)
       job.instance_variable_set(:@options, options)
-      allow(Services::BulkOperations::StatusUpdateService).to receive(:new).and_return(batch_service, main_service)
+      allow(Services::BulkOperations::StatusUpdateService).to receive(:new).and_return(batch_service)
     end
 
     it 'calculates correct progress percentages' do
@@ -497,9 +413,8 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
 
         job.perform(expense_ids: expense_ids, status: status, user_id: user.id, options: options)
 
-        # Should create: 1 initial + 200 batches = 201 service instances
-        # The initial service (line 13) is used on line 43 (redundant call)
-        expect(call_count).to eq(201) # BUG: The initial service processes ALL 10000 items again!
+        # Should create exactly 200 batch services (no redundant initial service)
+        expect(call_count).to eq(200)
       end
     end
   end

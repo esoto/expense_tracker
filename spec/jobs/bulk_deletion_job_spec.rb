@@ -10,8 +10,7 @@ RSpec.describe BulkDeletionJob, type: :job, unit: true do
   let(:options) { { reason: 'test_deletion' } }
   let(:merged_options) { options.merge(force_synchronous: true) }
 
-  # Mock services for different calls
-  let(:main_service) { double('MainService', call: { success: true, message: 'Main deletion completed' }) }
+  # Mock services
   let(:batch_service) { double('BatchService', call: { success: true }) }
 
   before do
@@ -54,15 +53,9 @@ RSpec.describe BulkDeletionJob, type: :job, unit: true do
           .with(expense_ids: expense_ids[100...120], user: user, options: merged_options)
           .and_return(batch3_service)
 
-        # Mock the main service call at the end
-        allow(Services::BulkOperations::DeletionService).to receive(:new)
-          .with(expense_ids: expense_ids, user: user, options: merged_options)
-          .and_return(main_service)
-
         expect(batch1_service).to receive(:call).once
         expect(batch2_service).to receive(:call).once
         expect(batch3_service).to receive(:call).once
-        expect(main_service).to receive(:call).once
 
         job.perform(expense_ids: expense_ids, user_id: user.id, options: options)
       end
@@ -94,7 +87,7 @@ RSpec.describe BulkDeletionJob, type: :job, unit: true do
           .with(expense_ids: expense_ids, user: user, options: merged_options)
           .and_return(single_batch_service)
 
-        expect(single_batch_service).to receive(:call).twice # Batch call + final call
+        expect(single_batch_service).to receive(:call).once
         expect(job).not_to receive(:sleep)
 
         job.perform(expense_ids: expense_ids, user_id: user.id, options: options)
@@ -105,13 +98,7 @@ RSpec.describe BulkDeletionJob, type: :job, unit: true do
       let(:expense_ids) { [] }
 
       it 'completes successfully without processing batches' do
-        empty_service = double('EmptyService', call: { success: true, message: 'No expenses to delete' })
-
-        allow(Services::BulkOperations::DeletionService).to receive(:new)
-          .with(expense_ids: [], user: user, options: merged_options)
-          .and_return(empty_service)
-
-        expect(empty_service).to receive(:call).once # Only the final call happens
+        expect(Services::BulkOperations::DeletionService).not_to receive(:new)
         expect(job).not_to receive(:sleep)
 
         job.perform(expense_ids: expense_ids, user_id: user.id, options: options)
@@ -141,8 +128,8 @@ RSpec.describe BulkDeletionJob, type: :job, unit: true do
 
       it 'proceeds with nil user' do
         allow(Services::BulkOperations::DeletionService).to receive(:new)
-          .with(expense_ids: expense_ids, user: nil, options: merged_options)
-          .and_return(main_service)
+          .with(expense_ids: anything, user: nil, options: merged_options)
+          .and_return(batch_service)
 
         expect { job.perform(expense_ids: expense_ids, user_id: user.id, options: options) }
           .not_to raise_error
@@ -159,37 +146,36 @@ RSpec.describe BulkDeletionJob, type: :job, unit: true do
       job.instance_variable_set(:@options, options)
     end
 
-    it 'creates main service and batch services with correct parameters' do
+    it 'creates service only for each batch, not for full set' do
       expect(Services::BulkOperations::DeletionService).to receive(:new)
         .with(expense_ids: expense_ids, user: user, options: merged_options)
-        .and_return(main_service)
-      expect(Services::BulkOperations::DeletionService).to receive(:new)
-        .with(expense_ids: expense_ids, user: user, options: merged_options)
+        .once
         .and_return(batch_service)
 
-      expect(batch_service).to receive(:call)
-      expect(main_service).to receive(:call)
+      expect(batch_service).to receive(:call).once
 
       job.send(:execute_operation)
     end
 
-    it 'makes a redundant final call to deletion service' do
-      # This test highlights the potential inefficiency in the code
-      # The service is called once for the batch and once for the full set
-      expect(batch_service).to receive(:call).once # Batch processing
-      expect(main_service).to receive(:call).once  # Final redundant call
+    it 'processes each expense exactly once' do
+      processed_expense_ids = []
 
-      # Set up both service instances
-      allow(Services::BulkOperations::DeletionService).to receive(:new).and_return(batch_service, main_service)
+      allow(Services::BulkOperations::DeletionService).to receive(:new) do |args|
+        processed_expense_ids.concat(args[:expense_ids])
+        batch_service
+      end
 
       job.send(:execute_operation)
+
+      expense_id_frequency = processed_expense_ids.group_by(&:itself).transform_values(&:count)
+      expect(expense_id_frequency.values.uniq).to eq([ 1 ])
     end
 
     context 'with large batch requiring throttling' do
       let(:expense_ids) { (1..150).to_a }
 
       it 'calls sleep after each batch for large jobs' do
-        allow(Services::BulkOperations::DeletionService).to receive(:new).and_return(batch_service, main_service)
+        allow(Services::BulkOperations::DeletionService).to receive(:new).and_return(batch_service)
 
         job.send(:execute_operation)
 
@@ -221,7 +207,7 @@ RSpec.describe BulkDeletionJob, type: :job, unit: true do
       job.instance_variable_set(:@expense_ids, expense_ids)
       job.instance_variable_set(:@user, user)
       job.instance_variable_set(:@options, options)
-      allow(Services::BulkOperations::DeletionService).to receive(:new).and_return(batch_service, main_service)
+      allow(Services::BulkOperations::DeletionService).to receive(:new).and_return(batch_service)
     end
 
     it 'calculates correct progress percentages' do

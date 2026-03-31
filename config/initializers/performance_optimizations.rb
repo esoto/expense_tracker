@@ -2,23 +2,9 @@
 
 # Performance optimizations for the expense tracker application
 
-# Configure Rails cache for dashboard metrics
-Rails.application.configure do
-  # Use memory store in development, Redis in production
-  if Rails.env.production?
-    config.cache_store = :redis_cache_store, {
-      url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"),
-      expires_in: 1.minute,
-      namespace: "expense_tracker_dashboard",
-      pool_size: 10,
-      pool_timeout: 5,
-      compress: true,
-      compress_threshold: 1.kilobyte
-    }
-  else
-    config.cache_store = :memory_store, { size: 64.megabytes }
-  end
-end
+# Note: Rails.cache is configured in config/environments/*.rb (Solid Cache in production).
+# Do NOT set config.cache_store here — multiple initializers competing for it causes
+# non-deterministic behavior (see PER-282).
 
 # Configure ActiveRecord for better performance
 ActiveRecord::Base.establish_connection(

@@ -1,7 +1,8 @@
-# Redis configuration for categorization pattern caching
-# Note: This initializer is safe to load even if Redis is not available
+# Redis configuration for categorization pattern caching (L2 tier)
+# Note: This initializer is safe to load even if Redis is not available.
+# Redis is used by PatternCache as the L2 cache layer — it does NOT override Rails.cache.
+# Rails.cache is configured in config/environments/*.rb (Solid Cache in production).
 
-# Skip Redis configuration in test environment to allow proper test isolation
 unless Rails.env.test?
   if defined?(Redis)
     redis_config = {
@@ -18,31 +19,13 @@ unless Rails.env.test?
       test_redis.ping
       test_redis.disconnect!
 
-      Rails.logger.info "✅ Redis connected successfully" if defined?(Rails.logger)
-
-      # Configure Rails cache store to use Redis
-      Rails.application.configure do
-        config.cache_store = :redis_cache_store, redis_config.merge(
-          namespace: "categorization",
-          expires_in: 24.hours
-        )
-      end
+      Rails.logger.info "✅ Redis connected successfully (used for PatternCache L2, not Rails.cache)"
 
     rescue => e
       if defined?(Rails.logger)
         Rails.logger.warn "⚠️  Redis connection failed: #{e.message}"
-        Rails.logger.warn "   Categorization caching will use memory-only cache"
+        Rails.logger.warn "   Categorization caching will use memory-only cache (L1 only)"
       end
-
-      # Fallback to memory cache
-      Rails.application.configure do
-        config.cache_store = :memory_store, { size: 32.megabytes }
-      end
-    end
-  else
-    # Redis gem not available, use memory cache
-    Rails.application.configure do
-      config.cache_store = :memory_store, { size: 32.megabytes }
     end
   end
 end

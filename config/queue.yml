@@ -26,8 +26,8 @@ production:
       processes: <%= ENV.fetch("HIGH_PRIORITY_PROCESSES", 2) %>
       polling_interval: 0.1
       priority: 10
-    # Standard queue for background jobs (metrics, cleanup)
-    - queues: [ metrics, background, maintenance ]
+    # Standard queue for background jobs (metrics, cleanup, bulk operations)
+    - queues: [ metrics, background, maintenance, bulk_operations, low, low_priority ]
       threads: <%= ENV.fetch("STANDARD_THREADS", 3) %>
       processes: <%= ENV.fetch("STANDARD_PROCESSES", 1) %>
       polling_interval: 0.5

@@ -93,7 +93,7 @@ module Services::Categorization
         @matcher = matcher || Matchers::FuzzyMatcher.new
         @confidence_calculator = confidence_calculator || ConfidenceCalculator.new
         @pattern_learner = pattern_learner || PatternLearner.new
-        @performance_tracker = performance_tracker || PerformanceTracker.new
+        @performance_tracker = performance_tracker || PerformanceTracker.instance
         @circuit_breaker = circuit_breaker || CircuitBreaker.new
         @logger = logger
         @options = DEFAULT_OPTIONS.dup

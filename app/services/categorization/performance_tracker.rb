@@ -1,12 +1,14 @@
 # frozen_string_literal: true
 
 require "concurrent"
+require "singleton"
 
 module Services::Categorization
   # Thread-safe performance tracking service for categorization operations
   # Monitors and reports on categorization performance metrics with bounded memory usage
   # Ensures operations stay within performance targets (<10ms)
   class PerformanceTracker
+    include Singleton
     include ActiveSupport::Benchmarkable
 
     # Performance thresholds
@@ -23,7 +25,7 @@ module Services::Categorization
 
     attr_reader :start_time
 
-    def initialize(logger: Rails.logger)
+    def initialize(logger: Rails.logger) # rubocop:disable Lint/MissingSuper
       @logger = logger
 
       # Thread-safe collections using concurrent-ruby
@@ -194,23 +196,22 @@ module Services::Categorization
 
     # Check service health
     def healthy?
-      @healthy ||= begin
-        # Check if we have recent data
-        samples = @categorizations.to_a
-        if samples.empty?
-          # No data means we're just started, consider healthy
-          true
-        else
-          # Check if performance is acceptable
-          avg_time = average_categorization_time
-          error_rate_val = error_rate(samples)
+      # Fresh computation each call — as a Singleton, memoizing `false`
+      # would mean permanently unhealthy until process restart.
+      samples = @categorizations.to_a
+      if samples.empty?
+        # No data means we're just started, consider healthy
+        true
+      else
+        # Check if performance is acceptable
+        avg_time = average_categorization_time
+        error_rate_val = error_rate(samples)
 
-          avg_time <= CRITICAL_TIME_MS && error_rate_val < 50.0
-        end
-      rescue => e
-        @logger.error "[PerformanceTracker] Health check failed: #{e.message}"
-        false
+        avg_time <= CRITICAL_TIME_MS && error_rate_val < 50.0
       end
+    rescue => e
+      @logger.error "[PerformanceTracker] Health check failed: #{e.message}"
+      false
     end
 
     private

@@ -56,7 +56,7 @@ module Services::Categorization
         @services[:fuzzy_matcher] ||= options[:fuzzy_matcher] || Matchers::FuzzyMatcher.new
         @services[:confidence_calculator] ||= options[:confidence_calculator] || ConfidenceCalculator.new
         @services[:pattern_learner] ||= options[:pattern_learner] || PatternLearner.new(pattern_cache: @services[:pattern_cache])
-        @services[:performance_tracker] ||= options[:performance_tracker] || PerformanceTracker.new
+        @services[:performance_tracker] ||= options[:performance_tracker] || PerformanceTracker.instance
         @services[:lru_cache] ||= options[:lru_cache] || LruCache.new(
           max_size: Engine::MAX_PATTERN_CACHE_SIZE,
           ttl_seconds: 300

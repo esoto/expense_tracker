@@ -344,14 +344,22 @@ RSpec.describe Services::Categorization::Monitoring::DashboardHelperOptimized, t
       end
     end
 
-    context "when PerformanceTracker raises an error (default behavior)" do
-      it "returns error message since PerformanceTracker has no .instance method" do
-        # PerformanceTracker does not define .instance, so calling it raises NoMethodError,
-        # which is rescued and returns the error hash.
+    context "when PerformanceTracker is available (Singleton)" do
+      it "returns performance metrics from the singleton instance" do
+        mock_tracker = instance_double(Services::Categorization::PerformanceTracker)
+        allow(Services::Categorization::PerformanceTracker).to receive(:instance).and_return(mock_tracker)
+        allow(mock_tracker).to receive(:metrics).and_return({
+          operations: {
+            "categorize_expense" => { avg_duration: 15.5, durations: [ 10, 20 ] },
+            "learn_pattern" => { avg_duration: 8.2, durations: [ 5 ] },
+            "cache_lookup" => { avg_duration: 2.1, durations: [ 1 ] }
+          }
+        })
+        allow(Expense).to receive(:where).and_return(double(count: 60))
+
         result = helper.performance_metrics
 
-        expect(result).to have_key(:error)
-        expect(result[:error]).to include("Unable to fetch performance metrics")
+        expect(result).to include(:operations, :averages, :slow_operations, :throughput)
       end
     end
   end

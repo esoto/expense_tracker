@@ -7,13 +7,8 @@
 return if Rails.env.test?
 
 class Rack::Attack
-  # Store configuration in Redis if available, otherwise use in-memory cache
-  if ENV["REDIS_URL"].present?
-    Rack::Attack.cache.store = ActiveSupport::Cache::RedisCacheStore.new(url: ENV["REDIS_URL"])
-  else
-    # Use Rails cache for development/testing
-    Rack::Attack.cache.store = Rails.cache
-  end
+  # Use Rails.cache (Solid Cache in production, memory store in dev)
+  Rack::Attack.cache.store = Rails.cache
 
   # === Allow Lists ===
   # Always allow requests from localhost in development

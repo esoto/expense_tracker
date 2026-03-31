@@ -112,6 +112,18 @@ RSpec.describe "Rack::Attack throttle path matching", :unit do
     end
   end
 
+  describe "cache store configuration" do
+    it "uses Rails.cache unconditionally without Redis branching" do
+      initializer_path = Rails.root.join("config/initializers/rack_attack.rb")
+      content = File.read(initializer_path)
+
+      # Must use Rails.cache directly, no Redis conditional
+      expect(content).to include("Rack::Attack.cache.store = Rails.cache")
+      expect(content).not_to include("RedisCacheStore")
+      expect(content).not_to include('ENV["REDIS_URL"]')
+    end
+  end
+
   describe "middleware loading" do
     it "loads middleware in all non-test environments including development" do
       # In development, the middleware must be mounted so throttles can be

@@ -20,7 +20,7 @@ module Services::Categorization
                           15.minutes
     end
     DEFAULT_L2_TTL = if defined?(Services::Infrastructure::PerformanceConfig)
-                       Services::Infrastructure::PerformanceConfig::CACHE_CONFIG[:redis_cache_ttl]
+                       Services::Infrastructure::PerformanceConfig::CACHE_CONFIG[:l2_cache_ttl]
     else
                        1.hour
     end

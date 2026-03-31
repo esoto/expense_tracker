@@ -77,7 +77,7 @@ module Services
         race_condition_ttl: 10.seconds, # Prevents cache stampede
         memory_cache_max_size_mb: 50,
         memory_cache_ttl: 15.minutes,
-        redis_cache_ttl: 1.hour,
+        l2_cache_ttl: 1.hour,
         pattern_cache_warming: {
           enabled: true,
           interval: 15.minutes,

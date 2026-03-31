@@ -35,7 +35,7 @@ namespace :categorization do
         )
       end
 
-      cache = Categorization::PatternCache.instance
+      cache = Services::Categorization::PatternCache.instance
       cache.invalidate_all
 
       puts "\nTest Data:"
@@ -205,7 +205,7 @@ namespace :categorization do
 
     desc "Monitor cache performance in real-time"
     task monitor: :environment do
-      cache = Categorization::PatternCache.instance
+      cache = Services::Categorization::PatternCache.instance
 
       puts "\n" + "=" * 80
       puts "PATTERN CACHE MONITOR (Press Ctrl+C to exit)"
@@ -266,7 +266,7 @@ namespace :categorization do
 
     desc "Test cache warming on startup"
     task test_warmup: :environment do
-      cache = Categorization::PatternCache.instance
+      cache = Services::Categorization::PatternCache.instance
 
       puts "\n" + "=" * 80
       puts "TESTING CACHE WARMUP"

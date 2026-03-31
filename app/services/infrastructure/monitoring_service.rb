@@ -519,7 +519,7 @@ module Services::Infrastructure
           end
 
           def pattern_cache_metrics
-            return {} unless defined?(Categorization::PatternCache)
+            return {} unless defined?(Services::Categorization::PatternCache)
 
             cache = Services::Categorization::PatternCache.instance
             cache_metrics = cache.metrics
@@ -627,7 +627,7 @@ module Services::Infrastructure
           end
 
           def check_pattern_cache_health
-            return { status: "not_configured" } unless defined?(Categorization::PatternCache)
+            return { status: "not_configured" } unless defined?(Services::Categorization::PatternCache)
 
             metrics = pattern_cache_metrics
 

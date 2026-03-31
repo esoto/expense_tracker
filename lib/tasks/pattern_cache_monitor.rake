@@ -6,7 +6,7 @@ namespace :cache do
     puts "Press Ctrl+C to stop monitoring"
     puts
 
-    cache = Categorization::PatternCache.instance
+    cache = Services::Categorization::PatternCache.instance
 
     loop do
       begin
@@ -101,7 +101,7 @@ namespace :cache do
 
   desc "Show current pattern cache status"
   task status: :environment do
-    cache = Categorization::PatternCache.instance
+    cache = Services::Categorization::PatternCache.instance
 
     puts "🚀 CATEGORIZATION PATTERN CACHE - STATUS"
     puts "=" * 50
@@ -179,7 +179,7 @@ namespace :cache do
     puts "🔥 WARMING PATTERN CACHE"
     puts "=" * 40
 
-    cache = Categorization::PatternCache.instance
+    cache = Services::Categorization::PatternCache.instance
 
     puts "Starting cache warmup..."
     result = cache.warm_cache
@@ -204,7 +204,7 @@ namespace :cache do
     puts "🧪 GENERATING SAMPLE CACHE ACTIVITY"
     puts "=" * 50
 
-    cache = Categorization::PatternCache.instance
+    cache = Services::Categorization::PatternCache.instance
 
     # Get some patterns to test with
     patterns = CategorizationPattern.active.limit(10)

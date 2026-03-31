@@ -21,7 +21,7 @@ namespace :performance do
     puts "="*80 + "\n"
 
     # Initialize services
-    pattern_cache = Categorization::PatternCache.instance
+    pattern_cache = Services::Categorization::PatternCache.instance
     engine = Services::Categorization::Engine.instance
 
     # Ensure cache is warmed
@@ -77,7 +77,7 @@ namespace :performance do
     puts "\nQuick Performance Check"
     puts "="*40
 
-    pattern_cache = Categorization::PatternCache.instance
+    pattern_cache = Services::Categorization::PatternCache.instance
 
     # Test pattern lookup
     expense = Expense.first || create_test_expense
@@ -103,7 +103,7 @@ namespace :performance do
     puts "\nPattern Cache Stress Test"
     puts "="*40
 
-    pattern_cache = Categorization::PatternCache.instance
+    pattern_cache = Services::Categorization::PatternCache.instance
 
     # Create many unique CategorizationPattern records
     # These will be automatically cached when fetched

@@ -278,16 +278,42 @@ RSpec.describe Services::BulkOperations::CategorizationService, type: :service, 
         expect(expense_same_suggestion.reload.ml_last_corrected_at).to be_nil
       end
 
+      it "clears ml_suggested_category_id when suggestion differs from chosen category" do
+        service.call
+
+        expect(expense_different_suggestion.reload.ml_suggested_category_id).to be_nil
+      end
+
+      it "preserves ml_suggested_category_id when suggestion matches chosen category" do
+        service.call
+
+        expect(expense_same_suggestion.reload.ml_suggested_category_id).to eq(target_category.id)
+      end
+
+      it "leaves ml_suggested_category_id nil for expenses with no suggestion" do
+        service.call
+
+        expect(expense_no_suggestion.reload.ml_suggested_category_id).to be_nil
+      end
+
       it "accumulates ml_correction_count across multiple calls" do
         service.call
-        service2 = described_class.new(
-          expense_ids: [ expense_different_suggestion.id ],
+        expense = expense_different_suggestion.reload
+        expect(expense.ml_correction_count).to eq(1)
+        expect(expense.ml_suggested_category_id).to be_nil
+
+        # Simulate ML re-suggesting after the first correction cleared it
+        expense.update_columns(
+          ml_suggested_category_id: ml_category.id,
+          category_id: other_category.id
+        )
+        described_class.new(
+          expense_ids: [ expense.id ],
           category_id: target_category.id,
           options: { track_ml_corrections: true, force_synchronous: true }
-        )
-        service2.call
+        ).call
 
-        expect(expense_different_suggestion.reload.ml_correction_count).to eq(2)
+        expect(expense.reload.ml_correction_count).to eq(2)
       end
     end
 
@@ -317,6 +343,12 @@ RSpec.describe Services::BulkOperations::CategorizationService, type: :service, 
         service.call
 
         expect(expense_with_suggestion.reload.ml_last_corrected_at).to be_nil
+      end
+
+      it "does not clear ml_suggested_category_id" do
+        service.call
+
+        expect(expense_with_suggestion.reload.ml_suggested_category_id).to eq(ml_category.id)
       end
     end
   end

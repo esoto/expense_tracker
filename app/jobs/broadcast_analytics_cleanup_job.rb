@@ -4,7 +4,7 @@
 # to prevent database bloat while maintaining useful historical data.
 #
 # Usage:
-#   BroadcastAnalyticsCleanupJob.perform_async
+#   BroadcastAnalyticsCleanupJob.perform_later
 class BroadcastAnalyticsCleanupJob < ApplicationJob
   queue_as :low
 

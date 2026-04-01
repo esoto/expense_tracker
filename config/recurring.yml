@@ -6,24 +6,38 @@ default: &default
   # This pre-warms the cache with fresh metrics data
   calculate_metrics_hourly:
     class: MetricsCalculationJob
-    command: "MetricsCalculationJob.perform_later"
     queue: default
     priority: 5
     schedule: every hour at minute 5
     description: "Pre-calculate expense metrics for all active email accounts"
 
-  # Clean up old finished jobs periodically  
+  # Clean up old finished jobs periodically
   clear_solid_queue_finished_jobs:
     command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
     schedule: every 6 hours at minute 30
     description: "Clean up completed Solid Queue jobs to prevent database bloat"
+
+  # Clean up old broadcast analytics data and recovered failed broadcast records hourly
+  broadcast_analytics_cleanup:
+    class: BroadcastAnalyticsCleanupJob
+    queue: low
+    priority: 10
+    schedule: every hour at minute 15
+    description: "Clean up old broadcast analytics data and recovered failed broadcast records"
+
+  # Retry failed broadcasts from the dead letter queue every 30 minutes
+  failed_broadcast_recovery:
+    class: FailedBroadcastRecoveryJob
+    queue: low
+    priority: 10
+    schedule: every 30 minutes
+    description: "Retry failed broadcasts from the dead letter queue"
 
 development:
   <<: *default
   # In development, run metrics calculation more frequently for testing
   calculate_metrics_hourly:
     class: MetricsCalculationJob
-    command: "MetricsCalculationJob.perform_later"
     queue: default
     priority: 5
     schedule: every 30 minutes
@@ -32,7 +46,6 @@ development:
   # Warm pattern cache more frequently in development for testing
   warm_pattern_cache:
     class: PatternCacheWarmerJob
-    command: "PatternCacheWarmerJob.perform_later"
     queue: low
     priority: 10
     schedule: every 5 minutes
@@ -49,7 +62,6 @@ production:
   # This keeps frequently used patterns in memory for < 1ms lookups
   warm_pattern_cache:
     class: PatternCacheWarmerJob
-    command: "PatternCacheWarmerJob.perform_later"
     queue: low
     priority: 10
     schedule: every 15 minutes

@@ -4,7 +4,7 @@
 # This job runs periodically to retry broadcasts that failed due to temporary issues.
 #
 # Usage:
-#   FailedBroadcastRecoveryJob.perform_async
+#   FailedBroadcastRecoveryJob.perform_later
 class FailedBroadcastRecoveryJob < ApplicationJob
   queue_as :low
 

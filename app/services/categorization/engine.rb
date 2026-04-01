@@ -627,7 +627,7 @@ module Services::Categorization
           if pattern.matches?(expense)
             matches << {
               pattern: pattern,
-              match_score: 1.0,
+              match_score: 1.0, # Binary match — ConfidenceCalculator handles confidence adjustment
               match_type: pattern.pattern_type
             }
           end

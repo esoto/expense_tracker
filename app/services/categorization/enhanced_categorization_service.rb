@@ -142,7 +142,7 @@ module Services::Categorization
 
         suggestions << {
           category: pattern.category,
-          confidence: match[:adjusted_score] || match[:score],
+          confidence: match[:score] || match[:adjusted_score],
           reason: "Pattern match: #{pattern.pattern_type} - #{pattern.pattern_value}",
           type: :pattern
         }

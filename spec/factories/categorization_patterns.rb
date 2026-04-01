@@ -70,5 +70,12 @@ FactoryBot.define do
       success_count { 90 }
       success_rate { 0.9 }
     end
+
+    trait :new_pattern do
+      usage_count { 0 }
+      success_count { 0 }
+      success_rate { 0.0 }
+      confidence_weight { 1.0 }
+    end
   end
 end

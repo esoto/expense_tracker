@@ -696,4 +696,85 @@ RSpec.describe Services::Categorization::Engine, type: :service do
       engine2.shutdown!
     end
   end
+
+  describe "PER-311 regression: confidence scoring pipeline", :unit do
+    let(:regression_category) { create(:category, name: "PER311-#{SecureRandom.hex(4)}") }
+
+    context "new pattern viability" do
+      let!(:new_merchant_pattern) do
+        create(:categorization_pattern, :new_pattern,
+               pattern_type: "merchant",
+               pattern_value: "whole foods",
+               category: regression_category)
+      end
+
+      it "new pattern with exact merchant match produces confidence >= 0.5" do
+        result = engine.categorize(expense)
+        expect(result).to be_successful
+        expect(result.confidence).to be >= 0.5
+      end
+
+      it "new pattern with fuzzy merchant match produces confidence >= 0.5" do
+        fuzzy_expense = create(:expense,
+                               merchant_name: "Whole Foods Mkt",
+                               description: "groceries",
+                               amount: 50.00,
+                               transaction_date: Time.current)
+        result = engine.categorize(fuzzy_expense)
+        expect(result).to be_successful
+        expect(result.confidence).to be >= 0.5
+      end
+    end
+
+    context "mature pattern advantage" do
+      let(:new_cat) { create(:category, name: "New-#{SecureRandom.hex(4)}") }
+      let(:mature_cat) { create(:category, name: "Mature-#{SecureRandom.hex(4)}") }
+
+      let!(:new_pat) do
+        create(:categorization_pattern, :new_pattern,
+               pattern_type: "merchant",
+               pattern_value: "whole foods",
+               category: new_cat)
+      end
+
+      let!(:mature_pat) do
+        create(:categorization_pattern, :with_high_usage,
+               pattern_type: "merchant",
+               pattern_value: "whole foods",
+               category: mature_cat,
+               metadata: {
+                 "amount_stats" => { "count" => 100, "mean" => 125.0, "std_dev" => 30.0, "min" => 10.0, "max" => 500.0 },
+                 "temporal_stats" => { "hour_distribution" => { "14" => 30 }, "day_distribution" => { "1" => 20 } }
+               })
+      end
+
+      it "mature pattern ranks higher than new pattern for same merchant" do
+        result = engine.categorize(expense)
+        expect(result).to be_successful
+        expect(result.category).to eq(mature_cat)
+      end
+
+      it "both patterns produce confidence above min threshold" do
+        result = engine.categorize(expense)
+        expect(result).to be_successful
+        expect(result.confidence).to be >= 0.5
+      end
+    end
+
+    context "non-fuzzy pattern cold start" do
+      let(:amount_category) { create(:category, name: "Amount-#{SecureRandom.hex(4)}") }
+      let!(:amount_pattern) do
+        create(:categorization_pattern, :new_pattern,
+               pattern_type: "amount_range",
+               pattern_value: "100.00-150.00",
+               category: amount_category)
+      end
+
+      it "new amount_range pattern can produce a match" do
+        result = engine.categorize(expense)
+        expect(result).to be_successful
+        expect(result.confidence).to be >= 0.5
+      end
+    end
+  end
 end

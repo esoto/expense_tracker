@@ -88,7 +88,8 @@ module Services::BulkOperations
               .where.not(ml_suggested_category_id: category_id)
               .update_all(
                 ml_correction_count: Arel.sql("ml_correction_count + 1"),
-                ml_last_corrected_at: Time.current
+                ml_last_corrected_at: Time.current,
+                ml_suggested_category_id: nil
               )
     end
 

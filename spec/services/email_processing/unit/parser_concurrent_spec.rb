@@ -63,6 +63,6 @@ RSpec.describe "Concurrent duplicate expense prevention (PER-277)", type: :model
     )
 
     expect(replacement).to be_persisted
-    expect(Expense.where(email_account: email_account, merchant_name: "Uber").count).to eq(1)
+    expect(Expense.where(email_account: email_account, merchant_name: "Uber", deleted_at: nil).count).to eq(1)
   end
 end

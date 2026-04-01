@@ -182,7 +182,7 @@ module Services::Email
                                "using #{expense.categorization_method}"
             end
           else
-            Rails.logger.error "[EmailProcessing] Failed to save expense: #{expense.errors.full_messages.join(', ')}"
+            Rails.logger.error "[EmailProcessing] Failed to save expense: #{expense&.errors&.full_messages&.join(', ') || 'duplicate rejected'}"
           end
         end
 

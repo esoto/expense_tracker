@@ -122,7 +122,8 @@ module Services::EmailProcessing
         email_account: email_account,
         amount: parsed_data[:amount],
         transaction_date: parsed_data[:transaction_date],
-        merchant_name: parsed_data[:merchant_name]
+        merchant_name: parsed_data[:merchant_name],
+        deleted_at: nil
       ).first
 
       if existing
@@ -136,7 +137,12 @@ module Services::EmailProcessing
     end
 
     def advisory_lock_key(email_account_id, amount, transaction_date, merchant_name)
-      raw = "#{email_account_id}:#{amount}:#{transaction_date.to_date}:#{merchant_name.to_s.downcase.strip}"
+      date_str = begin
+        transaction_date&.to_date
+      rescue NoMethodError, ArgumentError
+        nil
+      end || Date.current
+      raw = "#{email_account_id}:#{amount}:#{date_str}:#{merchant_name.to_s.downcase.strip}"
       Digest::SHA256.hexdigest(raw).to_i(16) % (2**63 - 1)
     end
 

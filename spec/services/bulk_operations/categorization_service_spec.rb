@@ -307,12 +307,11 @@ RSpec.describe Services::BulkOperations::CategorizationService, type: :service, 
           ml_suggested_category_id: ml_category.id,
           category_id: other_category.id
         )
-        service2 = described_class.new(
+        described_class.new(
           expense_ids: [ expense.id ],
           category_id: target_category.id,
           options: { track_ml_corrections: true, force_synchronous: true }
-        )
-        result = service2.call
+        ).call
 
         expect(expense.reload.ml_correction_count).to eq(2)
       end

@@ -718,7 +718,7 @@ module Services::Categorization
 
         {
           pattern: pattern,
-          match_score: match[:score],
+          match_score: match[:score] || 0.0,
           match_type: "fuzzy_match"
         }
       end.compact

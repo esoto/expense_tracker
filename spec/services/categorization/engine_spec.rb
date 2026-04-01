@@ -634,6 +634,7 @@ RSpec.describe Services::Categorization::Engine, type: :service do
       it "categorizes correctly when all patterns are brand new" do
         result = engine.categorize(expense)
         expect(result).to be_successful
+        expect(result.confidence).to be >= 0.5
         expect(result.category).to eq(fresh_category)
       end
     end
@@ -722,6 +723,7 @@ RSpec.describe Services::Categorization::Engine, type: :service do
                                transaction_date: Time.current)
         result = engine.categorize(fuzzy_expense)
         expect(result).to be_successful
+        expect(result.category).to eq(regression_category)
         expect(result.confidence).to be >= 0.5
       end
     end
@@ -752,11 +754,6 @@ RSpec.describe Services::Categorization::Engine, type: :service do
         result = engine.categorize(expense)
         expect(result).to be_successful
         expect(result.category).to eq(mature_cat)
-      end
-
-      it "both patterns produce confidence above min threshold" do
-        result = engine.categorize(expense)
-        expect(result).to be_successful
         expect(result.confidence).to be >= 0.5
       end
     end
@@ -773,6 +770,7 @@ RSpec.describe Services::Categorization::Engine, type: :service do
       it "new amount_range pattern can produce a match" do
         result = engine.categorize(expense)
         expect(result).to be_successful
+        expect(result.category).to eq(amount_category)
         expect(result.confidence).to be >= 0.5
       end
     end

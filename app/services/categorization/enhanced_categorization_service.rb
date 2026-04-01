@@ -280,7 +280,7 @@ module Services::Categorization
 
         patterns_by_type[pattern_type].each do |pattern|
           if pattern.matches?(expense)
-            score = pattern.effective_confidence
+            score = 1.0 # Binary match — ConfidenceCalculator handles confidence adjustment
             if score > best_score
               best_match = pattern
               best_score = score
@@ -332,7 +332,7 @@ module Services::Categorization
         {
           merchant: merchant,
           category: category,
-          score: match[:adjusted_score] || match[:score],
+          score: match[:score] || match[:adjusted_score],
           display_name: merchant.display_name || merchant.name
         }
       end.compact
@@ -357,7 +357,7 @@ module Services::Categorization
       end
 
       # Sort by adjusted score
-      matches.sort_by { |m| -(m[:adjusted_score] || m[:score]) }
+      matches.sort_by { |m| -(m[:score] || m[:adjusted_score]) }
     end
 
     def create_user_preference(expense, category)

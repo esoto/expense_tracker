@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
-  let(:email_account) { instance_double(EmailAccount, email: 'test@example.com', bank_name: 'TEST_BANK') }
+  let(:email_account) { instance_double(EmailAccount, id: 42, email: 'test@example.com', bank_name: 'TEST_BANK') }
   let(:parsing_rule) { instance_double(ParsingRule, id: 1, bank_name: 'TEST_BANK') }
   let(:email_data) do
     {
@@ -16,9 +16,13 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
   let(:parser) { described_class.new(email_account, email_data) }
   let(:logger) { instance_double(Logger, error: nil, warn: nil, info: nil) }
 
+  let(:db_connection) { instance_double(ActiveRecord::ConnectionAdapters::AbstractAdapter) }
+
   before do
     allow(ParsingRule).to receive_message_chain(:active, :for_bank, :first).and_return(parsing_rule)
     allow(Rails).to receive(:logger).and_return(logger)
+    allow(ActiveRecord::Base).to receive(:connection).and_return(db_connection)
+    allow(db_connection).to receive(:execute)
   end
 
   describe '#find_duplicate_expense' do
@@ -567,6 +571,126 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         allow(existing_expense).to receive(:status).and_return('duplicate')
         expect(existing_expense).to receive(:update).with(status: :duplicate)
         parser.send(:create_expense, parsed_data)
+      end
+    end
+  end
+
+  describe '#create_expense advisory lock protection', unit: true do
+    let(:parsed_data) do
+      {
+        amount: BigDecimal('100.00'),
+        transaction_date: Date.new(2025, 8, 15),
+        merchant_name: 'Test Merchant',
+        description: 'Test Transaction'
+      }
+    end
+
+    let(:new_expense) { instance_double(Expense, save: true, update: true, formatted_amount: '$100.00') }
+
+    # Uses db_connection from top-level let/before
+
+    context 'when email_account is present' do
+      before do
+        allow(parser).to receive(:find_duplicate_expense).and_return(nil)
+        allow(Expense).to receive(:new).and_return(new_expense)
+        allow(new_expense).to receive(:category=)
+        allow(parser).to receive(:set_currency)
+        allow(parser).to receive(:guess_category).and_return(nil)
+        allow(parser).to receive(:email_content).and_return('email content')
+      end
+
+      it 'acquires pg_advisory_xact_lock before duplicate check' do
+        call_order = []
+
+        allow(db_connection).to receive(:execute) do |sql|
+          if sql.include?('pg_advisory_xact_lock')
+            call_order << :advisory_lock
+          end
+        end
+
+        allow(parser).to receive(:find_duplicate_expense) do
+          call_order << :find_duplicate
+          nil
+        end
+
+        parser.send(:create_expense, parsed_data)
+
+        expect(call_order).to eq([ :advisory_lock, :find_duplicate ])
+      end
+
+      it 'uses a lock key derived from expense attributes' do
+        expect(db_connection).to receive(:execute).with(/pg_advisory_xact_lock\(\d+\)/)
+        parser.send(:create_expense, parsed_data)
+      end
+    end
+
+    context 'when email_account is nil' do
+      let(:email_account) { nil }
+      let(:parser) { described_class.new(nil, email_data) }
+
+      before do
+        allow(ParsingRule).to receive_message_chain(:active, :for_bank, :first).and_return(parsing_rule)
+        allow(Rails).to receive(:logger).and_return(logger)
+      end
+
+      it 'skips advisory lock when email_account is nil' do
+        expect(db_connection).not_to receive(:execute).with(/pg_advisory_xact_lock/)
+
+        # Since email_account is nil, find_parsing_rule returns nil,
+        # and create_expense won't normally be called via parse_expense.
+        # We test the private method directly and need to stub find_duplicate_expense
+        allow(parser).to receive(:find_duplicate_expense).and_return(nil)
+        allow(Expense).to receive(:new).and_return(new_expense)
+        allow(new_expense).to receive(:category=)
+        allow(parser).to receive(:set_currency)
+        allow(parser).to receive(:guess_category).and_return(nil)
+        allow(parser).to receive(:email_content).and_return('email content')
+
+        parser.send(:create_expense, parsed_data)
+      end
+    end
+
+    context 'when expense.save raises ActiveRecord::RecordNotUnique' do
+      let(:conflicting_expense) { instance_double(Expense, id: 999, update: true) }
+      let(:expense_relation) { instance_double(ActiveRecord::Relation) }
+
+      before do
+        allow(parser).to receive(:find_duplicate_expense).and_return(nil)
+        allow(Expense).to receive(:new).and_return(new_expense)
+        allow(new_expense).to receive(:category=)
+        allow(parser).to receive(:set_currency)
+        allow(parser).to receive(:guess_category).and_return(nil)
+        allow(parser).to receive(:email_content).and_return('email content')
+        allow(new_expense).to receive(:save).and_raise(ActiveRecord::RecordNotUnique.new('duplicate key'))
+      end
+
+      it 'rescues RecordNotUnique and returns existing duplicate' do
+        allow(Expense).to receive(:where).and_return(expense_relation)
+        allow(expense_relation).to receive(:first).and_return(conflicting_expense)
+
+        result = parser.send(:create_expense, parsed_data)
+
+        expect(conflicting_expense).to have_received(:update).with(status: :duplicate)
+        expect(result).to eq(conflicting_expense)
+      end
+
+      it 'adds duplicate error when RecordNotUnique is rescued' do
+        allow(Expense).to receive(:where).and_return(expense_relation)
+        allow(expense_relation).to receive(:first).and_return(conflicting_expense)
+
+        parser.send(:create_expense, parsed_data)
+
+        expect(parser.errors).to include('Duplicate expense detected via unique constraint')
+      end
+
+      it 'returns nil when conflicting record is not found on re-query' do
+        allow(Expense).to receive(:where).and_return(expense_relation)
+        allow(expense_relation).to receive(:first).and_return(nil)
+
+        result = parser.send(:create_expense, parsed_data)
+
+        expect(result).to be_nil
+        expect(parser.errors).to include('Duplicate expense conflict but original not found')
       end
     end
   end

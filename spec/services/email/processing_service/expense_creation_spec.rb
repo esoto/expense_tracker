@@ -1099,5 +1099,81 @@ RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
         end
       end
     end
+
+    describe 'Advisory Lock Protection (PER-277)' do
+      let(:expense_data) do
+        {
+          amount: 50.00,
+          description: 'Purchase at SuperMercado',
+          date: Date.new(2026, 3, 15),
+          merchant: 'SuperMercado',
+          currency: 'usd',
+          raw_text: 'Purchase at SuperMercado for $50.00'
+        }
+      end
+
+      it 'acquires pg_advisory_xact_lock before saving expense' do
+        connection = ActiveRecord::Base.connection
+        lock_acquired = false
+
+        allow(connection).to receive(:execute).and_wrap_original do |method, *args|
+          lock_acquired = true if args.first.include?('pg_advisory_xact_lock')
+          method.call(*args)
+        end
+
+        processing_service.send(:create_expense, expense_data)
+
+        expect(lock_acquired).to be true
+      end
+
+      it 'rescues ActiveRecord::RecordNotUnique and returns nil' do
+        # Create the first expense so the unique constraint fires
+        create(:expense,
+          email_account: email_account,
+          amount: 50.00,
+          transaction_date: Date.new(2026, 3, 15),
+          merchant_name: 'SuperMercado',
+          status: :processed
+        )
+
+        result = processing_service.send(:create_expense, expense_data)
+
+        expect(result).to be_nil
+      end
+
+      it 'logs warning when RecordNotUnique is raised' do
+        create(:expense,
+          email_account: email_account,
+          amount: 50.00,
+          transaction_date: Date.new(2026, 3, 15),
+          merchant_name: 'SuperMercado',
+          status: :processed
+        )
+
+        expect(Rails.logger).to receive(:warn).with(/Duplicate expense rejected by DB constraint/)
+
+        processing_service.send(:create_expense, expense_data)
+      end
+
+      it 'caller handles nil return from create_expense gracefully' do
+        allow(processing_service).to receive(:email_already_processed?).and_return(false)
+        allow(processing_service).to receive(:promotional_email?).and_return(false)
+        allow(processing_service).to receive(:parse_email).and_return([expense_data])
+
+        # Pre-create to trigger unique constraint
+        create(:expense,
+          email_account: email_account,
+          amount: 50.00,
+          transaction_date: Date.new(2026, 3, 15),
+          merchant_name: 'SuperMercado',
+          status: :processed
+        )
+
+        email = { message_id: 'dup-test', from: 'test@bac.com', subject: 'Alert', date: Time.current }
+
+        # Should not raise NoMethodError on nil.persisted?
+        expect { processing_service.send(:process_single_email, email) }.not_to raise_error
+      end
+    end
   end
 end

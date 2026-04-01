@@ -575,6 +575,68 @@ RSpec.describe Services::Categorization::Engine, type: :service do
         expect(weak_pattern.usage_count).to eq(original_usage)
       end
     end
+
+    context "with a brand new pattern (usage_count: 0) and exact merchant match", :unit do
+      let(:new_category) { create(:category, name: "Coffee-#{SecureRandom.hex(4)}") }
+      let!(:new_pattern) do
+        create(:categorization_pattern,
+               pattern_type: "merchant",
+               pattern_value: "whole foods",
+               category: new_category,
+               confidence_weight: 1.0,
+               usage_count: 0,
+               success_count: 0,
+               success_rate: 0.0)
+      end
+
+      it "returns a successful categorization above min_confidence" do
+        result = engine.categorize(expense)
+        expect(result).to be_successful
+        expect(result.confidence).to be >= 0.5
+        expect(result.category).to eq(new_category)
+      end
+
+      it "still ranks mature patterns higher than new ones for the same text" do
+        mature_category = create(:category, name: "Mature-#{SecureRandom.hex(4)}")
+        create(:categorization_pattern,
+               pattern_type: "merchant",
+               pattern_value: "whole foods",
+               category: mature_category,
+               confidence_weight: 1.0,
+               usage_count: 100,
+               success_count: 90,
+               success_rate: 0.9,
+               metadata: {
+                 "amount_stats" => { "count" => 100, "mean" => 125.0, "std_dev" => 30.0, "min" => 10.0, "max" => 500.0 },
+                 "temporal_stats" => { "hour_distribution" => { "14" => 30 }, "day_distribution" => { "1" => 20 } }
+               })
+
+        result = engine.categorize(expense)
+        expect(result).to be_successful
+        expect(result.category).to eq(mature_category)
+        expect(result.confidence).to be > 0.5
+      end
+    end
+
+    context "cold start scenario — all patterns brand new", :unit do
+      let(:fresh_category) { create(:category, name: "Fresh-#{SecureRandom.hex(4)}") }
+      let!(:fresh_pattern) do
+        create(:categorization_pattern,
+               pattern_type: "merchant",
+               pattern_value: "whole foods",
+               category: fresh_category,
+               confidence_weight: 1.0,
+               usage_count: 0,
+               success_count: 0,
+               success_rate: 0.0)
+      end
+
+      it "categorizes correctly when all patterns are brand new" do
+        result = engine.categorize(expense)
+        expect(result).to be_successful
+        expect(result.category).to eq(fresh_category)
+      end
+    end
   end
 
   describe "#shutdown!" do

@@ -627,7 +627,7 @@ module Services::Categorization
           if pattern.matches?(expense)
             matches << {
               pattern: pattern,
-              match_score: pattern.effective_confidence,
+              match_score: 1.0,
               match_type: pattern.pattern_type
             }
           end
@@ -718,7 +718,7 @@ module Services::Categorization
 
         {
           pattern: pattern,
-          match_score: match[:adjusted_score] || match[:score],
+          match_score: match[:score],
           match_type: "fuzzy_match"
         }
       end.compact

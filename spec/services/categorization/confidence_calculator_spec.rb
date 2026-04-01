@@ -538,7 +538,8 @@ RSpec.describe Services::Categorization::ConfidenceCalculator do
     context "with exact text match (score = 1.0)" do
       it "produces confidence above min_confidence threshold" do
         result = calculator.calculate(expense, new_pattern, 1.0)
-        expect(result.score).to be >= 0.5
+        # PER-311: raw score now feeds calculator — exact match yields ~0.99
+        expect(result.score).to be > 0.95
       end
 
       it "uses only text_match factor when usage is zero" do
@@ -552,7 +553,8 @@ RSpec.describe Services::Categorization::ConfidenceCalculator do
     context "with high fuzzy match (score = 0.85)" do
       it "still produces confidence above min_confidence threshold" do
         result = calculator.calculate(expense, new_pattern, 0.85)
-        expect(result.score).to be >= 0.5
+        # PER-311: raw score now feeds calculator — 0.85 fuzzy yields ~0.97
+        expect(result.score).to be > 0.9
       end
     end
 
@@ -568,8 +570,8 @@ RSpec.describe Services::Categorization::ConfidenceCalculator do
     it "prefers :score over :adjusted_score when given a Hash" do
       hash_input = { score: 0.9, adjusted_score: 0.3 }
       result = calculator.calculate(expense, pattern, hash_input)
-      # text_match factor should use the raw score (0.9), not the adjusted one (0.3)
-      expect(result.factors[:text_match]).to be >= 0.85
+      # PER-311: raw score now feeds calculator — Hash prefers :score key
+      expect(result.factors[:text_match]).to eq(0.9)
     end
   end
 

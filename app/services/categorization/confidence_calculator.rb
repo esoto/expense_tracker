@@ -185,7 +185,7 @@ module Services::Categorization
       when Matchers::MatchResult
         match_result.best_score
       when Hash
-        match_result[:adjusted_score] || match_result[:score] || 0.0
+        match_result[:score] || match_result[:adjusted_score] || 0.0
       when Numeric
         match_result
       when nil

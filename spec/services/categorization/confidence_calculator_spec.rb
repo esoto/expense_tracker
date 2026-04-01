@@ -138,8 +138,8 @@ RSpec.describe Services::Categorization::ConfidenceCalculator do
         expect(result.factors[:text_match]).to eq(0.75)
       end
 
-      it "handles Hash with adjusted_score" do
-        match_result = { adjusted_score: 0.82, score: 0.75 }
+      it "handles Hash with adjusted_score fallback" do
+        match_result = { adjusted_score: 0.82 }
 
         result = calculator.calculate(expense, pattern, match_result)
         expect(result.factors[:text_match]).to eq(0.82)
@@ -520,6 +520,58 @@ RSpec.describe Services::Categorization::ConfidenceCalculator do
       # Should still work, just without metadata-based factors
       expect(result).to be_valid
       expect(result.factors[:amount_similarity]).to be_nil
+    end
+  end
+
+  describe "cold-start pattern handling (PER-311)" do
+    let(:new_pattern) do
+      create(:categorization_pattern,
+             category: category,
+             pattern_type: "merchant",
+             pattern_value: "amazon",
+             usage_count: 0,
+             success_count: 0,
+             success_rate: 0.0,
+             confidence_weight: 1.0)
+    end
+
+    context "with exact text match (score = 1.0)" do
+      it "produces confidence above min_confidence threshold" do
+        result = calculator.calculate(expense, new_pattern, 1.0)
+        # PER-311: raw score now feeds calculator — exact match yields ~0.99
+        expect(result.score).to be > 0.95
+      end
+
+      it "uses only text_match factor when usage is zero" do
+        result = calculator.calculate(expense, new_pattern, 1.0)
+        expect(result.factors[:historical_success]).to be_nil
+        expect(result.factors[:usage_frequency]).to be_nil
+        expect(result.factors[:text_match]).to eq(1.0)
+      end
+    end
+
+    context "with high fuzzy match (score = 0.85)" do
+      it "still produces confidence above min_confidence threshold" do
+        result = calculator.calculate(expense, new_pattern, 0.85)
+        # PER-311: raw score now feeds calculator — 0.85 fuzzy yields ~0.97
+        expect(result.score).to be > 0.9
+      end
+    end
+
+    context "regression: established patterns retain high confidence" do
+      it "mature pattern with good stats scores above 0.75" do
+        result = calculator.calculate(expense, pattern, 0.95)
+        expect(result.score).to be > 0.75
+      end
+    end
+  end
+
+  describe "#calculate_text_match_factor (Hash input)" do
+    it "prefers :score over :adjusted_score when given a Hash" do
+      hash_input = { score: 0.9, adjusted_score: 0.3 }
+      result = calculator.calculate(expense, pattern, hash_input)
+      # PER-311: raw score now feeds calculator — Hash prefers :score key
+      expect(result.factors[:text_match]).to eq(0.9)
     end
   end
 

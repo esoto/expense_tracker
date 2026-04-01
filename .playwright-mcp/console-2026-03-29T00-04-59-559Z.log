@@ -1,0 +1,41 @@
+[      79ms] [ERROR] X-Frame-Options may only be set via an HTTP header sent along with a document. It may not be set inside <meta>. @ http://localhost:3000/admin/patterns:161
+[      95ms] [ERROR] Failed to load module script: Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of "application/json". Strict MIME type checking is enforced for module scripts per HTML spec. @ http://localhost:3000/assets/controllers/queue_monitor_controller-d6e31487.js:0
+[      96ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://localhost:3000/assets/controllers/sync_sessions_controller-8bdd2b18.js:0
+[     229ms] [ERROR] Failed to register controller: queue-monitor (controllers/queue_monitor_controller) TypeError: Failed to fetch dynamically imported module: http://localhost:3000/assets/controllers/queue_monitor_controller-d6e31487.js @ http://localhost:3000/assets/stimulus-loading-1fc53fe7.js:25
+[     229ms] [ERROR] Failed to register controller: sync-sessions (controllers/sync_sessions_controller) TypeError: Failed to fetch dynamically imported module: http://localhost:3000/assets/controllers/sync_sessions_controller-8bdd2b18.js @ http://localhost:3000/assets/stimulus-loading-1fc53fe7.js:25
+[    1645ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at H.scopeConnected (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36978)
+    at J.elementMatchedValue (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:35147)
+    at F.tokenMatched (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:15098)
+    at N.tokenMatched (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:13795)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:13689
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[    4776ms] [ERROR] X-Frame-Options may only be set via an HTTP header sent along with a document. It may not be set inside <meta>. @ http://localhost:3000/admin/patterns:161
+[    4789ms] [ERROR] Failed to load module script: Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of "application/json". Strict MIME type checking is enforced for module scripts per HTML spec. @ http://localhost:3000/assets/controllers/queue_monitor_controller-d6e31487.js:0
+[    4790ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://localhost:3000/assets/controllers/sync_sessions_controller-8bdd2b18.js:0
+[    4961ms] [ERROR] Failed to register controller: queue-monitor (controllers/queue_monitor_controller) TypeError: Failed to fetch dynamically imported module: http://localhost:3000/assets/controllers/queue_monitor_controller-d6e31487.js @ http://localhost:3000/assets/stimulus-loading-1fc53fe7.js:25
+[    4961ms] [ERROR] Failed to register controller: sync-sessions (controllers/sync_sessions_controller) TypeError: Failed to fetch dynamically imported module: http://localhost:3000/assets/controllers/sync_sessions_controller-8bdd2b18.js @ http://localhost:3000/assets/stimulus-loading-1fc53fe7.js:25
+[    5039ms] [ERROR] Error loading chart data: TypeError: Failed to fetch
+    at t.loadChart (http://localhost:3000/assets/controllers/pattern_chart_controller-b1b2e44d.js:106:30)
+    at t.connect (http://localhost:3000/assets/controllers/pattern_chart_controller-b1b2e44d.js:23:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) @ http://localhost:3000/assets/controllers/pattern_chart_controller-b1b2e44d.js:128
+[    5046ms] [ERROR] X-Frame-Options may only be set via an HTTP header sent along with a document. It may not be set inside <meta>. @ http://localhost:3000/admin/patterns:161
+[    5059ms] [ERROR] Failed to load module script: Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of "application/json". Strict MIME type checking is enforced for module scripts per HTML spec. @ http://localhost:3000/assets/controllers/queue_monitor_controller-d6e31487.js:0
+[    5061ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://localhost:3000/assets/controllers/sync_sessions_controller-8bdd2b18.js:0
+[    5258ms] [ERROR] Failed to register controller: queue-monitor (controllers/queue_monitor_controller) TypeError: Failed to fetch dynamically imported module: http://localhost:3000/assets/controllers/queue_monitor_controller-d6e31487.js @ http://localhost:3000/assets/stimulus-loading-1fc53fe7.js:25
+[    5258ms] [ERROR] Failed to register controller: sync-sessions (controllers/sync_sessions_controller) TypeError: Failed to fetch dynamically imported module: http://localhost:3000/assets/controllers/sync_sessions_controller-8bdd2b18.js @ http://localhost:3000/assets/stimulus-loading-1fc53fe7.js:25

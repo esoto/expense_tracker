@@ -1,3 +1,5 @@
+require "digest"
+
 module Services::EmailProcessing
   class Parser
     MAX_EMAIL_SIZE = 50_000  # 50KB threshold
@@ -56,57 +58,107 @@ module Services::EmailProcessing
     end
 
     def create_expense(parsed_data)
-      begin
-        # Check for potential duplicates
-        existing_expense = find_duplicate_expense(parsed_data)
-      rescue ActiveRecord::RecordNotFound, ActiveRecord::ConnectionNotEstablished, ActiveRecord::StatementTimeout => e
-        add_error("Database error during duplicate check: #{e.message}")
-        return nil
-      end
+      ActiveRecord::Base.transaction do
+        acquire_expense_advisory_lock(parsed_data)
 
-      if existing_expense
-        existing_expense.update(status: :duplicate)
-        add_error("Duplicate expense found")
-        return existing_expense
-      end
+        begin
+          # Check for potential duplicates
+          existing_expense = find_duplicate_expense(parsed_data)
+        rescue ActiveRecord::RecordNotFound, ActiveRecord::ConnectionNotEstablished, ActiveRecord::StatementTimeout => e
+          add_error("Database error during duplicate check: #{e.message}")
+          return nil
+        end
 
-      expense = Expense.new(
+        if existing_expense
+          existing_expense.update(status: :duplicate)
+          add_error("Duplicate expense found")
+          return existing_expense
+        end
+
+        expense = Expense.new(
+          email_account: email_account,
+          amount: parsed_data[:amount],
+          transaction_date: parsed_data[:transaction_date],
+          merchant_name: parsed_data[:merchant_name],
+          description: parsed_data[:description],
+          raw_email_content: email_content,
+          parsed_data: parsed_data.to_json,
+          status: :pending,
+          email_body: email_data[:body].to_s,
+          bank_name: email_account&.bank_name
+        )
+
+        # Set currency using enum methods
+        begin
+          set_currency(expense, parsed_data)
+        rescue StandardError => e
+          add_error("Currency detection failed: #{e.message}")
+          # Don't re-raise, continue with expense creation
+        end
+
+        # Try to auto-categorize
+        begin
+          expense.category = guess_category(expense)
+        rescue StandardError => e
+          add_error("Category guess failed: #{e.message}")
+          # Don't re-raise, continue with expense creation
+        end
+
+        if expense.save
+          expense.update(status: :processed)
+          Rails.logger.info "Created expense: #{expense.formatted_amount} from #{email_account&.email}"
+          expense
+        else
+          add_error("Failed to save expense: #{expense.errors.full_messages.join(", ")}")
+          nil
+        end
+      end
+    rescue ActiveRecord::RecordNotUnique
+      handle_record_not_unique(parsed_data)
+    end
+
+    def handle_record_not_unique(parsed_data)
+      existing = Expense.where(
         email_account: email_account,
         amount: parsed_data[:amount],
         transaction_date: parsed_data[:transaction_date],
         merchant_name: parsed_data[:merchant_name],
-        description: parsed_data[:description],
-        raw_email_content: email_content,
-        parsed_data: parsed_data.to_json,
-        status: :pending,
-        email_body: email_data[:body].to_s,
-        bank_name: email_account&.bank_name
-      )
+        deleted_at: nil
+      ).first
 
-      # Set currency using enum methods
-      begin
-        set_currency(expense, parsed_data)
-      rescue StandardError => e
-        add_error("Currency detection failed: #{e.message}")
-        # Don't re-raise, continue with expense creation
-      end
-
-      # Try to auto-categorize
-      begin
-        expense.category = guess_category(expense)
-      rescue StandardError => e
-        add_error("Category guess failed: #{e.message}")
-        # Don't re-raise, continue with expense creation
-      end
-
-      if expense.save
-        expense.update(status: :processed)
-        Rails.logger.info "Created expense: #{expense.formatted_amount} from #{email_account.email}"
-        expense
+      if existing
+        existing.update(status: :duplicate)
+        add_error("Duplicate expense detected via unique constraint")
+        existing
       else
-        add_error("Failed to save expense: #{expense.errors.full_messages.join(", ")}")
+        add_error("Duplicate expense conflict but original not found")
         nil
       end
+    end
+
+    def advisory_lock_key(email_account_id, amount, transaction_date, merchant_name)
+      date_str = begin
+        transaction_date&.to_date
+      rescue NoMethodError, ArgumentError
+        nil
+      end || Date.current
+      raw = "#{email_account_id}:#{amount}:#{date_str}:#{merchant_name.to_s.downcase.strip}"
+      Digest::SHA256.hexdigest(raw).to_i(16) % (2**63 - 1)
+    end
+
+    def acquire_expense_advisory_lock(parsed_data)
+      return unless email_account
+
+      lock_key = advisory_lock_key(
+        email_account.id,
+        parsed_data[:amount],
+        parsed_data[:transaction_date],
+        parsed_data[:merchant_name]
+      )
+      sanitized = ActiveRecord::Base.sanitize_sql_array(
+        [ "SELECT pg_advisory_xact_lock(?)", lock_key ]
+      )
+      ActiveRecord::Base.connection.execute(sanitized)
     end
 
     def find_duplicate_expense(parsed_data)

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "digest"
 require "set"
 
 module Services::Email
@@ -170,7 +171,7 @@ module Services::Email
         expenses_data.each do |expense_data|
           Rails.logger.debug "[EmailProcessing] Creating expense: #{expense_data[:merchant]} - #{expense_data[:currency]}#{expense_data[:amount]}"
           expense = create_expense(expense_data)
-          if expense.persisted?
+          if expense&.persisted?
             expenses_created += 1
             Rails.logger.info "[EmailProcessing] Created expense ##{expense.id}: #{expense.merchant_name} - #{expense.currency.upcase}#{expense.amount}"
 
@@ -181,7 +182,7 @@ module Services::Email
                                "using #{expense.categorization_method}"
             end
           else
-            Rails.logger.error "[EmailProcessing] Failed to save expense: #{expense.errors.full_messages.join(', ')}"
+            Rails.logger.error "[EmailProcessing] Failed to save expense: #{expense&.errors&.full_messages&.join(', ') || 'duplicate rejected'}"
           end
         end
 
@@ -401,6 +402,8 @@ module Services::Email
     end
 
     def create_expense(expense_data)
+      acquire_expense_advisory_lock(expense_data)
+
       expense = email_account.expenses.build(
         amount: expense_data[:amount],
         description: expense_data[:description],
@@ -436,6 +439,11 @@ module Services::Email
       end
 
       expense
+    rescue ActiveRecord::RecordNotUnique
+      Rails.logger.warn "[EmailProcessing] Duplicate expense rejected by DB constraint: " \
+                        "account=#{email_account.id} amount=#{expense_data[:amount]} " \
+                        "date=#{expense_data[:date]} merchant=#{expense_data[:merchant]}"
+      nil
     end
 
     def suggest_category(expense)
@@ -476,6 +484,29 @@ module Services::Email
         subject: email[:subject],
         from_address: email[:from]
       )
+    end
+
+    def advisory_lock_key(email_account_id, amount, transaction_date, merchant_name)
+      date_str = begin
+        transaction_date&.to_date
+      rescue NoMethodError, ArgumentError
+        nil
+      end || Date.current
+      raw = "#{email_account_id}:#{amount}:#{date_str}:#{merchant_name.to_s.downcase.strip}"
+      Digest::SHA256.hexdigest(raw).to_i(16) % (2**63 - 1)
+    end
+
+    def acquire_expense_advisory_lock(expense_data)
+      lock_key = advisory_lock_key(
+        email_account.id,
+        expense_data[:amount],
+        expense_data[:date] || Date.current,
+        expense_data[:merchant]
+      )
+      sanitized = ActiveRecord::Base.sanitize_sql_array(
+        ["SELECT pg_advisory_xact_lock(?)", lock_key]
+      )
+      ActiveRecord::Base.connection.execute(sanitized)
     end
 
     def success_response(results)

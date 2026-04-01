@@ -1,0 +1,68 @@
+[     207ms] Error: "linear" is not a registered scale.
+    at ws._get (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:72946)
+    at ws.getScale (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:72189)
+    at https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:83001
+    at d (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:7:781)
+    at Qs.buildOrUpdateScales (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:82790)
+    at Qs._updateScales (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:85524)
+    at Qs.update (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:84687)
+    at new Qs (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:81231)
+    at defaultExport.drawChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1072:17)
+    at defaultExport.renderLineChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:947:8)
+[     207ms] Error: "pie" is not a registered controller.
+    at ws._get (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:72946)
+    at ws.getController (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:72014)
+    at Qs.buildOrUpdateControllers (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:84118)
+    at Qs.update (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:84868)
+    at new Qs (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:81231)
+    at defaultExport.drawChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1072:17)
+    at defaultExport.renderPieChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:986:8)
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1842:29)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at PieChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+[     195ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-48b948c7.js:1137
+[     195ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-48b948c7.js:1137
+[     202ms] [ERROR] Error rendering sparkline chart: Error: "category" is not a registered scale.
+    at ws._get (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:72946)
+    at ws.getScale (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:72189)
+    at https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:83001
+    at d (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:7:781)
+    at Qs.buildOrUpdateScales (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:82790)
+    at Qs._updateScales (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:85524)
+    at Qs.update (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:84687)
+    at new Qs (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:81231)
+    at t.renderSparkline (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:116:20)
+    at http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:29:14 @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:127
+[     203ms] [ERROR] Error rendering sparkline chart: Error: "category" is not a registered scale.
+    at ws._get (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:72946)
+    at ws.getScale (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:72189)
+    at https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:83001
+    at d (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:7:781)
+    at Qs.buildOrUpdateScales (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:82790)
+    at Qs._updateScales (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:85524)
+    at Qs.update (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:84687)
+    at new Qs (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:81231)
+    at t.renderSparkline (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:116:20)
+    at http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:29:14 @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:127
+[     204ms] [ERROR] Error rendering sparkline chart: Error: "category" is not a registered scale.
+    at ws._get (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:72946)
+    at ws.getScale (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:72189)
+    at https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:83001
+    at d (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:7:781)
+    at Qs.buildOrUpdateScales (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:82790)
+    at Qs._updateScales (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:85524)
+    at Qs.update (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:84687)
+    at new Qs (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:81231)
+    at t.renderSparkline (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:116:20)
+    at http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:29:14 @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:127
+[     204ms] [ERROR] Error rendering sparkline chart: Error: "category" is not a registered scale.
+    at ws._get (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:72946)
+    at ws.getScale (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:72189)
+    at https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:83001
+    at d (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:7:781)
+    at Qs.buildOrUpdateScales (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:82790)
+    at Qs._updateScales (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:85524)
+    at Qs.update (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:84687)
+    at new Qs (https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm:13:81231)
+    at t.renderSparkline (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:116:20)
+    at http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:29:14 @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:127

@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :expense do
-    amount { 100.50 }
+    sequence(:amount) { |n| 100.50 + n }
     description { "Test expense" }
     transaction_date { Time.current }
     merchant_name { "Test Merchant" }

@@ -1,0 +1,19 @@
+[     262ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-44dd3c95.js:1137
+[     262ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-44dd3c95.js:1137
+[   17569ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Content) @ http://localhost:3000/expenses/323/accept_suggestion:0
+[   17589ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Content) @ http://localhost:3000/expenses/259/correct_category:0
+[   17606ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Content) @ http://localhost:3000/expenses/259/correct_category:0
+[   17657ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Content) @ http://localhost:3000/expenses/327/update_status:0
+[   74460ms] [ERROR] %s
+
+%o
+
+%o Error invoking action "click->category-confidence#showCorrection" TypeError: Cannot set property correctionPanelTarget of #<t> which has only a getter
+    at t.createCorrectionPanel (http://localhost:3000/assets/controllers/category_confidence_controller-840fcdcf.js:171:32)
+    at t.showCorrection (http://localhost:3000/assets/controllers/category_confidence_controller-840fcdcf.js:116:12)
+    at p.invokeWithEvent (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:4587)
+    at p.handleEvent (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:3919)
+    at e.handleEvent (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:721)
+    at eval (eval at evaluate (:301:30), <anonymous>:5:9)
+    at UtilityScript.evaluate (<anonymous>:303:16)
+    at UtilityScript.<anonymous> (<anonymous>:1:44) {identifier: category-confidence, controller: t, element: div.relative.inline-flex.items-center.gap-2, index: 0, event: PointerEvent} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3

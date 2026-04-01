@@ -1,0 +1,4 @@
+[   95764ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/bulk_categorizations/preview:0
+[  119701ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/bulk_categorizations/categorize:0
+[  119701ms] [ERROR] Error: Error: Network response was not ok
+    at http://localhost:3000/assets/controllers/bulk_categorization_controller-4fb004d1.js:128:31 @ http://localhost:3000/assets/controllers/bulk_categorization_controller-4fb004d1.js:135

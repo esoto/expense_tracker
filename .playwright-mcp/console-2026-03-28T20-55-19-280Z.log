@@ -1,0 +1,3 @@
+[   10205ms] [ERROR] X-Frame-Options may only be set via an HTTP header sent along with a document. It may not be set inside <meta>. @ http://localhost:3000/admin/composite_patterns/2/edit:161
+[   14880ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Content) @ http://localhost:3000/admin/composite_patterns/2:0
+[   14951ms] [ERROR] X-Frame-Options may only be set via an HTTP header sent along with a document. It may not be set inside <meta>. @ http://localhost:3000/admin/composite_patterns/2/edit:161

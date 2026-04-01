@@ -1,0 +1,5 @@
+[     501ms] [ERROR] X-Frame-Options may only be set via an HTTP header sent along with a document. It may not be set inside <meta>. @ http://localhost:3000/admin/login:152
+[   20751ms] [ERROR] Failed to load resource: the server responded with a status of 406 (Not Acceptable) @ http://localhost:3000/admin/patterns:0
+[   20846ms] [ERROR] X-Frame-Options may only be set via an HTTP header sent along with a document. It may not be set inside <meta>. @ http://localhost:3000/admin/patterns:160
+[   30771ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/admin/patterns/59/toggle_active:0
+[   30775ms] [WARNING] The response (500) from <turbo-frame id="patterns_table"> is performing a full page visit due to turbo-visit-control. @ http://localhost:3000/assets/turbo.min-9fd88cd5.js:18

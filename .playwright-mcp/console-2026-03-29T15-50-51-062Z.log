@@ -1,0 +1,3 @@
+[      83ms] [ERROR] X-Frame-Options may only be set via an HTTP header sent along with a document. It may not be set inside <meta>. @ http://localhost:3000/admin/patterns/21:161
+[    2956ms] [ERROR] Failed to load resource: the server responded with a status of 406 (Not Acceptable) @ http://localhost:3000/admin/patterns/21/test_single?test_text=&commit=Probar:0
+[    2959ms] [WARNING] The response (406) from <turbo-frame id="single_test_result"> is performing a full page visit due to turbo-visit-control. @ http://localhost:3000/assets/turbo.min-9fd88cd5.js:18

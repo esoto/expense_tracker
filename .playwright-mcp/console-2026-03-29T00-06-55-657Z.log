@@ -1,0 +1,37 @@
+[     171ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[    4809ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-48b948c7.js:1137
+[    4810ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-48b948c7.js:1137
+[    5983ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-48b948c7.js:1137
+[    5984ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-48b948c7.js:1137
+[    6155ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[   10528ms] [ERROR] X-Frame-Options may only be set via an HTTP header sent along with a document. It may not be set inside <meta>. @ http://localhost:3000/admin/patterns:161
+[   10700ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/admin/patterns/126/toggle_active:0
+[   10703ms] [WARNING] The response (500) from <turbo-frame id="patterns_table"> is performing a full page visit due to turbo-visit-control. @ http://localhost:3000/assets/turbo.min-9fd88cd5.js:18

@@ -1,0 +1,949 @@
+[     122ms] [ERROR] X-Frame-Options may only be set via an HTTP header sent along with a document. It may not be set inside <meta>. @ http://localhost:3000/analytics/pattern_dashboard:161
+[     192ms] [ERROR] Error loading trend data: TypeError: this.element.getContext is not a function
+    at t.renderChart (http://localhost:3000/assets/controllers/pattern_trend_chart_controller-b3e21c73.js:46:30)
+    at t.loadChartData (http://localhost:3000/assets/controllers/pattern_trend_chart_controller-b3e21c73.js:38:12) @ http://localhost:3000/assets/controllers/pattern_trend_chart_controller-b3e21c73.js:39
+[     971ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[    1481ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[    2203ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[    6362ms] [ERROR] Failed to load resource: the server responded with a status of 406 (Not Acceptable) @ http://localhost:3000/analytics/pattern_dashboard/export.csv:0
+[    6426ms] [ERROR] Failed to load resource: the server responded with a status of 406 (Not Acceptable) @ http://localhost:3000/analytics/pattern_dashboard/export.csv:0
+[    6489ms] [ERROR] Failed to load resource: the server responded with a status of 406 (Not Acceptable) @ http://localhost:3000/analytics/pattern_dashboard/export.csv:0
+[    6551ms] [ERROR] Failed to load resource: the server responded with a status of 406 (Not Acceptable) @ http://localhost:3000/analytics/pattern_dashboard/export.csv:0
+[    6686ms] [ERROR] Failed to load resource: the server responded with a status of 406 (Not Acceptable) @ http://localhost:3000/analytics/pattern_dashboard/export.csv:0
+[   14805ms] [ERROR] Failed to load resource: the server responded with a status of 403 (Forbidden) @ http://localhost:3000/analytics/pattern_dashboard/export:0
+[   16697ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[   18821ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[   28089ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[   34143ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[   38874ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[   47091ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[   47789ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[   48408ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[   49118ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[   50577ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[   63214ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[   79317ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[   81483ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[   91894ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[   92575ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/expenses:0
+[  105472ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  106194ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  121898ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  128031ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  133455ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  169225ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  195470ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  215910ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  230473ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  247598ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  269943ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  290360ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  312566ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  337524ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  365670ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  387957ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  407979ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  432425ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  506724ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  531288ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  579006ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  606189ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[  635525ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at LineChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at LineChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new LineChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2342:11)
+    at createChart (http://localhost:3000/expenses/dashboard:879:36)
+    at https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2555:12
+[  635525ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at PieChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at PieChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new PieChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2362:11)
+    at createChart (http://localhost:3000/expenses/dashboard:899:36)
+    at https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2555:12
+[  635515ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-48b948c7.js:1137
+[  637447ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  637449ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  637450ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  637450ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  671473ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at LineChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at LineChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new LineChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2342:11)
+    at createChart (http://localhost:3000/expenses/dashboard:879:36)
+    at https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2555:12
+[  671474ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at PieChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at PieChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new PieChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2362:11)
+    at createChart (http://localhost:3000/expenses/dashboard:899:36)
+    at https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2555:12
+[  671462ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-48b948c7.js:1137
+[  673394ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  673395ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  673396ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  673397ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  928268ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at LineChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at LineChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new LineChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2342:11)
+    at createChart (http://localhost:3000/expenses/dashboard:879:36)
+    at https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2555:12
+[  928268ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at PieChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at PieChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new PieChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2362:11)
+    at createChart (http://localhost:3000/expenses/dashboard:899:36)
+    at https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2555:12
+[  928255ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-48b948c7.js:1137
+[  930180ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  930182ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  930183ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  930183ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  950933ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at LineChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at LineChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new LineChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2342:11)
+    at createChart (http://localhost:3000/expenses/dashboard:879:36)
+    at https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2555:12
+[  950933ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at PieChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at PieChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new PieChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2362:11)
+    at createChart (http://localhost:3000/expenses/dashboard:899:36)
+    at https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2555:12
+[  950850ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-48b948c7.js:1137
+[  952773ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  952775ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  952776ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  952776ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  993748ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at LineChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at LineChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new LineChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2342:11)
+    at createChart (http://localhost:3000/expenses/dashboard:879:36)
+    at https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2555:12
+[  993749ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at PieChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at PieChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new PieChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2362:11)
+    at createChart (http://localhost:3000/expenses/dashboard:899:36)
+    at https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2555:12
+[  993736ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-48b948c7.js:1137
+[  995659ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  995661ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  995661ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  995662ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  995944ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at LineChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at LineChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new LineChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2342:11)
+    at createChart (http://localhost:3000/expenses/dashboard:879:36)
+    at https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2555:12
+[  995945ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at PieChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at PieChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new PieChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2362:11)
+    at createChart (http://localhost:3000/expenses/dashboard:899:36)
+    at https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2555:12
+[  995930ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-48b948c7.js:1137
+[  997854ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  997856ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  997856ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[  997857ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[ 1048449ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at LineChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at LineChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new LineChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2342:11)
+    at createChart (http://localhost:3000/expenses/dashboard:879:36)
+    at https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2555:12
+[ 1048449ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at PieChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at PieChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new PieChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2362:11)
+    at createChart (http://localhost:3000/expenses/dashboard:899:36)
+    at https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2555:12
+[ 1048436ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-48b948c7.js:1137
+[ 1050382ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[ 1050382ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[ 1050382ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[ 1050382ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[ 1106513ms] [ERROR] Failed to load resource: the server responded with a status of 406 (Not Acceptable) @ http://localhost:3000/expenses/315:0
+[ 1118564ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/admin/expenses/315.json:0
+[ 1118585ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/api/v1/expenses/315:0
+[ 1131503ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Content) @ http://localhost:3000/expenses/312/correct_category:0
+[ 1131515ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Content) @ http://localhost:3000/expenses/312/correct_category:0
+[ 1131526ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Content) @ http://localhost:3000/expenses/312/update_status:0
+[ 1146959ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Content) @ http://localhost:3000/expenses/312/accept_suggestion:0
+[ 1196060ms] [ERROR] Failed to load resource: the server responded with a status of 406 (Not Acceptable) @ http://localhost:3000/expenses/311/accept_suggestion:0
+[ 1304898ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Content) @ http://localhost:3000/email_accounts:0
+[ 1330146ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/email_accounts:0
+[ 1408417ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/sync_conflicts/1/edit:0
+[ 1408480ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/sync_conflicts/1/resolve:0
+[ 1420812ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/sync_conflicts/1:0
+[ 1420866ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/sync_conflicts/1/mark_resolved:0
+[ 1440284ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/undo_history:0
+[ 1453651ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/undo:0
+[ 1453699ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/expenses/undo:0
+[ 1465662ms] [ERROR] Failed to load resource: the server responded with a status of 406 (Not Acceptable) @ http://localhost:3000/sync_conflicts/bulk_resolve:0
+[ 1479025ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/sync_conflicts/1:0
+[ 1494628ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/sync_conflicts/1:0
+[ 1528848ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Content) @ http://localhost:3000/sync_conflicts/1/resolve:0
+[ 1529049ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[ 1546454ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Content) @ http://localhost:3000/sync_conflicts/1/resolve:0
+[ 1588167ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3
+[ 1588861ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at LineChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at LineChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new LineChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2342:11)
+    at createChart (http://localhost:3000/expenses/dashboard:879:36)
+    at https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2555:12
+[ 1588861ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at PieChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at PieChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new PieChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2362:11)
+    at createChart (http://localhost:3000/expenses/dashboard:899:36)
+    at https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2555:12
+[ 1588848ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-48b948c7.js:1137
+[ 1590774ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[ 1590776ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[ 1590777ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[ 1590777ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[ 1614832ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at LineChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at LineChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new LineChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2342:11)
+    at createChart (<anonymous>:6:36)
+    at <anonymous>:8:7
+    at <anonymous>:12:5
+[ 1614833ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at PieChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at PieChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new PieChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2362:11)
+    at createChart (<anonymous>:6:36)
+    at <anonymous>:8:7
+    at <anonymous>:12:5
+[ 1614798ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-48b948c7.js:1137
+[ 1616761ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[ 1616761ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[ 1616762ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[ 1616762ms] [WARNING] Chart.js not available, falling back to canvas rendering: Error: Chart.js not loaded after maximum attempts
+    at checkChart (http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:76:18) @ http://localhost:3000/assets/controllers/sparkline_controller-2daaec94.js:31
+[ 1629847ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/undo_histories:0
+[ 1629933ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/undo_histories/34:0
+[ 1630072ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at LineChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at LineChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new LineChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2342:11)
+    at createChart (http://localhost:3000/expenses/dashboard?filter_state=JTdCJTdE:879:36)
+    at https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2555:12
+[ 1630072ms] Error: No charting libraries found - be sure to include one before your charts
+    at callAdapter (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:1849:11)
+    at renderChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2165:5)
+    at PieChart.__render (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2333:3)
+    at errorCatcher (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2123:11)
+    at fetchDataSource (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2156:5)
+    at PieChart.Chart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2196:3)
+    at new PieChart (https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2362:11)
+    at createChart (http://localhost:3000/expenses/dashboard?filter_state=JTdCJTdE:899:36)
+    at https://cdn.jsdelivr.net/npm/chartkick@5.0.1/dist/chartkick.esm.js:2555:12
+[ 1630063ms] [WARNING] WebSocket connection to 'wss://echo.websocket.org/' failed: WebSocket is closed before the connection is established. @ http://localhost:3000/assets/controllers/sync_widget_controller-48b948c7.js:1137
+[ 1630761ms] [ERROR] %s
+
+%o
+
+%o Error connecting controller TypeError: Cannot set property liveRegionTarget of #<t> which has only a getter
+    at t.setupLiveRegions (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:111:29)
+    at t.connect (http://localhost:3000/assets/controllers/accessibility_enhanced_controller-5c49b46e.js:31:10)
+    at L.connect (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:26905)
+    at j.connectContextForScope (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:29697)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37287
+    at Array.forEach (<anonymous>)
+    at H.connectModule (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:37273)
+    at H.loadDefinition (http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:36130)
+    at http://localhost:3000/assets/stimulus.min-4b1e420e.js:4:39089
+    at Array.forEach (<anonymous>) {identifier: accessibility-enhanced, controller: t, element: div.space-y-6.overflow-x-hidden} @ http://localhost:3000/assets/stimulus.min-4b1e420e.js:3

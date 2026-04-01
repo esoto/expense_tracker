@@ -287,6 +287,11 @@ module Services
       currency: new_expense_data[:currency] || "crc"
     )
 
+    # Soft-delete duplicate expenses so they are excluded from the unique partial
+    # index on (email_account_id, amount, transaction_date, merchant_name)
+    # WHERE deleted_at IS NULL. The expense is retained for conflict resolution.
+    expense_attrs[:deleted_at] = Time.current if conflict_type.in?(%w[duplicate similar])
+
     new_expense = Expense.new(expense_attrs)
     new_expense.save! if conflict_type == "duplicate" || conflict_type == "similar"
 

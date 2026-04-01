@@ -6,7 +6,6 @@ default: &default
   # This pre-warms the cache with fresh metrics data
   calculate_metrics_hourly:
     class: MetricsCalculationJob
-    command: "MetricsCalculationJob.perform_later"
     queue: default
     priority: 5
     schedule: every hour at minute 5
@@ -21,7 +20,6 @@ default: &default
   # Clean up old broadcast analytics data and recovered failed broadcast records hourly
   broadcast_analytics_cleanup:
     class: BroadcastAnalyticsCleanupJob
-    command: "BroadcastAnalyticsCleanupJob.perform_later"
     queue: low
     priority: 10
     schedule: every hour at minute 15
@@ -30,7 +28,6 @@ default: &default
   # Retry failed broadcasts from the dead letter queue every 30 minutes
   failed_broadcast_recovery:
     class: FailedBroadcastRecoveryJob
-    command: "FailedBroadcastRecoveryJob.perform_later"
     queue: low
     priority: 10
     schedule: every 30 minutes
@@ -41,7 +38,6 @@ development:
   # In development, run metrics calculation more frequently for testing
   calculate_metrics_hourly:
     class: MetricsCalculationJob
-    command: "MetricsCalculationJob.perform_later"
     queue: default
     priority: 5
     schedule: every 30 minutes
@@ -50,7 +46,6 @@ development:
   # Warm pattern cache more frequently in development for testing
   warm_pattern_cache:
     class: PatternCacheWarmerJob
-    command: "PatternCacheWarmerJob.perform_later"
     queue: low
     priority: 10
     schedule: every 5 minutes
@@ -67,7 +62,6 @@ production:
   # This keeps frequently used patterns in memory for < 1ms lookups
   warm_pattern_cache:
     class: PatternCacheWarmerJob
-    command: "PatternCacheWarmerJob.perform_later"
     queue: low
     priority: 10
     schedule: every 15 minutes

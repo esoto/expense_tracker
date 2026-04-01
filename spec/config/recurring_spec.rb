@@ -12,23 +12,19 @@ RSpec.describe "Recurring tasks configuration", :unit do
 
   describe "broadcast jobs" do
     it "schedules BroadcastAnalyticsCleanupJob hourly" do
-      entry = production_recurring.find { |key, _| key == "broadcast_analytics_cleanup" }
-      expect(entry).not_to be_nil, "Missing broadcast_analytics_cleanup in production recurring tasks"
-
-      config = entry.last
+      config = production_recurring.fetch("broadcast_analytics_cleanup")
       expect(config["class"]).to eq("BroadcastAnalyticsCleanupJob")
       expect(config["schedule"]).to match(/every.*hour/i)
       expect(config["queue"]).to eq("low")
+      expect(config).not_to have_key("command"), "Use class: instead of command: for job-based tasks"
     end
 
     it "schedules FailedBroadcastRecoveryJob every 30 minutes" do
-      entry = production_recurring.find { |key, _| key == "failed_broadcast_recovery" }
-      expect(entry).not_to be_nil, "Missing failed_broadcast_recovery in production recurring tasks"
-
-      config = entry.last
+      config = production_recurring.fetch("failed_broadcast_recovery")
       expect(config["class"]).to eq("FailedBroadcastRecoveryJob")
       expect(config["schedule"]).to match(/every.*30.*minute/i)
       expect(config["queue"]).to eq("low")
+      expect(config).not_to have_key("command"), "Use class: instead of command: for job-based tasks"
     end
   end
 
@@ -52,7 +48,12 @@ RSpec.describe "Recurring tasks configuration", :unit do
     end
   end
 
-  describe "no sidekiq scheduler" do
+  describe "Solid Queue is the active scheduler" do
+    it "recurring.yml exists with a production section" do
+      expect(File.exist?(Rails.root.join("config", "recurring.yml"))).to be true
+      expect(production_recurring).not_to be_empty
+    end
+
     it "sidekiq.yml does not exist" do
       expect(File.exist?(Rails.root.join("config", "sidekiq.yml"))).to be false
     end

@@ -406,12 +406,13 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
             .with(email_account.id, 0, :failure)
         end
 
-        it "re-raises error after tracking failure metrics" do
-          expect { job.perform(email_account_id: email_account) }
-            .to raise_error(StandardError)
+        it "does not track failure metrics when email_account lookup fails" do
+          allow(EmailAccount).to receive(:find).and_raise(ActiveRecord::RecordNotFound)
 
-          expect(job).to have_received(:track_job_metrics)
-            .with(email_account.id, 0, :failure)
+          expect { job.perform(email_account_id: 999999) }
+            .to raise_error(ActiveRecord::RecordNotFound)
+
+          expect(job).not_to have_received(:track_job_metrics)
         end
       end
 

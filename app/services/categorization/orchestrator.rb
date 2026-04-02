@@ -4,7 +4,9 @@ require "concurrent"
 require "timeout"
 
 module Services::Categorization
-  # == Alternative entry point — full dependency injection + clean orchestration
+  # == TEST / DEVELOPMENT INFRASTRUCTURE — Not for direct production use
+  #
+  # Alternative entry point — full dependency injection + clean orchestration
   #
   # Orchestrator is a second-generation categorization coordinator that prioritises
   # separation of concerns: it delegates every sub-task (caching, matching, confidence
@@ -699,8 +701,8 @@ module Services::Categorization
         )
       end
 
-      # Track with local performance tracker
-      @performance_tracker.record(operation, duration, metadata) if @performance_tracker.respond_to?(:record)
+      # NOTE: PerformanceTracker does not support direct record/record_failure calls
+      # Use track_operation or track_categorization instead
 
       # Alert if performance threshold exceeded
       if duration > 25.0 # 25ms threshold for production stability
@@ -709,8 +711,7 @@ module Services::Categorization
 
       result
     rescue StandardError => e
-      # Track failed operation
-      @performance_tracker.record_failure(operation, metadata) if @performance_tracker.respond_to?(:record_failure)
+      # Track failed operation via monitoring service if available
       raise e
     end
 

@@ -118,7 +118,7 @@ The application follows Domain-Driven Design principles with services organized 
 - **Broadcast Domain** (root-level services)
   - `CoreBroadcastService` - Base WebSocket broadcasting
   - `BroadcastReliabilityService` - Delivery guarantees and retry orchestration
-  - `BroadcastAnalytics` / `BroadcastErrorHandler` / `BroadcastRateLimiter`
+  - `BroadcastAnalytics` / `BroadcastErrorHandler` / `BroadcastRateLimiter` / `RedisAnalyticsService`
 
 - **Bulk Operations Domain** (`BulkOperations::*`)
   - `BaseService`, `CategorizationService`, `DeletionService`, `StatusUpdateService`
@@ -129,7 +129,7 @@ The application follows Domain-Driven Design principles with services organized 
 
 - **Infrastructure** — Cross-cutting concerns
   - `ErrorTrackingService`, `MetricsCalculator`, `QueueMonitor`
-  - `SyncMetricsCollector`, `RedisAnalyticsService`
+  - `SyncMetricsCollector`
 
 **Current State:**
 - Fully functional expense tracking application with 26 models, 86 services, 48 Stimulus controllers

@@ -9,9 +9,6 @@ class MetricsRefreshJob < ApplicationJob
   # Retry with exponential backoff on failures
   retry_on StandardError, wait: :polynomially_longer, attempts: 3
 
-  # Include concurrency control
-  include GoodJob::ActiveJobExtensions::Concurrency if defined?(GoodJob)
-
   # Prevent concurrent execution for the same email account
   # This uses a simple approach with rescue for lock acquisition
   def perform(email_account_id, affected_dates: [], force_refresh: false)

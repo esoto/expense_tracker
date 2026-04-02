@@ -21,9 +21,6 @@ RSpec.describe Services::BroadcastReliabilityService, type: :service, integratio
     allow(Services::BroadcastFeatureFlags).to receive(:enabled?)
       .with(:broadcast_validation)
       .and_return(false)
-    allow(Services::BroadcastFeatureFlags).to receive(:enabled?)
-      .with(:enhanced_rate_limiting)
-      .and_return(false)
 
     # Mock sleep to prevent actual delays in tests
     allow(Kernel).to receive(:sleep)

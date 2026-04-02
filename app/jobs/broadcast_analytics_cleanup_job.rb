@@ -67,23 +67,7 @@ class BroadcastAnalyticsCleanupJob < ApplicationJob
 
     cache_patterns.each do |pattern|
       begin
-        # Use Redis directly for pattern-based cleanup
-        if Rails.cache.respond_to?(:redis)
-          keys = Rails.cache.redis.keys(pattern)
-
-          keys.each do |key|
-            # Extract timestamp from key if possible and check if old
-            if key_is_old?(key, cutoff_time)
-              Rails.cache.delete(key.gsub("#{Rails.cache.redis.options[:namespace]}:", ""))
-              cleaned_count += 1
-            end
-          end
-        else
-          # Fallback for non-Redis cache stores
-          # This is less efficient but works with any cache store
-          cleaned_count += cleanup_cache_pattern_fallback(pattern, cutoff_time)
-        end
-
+        cleaned_count += cleanup_cache_pattern_fallback(pattern, cutoff_time)
       rescue StandardError => e
         Rails.logger.warn "[BROADCAST_ANALYTICS_CLEANUP] Error cleaning cache pattern #{pattern}: #{e.message}"
       end
@@ -92,25 +76,7 @@ class BroadcastAnalyticsCleanupJob < ApplicationJob
     cleaned_count
   end
 
-  # Check if a cache key represents old data
-  # @param key [String] Cache key
-  # @param cutoff_time [Time] Cutoff time for cleanup
-  # @return [Boolean] True if key is old
-  def key_is_old?(key, cutoff_time)
-    # Extract date pattern from key (e.g., "2025-08-01-14")
-    date_match = key.match(/(\d{4}-\d{2}-\d{2}-\d{2})/)
-    return false unless date_match
-
-    begin
-      key_time = Time.zone.parse("#{date_match[1]}:00:00")
-      key_time < cutoff_time
-    rescue ArgumentError
-      # If we can't parse the date, consider it old to be safe
-      true
-    end
-  end
-
-  # Fallback cleanup method for non-Redis cache stores
+  # Cleanup method for cache stores without pattern matching support
   # @param pattern [String] Cache key pattern
   # @param cutoff_time [Time] Cutoff time
   # @return [Integer] Number of keys cleaned

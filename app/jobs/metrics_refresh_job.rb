@@ -14,7 +14,7 @@ class MetricsRefreshJob < ApplicationJob
   def perform(email_account_id, affected_dates: [], force_refresh: false)
     email_account = EmailAccount.find(email_account_id)
 
-    # Use Redis lock to prevent concurrent metric calculation for the same account
+    # Use cache lock to prevent concurrent metric calculation for the same account
     lock_key = "metrics_refresh:#{email_account_id}"
     lock_acquired = acquire_lock(lock_key)
 
@@ -98,7 +98,7 @@ class MetricsRefreshJob < ApplicationJob
   private
 
   def acquire_lock(lock_key)
-    # Simple Redis-based lock with 60-second expiration
+    # Simple cache-based lock with 60-second expiration
     Rails.cache.write(lock_key, Time.current.to_s, expires_in: 60.seconds, unless_exist: true)
   end
 

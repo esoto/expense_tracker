@@ -12,31 +12,13 @@
 # - Usage analytics integration
 #
 # Usage:
-#   BroadcastFeatureFlags.enabled?(:redis_analytics)
+#   BroadcastFeatureFlags.enabled?(:broadcast_validation)
 #   BroadcastFeatureFlags.enabled_for_user?(:new_rate_limiting, user_id: 123)
-#   BroadcastFeatureFlags.with_fallback(:redis_metrics) { risky_operation }
+#   BroadcastFeatureFlags.with_fallback(:failed_broadcast_recovery) { risky_operation }
 module Services
   class BroadcastFeatureFlags
   # Feature flag definitions with their configurations
   FEATURES = {
-    # Redis-powered analytics
-    redis_analytics: {
-      default: false,
-      description: "Use Redis for high-performance analytics instead of Rails cache",
-      rollout_percentage: 0,
-      circuit_breaker: true,
-      fallback_method: :rails_cache_analytics
-    },
-
-    # Enhanced rate limiting
-    enhanced_rate_limiting: {
-      default: false,
-      description: "Enable advanced rate limiting with IP blocking and abuse detection",
-      rollout_percentage: 0,
-      circuit_breaker: true,
-      fallback_method: :basic_rate_limiting
-    },
-
     # Input validation and sanitization
     broadcast_validation: {
       default: true,
@@ -384,12 +366,6 @@ module Services
       Rails.logger.info "[FEATURE_FLAGS] Executing fallback #{fallback_method} for #{feature}" + (error ? " due to error: #{error.message}" : "")
 
       case fallback_method
-      when :rails_cache_analytics
-        # Use Rails cache instead of Redis
-        BroadcastAnalytics.get_metrics
-      when :basic_rate_limiting
-        # Use simple rate limiting instead of enhanced
-        true # Always allow for now
       when :skip_validation
         # Skip validation entirely
         true
@@ -417,18 +393,7 @@ module Services
     # @param result [Symbol] :success or :failure
     # @param error [String] Error message if failed
     def record_feature_analytics(feature, result, error: nil)
-      begin
-        Services::RedisAnalyticsService.increment_counter(
-          "feature_usage",
-          tags: {
-            feature: feature.to_s,
-            result: result.to_s,
-            error_type: error ? error.split(":").first : nil
-          }
-        )
-      rescue StandardError => e
-        Rails.logger.debug "[FEATURE_FLAGS] Failed to record analytics: #{e.message}"
-      end
+      Rails.logger.debug "[FEATURE_FLAGS] #{feature}: #{result}#{error ? " (#{error})" : ""}"
     end
 
     # Parse boolean from string

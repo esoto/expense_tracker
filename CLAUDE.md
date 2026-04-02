@@ -118,7 +118,7 @@ The application follows Domain-Driven Design principles with services organized 
 - **Broadcast Domain** (root-level services)
   - `CoreBroadcastService` - Base WebSocket broadcasting
   - `BroadcastReliabilityService` - Delivery guarantees and retry orchestration
-  - `BroadcastAnalytics` / `BroadcastErrorHandler` / `BroadcastRateLimiter` / `RedisAnalyticsService`
+  - `BroadcastAnalytics` / `BroadcastErrorHandler`
 
 - **Bulk Operations Domain** (`BulkOperations::*`)
   - `BaseService`, `CategorizationService`, `DeletionService`, `StatusUpdateService`

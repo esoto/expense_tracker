@@ -171,7 +171,6 @@ GEM
     groupdate (6.7.0)
       activesupport (>= 7.1)
     hashdiff (1.2.1)
-    hiredis (0.6.3)
     i18n (1.14.8)
       concurrent-ruby (~> 1.0)
     importmap-rails (2.2.3)
@@ -348,12 +347,6 @@ GEM
       erb
       psych (>= 4.0.0)
       tsort
-    redis (5.4.1)
-      redis-client (>= 0.22.0)
-    redis-client (0.26.4)
-      connection_pool
-    redis-namespace (1.11.0)
-      redis (>= 4)
     regexp_parser (2.11.3)
     reline (0.6.3)
       io-console (~> 0.5)
@@ -532,7 +525,6 @@ DEPENDENCIES
   chartkick
   chronic
   concurrent-ruby
-  connection_pool
   csv
   cuprite
   database_cleaner-active_record
@@ -541,7 +533,6 @@ DEPENDENCIES
   fuzzy-string-match (~> 1.0)
   get_process_mem
   groupdate
-  hiredis (~> 0.6)
   importmap-rails
   jbuilder
   json_spec
@@ -560,8 +551,6 @@ DEPENDENCIES
   rails-controller-testing
   rails-i18n (~> 8.0)
   rails_best_practices (~> 1.23)
-  redis
-  redis-namespace (~> 1.10)
   rspec-benchmark
   rspec-collection_matchers
   rspec-rails (~> 8.0)

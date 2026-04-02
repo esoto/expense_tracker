@@ -129,23 +129,7 @@ module MonitoringServiceTestHelper
       connection
     end
 
-    # Redis connection mocking
-    def mock_redis_connection(available: true)
-      redis_mock = double("Redis")
-      if available
-        allow(redis_mock).to receive(:ping).and_return("PONG")
-      else
-        allow(redis_mock).to receive(:ping).and_raise(Redis::CannotConnectError)
-      end
-
-      cache_mock = double("Cache")
-      allow(cache_mock).to receive(:redis).and_return(redis_mock)
-      allow(Rails).to receive(:cache).and_return(cache_mock) unless Rails.cache.is_a?(ActiveSupport::Cache::MemoryStore)
-
-      redis_mock
-    end
-
-    # ActionCable mocking (legacy — uses Redis-based pubsub adapter)
+    # ActionCable mocking
     def mock_action_cable(status: "running")
       pubsub = double("ActionCable::SubscriptionAdapter::Redis")
       redis_connection = double("Redis")

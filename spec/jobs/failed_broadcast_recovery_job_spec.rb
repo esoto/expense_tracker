@@ -486,7 +486,6 @@ RSpec.describe FailedBroadcastRecoveryJob, type: :job, unit: true do
 
     context 'with connection errors' do
       [
-        [ 'Connection refused', Redis::CannotConnectError, 'connection_timeout' ],
         [ 'Net::ReadTimeout with "Connection timeout"', Net::ReadTimeout, 'connection_timeout' ],
         [ 'Connection refused - Socket error', Errno::ECONNREFUSED, 'connection_timeout' ]
       ].each do |expected_message, error_class, expected_type|
@@ -751,7 +750,7 @@ RSpec.describe FailedBroadcastRecoveryJob, type: :job, unit: true do
         allow(scope_mock).to receive(:find_each)
 
         # Then mock cache write to fail
-        allow(cache_mock).to receive(:write).and_raise(Redis::CannotConnectError, 'Cache unavailable')
+        allow(cache_mock).to receive(:write).and_raise(StandardError, 'Cache unavailable')
 
         # The job should log the error
         allow(Rails.logger).to receive(:error)

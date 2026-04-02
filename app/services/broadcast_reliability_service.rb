@@ -225,33 +225,6 @@ module Services
         return false
       end
 
-      # Rate limiting check (with feature flag)
-      if should_apply_rate_limiting?(priority) && BroadcastFeatureFlags.enabled?(:enhanced_rate_limiting)
-        identifier = user_id || "anonymous_#{request_ip}"
-        rate_limiter = BroadcastRateLimiter.new(
-          identifier: identifier,
-          request_ip: request_ip
-        )
-
-        unless rate_limiter.allowed?(priority: priority)
-          Rails.logger.warn "[BROADCAST_SECURITY] Rate limit exceeded: #{rate_limiter.errors.join(', ')}"
-
-          # Log rate limiting event
-          log_security_event("rate_limit_exceeded", {
-            identifier: identifier,
-            request_ip: request_ip,
-            priority: priority,
-            errors: rate_limiter.errors,
-            retry_after: rate_limiter.retry_after(priority: priority)
-          })
-
-          return false
-        end
-
-        # Consume rate limit token
-        rate_limiter.consume!(priority: priority)
-      end
-
       # Log successful validation
       if validator.warnings.any?
         Rails.logger.info "[BROADCAST_SECURITY] Validation passed with warnings: #{validator.warnings.join(', ')}"
@@ -266,17 +239,6 @@ module Services
       false
     end
 
-    # Determine if rate limiting should be applied based on priority
-    # @param priority [Symbol] Priority level
-    # @return [Boolean] True if rate limiting should be applied
-    def should_apply_rate_limiting?(priority)
-      # Critical priority broadcasts may bypass rate limiting in emergencies
-      # This can be controlled by configuration
-      return false if priority == :critical && ENV["BYPASS_CRITICAL_RATE_LIMITING"] == "true"
-
-      true
-    end
-
     # Log security-related events for monitoring and analysis
     # @param event_type [String] Type of security event
     # @param data [Hash] Event data
@@ -288,16 +250,6 @@ module Services
       }.merge(data)
 
       Rails.logger.warn "[BROADCAST_SECURITY_EVENT] #{event_type}: #{event_data.to_json}"
-
-      # Store security events for analysis (could be sent to security monitoring system)
-      begin
-        Services::RedisAnalyticsService.increment_counter(
-          "security_events",
-          tags: { event_type: event_type, service: "broadcast" }
-        )
-      rescue StandardError => e
-        Rails.logger.debug "[BROADCAST_SECURITY] Failed to record security metrics: #{e.message}"
-      end
     end
   end
   end

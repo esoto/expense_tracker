@@ -73,8 +73,6 @@ module Services
         metadata: metadata.merge(error_info)
       )
 
-      # Also update Redis analytics for real-time monitoring
-      update_redis_analytics(metric_type, duration, success, email_account)
     end
   end
 
@@ -250,30 +248,6 @@ module Services
     end
   end
 
-  def update_redis_analytics(metric_type, duration, success, email_account)
-    return unless defined?(Services::RedisAnalyticsService)
-
-    tags = {
-      metric_type: metric_type,
-      success: success.to_s
-    }
-
-    tags[:bank] = email_account.bank_name if email_account
-
-    # Record in Redis for real-time analytics
-    Services::RedisAnalyticsService.increment_counter(
-      "sync_metrics",
-      tags: tags
-    )
-
-    Services::RedisAnalyticsService.record_timing(
-      "sync_duration",
-      duration / 1000.0, # Convert to seconds
-      tags: tags
-    )
-  rescue StandardError => e
-    Rails.logger.warn "Failed to update Redis analytics: #{e.message}"
-  end
 
   # Class methods for dashboard data
   class << self

@@ -70,26 +70,11 @@ module Services
       # Store individual success event using Rails cache
       store_event(:success, event_data)
 
-      # Use Redis for high-performance counters and timing
-      begin
-        Services::RedisAnalyticsService.increment_counter(
-          "broadcast_success",
-          tags: { channel: channel, priority: priority.to_s }
-        )
-
-        Services::RedisAnalyticsService.record_timing(
-          "broadcast_duration",
-          duration,
-          tags: { channel: channel, priority: priority.to_s, result: "success" }
-        )
-      rescue StandardError => e
-        Rails.logger.warn "[BROADCAST_ANALYTICS] Redis recording failed: #{e.message}"
-        # Fallback to Rails cache
-        increment_counter("#{CACHE_KEYS[:success]}:count", timestamp)
-        increment_counter("#{CACHE_KEYS[:success]}:#{channel}", timestamp)
-        increment_counter("#{CACHE_KEYS[:success]}:#{priority}", timestamp)
-        update_duration_stats(channel, duration, timestamp)
-      end
+      # Update counters and duration stats via Rails cache
+      increment_counter("#{CACHE_KEYS[:success]}:count", timestamp)
+      increment_counter("#{CACHE_KEYS[:success]}:#{channel}", timestamp)
+      increment_counter("#{CACHE_KEYS[:success]}:#{priority}", timestamp)
+      update_duration_stats(channel, duration, timestamp)
 
       # Update hourly stats (keep using Rails cache for compatibility)
       update_hourly_stats(:success, timestamp)
@@ -125,30 +110,11 @@ module Services
       # Store individual failure event using Rails cache
       store_event(:failure, event_data)
 
-      # Use Redis for high-performance counters and timing
-      begin
-        Services::RedisAnalyticsService.increment_counter(
-          "broadcast_failure",
-          tags: {
-            channel: channel,
-            priority: priority.to_s,
-            attempt: attempt.to_s
-          }
-        )
-
-        Services::RedisAnalyticsService.record_timing(
-          "broadcast_duration",
-          duration,
-          tags: { channel: channel, priority: priority.to_s, result: "failure" }
-        )
-      rescue StandardError => e
-        Rails.logger.warn "[BROADCAST_ANALYTICS] Redis recording failed: #{e.message}"
-        # Fallback to Rails cache
-        increment_counter("#{CACHE_KEYS[:failure]}:count", timestamp)
-        increment_counter("#{CACHE_KEYS[:failure]}:#{channel}", timestamp)
-        increment_counter("#{CACHE_KEYS[:failure]}:#{priority}", timestamp)
-        increment_counter("#{CACHE_KEYS[:failure]}:attempt_#{attempt}", timestamp)
-      end
+      # Update failure counters via Rails cache
+      increment_counter("#{CACHE_KEYS[:failure]}:count", timestamp)
+      increment_counter("#{CACHE_KEYS[:failure]}:#{channel}", timestamp)
+      increment_counter("#{CACHE_KEYS[:failure]}:#{priority}", timestamp)
+      increment_counter("#{CACHE_KEYS[:failure]}:attempt_#{attempt}", timestamp)
 
       # Update hourly stats (keep using Rails cache for compatibility)
       update_hourly_stats(:failure, timestamp)
@@ -195,43 +161,6 @@ module Services
       Rails.cache.fetch(cache_key, expires_in: 5.minutes) do
         calculate_metrics(time_window)
       end
-    end
-
-    # Get Redis-powered high-performance metrics
-    # @param time_window [ActiveSupport::Duration] Time window for metrics
-    # @return [Hash] Redis-based metrics
-    def get_redis_metrics(time_window: 1.hour)
-      BroadcastFeatureFlags.with_fallback(:redis_analytics) do
-        success_data = Services::RedisAnalyticsService.get_time_series(
-          "broadcast_success",
-          window: time_window
-        )
-
-        failure_data = Services::RedisAnalyticsService.get_time_series(
-          "broadcast_failure",
-          window: time_window
-        )
-
-        timing_percentiles = Services::RedisAnalyticsService.get_timing_percentiles(
-          "broadcast_duration",
-          percentiles: [ 0.5, 0.95, 0.99 ],
-          window: time_window
-        )
-
-        total_attempts = success_data[:total] + failure_data[:total]
-
-        {
-          redis_powered: true,
-          time_window: time_window.to_i,
-          success: success_data,
-          failure: failure_data,
-          total_attempts: total_attempts,
-          success_rate: total_attempts > 0 ? ((success_data[:total].to_f / total_attempts) * 100).round(2) : 0,
-          failure_rate: total_attempts > 0 ? ((failure_data[:total].to_f / total_attempts) * 100).round(2) : 0,
-          performance: timing_percentiles,
-          calculated_at: Time.current.iso8601
-        }
-      end || get_metrics(time_window: time_window).merge(redis_powered: false, fallback_used: true)
     end
 
     # Get channel-specific metrics

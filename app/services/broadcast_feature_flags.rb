@@ -417,18 +417,7 @@ module Services
     # @param result [Symbol] :success or :failure
     # @param error [String] Error message if failed
     def record_feature_analytics(feature, result, error: nil)
-      begin
-        Services::RedisAnalyticsService.increment_counter(
-          "feature_usage",
-          tags: {
-            feature: feature.to_s,
-            result: result.to_s,
-            error_type: error ? error.split(":").first : nil
-          }
-        )
-      rescue StandardError => e
-        Rails.logger.debug "[FEATURE_FLAGS] Failed to record analytics: #{e.message}"
-      end
+      Rails.logger.debug "[FEATURE_FLAGS] #{feature}: #{result}#{error ? " (#{error})" : ""}"
     end
 
     # Parse boolean from string

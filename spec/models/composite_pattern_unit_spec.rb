@@ -227,33 +227,64 @@ RSpec.describe CompositePattern, type: :model, unit: true do
   end
 
   describe "#record_usage" do
-    it "increments usage_count" do
-      allow(composite_pattern).to receive(:save!)
-      expect { composite_pattern.record_usage(true) }
-        .to change { composite_pattern.usage_count }.by(1)
+    let(:composite_pattern) do
+      build_stubbed(:composite_pattern,
+                    id: 1,
+                    category: category,
+                    name: "Ride Share",
+                    operator: "OR",
+                    pattern_ids: [ pattern1.id, pattern2.id ],
+                    confidence_weight: 1.5,
+                    usage_count: 10,
+                    success_count: 8,
+                    success_rate: 0.8,
+                    active: true)
     end
 
-    it "increments success_count when successful" do
+    before do
+      allow(CompositePattern).to receive(:update_counters)
+      allow(composite_pattern).to receive(:reload) do
+        composite_pattern.usage_count += 1
+        composite_pattern.success_count += 1 if @was_successful
+        composite_pattern
+      end
       allow(composite_pattern).to receive(:save!)
-      expect { composite_pattern.record_usage(true) }
-        .to change { composite_pattern.success_count }.by(1)
     end
 
-    it "does not increment success_count when unsuccessful" do
-      allow(composite_pattern).to receive(:save!)
-      expect { composite_pattern.record_usage(false) }
-        .not_to change { composite_pattern.success_count }
+    context "when successful" do
+      before { @was_successful = true }
+
+      it "uses atomic update_counters for both usage and success counts" do
+        expect(CompositePattern).to receive(:update_counters).with(1, { usage_count: 1, success_count: 1 })
+        composite_pattern.record_usage(true)
+      end
+
+      it "recalculates success rate" do
+        composite_pattern.record_usage(true)
+        expect(composite_pattern.success_rate).to be_within(0.001).of(0.818)
+      end
     end
 
-    it "recalculates success_rate" do
-      allow(composite_pattern).to receive(:save!)
-      composite_pattern.usage_count = 10
-      composite_pattern.success_count = 5
+    context "when unsuccessful" do
+      before { @was_successful = false }
+
+      it "uses atomic update_counters for only usage count" do
+        expect(CompositePattern).to receive(:update_counters).with(1, { usage_count: 1 })
+        composite_pattern.record_usage(false)
+      end
+
+      it "recalculates success rate" do
+        composite_pattern.record_usage(false)
+        expect(composite_pattern.success_rate).to be_within(0.001).of(0.727)
+      end
+    end
+
+    it "reloads after atomic increment" do
+      expect(composite_pattern).to receive(:reload)
       composite_pattern.record_usage(true)
-      expect(composite_pattern.success_rate).to be_within(0.01).of(0.545)
     end
 
-    it "saves the record" do
+    it "saves the record after recalculating" do
       expect(composite_pattern).to receive(:save!)
       composite_pattern.record_usage(true)
     end

@@ -37,10 +37,6 @@ RSpec.describe RateLimiting, type: :controller, unit: true do
     if defined?(Rails.cache)
       Rails.cache.clear
     end
-
-    # Mock the rate limit store
-    @store = RateLimiting::MemoryRateLimitStore.new
-    allow(controller).to receive(:rate_limit_store).and_return(@store)
   end
 
   let!(:user) { create(:admin_user, email: "admin_#{SecureRandom.hex(4)}@example.com") }
@@ -128,28 +124,17 @@ RSpec.describe RateLimiting, type: :controller, unit: true do
     end
   end
 
-  describe "MemoryRateLimitStore", unit: true do
-    let(:store) { RateLimiting::MemoryRateLimitStore.new }
-
-    it "stores and retrieves values" do
-      store.setex("test_key", 60, 5)
-      expect(store.get("test_key")).to eq(5)
+  describe "Rails.cache integration", unit: true do
+    it "stores rate limit counts in Rails.cache" do
+      post :categorize, format: :json
+      key = "rate_limit:bulk_operations:#{user.id}:categorize"
+      expect(Rails.cache.read(key).to_i).to eq(1)
     end
 
-    it "increments values" do
-      store.setex("test_key", 60, 1)
-      store.incr("test_key")
-      expect(store.get("test_key")).to eq(2)
-    end
-
-    it "checks key existence" do
-      expect(store.exists?("nonexistent")).to be false
-      store.setex("test_key", 60, 1)
-      expect(store.exists?("test_key")).to be true
-    end
-
-    it "returns 0 for non-existent keys" do
-      expect(store.get("nonexistent")).to eq(0)
+    it "increments the count on subsequent requests" do
+      3.times { post :categorize, format: :json }
+      key = "rate_limit:bulk_operations:#{user.id}:categorize"
+      expect(Rails.cache.read(key).to_i).to eq(3)
     end
   end
 

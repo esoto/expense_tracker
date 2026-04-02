@@ -42,9 +42,9 @@ module RateLimiting
     return unless config
 
     key = rate_limit_key(operation)
-    current_count = Rails.cache.read(key).to_i
+    current_count = Rails.cache.increment(key, 1, expires_in: config[:window])
 
-    if current_count >= config[:limit]
+    if current_count > config[:limit]
       Rails.logger.warn "Rate limit exceeded for user #{current_user.id}, operation: #{operation}"
 
       respond_to do |format|
@@ -67,20 +67,10 @@ module RateLimiting
       end
       return
     end
-
-    # Increment rate limit counter
-    increment_rate_limit(key, config[:window])
   end
 
   def rate_limit_key(operation)
     "rate_limit:bulk_operations:#{current_user.id}:#{operation}"
-  end
-
-  def increment_rate_limit(key, window)
-    # Rails.cache.increment creates the key with value 1 if missing,
-    # and increments by 1 if it exists. expires_in ensures automatic
-    # cleanup after the rate limit window.
-    Rails.cache.increment(key, 1, expires_in: window)
   end
 
   def format_window(window)

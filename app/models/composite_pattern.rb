@@ -82,8 +82,14 @@ class CompositePattern < ApplicationRecord
 
   # Record usage of this pattern and whether it was successful
   def record_usage(was_successful)
-    self.usage_count += 1
-    self.success_count += 1 if was_successful
+    # Use update_counters for atomic database operations
+    increments = { usage_count: 1 }
+    increments[:success_count] = 1 if was_successful
+
+    self.class.update_counters(id, increments)
+
+    # Reload to get updated values and recalculate success rate
+    reload
     calculate_success_rate
     save!
   end

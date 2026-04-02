@@ -91,17 +91,17 @@ module Services::EmailProcessing
         # Set currency using enum methods
         begin
           set_currency(expense, parsed_data)
-        rescue StandardError => e
+        rescue ArgumentError, EncodingError => e
+          Rails.logger.warn("[Parser] Currency detection failed: #{e.class.name} - #{e.message}")
           add_error("Currency detection failed: #{e.message}")
-          # Don't re-raise, continue with expense creation
         end
 
         # Try to auto-categorize
         begin
           expense.category = guess_category(expense)
-        rescue StandardError => e
+        rescue Services::Categorization::Engine::CategorizationError, ActiveRecord::RecordNotFound, ArgumentError => e
+          Rails.logger.warn("[Parser] Categorization failed: #{e.class.name} - #{e.message}")
           add_error("Category guess failed: #{e.message}")
-          # Don't re-raise, continue with expense creation
         end
 
         if expense.save

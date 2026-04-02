@@ -335,6 +335,10 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
       end
 
       expect(cache.metrics[:hits][:memory]).to be >= frequently_used_patterns.size
+
+      # Verify duration is actually measured (PER-297)
+      expect(result[:duration]).to be_a(Float)
+      expect(result[:duration]).to be >= 0.0
     end
 
     it "handles errors gracefully" do

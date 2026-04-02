@@ -54,6 +54,26 @@ module Services::BulkOperations
       BulkCategorizationJob
     end
 
+    # Override to include category_id in job options since BaseJob#perform
+    # only passes expense_ids, user_id, and options as keyword args
+    def enqueue_background_job
+      job = background_job_class.perform_later(
+        expense_ids: expense_ids,
+        user_id: user&.id,
+        options: options.merge(category_id: category_id)
+      )
+
+      results.merge(
+        success: true,
+        message: "Processing #{expense_ids.size} expenses in background",
+        job_id: job.job_id,
+        background: true
+      )
+    rescue StandardError => e
+      handle_error(e)
+      results
+    end
+
     private
 
     def category_must_exist

@@ -244,6 +244,7 @@ module Services::Categorization
     # Warm cache with commonly used patterns
     def warm_cache
       Rails.logger.info "[PatternCache] Starting cache warming..."
+      start_time = Time.current
 
       warmup_stats = {
         patterns: 0,
@@ -282,7 +283,7 @@ module Services::Categorization
         end
       end
 
-      warmup_stats[:duration] = (Time.current - Time.current).round(3)
+      warmup_stats[:duration] = (Time.current - start_time).round(3)
 
       Rails.logger.info "[PatternCache] Cache warming completed: #{warmup_stats.inspect}"
       warmup_stats

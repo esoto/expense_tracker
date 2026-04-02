@@ -412,15 +412,11 @@ module Services::Categorization
     end
 
     def build_cache
-      if defined?(Redis) && Rails.cache.is_a?(ActiveSupport::Cache::RedisCacheStore)
-        Rails.cache
-      else
-        ActiveSupport::Cache::MemoryStore.new(
-          size: 5.megabytes,
-          compress: false,
-          expires_in: CACHE_TTL
-        )
-      end
+      ActiveSupport::Cache::MemoryStore.new(
+        size: 5.megabytes,
+        compress: false,
+        expires_in: CACHE_TTL
+      )
     end
 
     def benchmark_calculation(&block)

@@ -92,39 +92,13 @@ module Services::Infrastructure
       # Production environment key matching
       def production_matching_keys(pattern)
         case Rails.cache
-        when ActiveSupport::Cache::RedisCacheStore
-          redis_matching_keys(pattern)
         when ActiveSupport::Cache::MemoryStore
           test_matching_keys(pattern) # Fallback for development
         else
-          # For other cache stores, return empty array
-          # This prevents errors in production while logging a warning
+          # Solid Cache and other stores don't support key pattern matching
           Rails.logger.warn "CacheAdapter: Pattern matching not supported for #{Rails.cache.class}"
           []
         end
-      end
-
-      # Redis-specific key matching
-      def redis_matching_keys(pattern)
-        redis = Rails.cache.redis
-
-        # Convert our pattern format to Redis SCAN pattern
-        redis_pattern = pattern.gsub("*", "*")
-
-        keys = []
-        cursor = "0"
-
-        # Use SCAN to avoid blocking on large keysets
-        loop do
-          cursor, batch = redis.scan(cursor, match: redis_pattern, count: 100)
-          keys.concat(batch)
-          break if cursor == "0"
-        end
-
-        keys
-      rescue => e
-        Rails.logger.error "CacheAdapter: Redis key matching failed: #{e.message}"
-        []
       end
 
       # Convert a simple wildcard pattern to regex

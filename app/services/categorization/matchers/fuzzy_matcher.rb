@@ -626,14 +626,10 @@ module Services::Categorization
       end
 
       def build_cache
-        if defined?(Redis) && Rails.cache.is_a?(ActiveSupport::Cache::RedisCacheStore)
-          Rails.cache
-        else
-          ActiveSupport::Cache::MemoryStore.new(
-            size: 10.megabytes,
-            compress: false
-          )
-        end
+        ActiveSupport::Cache::MemoryStore.new(
+          size: 10.megabytes,
+          compress: false
+        )
       end
 
       def check_pg_extension(extension_name)

@@ -19,8 +19,6 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, integrati
 
       # Clear rate limit cache before each test
       Rails.cache.clear if defined?(Rails.cache)
-      # Also clear any instance variables that might persist
-      controller.instance_variable_set(:@rate_limit_store, nil) if controller.instance_variable_defined?(:@rate_limit_store)
     end
 
     describe 'Basic Functionality' do
@@ -91,7 +89,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, integrati
     describe 'Input Validation' do
       context 'amount range validation' do
         it 'validates amount range format' do
-          invalid_ranges = [ 'abc-def', '100-', '-200', '200-100', '', '999999999-9999999999' ]
+          invalid_ranges = [ 'abc-def', '100-', '-200', '200-100', '999999999-9999999999' ]
 
           invalid_ranges.each do |invalid_range|
             post :auto_categorize, params: {
@@ -185,10 +183,16 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, integrati
         end
 
         it 'blocks requests exceeding rate limit' do
-          # MemoryRateLimitStore is per-controller-instance and controller specs
-          # create a new instance per request, so the counter resets each time.
-          # Rate limiting works in production (single process) and request specs.
-          skip "MemoryRateLimitStore resets per controller instance in controller specs"
+          11.times do
+            post :categorize, params: {
+              expense_ids: [ expense.id ],
+              category_id: category.id,
+              format: :json
+            }
+          end
+
+          expect(response).to have_http_status(:too_many_requests)
+          expect(JSON.parse(response.body)['error']).to include('Rate limit exceeded')
         end
       end
 

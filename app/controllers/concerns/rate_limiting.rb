@@ -42,7 +42,7 @@ module RateLimiting
     return unless config
 
     key = rate_limit_key(operation)
-    current_count = rate_limit_store.get(key).to_i
+    current_count = Rails.cache.read(key).to_i
 
     if current_count >= config[:limit]
       Rails.logger.warn "Rate limit exceeded for user #{current_user.id}, operation: #{operation}"
@@ -77,22 +77,10 @@ module RateLimiting
   end
 
   def increment_rate_limit(key, window)
-    store = rate_limit_store
-
-    if store.exists?(key)
-      store.incr(key)
-    else
-      store.setex(key, window.to_i, 1)
-    end
-  end
-
-  def rate_limit_store
-    # Use Redis if available, otherwise in-memory store for development
-    if Rails.cache.respond_to?(:redis)
-      Rails.cache.redis
-    else
-      @rate_limit_store ||= MemoryRateLimitStore.new
-    end
+    # Rails.cache.increment creates the key with value 1 if missing,
+    # and increments by 1 if it exists. expires_in ensures automatic
+    # cleanup after the rate limit window.
+    Rails.cache.increment(key, 1, expires_in: window)
   end
 
   def format_window(window)
@@ -100,55 +88,6 @@ module RateLimiting
       "#{window.to_i / 60} minutes"
     else
       "#{window.to_i / 3600} hours"
-    end
-  end
-
-  # Simple in-memory rate limit store for development/testing
-  class MemoryRateLimitStore
-    def initialize
-      @store = {}
-      @expires = {}
-      @mutex = Mutex.new
-    end
-
-    def get(key)
-      @mutex.synchronize do
-        cleanup_expired
-        @store[key] || 0
-      end
-    end
-
-    def setex(key, ttl, value)
-      @mutex.synchronize do
-        @store[key] = value
-        @expires[key] = Time.current + ttl.seconds
-        value
-      end
-    end
-
-    def incr(key)
-      @mutex.synchronize do
-        @store[key] = (@store[key] || 0) + 1
-      end
-    end
-
-    def exists?(key)
-      @mutex.synchronize do
-        cleanup_expired
-        @store.key?(key)
-      end
-    end
-
-    private
-
-    def cleanup_expired
-      now = Time.current
-      expired_keys = @expires.select { |_, expire_time| expire_time <= now }.keys
-
-      expired_keys.each do |key|
-        @store.delete(key)
-        @expires.delete(key)
-      end
     end
   end
 end

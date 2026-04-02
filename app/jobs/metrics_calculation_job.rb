@@ -9,7 +9,14 @@ class MetricsCalculationJob < ApplicationJob
 
   # Performance monitoring
   MAX_EXECUTION_TIME = 30.seconds
+  LOCK_DURATION = 60.seconds # 2x MAX_EXECUTION_TIME for crash recovery
   CACHE_EXPIRY_HOURS = 4 # Longer cache for background-calculated metrics
+
+  # Prevent concurrent calculation for the same account
+  # Duration is the crash-recovery TTL — Solid Queue releases the semaphore after this period
+  limits_concurrency to: 1,
+    key: ->(args = {}) { args[:email_account_id] || "all_accounts" },
+    duration: LOCK_DURATION
 
   # Retry with exponential backoff on failures
   retry_on StandardError, wait: :polynomially_longer, attempts: 3
@@ -36,64 +43,50 @@ class MetricsCalculationJob < ApplicationJob
                       raise ArgumentError, "email_account_id is required for MetricsCalculationJob"
     end
 
-    # Acquire lock to prevent concurrent calculation for the same account
-    lock_key = "metrics_calculation:#{email_account.id}"
-    lock_acquired = acquire_lock(lock_key)
+    reference_date ||= Date.current
 
-    unless lock_acquired
-      Rails.logger.info "MetricsCalculationJob skipped - another job is already processing account #{email_account.id}"
-      return
+    # Clear cache if forced refresh
+    if force_refresh
+      Services::MetricsCalculator.clear_cache(email_account: email_account)
     end
 
-    begin
-      reference_date ||= Date.current
+    if period.present?
+      # Calculate specific period for the email account
+      Rails.logger.info "Calculating metrics for account #{email_account.id}, period: #{period}, date: #{reference_date}"
 
-      # Clear cache if forced refresh
-      if force_refresh
-        Services::MetricsCalculator.clear_cache(email_account: email_account)
-      end
+      # Use longer cache expiration for background-calculated metrics
+      calculator = Services::ExtendedCacheMetricsCalculator.new(
+        email_account: email_account,
+        period: period,
+        reference_date: reference_date,
+        cache_hours: CACHE_EXPIRY_HOURS
+      )
+      result = calculator.calculate
 
-      if period.present?
-        # Calculate specific period for the email account
-        Rails.logger.info "Calculating metrics for account #{email_account.id}, period: #{period}, date: #{reference_date}"
-
-        # Use longer cache expiration for background-calculated metrics
-        calculator = Services::ExtendedCacheMetricsCalculator.new(
-          email_account: email_account,
-          period: period,
-          reference_date: reference_date,
-          cache_hours: CACHE_EXPIRY_HOURS
-        )
-        result = calculator.calculate
-
-        log_calculation_result(email_account, period, reference_date, result)
-      else
-        # Calculate all periods for current date and next/previous periods for the email account
-        calculate_all_periods(email_account, reference_date)
-      end
-
-      # Track execution time
-      elapsed_time = Time.current - start_time
-
-      # Log performance warning if exceeds target
-      if elapsed_time > MAX_EXECUTION_TIME
-        Rails.logger.warn "MetricsCalculationJob exceeded #{MAX_EXECUTION_TIME}s target: #{elapsed_time.round(2)}s for account #{email_account.id}"
-        track_slow_job(email_account, elapsed_time)
-      else
-        Rails.logger.info "MetricsCalculationJob completed in #{elapsed_time.round(2)}s for account #{email_account.id}"
-      end
-
-      # Track job metrics for monitoring
-      track_job_metrics(email_account.id, elapsed_time, :success)
-
-    rescue StandardError => e
-      Rails.logger.error "MetricsCalculationJob failed: #{e.message}"
-      Rails.logger.error e.backtrace.join("\n")
-      track_job_metrics(email_account.id, 0, :failure)
-      raise # Re-raise for retry mechanism
-    ensure
-      release_lock(lock_key)
+      log_calculation_result(email_account, period, reference_date, result)
+    else
+      # Calculate all periods for current date and next/previous periods for the email account
+      calculate_all_periods(email_account, reference_date)
     end
+
+    # Track execution time
+    elapsed_time = Time.current - start_time
+
+    # Log performance warning if exceeds target
+    if elapsed_time > MAX_EXECUTION_TIME
+      Rails.logger.warn "MetricsCalculationJob exceeded #{MAX_EXECUTION_TIME}s target: #{elapsed_time.round(2)}s for account #{email_account.id}"
+      track_slow_job(email_account, elapsed_time)
+    else
+      Rails.logger.info "MetricsCalculationJob completed in #{elapsed_time.round(2)}s for account #{email_account.id}"
+    end
+
+    # Track job metrics for monitoring
+    track_job_metrics(email_account.id, elapsed_time, :success)
+  rescue StandardError => e
+    Rails.logger.error "MetricsCalculationJob failed: #{e.message}"
+    Rails.logger.error e.backtrace.join("\n")
+    track_job_metrics(email_account.id, 0, :failure) if email_account
+    raise # Re-raise for retry mechanism
   end
 
   # Enqueue calculation for all active email accounts
@@ -171,16 +164,6 @@ class MetricsCalculationJob < ApplicationJob
 
   def format_amount(amount)
     "$#{'%.2f' % amount}"
-  end
-
-  def acquire_lock(lock_key)
-    # Use Redis/cache-based lock with 5-minute expiration
-    # Returns true if lock acquired, false if already locked
-    Rails.cache.write(lock_key, Time.current.to_s, expires_in: 5.minutes, unless_exist: true)
-  end
-
-  def release_lock(lock_key)
-    Rails.cache.delete(lock_key)
   end
 
   def track_job_metrics(email_account_id, elapsed_time, status)

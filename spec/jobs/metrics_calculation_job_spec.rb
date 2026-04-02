@@ -87,7 +87,6 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
       end
 
       it "returns early without further processing" do
-        expect(job).not_to receive(:acquire_lock)
         expect(Services::ExtendedCacheMetricsCalculator).not_to receive(:new)
 
         job.perform(email_account_id: nil)
@@ -97,7 +96,6 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
     context "with email_account_id parameter handling" do
       it "accepts email_account_id as integer" do
         expect(EmailAccount).to receive(:find).with(email_account.id).and_return(email_account)
-        allow(job).to receive(:acquire_lock).and_return(true)
         allow(job).to receive(:calculate_all_periods)
 
         job.perform(email_account_id: email_account.id)
@@ -105,7 +103,6 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
       it "accepts email_account_id as string" do
         expect(EmailAccount).to receive(:find).with(email_account.id.to_s).and_return(email_account)
-        allow(job).to receive(:acquire_lock).and_return(true)
         allow(job).to receive(:calculate_all_periods)
 
         job.perform(email_account_id: email_account.id.to_s)
@@ -113,7 +110,6 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
       it "accepts EmailAccount object directly" do
         expect(EmailAccount).not_to receive(:find)
-        allow(job).to receive(:acquire_lock).and_return(true)
         allow(job).to receive(:calculate_all_periods)
 
         job.perform(email_account_id: email_account)
@@ -133,90 +129,34 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
       end
     end
 
-    context "distributed locking" do
-      let(:lock_key) { "metrics_calculation:#{email_account.id}" }
-
-      context "when lock is acquired successfully" do
-        before do
-          allow(Rails.cache).to receive(:write).with(
-            lock_key,
-            anything,
-            expires_in: 5.minutes,
-            unless_exist: true
-          ).and_return(true)
-          allow(Rails.cache).to receive(:delete)
-          allow(job).to receive(:track_job_metrics)
-        end
-
-        it "acquires lock with correct parameters" do
-          allow(job).to receive(:calculate_all_periods)
-
-          job.perform(email_account_id: email_account)
-
-          expect(Rails.cache).to have_received(:write).with(
-            lock_key,
-            anything,
-            expires_in: 5.minutes,
-            unless_exist: true
-          )
-        end
-
-        it "releases lock in ensure block even on success" do
-          allow(job).to receive(:calculate_all_periods)
-
-          job.perform(email_account_id: email_account)
-
-          expect(Rails.cache).to have_received(:delete).with(lock_key)
-        end
-
-        it "releases lock in ensure block even on failure" do
-          allow(job).to receive(:calculate_all_periods).and_raise(StandardError, "Test error")
-          allow(Rails.logger).to receive(:error)
-
-          expect { job.perform(email_account_id: email_account) }
-            .to raise_error(StandardError, "Test error")
-
-          expect(Rails.cache).to have_received(:delete).with(lock_key)
-        end
+    context "concurrency control" do
+      it "configures limits_concurrency to 1 per account" do
+        expect(described_class.concurrency_limit).to eq(1)
       end
 
-      context "when lock is already held (lock contention)" do
-        before do
-          allow(Rails.cache).to receive(:write).with(
-            lock_key,
-            anything,
-            expires_in: 5.minutes,
-            unless_exist: true
-          ).and_return(false)
-          allow(Rails.logger).to receive(:info)
-        end
+      it "uses email_account_id as concurrency key" do
+        concurrency_job = described_class.new
+        concurrency_job.arguments = [ { email_account_id: 42 } ]
+        expect(concurrency_job.concurrency_key).to eq("MetricsCalculationJob/42")
+      end
 
-        it "skips processing when lock cannot be acquired" do
-          expect(job).not_to receive(:calculate_all_periods)
-          expect(Services::ExtendedCacheMetricsCalculator).not_to receive(:new)
+      it "uses fallback key for fan-out mode (nil account_id)" do
+        concurrency_job = described_class.new
+        concurrency_job.arguments = [ { email_account_id: nil } ]
+        expect(concurrency_job.concurrency_key).to eq("MetricsCalculationJob/all_accounts")
+      end
 
-          job.perform(email_account_id: email_account)
-        end
+      it "defines LOCK_DURATION as 60 seconds" do
+        expect(described_class::LOCK_DURATION).to eq(60.seconds)
+      end
 
-        it "logs lock contention" do
-          job.perform(email_account_id: email_account)
-
-          expect(Rails.logger).to have_received(:info)
-            .with("MetricsCalculationJob skipped - another job is already processing account #{email_account.id}")
-        end
-
-        it "does not attempt to release lock" do
-          expect(Rails.cache).not_to receive(:delete)
-
-          job.perform(email_account_id: email_account)
-        end
+      it "configures concurrency duration to LOCK_DURATION" do
+        expect(described_class.concurrency_duration).to eq(60.seconds)
       end
     end
 
     context "with force_refresh option" do
       before do
-        allow(job).to receive(:acquire_lock).and_return(true)
-        allow(job).to receive(:release_lock)
         allow(job).to receive(:calculate_all_periods)
       end
 
@@ -253,8 +193,6 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
       end
 
       before do
-        allow(job).to receive(:acquire_lock).and_return(true)
-        allow(job).to receive(:release_lock)
         allow(Services::ExtendedCacheMetricsCalculator).to receive(:new).and_return(calculator_double)
         allow(calculator_double).to receive(:calculate).and_return(calculation_result)
         allow(Rails.logger).to receive(:info)
@@ -326,8 +264,6 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
     context "all periods calculation mode" do
       before do
-        allow(job).to receive(:acquire_lock).and_return(true)
-        allow(job).to receive(:release_lock)
         allow(Rails.logger).to receive(:info)
         allow(Rails.logger).to receive(:debug)
       end
@@ -361,8 +297,6 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
       let(:calculator_double) { instance_double(Services::ExtendedCacheMetricsCalculator) }
 
       before do
-        allow(job).to receive(:acquire_lock).and_return(true)
-        allow(job).to receive(:release_lock)
         allow(job).to receive(:track_job_metrics)
         allow(Services::ExtendedCacheMetricsCalculator).to receive(:new).and_return(calculator_double)
         allow(calculator_double).to receive(:calculate).and_return({
@@ -373,18 +307,13 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
       end
 
       context "when execution is within threshold" do
-        before do
-          # Stub Time.current to simulate fast execution
-          # Called at: start, lock write, end, track_job_metrics
-          allow(Time).to receive(:current).and_return(
-            start_time,                          # start_time = Time.current
-            start_time,                          # lock write (timestamp)
-            start_time + fast_execution_time,    # elapsed_time = Time.current - start_time
-            start_time + fast_execution_time     # track_job_metrics timestamp
-          )
-        end
-
         it "logs successful completion with execution time" do
+          # Stub calculate to advance time during execution
+          allow(calculator_double).to receive(:calculate) do
+            travel fast_execution_time
+            { metrics: { transaction_count: 10, total_amount: 100.0 } }
+          end
+
           job.perform(email_account_id: email_account, period: :month)
 
           expect(Rails.logger).to have_received(:info)
@@ -392,6 +321,11 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
         end
 
         it "tracks success metrics" do
+          allow(calculator_double).to receive(:calculate) do
+            travel fast_execution_time
+            { metrics: { transaction_count: 10, total_amount: 100.0 } }
+          end
+
           job.perform(email_account_id: email_account, period: :month)
 
           expect(job).to have_received(:track_job_metrics)
@@ -407,16 +341,11 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
       context "when execution exceeds threshold" do
         before do
-          # Stub Time.current to simulate slow execution
-          # Called at: start, lock write, end, track_job_metrics, track_slow_job
-          allow(Time).to receive(:current).and_return(
-            start_time,                          # start_time = Time.current
-            start_time,                          # lock write (timestamp)
-            start_time + slow_execution_time,    # elapsed_time = Time.current - start_time
-            start_time + slow_execution_time,    # track_job_metrics timestamp
-            start_time + slow_execution_time     # track_slow_job timestamp
-          )
           allow(job).to receive(:track_slow_job)
+          allow(calculator_double).to receive(:calculate) do
+            travel slow_execution_time
+            { metrics: { transaction_count: 10, total_amount: 100.0 } }
+          end
         end
 
         it "logs performance warning" do
@@ -444,8 +373,6 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
     context "error handling and retry behavior" do
       before do
-        allow(job).to receive(:acquire_lock).and_return(true)
-        allow(job).to receive(:release_lock)
         allow(job).to receive(:track_job_metrics)
         allow(Rails.logger).to receive(:error)
       end
@@ -479,12 +406,13 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
             .with(email_account.id, 0, :failure)
         end
 
-        it "ensures lock is released on error" do
-          expect { job.perform(email_account_id: email_account) }
-            .to raise_error(StandardError)
+        it "does not track failure metrics when email_account lookup fails" do
+          allow(EmailAccount).to receive(:find).and_raise(ActiveRecord::RecordNotFound)
 
-          expect(job).to have_received(:release_lock)
-            .with("metrics_calculation:#{email_account.id}")
+          expect { job.perform(email_account_id: 999999) }
+            .to raise_error(ActiveRecord::RecordNotFound)
+
+          expect(job).not_to have_received(:track_job_metrics)
         end
       end
 
@@ -513,8 +441,6 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
     let(:result) { { metrics: { transaction_count: 10, total_amount: 100.0 } } }
 
     before do
-      allow(job).to receive(:acquire_lock).and_return(true)
-      allow(job).to receive(:release_lock)
       allow(Services::ExtendedCacheMetricsCalculator).to receive(:new).and_return(calculator_double)
       allow(calculator_double).to receive(:calculate).and_return(result)
       allow(Rails.logger).to receive(:info)
@@ -957,19 +883,9 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
           reference_date: reference_date
         )
 
-        # Verify all steps executed in order
-        expect(Rails.cache).to have_received(:write).with(
-          "metrics_calculation:#{email_account.id}",
-          anything,
-          hash_including(expires_in: 5.minutes)
-        ).ordered
-
-        expect(Services::ExtendedCacheMetricsCalculator).to have_received(:new).ordered
-        expect(calculator).to have_received(:calculate).ordered
-
-        expect(Rails.cache).to have_received(:delete).with(
-          "metrics_calculation:#{email_account.id}"
-        ).ordered
+        # Verify calculation steps executed
+        expect(Services::ExtendedCacheMetricsCalculator).to have_received(:new)
+        expect(calculator).to have_received(:calculate)
       end
     end
 
@@ -1005,57 +921,37 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
     context "error recovery and retry" do
       before do
-        allow(Rails.cache).to receive(:write).and_return(true)
-        allow(Rails.cache).to receive(:delete)
         allow(Rails.logger).to receive(:error)
       end
 
-      it "ensures cleanup even on catastrophic failure" do
+      it "propagates catastrophic failure for retry mechanism" do
         allow(job).to receive(:calculate_all_periods).and_raise(NoMemoryError, "Out of memory")
 
         expect { job.perform(email_account_id: email_account) }
           .to raise_error(NoMemoryError)
-
-        # Lock should still be released
-        expect(Rails.cache).to have_received(:delete)
-          .with("metrics_calculation:#{email_account.id}")
       end
     end
   end
 
   describe "cache operation semantics" do
-    let(:lock_key) { "metrics_calculation:#{email_account.id}" }
-
-    context "lock acquisition with unless_exist semantics" do
-      it "writes lock with timestamp value" do
-        expect(Rails.cache).to receive(:write).with(
-          lock_key,
-          an_instance_of(String), # Timestamp as string
-          hash_including(
-            expires_in: 5.minutes,
-            unless_exist: true
-          )
-        ).and_return(true)
+    context "concurrency is managed by Solid Queue" do
+      it "does not use manual cache-based locking" do
+        # Verify no cache write with unless_exist (old lock pattern)
+        expect(Rails.cache).not_to receive(:write).with(
+          /metrics_calculation:\d+/,
+          anything,
+          hash_including(unless_exist: true)
+        )
 
         allow(job).to receive(:calculate_all_periods)
         allow(job).to receive(:track_job_metrics)
-        allow(Rails.cache).to receive(:delete)
 
         job.perform(email_account_id: email_account)
       end
 
-      it "respects unless_exist flag for concurrent safety" do
-        # First call succeeds
-        expect(Rails.cache).to receive(:write)
-          .with(lock_key, anything, hash_including(unless_exist: true))
-          .and_return(true)
-          .once
-
-        allow(job).to receive(:calculate_all_periods)
-        allow(job).to receive(:track_job_metrics)
-        allow(Rails.cache).to receive(:delete)
-
-        job.perform(email_account_id: email_account)
+      it "relies on limits_concurrency for mutual exclusion" do
+        expect(described_class.concurrency_limit).to eq(1)
+        expect(described_class.concurrency_duration).to eq(60.seconds)
       end
     end
 
@@ -1159,8 +1055,6 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
         allow(calculator).to receive(:calculate).and_return({
           metrics: { transaction_count: 5, total_amount: 50.0 }
         })
-        allow(job).to receive(:acquire_lock).and_return(true)
-        allow(job).to receive(:release_lock)
         allow(job).to receive(:track_job_metrics)
 
         job.perform(

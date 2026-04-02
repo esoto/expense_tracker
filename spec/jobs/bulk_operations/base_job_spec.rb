@@ -343,7 +343,7 @@ RSpec.describe BulkOperations::BaseJob, type: :job, unit: true do
 
     context 'when progress tracking fails' do
       before do
-        allow(rails_cache).to receive(:write).and_raise(Redis::ConnectionError, 'Connection refused')
+        allow(rails_cache).to receive(:write).and_raise(StandardError, 'Connection refused')
       end
 
       it 'logs tracking errors but continues operation' do

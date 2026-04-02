@@ -743,13 +743,13 @@ RSpec.describe MetricsRefreshJob, type: :job, unit: true do
         allow(Rails.cache).to receive(:write) do |*args|
           call_count += 1
           if call_count == 2
-            raise Redis::ConnectionError, "Connection lost"
+            raise StandardError, "Connection lost"
           else
             original_write.call(*args)
           end
         end
 
-        expect { job.perform(email_account.id) }.to raise_error(Redis::ConnectionError)
+        expect { job.perform(email_account.id) }.to raise_error(StandardError, "Connection lost")
       end
 
       it "maintains data consistency during concurrent modifications" do

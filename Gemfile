@@ -62,10 +62,6 @@ gem "solid_cable"
 # Concurrent programming support for batch collection
 gem "concurrent-ruby"
 
-# Redis connection pooling for analytics
-gem "connection_pool"
-gem "redis"
-
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
 
@@ -150,7 +146,4 @@ gem "rails_best_practices", "~> 1.23", group: :development
 # Categorization improvement dependencies
 group :categorization do
   gem "fuzzy-string-match", "~> 1.0"
-  gem "redis-namespace", "~> 1.10"
-  gem "hiredis", "~> 0.6"
-  # concurrent-ruby and connection_pool already defined above
 end

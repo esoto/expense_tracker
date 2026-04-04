@@ -388,7 +388,7 @@ RSpec.describe Services::Categorization::PatternLearner do
     end
 
     context "with custom threshold" do
-      xit "uses provided threshold date (pending investigation)" do
+      it "uses provided threshold date (pending investigation)" do
         # Create patterns for this specific test
         pattern_45_days = create(:categorization_pattern,
           confidence_weight: 2.0,

@@ -54,6 +54,7 @@ module Services::Categorization
         # Store for undo functionality
         if success_count > 0
           store_bulk_operation(results.select { |r| r[:success] })
+          broadcast_categorization_updates(results.select { |r| r[:success] })
         end
 
         {
@@ -215,6 +216,8 @@ module Services::Categorization
           }
         end
       end
+
+      broadcast_categorization_updates_for_ids(expense_adapter.map(&:id)) if success_count > 0
 
       {
         success_count: success_count,
@@ -521,6 +524,27 @@ module Services::Categorization
           by_current_category: {},
           estimated_time_saved: "0 seconds"
         }
+      end
+
+      def broadcast_categorization_updates(successful_results)
+        expense_ids = successful_results.map { |r| r[:expense_id] }
+        broadcast_categorization_updates_for_ids(expense_ids)
+      end
+
+      def broadcast_categorization_updates_for_ids(expense_ids)
+        Expense.where(id: expense_ids).includes(:category).find_each do |expense|
+          ActionCable.server.broadcast(
+            "expenses_#{expense.email_account_id}",
+            {
+              action: "categorized",
+              expense_id: expense.id,
+              category_id: expense.category_id,
+              category_name: expense.category&.name
+            }
+          )
+        end
+      rescue StandardError => e
+        Rails.logger.warn "Failed to broadcast categorization updates: #{e.message}"
       end
   end
 end

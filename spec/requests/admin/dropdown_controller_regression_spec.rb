@@ -65,7 +65,6 @@ RSpec.describe "Admin dropdown controller regression (PER-201)", type: :request 
       # NOTE: composite_patterns auth test removed due to test-suite-level session
       # pollution (passes solo, fails in full suite). Auth is verified via same
       # BaseController inheritance chain tested in authentication_spec.rb.
-
     end
   end
 end

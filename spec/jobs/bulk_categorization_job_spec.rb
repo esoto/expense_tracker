@@ -2,28 +2,51 @@
 
 require 'rails_helper'
 
+# Stub User class for testing since BaseJob references it
+class User
+  attr_accessor :id
+
+  def initialize(id)
+    @id = id
+  end
+
+  def self.find_by(id:)
+    new(id) if id
+  end
+end unless defined?(User)
+
 RSpec.describe BulkCategorizationJob, type: :job, unit: true do
   subject(:job) { described_class.new }
 
   let(:expense_ids) { [ 1, 2, 3, 4, 5 ] }
   let(:category_id) { 10 }
   let(:user_id) { 20 }
-  let(:options) { { force: true } }
+  let(:options) { { category_id: category_id, force: true } }
   let(:category) { double('Category', id: category_id, name: 'Test Category') }
-  let(:successful_result) { double('Result', success?: true) }
-  let(:failed_result) { double('Result', success?: false, message: 'Service failed', errors: [ 'Error 1' ]) }
+  let(:successful_result) do
+    OpenStruct.new(
+      success?: true,
+      message: "Successfully categorized 5 expenses",
+      errors: []
+    )
+  end
+  let(:failed_result) do
+    OpenStruct.new(
+      success?: false,
+      message: 'Service failed',
+      errors: [ 'Error 1' ]
+    )
+  end
 
   before do
-    # Mock external dependencies
     allow(Rails.logger).to receive(:info)
     allow(Rails.logger).to receive(:error)
-    allow(Category).to receive(:find).with(category_id).and_return(category)
-    allow(Turbo::StreamsChannel).to receive(:broadcast_append_to)
+    allow(Category).to receive(:find_by).with(id: category_id).and_return(category)
     allow(Rails.cache).to receive(:write)
+    allow(ActionCable.server).to receive(:broadcast)
     allow(Time).to receive(:current).and_return(Time.zone.parse('2025-08-30 12:00:00'))
     allow(SecureRandom).to receive(:uuid).and_return('test-uuid-123')
 
-    # Mock the bulk categorization service
     allow(Services::BulkCategorization::ApplyService).to receive(:new).and_return(
       double('Service', call: successful_result)
     )
@@ -31,58 +54,61 @@ RSpec.describe BulkCategorizationJob, type: :job, unit: true do
 
   describe '#perform' do
     context 'with successful batch processing' do
-      it 'processes expenses in batches and notifies completion' do
-        job.perform(expense_ids, category_id, user_id, options)
+      it 'processes expenses and returns success result' do
+        result = job.perform(expense_ids: expense_ids, user_id: user_id, options: options)
+
+        expect(result[:success]).to be true
+        expect(result[:affected_count]).to eq(5)
+        expect(result[:message]).to include('5 expenses categorized as Test Category')
+      end
+
+      it 'logs processing info' do
+        job.perform(expense_ids: expense_ids, user_id: user_id, options: options)
 
         expect(Rails.logger).to have_received(:info).with('Processing bulk categorization: 5 expenses')
-        expect(Rails.logger).to have_received(:info).with(
-          {
-            event: 'bulk_categorization_completed',
-            user_id: user_id,
-            expense_count: expense_ids.count,
-            category_id: category_id,
-            timestamp: '2025-08-30T12:00:00Z'
-          }.to_json
-        )
       end
 
       it 'processes expenses in correct batch sizes' do
-        large_expense_ids = (1..45).to_a # 45 expenses = 3 batches of 20, 1 batch of 5
+        large_expense_ids = (1..45).to_a
         service_double = double('Service', call: successful_result)
         allow(Services::BulkCategorization::ApplyService).to receive(:new).and_return(service_double)
 
-        job.perform(large_expense_ids, category_id, user_id, options)
+        job.perform(expense_ids: large_expense_ids, user_id: user_id, options: options)
 
-        # Should create service instances for each batch
+        # 45 expenses / 20 batch size = 3 batches (20, 20, 5)
         expect(Services::BulkCategorization::ApplyService).to have_received(:new).exactly(3).times
       end
 
-      it 'passes correct parameters to Services::BulkCategorization::ApplyService' do
+      it 'passes correct parameters to ApplyService' do
         service_double = double('Service', call: successful_result)
         allow(Services::BulkCategorization::ApplyService).to receive(:new).and_return(service_double)
 
-        job.perform(expense_ids, category_id, user_id, options)
+        job.perform(expense_ids: expense_ids, user_id: user_id, options: options)
 
         expect(Services::BulkCategorization::ApplyService).to have_received(:new).with(
           expense_ids: expense_ids,
           category_id: category_id,
           user_id: user_id,
-          options: options.merge(send_notifications: false)
+          options: { force: true, send_notifications: false }
         )
       end
 
-      it 'sends completion notification via Turbo Streams' do
-        job.perform(expense_ids, category_id, user_id, options)
+      it 'tracks progress via BaseJob' do
+        job.perform(expense_ids: expense_ids, user_id: user_id, options: options)
 
-        expect(Turbo::StreamsChannel).to have_received(:broadcast_append_to).with(
-          "user_#{user_id}_notifications",
-          target: 'notifications',
-          partial: 'shared/notification',
-          locals: {
-            message: 'Bulk categorization completed: 5 expenses categorized as Test Category',
-            type: :success,
-            timestamp: Time.current
-          }
+        expect(Rails.cache).to have_received(:write).with(
+          /bulk_operation_progress/,
+          hash_including(percentage: 0, message: "Starting bulk operation..."),
+          expires_in: 1.hour
+        )
+      end
+
+      it 'broadcasts completion via BaseJob' do
+        job.perform(expense_ids: expense_ids, user_id: user_id, options: options)
+
+        expect(ActionCable.server).to have_received(:broadcast).with(
+          "bulk_operations_completion_#{user_id}",
+          hash_including(success: true, affected_count: 5)
         )
       end
     end
@@ -94,13 +120,13 @@ RSpec.describe BulkCategorizationJob, type: :job, unit: true do
       end
 
       it 'logs batch processing errors' do
-        job.perform(expense_ids, category_id, user_id, options)
+        job.perform(expense_ids: expense_ids, user_id: user_id, options: options)
 
         expect(Rails.logger).to have_received(:error).with('Batch processing failed: Service failed')
       end
 
-      it 'tracks failed batch for retry' do
-        job.perform(expense_ids, category_id, user_id, options)
+      it 'tracks failed batch in cache' do
+        job.perform(expense_ids: expense_ids, user_id: user_id, options: options)
 
         expect(Rails.cache).to have_received(:write).with(
           'failed_bulk_categorization_test-uuid-123',
@@ -113,236 +139,128 @@ RSpec.describe BulkCategorizationJob, type: :job, unit: true do
         )
       end
 
-      it 'still notifies completion despite batch failures' do
-        job.perform(expense_ids, category_id, user_id, options)
+      it 'returns failure result with failures array' do
+        result = job.perform(expense_ids: expense_ids, user_id: user_id, options: options)
 
-        expect(Turbo::StreamsChannel).to have_received(:broadcast_append_to).with(
-          "user_#{user_id}_notifications",
-          target: 'notifications',
-          partial: 'shared/notification',
-          locals: {
-            message: 'Bulk categorization completed: 5 expenses categorized as Test Category',
-            type: :success,
-            timestamp: Time.current
-          }
+        expect(result[:success]).to be false
+        expect(result[:affected_count]).to eq(0)
+        expect(result[:failures]).not_to be_empty
+      end
+
+      it 'broadcasts failure via BaseJob' do
+        job.perform(expense_ids: expense_ids, user_id: user_id, options: options)
+
+        expect(ActionCable.server).to have_received(:broadcast).with(
+          "bulk_operations_completion_#{user_id}",
+          hash_including(success: false)
         )
       end
     end
 
-    context 'when job encounters an error' do
+    context 'when job encounters an unhandled error' do
       let(:test_error) { StandardError.new('Database connection failed') }
 
       before do
         allow(Services::BulkCategorization::ApplyService).to receive(:new).and_raise(test_error)
       end
 
-      it 'handles the error and re-raises for retry mechanism' do
-        expect { job.perform(expense_ids, category_id, user_id, options) }.to raise_error(StandardError, 'Database connection failed')
-
-        expect(Rails.logger).to have_received(:error).with(
-          {
-            event: 'bulk_categorization_failed',
-            error: 'Database connection failed',
-            error_class: 'StandardError',
-            user_id: user_id,
-            expense_count: expense_ids.count,
-            category_id: category_id,
-            backtrace: test_error.backtrace&.first(5),
-            timestamp: '2025-08-30T12:00:00Z'
-          }.to_json
-        )
+      it 'lets BaseJob handle the error and re-raises for retry' do
+        expect {
+          job.perform(expense_ids: expense_ids, user_id: user_id, options: options)
+        }.to raise_error(StandardError, 'Database connection failed')
       end
 
-      it 'sends error notification to user' do
-        expect { job.perform(expense_ids, category_id, user_id, options) }.to raise_error(StandardError)
+      it 'tracks error progress via BaseJob' do
+        begin
+          job.perform(expense_ids: expense_ids, user_id: user_id, options: options)
+        rescue StandardError
+          # Expected
+        end
 
-        expect(Turbo::StreamsChannel).to have_received(:broadcast_append_to).with(
-          "user_#{user_id}_notifications",
-          target: 'notifications',
-          partial: 'shared/notification',
-          locals: {
-            message: 'Bulk categorization failed. Please try again or contact support if the problem persists.',
-            type: :error,
-            timestamp: Time.current
-          }
+        expect(Rails.cache).to have_received(:write).with(
+          /bulk_operation_progress/,
+          hash_including(error: true),
+          expires_in: 1.hour
         )
       end
     end
 
     context 'with empty expense_ids' do
       it 'handles empty array gracefully' do
-        empty_ids = []
+        result = job.perform(expense_ids: [], user_id: user_id, options: options)
 
-        expect { job.perform(empty_ids, category_id, user_id, options) }.not_to raise_error
-
-        expect(Rails.logger).to have_received(:info).with('Processing bulk categorization: 0 expenses')
+        expect(result[:success]).to be true
+        expect(result[:affected_count]).to eq(0)
       end
     end
-  end
 
-  describe '#process_batch' do
-    let(:batch_ids) { [ 1, 2, 3 ] }
-
-    context 'with successful service call' do
-      it 'calls Services::BulkCategorization::ApplyService with correct parameters' do
+    context 'without user_id' do
+      it 'passes nil user_id to ApplyService' do
         service_double = double('Service', call: successful_result)
         allow(Services::BulkCategorization::ApplyService).to receive(:new).and_return(service_double)
 
-        job.send(:process_batch, batch_ids, category_id, user_id, options)
+        job.perform(expense_ids: expense_ids, options: options)
 
         expect(Services::BulkCategorization::ApplyService).to have_received(:new).with(
-          expense_ids: batch_ids,
-          category_id: category_id,
-          user_id: user_id,
-          options: options.merge(send_notifications: false)
-        )
-        expect(service_double).to have_received(:call)
-      end
-
-      it 'does not log errors for successful batches' do
-        service_double = double('Service', call: successful_result)
-        allow(Services::BulkCategorization::ApplyService).to receive(:new).and_return(service_double)
-
-        job.send(:process_batch, batch_ids, category_id, user_id, options)
-
-        expect(Rails.logger).not_to have_received(:error)
-      end
-    end
-
-    context 'with failed service call' do
-      before do
-        service_double = double('Service', call: failed_result)
-        allow(Services::BulkCategorization::ApplyService).to receive(:new).and_return(service_double)
-      end
-
-      it 'logs the failure and tracks failed batch' do
-        job.send(:process_batch, batch_ids, category_id, user_id, options)
-
-        expect(Rails.logger).to have_received(:error).with('Batch processing failed: Service failed')
-        expect(Rails.cache).to have_received(:write).with(
-          'failed_bulk_categorization_test-uuid-123',
-          {
-            expense_ids: batch_ids,
-            errors: [ 'Error 1' ],
-            timestamp: Time.current
-          },
-          expires_in: 7.days
+          hash_including(user_id: nil)
         )
       end
     end
   end
 
-  describe '#notify_completion' do
-    it 'broadcasts success notification to user' do
-      job.send(:notify_completion, expense_ids.count, category_id, user_id)
+  describe '#execute_operation (via perform)' do
+    it 'extracts category_id from options' do
+      other_category = double('Category', id: 99, name: 'Other Category')
+      allow(Category).to receive(:find_by).with(id: 99).and_return(other_category)
+      service_double = double('Service', call: successful_result)
+      allow(Services::BulkCategorization::ApplyService).to receive(:new).and_return(service_double)
 
-      expect(Category).to have_received(:find).with(category_id)
-      expect(Turbo::StreamsChannel).to have_received(:broadcast_append_to).with(
-        "user_#{user_id}_notifications",
-        target: 'notifications',
-        partial: 'shared/notification',
-        locals: {
-          message: 'Bulk categorization completed: 5 expenses categorized as Test Category',
-          type: :success,
-          timestamp: Time.current
-        }
+      job.perform(expense_ids: expense_ids, user_id: user_id, options: { category_id: 99 })
+
+      expect(Services::BulkCategorization::ApplyService).to have_received(:new).with(
+        hash_including(category_id: 99)
       )
     end
 
-    it 'logs structured completion data' do
-      job.send(:notify_completion, expense_ids.count, category_id, user_id)
+    it 'reports incremental progress during batch processing' do
+      large_ids = (1..40).to_a
+      service_double = double('Service', call: successful_result)
+      allow(Services::BulkCategorization::ApplyService).to receive(:new).and_return(service_double)
 
-      expect(Rails.logger).to have_received(:info).with(
-        {
-          event: 'bulk_categorization_completed',
-          user_id: user_id,
-          expense_count: expense_ids.count,
-          category_id: category_id,
-          timestamp: '2025-08-30T12:00:00Z'
-        }.to_json
+      job.perform(expense_ids: large_ids, user_id: user_id, options: options)
+
+      # Should broadcast progress at 50% (20/40) and 100% (40/40)
+      expect(ActionCable.server).to have_received(:broadcast).with(
+        "bulk_operations_#{user_id}",
+        hash_including(percentage: 50, message: "Processed 20/40 expenses")
       )
-    end
-  end
-
-  describe '#handle_job_error' do
-    let(:test_error) do
-      error = StandardError.new('Connection timeout')
-      error.set_backtrace([ 'line1', 'line2', 'line3', 'line4', 'line5', 'line6' ])
-      error
-    end
-
-    it 'logs structured error information' do
-      job.send(:handle_job_error, test_error, expense_ids, category_id, user_id)
-
-      expect(Rails.logger).to have_received(:error).with(
-        {
-          event: 'bulk_categorization_failed',
-          error: 'Connection timeout',
-          error_class: 'StandardError',
-          user_id: user_id,
-          expense_count: expense_ids.count,
-          category_id: category_id,
-          backtrace: [ 'line1', 'line2', 'line3', 'line4', 'line5' ],
-          timestamp: '2025-08-30T12:00:00Z'
-        }.to_json
+      expect(ActionCable.server).to have_received(:broadcast).with(
+        "bulk_operations_#{user_id}",
+        hash_including(percentage: 100, message: "Processed 40/40 expenses")
       )
     end
 
-    it 'broadcasts error notification to user' do
-      job.send(:handle_job_error, test_error, expense_ids, category_id, user_id)
+    it 'handles missing category gracefully' do
+      allow(Category).to receive(:find_by).with(id: category_id).and_return(nil)
 
-      expect(Turbo::StreamsChannel).to have_received(:broadcast_append_to).with(
-        "user_#{user_id}_notifications",
-        target: 'notifications',
-        partial: 'shared/notification',
-        locals: {
-          message: 'Bulk categorization failed. Please try again or contact support if the problem persists.',
-          type: :error,
-          timestamp: Time.current
-        }
-      )
-    end
-  end
+      result = job.perform(expense_ids: expense_ids, user_id: user_id, options: options)
 
-  describe '#track_failed_batch' do
-    let(:batch_ids) { [ 1, 2, 3 ] }
-    let(:result) { double('Result', errors: [ 'Error 1', 'Error 2' ]) }
-
-    it 'stores failed batch data in cache' do
-      job.send(:track_failed_batch, batch_ids, result)
-
-      expect(Rails.cache).to have_received(:write).with(
-        'failed_bulk_categorization_test-uuid-123',
-        {
-          expense_ids: batch_ids,
-          errors: [ 'Error 1', 'Error 2' ],
-          timestamp: Time.current
-        },
-        expires_in: 7.days
-      )
+      expect(result[:message]).to include('categorized as category')
     end
   end
 
   describe 'job configuration' do
-    it 'is configured to use bulk_operations queue' do
+    it 'inherits bulk_operations queue from BaseJob' do
       expect(described_class.queue_name).to eq('bulk_operations')
-    end
-
-    it 'has retry configuration for deadlocks' do
-      # Test that retry_on is configured - this is more of a smoke test
-      # since the actual retry configuration is defined in the class
-      expect(described_class).to respond_to(:retry_on)
-    end
-
-    it 'has retry configuration for record not found' do
-      # Test that retry_on is configured - this is more of a smoke test
-      # since the actual retry configuration is defined in the class
-      expect(described_class).to respond_to(:retry_on)
     end
 
     it 'defines performance constants' do
       expect(described_class::MAX_EXPENSES_PER_JOB).to eq(100)
       expect(described_class::BATCH_SIZE).to eq(20)
+    end
+
+    it 'extends BulkOperations::BaseJob' do
+      expect(described_class.superclass).to eq(BulkOperations::BaseJob)
     end
   end
 end

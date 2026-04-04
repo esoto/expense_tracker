@@ -578,4 +578,117 @@ RSpec.describe Services::Categorization::BulkCategorizationService, type: :servi
       end
     end
   end
+
+  # Private method tests via send — verifies pattern.matches? delegation (PER-292)
+  describe "#find_best_category_match (private)" do
+    let(:expense) { build(:expense, description: "Uber ride downtown", merchant_name: "Uber") }
+
+    it "delegates matching to pattern.matches?" do
+      matching_pattern = instance_double(
+        CategorizationPattern,
+        matches?: true,
+        category: category,
+        effective_confidence: 0.92,
+        confidence_weight: 0.8,
+        pattern_value: "uber"
+      )
+      non_matching_pattern = instance_double(
+        CategorizationPattern,
+        matches?: false
+      )
+
+      allow(CategorizationPattern).to receive_message_chain(:active, :with_category)
+        .and_return([ non_matching_pattern, matching_pattern ])
+
+      result = service.send(:find_best_category_match, expense)
+
+      expect(non_matching_pattern).to have_received(:matches?).with(expense)
+      expect(matching_pattern).to have_received(:matches?).with(expense)
+      expect(result[:category]).to eq(category)
+      expect(result[:confidence]).to eq(0.92)
+      expect(result[:reason]).to eq("Pattern match: uber")
+    end
+
+    it "returns nil when no patterns match" do
+      non_matching = instance_double(CategorizationPattern, matches?: false)
+
+      allow(CategorizationPattern).to receive_message_chain(:active, :with_category)
+        .and_return([ non_matching ])
+
+      result = service.send(:find_best_category_match, expense)
+
+      expect(result).to be_nil
+    end
+
+    it "uses effective_confidence over confidence_weight" do
+      pattern_with_effective = instance_double(
+        CategorizationPattern,
+        matches?: true,
+        category: category,
+        effective_confidence: 0.95,
+        confidence_weight: 0.7,
+        pattern_value: "test"
+      )
+
+      allow(CategorizationPattern).to receive_message_chain(:active, :with_category)
+        .and_return([ pattern_with_effective ])
+
+      result = service.send(:find_best_category_match, expense)
+
+      expect(result[:confidence]).to eq(0.95)
+    end
+
+    it "falls back to confidence_weight when effective_confidence is nil" do
+      pattern_without_effective = instance_double(
+        CategorizationPattern,
+        matches?: true,
+        category: category,
+        effective_confidence: nil,
+        confidence_weight: 0.75,
+        pattern_value: "test"
+      )
+
+      allow(CategorizationPattern).to receive_message_chain(:active, :with_category)
+        .and_return([ pattern_without_effective ])
+
+      result = service.send(:find_best_category_match, expense)
+
+      expect(result[:confidence]).to eq(0.75)
+    end
+
+    it "falls back to 0.8 when both confidence values are nil" do
+      pattern_no_confidence = instance_double(
+        CategorizationPattern,
+        matches?: true,
+        category: category,
+        effective_confidence: nil,
+        confidence_weight: nil,
+        pattern_value: "test"
+      )
+
+      allow(CategorizationPattern).to receive_message_chain(:active, :with_category)
+        .and_return([ pattern_no_confidence ])
+
+      result = service.send(:find_best_category_match, expense)
+
+      expect(result[:confidence]).to eq(0.8)
+    end
+
+    it "returns nil for expense without required attributes" do
+      plain_object = Object.new
+
+      result = service.send(:find_best_category_match, plain_object)
+
+      expect(result).to be_nil
+    end
+
+    it "handles errors from pattern query gracefully" do
+      allow(CategorizationPattern).to receive_message_chain(:active, :with_category)
+        .and_raise(ActiveRecord::ConnectionNotEstablished)
+
+      result = service.send(:find_best_category_match, expense)
+
+      expect(result).to be_nil
+    end
+  end
 end

@@ -377,6 +377,57 @@ RSpec.describe Services::Categorization::Monitoring::MetricsCollector, type: :se
     end
   end
 
+  describe "LogClient fallback", unit: true do
+    let(:log_client) { described_class::LogClient.new(logger: logger) }
+    let(:logger) { instance_double(ActiveSupport::Logger) }
+
+    before do
+      allow(logger).to receive(:debug)
+    end
+
+    it "implements increment" do
+      log_client.increment("test.metric", 1)
+      expect(logger).to have_received(:debug)
+    end
+
+    it "implements gauge" do
+      log_client.gauge("test.metric", 42)
+      expect(logger).to have_received(:debug)
+    end
+
+    it "implements timing" do
+      log_client.timing("test.metric", 5.2)
+      expect(logger).to have_received(:debug)
+    end
+
+    it "implements histogram" do
+      log_client.histogram("test.metric", 100)
+      expect(logger).to have_received(:debug)
+    end
+
+    it "reports present? as true" do
+      expect(log_client).to be_present
+    end
+  end
+
+  describe "track_categorization with LogClient fallback", unit: true do
+    before do
+      collector.instance_variable_set(:@client, described_class::LogClient.new)
+    end
+
+    it "logs metrics at debug level without raising" do
+      expect {
+        collector.track_categorization(
+          expense_id: 1,
+          success: true,
+          confidence: 0.85,
+          duration_ms: 12.5,
+          method: "pattern"
+        )
+      }.not_to raise_error
+    end
+  end
+
   describe "class-level delegation" do
     it "delegates .track_categorization to instance", unit: true do
       expect(described_class).to respond_to(:track_categorization)

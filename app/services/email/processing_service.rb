@@ -419,22 +419,20 @@ module Services::Email
       # Save expense first
       expense.save!
 
-      # Auto-categorize if enabled (after saving so expense has an ID)
+      # Auto-categorize if enabled (requires persisted expense for Engine validation)
       if options[:auto_categorize]
         category = suggest_category(expense)
         if category
-          begin
-            expense.reload.update!(
-              category: category,
-              auto_categorized: true,
-              categorization_confidence: last_categorization_confidence,
-              categorization_method: last_categorization_method,
-              categorized_at: Time.current
-            )
-          rescue ActiveRecord::StaleObjectError
-            # Expense was modified concurrently, skip auto-categorization
-            Rails.logger.warn "Skipped auto-categorization for expense #{expense.id} due to concurrent modification"
-          end
+          expense.update!(
+            category_id: category.id,
+            auto_categorized: true,
+            categorization_confidence: last_categorization_confidence,
+            categorization_method: last_categorization_method,
+            categorized_at: Time.current
+          )
+          # Keep in-memory object in sync
+          expense.category = category
+          expense.auto_categorized = true
         end
       end
 
@@ -504,7 +502,7 @@ module Services::Email
         expense_data[:merchant]
       )
       sanitized = ActiveRecord::Base.sanitize_sql_array(
-        ["SELECT pg_advisory_xact_lock(?)", lock_key]
+        [ "SELECT pg_advisory_xact_lock(?)", lock_key ]
       )
       ActiveRecord::Base.connection.execute(sanitized)
     end

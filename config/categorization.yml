@@ -3,6 +3,9 @@
 
 default: &default
   # Cache configuration
+  # NOTE: PatternCache uses its own constants and MemoryStore, not these settings.
+  # These values are available via Rails.configuration.x.categorization[:cache]
+  # for other services that read from this config.
   cache:
     enabled: true
     ttl_seconds: 3600

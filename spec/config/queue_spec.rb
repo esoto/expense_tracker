@@ -7,7 +7,7 @@ require "erb"
 RSpec.describe "Queue configuration", :unit do
   let(:queue_config_path) { Rails.root.join("config", "queue.yml") }
   let(:raw_config) { File.read(queue_config_path) }
-  let(:parsed_config) { YAML.safe_load(ERB.new(raw_config).result, permitted_classes: [Symbol], aliases: true) }
+  let(:parsed_config) { YAML.safe_load(ERB.new(raw_config).result, permitted_classes: [ Symbol ], aliases: true) }
   let(:production_config) { parsed_config.fetch("production") }
 
   let(:production_worker_queues) do

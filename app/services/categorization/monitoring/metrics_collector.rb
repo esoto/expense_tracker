@@ -19,6 +19,43 @@ module Services::Categorization
         very_low: 0.0...0.3
       }.freeze
 
+      # Log-backed fallback client when StatsD is unavailable.
+      # Implements the StatsD interface, writing to Rails.logger.debug.
+      class LogClient
+        attr_accessor :namespace
+
+        def initialize(logger: Rails.logger)
+          @logger = logger
+          @namespace = "categorization"
+        end
+
+        def increment(metric, value = 1)
+          @logger.debug { "[Metrics] INCREMENT #{namespaced(metric)} += #{value}" }
+        end
+
+        def gauge(metric, value)
+          @logger.debug { "[Metrics] GAUGE #{namespaced(metric)} = #{value}" }
+        end
+
+        def timing(metric, value)
+          @logger.debug { "[Metrics] TIMING #{namespaced(metric)} = #{value}ms" }
+        end
+
+        def histogram(metric, value)
+          @logger.debug { "[Metrics] HISTOGRAM #{namespaced(metric)} = #{value}" }
+        end
+
+        def present?
+          true
+        end
+
+        private
+
+        def namespaced(metric)
+          "#{@namespace}.#{metric}"
+        end
+      end
+
       attr_reader :client, :enabled, :prefix
 
       def initialize
@@ -184,12 +221,12 @@ module Services::Categorization
             client.namespace = @prefix
           end
         else
-          Rails.logger.warn "[MetricsCollector] StatsD client not available. Metrics collection disabled."
-          nil
+          Rails.logger.info "[MetricsCollector] StatsD not available, using log-backed fallback."
+          LogClient.new
         end
       rescue => e
         Rails.logger.error "[MetricsCollector] Failed to initialize StatsD client: #{e.message}"
-        nil
+        LogClient.new
       end
 
       def client_connected?

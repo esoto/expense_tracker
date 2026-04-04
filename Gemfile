@@ -131,7 +131,6 @@ group :test do
 
   # Enhanced collection matchers
   gem "rspec-collection_matchers"
-
 end
 
 gem "rspec-rails", "~> 8.0"

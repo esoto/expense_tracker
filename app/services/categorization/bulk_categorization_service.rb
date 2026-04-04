@@ -452,21 +452,12 @@ module Services::Categorization
         # Try to find matching patterns for this expense
         patterns = CategorizationPattern.active.with_category rescue []
 
-        matching_pattern = patterns.find do |pattern|
-          case pattern.pattern_type
-          when "merchant"
-            expense.merchant_name&.downcase&.include?(pattern.pattern_value.downcase)
-          when "keyword", "description"
-            expense.description&.downcase&.include?(pattern.pattern_value.downcase)
-          else
-            false
-          end
-        end
+        matching_pattern = patterns.find { |pattern| pattern.matches?(expense) }
 
         if matching_pattern
           {
             category: matching_pattern.category,
-            confidence: matching_pattern.confidence_weight || 0.8,
+            confidence: matching_pattern.effective_confidence || matching_pattern.confidence_weight || 0.8,
             reason: "Pattern match: #{matching_pattern.pattern_value}"
           }
         elsif expense.respond_to?(:persisted?) && expense.persisted? && expense.description?

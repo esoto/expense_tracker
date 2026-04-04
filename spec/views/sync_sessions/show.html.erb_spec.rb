@@ -22,7 +22,7 @@ RSpec.describe "sync_sessions/show", type: :view, unit: true do
     allow(view).to receive(:retry_sync_session_path).and_return("/sync_sessions/1/retry")
 
     accounts_relation = double("session_accounts")
-    allow(accounts_relation).to receive(:includes).with(:email_account).and_return([session_account])
+    allow(accounts_relation).to receive(:includes).with(:email_account).and_return([ session_account ])
     allow(accounts_relation).to receive(:count).and_return(1)
     assign(:session_accounts, accounts_relation)
   end
@@ -96,7 +96,7 @@ RSpec.describe "sync_sessions/show", type: :view, unit: true do
     before do
       assign(:sync_session, sync_session)
       accounts_relation = double("session_accounts")
-      allow(accounts_relation).to receive(:includes).with(:email_account).and_return([completed_account])
+      allow(accounts_relation).to receive(:includes).with(:email_account).and_return([ completed_account ])
       allow(accounts_relation).to receive(:count).and_return(1)
       assign(:session_accounts, accounts_relation)
     end

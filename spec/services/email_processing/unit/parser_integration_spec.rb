@@ -432,7 +432,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       context 'when currency detection fails' do
         before do
           allow(currency_detector).to receive(:apply_currency_to_expense)
-            .and_raise(StandardError, 'Currency error')
+            .and_raise(ArgumentError, 'Currency error')
         end
 
         it 'handles the error gracefully' do
@@ -444,7 +444,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       context 'when category guessing fails' do
         before do
           allow(category_guesser).to receive(:guess_category_for_expense)
-            .and_raise(StandardError, 'Category error')
+            .and_raise(Services::Categorization::Engine::CategorizationError, 'Category error')
         end
 
         it 'handles the error gracefully' do

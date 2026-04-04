@@ -423,7 +423,7 @@ module Services::Email
       if options[:auto_categorize]
         category = suggest_category(expense)
         if category
-          expense.update_columns(
+          expense.update!(
             category_id: category.id,
             auto_categorized: true,
             categorization_confidence: last_categorization_confidence,

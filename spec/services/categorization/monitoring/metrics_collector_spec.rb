@@ -382,23 +382,27 @@ RSpec.describe Services::Categorization::Monitoring::MetricsCollector, type: :se
     let(:logger) { instance_double(ActiveSupport::Logger) }
 
     before do
-      allow(logger).to receive(:debug).and_yield
+      allow(logger).to receive(:debug)
     end
 
     it "implements increment" do
-      expect { log_client.increment("test.metric", 1) }.not_to raise_error
+      log_client.increment("test.metric", 1)
+      expect(logger).to have_received(:debug)
     end
 
     it "implements gauge" do
-      expect { log_client.gauge("test.metric", 42) }.not_to raise_error
+      log_client.gauge("test.metric", 42)
+      expect(logger).to have_received(:debug)
     end
 
     it "implements timing" do
-      expect { log_client.timing("test.metric", 5.2) }.not_to raise_error
+      log_client.timing("test.metric", 5.2)
+      expect(logger).to have_received(:debug)
     end
 
     it "implements histogram" do
-      expect { log_client.histogram("test.metric", 100) }.not_to raise_error
+      log_client.histogram("test.metric", 100)
+      expect(logger).to have_received(:debug)
     end
 
     it "reports present? as true" do

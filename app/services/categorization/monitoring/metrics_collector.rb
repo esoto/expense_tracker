@@ -198,11 +198,11 @@ module Services::Categorization
       private
 
       def enabled?
-        @client.present?
+        @enabled && @client.present?
       end
 
       def initialize_client
-        return LogClient.new unless @enabled
+        return nil unless @enabled
 
         # Try to use StatsD if available
         if defined?(::StatsD)

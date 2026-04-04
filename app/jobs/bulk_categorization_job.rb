@@ -12,6 +12,10 @@ class BulkCategorizationJob < BulkOperations::BaseJob
 
   protected
 
+  def service_class
+    Services::BulkCategorization::ApplyService
+  end
+
   def execute_operation
     category_id = @options[:category_id]
     total = @expense_ids.size
@@ -25,7 +29,7 @@ class BulkCategorizationJob < BulkOperations::BaseJob
       result = process_batch(batch_ids, category_id)
 
       if result.success?
-        processed += batch_ids.size
+        processed += result.expense_count || batch_ids.size
       else
         failures << { batch_ids: batch_ids, error: result.message }
         Rails.logger.error "Batch processing failed: #{result.message}"
@@ -43,7 +47,8 @@ class BulkCategorizationJob < BulkOperations::BaseJob
       success: failures.empty?,
       affected_count: processed,
       message: "Bulk categorization completed: #{processed} expenses categorized as #{category_name}",
-      failures: failures
+      failures: failures,
+      errors: failures.map { |f| f[:error] }
     }
   end
 

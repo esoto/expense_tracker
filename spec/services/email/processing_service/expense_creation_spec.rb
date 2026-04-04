@@ -1158,7 +1158,7 @@ RSpec.describe Services::Email::ProcessingService, type: :service, unit: true do
       it 'caller handles nil return from create_expense gracefully' do
         allow(processing_service).to receive(:email_already_processed?).and_return(false)
         allow(processing_service).to receive(:promotional_email?).and_return(false)
-        allow(processing_service).to receive(:parse_email).and_return([expense_data])
+        allow(processing_service).to receive(:parse_email).and_return([ expense_data ])
 
         # Pre-create to trigger unique constraint
         create(:expense,

@@ -502,7 +502,7 @@ module Services::Email
         expense_data[:merchant]
       )
       sanitized = ActiveRecord::Base.sanitize_sql_array(
-        ["SELECT pg_advisory_xact_lock(?)", lock_key]
+        [ "SELECT pg_advisory_xact_lock(?)", lock_key ]
       )
       ActiveRecord::Base.connection.execute(sanitized)
     end

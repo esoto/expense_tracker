@@ -13,7 +13,7 @@ RSpec.describe "sync_sessions/index", type: :view, unit: true do
 
   before do
     assign(:active_session, nil)
-    assign(:recent_sessions, [completed_session, failed_session, cancelled_session, pending_session])
+    assign(:recent_sessions, [ completed_session, failed_session, cancelled_session, pending_session ])
     assign(:active_accounts_count, 2)
     assign(:today_sync_count, 5)
     assign(:monthly_expenses_detected, 42)
@@ -77,7 +77,7 @@ RSpec.describe "sync_sessions/index", type: :view, unit: true do
       assign(:active_session, running_session)
 
       accounts_relation = double("sync_session_accounts")
-      allow(accounts_relation).to receive(:includes).with(:email_account).and_return([sync_session_account])
+      allow(accounts_relation).to receive(:includes).with(:email_account).and_return([ sync_session_account ])
       allow(running_session).to receive(:sync_session_accounts).and_return(accounts_relation)
 
       allow(view).to receive(:cancel_sync_session_path).with(running_session).and_return("/sync_sessions/1/cancel")

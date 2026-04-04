@@ -7,7 +7,7 @@ require "erb"
 RSpec.describe "Recurring tasks configuration", :unit do
   let(:recurring_config_path) { Rails.root.join("config", "recurring.yml") }
   let(:raw_config) { File.read(recurring_config_path) }
-  let(:parsed_config) { YAML.safe_load(ERB.new(raw_config).result, permitted_classes: [Symbol], aliases: true) }
+  let(:parsed_config) { YAML.safe_load(ERB.new(raw_config).result, permitted_classes: [ Symbol ], aliases: true) }
   let(:production_recurring) { parsed_config.fetch("production") }
 
   describe "broadcast jobs" do
@@ -31,7 +31,7 @@ RSpec.describe "Recurring tasks configuration", :unit do
   describe "recurring task queues" do
     let(:queue_config_path) { Rails.root.join("config", "queue.yml") }
     let(:queue_raw) { File.read(queue_config_path) }
-    let(:queue_parsed) { YAML.safe_load(ERB.new(queue_raw).result, permitted_classes: [Symbol], aliases: true) }
+    let(:queue_parsed) { YAML.safe_load(ERB.new(queue_raw).result, permitted_classes: [ Symbol ], aliases: true) }
     let(:production_worker_queues) do
       queue_parsed.fetch("production").fetch("workers").flat_map { |w| w.fetch("queues") }.map(&:to_s)
     end

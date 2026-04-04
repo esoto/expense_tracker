@@ -304,7 +304,7 @@ RSpec.describe "Categorization Pipeline E2E Smoke Test", :integration do
     end
 
     let(:bulk_expense_ids) do
-      [bulk_expense_1.id, bulk_expense_2.id, bulk_expense_3.id]
+      [ bulk_expense_1.id, bulk_expense_2.id, bulk_expense_3.id ]
     end
 
     let(:bulk_categorization_result) do
@@ -327,7 +327,7 @@ RSpec.describe "Categorization Pipeline E2E Smoke Test", :integration do
 
       expect(
         Expense.where(id: bulk_expense_ids).pluck(:category_id).uniq
-      ).to eq([supermercado_category.id])
+      ).to eq([ supermercado_category.id ])
     end
 
     it "returns no failures" do
@@ -355,7 +355,7 @@ RSpec.describe "Categorization Pipeline E2E Smoke Test", :integration do
     end
 
     let(:status_expense_ids) do
-      [status_expense_1.id, status_expense_2.id, status_expense_3.id]
+      [ status_expense_1.id, status_expense_2.id, status_expense_3.id ]
     end
 
     let(:status_update_result) do
@@ -378,7 +378,7 @@ RSpec.describe "Categorization Pipeline E2E Smoke Test", :integration do
 
       expect(
         Expense.where(id: status_expense_ids).pluck(:status).uniq
-      ).to eq(["processed"])
+      ).to eq([ "processed" ])
     end
 
     it "returns no failures" do
@@ -719,7 +719,7 @@ RSpec.describe "Categorization Pipeline E2E Smoke Test", :integration do
     context "with an invalid (non-existent) category_id" do
       let(:invalid_category_result) do
         Services::BulkOperations::CategorizationService.new(
-          expense_ids: [edge_expense_1.id],
+          expense_ids: [ edge_expense_1.id ],
           category_id: 999_999_999
         ).call
       end
@@ -756,7 +756,7 @@ RSpec.describe "Categorization Pipeline E2E Smoke Test", :integration do
     context "with a mix of valid and non-existent expense IDs" do
       let(:mixed_ids_result) do
         Services::BulkOperations::CategorizationService.new(
-          expense_ids: [edge_expense_1.id, 888_888_888],
+          expense_ids: [ edge_expense_1.id, 888_888_888 ],
           category_id: supermercado_category.id
         ).call
       end
@@ -822,7 +822,7 @@ RSpec.describe "Categorization Pipeline E2E Smoke Test", :integration do
     context "with an invalid status value" do
       let(:invalid_status_result) do
         Services::BulkOperations::StatusUpdateService.new(
-          expense_ids: [status_edge_expense.id],
+          expense_ids: [ status_edge_expense.id ],
           status: "definitely_not_a_real_status"
         ).call
       end
@@ -941,13 +941,13 @@ RSpec.describe "Categorization Pipeline E2E Smoke Test", :integration do
              headers: auth_headers
 
         # Accept 200 (success) or 500 (known regression EFG-100 — document the failure)
-        expect([200, 500]).to include(response.status),
+        expect([ 200, 500 ]).to include(response.status),
           "batch_suggest returned unexpected status #{response.status}: #{response.body}"
       end
 
       it "returns HTTP 401 without auth token" do
         post "/api/v1/categorization/batch_suggest",
-             params: { expenses: [{ merchant_name: "AutoMercado" }] }.to_json,
+             params: { expenses: [ { merchant_name: "AutoMercado" } ] }.to_json,
              headers: { "Content-Type" => "application/json" }
 
         expect(response).to have_http_status(:unauthorized)

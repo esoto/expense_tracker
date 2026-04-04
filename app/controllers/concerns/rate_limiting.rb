@@ -65,7 +65,7 @@ module RateLimiting
                        alert: "Too many requests. Please try again later.")
         end
       end
-      return
+      nil
     end
   end
 

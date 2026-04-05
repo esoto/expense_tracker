@@ -410,6 +410,7 @@ RSpec.describe Services::Categorization::ConfidenceCalculator do
   end
 
   describe "caching" do
+    let(:calculator) { described_class.new(enable_caching: true) }
     let(:match_result) { { score: 0.85 } }
 
     it "caches calculation results" do

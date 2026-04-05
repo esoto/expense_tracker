@@ -11,8 +11,8 @@ module CategorizationTestHelper
       begin
         if Services::Categorization::PatternCache.respond_to?(:reset_singleton!)
           Services::Categorization::PatternCache.reset_singleton!
-        elsif Services::Categorization::PatternCache.instance_variable_defined?(:@instance)
-          Services::Categorization::PatternCache.instance_variable_set(:@instance, nil)
+        elsif Services::Categorization::PatternCache.instance_variable_defined?(:@default_instance)
+          Services::Categorization::PatternCache.instance_variable_set(:@default_instance, nil)
         end
       rescue => e
         Rails.logger.warn "[Test] Failed to reset pattern cache: #{e.message}"

@@ -288,11 +288,11 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
           category: category, confidence: 0.9, method: "pattern_match"
         )
         allow(engine).to receive(:categorize).and_return(result)
-        allow(expense).to receive(:update!)
+        allow(expense).to receive(:update)
 
         parser.send(:categorize_expense, expense)
 
-        expect(expense).to have_received(:update!).with(
+        expect(expense).to have_received(:update).with(
           category_id: 1,
           auto_categorized: true,
           categorization_confidence: 0.9,
@@ -303,10 +303,11 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       it 'does not update expense when categorization fails' do
         result = Services::Categorization::CategorizationResult.no_match
         allow(engine).to receive(:categorize).and_return(result)
+        allow(expense).to receive(:update)
 
         parser.send(:categorize_expense, expense)
 
-        expect(expense).not_to respond_to(:update!) unless expense.respond_to?(:update!)
+        expect(expense).not_to have_received(:update)
       end
 
       it 'does not update expense when result is nil' do

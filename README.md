@@ -59,7 +59,7 @@ app/services/
 │   └── SyncService - Synchronization orchestration
 ├── Categorization Domain
 │   ├── BulkCategorizationService - Bulk operations
-│   └── CategoryGuesserService - AI-powered categorization
+│   └── Categorization::Engine - ML-powered categorization
 ├── Infrastructure Domain
 │   ├── BroadcastService - WebSocket reliability
 │   └── MonitoringService - System health tracking

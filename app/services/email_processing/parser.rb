@@ -100,7 +100,10 @@ module Services::EmailProcessing
           # Auto-categorize after save (Engine requires persisted expense)
           begin
             categorize_expense(expense)
-          rescue => e
+          rescue Services::Categorization::Engine::CategorizationError,
+                 ActiveRecord::RecordNotFound,
+                 ActiveRecord::RecordInvalid,
+                 ArgumentError => e
             Rails.logger.warn("[Parser] Categorization failed: #{e.class.name} - #{e.message}")
             add_error("Category guess failed: #{e.message}")
           end
@@ -183,7 +186,7 @@ module Services::EmailProcessing
 
       return unless result&.successful?
 
-      expense.update!(
+      expense.update(
         category_id: result.category.id,
         auto_categorized: true,
         categorization_confidence: result.confidence,

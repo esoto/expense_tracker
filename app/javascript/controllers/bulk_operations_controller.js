@@ -384,9 +384,8 @@ export default class extends Controller {
    * Handle successful operation
    */
   handleSuccess(result) {
-    // Normalize response format for different endpoints
-    // Path B (new) returns: { success: true, updated_count, failed_count, errors, undo_operation_id }
-    // Path A (old) returns: { success: true, message, affected_count, failures, background, job_id }
+    // Normalize response format
+    // Returns: { success: true, updated_count, failed_count, errors, undo_operation_id }
     const affectedCount = result.affected_count || result.updated_count || this.selectedCountValue
     const failures = result.failures || (result.errors && result.errors.length > 0 ? result.errors.map((e, i) => ({ id: i, error: e })) : [])
     const message = result.message || 'Operación completada exitosamente'

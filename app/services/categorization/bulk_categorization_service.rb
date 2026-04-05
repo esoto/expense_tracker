@@ -8,6 +8,7 @@ module Services::Categorization
   # This replaces 8 separate service files for better cohesion and maintainability.
   class BulkCategorizationService
     TIME_SAVED_PER_CATEGORIZATION = 3 # seconds saved per manual categorization
+    BACKGROUND_THRESHOLD = 100
 
     include ActiveModel::Model
 
@@ -44,36 +45,11 @@ module Services::Categorization
       return { success: false, errors: [ "No expenses selected" ] } if expense_adapter.empty?
       return { success: false, errors: [ "Category not found" ] } unless valid_category?
 
-      successful_ids = []
-
-      ApplicationRecord.transaction do
-        results = expense_adapter.map do |expense|
-          apply_to_expense(expense)
-        end
-
-        successful = results.select { |r| r[:success] }
-        success_count = successful.count
-
-        # Store for undo functionality
-        store_bulk_operation(successful) if success_count > 0
-
-        successful_ids = successful.map { |r| r[:expense_id] }
-
-        {
-          success: true,
-          updated_count: success_count,
-          failed_count: results.count { |r| !r[:success] },
-          errors: results.reject { |r| r[:success] }.map { |r| r[:error] },
-          undo_operation_id: @bulk_operation&.id
-        }
-      end.tap do |result|
-        # Broadcast AFTER transaction commits so clients never see uncommitted state
-        if result[:success] && successful_ids.any? && options[:broadcast_updates]
-          broadcast_categorization_updates_for_ids(successful_ids)
-        end
+      if should_process_in_background?
+        enqueue_background_job
+      else
+        apply_synchronously!
       end
-    rescue StandardError => e
-      { success: false, errors: [ e.message ] }
     end
 
     # Undo a bulk categorization
@@ -210,33 +186,114 @@ module Services::Categorization
       category = @category || Category.find_by(id: @category_id)
       return { success: false, errors: [ "Category not found" ] } unless category
 
-      success_count = 0
-      successful_ids = []
-      failures = []
-
-      expense_adapter.each do |expense|
-        if expense.update(category_id: category.id)
-          success_count += 1
-          successful_ids << expense.id
-        else
-          failures << {
-            id: expense.id,
-            error: expense.errors.full_messages.join(", ")
-          }
-        end
+      if should_process_in_background?
+        enqueue_background_job
+      else
+        categorize_all_synchronously!(category)
       end
-
-      if successful_ids.any? && options[:broadcast_updates]
-        broadcast_categorization_updates_for_ids(successful_ids)
-      end
-
-      {
-        success_count: success_count,
-        failures: failures
-      }
     end
 
       private
+
+      def should_process_in_background?
+        expense_adapter.count >= BACKGROUND_THRESHOLD && !options[:force_synchronous]
+      end
+
+      # Background path delegates to BulkCategorizationJob which uses
+      # Services::BulkCategorization::ApplyService (Path A infrastructure).
+      # This is intentional — large batches use the established job pipeline
+      # with progress tracking and batch processing. Broadcasts are not sent
+      # from background jobs; the UI polls for job status instead.
+      SAFE_JOB_OPTIONS = %i[category_id confidence_threshold apply_learning update_patterns broadcast_updates].freeze
+
+      def enqueue_background_job
+        ids = collect_expense_ids
+        raise ArgumentError, "category_id required for background job" if category_id.nil?
+
+        job = BulkCategorizationJob.perform_later(
+          expense_ids: ids,
+          user_id: user&.id,
+          options: options.slice(*SAFE_JOB_OPTIONS).merge(category_id: category_id)
+        )
+
+        {
+          success: true,
+          message: "Processing #{ids.size} expenses in background",
+          job_id: job.job_id,
+          background: true
+        }
+      rescue StandardError => e
+        { success: false, errors: [ e.message ] }
+      end
+
+      def collect_expense_ids
+        if expense_adapter.respond_to?(:pluck)
+          expense_adapter.pluck(:id)
+        else
+          expense_adapter.map(&:id)
+        end
+      end
+
+      def apply_synchronously!
+        successful_ids = []
+
+        ApplicationRecord.transaction do
+          results = expense_adapter.map do |expense|
+            apply_to_expense(expense)
+          end
+
+          successful = results.select { |r| r[:success] }
+          success_count = successful.count
+
+          # Store for undo functionality
+          store_bulk_operation(successful) if success_count > 0
+
+          successful_ids = successful.map { |r| r[:expense_id] }
+
+          {
+            success: true,
+            updated_count: success_count,
+            failed_count: results.count { |r| !r[:success] },
+            errors: results.reject { |r| r[:success] }.map { |r| r[:error] },
+            undo_operation_id: @bulk_operation&.id
+          }
+        end.tap do |result|
+          # Broadcast AFTER transaction commits so clients never see uncommitted state
+          if result[:success] && successful_ids.any? && options[:broadcast_updates]
+            broadcast_categorization_updates_for_ids(successful_ids)
+          end
+        end
+      rescue StandardError => e
+        { success: false, errors: [ e.message ] }
+      end
+
+      def categorize_all_synchronously!(category)
+        success_count = 0
+        successful_ids = []
+        failures = []
+
+        expense_adapter.each do |expense|
+          if expense.update(category_id: category.id)
+            success_count += 1
+            successful_ids << expense.id
+          else
+            failures << {
+              id: expense.id,
+              error: expense.errors.full_messages.join(", ")
+            }
+          end
+        end
+
+        if successful_ids.any? && options[:broadcast_updates]
+          broadcast_categorization_updates_for_ids(successful_ids)
+        end
+
+        {
+          success: true,
+          success_count: success_count,
+          failures: failures
+        }
+      end
 
       def filter_changeable_expenses
         expense_adapter.select do |expense|

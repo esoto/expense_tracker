@@ -44,18 +44,20 @@ module Services::Categorization
       return { success: false, errors: [ "No expenses selected" ] } if expense_adapter.empty?
       return { success: false, errors: [ "Category not found" ] } unless valid_category?
 
+      successful_ids = []
+
       ApplicationRecord.transaction do
         results = expense_adapter.map do |expense|
           apply_to_expense(expense)
         end
 
-        success_count = results.count { |r| r[:success] }
+        successful = results.select { |r| r[:success] }
+        success_count = successful.count
 
         # Store for undo functionality
-        if success_count > 0
-          store_bulk_operation(results.select { |r| r[:success] })
-          broadcast_categorization_updates(results.select { |r| r[:success] })
-        end
+        store_bulk_operation(successful) if success_count > 0
+
+        successful_ids = successful.map { |r| r[:expense_id] }
 
         {
           success: true,
@@ -64,6 +66,11 @@ module Services::Categorization
           errors: results.reject { |r| r[:success] }.map { |r| r[:error] },
           undo_operation_id: @bulk_operation&.id
         }
+      end.tap do |result|
+        # Broadcast AFTER transaction commits so clients never see uncommitted state
+        if result[:success] && successful_ids.any? && options[:broadcast_updates]
+          broadcast_categorization_updates_for_ids(successful_ids)
+        end
       end
     rescue StandardError => e
       { success: false, errors: [ e.message ] }
@@ -204,11 +211,13 @@ module Services::Categorization
       return { success: false, errors: [ "Category not found" ] } unless category
 
       success_count = 0
+      successful_ids = []
       failures = []
 
       expense_adapter.each do |expense|
         if expense.update(category_id: category.id)
           success_count += 1
+          successful_ids << expense.id
         else
           failures << {
             id: expense.id,
@@ -217,7 +226,9 @@ module Services::Categorization
         end
       end
 
-      broadcast_categorization_updates_for_ids(expense_adapter.map(&:id)) if success_count > 0
+      if successful_ids.any? && options[:broadcast_updates]
+        broadcast_categorization_updates_for_ids(successful_ids)
+      end
 
       {
         success_count: success_count,
@@ -526,25 +537,22 @@ module Services::Categorization
         }
       end
 
-      def broadcast_categorization_updates(successful_results)
-        expense_ids = successful_results.map { |r| r[:expense_id] }
-        broadcast_categorization_updates_for_ids(expense_ids)
-      end
-
       def broadcast_categorization_updates_for_ids(expense_ids)
         Expense.where(id: expense_ids).includes(:category).find_each do |expense|
-          ActionCable.server.broadcast(
-            "expenses_#{expense.email_account_id}",
-            {
-              action: "categorized",
-              expense_id: expense.id,
-              category_id: expense.category_id,
-              category_name: expense.category&.name
-            }
-          )
+          begin
+            ActionCable.server.broadcast(
+              "expenses_#{expense.email_account_id}",
+              {
+                action: "categorized",
+                expense_id: expense.id,
+                category_id: expense.category_id,
+                category_name: expense.category&.name
+              }
+            )
+          rescue StandardError => e
+            Rails.logger.warn "Failed to broadcast categorization update for expense #{expense.id}: #{e.message}"
+          end
         end
-      rescue StandardError => e
-        Rails.logger.warn "Failed to broadcast categorization updates: #{e.message}"
       end
   end
 end

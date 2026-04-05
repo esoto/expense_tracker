@@ -13,6 +13,8 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
     # Create mock service classes with flexible initializers
     pattern_cache_class = Class.new do
       def initialize(*args, **kwargs); end
+      def self.instance; @instance ||= new; end
+      def self.reset_singleton!; @instance = nil; end
     end
 
     fuzzy_matcher_class = Class.new do
@@ -46,7 +48,7 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
     stub_const("Services::Categorization::Engine::MAX_PATTERN_CACHE_SIZE", 1000)
 
     # Allow instantiation of service mocks
-    allow(Services::Categorization::PatternCache).to receive(:new).and_call_original
+    allow(Services::Categorization::PatternCache).to receive(:instance).and_call_original
     allow(Services::Categorization::Matchers::FuzzyMatcher).to receive(:new).and_call_original
     allow(Services::Categorization::ConfidenceCalculator).to receive(:new).and_call_original
     allow(Services::Categorization::PatternLearner).to receive(:new).and_call_original
@@ -324,7 +326,7 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
 
       it "creates PatternLearner with pattern_cache dependency" do
         pattern_cache = double("PatternCache")
-        allow(Services::Categorization::PatternCache).to receive(:new).and_return(pattern_cache)
+        allow(Services::Categorization::PatternCache).to receive(:instance).and_return(pattern_cache)
 
         expect(Services::Categorization::PatternLearner).to receive(:new)
           .with(pattern_cache: pattern_cache)
@@ -385,7 +387,7 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
       end
 
       it "doesn't instantiate default services when custom ones provided" do
-        expect(Services::Categorization::PatternCache).not_to receive(:new)
+        expect(Services::Categorization::PatternCache).not_to receive(:instance)
         expect(Services::Categorization::Matchers::FuzzyMatcher).not_to receive(:new)
 
         registry.build_defaults(options)

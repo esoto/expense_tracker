@@ -52,7 +52,18 @@ module Services::Categorization
     # Build default services for categorization engine
     def build_defaults(options = {})
       @mutex.synchronize do
-        @services[:pattern_cache] ||= options[:pattern_cache] || PatternCache.new
+        # Uses singleton so model after_commit callbacks (which call PatternCache.instance.invalidate)
+        # reach the same object the Engine reads from. DI override via options[:pattern_cache] still
+        # takes precedence for test isolation.
+        #
+        # Future alternative (Option B): If independent cache instances are needed (e.g., per-tenant
+        # isolation with different TTLs), replace this with PatternCache.new and implement version-key
+        # broadcast invalidation. All PatternCache instances already embed PATTERN_VERSION_KEY in their
+        # cache keys via CacheVersioning concern. The change would require: (1) ensure
+        # increment_pattern_cache_version is called in model callbacks instead of instance.invalidate,
+        # (2) add a version-check on every L1 read to detect stale entries, (3) accept a TTL-bounded
+        # stale window on L1 (currently 15 minutes). See PER-327 epic for context.
+        @services[:pattern_cache] ||= options[:pattern_cache] || PatternCache.instance
         @services[:fuzzy_matcher] ||= options[:fuzzy_matcher] || Matchers::FuzzyMatcher.new
         @services[:confidence_calculator] ||= options[:confidence_calculator] || ConfidenceCalculator.new
         @services[:pattern_learner] ||= options[:pattern_learner] || PatternLearner.new(pattern_cache: @services[:pattern_cache])

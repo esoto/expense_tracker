@@ -910,6 +910,18 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
       it "skips pattern cache when not defined" do
         expect { pattern.send(:invalidate_cache) }.not_to raise_error
       end
+
+      it "delegates to PatternCache.instance.invalidate" do
+        cache_instance = instance_double("Services::Categorization::PatternCache")
+        stub_const("Services::Categorization::PatternCache", class_double("Services::Categorization::PatternCache", instance: cache_instance))
+
+        allow(cache_instance).to receive(:invalidate)
+        allow_any_instance_of(CategorizationPattern).to receive(:atomic_cache_increment)
+
+        pattern.send(:invalidate_cache)
+
+        expect(cache_instance).to have_received(:invalidate).with(pattern)
+      end
     end
   end
 end

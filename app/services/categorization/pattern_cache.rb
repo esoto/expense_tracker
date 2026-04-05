@@ -55,6 +55,11 @@ module Services::Categorization
       def create(options = {})
         new(options)
       end
+
+      # Reset the singleton instance (test use only)
+      def reset_singleton!
+        @default_instance = nil
+      end
     end
 
     def initialize(options = {})

@@ -72,6 +72,51 @@ RSpec.describe "Categorization Pipeline E2E Smoke Test", :integration do
     reset_categorization_engine!
   end
 
+  # ---------------------------------------------------------------------------
+  # Cache invalidation: model callbacks reach the Engine's PatternCache
+  # ---------------------------------------------------------------------------
+  context "Step 0: Cache invalidation (PER-286)" do
+    it "Engine sees updated patterns after model save triggers after_commit" do
+      # Build an Engine using build_defaults (singleton path, no DI override)
+      registry = Services::Categorization::ServiceRegistry.new(logger: Rails.logger)
+      registry.build_defaults
+      engine = Services::Categorization::Engine.new(
+        service_registry: registry,
+        skip_defaults: true
+      )
+
+      # Verify the Engine's pattern_cache IS the singleton
+      engine_cache = registry.get(:pattern_cache)
+      expect(engine_cache).to be(Services::Categorization::PatternCache.instance)
+
+      # Warm the cache so patterns are loaded into L1
+      engine_cache.warm_cache
+
+      # Create a new pattern — after_commit should invalidate the singleton
+      create(:categorization_pattern,
+             pattern_type: "merchant",
+             pattern_value: "test_invalidation_merchant",
+             category: alimentacion_category,
+             confidence_weight: 4.0,
+             usage_count: 100,
+             success_count: 95,
+             success_rate: 0.95,
+             active: true)
+
+      # The Engine should be able to find and use this pattern
+      expense = create(:expense,
+                       merchant_name: "TEST_INVALIDATION_MERCHANT",
+                       description: "Test cache invalidation")
+
+      result = engine.categorize(expense)
+      expect(result).to be_successful
+      expect(result.category).to eq(alimentacion_category)
+
+      # Cleanup
+      engine.shutdown!
+    end
+  end
+
   # ===========================================================================
   # Step 1 — Verify setup: categories and patterns exist in the database
   # ===========================================================================

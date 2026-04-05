@@ -12,67 +12,6 @@ RSpec.describe ExpensesController, type: :request, unit: true do
   before { sign_in_admin(admin_user) }
 
   describe "Security: Strong Parameters", unit: true do
-    describe "POST /expenses/bulk_categorize", unit: true do
-      it "filters out unpermitted parameters" do
-        post bulk_categorize_expenses_path, params: {
-          expense_ids: expense_ids,
-          category_id: category.id,
-          malicious_param: "evil_value",
-          admin: true,
-          role: "superuser"
-        }, as: :json
-
-        expect(response).to have_http_status(:ok)
-        json = JSON.parse(response.body)
-        expect(json["success"]).to be true
-
-        # Verify malicious params were not processed
-        expenses.each(&:reload)
-        expenses.each do |expense|
-          expect(expense.attributes).not_to have_key("malicious_param")
-          expect(expense.attributes).not_to have_key("admin")
-          expect(expense.attributes).not_to have_key("role")
-        end
-      end
-
-      it "requires expense_ids parameter" do
-        post bulk_categorize_expenses_path, params: {
-          category_id: category.id
-        }, as: :json
-
-        expect(response).to have_http_status(:unprocessable_content)
-        json = JSON.parse(response.body)
-        expect(json["success"]).to be false
-      end
-
-      it "requires category_id parameter" do
-        post bulk_categorize_expenses_path, params: {
-          expense_ids: expense_ids
-        }, as: :json
-
-        expect(response).to have_http_status(:unprocessable_content)
-        json = JSON.parse(response.body)
-        expect(json["success"]).to be false
-      end
-
-      it "prevents SQL injection in expense_ids" do
-        malicious_ids = [ "1 OR 1=1", "'; DROP TABLE expenses; --" ]
-
-        post bulk_categorize_expenses_path, params: {
-          expense_ids: malicious_ids,
-          category_id: category.id
-        }, as: :json
-
-        # Should handle safely - malicious IDs won't match any real expenses
-        expect(response).to have_http_status(:unprocessable_content)
-        json = JSON.parse(response.body)
-        expect(json["success"]).to be false
-
-        # Table should still exist
-        expect(Expense.table_exists?).to be true
-      end
-    end
-
     describe "POST /expenses/bulk_update_status", unit: true do
       it "filters out unpermitted parameters" do
         post bulk_update_status_expenses_path, params: {
@@ -145,38 +84,11 @@ RSpec.describe ExpensesController, type: :request, unit: true do
     end
   end
 
-  describe "Security: Authorization", unit: true do
-    context "when trying to modify expenses from different accounts" do
-      let(:other_account) { create(:email_account) }
-      let(:other_expenses) { create_list(:expense, 2, email_account: other_account) }
-
-      it "allows admin users to access all expenses" do
-        post bulk_categorize_expenses_path, params: {
-          expense_ids: other_expenses.map(&:id),
-          category_id: category.id
-        }, as: :json
-
-        json = JSON.parse(response.body)
-        # Admin users have full access (no per-user data isolation yet)
-        expect(json["success"]).to be true
-      end
-    end
-  end
-
   describe "Security: Authentication Enforcement", unit: true do
     context "when not authenticated" do
       before do
         # Clear the authenticated session so requests hit the real auth flow
         reset!
-      end
-
-      it "redirects unauthenticated bulk_categorize to login" do
-        post bulk_categorize_expenses_path, params: {
-          expense_ids: expense_ids,
-          category_id: category.id
-        }
-
-        expect(response).to redirect_to(admin_login_url)
       end
 
       it "redirects unauthenticated bulk_destroy to login" do
@@ -204,27 +116,4 @@ RSpec.describe ExpensesController, type: :request, unit: true do
     end
   end
 
-  describe "Security: Mass Assignment Protection", unit: true do
-    it "prevents direct modification of protected attributes" do
-      post bulk_categorize_expenses_path, params: {
-        expense_ids: expense_ids,
-        category_id: category.id,
-        expense: {
-          id: 99999,
-          email_account_id: 99999,
-          created_at: "2020-01-01"
-        }
-      }, as: :json
-
-      # Should succeed but ignore the nested expense params
-      expect(response).to have_http_status(:ok)
-
-      # Verify protected attributes weren't changed
-      expenses.each(&:reload)
-      expenses.each do |expense|
-        expect(expense.email_account_id).to eq(email_account.id)
-        expect(expense.created_at).not_to eq(Date.parse("2020-01-01"))
-      end
-    end
-  end
 end

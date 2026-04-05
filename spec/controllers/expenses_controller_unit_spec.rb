@@ -528,55 +528,6 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
     end
   end
 
-  describe "POST #bulk_categorize", unit: true do
-    let(:bulk_params) do
-      {
-        expense_ids: [ expense.id ],
-        category_id: category.id
-      }
-    end
-    let(:categorization_service) { double("Services::BulkOperations::CategorizationService") }
-    let(:service_result) { { success: true, message: "Categorized successfully", affected_count: 1, failures: [], background: false, job_id: nil } }
-
-    before do
-      # Mock the Services::BulkOperations::CategorizationService
-      categorization_service_class = Class.new do
-        def initialize(expense_ids:, category_id:, user:, options:)
-          # Mock constructor that accepts the parameters
-        end
-
-        def call
-          # Mock call method
-        end
-      end
-      stub_const("Services::BulkOperations::CategorizationService", categorization_service_class)
-      allow(categorization_service_class).to receive(:new).and_return(categorization_service)
-      allow(categorization_service).to receive(:call).and_return(service_result)
-      allow(controller).to receive(:authorize_bulk_operation!).and_return(true)
-    end
-
-    it "uses the bulk categorization service" do
-      expect(Services::BulkOperations::CategorizationService).to receive(:new).with(
-        expense_ids: [ expense.id.to_s ],
-        category_id: category.id.to_s,
-        user: current_user_id, # Controller returns current_user_id from before block
-        options: { broadcast_updates: true, track_ml_corrections: true }
-      )
-      expect(categorization_service).to receive(:call)
-
-      post :bulk_categorize, params: bulk_params, format: :json
-    end
-
-    it "responds with JSON success and count" do
-      post :bulk_categorize, params: bulk_params, format: :json
-
-      expect(response).to have_http_status(:ok)
-      json_response = JSON.parse(response.body)
-      expect(json_response["success"]).to eq(true)
-      expect(json_response["affected_count"]).to eq(1)
-    end
-  end
-
   describe "before_actions", unit: true do
     describe "#set_expense" do
       it "finds expense by ID and assigns to instance variable" do

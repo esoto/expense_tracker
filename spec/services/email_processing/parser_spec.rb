@@ -349,89 +349,51 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, performance: t
     end
   end
 
-  describe '#guess_category', performance: true do
-    let(:expense) { build(:expense, email_account: email_account) }
+  describe '#categorize_expense', performance: true do
+    let(:category) { create(:category, name: 'Alimentación') }
+    let(:expense) { create(:expense, email_account: email_account, merchant_name: 'RESTAURANTE LA COCINA') }
+    let(:engine) { instance_double(Services::Categorization::Engine) }
 
     before do
-      create(:category, name: 'Alimentación')
-      create(:category, name: 'Transporte')
-      create(:category, name: 'Servicios')
-      create(:category, name: 'Entretenimiento')
-      create(:category, name: 'Salud')
-      create(:category, name: 'Compras')
-      create(:category, name: 'Sin Categoría')
+      allow(Services::Categorization::Engine).to receive(:create).and_return(engine)
     end
 
-    it 'categorizes food-related expenses' do
-      expense.merchant_name = 'RESTAURANTE LA COCINA'
-      category = parser.send(:guess_category, expense)
-      expect(category.name).to eq('Alimentación')
+    it 'uses the categorization engine to categorize' do
+      result = Services::Categorization::CategorizationResult.new(
+        category: category, confidence: 0.85, method: "pattern_match"
+      )
+      allow(engine).to receive(:categorize).and_return(result)
+
+      parser.send(:categorize_expense, expense)
+
+      expect(expense.reload.category).to eq(category)
+      expect(expense.auto_categorized).to be true
+      expect(expense.categorization_confidence).to eq(0.85)
+      expect(expense.categorization_method).to eq("pattern_match")
     end
 
-    it 'categorizes transport-related expenses' do
-      expense.description = 'GASOLINA SHELL'
-      category = parser.send(:guess_category, expense)
-      expect(category.name).to eq('Transporte')
+    it 'does not update expense when categorization fails' do
+      result = Services::Categorization::CategorizationResult.no_match
+      allow(engine).to receive(:categorize).and_return(result)
+
+      parser.send(:categorize_expense, expense)
+
+      expect(expense.reload.category_id).to be_nil
     end
 
-    it 'categorizes service-related expenses' do
-      expense.merchant_name = 'ELECTRICIDAD ICE'
-      category = parser.send(:guess_category, expense)
-      expect(category.name).to eq('Servicios')
+    it 'does not update expense when result is nil' do
+      allow(engine).to receive(:categorize).and_return(nil)
+
+      parser.send(:categorize_expense, expense)
+
+      expect(expense.reload.category_id).to be_nil
     end
 
-    it 'categorizes entertainment expenses' do
-      expense.description = 'CINE MULTIPLEX'
-      category = parser.send(:guess_category, expense)
-      expect(category.name).to eq('Entretenimiento')
-    end
+    it 'passes auto_update: false to engine' do
+      result = Services::Categorization::CategorizationResult.no_match
+      expect(engine).to receive(:categorize).with(expense, auto_update: false).and_return(result)
 
-    it 'categorizes health-related expenses' do
-      expense.merchant_name = 'FARMACIA SUCRE'
-      category = parser.send(:guess_category, expense)
-      expect(category.name).to eq('Salud')
-    end
-
-    it 'categorizes shopping expenses' do
-      expense.description = 'TIENDA LA CURACAO'
-      category = parser.send(:guess_category, expense)
-      expect(category.name).to eq('Compras')
-    end
-
-    it 'handles case insensitive matching' do
-      expense.merchant_name = 'SUPER MERCADO CENTRAL'
-      category = parser.send(:guess_category, expense)
-      expect(category.name).to eq('Alimentación')
-    end
-
-    it 'returns default category for unmatched expenses' do
-      expense.merchant_name = 'UNKNOWN MERCHANT'
-      expense.description = 'UNKNOWN TRANSACTION'
-      category = parser.send(:guess_category, expense)
-      expect(category.name).to eq('Sin Categoría')
-    end
-
-    it 'returns Other category if Sin Categoría not found' do
-      Category.find_by(name: 'Sin Categoría').destroy
-      create(:category, name: 'Other')
-
-      expense.merchant_name = 'UNKNOWN MERCHANT'
-      category = parser.send(:guess_category, expense)
-      expect(category.name).to eq('Other')
-    end
-
-    it 'returns nil if no default categories exist' do
-      Category.where(name: [ 'Sin Categoría', 'Other' ]).destroy_all
-
-      expense.merchant_name = 'UNKNOWN MERCHANT'
-      category = parser.send(:guess_category, expense)
-      expect(category).to be_nil
-    end
-
-    it 'matches multiple keywords' do
-      expense.merchant_name = 'RESTAURANTE UBER EATS'
-      category = parser.send(:guess_category, expense)
-      expect(category.name).to eq('Alimentación')  # Should match restaurant, not transport
+      parser.send(:categorize_expense, expense)
     end
   end
 
@@ -533,7 +495,6 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, performance: t
 
         it 'handles expense save failure' do
           expense = instance_double(Expense, save: false)
-          allow(expense).to receive(:category=)
           allow(expense).to receive(:crc!)
           allow(expense).to receive(:errors).and_return(
             double('errors', full_messages: [ 'Amount cannot be negative' ])
@@ -541,7 +502,6 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, performance: t
           allow(Expense).to receive(:new).and_return(expense)
           allow(parser).to receive(:find_duplicate_expense).and_return(nil)
           allow(parser).to receive(:set_currency)
-          allow(parser).to receive(:guess_category).and_return(nil)
 
           result = parser.send(:create_expense, parsed_data)
 
@@ -555,11 +515,10 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, performance: t
             update: true,
             formatted_amount: '$100.50'
           )
-          allow(expense).to receive(:category=)
           allow(Expense).to receive(:new).and_return(expense)
           allow(parser).to receive(:find_duplicate_expense).and_return(nil)
           allow(parser).to receive(:set_currency)
-          allow(parser).to receive(:guess_category).and_return(nil)
+          allow(parser).to receive(:categorize_expense)
 
           expect(Rails.logger).to receive(:info).with("Created expense: $100.50 from #{email_account.email}")
 
@@ -590,23 +549,25 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, performance: t
         end
       end
 
-      describe '#guess_category with nil values', performance: true do
-        it 'handles expense with nil description and merchant_name' do
-          expense = instance_double(Expense, description: nil, merchant_name: nil)
+      describe '#categorize_expense with edge cases', performance: true do
+        let(:engine) { instance_double(Services::Categorization::Engine) }
 
-          category = parser.send(:guess_category, expense)
-
-          # Should return default category even with nil values
-          expect(category&.name).to be_in([ 'Sin Categoría', 'Other', nil ])
+        before do
+          allow(Services::Categorization::Engine).to receive(:create).and_return(engine)
         end
 
-        it 'handles expense with empty strings' do
-          expense = instance_double(Expense, description: '', merchant_name: '')
+        it 'handles engine returning nil' do
+          expense = create(:expense, email_account: email_account)
+          allow(engine).to receive(:categorize).and_return(nil)
 
-          category = parser.send(:guess_category, expense)
+          expect { parser.send(:categorize_expense, expense) }.not_to raise_error
+        end
 
-          # Should return default category for empty strings
-          expect(category&.name).to be_in([ 'Sin Categoría', 'Other', nil ])
+        it 'handles engine raising an error' do
+          expense = create(:expense, email_account: email_account)
+          allow(engine).to receive(:categorize).and_raise(StandardError, 'Engine error')
+
+          expect { parser.send(:categorize_expense, expense) }.to raise_error(StandardError)
         end
       end
 

@@ -374,7 +374,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       allow(parser).to receive(:find_duplicate_expense).and_return(nil)
       allow(Expense).to receive(:new).and_return(expense)
       allow(parser).to receive(:set_currency)
-      allow(parser).to receive(:guess_category).and_return(nil)
+      allow(parser).to receive(:categorize_expense)
       allow(parser).to receive(:email_content).and_return('content')
 
       expect(logger).to receive(:info).with('Created expense: $100.00 from test@example.com')

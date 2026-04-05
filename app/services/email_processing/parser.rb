@@ -96,15 +96,15 @@ module Services::EmailProcessing
           add_error("Currency detection failed: #{e.message}")
         end
 
-        # Try to auto-categorize
-        begin
-          expense.category = guess_category(expense)
-        rescue Services::Categorization::Engine::CategorizationError, ActiveRecord::RecordNotFound, ArgumentError => e
-          Rails.logger.warn("[Parser] Categorization failed: #{e.class.name} - #{e.message}")
-          add_error("Category guess failed: #{e.message}")
-        end
-
         if expense.save
+          # Auto-categorize after save (Engine requires persisted expense)
+          begin
+            categorize_expense(expense)
+          rescue => e
+            Rails.logger.warn("[Parser] Categorization failed: #{e.class.name} - #{e.message}")
+            add_error("Category guess failed: #{e.message}")
+          end
+
           expense.update(status: :processed)
           Rails.logger.info "Created expense: #{expense.formatted_amount} from #{email_account&.email}"
           expense
@@ -177,9 +177,18 @@ module Services::EmailProcessing
       currency_detector.apply_currency_to_expense(expense, parsed_data)
     end
 
-    def guess_category(expense)
-      category_guesser = Services::CategoryGuesserService.new
-      category_guesser.guess_category_for_expense(expense)
+    def categorize_expense(expense)
+      engine = Services::Categorization::Engine.create
+      result = engine.categorize(expense, auto_update: false)
+
+      return unless result&.successful?
+
+      expense.update!(
+        category_id: result.category.id,
+        auto_categorized: true,
+        categorization_confidence: result.confidence,
+        categorization_method: result.method || "engine"
+      )
     end
 
     def add_error(message)

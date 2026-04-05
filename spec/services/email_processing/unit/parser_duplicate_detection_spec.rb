@@ -238,7 +238,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       end
 
       it 'does not call category guessing' do
-        expect(parser).not_to receive(:guess_category)
+        expect(parser).not_to receive(:categorize_expense)
         parser.send(:create_expense, parsed_data)
       end
 
@@ -283,9 +283,9 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       before do
         allow(parser).to receive(:find_duplicate_expense).and_return(nil)
         allow(Expense).to receive(:new).and_return(new_expense)
-        allow(new_expense).to receive(:category=)
+
         allow(parser).to receive(:set_currency)
-        allow(parser).to receive(:guess_category).and_return(nil)
+        allow(parser).to receive(:categorize_expense).and_return(nil)
         allow(parser).to receive(:email_content).and_return('email content')
       end
 
@@ -307,7 +307,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       end
 
       it 'guesses category for new expense' do
-        expect(parser).to receive(:guess_category).with(new_expense)
+        expect(parser).to receive(:categorize_expense).with(new_expense)
         parser.send(:create_expense, parsed_data)
       end
 
@@ -348,9 +348,9 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
           new_expense
         end
 
-        allow(new_expense).to receive(:category=)
+
         allow(parser).to receive(:set_currency)
-        allow(parser).to receive(:guess_category).and_return(nil)
+        allow(parser).to receive(:categorize_expense).and_return(nil)
         allow(parser).to receive(:email_content).and_return('content')
 
         parser.send(:create_expense, parsed_data)
@@ -593,9 +593,9 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       before do
         allow(parser).to receive(:find_duplicate_expense).and_return(nil)
         allow(Expense).to receive(:new).and_return(new_expense)
-        allow(new_expense).to receive(:category=)
+
         allow(parser).to receive(:set_currency)
-        allow(parser).to receive(:guess_category).and_return(nil)
+        allow(parser).to receive(:categorize_expense).and_return(nil)
         allow(parser).to receive(:email_content).and_return('email content')
       end
 
@@ -641,9 +641,9 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         # We test the private method directly and need to stub find_duplicate_expense
         allow(parser).to receive(:find_duplicate_expense).and_return(nil)
         allow(Expense).to receive(:new).and_return(new_expense)
-        allow(new_expense).to receive(:category=)
+
         allow(parser).to receive(:set_currency)
-        allow(parser).to receive(:guess_category).and_return(nil)
+        allow(parser).to receive(:categorize_expense).and_return(nil)
         allow(parser).to receive(:email_content).and_return('email content')
 
         parser.send(:create_expense, parsed_data)
@@ -657,9 +657,9 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       before do
         allow(parser).to receive(:find_duplicate_expense).and_return(nil)
         allow(Expense).to receive(:new).and_return(new_expense)
-        allow(new_expense).to receive(:category=)
+
         allow(parser).to receive(:set_currency)
-        allow(parser).to receive(:guess_category).and_return(nil)
+        allow(parser).to receive(:categorize_expense).and_return(nil)
         allow(parser).to receive(:email_content).and_return('email content')
         allow(new_expense).to receive(:save).and_raise(ActiveRecord::RecordNotUnique.new('duplicate key'))
       end

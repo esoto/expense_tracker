@@ -92,6 +92,7 @@ Rails.application.routes.draw do
     get "patterns/export", to: "pattern_management#export"
     get "patterns/statistics", to: "pattern_management#statistics"
     get "patterns/performance", to: "pattern_management#performance"
+    get "patterns/data_quality", to: "pattern_management#data_quality"
     post "patterns/:id/toggle_active", to: "pattern_management#toggle_active", as: :toggle_active_pattern
 
     resources :patterns

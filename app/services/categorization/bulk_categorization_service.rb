@@ -199,22 +199,39 @@ module Services::Categorization
         expense_adapter.count >= BACKGROUND_THRESHOLD && !options[:force_synchronous]
       end
 
+      # Background path delegates to BulkCategorizationJob which uses
+      # Services::BulkCategorization::ApplyService (Path A infrastructure).
+      # This is intentional — large batches use the established job pipeline
+      # with progress tracking and batch processing. Broadcasts are not sent
+      # from background jobs; the UI polls for job status instead.
+      SAFE_JOB_OPTIONS = %i[category_id confidence_threshold apply_learning update_patterns broadcast_updates].freeze
+
       def enqueue_background_job
-        expense_ids = expense_adapter.map(&:id)
+        ids = collect_expense_ids
+        raise ArgumentError, "category_id required for background job" if category_id.nil?
+
         job = BulkCategorizationJob.perform_later(
-          expense_ids: expense_ids,
+          expense_ids: ids,
           user_id: user&.id,
-          options: options.merge(category_id: category_id)
+          options: options.slice(*SAFE_JOB_OPTIONS).merge(category_id: category_id)
         )
 
         {
           success: true,
-          message: "Processing #{expense_ids.size} expenses in background",
+          message: "Processing #{ids.size} expenses in background",
           job_id: job.job_id,
           background: true
         }
       rescue StandardError => e
         { success: false, errors: [ e.message ] }
+      end
+
+      def collect_expense_ids
+        if expense_adapter.respond_to?(:pluck)
+          expense_adapter.pluck(:id)
+        else
+          expense_adapter.map(&:id)
+        end
       end
 
       def apply_synchronously!
@@ -272,6 +289,7 @@ module Services::Categorization
         end
 
         {
+          success: true,
           success_count: success_count,
           failures: failures
         }

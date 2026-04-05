@@ -334,16 +334,20 @@ module Services::Categorization
         end
 
         with_performance_tracking("batch_categorize", correlation_id) do
-          # Preload cache for efficiency
-          @pattern_cache_service.preload_for_expenses(expenses) if @pattern_cache_service.respond_to?(:preload_for_expenses)
+          begin
+            # Preload cache for efficiency
+            @pattern_cache_service.preload_for_expenses(expenses) if @pattern_cache_service.respond_to?(:preload_for_expenses)
 
-          # Process in parallel with controlled concurrency
-          results = process_batch_with_concurrency(expenses, options, correlation_id)
+            # Process in parallel with controlled concurrency
+            results = process_batch_with_concurrency(expenses, options, correlation_id)
 
-          # Log batch performance
-          log_batch_performance(results, correlation_id)
+            # Log batch performance
+            log_batch_performance(results, correlation_id)
 
-          results
+            results
+          ensure
+            @pattern_cache_service.clear_preloaded_patterns if @pattern_cache_service.respond_to?(:clear_preloaded_patterns)
+          end
         end
       rescue => e
         log_error(correlation_id, "Batch categorization error", e)

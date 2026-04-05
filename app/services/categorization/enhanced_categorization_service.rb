@@ -80,18 +80,22 @@ module Services::Categorization
     def categorize_batch(expenses)
       return [] if expenses.blank?
 
-      # Preload cache for efficiency
-      @pattern_cache.preload_for_expenses(expenses)
+      begin
+        # Preload cache for efficiency
+        @pattern_cache.preload_for_expenses(expenses)
 
-      # Get all active patterns once
-      all_patterns = @pattern_cache.get_all_active_patterns
+        # Get all active patterns once
+        all_patterns = @pattern_cache.get_all_active_patterns
 
-      expenses.map do |expense|
-        {
-          expense: expense,
-          category: categorize(expense),
-          confidence: last_match_confidence
-        }
+        expenses.map do |expense|
+          {
+            expense: expense,
+            category: categorize(expense),
+            confidence: last_match_confidence
+          }
+        end
+      ensure
+        @pattern_cache.clear_preloaded_patterns if @pattern_cache.respond_to?(:clear_preloaded_patterns)
       end
     end
 

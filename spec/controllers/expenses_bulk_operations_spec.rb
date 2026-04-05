@@ -15,42 +15,6 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
     ]
   end
 
-  describe "POST #bulk_categorize", integration: true do
-    context "with valid parameters" do
-      it "categorizes selected expenses" do
-        expense_ids = expenses.map(&:id)
-
-        post :bulk_categorize, params: {
-          expense_ids: expense_ids,
-          category_id: category2.id
-        }, format: :json
-
-        expect(response).to have_http_status(:success)
-        json_response = JSON.parse(response.body)
-
-        expect(json_response['success']).to be true
-        expect(json_response['affected_count']).to eq(3)
-
-        # Verify expenses were updated
-        expenses.each(&:reload)
-        expect(expenses.all? { |e| e.category_id == category2.id }).to be true
-      end
-    end
-
-    context "with invalid parameters" do
-      it "returns error when category not found" do
-        post :bulk_categorize, params: {
-          expense_ids: expenses.map(&:id),
-          category_id: 999999
-        }, format: :json
-
-        expect(response).to have_http_status(:unprocessable_content)
-        json_response = JSON.parse(response.body)
-        expect(json_response['success']).to be false
-      end
-    end
-  end
-
   describe "POST #bulk_update_status", integration: true do
     context "with valid parameters" do
       it "updates status of selected expenses" do

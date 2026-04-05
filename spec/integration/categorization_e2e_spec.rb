@@ -12,7 +12,7 @@ require "rails_helper"
 #   3. Accept       — ML suggestion applied; expense fields updated
 #   4. Correction   — User overrides suggestion; correction counters tracked
 #   5. Learning     — PatternLearner processes feedback, creates/updates patterns
-#   6. Bulk categ.  — BulkOperations::CategorizationService mass-assigns categories
+#   6. Bulk categ.  — Categorization::BulkCategorizationService mass-assigns categories
 #   7. Bulk status  — BulkOperations::StatusUpdateService mass-marks as "processed"
 #   8. API suggest  — POST /api/v1/categorization/suggest returns JSON suggestions
 #   9. Confidence   — Expense#confidence_level reflects threshold boundaries
@@ -330,7 +330,7 @@ RSpec.describe "Categorization Pipeline E2E Smoke Test", :integration do
   end
 
   # ===========================================================================
-  # Step 6 — Bulk categorization: BulkOperations::CategorizationService
+  # Step 6 — Bulk categorization: Categorization::BulkCategorizationService
   # ===========================================================================
   describe "Step 6: Bulk categorization — categorize multiple expenses at once" do
     let!(:bulk_expense_1) do
@@ -348,23 +348,27 @@ RSpec.describe "Categorization Pipeline E2E Smoke Test", :integration do
              description: "Frutas", amount: 9_800, category: nil)
     end
 
+    let(:bulk_expenses) do
+      [ bulk_expense_1, bulk_expense_2, bulk_expense_3 ]
+    end
+
     let(:bulk_expense_ids) do
-      [ bulk_expense_1.id, bulk_expense_2.id, bulk_expense_3.id ]
+      bulk_expenses.map(&:id)
     end
 
     let(:bulk_categorization_result) do
-      Services::BulkOperations::CategorizationService.new(
-        expense_ids: bulk_expense_ids,
+      Services::Categorization::BulkCategorizationService.new(
+        expenses: bulk_expenses,
         category_id: supermercado_category.id
-      ).call
+      ).apply!
     end
 
     it "returns a successful operation result" do
       expect(bulk_categorization_result[:success]).to be true
     end
 
-    it "reports affected_count of 3" do
-      expect(bulk_categorization_result[:affected_count]).to eq(3)
+    it "reports updated_count of 3" do
+      expect(bulk_categorization_result[:updated_count]).to eq(3)
     end
 
     it "assigns Supermercado to all three expenses" do
@@ -375,8 +379,8 @@ RSpec.describe "Categorization Pipeline E2E Smoke Test", :integration do
       ).to eq([ supermercado_category.id ])
     end
 
-    it "returns no failures" do
-      expect(bulk_categorization_result[:failures]).to be_empty
+    it "returns no errors" do
+      expect(bulk_categorization_result[:errors]).to be_empty
     end
   end
 
@@ -763,10 +767,10 @@ RSpec.describe "Categorization Pipeline E2E Smoke Test", :integration do
 
     context "with an invalid (non-existent) category_id" do
       let(:invalid_category_result) do
-        Services::BulkOperations::CategorizationService.new(
-          expense_ids: [ edge_expense_1.id ],
+        Services::Categorization::BulkCategorizationService.new(
+          expenses: [ edge_expense_1 ],
           category_id: 999_999_999
-        ).call
+        ).apply!
       end
 
       it "returns success: false" do
@@ -778,79 +782,21 @@ RSpec.describe "Categorization Pipeline E2E Smoke Test", :integration do
       end
     end
 
-    context "with an empty expense_ids array" do
-      let(:empty_ids_result) do
-        Services::BulkOperations::CategorizationService.new(
-          expense_ids: [],
+    context "with an empty expenses array" do
+      let(:empty_result) do
+        Services::Categorization::BulkCategorizationService.new(
+          expenses: [],
           category_id: supermercado_category.id
-        ).call
+        ).apply!
       end
 
       it "returns success: false" do
-        expect(empty_ids_result[:success]).to be false
+        expect(empty_result[:success]).to be false
       end
 
-      it "includes a meaningful error or message" do
-        # The service may put the reason in :errors or :message (or both)
-        errors_text = Array(empty_ids_result[:errors]).join
-        message_text = empty_ids_result[:message].to_s
-        expect(errors_text + message_text).not_to be_empty
-      end
-    end
-
-    context "with a mix of valid and non-existent expense IDs" do
-      let(:mixed_ids_result) do
-        Services::BulkOperations::CategorizationService.new(
-          expense_ids: [ edge_expense_1.id, 888_888_888 ],
-          category_id: supermercado_category.id
-        ).call
-      end
-
-      it "returns success: false when IDs are missing" do
-        expect(mixed_ids_result[:success]).to be false
-      end
-
-      it "includes an error about missing expenses" do
-        error_text = [
-          mixed_ids_result[:errors],
-          mixed_ids_result[:message]
-        ].flatten.compact.join(" ")
-
-        expect(error_text).to match(/not found|missing|unauthorized/i)
-      end
-    end
-
-    context "with non-array expense_ids (a string)" do
-      let(:string_ids_result) do
-        Services::BulkOperations::CategorizationService.new(
-          expense_ids: "not_an_array",
-          category_id: supermercado_category.id
-        ).call
-      end
-
-      it "returns success: false" do
-        expect(string_ids_result[:success]).to be false
-      end
-
-      it "includes a validation error about expense_ids" do
-        expect(string_ids_result[:errors].join).to match(/array/i)
-      end
-    end
-
-    context "with non-array expense_ids (an integer)" do
-      let(:integer_ids_result) do
-        Services::BulkOperations::CategorizationService.new(
-          expense_ids: 42,
-          category_id: supermercado_category.id
-        ).call
-      end
-
-      it "returns success: false" do
-        expect(integer_ids_result[:success]).to be false
-      end
-
-      it "includes a validation error" do
-        expect(integer_ids_result[:errors]).not_to be_empty
+      it "includes a meaningful error" do
+        errors_text = Array(empty_result[:errors]).join
+        expect(errors_text).not_to be_empty
       end
     end
   end

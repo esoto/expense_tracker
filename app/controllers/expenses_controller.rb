@@ -463,44 +463,6 @@ class ExpensesController < ApplicationController
     end
   end
 
-  # POST /expenses/bulk_categorize
-  def bulk_categorize
-    return unless authorize_bulk_operation!
-
-    # Use strong parameters
-    permitted = bulk_categorize_params
-
-    # Use the new service object for better performance and organization
-    service = Services::BulkOperations::CategorizationService.new(
-      expense_ids: permitted[:expense_ids],
-      category_id: permitted[:category_id],
-      user: current_user_for_bulk_operations,
-      options: {
-        broadcast_updates: true,
-        track_ml_corrections: true
-      }
-    )
-
-    result = service.call
-
-    if result[:success]
-      render json: {
-        success: true,
-        message: result[:message],
-        affected_count: result[:affected_count],
-        failures: result[:failures],
-        background: result[:background],
-        job_id: result[:job_id]
-      }
-    else
-      render json: {
-        success: false,
-        message: result[:message] || "Error al categorizar gastos",
-        errors: result[:errors]
-      }, status: :unprocessable_content
-    end
-  end
-
   # POST /expenses/bulk_update_status
   def bulk_update_status
     return unless authorize_bulk_operation!
@@ -643,10 +605,6 @@ class ExpensesController < ApplicationController
   end
 
   # Strong parameters for bulk operations
-  def bulk_categorize_params
-    params.permit(:category_id, expense_ids: [])
-  end
-
   def bulk_status_params
     params.permit(:status, expense_ids: [])
   end

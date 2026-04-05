@@ -200,8 +200,8 @@ module Services::Categorization
       end
 
       # Background path delegates to BulkCategorizationJob which uses
-      # Services::BulkCategorization::ApplyService (Path A infrastructure).
-      # This is intentional — large batches use the established job pipeline
+      # Services::BulkCategorization::ApplyService for batch processing.
+      # Large batches use the established job pipeline
       # with progress tracking and batch processing. Broadcasts are not sent
       # from background jobs; the UI polls for job status instead.
       SAFE_JOB_OPTIONS = %i[category_id confidence_threshold apply_learning update_patterns broadcast_updates].freeze

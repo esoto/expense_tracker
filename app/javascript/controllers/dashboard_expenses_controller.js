@@ -1191,8 +1191,8 @@ export default class extends Controller {
     submitButton.disabled = true
     submitButton.innerHTML = '<span class="spinner"></span> Aplicando...'
     
-    // Send bulk categorize request
-    fetch('/expenses/bulk_categorize', {
+    // Send bulk categorize request via Path B (BulkCategorizationActionsController)
+    fetch('/bulk_categorizations/categorize', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1215,7 +1215,8 @@ export default class extends Controller {
       if (data.success) {
         this.closeBulkModal()
         // Use the message from the backend service which includes the category name
-        const message = data.message || `${data.affected_count || this.selectedIdsValue.length} gastos categorizados exitosamente`
+        const count = data.updated_count || data.affected_count || this.selectedIdsValue.length
+        const message = data.message || `${count} gastos categorizados exitosamente`
         console.log("Showing toast with message:", message)
         this.showToast(message, "success")
         

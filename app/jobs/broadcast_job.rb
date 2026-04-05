@@ -63,7 +63,7 @@ class BroadcastJob < ApplicationJob
         error_message: error.message,
         failed_at: Time.current,
         retry_count: 5,
-        sidekiq_job_id: job.job_id
+        job_id: job.job_id
       )
     rescue StandardError => e
       Rails.logger.error "[BROADCAST_JOB] Failed to record exhausted retry: #{e.message}"
@@ -137,7 +137,7 @@ class BroadcastJob < ApplicationJob
           error_message: "Failed after service retries",
           failed_at: Time.current,
           retry_count: 0,
-          sidekiq_job_id: job_id
+          job_id: job_id
         )
       end
 
@@ -168,7 +168,7 @@ class BroadcastJob < ApplicationJob
         error_message: e.message,
         failed_at: Time.current,
         retry_count: 0,
-        sidekiq_job_id: job_id
+        job_id: job_id
       )
 
       # Don't re-raise - this is a permanent failure
@@ -202,7 +202,7 @@ class BroadcastJob < ApplicationJob
         error_message: e.message,
         failed_at: Time.current,
         retry_count: 0,
-        sidekiq_job_id: job_id
+        job_id: job_id
       )
 
       # Re-raise to trigger ActiveJob's retry mechanism

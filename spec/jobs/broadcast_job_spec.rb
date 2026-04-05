@@ -137,7 +137,7 @@ RSpec.describe BroadcastJob, type: :job, integration: true do
             error_message: match(/Couldn't find/),
             failed_at: be_within(1.second).of(Time.current),
             retry_count: 0,
-            sidekiq_job_id: be_a(String)
+            job_id: be_a(String)
           )
         )
       end

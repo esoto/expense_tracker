@@ -12,7 +12,7 @@
 # - error_message: Detailed error message
 # - failed_at: When the broadcast failed
 # - retry_count: Number of retry attempts
-# - sidekiq_job_id: Background job ID (legacy column name)
+# - job_id: Background job ID (ActiveJob UUID)
 # - recovered_at: When the broadcast was successfully recovered
 # - recovery_notes: Manual notes about recovery process
 class FailedBroadcastStore < ApplicationRecord
@@ -44,7 +44,7 @@ class FailedBroadcastStore < ApplicationRecord
   validates :error_message, presence: true
   validates :failed_at, presence: true
   validates :retry_count, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :sidekiq_job_id, uniqueness: true, allow_nil: true
+  validates :job_id, uniqueness: true, allow_nil: true
 
   # Scopes
   scope :unrecovered, -> { where(recovered_at: nil) }
@@ -87,7 +87,7 @@ class FailedBroadcastStore < ApplicationRecord
         error_message: error.message,
         failed_at: Time.current,
         retry_count: job.try(:executions) || job["retry_count"] || 0,
-        sidekiq_job_id: job_identifier
+        job_id: job_identifier
       )
     end
 

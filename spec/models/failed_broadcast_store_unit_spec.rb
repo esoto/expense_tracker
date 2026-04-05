@@ -54,19 +54,19 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
     it { should validate_presence_of(:retry_count) }
     it { should validate_numericality_of(:retry_count).is_greater_than_or_equal_to(0) }
 
-    describe "sidekiq_job_id uniqueness" do
+    describe "job_id uniqueness" do
       it "validates uniqueness when present" do
         # Mock the validation to avoid database interaction in unit tests
-        store = build_stubbed(:failed_broadcast_store, sidekiq_job_id: "unique_job_123")
+        store = build_stubbed(:failed_broadcast_store, job_id: "unique_job_123")
 
         # Mock the uniqueness check to simulate no duplicate exists
-        allow(FailedBroadcastStore).to receive(:exists?).with(sidekiq_job_id: "unique_job_123").and_return(false)
+        allow(FailedBroadcastStore).to receive(:exists?).with(job_id: "unique_job_123").and_return(false)
 
         expect(store).to be_valid
       end
 
-      it "allows nil sidekiq_job_id" do
-        store = build_stubbed(:failed_broadcast_store, sidekiq_job_id: nil)
+      it "allows nil job_id" do
+        store = build_stubbed(:failed_broadcast_store, job_id: nil)
         expect(store).to be_valid
       end
     end
@@ -184,7 +184,7 @@ RSpec.describe FailedBroadcastStore, type: :model, unit: true do
           error_message: "Record not found",
           failed_at: Time.new(2024, 1, 1),
           retry_count: 2,
-          sidekiq_job_id: "job_123"
+          job_id: "job_123"
         )
 
         FailedBroadcastStore.create_from_job_failure!(job, error)

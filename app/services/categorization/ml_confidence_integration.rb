@@ -111,6 +111,5 @@ module Services::Categorization
       Rails.logger.error "[MlConfidenceIntegration] Failed to reject ML suggestion: #{e.message}"
       false
     end
-
   end
 end

@@ -153,6 +153,19 @@ module Services::Categorization
       @metrics
     end
 
+    # Health check for service monitoring
+    def healthy?
+      @healthy ||= begin
+        # Verify core calculation logic works without DB dependencies
+        factors = { text_match: 0.9 }
+        score = calculate_weighted_score(factors)
+        score.is_a?(Numeric) && score >= 0.0
+      rescue => e
+        Rails.logger.error "[ConfidenceCalculator] Health check failed: #{e.message}"
+        false
+      end
+    end
+
     private
 
     def calculate_factors(expense, pattern, match_result, options)
@@ -510,23 +523,6 @@ module Services::Categorization
         sorted = values.sort
         index = (pct * sorted.size).ceil - 1
         sorted[index] || sorted.last
-      end
-    end
-
-    # Health check for service monitoring
-    def healthy?
-      @healthy ||= begin
-        # Test basic calculation functionality
-        test_result = calculate_confidence(
-          pattern_type: "merchant",
-          match_score: 0.9,
-          pattern_usage_count: 10,
-          pattern_success_rate: 0.95
-        )
-        test_result.is_a?(ConfidenceScore)
-      rescue => e
-        Rails.logger.error "[ConfidenceCalculator] Health check failed: #{e.message}"
-        false
       end
     end
 

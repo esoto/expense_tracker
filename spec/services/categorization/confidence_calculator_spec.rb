@@ -720,4 +720,20 @@ RSpec.describe Services::Categorization::ConfidenceCalculator do
       end
     end
   end
+
+  describe "#healthy?" do
+    it "returns true when calculator is functional" do
+      expect(calculator.healthy?).to be true
+    end
+
+    it "memoizes the result" do
+      calculator.healthy?
+      expect(calculator.healthy?).to be true
+    end
+
+    it "returns true after reset" do
+      calculator.send(:reset!)
+      expect(calculator.healthy?).to be true
+    end
+  end
 end

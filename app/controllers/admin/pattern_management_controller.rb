@@ -50,6 +50,16 @@ class Admin::PatternManagementController < Admin::BaseController
     end
   end
 
+  def data_quality
+    @audit = Rails.cache.read(DataQualityAuditJob::CACHE_KEY) ||
+             { message: "No audit data yet. Run DataQualityAuditJob.perform_now to generate." }
+
+    respond_to do |format|
+      format.html
+      format.json { render json: @audit }
+    end
+  end
+
   def toggle_active
     @pattern = CategorizationPattern.find(params[:id])
     @pattern.update!(active: !@pattern.active)

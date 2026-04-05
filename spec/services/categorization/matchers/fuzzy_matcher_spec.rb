@@ -9,7 +9,6 @@ RSpec.describe Services::Categorization::Matchers::FuzzyMatcher, performance: tr
     before do
       # Reset the singleton instance before each test
       described_class.instance_variable_set(:@default_instance, nil)
-      described_class.instance_variable_set(:@instance_mutex, nil)
     end
 
     it "returns a cached instance" do

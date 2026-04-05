@@ -1084,7 +1084,7 @@ RSpec.describe Services::Categorization::BulkCategorizationService, type: :servi
             ml_suggested_category_id: target_category.id,
             ml_correction_count: 1)
         end
-        let(:expenses) { [expense_with_suggestion, expense_without_suggestion, expense_matching_suggestion] }
+        let(:expenses) { [ expense_with_suggestion, expense_without_suggestion, expense_matching_suggestion ] }
 
         subject(:service) do
           described_class.new(
@@ -1143,7 +1143,7 @@ RSpec.describe Services::Categorization::BulkCategorizationService, type: :servi
             ml_suggested_category_id: suggested_category.id,
             ml_correction_count: 0)
         end
-        let(:expenses) { [expense_with_suggestion] }
+        let(:expenses) { [ expense_with_suggestion ] }
 
         subject(:service) do
           described_class.new(
@@ -1172,7 +1172,7 @@ RSpec.describe Services::Categorization::BulkCategorizationService, type: :servi
           ml_suggested_category_id: suggested_category.id,
           ml_correction_count: 0)
       end
-      let(:expenses) { [expense_with_suggestion] }
+      let(:expenses) { [ expense_with_suggestion ] }
 
       it "does not track corrections when option is absent" do
         service = described_class.new(

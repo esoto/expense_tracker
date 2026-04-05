@@ -258,9 +258,12 @@ module Services::Categorization
             undo_operation_id: @bulk_operation&.id
           }
         end.tap do |result|
-          # Broadcast AFTER transaction commits so clients never see uncommitted state
-          if result[:success] && successful_ids.any? && options[:broadcast_updates]
-            broadcast_categorization_updates_for_ids(successful_ids)
+          if result[:success] && successful_ids.any?
+            # Track ML corrections AFTER transaction commits so counters reflect final state
+            track_ml_corrections(successful_ids) if options[:track_ml_corrections]
+
+            # Broadcast AFTER transaction commits so clients never see uncommitted state
+            broadcast_categorization_updates_for_ids(successful_ids) if options[:broadcast_updates]
           end
         end
       rescue StandardError => e
@@ -284,8 +287,9 @@ module Services::Categorization
           end
         end
 
-        if successful_ids.any? && options[:broadcast_updates]
-          broadcast_categorization_updates_for_ids(successful_ids)
+        if successful_ids.any?
+          track_ml_corrections(successful_ids) if options[:track_ml_corrections]
+          broadcast_categorization_updates_for_ids(successful_ids) if options[:broadcast_updates]
         end
 
         {
@@ -592,6 +596,17 @@ module Services::Categorization
           by_current_category: {},
           estimated_time_saved: "0 seconds"
         }
+      end
+
+      def track_ml_corrections(successful_expense_ids)
+        Expense.where(id: successful_expense_ids)
+               .where.not(ml_suggested_category_id: nil)
+               .where.not(ml_suggested_category_id: category_id)
+               .update_all(
+                 ml_correction_count: Arel.sql("ml_correction_count + 1"),
+                 ml_last_corrected_at: Time.current,
+                 ml_suggested_category_id: nil
+               )
       end
 
       def broadcast_categorization_updates_for_ids(expense_ids)

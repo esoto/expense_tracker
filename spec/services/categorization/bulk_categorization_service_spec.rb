@@ -1053,4 +1053,154 @@ RSpec.describe Services::Categorization::BulkCategorizationService, type: :servi
       expect(result).to be_nil
     end
   end
+
+  describe "ML correction tracking", :unit do
+    let(:email_account) { create(:email_account) }
+    let(:target_category) { create(:category, name: "Food & Dining") }
+    let(:suggested_category) { create(:category, name: "Transportation") }
+
+    context "when track_ml_corrections option is true" do
+      let(:options) { { track_ml_corrections: true } }
+
+      context "via #apply!" do
+        let(:expense_with_suggestion) do
+          create(:expense,
+            email_account: email_account,
+            category: nil,
+            ml_suggested_category_id: suggested_category.id,
+            ml_correction_count: 2)
+        end
+        let(:expense_without_suggestion) do
+          create(:expense,
+            email_account: email_account,
+            category: nil,
+            ml_suggested_category_id: nil,
+            ml_correction_count: 0)
+        end
+        let(:expense_matching_suggestion) do
+          create(:expense,
+            email_account: email_account,
+            category: nil,
+            ml_suggested_category_id: target_category.id,
+            ml_correction_count: 1)
+        end
+        let(:expenses) { [ expense_with_suggestion, expense_without_suggestion, expense_matching_suggestion ] }
+
+        subject(:service) do
+          described_class.new(
+            expenses: expenses,
+            category_id: target_category.id,
+            user: user,
+            options: options
+          )
+        end
+
+        it "increments ml_correction_count when suggestion differs from chosen category" do
+          service.apply!
+          expense_with_suggestion.reload
+
+          expect(expense_with_suggestion.ml_correction_count).to eq(3)
+        end
+
+        it "sets ml_last_corrected_at when suggestion differs" do
+          freeze_time do
+            service.apply!
+            expense_with_suggestion.reload
+
+            expect(expense_with_suggestion.ml_last_corrected_at).to be_within(1.second).of(Time.current)
+          end
+        end
+
+        it "clears ml_suggested_category_id when suggestion differs" do
+          service.apply!
+          expense_with_suggestion.reload
+
+          expect(expense_with_suggestion.ml_suggested_category_id).to be_nil
+        end
+
+        it "does not track correction when expense has no ml suggestion" do
+          service.apply!
+          expense_without_suggestion.reload
+
+          expect(expense_without_suggestion.ml_correction_count).to eq(0)
+          expect(expense_without_suggestion.ml_last_corrected_at).to be_nil
+        end
+
+        it "does not track correction when suggestion matches chosen category" do
+          service.apply!
+          expense_matching_suggestion.reload
+
+          expect(expense_matching_suggestion.ml_correction_count).to eq(1)
+          expect(expense_matching_suggestion.ml_suggested_category_id).to eq(target_category.id)
+        end
+      end
+
+      context "via #categorize_all" do
+        let(:expense_with_suggestion) do
+          create(:expense,
+            email_account: email_account,
+            category: nil,
+            ml_suggested_category_id: suggested_category.id,
+            ml_correction_count: 0)
+        end
+        let(:expenses) { [ expense_with_suggestion ] }
+
+        subject(:service) do
+          described_class.new(
+            expenses: expenses,
+            category_id: target_category.id,
+            user: user,
+            options: options
+          )
+        end
+
+        it "tracks ML corrections after categorize_all" do
+          service.categorize_all
+          expense_with_suggestion.reload
+
+          expect(expense_with_suggestion.ml_correction_count).to eq(1)
+          expect(expense_with_suggestion.ml_suggested_category_id).to be_nil
+        end
+      end
+    end
+
+    context "when track_ml_corrections option is false or absent" do
+      let(:expense_with_suggestion) do
+        create(:expense,
+          email_account: email_account,
+          category: nil,
+          ml_suggested_category_id: suggested_category.id,
+          ml_correction_count: 0)
+      end
+      let(:expenses) { [ expense_with_suggestion ] }
+
+      it "does not track corrections when option is absent" do
+        service = described_class.new(
+          expenses: expenses,
+          category_id: target_category.id,
+          user: user,
+          options: {}
+        )
+        service.apply!
+        expense_with_suggestion.reload
+
+        expect(expense_with_suggestion.ml_correction_count).to eq(0)
+        expect(expense_with_suggestion.ml_suggested_category_id).to eq(suggested_category.id)
+      end
+
+      it "does not track corrections when option is explicitly false" do
+        service = described_class.new(
+          expenses: expenses,
+          category_id: target_category.id,
+          user: user,
+          options: { track_ml_corrections: false }
+        )
+        service.apply!
+        expense_with_suggestion.reload
+
+        expect(expense_with_suggestion.ml_correction_count).to eq(0)
+        expect(expense_with_suggestion.ml_suggested_category_id).to eq(suggested_category.id)
+      end
+    end
+  end
 end

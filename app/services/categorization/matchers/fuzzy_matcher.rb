@@ -51,10 +51,12 @@ module Services::Categorization
         /^(PAYPAL|SQ|SQUARE|TST|POS|CCD)\s*\*/i
       ].freeze
 
+      INSTANCE_MUTEX = Mutex.new
+
       class << self
         # Get or create a default instance (for services that haven't migrated to DI yet)
         def instance
-          @default_instance ||= new
+          INSTANCE_MUTEX.synchronize { @default_instance ||= new }
         end
 
         # Factory method for creating matcher instances

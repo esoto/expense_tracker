@@ -252,105 +252,75 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
     end
   end
 
-  describe 'Services::CategoryGuesserService integration' do
+  describe 'Categorization Engine integration' do
+    let(:category) { instance_double(Category, id: 1, name: 'Food & Dining') }
+    let(:engine) { instance_double(Services::Categorization::Engine) }
     let(:expense) do
       instance_double(Expense,
-        merchant_name: 'RESTAURANT ABC',
-        description: 'Lunch purchase',
-        amount: BigDecimal('50.00')
+        persisted?: true,
+        merchant_name?: true,
+        description?: true
       )
     end
-    let(:category_guesser) { instance_double(Services::CategoryGuesserService) }
-    let(:category) { instance_double(Category, name: 'Food & Dining') }
 
     before do
-      allow(Services::CategoryGuesserService).to receive(:new).and_return(category_guesser)
-      allow(category_guesser).to receive(:guess_category_for_expense).and_return(category)
+      allow(Services::Categorization::Engine).to receive(:create).and_return(engine)
     end
 
-    describe '#guess_category' do
-      it 'creates Services::CategoryGuesserService' do
-        expect(Services::CategoryGuesserService).to receive(:new).with(no_args)
-        parser.send(:guess_category, expense)
+    describe '#categorize_expense' do
+      it 'creates an Engine instance' do
+        result = Services::Categorization::CategorizationResult.no_match
+        allow(engine).to receive(:categorize).and_return(result)
+
+        parser.send(:categorize_expense, expense)
+        expect(Services::Categorization::Engine).to have_received(:create)
       end
 
-      it 'passes expense to guess method' do
-        expect(category_guesser).to receive(:guess_category_for_expense).with(expense)
-        parser.send(:guess_category, expense)
+      it 'passes expense with auto_update: false' do
+        result = Services::Categorization::CategorizationResult.no_match
+        expect(engine).to receive(:categorize).with(expense, auto_update: false).and_return(result)
+
+        parser.send(:categorize_expense, expense)
       end
 
-      it 'returns guessed category' do
-        result = parser.send(:guess_category, expense)
-        expect(result).to eq(category)
+      it 'updates expense when categorization succeeds' do
+        result = Services::Categorization::CategorizationResult.new(
+          category: category, confidence: 0.9, method: "pattern_match"
+        )
+        allow(engine).to receive(:categorize).and_return(result)
+        allow(expense).to receive(:update)
+
+        parser.send(:categorize_expense, expense)
+
+        expect(expense).to have_received(:update).with(
+          category_id: 1,
+          auto_categorized: true,
+          categorization_confidence: 0.9,
+          categorization_method: "pattern_match"
+        )
       end
 
-      it 'handles nil return from service' do
-        allow(category_guesser).to receive(:guess_category_for_expense).and_return(nil)
+      it 'does not update expense when categorization fails' do
+        result = Services::Categorization::CategorizationResult.no_match
+        allow(engine).to receive(:categorize).and_return(result)
+        allow(expense).to receive(:update)
 
-        result = parser.send(:guess_category, expense)
-        expect(result).to be_nil
+        parser.send(:categorize_expense, expense)
+
+        expect(expense).not_to have_received(:update)
       end
 
-      it 'handles service initialization error' do
-        allow(Services::CategoryGuesserService).to receive(:new)
-          .and_raise(StandardError, 'Service init failed')
+      it 'does not update expense when result is nil' do
+        allow(engine).to receive(:categorize).and_return(nil)
 
-        expect { parser.send(:guess_category, expense) }.to raise_error(StandardError)
+        parser.send(:categorize_expense, expense)
       end
 
-      it 'handles guess_category error' do
-        allow(category_guesser).to receive(:guess_category_for_expense)
-          .and_raise(StandardError, 'Category guess failed')
+      it 'propagates engine errors' do
+        allow(engine).to receive(:categorize)
+          .and_raise(StandardError, 'Engine failure')
 
-        expect { parser.send(:guess_category, expense) }.to raise_error(StandardError)
-      end
-
-      context 'with different expense types' do
-        it 'categorizes food expenses' do
-          allow(expense).to receive(:merchant_name).and_return('PIZZA HUT')
-          parser.send(:guess_category, expense)
-          expect(category_guesser).to have_received(:guess_category_for_expense).with(expense)
-        end
-
-        it 'categorizes transport expenses' do
-          allow(expense).to receive(:merchant_name).and_return('UBER')
-          allow(expense).to receive(:description).and_return('Ride payment')
-          parser.send(:guess_category, expense)
-          expect(category_guesser).to have_received(:guess_category_for_expense).with(expense)
-        end
-
-        it 'categorizes shopping expenses' do
-          allow(expense).to receive(:merchant_name).and_return('AMAZON')
-          allow(expense).to receive(:description).and_return('Online purchase')
-          parser.send(:guess_category, expense)
-          expect(category_guesser).to have_received(:guess_category_for_expense).with(expense)
-        end
-      end
-
-      context 'with expense attributes' do
-        it 'uses merchant_name for categorization' do
-          allow(expense).to receive(:merchant_name).and_return('SUPERMARKET XYZ')
-          parser.send(:guess_category, expense)
-          expect(category_guesser).to have_received(:guess_category_for_expense)
-        end
-
-        it 'uses description for categorization' do
-          allow(expense).to receive(:description).and_return('Grocery shopping')
-          parser.send(:guess_category, expense)
-          expect(category_guesser).to have_received(:guess_category_for_expense)
-        end
-
-        it 'handles nil merchant_name' do
-          allow(expense).to receive(:merchant_name).and_return(nil)
-          parser.send(:guess_category, expense)
-          expect(category_guesser).to have_received(:guess_category_for_expense)
-        end
-
-        it 'handles nil description' do
-          allow(expense).to receive(:description).and_return(nil)
-          parser.send(:guess_category, expense)
-          expect(category_guesser).to have_received(:guess_category_for_expense)
-        end
+        expect { parser.send(:categorize_expense, expense) }.to raise_error(StandardError)
       end
     end
   end
@@ -369,27 +339,23 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       instance_double(Expense,
         save: true,
         update: true,
-        formatted_amount: '$100.00',
-        :category= => nil
+        formatted_amount: '$100.00'
       )
     end
 
-    let(:category) { instance_double(Category, name: 'Shopping') }
     let(:currency_detector) { instance_double(Services::CurrencyDetectorService) }
-    let(:category_guesser) { instance_double(Services::CategoryGuesserService) }
 
     before do
       allow(parser).to receive(:find_duplicate_expense).and_return(nil)
       allow(Expense).to receive(:new).and_return(expense)
       allow(Services::CurrencyDetectorService).to receive(:new).and_return(currency_detector)
       allow(currency_detector).to receive(:apply_currency_to_expense)
-      allow(Services::CategoryGuesserService).to receive(:new).and_return(category_guesser)
-      allow(category_guesser).to receive(:guess_category_for_expense).and_return(category)
+      allow(parser).to receive(:categorize_expense)
       allow(parser).to receive(:email_content).and_return('email content')
     end
 
     describe 'service call order' do
-      it 'calls services in correct order' do
+      it 'calls services in correct order (categorize after save)' do
         call_order = []
 
         allow(parser).to receive(:find_duplicate_expense) do
@@ -406,14 +372,13 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
           call_order << :set_currency
         end
 
-        allow(category_guesser).to receive(:guess_category_for_expense) do
-          call_order << :guess_category
-          category
-        end
-
         allow(expense).to receive(:save) do
           call_order << :save_expense
           true
+        end
+
+        allow(parser).to receive(:categorize_expense) do
+          call_order << :categorize_expense
         end
 
         parser.send(:create_expense, parsed_data)
@@ -422,8 +387,8 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
           :duplicate_check,
           :create_expense,
           :set_currency,
-          :guess_category,
-          :save_expense
+          :save_expense,
+          :categorize_expense
         ])
       end
     end
@@ -441,9 +406,9 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         end
       end
 
-      context 'when category guessing fails' do
+      context 'when categorization fails' do
         before do
-          allow(category_guesser).to receive(:guess_category_for_expense)
+          allow(parser).to receive(:categorize_expense)
             .and_raise(Services::Categorization::Engine::CategorizationError, 'Category error')
         end
 
@@ -480,20 +445,8 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         parser.send(:create_expense, parsed_data)
       end
 
-      it 'passes expense instance to category guesser' do
-        expect(category_guesser).to receive(:guess_category_for_expense)
-          .with(expense)
-        parser.send(:create_expense, parsed_data)
-      end
-
-      it 'sets category on expense' do
-        expect(expense).to receive(:category=).with(category)
-        parser.send(:create_expense, parsed_data)
-      end
-
-      it 'handles nil category from guesser' do
-        allow(category_guesser).to receive(:guess_category_for_expense).and_return(nil)
-        expect(expense).to receive(:category=).with(nil)
+      it 'calls categorize_expense after save' do
+        expect(parser).to receive(:categorize_expense).with(expense)
         parser.send(:create_expense, parsed_data)
       end
     end
@@ -502,14 +455,11 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
   describe 'full parsing flow with all services' do
     let(:strategy) { instance_double(Services::EmailProcessing::Strategies::Regex) }
     let(:currency_detector) { instance_double(Services::CurrencyDetectorService) }
-    let(:category_guesser) { instance_double(Services::CategoryGuesserService) }
-    let(:category) { instance_double(Category, name: 'Food') }
     let(:expense) do
       instance_double(Expense,
         save: true,
         update: true,
-        formatted_amount: '$100.00',
-        :category= => nil
+        formatted_amount: '$100.00'
       )
     end
 
@@ -531,9 +481,8 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       allow(Services::CurrencyDetectorService).to receive(:new).and_return(currency_detector)
       allow(currency_detector).to receive(:apply_currency_to_expense)
 
-      # Setup category guesser
-      allow(Services::CategoryGuesserService).to receive(:new).and_return(category_guesser)
-      allow(category_guesser).to receive(:guess_category_for_expense).and_return(category)
+      # Setup categorization
+      allow(parser).to receive(:categorize_expense)
 
       # Setup expense creation
       allow(Expense).to receive(:where).and_return(instance_double(ActiveRecord::Relation, first: nil))
@@ -547,7 +496,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       expect(Services::EmailProcessing::StrategyFactory).to have_received(:create_strategy)
       expect(strategy).to have_received(:parse_email)
       expect(currency_detector).to have_received(:apply_currency_to_expense)
-      expect(category_guesser).to have_received(:guess_category_for_expense)
+      expect(parser).to have_received(:categorize_expense)
       expect(expense).to have_received(:save)
       expect(expense).to have_received(:update).with(status: :processed)
     end

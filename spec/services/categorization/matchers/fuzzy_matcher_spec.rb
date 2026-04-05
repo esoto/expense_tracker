@@ -5,6 +5,36 @@ require "rails_helper"
 RSpec.describe Services::Categorization::Matchers::FuzzyMatcher, performance: true do
   let(:matcher) { described_class.new }
 
+  describe ".instance" do
+    before do
+      # Reset the singleton instance before each test
+      described_class.instance_variable_set(:@default_instance, nil)
+    end
+
+    it "returns a cached instance" do
+      first_instance = described_class.instance
+      second_instance = described_class.instance
+
+      expect(first_instance).to be(second_instance)
+    end
+
+    it "returns same instance across concurrent calls (thread-safe)" do
+      instances = Concurrent::Array.new
+
+      threads = 10.times.map do
+        Thread.new { instances << described_class.instance }
+      end
+
+      threads.each(&:join)
+
+      # All threads should get the exact same instance
+      first_instance = instances[0]
+      instances.each do |instance|
+        expect(instance).to be(first_instance)
+      end
+    end
+  end
+
   describe "#match", performance: true do
     context "with valid inputs" do
       let(:candidates) do

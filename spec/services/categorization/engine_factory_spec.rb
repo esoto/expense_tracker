@@ -31,6 +31,22 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
       expect(first_call).to be(second_call) # Same object reference
     end
 
+    it "returns same instance across concurrent calls (thread-safe)" do
+      instances = Concurrent::Array.new
+
+      threads = 10.times.map do
+        Thread.new { instances << described_class.default }
+      end
+
+      threads.each(&:join)
+
+      # All threads should get the exact same instance
+      first_instance = instances[0]
+      instances.each do |instance|
+        expect(instance).to be(first_instance)
+      end
+    end
+
     it "creates engine with default configuration" do
       expected_config = {
         cache_size: 1000,
@@ -536,11 +552,7 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
     end
 
     context "with race conditions" do
-      it "may create multiple engines under concurrent access" do
-        # Note: The current implementation is NOT thread-safe for the default method
-        # Multiple threads accessing .default simultaneously may create multiple engines
-        # This test documents the actual behavior
-
+      it "creates exactly one engine under concurrent access" do
         described_class.reset!
 
         call_count = 0
@@ -558,12 +570,10 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
 
         threads.each(&:join)
 
-        # Due to race condition, multiple engines might be created
-        # but only one will be cached as @default
-        expect(call_count).to be >= 1
-        expect(call_count).to be <= 5
+        # DEFAULT_MUTEX ensures only one engine is created
+        expect(call_count).to eq(1)
 
-        # After all threads complete, subsequent calls should use cached value
+        # Subsequent calls use cached value
         expect(Services::Categorization::Engine).not_to receive(:create)
         described_class.default
       end

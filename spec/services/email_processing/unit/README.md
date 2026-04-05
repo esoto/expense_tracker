@@ -48,10 +48,10 @@ This directory contains comprehensive unit tests for the `EmailProcessing::Parse
   - Currency detection from email content
   - Currency application to expenses
   - Multi-currency support (USD, EUR, CRC)
-- CategoryGuesserService integration
-  - Automatic categorization
-  - Category matching logic
-  - Default category handling
+- Categorization Engine integration
+  - Automatic categorization via Engine
+  - Confidence metadata on expenses
+  - Graceful error handling
 - Full parsing flow with all services
 
 ### 5. parser_performance_spec.rb

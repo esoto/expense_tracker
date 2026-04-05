@@ -337,6 +337,25 @@ RSpec.describe Services::Categorization::Engine, type: :service do
         expect(result).not_to be_success
         expect(result.error).to eq("Learning failed")
       end
+
+      it "does not invalidate cache when learning fails" do
+        pattern_learner = engine.service_registry.get(:pattern_learner)
+        pattern_cache = engine.service_registry.get(:pattern_cache)
+
+        failed_result = Services::Categorization::LearningResult.error("Pattern validation failed")
+        allow(pattern_learner)
+          .to receive(:learn_from_correction)
+          .and_return(failed_result)
+
+        allow(pattern_cache).to receive(:invalidate_all)
+        allow(engine).to receive(:invalidate_relevant_cache)
+
+        result = engine.learn_from_correction(expense, correct_category, predicted_category)
+
+        expect(result).not_to be_success
+        expect(pattern_cache).not_to have_received(:invalidate_all)
+        expect(engine).not_to have_received(:invalidate_relevant_cache)
+      end
     end
   end
 

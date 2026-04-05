@@ -720,4 +720,29 @@ RSpec.describe Services::Categorization::ConfidenceCalculator do
       end
     end
   end
+
+  describe "#healthy?" do
+    it "returns true when calculator is functional" do
+      expect(calculator.healthy?).to be true
+    end
+
+    it "memoizes the result and only calculates once" do
+      allow(calculator).to receive(:calculate_weighted_score).and_call_original
+
+      calculator.healthy?
+      calculator.healthy?
+
+      expect(calculator).to have_received(:calculate_weighted_score).once
+    end
+
+    it "recalculates after reset" do
+      calculator.healthy?
+      allow(calculator).to receive(:calculate_weighted_score).and_call_original
+
+      calculator.send(:reset!)
+      calculator.healthy?
+
+      expect(calculator).to have_received(:calculate_weighted_score).once
+    end
+  end
 end

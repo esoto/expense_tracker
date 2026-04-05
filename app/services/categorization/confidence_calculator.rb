@@ -50,7 +50,7 @@ module Services::Categorization
 
     def initialize(options = {})
       @options = options
-      @cache = build_cache if options.fetch(:enable_caching, true)
+      @cache = build_cache if options.fetch(:enable_caching, false)
       @metrics = { calculations: 0, cache_hits: 0, total_time_ms: 0.0 }
       @performance_tracker = PerformanceTracker.new
 

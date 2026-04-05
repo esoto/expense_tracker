@@ -664,7 +664,7 @@ module Services::Categorization
       # Group matches by category
       grouped = pattern_matches.group_by { |m| m[:pattern].category_id }
 
-      grouped.each do |category_id, matches|
+      grouped.each_value do |matches|
         best_match = matches.max_by { |m| m[:match_score] }
         pattern = best_match[:pattern]
         category = matches.first[:pattern].category
@@ -755,7 +755,7 @@ module Services::Categorization
       # Process in parallel with futures
       futures = expenses.map do |expense|
         Concurrent::Future.execute(executor: @thread_pool) do
-          categorize(expense, options.merge(skip_cache_preload: true))
+          categorize(expense, options)
         end
       end
 

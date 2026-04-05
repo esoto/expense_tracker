@@ -36,7 +36,7 @@ module Services::Categorization
   # == Differences from Engine
   # | Concern              | Engine                    | Orchestrator                     |
   # |----------------------|---------------------------|----------------------------------|
-  # | Caching strategy     | Internal LRU + PatternCache | Delegates to injected PatternCache |
+  # | Caching strategy     | PatternCache (L1 + L2)    | Delegates to injected PatternCache |
   # | Thread pool          | Shared SHARED_THREAD_POOL | Per-instance Thread.new          |
   # | Circuit breaker      | Internal SimpleCircuitBreaker | Inner CircuitBreaker class    |
   # | Timeout              | None (async guards only)  | Timeout::timeout 25ms            |

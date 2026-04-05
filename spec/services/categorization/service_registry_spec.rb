@@ -34,17 +34,12 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
       def initialize(*args, **kwargs); end # rubocop:disable Lint/MissingSuper
     end
 
-    lru_cache_class = Class.new do
-      def initialize(*args, **kwargs); end
-    end
-
     # Stub all service classes
     stub_const("Services::Categorization::PatternCache", pattern_cache_class)
     stub_const("Services::Categorization::Matchers::FuzzyMatcher", fuzzy_matcher_class)
     stub_const("Services::Categorization::ConfidenceCalculator", confidence_calculator_class)
     stub_const("Services::Categorization::PatternLearner", pattern_learner_class)
     stub_const("Services::Categorization::PerformanceTracker", performance_tracker_class)
-    stub_const("Services::Categorization::LruCache", lru_cache_class)
     stub_const("Services::Categorization::Engine::MAX_PATTERN_CACHE_SIZE", 1000)
 
     # Allow instantiation of service mocks
@@ -53,7 +48,6 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
     allow(Services::Categorization::ConfidenceCalculator).to receive(:new).and_call_original
     allow(Services::Categorization::PatternLearner).to receive(:new).and_call_original
     allow(Services::Categorization::PerformanceTracker).to receive(:instance).and_call_original
-    allow(Services::Categorization::LruCache).to receive(:new).and_call_original
   end
 
   describe "#initialize" do
@@ -321,7 +315,6 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
         expect(registry.registered?(:confidence_calculator)).to be true
         expect(registry.registered?(:pattern_learner)).to be true
         expect(registry.registered?(:performance_tracker)).to be true
-        expect(registry.registered?(:lru_cache)).to be true
       end
 
       it "creates PatternLearner with pattern_cache dependency" do
@@ -331,14 +324,6 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
         expect(Services::Categorization::PatternLearner).to receive(:new)
           .with(pattern_cache: pattern_cache)
           .and_return(double("PatternLearner"))
-
-        registry.build_defaults
-      end
-
-      it "creates LruCache with correct parameters" do
-        expect(Services::Categorization::LruCache).to receive(:new)
-          .with(max_size: 1000, ttl_seconds: 300)
-          .and_return(double("LruCache"))
 
         registry.build_defaults
       end
@@ -362,7 +347,6 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
       let(:custom_confidence_calculator) { double("CustomConfidenceCalculator") }
       let(:custom_pattern_learner) { double("CustomPatternLearner") }
       let(:custom_performance_tracker) { double("CustomPerformanceTracker") }
-      let(:custom_lru_cache) { double("CustomLruCache") }
 
       let(:options) do
         {
@@ -370,8 +354,7 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
           fuzzy_matcher: custom_fuzzy_matcher,
           confidence_calculator: custom_confidence_calculator,
           pattern_learner: custom_pattern_learner,
-          performance_tracker: custom_performance_tracker,
-          lru_cache: custom_lru_cache
+          performance_tracker: custom_performance_tracker
         }
       end
 
@@ -383,7 +366,6 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
         expect(registry.get(:confidence_calculator)).to eq(custom_confidence_calculator)
         expect(registry.get(:pattern_learner)).to eq(custom_pattern_learner)
         expect(registry.get(:performance_tracker)).to eq(custom_performance_tracker)
-        expect(registry.get(:lru_cache)).to eq(custom_lru_cache)
       end
 
       it "doesn't instantiate default services when custom ones provided" do
@@ -406,7 +388,6 @@ RSpec.describe Services::Categorization::ServiceRegistry, :unit do
 
         expect(Services::Categorization::ConfidenceCalculator).to receive(:new)
         expect(Services::Categorization::PerformanceTracker).to receive(:instance)
-        expect(Services::Categorization::LruCache).to receive(:new)
 
         registry.build_defaults(options)
 

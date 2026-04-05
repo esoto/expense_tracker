@@ -37,10 +37,6 @@ module CategorizationTestHelper
     service_registry.register(:confidence_calculator, Services::Categorization::ConfidenceCalculator.new)
     service_registry.register(:pattern_learner, Services::Categorization::PatternLearner.new(pattern_cache: pattern_cache))
     service_registry.register(:performance_tracker, Services::Categorization::PerformanceTracker.instance)
-    service_registry.register(:lru_cache, Services::Categorization::LruCache.new(
-      max_size: Services::Categorization::Engine::MAX_PATTERN_CACHE_SIZE,
-      ttl_seconds: 300
-    ))
 
     # Create engine with fresh dependencies
     Services::Categorization::Engine.new(
@@ -66,7 +62,7 @@ module CategorizationTestHelper
       engine_initialized: engine.present?,
       total_categorizations: engine.metrics.dig(:engine, :total_categorizations),
       successful_categorizations: engine.metrics.dig(:engine, :successful_categorizations),
-      cache_size: engine.metrics.dig(:cache, :lru_cache, :size) || 0,
+      cache_size: engine.metrics.dig(:cache, :pattern_cache, :size) || 0,
       thread_pool_active: engine.metrics.dig(:engine, :thread_pool_status) || "unknown",
       shutdown: engine.shutdown?
     }

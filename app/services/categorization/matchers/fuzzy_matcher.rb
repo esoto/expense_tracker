@@ -54,7 +54,8 @@ module Services::Categorization
       class << self
         # Get or create a default instance (for services that haven't migrated to DI yet)
         def instance
-          @default_instance ||= new
+          @instance_mutex ||= Mutex.new
+          @instance_mutex.synchronize { @default_instance ||= new }
         end
 
         # Factory method for creating matcher instances

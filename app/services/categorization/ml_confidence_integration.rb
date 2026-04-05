@@ -91,9 +91,6 @@ module Services::Categorization
 
       expense.accept_ml_suggestion!
 
-      # Track this as positive feedback for the pattern
-      track_pattern_feedback(expense, true)
-
       true
     rescue => e
       Rails.logger.error "[MlConfidenceIntegration] Failed to apply ML suggestion: #{e.message}"
@@ -109,44 +106,11 @@ module Services::Categorization
 
       expense.reject_ml_suggestion!(correct_category_id)
 
-      # Track this as negative feedback for the pattern
-      track_pattern_feedback(expense, false)
-
-      # Learn from the correction
-      learn_from_correction(expense, correct_category_id)
-
       true
     rescue => e
       Rails.logger.error "[MlConfidenceIntegration] Failed to reject ML suggestion: #{e.message}"
       false
     end
 
-    private
-
-    # Tracks pattern feedback for learning
-    def track_pattern_feedback(expense, was_correct)
-      return unless defined?(PatternLearner)
-
-      PatternLearner.new.record_feedback(
-        expense: expense,
-        was_correct: was_correct,
-        confidence_score: expense.ml_confidence || 0.0
-      )
-    rescue => e
-      Rails.logger.warn "[MlConfidenceIntegration] Failed to track pattern feedback: #{e.message}"
-    end
-
-    # Learns from user correction
-    def learn_from_correction(expense, correct_category_id)
-      return unless defined?(PatternLearner)
-
-      PatternLearner.new.learn_from_correction(
-        expense: expense,
-        correct_category_id: correct_category_id,
-        previous_category_id: expense.category_id_was
-      )
-    rescue => e
-      Rails.logger.warn "[MlConfidenceIntegration] Failed to learn from correction: #{e.message}"
-    end
   end
 end

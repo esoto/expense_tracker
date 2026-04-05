@@ -9,7 +9,8 @@ module Services::Categorization
     class << self
       # Get a shared instance (default behavior)
       def default
-        @default ||= create_engine(:default)
+        @default_mutex ||= Mutex.new
+        @default_mutex.synchronize { @default ||= create_engine(:default) }
       end
 
       # Create a new engine instance with custom configuration
@@ -27,6 +28,7 @@ module Services::Categorization
       def reset!
         @engines = nil
         @default = nil
+        @default_mutex = nil
       end
 
       # Get all active engines

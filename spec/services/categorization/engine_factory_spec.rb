@@ -31,6 +31,22 @@ RSpec.describe Services::Categorization::EngineFactory, type: :service, unit: tr
       expect(first_call).to be(second_call) # Same object reference
     end
 
+    it "returns same instance across concurrent calls (thread-safe)" do
+      instances = Concurrent::Array.new
+
+      threads = 10.times.map do
+        Thread.new { instances << described_class.default }
+      end
+
+      threads.each(&:join)
+
+      # All threads should get the exact same instance
+      first_instance = instances[0]
+      instances.each do |instance|
+        expect(instance).to be(first_instance)
+      end
+    end
+
     it "creates engine with default configuration" do
       expected_config = {
         cache_size: 1000,

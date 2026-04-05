@@ -165,6 +165,128 @@ RSpec.describe Services::Categorization::BulkCategorizationService, type: :servi
         expect(result[:errors]).to include("Category not found")
       end
     end
+
+    context "background job threshold" do
+      include_context "with valid category"
+
+      let(:large_expenses) { build_list(:expense, 100) }
+      let(:fake_job) { instance_double(BulkCategorizationJob, job_id: "fake-job-id-123") }
+
+      context "with fewer than #{described_class::BACKGROUND_THRESHOLD} expenses" do
+        let(:expenses) { build_list(:expense, 3) }
+
+        it "processes synchronously" do
+          expenses.each(&:save!)
+
+          result = service.apply!
+
+          expect(result[:success]).to be true
+          expect(result).not_to have_key(:background)
+          expect(result).not_to have_key(:job_id)
+        end
+      end
+
+      context "with #{described_class::BACKGROUND_THRESHOLD} or more expenses" do
+        subject(:service) do
+          described_class.new(
+            expenses: large_expenses,
+            category_id: category.id,
+            user: user,
+            options: options
+          )
+        end
+
+        before do
+          allow(BulkCategorizationJob).to receive(:perform_later).and_return(fake_job)
+        end
+
+        it "enqueues a background job" do
+          service.apply!
+          expect(BulkCategorizationJob).to have_received(:perform_later)
+        end
+
+        it "returns background: true in the response" do
+          result = service.apply!
+          expect(result[:background]).to be true
+        end
+
+        it "returns a job_id for polling" do
+          result = service.apply!
+          expect(result[:job_id]).to eq("fake-job-id-123")
+        end
+
+        it "returns success: true" do
+          result = service.apply!
+          expect(result[:success]).to be true
+        end
+
+        it "returns a message indicating background processing" do
+          result = service.apply!
+          expect(result[:message]).to include("background")
+          expect(result[:message]).to include("100")
+        end
+
+        it "passes expense_ids, user_id, and options with category_id to the job" do
+          service.apply!
+          expect(BulkCategorizationJob).to have_received(:perform_later).with(
+            expense_ids: large_expenses.map(&:id),
+            user_id: nil,
+            options: hash_including(category_id: category.id)
+          )
+        end
+      end
+
+      context "with force_synchronous option" do
+        let(:small_force_set) { build_list(:expense, 100) }
+
+        subject(:service) do
+          described_class.new(
+            expenses: small_force_set,
+            category_id: category.id,
+            user: user,
+            options: { force_synchronous: true }
+          )
+        end
+
+        before do
+          allow(BulkCategorizationJob).to receive(:perform_later)
+          small_force_set.each(&:save!)
+        end
+
+        it "does not enqueue a background job" do
+          service.apply!
+          expect(BulkCategorizationJob).not_to have_received(:perform_later)
+        end
+
+        it "processes synchronously" do
+          result = service.apply!
+          expect(result[:success]).to be true
+          expect(result).not_to have_key(:background)
+        end
+      end
+
+      context "when background job enqueue fails" do
+        subject(:service) do
+          described_class.new(
+            expenses: large_expenses,
+            category_id: category.id,
+            user: user,
+            options: options
+          )
+        end
+
+        before do
+          allow(BulkCategorizationJob).to receive(:perform_later)
+            .and_raise(StandardError, "Queue unavailable")
+        end
+
+        it "returns success: false with error message" do
+          result = service.apply!
+          expect(result[:success]).to be false
+          expect(result[:errors]).to include("Queue unavailable")
+        end
+      end
+    end
   end
 
   describe "#undo!" do
@@ -487,6 +609,83 @@ RSpec.describe Services::Categorization::BulkCategorizationService, type: :servi
 
         expect(result[:success_count]).to eq(3)
         expect(result[:failures]).to be_empty
+      end
+    end
+
+    context "background job threshold" do
+      include_context "with valid category"
+
+      let(:large_expenses) { build_list(:expense, 100) }
+      let(:fake_job) { instance_double(BulkCategorizationJob, job_id: "fake-job-id-456") }
+
+      context "with fewer than #{described_class::BACKGROUND_THRESHOLD} expenses" do
+        let(:expenses) { build_list(:expense, 3) }
+
+        it "processes synchronously" do
+          expenses.each(&:save!)
+
+          result = service.categorize_all
+
+          expect(result[:success_count]).to eq(3)
+          expect(result).not_to have_key(:background)
+        end
+      end
+
+      context "with #{described_class::BACKGROUND_THRESHOLD} or more expenses" do
+        subject(:service) do
+          described_class.new(
+            expenses: large_expenses,
+            category_id: category.id,
+            user: user,
+            options: options
+          )
+        end
+
+        before do
+          allow(BulkCategorizationJob).to receive(:perform_later).and_return(fake_job)
+        end
+
+        it "enqueues a background job" do
+          service.categorize_all
+          expect(BulkCategorizationJob).to have_received(:perform_later)
+        end
+
+        it "returns background: true" do
+          result = service.categorize_all
+          expect(result[:background]).to be true
+        end
+
+        it "returns a job_id" do
+          result = service.categorize_all
+          expect(result[:job_id]).to eq("fake-job-id-456")
+        end
+      end
+
+      context "with force_synchronous: true" do
+        subject(:service) do
+          described_class.new(
+            expenses: large_expenses,
+            category_id: category.id,
+            user: user,
+            options: { force_synchronous: true }
+          )
+        end
+
+        before do
+          allow(BulkCategorizationJob).to receive(:perform_later)
+          large_expenses.each(&:save!)
+        end
+
+        it "does not enqueue a background job" do
+          service.categorize_all
+          expect(BulkCategorizationJob).not_to have_received(:perform_later)
+        end
+
+        it "processes synchronously" do
+          result = service.categorize_all
+          expect(result[:success_count]).to eq(100)
+          expect(result).not_to have_key(:background)
+        end
       end
     end
   end

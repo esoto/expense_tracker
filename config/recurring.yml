@@ -33,6 +33,14 @@ default: &default
     schedule: every 30 minutes
     description: "Retry failed broadcasts from the dead letter queue"
 
+  # Run data quality audit daily to check pattern coverage and detect issues
+  data_quality_audit:
+    class: DataQualityAuditJob
+    queue: low
+    priority: 10
+    schedule: every day at 3am
+    description: "Run data quality audit to check pattern coverage, detect duplicates, and identify issues"
+
 development:
   <<: *default
   # In development, run metrics calculation more frequently for testing

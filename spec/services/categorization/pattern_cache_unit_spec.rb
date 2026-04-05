@@ -239,4 +239,109 @@ RSpec.describe Services::Categorization::PatternCache, :unit do
       expect(cache.respond_to?(:delete_namespaced_keys, true)).to be false
     end
   end
+
+  describe "#preload_for_texts" do
+    it "stores patterns in thread-local storage" do
+      create(:categorization_pattern, active: true)
+
+      cache = described_class.new
+      cache.preload_for_texts([ "test" ])
+
+      expect(Thread.current[:pattern_cache_preloaded]).to be_an(Array)
+      expect(Thread.current[:pattern_cache_preloaded]).not_to be_empty
+    ensure
+      Thread.current[:pattern_cache_preloaded] = nil
+    end
+
+    it "does nothing for blank input" do
+      cache = described_class.new
+      cache.preload_for_texts(nil)
+      expect(Thread.current[:pattern_cache_preloaded]).to be_nil
+
+      cache.preload_for_texts([])
+      expect(Thread.current[:pattern_cache_preloaded]).to be_nil
+    end
+  end
+
+  describe "#clear_preloaded_patterns" do
+    it "sets thread-local to nil" do
+      cache = described_class.new
+      Thread.current[:pattern_cache_preloaded] = [ double("pattern") ]
+
+      cache.clear_preloaded_patterns
+
+      expect(Thread.current[:pattern_cache_preloaded]).to be_nil
+    end
+  end
+
+  describe "#get_patterns_for_expense with preloaded data" do
+    it "returns preloaded patterns without querying the database" do
+      cache = described_class.new
+      preloaded = [ double("pattern") ]
+      Thread.current[:pattern_cache_preloaded] = preloaded
+
+      expect(CategorizationPattern).not_to receive(:active)
+      result = cache.get_patterns_for_expense(build(:expense, merchant_name: "test"))
+
+      expect(result).to equal(preloaded)
+    ensure
+      Thread.current[:pattern_cache_preloaded] = nil
+    end
+  end
+
+  describe "thread-local isolation (PER-287)", :unit do
+    it "preloaded patterns in one thread do not leak to another" do
+      create(:categorization_pattern, active: true)
+      cache = described_class.new
+
+      thread_a_value = nil
+      thread_b_value = nil
+
+      thread_a = Thread.new do
+        cache.preload_for_texts([ "test" ])
+        thread_a_value = Thread.current[:pattern_cache_preloaded]
+        sleep 0.05
+        cache.clear_preloaded_patterns
+      end
+
+      sleep 0.02
+
+      thread_b = Thread.new do
+        thread_b_value = Thread.current[:pattern_cache_preloaded]
+      end
+
+      thread_a.join(5)
+      thread_b.join(5)
+
+      expect(thread_a_value).to be_an(Array)
+      expect(thread_a_value).not_to be_empty
+      expect(thread_b_value).to be_nil
+    end
+
+    it "clearing in one thread does not affect another" do
+      cache = described_class.new
+      patterns = [ double("pattern") ]
+
+      thread_a_after_clear = nil
+      thread_b_after_clear = nil
+
+      Thread.current[:pattern_cache_preloaded] = patterns
+
+      thread_b = Thread.new do
+        Thread.current[:pattern_cache_preloaded] = [ double("other") ]
+        sleep 0.02
+        thread_b_after_clear = Thread.current[:pattern_cache_preloaded]
+      end
+
+      sleep 0.01
+      cache.clear_preloaded_patterns
+      thread_a_after_clear = Thread.current[:pattern_cache_preloaded]
+
+      thread_b.join(5)
+
+      expect(thread_a_after_clear).to be_nil
+      expect(thread_b_after_clear).to be_an(Array)
+      expect(thread_b_after_clear).not_to be_empty
+    end
+  end
 end

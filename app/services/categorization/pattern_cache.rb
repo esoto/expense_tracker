@@ -97,7 +97,7 @@ module Services::Categorization
       return [] unless expense
 
       # Return cached patterns if available (for batch processing)
-      return @all_patterns if @all_patterns
+      return Thread.current[:pattern_cache_preloaded] if Thread.current[:pattern_cache_preloaded]
 
       benchmark_with_metrics("get_patterns_for_expense") do
         # Get all active patterns that might match this expense
@@ -116,7 +116,7 @@ module Services::Categorization
       return if texts.blank?
 
       # Load all patterns once for batch processing
-      @all_patterns = CategorizationPattern
+      Thread.current[:pattern_cache_preloaded] = CategorizationPattern
         .active
         .includes(:category)
         .order(usage_count: :desc, success_rate: :desc)
@@ -125,7 +125,7 @@ module Services::Categorization
 
     # Clear preloaded patterns after batch processing
     def clear_preloaded_patterns
-      @all_patterns = nil
+      Thread.current[:pattern_cache_preloaded] = nil
     end
 
     # Invalidate cache for a specific category by bumping the pattern cache version.

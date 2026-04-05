@@ -2,7 +2,6 @@
 
 require "concurrent"
 require "ostruct"
-require_relative "lru_cache"
 require_relative "ml_confidence_integration"
 require_relative "service_registry"
 
@@ -90,7 +89,7 @@ module Services::Categorization
   # == Key features
   # - Dependency injection for all sub-services (via ServiceRegistry)
   # - Thread-safe operations with concurrent-ruby atomic primitives
-  # - Memory-bounded LRU caching with TTL
+  # - Pattern caching via PatternCache (L1 MemoryStore + L2 Solid Cache)
   # - Batched database queries (avoids loading all patterns into memory)
   # - Async expense updates via a shared thread pool
   # - Circuit breakers for DB, cache, and the main categorization path
@@ -462,8 +461,6 @@ module Services::Categorization
       @confidence_calculator = @service_registry.get(:confidence_calculator)
       @pattern_learner = @service_registry.get(:pattern_learner)
       @performance_tracker = @service_registry.get(:performance_tracker)
-      @lru_cache = @service_registry.get(:lru_cache)
-
       # Thread pool for async operations
       initialize_thread_pool
     end
@@ -499,7 +496,6 @@ module Services::Categorization
 
       # Clear internal caches
       @pattern_cache.clear
-      @lru_cache.clear if @lru_cache.respond_to?(:clear)
     end
 
     def perform_categorization(expense, options)
@@ -529,7 +525,7 @@ module Services::Categorization
       end
 
       # Step 4: Score and rank matches
-      scored_matches = score_matches_with_caching(expense, pattern_matches, opts)
+      scored_matches = score_and_rank_matches(expense, pattern_matches, opts)
 
       # Step 5: Select best category
       best_match = scored_matches.first
@@ -570,9 +566,7 @@ module Services::Categorization
 
     def check_user_preference_safely(expense, correlation_id)
       with_circuit_breaker(:cache) do
-        preference = @lru_cache.fetch("user_pref:#{expense.merchant_name.downcase}") do
-          @pattern_cache_service.get_user_preference(expense.merchant_name)
-        end
+        preference = @pattern_cache_service.get_user_preference(expense.merchant_name)
 
         return nil unless preference
 
@@ -645,61 +639,50 @@ module Services::Categorization
     end
 
     def load_patterns_in_batches(options)
-      cache_key = "patterns:batch:#{options[:pattern_types]&.join(',')}"
+      patterns = CategorizationPattern
+        .active
+        .includes(:category)
+        .order(usage_count: :desc, success_rate: :desc)
 
-      @lru_cache.fetch(cache_key, ttl: 60) do
-        patterns = CategorizationPattern
-          .active
-          .includes(:category)
-          .order(usage_count: :desc, success_rate: :desc)
-
-        if options[:pattern_types].present?
-          patterns = patterns.where(pattern_type: options[:pattern_types])
-        end
-
-        # Load in batches to avoid memory bloat
-        batches = []
-        patterns.find_in_batches(batch_size: PATTERN_BATCH_SIZE) do |batch|
-          batches << batch
-          break if batches.size >= 5 # Limit to 500 patterns total
-        end
-
-        batches
+      if options[:pattern_types].present?
+        patterns = patterns.where(pattern_type: options[:pattern_types])
       end
+
+      # Load in batches to avoid memory bloat
+      batches = []
+      patterns.find_in_batches(batch_size: PATTERN_BATCH_SIZE) do |batch|
+        batches << batch
+        break if batches.size >= 5 # Limit to 500 patterns total
+      end
+
+      batches
     end
 
-    def score_matches_with_caching(expense, pattern_matches, options)
+    def score_and_rank_matches(expense, pattern_matches, options)
       scored = []
 
       # Group matches by category
       grouped = pattern_matches.group_by { |m| m[:pattern].category_id }
 
       grouped.each do |category_id, matches|
-        # Cache confidence calculations
-        cache_key = "confidence:#{expense.id}:#{category_id}"
+        best_match = matches.max_by { |m| m[:match_score] }
+        pattern = best_match[:pattern]
+        category = matches.first[:pattern].category
 
-        confidence_data = @lru_cache.fetch(cache_key, ttl: 30) do
-          best_match = matches.max_by { |m| m[:match_score] }
-          pattern = best_match[:pattern]
-          category = Category.find(category_id)
+        # Calculate comprehensive confidence score
+        confidence_score = @confidence_calculator.calculate(
+          expense,
+          pattern,
+          best_match[:match_score]
+        )
 
-          # Calculate comprehensive confidence score
-          confidence_score = @confidence_calculator.calculate(
-            expense,
-            pattern,
-            best_match[:match_score]
-          )
-
-          {
-            category: category,
-            confidence: confidence_score.score,
-            confidence_score: confidence_score,
-            patterns: matches.map { |m| m[:pattern] },
-            match_type: best_match[:match_type]
-          }
-        end
-
-        scored << confidence_data
+        scored << {
+          category: category,
+          confidence: confidence_score.score,
+          confidence_score: confidence_score,
+          patterns: matches.map { |m| m[:pattern] },
+          match_type: best_match[:match_type]
+        }
       end
 
       # Sort by confidence descending
@@ -769,9 +752,6 @@ module Services::Categorization
     end
 
     def process_batch_with_concurrency(expenses, options, correlation_id)
-      # Preload patterns once for the batch
-      preload_patterns_for_batch(expenses)
-
       # Process in parallel with futures
       futures = expenses.map do |expense|
         Concurrent::Future.execute(executor: @thread_pool) do
@@ -786,20 +766,6 @@ module Services::Categorization
 
       log_batch_performance(results, correlation_id)
       results
-    end
-
-    def preload_patterns_for_batch(expenses)
-      # Extract unique attributes for preloading
-      merchant_names = expenses.map(&:merchant_name).compact.uniq
-
-      # Preload in parallel
-      Concurrent::Future.execute {
-        merchant_names.each { |name|
-          @lru_cache.fetch("user_pref:#{name.downcase}") {
-            @pattern_cache_service.get_user_preference(name)
-          }
-        }
-      }.value(5)
     end
 
     def warm_frequently_used_patterns
@@ -820,14 +786,7 @@ module Services::Categorization
     end
 
     def invalidate_relevant_cache(category)
-      # Invalidate only relevant cache entries
-      @lru_cache.keys.each do |key|
-        if key.to_s.include?("confidence:") && key.to_s.include?(":#{category.id}")
-          @lru_cache.delete(key)
-        end
-      end
-
-      # Also invalidate pattern cache for this category
+      # Invalidate pattern cache entries for this category
       @pattern_cache.each do |id, pattern|
         if pattern.category_id == category.id
           @pattern_cache.delete(id)
@@ -859,22 +818,7 @@ module Services::Categorization
       expenses
     end
 
-    def handle_database_error(expense, error)
-      # Try to provide a degraded response using cache
-      if @lru_cache.keys.any? { |k| k.to_s.start_with?("confidence:#{expense.id}:") }
-        cached_key = @lru_cache.keys.find { |k| k.to_s.start_with?("confidence:#{expense.id}:") }
-        cached_data = @lru_cache.read(cached_key)
-
-        if cached_data
-          return CategorizationResult.new(
-            category: cached_data[:category],
-            confidence: cached_data[:confidence] * 0.8, # Lower confidence for stale data
-            method: "cached_fallback",
-            metadata: { error: error.message }
-          )
-        end
-      end
-
+    def handle_database_error(_expense, _error)
       CategorizationResult.error("Database unavailable")
     end
 
@@ -939,14 +883,12 @@ module Services::Categorization
 
     def default_options
       {
-        use_cache: true,
         check_user_preferences: true,
         include_alternatives: false,
         min_confidence: 0.5,
         max_results: 10,
         max_categories: 5,
-        auto_update: true,
-        skip_cache_preload: false
+        auto_update: true
       }
     end
 
@@ -973,7 +915,6 @@ module Services::Categorization
         confidence_breakdown: best_match[:confidence_score].factor_breakdown,
         alternative_categories: alternatives,
         processing_time_ms: duration_ms,
-        cache_hits: @lru_cache.stats[:hits] || 0,
         method: best_match[:match_type] || "pattern_match",
         metadata: {
           expense_id: expense.id,
@@ -998,14 +939,7 @@ module Services::Categorization
     end
 
     def cache_metrics
-      stats = @lru_cache.stats
       {
-        hits: stats[:hits] || 0,
-        lru_cache: {
-          size: @lru_cache.keys.size,
-          max_size: MAX_PATTERN_CACHE_SIZE,
-          stats: stats
-        },
         pattern_cache: {
           size: @pattern_cache_size.value,
           max_size: MAX_PATTERN_CACHE_SIZE
@@ -1034,8 +968,7 @@ module Services::Categorization
           count: @total_categorizations.value,
           successful: @successful_categorizations.value
         },
-        operations: summary,
-        cache: @lru_cache.stats
+        operations: summary
       }
     end
 
@@ -1081,7 +1014,7 @@ module Services::Categorization
     end
 
     def cache_healthy?
-      @lru_cache.keys.size < MAX_PATTERN_CACHE_SIZE * 0.9
+      @pattern_cache.size < MAX_PATTERN_CACHE_SIZE * 0.9
     end
 
     def performance_within_target?
@@ -1090,8 +1023,7 @@ module Services::Categorization
     end
 
     def memory_usage_mb
-      # Estimate memory usage
-      ((@lru_cache.keys.size + @pattern_cache.size) * 1.0 / 1024).round(2)
+      (@pattern_cache.size * 1.0 / 1024).round(2)
     rescue
       0.0
     end

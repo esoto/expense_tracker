@@ -916,7 +916,7 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
         stub_const("Services::Categorization::PatternCache", class_double("Services::Categorization::PatternCache", instance: cache_instance))
 
         allow(cache_instance).to receive(:invalidate)
-        allow_any_instance_of(CategorizationPattern).to receive(:atomic_cache_increment)
+        allow(pattern).to receive(:atomic_cache_increment)
 
         pattern.send(:invalidate_cache)
 

@@ -47,8 +47,10 @@ module Services::Categorization
 
     class << self
       # Get or create a default instance (for services that haven't migrated to DI yet)
+      # Thread-safe: Mutex prevents concurrent first-access from creating duplicate instances
       def instance
-        @default_instance ||= new
+        @singleton_mutex ||= Mutex.new
+        @singleton_mutex.synchronize { @default_instance ||= new }
       end
 
       # Factory method for creating cache instances

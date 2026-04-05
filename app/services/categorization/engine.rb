@@ -299,9 +299,11 @@ module Services::Categorization
             options.merge(correlation_id: correlation_id)
           )
 
-          # Invalidate affected cache entries only
-          invalidate_relevant_cache(correct_category) if result.success?
-          @pattern_cache_service.invalidate_all if @pattern_cache_service.respond_to?(:invalidate_all)
+          # Invalidate affected cache entries only on success
+          if result.success?
+            invalidate_relevant_cache(correct_category)
+            @pattern_cache_service.invalidate_all if @pattern_cache_service.respond_to?(:invalidate_all)
+          end
 
           result
         end

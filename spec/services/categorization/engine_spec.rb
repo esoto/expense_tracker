@@ -348,19 +348,12 @@ RSpec.describe Services::Categorization::Engine, type: :service do
           .to receive(:learn_from_correction)
           .and_return(failed_result)
 
-        # Record invalidate_all call counts during learning
-        invalidate_call_count = 0
-        allow(pattern_cache).to receive(:invalidate_all) do
-          invalidate_call_count += 1
-        end
+        allow(pattern_cache).to receive(:invalidate_all)
 
         result = engine.learn_from_correction(expense, correct_category, predicted_category)
 
-        # Verify the result is a failure
         expect(result).not_to be_success
-
-        # Verify invalidate_all was not called during learning
-        expect(invalidate_call_count).to eq(0)
+        expect(pattern_cache).not_to have_received(:invalidate_all)
       end
     end
   end

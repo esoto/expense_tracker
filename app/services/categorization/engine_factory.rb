@@ -6,11 +6,12 @@ module Services::Categorization
   # Factory for creating and managing categorization engine instances
   # Replaces singleton pattern with configurable instances for better testing
   class EngineFactory
+    DEFAULT_MUTEX = Mutex.new
+
     class << self
       # Get a shared instance (default behavior)
       def default
-        @default_mutex ||= Mutex.new
-        @default_mutex.synchronize { @default ||= create_engine(:default) }
+        DEFAULT_MUTEX.synchronize { @default ||= create_engine(:default) }
       end
 
       # Create a new engine instance with custom configuration
@@ -26,9 +27,10 @@ module Services::Categorization
 
       # Clear all cached engines (useful for testing)
       def reset!
-        @engines = nil
-        @default = nil
-        @default_mutex = nil
+        DEFAULT_MUTEX.synchronize do
+          @engines = nil
+          @default = nil
+        end
       end
 
       # Get all active engines

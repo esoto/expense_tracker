@@ -220,7 +220,7 @@ RSpec.describe Services::BulkOperations::StatusUpdateService, type: :service, un
 
       it "returns failure when no expenses exist" do
         service = described_class.new(
-          expense_ids: [999_999, 999_998],
+          expense_ids: [ 999_999, 999_998 ],
           status: "processed",
           options: { force_synchronous: true }
         )
@@ -233,7 +233,7 @@ RSpec.describe Services::BulkOperations::StatusUpdateService, type: :service, un
         original_status = expenses.first.status
         fake_id = 999_999
         service = described_class.new(
-          expense_ids: expense_ids + [fake_id],
+          expense_ids: expense_ids + [ fake_id ],
           status: "processed",
           options: { force_synchronous: true }
         )
@@ -375,7 +375,7 @@ RSpec.describe Services::BulkOperations::StatusUpdateService, type: :service, un
 
     it "broadcasts with correct channel name" do
       service = described_class.new(
-        expense_ids: [expenses.first.id],
+        expense_ids: [ expenses.first.id ],
         status: "processed",
         options: { broadcast_updates: true, force_synchronous: true }
       )
@@ -391,7 +391,7 @@ RSpec.describe Services::BulkOperations::StatusUpdateService, type: :service, un
     it "broadcasts with correct payload structure" do
       expense = expenses.first
       service = described_class.new(
-        expense_ids: [expense.id],
+        expense_ids: [ expense.id ],
         status: "processed",
         options: { broadcast_updates: true, force_synchronous: true }
       )
@@ -464,7 +464,7 @@ RSpec.describe Services::BulkOperations::StatusUpdateService, type: :service, un
     it "broadcasts to multiple channels when expenses span email accounts" do
       other_account = create(:email_account)
       other_expense = create(:expense, email_account: other_account, category: category)
-      mixed_ids = expense_ids + [other_expense.id]
+      mixed_ids = expense_ids + [ other_expense.id ]
 
       service = described_class.new(
         expense_ids: mixed_ids,
@@ -564,7 +564,7 @@ RSpec.describe Services::BulkOperations::StatusUpdateService, type: :service, un
     it "returns failures array when individual updates fail" do
       expense = expenses.first
       service = described_class.new(
-        expense_ids: [expense.id],
+        expense_ids: [ expense.id ],
         status: "processed",
         options: { force_synchronous: true }
       )
@@ -572,7 +572,7 @@ RSpec.describe Services::BulkOperations::StatusUpdateService, type: :service, un
       # Mock an individual update to fail
       allow_any_instance_of(Expense).to receive(:update).and_return(false)
       allow_any_instance_of(Expense).to receive(:errors).and_return(
-        double(full_messages: ["Status is invalid"])
+        double(full_messages: [ "Status is invalid" ])
       )
 
       allow_any_instance_of(ActiveRecord::Relation).to receive(:update_all)
@@ -667,7 +667,7 @@ RSpec.describe Services::BulkOperations::StatusUpdateService, type: :service, un
       expense3 = create(:expense, email_account: email_account, category: category, status: "failed")
 
       service = described_class.new(
-        expense_ids: [expense1.id, expense2.id, expense3.id],
+        expense_ids: [ expense1.id, expense2.id, expense3.id ],
         status: "duplicate",
         options: { force_synchronous: true }
       )
@@ -696,7 +696,7 @@ RSpec.describe Services::BulkOperations::StatusUpdateService, type: :service, un
     it "works with single expense" do
       expense = expenses.first
       service = described_class.new(
-        expense_ids: [expense.id],
+        expense_ids: [ expense.id ],
         status: "processed",
         options: { force_synchronous: true }
       )

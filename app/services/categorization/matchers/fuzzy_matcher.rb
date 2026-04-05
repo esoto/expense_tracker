@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "concurrent"
 require "fuzzystringmatch"
 
 module Services::Categorization
@@ -663,8 +664,8 @@ module Services::Categorization
           # Pre-build normalization table for O(1) lookups
           @spanish_normalization = SPANISH_CHARS.dup if @options[:handle_spanish]
 
-          # Cache normalized text to avoid redundant processing
-          @normalization_cache = {}
+          # Cache normalized text to avoid redundant processing (thread-safe)
+          @normalization_cache = Concurrent::Map.new
         end
 
         def normalize(text)
@@ -831,7 +832,7 @@ module Services::Categorization
     def reset!
       @cache&.clear if @options[:enable_caching]
       @metrics_collector = MetricsCollector.new
-      @normalizer.instance_variable_set(:@normalization_cache, {}) if @normalizer
+      @normalizer.instance_variable_set(:@normalization_cache, Concurrent::Map.new) if @normalizer
       @healthy = nil
       Rails.logger.info "[FuzzyMatcher] Service reset completed"
     rescue => e

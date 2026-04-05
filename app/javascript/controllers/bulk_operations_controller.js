@@ -311,14 +311,15 @@ export default class extends Controller {
     const baseData = {
       expense_ids: this.selectedIdsValue
     }
-    
+
     switch (operation) {
       case 'categorize':
         return {
-          endpoint: '/expenses/bulk_categorize',
+          endpoint: '/bulk_categorizations/categorize',
           data: {
             ...baseData,
-            category_id: this.categorySelectTarget.value
+            category_id: this.categorySelectTarget.value,
+            track_ml_corrections: true
           }
         }
       case 'status':
@@ -383,34 +384,41 @@ export default class extends Controller {
    * Handle successful operation
    */
   handleSuccess(result) {
+    // Normalize response format for different endpoints
+    // Path B (new) returns: { success: true, updated_count, failed_count, errors, undo_operation_id }
+    // Path A (old) returns: { success: true, message, affected_count, failures, background, job_id }
+    const affectedCount = result.affected_count || result.updated_count || this.selectedCountValue
+    const failures = result.failures || (result.errors && result.errors.length > 0 ? result.errors.map((e, i) => ({ id: i, error: e })) : [])
+    const message = result.message || 'Operación completada exitosamente'
+
     // Update progress to 100%
-    this.updateProgress(100, result.message || 'Operación completada exitosamente')
-    
+    this.updateProgress(100, message)
+
     // Show success message
     if (this.hasSuccessMessageTarget) {
       const messageElement = this.successMessageTarget.querySelector('p')
       if (messageElement) {
-        messageElement.textContent = result.message || 'Operación completada exitosamente'
+        messageElement.textContent = message
       } else {
-        this.successMessageTarget.textContent = result.message || 'Operación completada exitosamente'
+        this.successMessageTarget.textContent = message
       }
       this.successMessageTarget.classList.remove('hidden')
     }
-    
+
     // Handle partial failures if any
-    if (result.failures && result.failures.length > 0) {
-      this.showPartialErrors(result.failures)
+    if (failures && failures.length > 0) {
+      this.showPartialErrors(failures)
     }
-    
+
     // Dispatch success event
     this.dispatch('operationCompleted', {
       detail: {
         operation: this.currentOperationValue,
-        affectedCount: result.affected_count || this.selectedCountValue,
-        failures: result.failures || []
+        affectedCount: affectedCount,
+        failures: failures
       }
     })
-    
+
     // Clear selection in batch selection controller
     document.dispatchEvent(new CustomEvent('bulk-operations:completed', {
       detail: {
@@ -418,11 +426,11 @@ export default class extends Controller {
         success: true
       }
     }))
-    
+
     // Close modal after delay
     setTimeout(() => {
       this.close()
-      
+
       // Reload the page or update via Turbo
       if (result.reload) {
         window.location.reload()

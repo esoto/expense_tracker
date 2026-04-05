@@ -491,6 +491,169 @@ RSpec.describe Services::Categorization::BulkCategorizationService, type: :servi
     end
   end
 
+  describe "ActionCable broadcasting" do
+    let(:email_account) { create(:email_account) }
+    let(:category) { create(:category, name: "Food & Dining") }
+    let(:expenses) { create_list(:expense, 2, email_account: email_account, category: nil) }
+    let(:broadcast_options) { { broadcast_updates: true } }
+
+    before do
+      allow(ActionCable.server).to receive(:broadcast)
+    end
+
+    describe "#apply! broadcasts after successful categorization", :unit do
+      subject(:service) { described_class.new(expenses: expenses, category_id: category.id, options: broadcast_options) }
+
+      it "broadcasts to expenses channel for each categorized expense" do
+        service.apply!
+
+        expenses.each do |expense|
+          expect(ActionCable.server).to have_received(:broadcast).with(
+            "expenses_#{expense.email_account_id}",
+            hash_including(
+              action: "categorized",
+              expense_id: expense.id
+            )
+          )
+        end
+      end
+
+      it "includes category_id and category_name in broadcast payload" do
+        service.apply!
+
+        expect(ActionCable.server).to have_received(:broadcast).with(
+          anything,
+          hash_including(
+            category_id: category.id,
+            category_name: category.name
+          )
+        ).at_least(:once)
+      end
+
+      it "does not broadcast when no expenses are selected" do
+        empty_service = described_class.new(expenses: [], category_id: category.id, options: broadcast_options)
+        empty_service.apply!
+
+        expect(ActionCable.server).not_to have_received(:broadcast)
+      end
+
+      it "does not broadcast when broadcast_updates option is not set" do
+        service_without_broadcast = described_class.new(expenses: expenses, category_id: category.id)
+        service_without_broadcast.apply!
+
+        expect(ActionCable.server).not_to have_received(:broadcast)
+      end
+
+      it "broadcasts for a single expense" do
+        single_expense = create(:expense, email_account: email_account, category: nil)
+        single_service = described_class.new(expenses: [ single_expense ], category_id: category.id, options: broadcast_options)
+
+        single_service.apply!
+
+        expect(ActionCable.server).to have_received(:broadcast).once
+      end
+    end
+
+    describe "#categorize_all broadcasts after success", :unit do
+      subject(:service) { described_class.new(expenses: expenses, category_id: category.id, options: broadcast_options) }
+
+      it "broadcasts to expenses channel for each categorized expense" do
+        service.categorize_all
+
+        expenses.each do |expense|
+          expect(ActionCable.server).to have_received(:broadcast).with(
+            "expenses_#{expense.email_account_id}",
+            hash_including(
+              action: "categorized",
+              expense_id: expense.id
+            )
+          )
+        end
+      end
+
+      it "does not broadcast when no expenses are categorized" do
+        empty_service = described_class.new(expenses: [], category_id: category.id, options: broadcast_options)
+        empty_service.categorize_all
+
+        expect(ActionCable.server).not_to have_received(:broadcast)
+      end
+
+      it "does not broadcast when broadcast_updates option is not set" do
+        service_without_broadcast = described_class.new(expenses: expenses, category_id: category.id)
+        service_without_broadcast.categorize_all
+
+        expect(ActionCable.server).not_to have_received(:broadcast)
+      end
+
+      it "only broadcasts for successfully categorized expenses" do
+        good_expense = create(:expense, email_account: email_account, category: nil)
+        bad_expense = create(:expense, email_account: email_account, category: nil)
+        allow(bad_expense).to receive(:update).and_return(false)
+        allow(bad_expense).to receive(:errors).and_return(double(full_messages: [ "Invalid" ]))
+
+        mixed_service = described_class.new(
+          expenses: [ good_expense, bad_expense ],
+          category_id: category.id,
+          options: broadcast_options
+        )
+        mixed_service.categorize_all
+
+        expect(ActionCable.server).to have_received(:broadcast).with(
+          "expenses_#{good_expense.email_account_id}",
+          hash_including(expense_id: good_expense.id)
+        )
+        expect(ActionCable.server).not_to have_received(:broadcast).with(
+          anything,
+          hash_including(expense_id: bad_expense.id)
+        )
+      end
+    end
+
+    describe "broadcast failure does not fail the categorization", :unit do
+      subject(:service) { described_class.new(expenses: expenses, category_id: category.id, options: broadcast_options) }
+
+      it "apply! still returns success when broadcast raises" do
+        allow(ActionCable.server).to receive(:broadcast).and_raise(StandardError, "Cable down")
+
+        result = service.apply!
+
+        expect(result[:success]).to be true
+        expect(result[:updated_count]).to eq(expenses.size)
+      end
+
+      it "categorize_all still returns success count when broadcast raises" do
+        allow(ActionCable.server).to receive(:broadcast).and_raise(StandardError, "Cable down")
+
+        result = service.categorize_all
+
+        expect(result[:success_count]).to eq(expenses.size)
+        expect(result[:failures]).to be_empty
+      end
+
+      it "logs a warning per failed broadcast" do
+        allow(ActionCable.server).to receive(:broadcast).and_raise(StandardError, "Cable down")
+        allow(Rails.logger).to receive(:warn)
+
+        service.apply!
+
+        expect(Rails.logger).to have_received(:warn).with(/Failed to broadcast categorization update/).at_least(:once)
+      end
+
+      it "continues broadcasting remaining expenses when one fails" do
+        call_count = 0
+        allow(ActionCable.server).to receive(:broadcast) do
+          call_count += 1
+          raise StandardError, "Cable down" if call_count == 1
+        end
+        allow(Rails.logger).to receive(:warn)
+
+        service.apply!
+
+        expect(ActionCable.server).to have_received(:broadcast).twice
+      end
+    end
+  end
+
   describe "#store_bulk_operation", :unit do
     let(:email_account) { create(:email_account) }
     let(:category) { create(:category, name: "Test Category") }

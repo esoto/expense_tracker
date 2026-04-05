@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_31_232426) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_05_073713) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -325,18 +325,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_31_232426) do
     t.text "error_message", null: false
     t.string "error_type", null: false
     t.datetime "failed_at", null: false
+    t.string "job_id"
     t.string "priority", default: "medium", null: false
     t.datetime "recovered_at"
     t.text "recovery_notes"
     t.integer "retry_count", default: 0, null: false
-    t.string "sidekiq_job_id"
     t.bigint "target_id", null: false
     t.string "target_type", null: false
     t.datetime "updated_at", null: false
     t.index ["channel_name", "priority"], name: "idx_failed_broadcasts_channel_priority"
     t.index ["error_type"], name: "idx_failed_broadcasts_error_type"
     t.index ["failed_at", "recovered_at"], name: "idx_failed_broadcasts_status"
-    t.index ["sidekiq_job_id"], name: "idx_failed_broadcasts_job_id", unique: true
+    t.index ["job_id"], name: "idx_failed_broadcasts_job_id", unique: true
     t.index ["target_type", "target_id"], name: "idx_failed_broadcasts_target"
   end
 

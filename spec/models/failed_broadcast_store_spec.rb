@@ -25,16 +25,16 @@ RSpec.describe FailedBroadcastStore, type: :model do
     it { should validate_inclusion_of(:priority).in_array(described_class::PRIORITIES) }
     it { should validate_inclusion_of(:error_type).in_array(described_class::ERROR_TYPES) }
 
-    it 'validates uniqueness of sidekiq_job_id when present' do
-      create(:failed_broadcast_store, sidekiq_job_id: 'unique_job_id')
-      duplicate = build(:failed_broadcast_store, sidekiq_job_id: 'unique_job_id')
+    it 'validates uniqueness of job_id when present' do
+      create(:failed_broadcast_store, job_id: 'unique_job_id')
+      duplicate = build(:failed_broadcast_store, job_id: 'unique_job_id')
 
       expect(duplicate).not_to be_valid
-      expect(duplicate.errors[:sidekiq_job_id]).to include('ya está en uso')
+      expect(duplicate.errors[:job_id]).to include('ya está en uso')
     end
 
-    it 'allows nil sidekiq_job_id' do
-      record = build(:failed_broadcast_store, sidekiq_job_id: nil)
+    it 'allows nil job_id' do
+      record = build(:failed_broadcast_store, job_id: nil)
       expect(record).to be_valid
     end
 
@@ -151,7 +151,7 @@ RSpec.describe FailedBroadcastStore, type: :model do
         error_type: 'record_not_found',
         error_message: 'Record not found',
         retry_count: 2,
-        sidekiq_job_id: 'job123'
+        job_id: 'job123'
       )
       expect(record.failed_at).to be_within(1.second).of(Time.current)
     end

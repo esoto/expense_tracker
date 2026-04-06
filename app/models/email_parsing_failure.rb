@@ -6,6 +6,6 @@ class EmailParsingFailure < ApplicationRecord
   private
 
   def error_messages_not_nil
-    errors.add(:error_messages, "must not be nil") if error_messages.nil?
+    errors.add(:error_messages, "must be an array") unless error_messages.is_a?(Array)
   end
 end

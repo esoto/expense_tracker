@@ -8,6 +8,7 @@ pin_all_from "app/javascript/controllers", under: "controllers"
 pin_all_from "app/javascript/utilities", under: "utilities"
 pin "@rails/actioncable", to: "actioncable.esm.js"
 pin "services/sync_cable_consumer", to: "services/sync_cable_consumer.js"
+pin "mixins/sync_channel_mixin", to: "mixins/sync_channel_mixin.js"
 pin "progress_throttler", to: "progress_throttler.js"
 pin "chart.js", to: "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm"
 # chartjs-adapter-date-fns is NOT pinned here.

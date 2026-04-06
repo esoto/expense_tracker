@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
-import { getSharedConsumer } from "services/sync_cable_consumer"
+import { syncChannelMixin } from "mixins/sync_channel_mixin"
 
-export default class extends Controller {
+class SyncSessionDetailController extends Controller {
   static targets = [
     "progressBar",
     "progressPercentage",
@@ -14,7 +14,7 @@ export default class extends Controller {
     "accountProcessed",
     "accountDetected"
   ]
-  
+
   static values = {
     sessionId: Number,
     active: Boolean
@@ -27,69 +27,7 @@ export default class extends Controller {
   }
 
   disconnect() {
-    if (this.subscription) {
-      this.subscription.unsubscribe()
-      this.subscription = null
-    }
-    // Release consumer reference (shared consumer stays alive for other controllers)
-    this.consumer = null
-  }
-
-  subscribeToChannel() {
-    if (!this.consumer) {
-      this.consumer = getSharedConsumer()
-    }
-    
-    try {
-      this.subscription = this.consumer.subscriptions.create(
-        { 
-          channel: "SyncStatusChannel",
-          session_id: this.sessionIdValue
-        },
-        {
-          connected: () => {
-            // Connection established
-          },
-
-          disconnected: () => {
-            // Connection lost
-          },
-
-          received: (data) => {
-            this.handleUpdate(data)
-          },
-          
-          rejected: () => {
-            console.error("❌ Subscription rejected by server")
-          }
-        }
-      )
-    } catch (error) {
-      console.error("Error creating subscription:", error)
-    }
-  }
-
-  handleUpdate(data) {
-    switch(data.type) {
-      case 'initial_status':
-        // Just update the UI, don't trigger any actions
-        this.updateStatus(data)
-        break
-      case 'progress_update':
-        this.updateProgress(data)
-        break
-      case 'account_update':
-        this.updateAccount(data)
-        break
-      case 'completed':
-        this.handleCompletion(data)
-        break
-      case 'failed':
-        this.handleFailure(data)
-        break
-      default:
-        this.updateStatus(data)
-    }
+    this.disconnectChannel()
   }
 
   updateProgress(data) {
@@ -97,7 +35,7 @@ export default class extends Controller {
     if (this.hasProgressBarTarget) {
       const percentage = data.progress_percentage || 0
       this.progressBarTarget.style.width = `${percentage}%`
-      
+
       // Update inline percentage if bar is wide enough
       const percentageSpan = this.progressBarTarget.querySelector('span')
       if (percentageSpan) {
@@ -130,7 +68,7 @@ export default class extends Controller {
     // Find account elements by data-account-id
     const accountSelector = `[data-account-id="${data.account_id}"]`
     const accountElement = document.querySelector(accountSelector)
-    
+
     if (!accountElement) {
       return
     }
@@ -138,10 +76,10 @@ export default class extends Controller {
     // Update status badge
     const statusBadge = accountElement.querySelector('[data-account-status]')
     if (statusBadge) {
-      const statusText = data.status === 'processing' ? 'Procesando' : 
+      const statusText = data.status === 'processing' ? 'Procesando' :
                         data.status === 'completed' ? 'Completado' :
                         data.status === 'failed' ? 'Error' : data.status
-      
+
       statusBadge.textContent = statusText
       statusBadge.className = `px-3 py-1 rounded-full text-xs font-medium ${
         data.status === 'completed' ? 'bg-emerald-100 text-emerald-800' :
@@ -172,83 +110,37 @@ export default class extends Controller {
     }
   }
 
-  updateStatus(data) {
-    if (data.status) {
-      this.updateProgress(data)
-      
-      if (data.accounts && Array.isArray(data.accounts)) {
-        data.accounts.forEach(account => {
-          this.updateAccount(account)
-        })
-      }
-    }
-  }
-
   handleCompletion(data) {
-    
+
     // Update final progress
     this.updateProgress(data)
-    
+
     // Show completion notification
     this.showNotification("Sincronización completada exitosamente", "success")
-    
+
     // Update status badge
     const statusBadge = document.querySelector('[data-sync-status]')
     if (statusBadge) {
       statusBadge.className = 'px-3 py-1 rounded-full text-sm font-medium inline-flex items-center bg-emerald-100 text-emerald-800'
       statusBadge.textContent = 'Completado'
     }
-    
+
     // Don't reload - let user see the final state
   }
 
   handleFailure(data) {
-    
+
     // Show error notification
     this.showNotification(`Error en sincronización: ${data.error || 'Error desconocido'}`, "error")
-    
+
     // Update UI to show error state
     if (this.hasProgressBarTarget) {
       this.progressBarTarget.classList.remove('from-teal-500', 'to-emerald-500')
       this.progressBarTarget.classList.add('from-rose-500', 'to-rose-600')
     }
   }
-
-  showNotification(message, type = 'info') {
-    const notification = document.createElement('div')
-    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 ${
-      type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-      type === 'error' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
-      'bg-slate-50 text-slate-700 border border-slate-200'
-    }`
-    const flexDiv = document.createElement('div')
-    flexDiv.className = 'flex items-center'
-    const messageSpan = document.createElement('span')
-    messageSpan.textContent = message
-    const closeBtn = document.createElement('button')
-    closeBtn.className = 'ml-4 text-current opacity-70 hover:opacity-100'
-    closeBtn.addEventListener('click', () => notification.remove())
-    const closeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-    closeSvg.setAttribute('class', 'w-4 h-4')
-    closeSvg.setAttribute('fill', 'none')
-    closeSvg.setAttribute('stroke', 'currentColor')
-    closeSvg.setAttribute('viewBox', '0 0 24 24')
-    const closePath = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-    closePath.setAttribute('stroke-linecap', 'round')
-    closePath.setAttribute('stroke-linejoin', 'round')
-    closePath.setAttribute('stroke-width', '2')
-    closePath.setAttribute('d', 'M6 18L18 6M6 6l12 12')
-    closeSvg.appendChild(closePath)
-    closeBtn.appendChild(closeSvg)
-    flexDiv.appendChild(messageSpan)
-    flexDiv.appendChild(closeBtn)
-    notification.appendChild(flexDiv)
-    
-    document.body.appendChild(notification)
-    
-    setTimeout(() => {
-      notification.style.opacity = '0'
-      setTimeout(() => notification.remove(), 300)
-    }, 5000)
-  }
 }
+
+Object.assign(SyncSessionDetailController.prototype, syncChannelMixin)
+
+export default SyncSessionDetailController

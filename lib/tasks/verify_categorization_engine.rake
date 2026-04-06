@@ -56,12 +56,12 @@ namespace :categorization do
     # 4. Engine shutdown doesn't kill shared pool
     print "4. Engine shutdown preserves pool... "
     begin
-      test_engine = Services::Categorization::Engine.new
+      test_engine = Services::Categorization::Engine.create
       pool_before = Services::Categorization::Engine.shared_thread_pool
       test_engine.shutdown!
       raise "Pool stopped running!" unless pool_before.running?
       # Create new engine after shutdown — should work
-      new_engine = Services::Categorization::Engine.new
+      new_engine = Services::Categorization::Engine.create
       new_pool = new_engine.instance_variable_get(:@thread_pool)
       raise "New engine got dead pool!" unless new_pool.running?
       puts "PASS (pool survives engine shutdown)"

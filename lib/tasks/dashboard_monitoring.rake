@@ -3,7 +3,7 @@
 namespace :dashboard do
   desc "Display current dashboard metrics using the configured strategy"
   task metrics: :environment do
-    adapter = Categorization::Monitoring::DashboardAdapter.new
+    adapter = Services::Categorization::Monitoring::DashboardAdapter.new
 
     puts "="*60
     puts "Dashboard Metrics Report"
@@ -49,8 +49,8 @@ namespace :dashboard do
     puts "Dashboard Strategy Performance Comparison"
     puts "="*60
 
-    original = Categorization::Monitoring::DashboardAdapter.new(strategy_override: :original)
-    optimized = Categorization::Monitoring::DashboardAdapter.new(strategy_override: :optimized)
+    original = Services::Categorization::Monitoring::DashboardAdapter.new(strategy_override: :original)
+    optimized = Services::Categorization::Monitoring::DashboardAdapter.new(strategy_override: :optimized)
 
     # Warm up caches
     original.metrics_summary
@@ -107,7 +107,7 @@ namespace :dashboard do
     puts "Switching dashboard strategy to: #{strategy}"
     puts "Set DASHBOARD_STRATEGY=#{strategy} in your environment to make this permanent"
 
-    adapter = Categorization::Monitoring::DashboardAdapter.new(strategy_override: strategy)
+    adapter = Services::Categorization::Monitoring::DashboardAdapter.new(strategy_override: strategy)
 
     puts "\nTesting new strategy..."
     start_time = Time.current

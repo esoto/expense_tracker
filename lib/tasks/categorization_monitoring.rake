@@ -7,7 +7,7 @@ namespace :categorization do
       puts "\n🏥 Categorization System Health Check"
       puts "=" * 50
 
-      health_check = Categorization::Monitoring::HealthCheck.new
+      health_check = Services::Categorization::Monitoring::HealthCheck.new
       result = health_check.check_all
 
       # Overall status
@@ -78,7 +78,7 @@ namespace :categorization do
       puts "\n📈 Categorization Monitoring Dashboard"
       puts "=" * 50
 
-      metrics = Categorization::Monitoring::DashboardHelper.metrics_summary
+      metrics = Services::Categorization::Monitoring::DashboardHelper.metrics_summary
 
       # Health Summary
       puts "\n🏥 Health Status:"
@@ -160,9 +160,9 @@ namespace :categorization do
       puts "\n🧪 Testing Metrics Collection"
       puts "=" * 50
 
-      collector = Categorization::Monitoring::MetricsCollector.instance
+      collector = Services::Categorization::Monitoring::MetricsCollector.instance
 
-      if collector.enabled?
+      if collector.respond_to?(:enabled?, true) && collector.send(:enabled?)
         puts "✅ Metrics collector is enabled"
 
         # Test categorization tracking

@@ -22,7 +22,7 @@ module Services::EmailProcessing
         parsed_data = if @pre_parsed_data
           # Convert amount back from String to BigDecimal (serialized as String
           # in Processor to avoid ActiveJob Float rounding on financial values)
-          @pre_parsed_data.merge(amount: BigDecimal(@pre_parsed_data[:amount].to_s))
+          @pre_parsed_data.merge(amount: @pre_parsed_data[:amount] ? BigDecimal(@pre_parsed_data[:amount].to_s) : nil)
         else
           strategy = Services::EmailProcessing::StrategyFactory.create_strategy(parsing_rule, email_content: email_content)
           strategy.parse_email(email_content)

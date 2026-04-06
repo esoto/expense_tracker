@@ -25,6 +25,7 @@
 **Security scan:** `bundle exec brakeman`
 
 **Notes:**
+- NEVER push directly to main. ALL code changes go through a PR — no exceptions, not even 1-line hotfixes. Create a branch, commit, push, open PR, review, then merge.
 - NEVER use `--no-verify` to bypass pre-commit hook. Hook failure = commit did NOT happen — fix, re-stage, new commit (do NOT amend).
 - Design system: Financial Confidence palette — `teal-*` (primary), `amber-*` (warning), `rose-*` (error), `emerald-*` (success), `slate-*` (neutrals). NEVER use `blue-*`, `gray-*`, `red-*`, `yellow-*`, or `green-*`. Full palette: `.claude/context/frontend/design-system.md`
 

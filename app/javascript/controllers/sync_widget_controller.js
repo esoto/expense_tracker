@@ -696,35 +696,64 @@ export default class extends Controller {
   }
 
   updateStatusIcon(element, status) {
-    // Clear existing content
-    element.innerHTML = ''
-    
+    element.textContent = ''
+
+    const svgNS = 'http://www.w3.org/2000/svg'
+
     switch(status) {
       case 'processing':
-      case 'running':
-        element.innerHTML = `
-          <svg aria-hidden="true" class="animate-spin h-4 w-4 text-teal-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-        `
+      case 'running': {
+        const svg = document.createElementNS(svgNS, 'svg')
+        svg.setAttribute('aria-hidden', 'true')
+        svg.setAttribute('class', 'animate-spin h-4 w-4 text-teal-700')
+        svg.setAttribute('fill', 'none')
+        svg.setAttribute('viewBox', '0 0 24 24')
+        const circle = document.createElementNS(svgNS, 'circle')
+        circle.setAttribute('class', 'opacity-25')
+        circle.setAttribute('cx', '12'); circle.setAttribute('cy', '12')
+        circle.setAttribute('r', '10')
+        circle.setAttribute('stroke', 'currentColor')
+        circle.setAttribute('stroke-width', '4')
+        const path = document.createElementNS(svgNS, 'path')
+        path.setAttribute('class', 'opacity-75')
+        path.setAttribute('fill', 'currentColor')
+        path.setAttribute('d', 'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z')
+        svg.appendChild(circle)
+        svg.appendChild(path)
+        element.appendChild(svg)
         break
-      case 'completed':
-        element.innerHTML = `
-          <svg aria-hidden="true" class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-          </svg>
-        `
+      }
+      case 'completed': {
+        const svg = document.createElementNS(svgNS, 'svg')
+        svg.setAttribute('aria-hidden', 'true')
+        svg.setAttribute('class', 'h-4 w-4 text-emerald-600')
+        svg.setAttribute('fill', 'none'); svg.setAttribute('stroke', 'currentColor')
+        svg.setAttribute('viewBox', '0 0 24 24')
+        const path = document.createElementNS(svgNS, 'path')
+        path.setAttribute('stroke-linecap', 'round'); path.setAttribute('stroke-linejoin', 'round')
+        path.setAttribute('stroke-width', '2'); path.setAttribute('d', 'M5 13l4 4L19 7')
+        svg.appendChild(path)
+        element.appendChild(svg)
         break
-      case 'failed':
-        element.innerHTML = `
-          <svg aria-hidden="true" class="h-4 w-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        `
+      }
+      case 'failed': {
+        const svg = document.createElementNS(svgNS, 'svg')
+        svg.setAttribute('aria-hidden', 'true')
+        svg.setAttribute('class', 'h-4 w-4 text-rose-600')
+        svg.setAttribute('fill', 'none'); svg.setAttribute('stroke', 'currentColor')
+        svg.setAttribute('viewBox', '0 0 24 24')
+        const path = document.createElementNS(svgNS, 'path')
+        path.setAttribute('stroke-linecap', 'round'); path.setAttribute('stroke-linejoin', 'round')
+        path.setAttribute('stroke-width', '2'); path.setAttribute('d', 'M6 18L18 6M6 6l12 12')
+        svg.appendChild(path)
+        element.appendChild(svg)
         break
-      default:
-        element.innerHTML = `<div class="h-4 w-4 rounded-full bg-slate-300"></div>`
+      }
+      default: {
+        const dot = document.createElement('div')
+        dot.className = 'h-4 w-4 rounded-full bg-slate-300'
+        element.appendChild(dot)
+      }
     }
   }
 
@@ -787,25 +816,37 @@ export default class extends Controller {
     
     // Update button UI
     if (this.hasPauseButtonTarget) {
-      this.pauseButtonTarget.innerHTML = `
-        <svg aria-hidden="true" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-        Reanudar
-      `
+      this.pauseButtonTarget.textContent = ''
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+      svg.setAttribute('aria-hidden', 'true')
+      svg.setAttribute('class', 'w-4 h-4 mr-1.5')
+      svg.setAttribute('fill', 'none'); svg.setAttribute('stroke', 'currentColor')
+      svg.setAttribute('viewBox', '0 0 24 24')
+      const path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+      path1.setAttribute('stroke-linecap', 'round'); path1.setAttribute('stroke-linejoin', 'round')
+      path1.setAttribute('stroke-width', '2')
+      path1.setAttribute('d', 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z')
+      const path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+      path2.setAttribute('stroke-linecap', 'round'); path2.setAttribute('stroke-linejoin', 'round')
+      path2.setAttribute('stroke-width', '2')
+      path2.setAttribute('d', 'M21 12a9 9 0 11-18 0 9 9 0 0118 0z')
+      svg.appendChild(path1); svg.appendChild(path2)
+      this.pauseButtonTarget.appendChild(svg)
+      this.pauseButtonTarget.appendChild(document.createTextNode('Reanudar'))
       this.pauseButtonTarget.classList.add('bg-amber-50', 'border-amber-300', 'text-amber-700')
       this.pauseButtonTarget.classList.remove('bg-white', 'border-slate-300', 'text-slate-700')
     }
-    
+
     // Update status text
     if (this.hasStatusTextTarget) {
-      this.statusTextTarget.innerHTML = `
-        <span class="inline-flex items-center">
-          <span class="w-2 h-2 bg-amber-500 rounded-full mr-2"></span>
-          Sincronización pausada
-        </span>
-      `
+      this.statusTextTarget.textContent = ''
+      const span = document.createElement('span')
+      span.className = 'inline-flex items-center'
+      const dot = document.createElement('span')
+      dot.className = 'w-2 h-2 bg-amber-500 rounded-full mr-2'
+      span.appendChild(dot)
+      span.appendChild(document.createTextNode('Sincronización pausada'))
+      this.statusTextTarget.appendChild(span)
     }
     
     // Send pause command to server
@@ -825,24 +866,33 @@ export default class extends Controller {
     
     // Update button UI
     if (this.hasPauseButtonTarget) {
-      this.pauseButtonTarget.innerHTML = `
-        <svg aria-hidden="true" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-        Pausar
-      `
+      this.pauseButtonTarget.textContent = ''
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+      svg.setAttribute('aria-hidden', 'true')
+      svg.setAttribute('class', 'w-4 h-4 mr-1.5')
+      svg.setAttribute('fill', 'none'); svg.setAttribute('stroke', 'currentColor')
+      svg.setAttribute('viewBox', '0 0 24 24')
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+      path.setAttribute('stroke-linecap', 'round'); path.setAttribute('stroke-linejoin', 'round')
+      path.setAttribute('stroke-width', '2')
+      path.setAttribute('d', 'M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z')
+      svg.appendChild(path)
+      this.pauseButtonTarget.appendChild(svg)
+      this.pauseButtonTarget.appendChild(document.createTextNode('Pausar'))
       this.pauseButtonTarget.classList.remove('bg-amber-50', 'border-amber-300', 'text-amber-700')
       this.pauseButtonTarget.classList.add('bg-white', 'border-slate-300', 'text-slate-700')
     }
-    
+
     // Update status text
     if (this.hasStatusTextTarget) {
-      this.statusTextTarget.innerHTML = `
-        <span class="inline-flex items-center">
-          <span class="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></span>
-          Sincronización en progreso
-        </span>
-      `
+      this.statusTextTarget.textContent = ''
+      const span = document.createElement('span')
+      span.className = 'inline-flex items-center'
+      const dot = document.createElement('span')
+      dot.className = 'w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse'
+      span.appendChild(dot)
+      span.appendChild(document.createTextNode('Sincronización en progreso'))
+      this.statusTextTarget.appendChild(span)
     }
     
     // Send resume command to server
@@ -1236,12 +1286,20 @@ export default class extends Controller {
     const indicator = document.createElement('div')
     indicator.id = 'polling-indicator'
     indicator.className = 'fixed bottom-4 left-4 px-3 py-2 bg-amber-100 text-amber-700 rounded-lg text-sm flex items-center space-x-2 shadow-sm border border-amber-200'
-    indicator.innerHTML = `
-      <svg aria-hidden="true" class="animate-pulse h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-      </svg>
-      <span>Modo de actualización periódica</span>
-    `
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    svg.setAttribute('aria-hidden', 'true')
+    svg.setAttribute('class', 'animate-pulse h-4 w-4')
+    svg.setAttribute('fill', 'none'); svg.setAttribute('stroke', 'currentColor')
+    svg.setAttribute('viewBox', '0 0 24 24')
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    path.setAttribute('stroke-linecap', 'round'); path.setAttribute('stroke-linejoin', 'round')
+    path.setAttribute('stroke-width', '2')
+    path.setAttribute('d', 'M13 10V3L4 14h7v7l9-11h-7z')
+    svg.appendChild(path)
+    const textSpan = document.createElement('span')
+    textSpan.textContent = 'Modo de actualización periódica'
+    indicator.appendChild(svg)
+    indicator.appendChild(textSpan)
     
     // Remove existing indicator if present
     const existing = document.getElementById('polling-indicator')

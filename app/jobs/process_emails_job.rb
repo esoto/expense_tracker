@@ -148,5 +148,4 @@ class ProcessEmailsJob < ApplicationJob
       end
     end
   end
-
 end

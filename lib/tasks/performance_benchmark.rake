@@ -157,29 +157,23 @@ namespace :performance do
 
   private
 
-  def create_test_expenses
-    # Create or fetch test expenses
-    expenses = []
-
-    if Expense.count > 100
-      expenses = Expense.limit(100).to_a
-    else
-      # Create test expenses
-      categories = Category.limit(5).to_a
-      categories = [ Category.create!(name: "Test Category") ] if categories.empty?
-
-      100.times do |i|
-        expenses << Expense.create!(
-          description: "Test expense #{i} - #{[ 'grocery', 'restaurant', 'gas', 'utilities' ].sample}",
-          amount: rand(10.0..500.0),
-          transaction_date: Date.current - rand(1..30).days,
-          category: categories.sample,
-          source: "test"
-        )
-      end
+  def create_test_expenses(count = 100)
+    if Expense.count >= count
+      return Expense.limit(count).to_a
     end
 
-    expenses
+    categories = Category.limit(5).to_a
+    categories = [ Category.create!(name: "Test Category") ] if categories.empty?
+
+    count.times.map do |i|
+      Expense.create!(
+        description: "Test expense #{i} - #{[ 'grocery', 'restaurant', 'gas', 'utilities' ].sample}",
+        amount: rand(10.0..500.0),
+        transaction_date: Date.current - rand(1..30).days,
+        category: categories.sample,
+        source: "test"
+      )
+    end
   end
 
   def create_test_expense

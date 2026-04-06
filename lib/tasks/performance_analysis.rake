@@ -36,7 +36,7 @@ namespace :categorization do
     create_test_patterns(categories)
     expenses = create_test_expenses(1000)
 
-    engine = Services::Categorization::Engine.new
+    engine = Services::Categorization::Engine.create
 
     report = MemoryProfiler.report do
       expenses.each { |expense| engine.categorize(expense) }
@@ -226,7 +226,7 @@ namespace :categorization do
     create_test_patterns(categories)
     expenses = create_test_expenses(100)
 
-    engine = Services::Categorization::Engine.new
+    engine = Services::Categorization::Engine.create
 
     require "benchmark"
 

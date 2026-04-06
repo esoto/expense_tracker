@@ -149,14 +149,4 @@ class ProcessEmailsJob < ApplicationJob
     end
   end
 
-  def process_all_accounts_in_batches(since)
-    EmailAccount.active.find_in_batches(batch_size: 5) do |batch|
-      batch.each do |email_account|
-        ProcessEmailsJob.perform_later(email_account.id, since: since)
-      end
-
-      # Prevent IMAP server overload
-      sleep(1) if batch.size == 5
-    end
-  end
 end

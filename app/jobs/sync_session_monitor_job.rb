@@ -1,5 +1,5 @@
 class SyncSessionMonitorJob < ApplicationJob
-  queue_as :default
+  queue_as :email_processing
 
   def perform(sync_session_id)
     sync_session = SyncSession.find_by(id: sync_session_id)
@@ -10,6 +10,13 @@ class SyncSessionMonitorJob < ApplicationJob
 
     # Don't monitor if already completed or failed
     return unless sync_session.running?
+
+    # Timeout: force-fail sessions running longer than 30 minutes
+    if sync_session.started_at && sync_session.started_at < 30.minutes.ago
+      sync_session.fail!("Sync timed out after 30 minutes")
+      Rails.logger.warn "Sync session #{sync_session_id} force-failed: exceeded 30-minute timeout"
+      return
+    end
 
     # Check if all accounts are processed
     accounts = sync_session.sync_session_accounts

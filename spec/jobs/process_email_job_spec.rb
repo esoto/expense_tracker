@@ -243,8 +243,8 @@ RSpec.describe ProcessEmailJob, type: :job, integration: true do
   end
 
   describe 'job queue configuration', integration: true do
-    it 'uses the default queue' do
-      expect(ProcessEmailJob.new.queue_name).to eq('default')
+    it 'uses the email_processing queue' do
+      expect(ProcessEmailJob.new.queue_name).to eq('email_processing')
     end
   end
 

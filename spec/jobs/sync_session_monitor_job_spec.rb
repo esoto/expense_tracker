@@ -4,7 +4,7 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
   include ActiveJob::TestHelper
 
   let(:sync_session_id) { 123 }
-  let(:sync_session) { instance_double(SyncSession, id: sync_session_id) }
+  let(:sync_session) { instance_double(SyncSession, id: sync_session_id, started_at: nil) }
   let(:sync_session_accounts) { [] }
   let(:logger) { instance_double(ActiveSupport::Logger) }
 
@@ -12,6 +12,7 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
     allow(Rails).to receive(:logger).and_return(logger)
     allow(logger).to receive(:info)
     allow(logger).to receive(:error)
+    allow(logger).to receive(:warn)
   end
 
   describe '#perform' do
@@ -121,6 +122,54 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
 
         it 'continues to process accounts', unit: true do
           expect(sync_session).to receive(:sync_session_accounts)
+          subject.perform(sync_session_id)
+        end
+      end
+    end
+
+    describe 'timeout handling' do
+      before do
+        allow(SyncSession).to receive(:find_by).with(id: sync_session_id).and_return(sync_session)
+        allow(sync_session).to receive(:reload)
+        allow(sync_session).to receive(:running?).and_return(true)
+      end
+
+      context 'when session has been running longer than 30 minutes' do
+        before do
+          allow(sync_session).to receive(:started_at).and_return(31.minutes.ago)
+          allow(sync_session).to receive(:fail!)
+        end
+
+        it 'force-fails the session with timeout message', unit: true do
+          expect(sync_session).to receive(:fail!).with("Sync timed out after 30 minutes")
+          subject.perform(sync_session_id)
+        end
+
+        it 'logs a warning', unit: true do
+          expect(logger).to receive(:warn).with("Sync session #{sync_session_id} force-failed: exceeded 30-minute timeout")
+          subject.perform(sync_session_id)
+        end
+
+        it 'does not check accounts', unit: true do
+          expect(sync_session).not_to receive(:sync_session_accounts)
+          subject.perform(sync_session_id)
+        end
+
+        it 'does not reschedule the job', unit: true do
+          expect(described_class).not_to receive(:set)
+          subject.perform(sync_session_id)
+        end
+      end
+
+      context 'when session has been running less than 30 minutes' do
+        before do
+          allow(sync_session).to receive(:started_at).and_return(10.minutes.ago)
+          allow(sync_session).to receive(:sync_session_accounts).and_return([])
+          allow(sync_session).to receive(:complete!)
+        end
+
+        it 'does not force-fail the session', unit: true do
+          expect(sync_session).not_to receive(:fail!)
           subject.perform(sync_session_id)
         end
       end
@@ -547,8 +596,8 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
     end
 
     describe 'job configuration' do
-      it 'uses the default queue', unit: true do
-        expect(described_class.new.queue_name).to eq('default')
+      it 'uses the email_processing queue', unit: true do
+        expect(described_class.new.queue_name).to eq('email_processing')
       end
 
       it 'inherits from ApplicationJob', unit: true do

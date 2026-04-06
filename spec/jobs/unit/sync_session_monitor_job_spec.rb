@@ -8,6 +8,7 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
     instance_double(SyncSession,
       id: sync_session_id,
       running?: true,
+      started_at: 5.minutes.ago,
       reload: nil,
       complete!: true,
       fail!: true
@@ -368,8 +369,8 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
   end
 
   describe 'job configuration' do
-    it 'uses the default queue' do
-      expect(job.queue_name).to eq('default')
+    it 'uses the email_processing queue' do
+      expect(job.queue_name).to eq('email_processing')
     end
 
     it 'inherits from ApplicationJob' do

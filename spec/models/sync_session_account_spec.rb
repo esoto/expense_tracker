@@ -225,6 +225,45 @@ RSpec.describe SyncSessionAccount, type: :model do
     end
   end
 
+  describe "#check_session_completion" do
+    let(:sync_session) { create(:sync_session, :running) }
+    let!(:account_1) { create(:sync_session_account, sync_session: sync_session, status: "processing") }
+    let!(:account_2) { create(:sync_session_account, sync_session: sync_session, status: "processing") }
+
+    it "completes session when all accounts are done with mixed results" do
+      account_1.complete!
+      account_2.fail!("Auth error")
+
+      sync_session.reload
+      expect(sync_session.status).to eq("completed")
+    end
+
+    it "fails session when ALL accounts failed" do
+      account_1.fail!("Auth error 1")
+      account_2.fail!("Auth error 2")
+
+      sync_session.reload
+      expect(sync_session.status).to eq("failed")
+      expect(sync_session.error_details).to include("Auth error 1")
+      expect(sync_session.error_details).to include("Auth error 2")
+    end
+
+    it "does not complete session while accounts are still processing" do
+      account_1.complete!
+
+      sync_session.reload
+      expect(sync_session.status).to eq("running")
+    end
+
+    it "does not trigger on non-running sessions" do
+      sync_session.complete!
+      # Creating a new account and completing it should not re-trigger
+      account_3 = create(:sync_session_account, sync_session: sync_session, status: "processing")
+      account_3.complete!
+      expect(sync_session.reload.status).to eq("completed")
+    end
+  end
+
   describe '#update_progress' do
     # Performance: share parent records across update_progress tests
     let(:sync_session) { create(:sync_session, total_emails: 100, processed_emails: 50, detected_expenses: 10) }
@@ -275,6 +314,30 @@ RSpec.describe SyncSessionAccount, type: :model do
       it 'does not increment detected_expenses when not provided' do
         expect { session_account.update_progress(25, 100) }.not_to change { session_account.detected_expenses }
       end
+    end
+
+    it 'retries up to 3 times on StaleObjectError then stops gracefully' do
+      call_count = 0
+      allow(sync_session).to receive(:update_progress) do
+        call_count += 1
+        raise ActiveRecord::StaleObjectError.new(sync_session, "update")
+      end
+      allow(session_account).to receive(:sync_session).and_return(sync_session)
+
+      expect { session_account.update_progress(5, 10, 1) }.not_to raise_error
+      expect(call_count).to eq(4) # initial + 3 retries
+    end
+
+    it 'succeeds on retry after StaleObjectError' do
+      call_count = 0
+      allow(sync_session).to receive(:update_progress) do
+        call_count += 1
+        raise ActiveRecord::StaleObjectError.new(sync_session, "update") if call_count == 1
+      end
+      allow(session_account).to receive(:sync_session).and_return(sync_session)
+
+      expect { session_account.update_progress(5, 10, 1) }.not_to raise_error
+      expect(call_count).to eq(2)
     end
   end
 

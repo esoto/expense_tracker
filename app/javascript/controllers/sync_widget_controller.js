@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import { createConsumer } from "@rails/actioncable"
+import { getSharedConsumer } from "services/sync_cable_consumer"
 
 // Inline error messages to avoid import issues
 const errorMessages = {
@@ -225,16 +225,9 @@ export default class extends Controller {
       this.subscription = null
     }
     
-    // Disconnect consumer
-    if (this.consumer) {
-      try {
-        this.consumer.disconnect()
-      } catch (error) {
-        this.log("error", "Error disconnecting consumer", error)
-      }
-      this.consumer = null
-    }
-    
+    // Release consumer reference (shared consumer stays alive for other controllers)
+    this.consumer = null
+
     // Clear cached state if session completed
     if (this.isCompleted) {
       this.clearCachedState()
@@ -262,7 +255,7 @@ export default class extends Controller {
     
     // Use global consumer or create one if not available
     if (!this.consumer) {
-      this.consumer = window.consumer || createConsumer()
+      this.consumer = getSharedConsumer()
     }
     
     try {

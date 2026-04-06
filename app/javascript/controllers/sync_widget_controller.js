@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import { getSharedConsumer } from "services/sync_cable_consumer"
+import { getSharedConsumer, resetSharedConsumer } from "services/sync_cable_consumer"
 
 // Inline error messages to avoid import issues
 const errorMessages = {
@@ -416,6 +416,8 @@ export default class extends Controller {
     
     this.reconnectTimer = setTimeout(() => {
       this.retryCountValue++
+      resetSharedConsumer()
+      this.consumer = null
       this.subscribeToChannel()
     }, delay)
   }
@@ -433,10 +435,12 @@ export default class extends Controller {
   // Manual retry action
   manualRetry(event) {
     if (event) event.preventDefault()
-    
+
     this.log("info", "Manual retry initiated")
-    
-    // Reset retry count and attempt connection
+
+    // Reset dead consumer, retry count, and attempt fresh connection
+    resetSharedConsumer()
+    this.consumer = null
     this.retryCountValue = 0
     this.hideManualRetryButton()
     this.subscribeToChannel()

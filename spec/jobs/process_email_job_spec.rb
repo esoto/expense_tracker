@@ -116,16 +116,13 @@ RSpec.describe ProcessEmailJob, type: :job, integration: true do
         }
       end
 
-      it 'does not create a valid expense' do
-        initial_count = Expense.count
+      it 'does not create an expense and records parsing failure' do
+        expect {
+          ProcessEmailJob.new.perform(email_account.id, invalid_email_data)
+        }.to change(EmailParsingFailure, :count).by(1)
 
-        ProcessEmailJob.new.perform(email_account.id, invalid_email_data)
-
-        # Should create a failed expense record
-        expect(Expense.count).to eq(initial_count + 1)
-        failed_expense = Expense.last
-        expect(failed_expense.status).to eq('failed')
-        expect(failed_expense.amount).to eq(0.01)
+        # Verify no expense was created (only pre-existing ones)
+        expect(Expense.where(status: 'failed')).to be_empty
       end
 
       it 'logs parsing failure' do
@@ -173,27 +170,25 @@ RSpec.describe ProcessEmailJob, type: :job, integration: true do
       }
     end
 
-    it 'creates a failed expense record' do
+    it 'creates an EmailParsingFailure record without creating an Expense' do
       expect {
         job.send(:save_failed_parsing, email_account, failed_email_data, errors)
-      }.to change(Expense, :count).by(1)
+      }.to change(EmailParsingFailure, :count).by(1)
+
+      expect { job.send(:save_failed_parsing, email_account, failed_email_data, errors) }
+        .not_to change(Expense, :count)
     end
 
-    it 'sets correct attributes for failed expense' do
+    it 'sets correct attributes for parsing failure' do
       job.send(:save_failed_parsing, email_account, failed_email_data, errors)
 
-      failed_expense = Expense.last
-      expect(failed_expense.email_account).to eq(email_account)
-      expect(failed_expense.amount).to eq(0.01)
-      expect(failed_expense.status).to eq('failed')
-      expect(failed_expense.description).to include("Failed to parse")
-      expect(failed_expense.description).to include(errors.first)
-      expect(failed_expense.raw_email_content).to eq(failed_email_data[:body])
-
-      parsed_data = JSON.parse(failed_expense.parsed_data)
-      expect(parsed_data['errors']).to eq(errors)
-      expect(parsed_data['truncated']).to eq(false)
-      expect(parsed_data['original_size']).to eq(failed_email_data[:body].bytesize)
+      failure = EmailParsingFailure.last
+      expect(failure.email_account).to eq(email_account)
+      expect(failure.bank_name).to eq(email_account.bank_name)
+      expect(failure.error_messages).to eq(errors)
+      expect(failure.raw_email_content).to eq(failed_email_data[:body])
+      expect(failure.original_email_size).to eq(failed_email_data[:body].bytesize)
+      expect(failure.truncated).to eq(false)
     end
 
     context 'with large email body' do
@@ -203,23 +198,22 @@ RSpec.describe ProcessEmailJob, type: :job, integration: true do
       it 'truncates large email bodies' do
         job.send(:save_failed_parsing, email_account, large_email_data, errors)
 
-        failed_expense = Expense.last
-        expect(failed_expense.raw_email_content.bytesize).to be <= 10_000 + 50 # 10KB + truncation message
-        expect(failed_expense.raw_email_content).to end_with('... [truncated]')
+        failure = EmailParsingFailure.last
+        expect(failure.raw_email_content.bytesize).to be <= 10_000 + 50 # 10KB + truncation message
+        expect(failure.raw_email_content).to end_with('... [truncated]')
       end
 
-      it 'marks as truncated in parsed_data' do
+      it 'marks as truncated' do
         job.send(:save_failed_parsing, email_account, large_email_data, errors)
 
-        failed_expense = Expense.last
-        parsed_data = JSON.parse(failed_expense.parsed_data)
-        expect(parsed_data['truncated']).to eq(true)
-        expect(parsed_data['original_size']).to eq(15_000)
+        failure = EmailParsingFailure.last
+        expect(failure.truncated).to eq(true)
+        expect(failure.original_email_size).to eq(15_000)
       end
     end
 
     it 'handles save errors gracefully' do
-      allow(Expense).to receive(:create!).and_raise(ActiveRecord::RecordInvalid)
+      allow(EmailParsingFailure).to receive(:create!).and_raise(ActiveRecord::RecordInvalid)
       allow(Rails.logger).to receive(:error)
 
       expect {
@@ -227,7 +221,7 @@ RSpec.describe ProcessEmailJob, type: :job, integration: true do
       }.not_to raise_error
 
       expect(Rails.logger).to have_received(:error).with(
-        a_string_matching(/Failed to save failed parsing record/)
+        a_string_matching(/Failed to save parsing failure record/)
       )
     end
 

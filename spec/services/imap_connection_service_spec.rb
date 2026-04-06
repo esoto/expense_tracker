@@ -363,7 +363,7 @@ RSpec.describe Services::ImapConnectionService, integration: true do
         service.with_session do
           raise StandardError, "something went wrong"
         end
-      }.to raise_error(Services::ImapConnectionService::ConnectionError, "Unexpected error: something went wrong")
+      }.to raise_error(StandardError, "something went wrong")
 
       expect(mock_imap).to have_received(:logout)
       expect(mock_imap).to have_received(:disconnect)

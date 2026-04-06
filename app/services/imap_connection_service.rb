@@ -11,22 +11,30 @@ module Services
     @errors = []
   end
 
+  # Opens a persistent IMAP session for the duration of the block.
+  # All IMAP commands within the block reuse this single connection.
+  #
+  # Connection setup errors are wrapped as ConnectionError/AuthenticationError.
+  # Errors raised inside the yielded block propagate naturally — callers
+  # retain control over their own error handling.
   def with_session
     validate_account!
 
-    @active_session = create_connection
-    authenticate_connection(@active_session)
-    select_inbox(@active_session)
+    begin
+      @active_session = create_connection
+      authenticate_connection(@active_session)
+      select_inbox(@active_session)
+    rescue ConnectionError
+      raise
+    rescue Net::IMAP::NoResponseError => e
+      raise AuthenticationError, "Authentication failed: #{e.message}"
+    rescue Net::IMAP::Error => e
+      raise ConnectionError, "IMAP error: #{e.message}"
+    rescue StandardError => e
+      raise ConnectionError, "Unexpected error: #{e.message}"
+    end
 
     yield
-  rescue ConnectionError
-    raise
-  rescue Net::IMAP::NoResponseError => e
-    raise AuthenticationError, "Authentication failed: #{e.message}"
-  rescue Net::IMAP::Error => e
-    raise ConnectionError, "IMAP error: #{e.message}"
-  rescue StandardError => e
-    raise ConnectionError, "Unexpected error: #{e.message}"
   ensure
     session = @active_session
     @active_session = nil

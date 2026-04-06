@@ -297,6 +297,149 @@ RSpec.describe Services::ImapConnectionService, integration: true do
     end
   end
 
+  describe '#with_session', :unit do
+    let(:mock_settings) do
+      {
+        address: 'imap.test.com',
+        port: 993,
+        enable_ssl: true,
+        user_name: 'test@test.com',
+        password: 'password123'
+      }
+    end
+
+    let(:mock_envelope) { double('envelope', subject: 'Test Subject') }
+    let(:mock_structure) { double('structure', multipart?: true) }
+
+    before do
+      allow(email_account).to receive(:imap_settings).and_return(mock_settings)
+      allow(Net::IMAP).to receive(:new).and_return(mock_imap)
+      allow(mock_imap).to receive(:login)
+      allow(mock_imap).to receive(:select)
+      allow(mock_imap).to receive(:logout)
+      allow(mock_imap).to receive(:disconnect)
+    end
+
+    it 'opens exactly one connection for the entire block' do
+      mock_fetch_envelope = double('fetch_result', attr: { "ENVELOPE" => mock_envelope })
+      mock_fetch_structure = double('fetch_result', attr: { "BODYSTRUCTURE" => mock_structure })
+      allow(mock_imap).to receive(:search).and_return([ 1, 2 ])
+      allow(mock_imap).to receive(:fetch).with(1, "ENVELOPE").and_return([ mock_fetch_envelope ])
+      allow(mock_imap).to receive(:fetch).with(1, "BODYSTRUCTURE").and_return([ mock_fetch_structure ])
+
+      service.with_session do
+        service.search_emails([ "ALL" ])
+        service.fetch_envelope(1)
+        service.fetch_body_structure(1)
+      end
+
+      expect(Net::IMAP).to have_received(:new).once
+    end
+
+    it 'authenticates and selects INBOX once even with multiple calls' do
+      mock_fetch_result = double('fetch_result', attr: { "ENVELOPE" => mock_envelope })
+      allow(mock_imap).to receive(:fetch).and_return([ mock_fetch_result ])
+
+      service.with_session do
+        service.fetch_envelope(1)
+        service.fetch_envelope(2)
+      end
+
+      expect(mock_imap).to have_received(:login).once
+      expect(mock_imap).to have_received(:select).with("INBOX").once
+    end
+
+    it 'cleans up after block completes' do
+      service.with_session do
+        # no-op
+      end
+
+      expect(mock_imap).to have_received(:logout)
+      expect(mock_imap).to have_received(:disconnect)
+    end
+
+    it 'cleans up even when block raises' do
+      expect {
+        service.with_session do
+          raise StandardError, "something went wrong"
+        end
+      }.to raise_error(StandardError, "something went wrong")
+
+      expect(mock_imap).to have_received(:logout)
+      expect(mock_imap).to have_received(:disconnect)
+    end
+
+    it 'raises ConnectionError on nested with_session calls' do
+      service.with_session do
+        expect {
+          service.with_session { }
+        }.to raise_error(
+          Services::ImapConnectionService::ConnectionError,
+          /nested with_session is not supported/
+        )
+      end
+    end
+
+    it 'validates account before opening connection' do
+      email_account.update(active: false)
+
+      expect {
+        service.with_session do
+          # should not reach
+        end
+      }.to raise_error(Services::ImapConnectionService::ConnectionError, "Email account is not active")
+
+      expect(Net::IMAP).not_to have_received(:new)
+    end
+
+    it 'raises AuthenticationError on auth failure' do
+      error_data = double('error_data',
+        data: double('data', text: 'Authentication failed'),
+        text: 'Authentication failed'
+      )
+      allow(mock_imap).to receive(:login).and_raise(Net::IMAP::NoResponseError.new(error_data))
+
+      expect {
+        service.with_session do
+          # should not reach
+        end
+      }.to raise_error(Services::ImapConnectionService::AuthenticationError, /Authentication failed/)
+    end
+  end
+
+  describe 'backward compatibility', :unit do
+    let(:mock_settings) do
+      {
+        address: 'imap.test.com',
+        port: 993,
+        enable_ssl: true,
+        user_name: 'test@test.com',
+        password: 'password123'
+      }
+    end
+
+    let(:mock_envelope) { double('envelope', subject: 'Test Subject') }
+
+    before do
+      allow(email_account).to receive(:imap_settings).and_return(mock_settings)
+      allow(Net::IMAP).to receive(:new).and_return(mock_imap)
+      allow(mock_imap).to receive(:login)
+      allow(mock_imap).to receive(:select)
+      allow(mock_imap).to receive(:logout)
+      allow(mock_imap).to receive(:disconnect)
+      allow(mock_imap).to receive(:fetch).and_return(
+        [ double('fetch_result', attr: { "ENVELOPE" => mock_envelope }) ]
+      )
+    end
+
+    it 'fetch methods work without with_session — each call opens its own connection' do
+      service.fetch_envelope(1)
+      service.fetch_envelope(2)
+
+      expect(Net::IMAP).to have_received(:new).twice
+    end
+  end
+
   describe 'error handling', integration: true do
     describe 'ConnectionError', integration: true do
       it 'is a StandardError subclass' do

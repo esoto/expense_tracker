@@ -11,8 +11,40 @@ module Services
     @errors = []
   end
 
+  # Opens a persistent IMAP session for the duration of the block.
+  # All IMAP commands within the block reuse this single connection.
+  #
+  # Connection setup errors are wrapped as ConnectionError/AuthenticationError.
+  # Errors raised inside the yielded block propagate naturally — callers
+  # retain control over their own error handling.
+  def with_session
+    raise ConnectionError, "Session already active (nested with_session is not supported)" if @active_session
+
+    validate_account!
+
+    begin
+      @active_session = create_connection
+      authenticate_connection(@active_session)
+      select_inbox(@active_session)
+    rescue ConnectionError
+      raise
+    rescue Net::IMAP::NoResponseError => e
+      raise AuthenticationError, "Authentication failed: #{e.message}"
+    rescue Net::IMAP::Error => e
+      raise ConnectionError, "IMAP error: #{e.message}"
+    rescue StandardError => e
+      raise ConnectionError, "Unexpected error: #{e.message}"
+    end
+
+    yield
+  ensure
+    session = @active_session
+    @active_session = nil
+    cleanup_connection(session)
+  end
+
   def test_connection
-    with_connection do |imap|
+    execute_imap_command do |imap|
       imap.list("", "*").present?
     end
   rescue Net::IMAP::Error => e
@@ -21,7 +53,7 @@ module Services
   end
 
   def search_emails(criteria)
-    with_connection do |imap|
+    execute_imap_command do |imap|
       imap.search(criteria)
     end
   rescue Net::IMAP::Error => e
@@ -30,7 +62,7 @@ module Services
   end
 
   def fetch_envelope(message_id)
-    with_connection do |imap|
+    execute_imap_command do |imap|
       result = imap.fetch(message_id, "ENVELOPE")
       result&.first&.attr&.dig("ENVELOPE")
     end
@@ -40,7 +72,7 @@ module Services
   end
 
   def fetch_body_structure(message_id)
-    with_connection do |imap|
+    execute_imap_command do |imap|
       result = imap.fetch(message_id, "BODYSTRUCTURE")
       result&.first&.attr&.dig("BODYSTRUCTURE")
     end
@@ -50,7 +82,7 @@ module Services
   end
 
   def fetch_body_part(message_id, part_number)
-    with_connection do |imap|
+    execute_imap_command do |imap|
       part_spec = "BODY[#{part_number}]"
       result = imap.fetch(message_id, part_spec)
       result&.first&.attr&.dig(part_spec)
@@ -61,7 +93,7 @@ module Services
   end
 
   def fetch_text_body(message_id)
-    with_connection do |imap|
+    execute_imap_command do |imap|
       result = imap.fetch(message_id, "BODY[TEXT]")
       result&.first&.attr&.dig("BODY[TEXT]")
     end
@@ -96,6 +128,14 @@ module Services
   end
 
   private
+
+  def execute_imap_command(&block)
+    if @active_session
+      yield @active_session
+    else
+      with_connection(&block)
+    end
+  end
 
   def validate_account!
     unless email_account.active?

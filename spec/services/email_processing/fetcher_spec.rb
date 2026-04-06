@@ -8,6 +8,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, type: :service, integration: 
 
   before do
     allow(mock_imap_service).to receive(:errors).and_return([])
+    allow(mock_imap_service).to receive(:with_session).and_yield
     allow(mock_email_processor).to receive(:errors).and_return([])
   end
 
@@ -124,6 +125,16 @@ RSpec.describe Services::EmailProcessing::Fetcher, type: :service, integration: 
         expect(result.failure?).to be true
         expect(result.errors).to include('Unexpected error: Unexpected error')
       end
+    end
+  end
+
+  describe 'IMAP session reuse', :unit do
+    it 'wraps search and processing in a single IMAP session' do
+      expect(mock_imap_service).to receive(:with_session).and_yield
+      allow(mock_imap_service).to receive(:search_emails).and_return([])
+      allow(mock_email_processor).to receive(:process_emails).and_return({ processed_count: 0, total_count: 0 })
+
+      fetcher.fetch_new_emails
     end
   end
 

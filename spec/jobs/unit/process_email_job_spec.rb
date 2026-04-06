@@ -264,56 +264,30 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
         from: 'sender@example.com'
       }
     end
-    let(:created_expense) { instance_double(Expense) }
+    let(:created_failure) { instance_double(EmailParsingFailure) }
 
     context 'with normal-sized email body' do
       before do
-        allow(Expense).to receive(:create!).and_return(created_expense)
+        allow(EmailParsingFailure).to receive(:create!).and_return(created_failure)
       end
 
-      it 'creates a failed expense record' do
-        expect(Expense).to receive(:create!).with(
+      it 'creates an EmailParsingFailure record' do
+        expect(EmailParsingFailure).to receive(:create!).with(
           hash_including(
             email_account: email_account,
-            amount: 0.01,
-            merchant_name: nil,
-            description: 'Failed to parse: Amount not found',
-            status: 'failed',
-            bank_name: 'Test Bank'
-          )
-        )
-
-        job.send(:save_failed_parsing, email_account, failed_email_data, errors)
-      end
-
-      it 'stores the raw email content' do
-        expect(Expense).to receive(:create!).with(
-          hash_including(
+            bank_name: 'Test Bank',
+            error_messages: errors,
             raw_email_content: 'Failed email content',
-            email_body: 'Failed email content'
+            original_email_size: 20,
+            truncated: false
           )
         )
 
         job.send(:save_failed_parsing, email_account, failed_email_data, errors)
       end
 
-      it 'stores parsed data with errors and metadata' do
-        expect(Expense).to receive(:create!) do |args|
-          parsed_data = JSON.parse(args[:parsed_data])
-          expect(parsed_data['errors']).to eq(errors)
-          expect(parsed_data['truncated']).to eq(false)
-          expect(parsed_data['original_size']).to eq(20) # 'Failed email content'.bytesize
-          created_expense
-        end
-
-        job.send(:save_failed_parsing, email_account, failed_email_data, errors)
-      end
-
-      it 'uses only the first error in the description' do
-        expect(Expense).to receive(:create!).with(
-          hash_including(description: 'Failed to parse: Amount not found')
-        )
-
+      it 'does not create an Expense record' do
+        expect(Expense).not_to receive(:create!)
         job.send(:save_failed_parsing, email_account, failed_email_data, errors)
       end
     end
@@ -323,37 +297,36 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
       let(:large_email_data) { failed_email_data.merge(body: large_body) }
 
       before do
-        allow(Expense).to receive(:create!).and_return(created_expense)
+        allow(EmailParsingFailure).to receive(:create!).and_return(created_failure)
       end
 
       it 'truncates the email body to TRUNCATE_SIZE' do
-        expect(Expense).to receive(:create!) do |args|
+        expect(EmailParsingFailure).to receive(:create!) do |args|
           expect(args[:raw_email_content].bytesize).to be <= 10_000 + 20 # TRUNCATE_SIZE + truncation message
           expect(args[:raw_email_content]).to end_with('... [truncated]')
-          created_expense
+          created_failure
         end
 
         job.send(:save_failed_parsing, email_account, large_email_data, errors)
       end
 
-      it 'marks as truncated in parsed_data' do
-        expect(Expense).to receive(:create!) do |args|
-          parsed_data = JSON.parse(args[:parsed_data])
-          expect(parsed_data['truncated']).to eq(true)
-          expect(parsed_data['original_size']).to eq(15_000)
-          created_expense
+      it 'marks as truncated' do
+        expect(EmailParsingFailure).to receive(:create!) do |args|
+          expect(args[:truncated]).to eq(true)
+          expect(args[:original_email_size]).to eq(15_000)
+          created_failure
         end
 
         job.send(:save_failed_parsing, email_account, large_email_data, errors)
       end
 
       it 'preserves exactly TRUNCATE_SIZE bytes' do
-        expect(Expense).to receive(:create!) do |args|
+        expect(EmailParsingFailure).to receive(:create!) do |args|
           truncated_content = args[:raw_email_content]
           # Remove the truncation message to check the actual content size
           actual_content = truncated_content.sub(/\n\.\.\. \[truncated\]$/, '')
           expect(actual_content.bytesize).to eq(10_000)
-          created_expense
+          created_failure
         end
 
         job.send(:save_failed_parsing, email_account, large_email_data, errors)
@@ -366,15 +339,14 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
         let(:exact_email_data) { failed_email_data.merge(body: exact_size_body) }
 
         before do
-          allow(Expense).to receive(:create!).and_return(created_expense)
+          allow(EmailParsingFailure).to receive(:create!).and_return(created_failure)
         end
 
         it 'does not truncate the body' do
-          expect(Expense).to receive(:create!) do |args|
+          expect(EmailParsingFailure).to receive(:create!) do |args|
             expect(args[:raw_email_content]).to eq(exact_size_body)
-            parsed_data = JSON.parse(args[:parsed_data])
-            expect(parsed_data['truncated']).to eq(false)
-            created_expense
+            expect(args[:truncated]).to eq(false)
+            created_failure
           end
 
           job.send(:save_failed_parsing, email_account, exact_email_data, errors)
@@ -386,15 +358,14 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
         let(:over_email_data) { failed_email_data.merge(body: over_size_body) }
 
         before do
-          allow(Expense).to receive(:create!).and_return(created_expense)
+          allow(EmailParsingFailure).to receive(:create!).and_return(created_failure)
         end
 
         it 'truncates the body' do
-          expect(Expense).to receive(:create!) do |args|
+          expect(EmailParsingFailure).to receive(:create!) do |args|
             expect(args[:raw_email_content]).to end_with('... [truncated]')
-            parsed_data = JSON.parse(args[:parsed_data])
-            expect(parsed_data['truncated']).to eq(true)
-            created_expense
+            expect(args[:truncated]).to eq(true)
+            created_failure
           end
 
           job.send(:save_failed_parsing, email_account, over_email_data, errors)
@@ -405,11 +376,11 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
     context 'when saving fails' do
       context 'with ActiveRecord::RecordInvalid' do
         before do
-          allow(Expense).to receive(:create!).and_raise(ActiveRecord::RecordInvalid)
+          allow(EmailParsingFailure).to receive(:create!).and_raise(ActiveRecord::RecordInvalid)
         end
 
         it 'logs the error' do
-          expect(Rails.logger).to receive(:error).with(/Failed to save failed parsing record/)
+          expect(Rails.logger).to receive(:error).with(/Failed to save parsing failure record/)
           job.send(:save_failed_parsing, email_account, failed_email_data, errors)
         end
 
@@ -420,11 +391,11 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
 
       context 'with StandardError' do
         before do
-          allow(Expense).to receive(:create!).and_raise(StandardError, 'Database connection lost')
+          allow(EmailParsingFailure).to receive(:create!).and_raise(StandardError, 'Database connection lost')
         end
 
         it 'logs the specific error message' do
-          expect(Rails.logger).to receive(:error).with('Failed to save failed parsing record: Database connection lost')
+          expect(Rails.logger).to receive(:error).with('Failed to save parsing failure record: Database connection lost')
           job.send(:save_failed_parsing, email_account, failed_email_data, errors)
         end
 
@@ -436,30 +407,20 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
 
     context 'with nil or missing data' do
       before do
-        allow(Expense).to receive(:create!).and_return(created_expense)
+        allow(EmailParsingFailure).to receive(:create!).and_return(created_failure)
       end
 
       context 'when email_data[:body] is nil' do
         let(:nil_body_data) { { body: nil, subject: 'Test' } }
 
         it 'handles nil body gracefully' do
-          expect(Expense).to receive(:create!).with(
+          expect(EmailParsingFailure).to receive(:create!).with(
             hash_including(
               raw_email_content: '',
-              email_body: ''
+              original_email_size: 0,
+              truncated: false
             )
           )
-
-          job.send(:save_failed_parsing, email_account, nil_body_data, errors)
-        end
-
-        it 'stores correct metadata for nil body' do
-          expect(Expense).to receive(:create!) do |args|
-            parsed_data = JSON.parse(args[:parsed_data])
-            expect(parsed_data['original_size']).to eq(0)
-            expect(parsed_data['truncated']).to eq(false)
-            created_expense
-          end
 
           job.send(:save_failed_parsing, email_account, nil_body_data, errors)
         end
@@ -467,8 +428,8 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
 
       context 'when errors array is empty' do
         it 'handles empty errors array' do
-          expect(Expense).to receive(:create!).with(
-            hash_including(description: 'Failed to parse: ')
+          expect(EmailParsingFailure).to receive(:create!).with(
+            hash_including(error_messages: [])
           )
 
           job.send(:save_failed_parsing, email_account, failed_email_data, [])
@@ -479,7 +440,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
         let(:account_no_bank) { instance_double(EmailAccount, id: 1, email: 'test@example.com', bank_name: nil) }
 
         it 'handles nil bank_name' do
-          expect(Expense).to receive(:create!).with(
+          expect(EmailParsingFailure).to receive(:create!).with(
             hash_including(bank_name: nil)
           )
 
@@ -493,7 +454,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
       let(:utf8_email_data) { failed_email_data.merge(body: invalid_utf8_body) }
 
       before do
-        allow(Expense).to receive(:create!).and_return(created_expense)
+        allow(EmailParsingFailure).to receive(:create!).and_return(created_failure)
       end
 
       it 'handles invalid UTF-8 gracefully' do

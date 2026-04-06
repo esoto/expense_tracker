@@ -59,23 +59,15 @@ class ProcessEmailJob < ApplicationJob
       truncated = true
     end
 
-    Expense.create!(
+    EmailParsingFailure.create!(
       email_account: email_account,
-      amount: 0.01,
-      transaction_date: Time.current,
-      merchant_name: nil,  # Explicitly set to nil for failed parsing
-      description: "Failed to parse: #{errors.first}",  # Only first error to save space
+      bank_name: email_account.bank_name,
+      error_messages: errors,
       raw_email_content: email_body,
-      parsed_data: {
-        errors: errors,
-        truncated: truncated,
-        original_size: email_data&.dig(:body).to_s.bytesize
-      }.to_json,
-      status: "failed",
-      email_body: email_body,
-      bank_name: email_account.bank_name
+      original_email_size: email_data&.dig(:body).to_s.bytesize,
+      truncated: truncated
     )
   rescue StandardError => e
-    Rails.logger.error "Failed to save failed parsing record: #{e.message}"
+    Rails.logger.error "Failed to save parsing failure record: #{e.message}"
   end
 end

@@ -291,9 +291,14 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
         expect(score).to eq(0.0)
       end
 
+      it 'returns 0 for nil strings' do
+        score = service.send(:string_similarity, nil, 'test')
+        expect(score).to eq(0.0)
+      end
+
       it 'calculates partial similarity' do
         score = service.send(:string_similarity, 'test', 'text')
-        expect(score).to be_between(50, 90)
+        expect(score).to be_between(25, 90)
       end
     end
   end

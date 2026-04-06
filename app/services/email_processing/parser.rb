@@ -7,9 +7,10 @@ module Services::EmailProcessing
 
     attr_reader :email_account, :email_data, :parsing_rule, :errors
 
-    def initialize(email_account, email_data)
+    def initialize(email_account, email_data, pre_parsed_data: nil)
       @email_account = email_account
       @email_data = email_data
+      @pre_parsed_data = pre_parsed_data
       @parsing_rule = find_parsing_rule
       @errors = []
     end
@@ -18,8 +19,10 @@ module Services::EmailProcessing
       return nil unless parsing_rule
 
       begin
-        parsing_strategy = Services::EmailProcessing::StrategyFactory.create_strategy(parsing_rule, email_content: email_content)
-        parsed_data = parsing_strategy.parse_email(email_content)
+        parsed_data = @pre_parsed_data || begin
+          strategy = Services::EmailProcessing::StrategyFactory.create_strategy(parsing_rule, email_content: email_content)
+          strategy.parse_email(email_content)
+        end
 
         if valid_parsed_data?(parsed_data)
           create_expense(parsed_data)

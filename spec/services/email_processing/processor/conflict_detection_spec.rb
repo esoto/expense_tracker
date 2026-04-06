@@ -48,9 +48,11 @@ RSpec.describe 'Services::EmailProcessing::Processor - Conflict Detection', type
 
           email_data = { body: 'Transaction $100', date: Time.current }
 
-          # Process twice — should use the same session both times
-          processor_with_session2.send(:detect_and_handle_conflict, email_data)
-          processor_with_session2.send(:detect_and_handle_conflict, email_data)
+          # Process twice — should use the same session both times and return parsed data
+          result1 = processor_with_session2.send(:detect_and_handle_conflict, email_data)
+          result2 = processor_with_session2.send(:detect_and_handle_conflict, email_data)
+          expect(result1).to be_a(Hash)
+          expect(result2).to be_a(Hash)
         end
       end
 
@@ -65,7 +67,7 @@ RSpec.describe 'Services::EmailProcessing::Processor - Conflict Detection', type
           expense_data = { amount: 100, description: 'Purchase' }
           allow(parsing_strategy).to receive(:parse_email).and_return(expense_data)
           allow(Services::ConflictDetectionService).to receive(:new).and_return(conflict_detector)
-          allow(conflict_detector).to receive(:detect_conflict_for_expense)
+          allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(false)
 
           result = processor.send(:detect_and_handle_conflict, email_data)
 
@@ -160,12 +162,12 @@ RSpec.describe 'Services::EmailProcessing::Processor - Conflict Detection', type
           allow(Services::ConflictDetectionService).to receive(:new).and_return(conflict_detector)
         end
 
-        it 'detects exact duplicate transactions' do
+        it 'returns nil for exact duplicate transactions (conflict detected)' do
           allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(true)
 
           result = processor.send(:detect_and_handle_conflict, email_data)
 
-          expect(result).to be true
+          expect(result).to be_nil
           expect(conflict_detector).to have_received(:detect_conflict_for_expense).with(
             hash_including(
               amount: 50.00,
@@ -177,7 +179,7 @@ RSpec.describe 'Services::EmailProcessing::Processor - Conflict Detection', type
           )
         end
 
-        it 'handles near-duplicate transactions' do
+        it 'returns nil for near-duplicate transactions' do
           # Simulate a near-duplicate (same amount, similar time)
           similar_expense_data = expense_data.merge(
             transaction_date: Time.parse('2024-01-15 10:01:00')
@@ -188,15 +190,16 @@ RSpec.describe 'Services::EmailProcessing::Processor - Conflict Detection', type
 
           result = processor.send(:detect_and_handle_conflict, email_data)
 
-          expect(result).to be true
+          expect(result).to be_nil
         end
 
-        it 'distinguishes between similar but distinct transactions' do
+        it 'returns expense data hash for similar but distinct transactions' do
           allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(false)
 
           result = processor.send(:detect_and_handle_conflict, email_data)
 
-          expect(result).to be false
+          expect(result).to be_a(Hash)
+          expect(result[:amount]).to eq(50.00)
         end
       end
 
@@ -294,11 +297,12 @@ RSpec.describe 'Services::EmailProcessing::Processor - Conflict Detection', type
         it 'works without metrics collector' do
           processor_no_metrics = Services::EmailProcessing::Processor.new(email_account)
 
-          # Without a sync_session, conflict detection is skipped and returns false
+          # Without a sync_session, conflict detection is skipped but returns parsed data
           expect(Services::ConflictDetectionService).not_to receive(:new)
 
           result = processor_no_metrics.send(:detect_and_handle_conflict, email_data)
-          expect(result).to be false
+          expect(result).to be_a(Hash)
+          expect(result[:amount]).to eq(100)
         end
       end
 
@@ -317,6 +321,7 @@ RSpec.describe 'Services::EmailProcessing::Processor - Conflict Detection', type
 
           result = processor.send(:detect_and_handle_conflict, email_data)
 
+          expect(result).to be_a(Hash)
           expect(conflict_detector).to have_received(:detect_conflict_for_expense).with(
             hash_including(raw_email_content: long_body)
           )
@@ -331,6 +336,7 @@ RSpec.describe 'Services::EmailProcessing::Processor - Conflict Detection', type
 
           result = processor.send(:detect_and_handle_conflict, email_data)
 
+          expect(result).to be_a(Hash)
           expect(conflict_detector).to have_received(:detect_conflict_for_expense).with(
             hash_including(raw_email_content: nil)
           )
@@ -346,6 +352,7 @@ RSpec.describe 'Services::EmailProcessing::Processor - Conflict Detection', type
 
           result = processor.send(:detect_and_handle_conflict, email_data)
 
+          expect(result).to be_a(Hash)
           expect(conflict_detector).to have_received(:detect_conflict_for_expense).with(
             hash_including(transaction_date: future_date)
           )

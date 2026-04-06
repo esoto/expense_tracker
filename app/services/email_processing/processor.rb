@@ -78,11 +78,15 @@ module Services::EmailProcessing
       return { processed: false, expense_created: false } unless email_data
 
       # Check for conflicts before creating expense
-      if detect_and_handle_conflict(email_data)
+      conflict_result = detect_and_handle_conflict(email_data)
+
+      if conflict_result.nil?
+        # Conflict detected
         { processed: true, expense_created: false, conflict_detected: true }
       else
-        # Queue job to parse and create expense
-        ProcessEmailJob.perform_later(email_account.id, email_data, @sync_session&.id)
+        # No conflict — pass pre-parsed data if available
+        pre_parsed = conflict_result.is_a?(Hash) ? conflict_result : nil
+        ProcessEmailJob.perform_later(email_account.id, email_data, @sync_session&.id, pre_parsed)
 
         # For now, we assume transaction emails will create expenses
         # In a real implementation, we'd track this through the job
@@ -271,6 +275,10 @@ module Services::EmailProcessing
       "#{from_addr.mailbox}@#{from_addr.host}"
     end
 
+    # Returns:
+    #   nil        — conflict detected, processing should stop
+    #   Hash       — no conflict, pre-parsed expense data for reuse
+    #   false      — parsing failed or no rule, continue without pre-parsed data
     def detect_and_handle_conflict(email_data)
       # Parse expense data from email to extract fields without creating expense
       parsing_rule = ParsingRule.active.for_bank(email_account.bank_name).first
@@ -299,10 +307,10 @@ module Services::EmailProcessing
         detector = Services::ConflictDetectionService.new(sync_session, metrics_collector: @metrics_collector)
         conflict = detector.detect_conflict_for_expense(expense_data)
 
-        return true if conflict # Conflict detected and handled
+        return nil if conflict # Conflict detected — stop processing
       end
 
-      false # No conflict detected
+      expense_data # No conflict — return parsed data for reuse
     rescue => e
       Rails.logger.error "[Services::EmailProcessing::Processor] Error detecting conflict: #{e.message}"
       false # Continue with normal processing on error

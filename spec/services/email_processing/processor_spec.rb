@@ -636,18 +636,21 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
         allow(Services::ConflictDetectionService).to receive(:new).with(sync_session, metrics_collector: metrics_collector).and_return(conflict_detector)
       end
 
-      it 'detects conflict when present' do
+      it 'returns nil when conflict is detected' do
         allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(true)
 
         result = processor_with_session.send(:detect_and_handle_conflict, email_data)
-        expect(result).to be true
+        expect(result).to be_nil
       end
 
-      it 'returns false when no conflict' do
+      it 'returns expense data hash when no conflict' do
         allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(false)
 
         result = processor_with_session.send(:detect_and_handle_conflict, email_data)
-        expect(result).to be false
+        expect(result).to be_a(Hash)
+        expect(result[:amount]).to eq(100)
+        expect(result[:email_account_id]).to eq(email_account.id)
+        expect(result[:raw_email_content]).to eq(email_data[:body])
       end
 
       it 'does not call SyncSession.active.last' do
@@ -659,9 +662,10 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
     end
 
     context 'without sync session (nil)' do
-      it 'returns false when no sync session' do
+      it 'returns expense data hash when no sync session' do
         result = processor.send(:detect_and_handle_conflict, email_data)
-        expect(result).to be false
+        expect(result).to be_a(Hash)
+        expect(result[:amount]).to eq(100)
       end
     end
 

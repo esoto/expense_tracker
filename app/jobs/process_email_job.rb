@@ -3,7 +3,7 @@ class ProcessEmailJob < ApplicationJob
 
   TRUNCATE_SIZE = 10_000  # Store only 10KB for large emails
 
-  def perform(email_account_id, email_data, sync_session_id = nil)
+  def perform(email_account_id, email_data, sync_session_id = nil, pre_parsed_data = nil)
     email_account = EmailAccount.find_by(id: email_account_id)
 
     unless email_account
@@ -21,18 +21,18 @@ class ProcessEmailJob < ApplicationJob
     # Track expense detection operation
     if metrics_collector
       metrics_collector.track_operation(:detect_expense, email_account, { email_subject: email_data&.dig(:subject) }) do
-        parse_and_save_expense(email_account, email_data)
+        parse_and_save_expense(email_account, email_data, pre_parsed_data)
       end
       metrics_collector.flush_buffer
     else
-      parse_and_save_expense(email_account, email_data)
+      parse_and_save_expense(email_account, email_data, pre_parsed_data)
     end
   end
 
   private
 
-  def parse_and_save_expense(email_account, email_data)
-    parser = Services::EmailProcessing::Parser.new(email_account, email_data)
+  def parse_and_save_expense(email_account, email_data, pre_parsed_data = nil)
+    parser = Services::EmailProcessing::Parser.new(email_account, email_data, pre_parsed_data: pre_parsed_data)
     expense = parser.parse_expense
 
     if expense

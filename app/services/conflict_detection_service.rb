@@ -185,7 +185,7 @@ module Services
 
     # Merchant similarity — use pre-computed DB score if available
     if new_expense_data[:merchant_name]
-      merchant_score = if existing_expense.respond_to?(:merchant_similarity) && existing_expense.merchant_similarity
+      merchant_score = if existing_expense.respond_to?(:merchant_similarity) && !existing_expense.merchant_similarity.nil?
         (existing_expense.merchant_similarity.to_f * 100.0).round(2)
       else
         string_similarity(
@@ -198,7 +198,7 @@ module Services
 
     # Description similarity — use pre-computed DB score if available
     if new_expense_data[:description]
-      desc_score = if existing_expense.respond_to?(:description_similarity) && existing_expense.description_similarity
+      desc_score = if existing_expense.respond_to?(:description_similarity) && !existing_expense.description_similarity.nil?
         (existing_expense.description_similarity.to_f * 100.0).round(2)
       else
         string_similarity(

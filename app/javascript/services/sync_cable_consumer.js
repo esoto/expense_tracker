@@ -8,3 +8,10 @@ export function getSharedConsumer() {
   }
   return sharedConsumer
 }
+
+export function resetSharedConsumer() {
+  if (sharedConsumer) {
+    try { sharedConsumer.disconnect() } catch (_) {}
+    sharedConsumer = null
+  }
+}

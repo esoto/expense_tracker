@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import { getSharedConsumer } from "services/sync_cable_consumer"
+import { getSharedConsumer, resetSharedConsumer } from "services/sync_cable_consumer"
 
 // Inline error messages to avoid import issues
 const errorMessages = {
@@ -416,6 +416,17 @@ export default class extends Controller {
     
     this.reconnectTimer = setTimeout(() => {
       this.retryCountValue++
+      // Unsubscribe before resetting to avoid dangling subscription
+      if (this.subscription) {
+        try { this.subscription.unsubscribe() } catch (_) {}
+        this.subscription = null
+      }
+      // NOTE: Peer controllers (sync_sessions, sync_session_detail) hold a separate
+      // this.consumer reference via syncChannelMixin. Resetting the singleton here
+      // does NOT reconnect those controllers. They are read-only observers that
+      // re-acquire via getSharedConsumer() on their next connect() lifecycle.
+      resetSharedConsumer()
+      this.consumer = null
       this.subscribeToChannel()
     }, delay)
   }
@@ -433,10 +444,17 @@ export default class extends Controller {
   // Manual retry action
   manualRetry(event) {
     if (event) event.preventDefault()
-    
+
     this.log("info", "Manual retry initiated")
-    
-    // Reset retry count and attempt connection
+
+    // Unsubscribe before resetting to avoid dangling subscription
+    if (this.subscription) {
+      try { this.subscription.unsubscribe() } catch (_) {}
+      this.subscription = null
+    }
+    // Reset dead consumer, retry count, and attempt fresh connection
+    resetSharedConsumer()
+    this.consumer = null
     this.retryCountValue = 0
     this.hideManualRetryButton()
     this.subscribeToChannel()

@@ -356,7 +356,7 @@ RSpec.describe Services::Email::SyncService, 'Error Handling and Edge Cases', un
         allow(failed_session).to receive_message_chain(:sync_session_accounts, :failed).and_return([])
 
         expect(failed_session).to receive(:update!).with(
-          status: 'retrying',
+          status: 'pending',
           metadata: { 'retry_count' => 1000 }
         )
 

@@ -98,8 +98,11 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
       end
 
       context 'with active sync session' do
+        let(:active_sync_session_id) { 456 }
+        let(:sync_session) { instance_double(SyncSession, id: active_sync_session_id) }
+
         before do
-          allow(SyncSession).to receive_message_chain(:active, :last).and_return(sync_session)
+          allow(SyncSession).to receive(:find_by).with(id: active_sync_session_id).and_return(sync_session)
           allow(Services::SyncMetricsCollector).to receive(:new).with(sync_session).and_return(metrics_collector)
           allow(metrics_collector).to receive(:track_operation).and_yield
           allow(metrics_collector).to receive(:flush_buffer)
@@ -113,7 +116,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
 
           it 'creates a metrics collector with the sync session' do
             expect(Services::SyncMetricsCollector).to receive(:new).with(sync_session).and_return(metrics_collector)
-            job.perform(email_account_id, email_data)
+            job.perform(email_account_id, email_data, active_sync_session_id)
           end
 
           it 'tracks the operation with metrics collector' do
@@ -122,18 +125,18 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
               email_account,
               { email_subject: 'Transaction Alert' }
             ).and_yield
-            job.perform(email_account_id, email_data)
+            job.perform(email_account_id, email_data, active_sync_session_id)
           end
 
           it 'flushes the metrics buffer' do
             expect(metrics_collector).to receive(:flush_buffer)
-            job.perform(email_account_id, email_data)
+            job.perform(email_account_id, email_data, active_sync_session_id)
           end
 
           it 'processes the email within the tracked operation' do
             expect(Services::EmailProcessing::Parser).to receive(:new).ordered
             expect(parser).to receive(:parse_expense).ordered
-            job.perform(email_account_id, email_data)
+            job.perform(email_account_id, email_data, active_sync_session_id)
           end
         end
 
@@ -150,7 +153,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
           it 'still tracks the operation even when parsing fails' do
             expect(metrics_collector).to receive(:track_operation).and_yield
             expect(metrics_collector).to receive(:flush_buffer)
-            job.perform(email_account_id, email_data)
+            job.perform(email_account_id, email_data, active_sync_session_id)
           end
         end
       end

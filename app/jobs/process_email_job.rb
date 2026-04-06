@@ -3,7 +3,7 @@ class ProcessEmailJob < ApplicationJob
 
   TRUNCATE_SIZE = 10_000  # Store only 10KB for large emails
 
-  def perform(email_account_id, email_data)
+  def perform(email_account_id, email_data, sync_session_id = nil)
     email_account = EmailAccount.find_by(id: email_account_id)
 
     unless email_account
@@ -14,8 +14,8 @@ class ProcessEmailJob < ApplicationJob
     Rails.logger.info "Processing individual email for: #{email_account.email}"
     Rails.logger.debug "Email data: #{email_data.inspect}"
 
-    # Get current sync session for metrics
-    sync_session = SyncSession.active.last
+    # Use explicit sync session ID instead of global lookup
+    sync_session = sync_session_id ? SyncSession.find_by(id: sync_session_id) : nil
     metrics_collector = Services::SyncMetricsCollector.new(sync_session) if sync_session
 
     # Track expense detection operation

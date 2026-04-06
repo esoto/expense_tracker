@@ -126,6 +126,12 @@ module Services::EmailProcessing
     def format_expense_message(expense)
       return "" unless expense
 
+      # Support both Expense objects and Hash (from progress callback)
+      if expense.is_a?(Hash)
+        merchant = expense[:merchant_name].presence || "Comercio desconocido"
+        return "Gasto detectado en #{merchant}"
+      end
+
       amount = ActiveSupport::NumberHelper.number_to_currency(
         expense.amount,
         unit: "₡",

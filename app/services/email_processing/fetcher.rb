@@ -58,59 +58,61 @@ module Services::EmailProcessing
     end
 
     def search_and_process_emails(since)
-      # Build search criteria for emails since the specified date
-      search_criteria = build_search_criteria(since)
+      imap_service.with_session do
+        # Build search criteria for emails since the specified date
+        search_criteria = build_search_criteria(since)
 
-      # Track email fetch operation
-      message_ids = if @metrics_collector
-        @metrics_collector.track_operation(:fetch_emails, @email_account, { since: since }) do
+        # Track email fetch operation
+        message_ids = if @metrics_collector
+          @metrics_collector.track_operation(:fetch_emails, @email_account, { since: since }) do
+            imap_service.search_emails(search_criteria)
+          end
+        else
           imap_service.search_emails(search_criteria)
         end
-      else
-        imap_service.search_emails(search_criteria)
-      end
 
-      # Handle nil return from metrics collector
-      message_ids ||= []
-      total_emails_found = message_ids.count
+        # Handle nil return from metrics collector
+        message_ids ||= []
+        total_emails_found = message_ids.count
 
-      # Update sync session with total emails
-      @sync_session_account&.update!(total_emails: total_emails_found)
+        # Update sync session with total emails
+        @sync_session_account&.update!(total_emails: total_emails_found)
 
-      # Process emails using the email processor with progress tracking
-      result = if @sync_session_account
-        last_detected = 0
-        email_processor.process_emails(message_ids, imap_service) do |processed_count, detected_expenses, last_expense|
-          begin
-            # Calculate incremental detected expenses
-            incremental_detected = detected_expenses - last_detected
-            @sync_session_account.update_progress(processed_count, total_emails_found, incremental_detected)
+        # Process emails using the email processor with progress tracking
+        result = if @sync_session_account
+          last_detected = 0
+          email_processor.process_emails(message_ids, imap_service) do |processed_count, detected_expenses, last_expense|
+            begin
+              # Calculate incremental detected expenses
+              incremental_detected = detected_expenses - last_detected
+              @sync_session_account.update_progress(processed_count, total_emails_found, incremental_detected)
 
-            # Broadcast activity if new expense was detected
-            if incremental_detected > 0 && last_expense
-              SyncStatusChannel.broadcast_activity(
-                @sync_session_account.sync_session,
-                "expense_detected",
-                "Gasto detectado: #{format_expense_message(last_expense)}"
-              )
+              # Broadcast activity if new expense was detected
+              if incremental_detected > 0 && last_expense
+                SyncStatusChannel.broadcast_activity(
+                  @sync_session_account.sync_session,
+                  "expense_detected",
+                  "Gasto detectado: #{format_expense_message(last_expense)}"
+                )
+              end
+
+              last_detected = detected_expenses
+            rescue => e
+              Rails.logger.error "[Services::EmailProcessing::Fetcher] Failed to update progress: #{e.message}"
+              # Continue processing even if progress update fails
             end
-
-            last_detected = detected_expenses
-          rescue => e
-            Rails.logger.error "[Services::EmailProcessing::Fetcher] Failed to update progress: #{e.message}"
-            # Continue processing even if progress update fails
           end
+        else
+          email_processor.process_emails(message_ids, imap_service)
         end
-      else
-        email_processor.process_emails(message_ids, imap_service)
+
+        processed_emails_count = result[:processed_count]
+
+        {
+          processed_emails_count: processed_emails_count,
+          total_emails_found: total_emails_found
+        }
       end
-
-      processed_emails_count = result[:processed_count]
-
-      {
-        processed_emails_count: processed_emails_count,
-        total_emails_found: total_emails_found
-      }
     end
 
     def build_search_criteria(since_date)

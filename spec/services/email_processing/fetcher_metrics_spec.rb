@@ -26,6 +26,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'metrics integration', type: 
 
   before do
     allow(mock_imap_service).to receive(:errors).and_return([])
+    allow(mock_imap_service).to receive(:with_session).and_yield
     allow(mock_email_processor).to receive(:errors).and_return([])
   end
 

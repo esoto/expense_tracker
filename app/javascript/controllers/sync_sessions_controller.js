@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import { createConsumer } from "@rails/actioncable"
+import { getSharedConsumer } from "services/sync_cable_consumer"
 
 export default class extends Controller {
   static targets = [
@@ -28,15 +28,13 @@ export default class extends Controller {
       this.subscription.unsubscribe()
       this.subscription = null
     }
-    if (this.consumer) {
-      this.consumer.disconnect()
-      this.consumer = null
-    }
+    // Release consumer reference (shared consumer stays alive for other controllers)
+    this.consumer = null
   }
 
   subscribeToChannel() {
     if (!this.consumer) {
-      this.consumer = window.consumer || createConsumer()
+      this.consumer = getSharedConsumer()
     }
     
     try {

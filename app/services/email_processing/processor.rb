@@ -85,7 +85,11 @@ module Services::EmailProcessing
         { processed: true, expense_created: false, conflict_detected: true }
       else
         # No conflict — pass pre-parsed data if available
-        pre_parsed = conflict_result.is_a?(Hash) ? conflict_result : nil
+        pre_parsed = if conflict_result.is_a?(Hash)
+          # Convert BigDecimal amount to String before ActiveJob serialization
+          # to avoid Float rounding on financial values
+          conflict_result.merge(amount: conflict_result[:amount]&.to_s)
+        end
         ProcessEmailJob.perform_later(email_account.id, email_data, @sync_session&.id, pre_parsed)
 
         # For now, we assume transaction emails will create expenses

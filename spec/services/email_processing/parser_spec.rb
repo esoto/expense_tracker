@@ -156,6 +156,19 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, performance: t
         result = parser_without_pre_parsed.parse_expense
         expect(result).to be_a(Expense)
       end
+
+      it 'converts String amount back to BigDecimal to preserve precision after ActiveJob serialization' do
+        string_amount_pre_parsed = pre_parsed.merge(amount: '95000.50')
+        parsing_rule
+        parser_with_string = Services::EmailProcessing::Parser.new(
+          email_account, email_data, pre_parsed_data: string_amount_pre_parsed
+        )
+
+        result = parser_with_string.parse_expense
+        expect(result).to be_a(Expense)
+        expect(result.amount).to eq(BigDecimal('95000.50'))
+        expect(result.amount).to be_a(BigDecimal)
+      end
     end
 
     context 'with no parsing rule' do

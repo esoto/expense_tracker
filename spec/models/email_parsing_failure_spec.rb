@@ -6,7 +6,15 @@ RSpec.describe EmailParsingFailure, type: :model, unit: true do
   end
 
   describe 'validations' do
-    it { is_expected.to validate_presence_of(:error_messages) }
+    it 'allows empty error_messages array' do
+      failure = build(:email_parsing_failure, error_messages: [])
+      expect(failure).to be_valid
+    end
+
+    it 'rejects nil error_messages' do
+      failure = build(:email_parsing_failure, error_messages: nil)
+      expect(failure).not_to be_valid
+    end
   end
 
   describe 'defaults' do

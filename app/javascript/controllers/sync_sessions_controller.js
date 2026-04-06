@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
-import { getSharedConsumer } from "services/sync_cable_consumer"
+import { syncChannelMixin } from "mixins/sync_channel_mixin"
 
-export default class extends Controller {
+class SyncSessionsController extends Controller {
   static targets = [
     "sessionRow",
     "activeSection",
@@ -11,7 +11,7 @@ export default class extends Controller {
     "detectedCount",
     "accountCard"
   ]
-  
+
   static values = {
     sessionId: Number,
     autoRefresh: Boolean
@@ -24,69 +24,7 @@ export default class extends Controller {
   }
 
   disconnect() {
-    if (this.subscription) {
-      this.subscription.unsubscribe()
-      this.subscription = null
-    }
-    // Release consumer reference (shared consumer stays alive for other controllers)
-    this.consumer = null
-  }
-
-  subscribeToChannel() {
-    if (!this.consumer) {
-      this.consumer = getSharedConsumer()
-    }
-    
-    try {
-      this.subscription = this.consumer.subscriptions.create(
-        { 
-          channel: "SyncStatusChannel",
-          session_id: this.sessionIdValue
-        },
-        {
-          connected: () => {
-            // Connection established
-          },
-
-          disconnected: () => {
-            // Connection lost
-          },
-
-          received: (data) => {
-            this.handleUpdate(data)
-          },
-          
-          rejected: () => {
-            console.error("❌ Subscription rejected by server")
-          }
-        }
-      )
-    } catch (error) {
-      console.error("Error creating subscription:", error)
-    }
-  }
-
-  handleUpdate(data) {
-    switch(data.type) {
-      case 'initial_status':
-        // Just update the UI, don't trigger any actions
-        this.updateStatus(data)
-        break
-      case 'progress_update':
-        this.updateProgress(data)
-        break
-      case 'account_update':
-        this.updateAccount(data)
-        break
-      case 'completed':
-        this.handleCompletion(data)
-        break
-      case 'failed':
-        this.handleFailure(data)
-        break
-      default:
-        this.updateStatus(data)
-    }
+    this.disconnectChannel()
   }
 
   updateProgress(data) {
@@ -120,7 +58,7 @@ export default class extends Controller {
     // Find the row for this session
     const rowSelector = `[data-session-id="${this.sessionIdValue}"]`
     const row = document.querySelector(rowSelector)
-    
+
     if (row) {
       // Update progress in the row
       const progressBarCell = row.querySelector('[data-progress-bar]')
@@ -147,16 +85,16 @@ export default class extends Controller {
     if (!this.hasAccountCardTargets) return
 
     // Find the account card
-    const accountCard = this.accountCardTargets.find(card => 
+    const accountCard = this.accountCardTargets.find(card =>
       card.dataset.accountId === String(data.account_id)
     )
-    
+
     if (accountCard) {
       // Update status badge
       const statusBadge = accountCard.querySelector('[data-status-badge]')
       if (statusBadge) {
         statusBadge.textContent = data.status === 'processing' ? 'Procesando' : data.status
-        statusBadge.className = data.status === 'processing' 
+        statusBadge.className = data.status === 'processing'
           ? 'text-xs px-2 py-1 rounded-full bg-teal-100 text-teal-700'
           : 'text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700'
       }
@@ -175,23 +113,11 @@ export default class extends Controller {
     }
   }
 
-  updateStatus(data) {
-    if (data.status) {
-      this.updateProgress(data)
-      
-      if (data.accounts && Array.isArray(data.accounts)) {
-        data.accounts.forEach(account => {
-          this.updateAccount(account)
-        })
-      }
-    }
-  }
-
   handleCompletion(data) {
-    
+
     // Update UI to show completion
     this.updateProgress(data)
-    
+
     // Update status badge in the table row
     const rowSelector = `[data-session-id="${this.sessionIdValue}"]`
     const row = document.querySelector(rowSelector)
@@ -202,60 +128,26 @@ export default class extends Controller {
         statusBadge.textContent = 'Completado'
       }
     }
-    
+
     // Show completion notification
     this.showNotification("Sincronización completada exitosamente", "success")
-    
+
     // Don't reload - let user continue viewing real-time updates
   }
 
   handleFailure(data) {
-    
+
     // Show error notification
     this.showNotification(`Error en sincronización: ${data.error || 'Error desconocido'}`, "error")
-    
+
     // Update UI to show error state
     if (this.hasProgressBarTarget) {
       this.progressBarTarget.classList.add('bg-rose-600')
       this.progressBarTarget.classList.remove('bg-amber-600')
     }
   }
-
-  showNotification(message, type = 'info') {
-    const notification = document.createElement('div')
-    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 ${
-      type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-      type === 'error' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
-      'bg-slate-50 text-slate-700 border border-slate-200'
-    }`
-    const flexDiv = document.createElement('div')
-    flexDiv.className = 'flex items-center'
-    const messageSpan = document.createElement('span')
-    messageSpan.textContent = message
-    const closeBtn = document.createElement('button')
-    closeBtn.className = 'ml-4 text-current opacity-70 hover:opacity-100'
-    closeBtn.addEventListener('click', () => notification.remove())
-    const closeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-    closeSvg.setAttribute('class', 'w-4 h-4')
-    closeSvg.setAttribute('fill', 'none')
-    closeSvg.setAttribute('stroke', 'currentColor')
-    closeSvg.setAttribute('viewBox', '0 0 24 24')
-    const closePath = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-    closePath.setAttribute('stroke-linecap', 'round')
-    closePath.setAttribute('stroke-linejoin', 'round')
-    closePath.setAttribute('stroke-width', '2')
-    closePath.setAttribute('d', 'M6 18L18 6M6 6l12 12')
-    closeSvg.appendChild(closePath)
-    closeBtn.appendChild(closeSvg)
-    flexDiv.appendChild(messageSpan)
-    flexDiv.appendChild(closeBtn)
-    notification.appendChild(flexDiv)
-    
-    document.body.appendChild(notification)
-    
-    setTimeout(() => {
-      notification.style.opacity = '0'
-      setTimeout(() => notification.remove(), 300)
-    }, 5000)
-  }
 }
+
+Object.assign(SyncSessionsController.prototype, syncChannelMixin)
+
+export default SyncSessionsController

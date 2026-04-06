@@ -307,15 +307,25 @@ RSpec.describe Services::Email::SyncService, unit: true do
 
       it 'updates session status and increments retry count' do
         expect(failed_session).to receive(:update!).with(
-          status: 'retrying',
+          status: 'pending',
           metadata: { 'retry_count' => 2 }
         )
-        expect(ProcessEmailsJob).to receive(:perform_later).with(5)
+        allow(failed_account_session).to receive(:update!)
+        expect(ProcessEmailsJob).to receive(:perform_later).with(5, sync_session_id: 30)
 
         result = service.retry_failed_session(30)
 
         expect(result[:success]).to be true
         expect(result[:message]).to eq('Retry initiated for session 30')
+      end
+
+      it 'resets failed account sessions to pending' do
+        allow(failed_session).to receive(:update!)
+        allow(ProcessEmailsJob).to receive(:perform_later)
+
+        expect(failed_account_session).to receive(:update!).with(status: 'pending', last_error: nil)
+
+        service.retry_failed_session(30)
       end
 
       it 're-runs sync for all failed accounts' do
@@ -324,9 +334,11 @@ RSpec.describe Services::Email::SyncService, unit: true do
         allow(failed_session).to receive_message_chain(:sync_session_accounts, :failed)
           .and_return([ failed_account_session, failed_account2 ])
         allow(failed_session).to receive(:update!)
+        allow(failed_account_session).to receive(:update!)
+        allow(failed_account2).to receive(:update!)
 
-        expect(ProcessEmailsJob).to receive(:perform_later).with(5)
-        expect(ProcessEmailsJob).to receive(:perform_later).with(8)
+        expect(ProcessEmailsJob).to receive(:perform_later).with(5, sync_session_id: 30)
+        expect(ProcessEmailsJob).to receive(:perform_later).with(8, sync_session_id: 30)
 
         service.retry_failed_session(30)
       end

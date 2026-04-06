@@ -304,7 +304,7 @@ RSpec.describe Services::Email::SyncService, 'Session Management', unit: true do
         allow(failed_session).to receive_message_chain(:sync_session_accounts, :failed).and_return([])
 
         expect(failed_session).to receive(:update!).with(
-          status: 'retrying',
+          status: 'pending',
           metadata: { 'retry_count' => 3 }
         )
 
@@ -318,9 +318,13 @@ RSpec.describe Services::Email::SyncService, 'Session Management', unit: true do
           .and_return(failed_accounts)
         allow(failed_session).to receive(:update!)
 
-        expect(ProcessEmailsJob).to receive(:perform_later).with(1)
-        expect(ProcessEmailsJob).to receive(:perform_later).with(2)
-        expect(ProcessEmailsJob).not_to receive(:perform_later).with(3)
+        failed_accounts.each do |acct|
+          allow(acct).to receive(:update!)
+        end
+
+        expect(ProcessEmailsJob).to receive(:perform_later).with(1, sync_session_id: 400)
+        expect(ProcessEmailsJob).to receive(:perform_later).with(2, sync_session_id: 400)
+        expect(ProcessEmailsJob).not_to receive(:perform_later).with(3, any_args)
 
         result = service.retry_failed_session(400)
 
@@ -353,7 +357,7 @@ RSpec.describe Services::Email::SyncService, 'Session Management', unit: true do
             .and_return([])
 
           expect(failed_session_high_retry).to receive(:update!).with(
-            status: 'retrying',
+            status: 'pending',
             metadata: { 'retry_count' => 11 }
           )
 

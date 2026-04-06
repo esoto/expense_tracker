@@ -72,13 +72,14 @@ module Services::Email
         retry_count = (session.metadata&.dig("retry_count") || 0) + 1
 
         session.update!(
-          status: "retrying",
+          status: "pending",
           metadata: (session.metadata || {}).merge("retry_count" => retry_count)
         )
 
         # Re-run sync for failed accounts
         session.sync_session_accounts.failed.each do |account_session|
-          ProcessEmailsJob.perform_later(account_session.email_account_id)
+          account_session.update!(status: "pending", last_error: nil)
+          ProcessEmailsJob.perform_later(account_session.email_account_id, sync_session_id: session.id)
         end
 
         { success: true, message: "Retry initiated for session #{session_id}" }

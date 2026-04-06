@@ -369,6 +369,17 @@ RSpec.describe Services::ImapConnectionService, integration: true do
       expect(mock_imap).to have_received(:disconnect)
     end
 
+    it 'raises ConnectionError on nested with_session calls' do
+      service.with_session do
+        expect {
+          service.with_session { }
+        }.to raise_error(
+          Services::ImapConnectionService::ConnectionError,
+          /nested with_session is not supported/
+        )
+      end
+    end
+
     it 'validates account before opening connection' do
       email_account.update(active: false)
 

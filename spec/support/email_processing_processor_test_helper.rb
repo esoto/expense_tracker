@@ -46,6 +46,10 @@ module EmailProcessingProcessorTestHelper
       @text_bodies[message_id]
     end
 
+    def with_session
+      yield
+    end
+
     def add_error(message)
       @errors << message
     end

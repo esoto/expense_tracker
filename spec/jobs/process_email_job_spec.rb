@@ -243,8 +243,8 @@ RSpec.describe ProcessEmailJob, type: :job, integration: true do
   end
 
   describe 'job queue configuration', integration: true do
-    it 'uses the default queue' do
-      expect(ProcessEmailJob.new.queue_name).to eq('default')
+    it 'uses the email_processing queue' do
+      expect(ProcessEmailJob.new.queue_name).to eq('email_processing')
     end
   end
 
@@ -259,6 +259,26 @@ RSpec.describe ProcessEmailJob, type: :job, integration: true do
       expect {
         ProcessEmailJob.perform_now(email_account.id, email_data)
       }.to change(Expense, :count).by(1)
+    end
+  end
+
+  describe 'sync session threading', integration: true do
+    let(:small_email_data) { { subject: "Test", body: "Test body", date: Time.current } }
+
+    it "works without sync_session_id for backwards compatibility" do
+      expect { ProcessEmailJob.perform_now(email_account.id, small_email_data) }.not_to raise_error
+    end
+
+    it "uses explicit sync_session_id when provided" do
+      sync_session = create(:sync_session, :running)
+      # Should not call SyncSession.active.last
+      expect(SyncSession).not_to receive(:active)
+      ProcessEmailJob.perform_now(email_account.id, small_email_data, sync_session.id)
+    end
+
+    it "resolves nil when sync_session_id is nil" do
+      expect(SyncSession).not_to receive(:active)
+      ProcessEmailJob.perform_now(email_account.id, small_email_data, nil)
     end
   end
 

@@ -104,6 +104,7 @@ RSpec.describe 'Services::EmailProcessing::Processor - Metrics Tracking', type: 
 
     describe 'conflict detection with metrics' do
       let(:sync_session) { instance_double(SyncSession) }
+      let(:processor) { Services::EmailProcessing::Processor.new(email_account, metrics_collector: metrics_collector, sync_session: sync_session) }
       let(:conflict_detector) { instance_double(Services::ConflictDetectionService) }
       let(:parsing_rule) { instance_double(ParsingRule) }
       let(:parsing_strategy) { instance_double(Services::EmailProcessing::Strategies::Regex) }
@@ -117,7 +118,6 @@ RSpec.describe 'Services::EmailProcessing::Processor - Metrics Tracking', type: 
       }
 
       before do
-        allow(SyncSession).to receive_message_chain(:active, :last).and_return(sync_session)
         allow(ParsingRule).to receive_message_chain(:active, :for_bank, :first).and_return(parsing_rule)
         allow(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy).and_return(parsing_strategy)
         allow(parsing_strategy).to receive(:parse_email).and_return({

@@ -20,6 +20,16 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
     it 'works without metrics collector' do
       expect(processor_without_metrics.metrics_collector).to be_nil
     end
+
+    it 'accepts optional sync_session' do
+      sync_session = instance_double(SyncSession)
+      p = described_class.new(email_account, sync_session: sync_session)
+      expect(p.instance_variable_get(:@sync_session)).to eq(sync_session)
+    end
+
+    it 'defaults sync_session to nil' do
+      expect(processor.instance_variable_get(:@sync_session)).to be_nil
+    end
   end
 
   describe '#process_emails', integration: true do
@@ -75,15 +85,14 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
       it 'calls progress callback when provided' do
         progress_calls = []
 
-        processor.process_emails(message_ids, mock_imap_service) do |processed, detected|
-          progress_calls << [ processed, detected ]
+        processor.process_emails(message_ids, mock_imap_service) do |processed, detected, expense_data|
+          progress_calls << [ processed, detected, expense_data ]
         end
 
-        expect(progress_calls).to eq([
-          [ 1, 1 ],  # First email (transaction)
-          [ 2, 1 ],  # Second email (non-transaction)
-          [ 3, 2 ]   # Third email (transaction)
-        ])
+        expect(progress_calls.length).to eq(3)
+        expect(progress_calls[0][0..1]).to eq([ 1, 1 ])  # First email (transaction)
+        expect(progress_calls[1][0..1]).to eq([ 2, 1 ])  # Second email (non-transaction)
+        expect(progress_calls[2][0..1]).to eq([ 3, 2 ])  # Third email (transaction)
       end
 
       it 'works without progress callback' do
@@ -145,6 +154,38 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
         expect(result[:detected_expenses_count]).to eq(0)
         expect(processor.errors).to include('Error processing email: IMAP error')
       end
+    end
+  end
+
+  describe '#process_emails progress callback', unit: true do
+    let(:imap_service) { instance_double(Services::ImapConnectionService) }
+
+    it 'passes 3 arguments to progress callback' do
+      envelope = double("envelope", subject: "Notificación de transacción", from: nil, date: Time.current)
+      allow(imap_service).to receive(:fetch_envelope).and_return(envelope)
+      allow(imap_service).to receive(:fetch_body_structure).and_return(nil)
+      allow(imap_service).to receive(:fetch_text_body).and_return("Test body")
+      allow(ProcessEmailJob).to receive(:perform_later)
+
+      callback_args = []
+      processor_without_metrics.process_emails([ 1 ], imap_service) do |*args|
+        callback_args = args
+      end
+
+      expect(callback_args.length).to eq(3)
+    end
+
+    it 'passes nil as third arg for non-expense emails' do
+      non_transaction_envelope = double("envelope", subject: "Newsletter", from: nil, date: Time.current)
+      allow(imap_service).to receive(:fetch_envelope).and_return(non_transaction_envelope)
+
+      callback_args = []
+      processor_without_metrics.process_emails([ 1 ], imap_service) do |*args|
+        callback_args = args
+      end
+
+      expect(callback_args.length).to eq(3)
+      expect(callback_args[2]).to be_nil
     end
   end
 
@@ -588,32 +629,36 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
       allow(metrics_collector).to receive(:track_operation).and_yield
     end
 
-    context 'with active sync session' do
+    context 'with active sync session threaded via constructor' do
+      let(:processor_with_session) { described_class.new(email_account, metrics_collector: metrics_collector, sync_session: sync_session) }
+
       before do
-        allow(SyncSession).to receive_message_chain(:active, :last).and_return(sync_session)
         allow(Services::ConflictDetectionService).to receive(:new).with(sync_session, metrics_collector: metrics_collector).and_return(conflict_detector)
       end
 
       it 'detects conflict when present' do
         allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(true)
 
-        result = processor.send(:detect_and_handle_conflict, email_data)
+        result = processor_with_session.send(:detect_and_handle_conflict, email_data)
         expect(result).to be true
       end
 
       it 'returns false when no conflict' do
         allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(false)
 
-        result = processor.send(:detect_and_handle_conflict, email_data)
+        result = processor_with_session.send(:detect_and_handle_conflict, email_data)
         expect(result).to be false
+      end
+
+      it 'does not call SyncSession.active.last' do
+        allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(false)
+        expect(SyncSession).not_to receive(:active)
+
+        processor_with_session.send(:detect_and_handle_conflict, email_data)
       end
     end
 
-    context 'without active sync session' do
-      before do
-        allow(SyncSession).to receive_message_chain(:active, :last).and_return(nil)
-      end
-
+    context 'without sync session (nil)' do
       it 'returns false when no sync session' do
         result = processor.send(:detect_and_handle_conflict, email_data)
         expect(result).to be false
@@ -643,8 +688,9 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
     end
 
     context 'with error during conflict detection' do
+      let(:processor_with_session) { described_class.new(email_account, metrics_collector: metrics_collector, sync_session: sync_session) }
+
       before do
-        allow(SyncSession).to receive_message_chain(:active, :last).and_return(sync_session)
         allow(Services::ConflictDetectionService).to receive(:new).and_raise(StandardError, 'Detection error')
         allow(Rails.logger).to receive(:error)
       end
@@ -652,7 +698,7 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
       it 'logs error and returns false' do
         expect(Rails.logger).to receive(:error).with('[Services::EmailProcessing::Processor] Error detecting conflict: Detection error')
 
-        result = processor.send(:detect_and_handle_conflict, email_data)
+        result = processor_with_session.send(:detect_and_handle_conflict, email_data)
         expect(result).to be false
       end
     end

@@ -5,7 +5,8 @@ RSpec.describe 'Services::EmailProcessing::Processor - Conflict Detection', type
   include EmailProcessingProcessorTestHelper
   let(:email_account) { create(:email_account, :bac) }
   let(:metrics_collector) { instance_double(Services::SyncMetricsCollector) }
-  let(:processor) { Services::EmailProcessing::Processor.new(email_account, metrics_collector: metrics_collector) }
+  let(:sync_session_for_processor) { instance_double(SyncSession, id: 1) }
+  let(:processor) { Services::EmailProcessing::Processor.new(email_account, metrics_collector: metrics_collector, sync_session: sync_session_for_processor) }
   let(:mock_imap_service) { instance_double(Services::ImapConnectionService) }
 
   describe '#detect_and_handle_conflict' do
@@ -21,18 +22,13 @@ RSpec.describe 'Services::EmailProcessing::Processor - Conflict Detection', type
     end
 
     describe 'edge cases and complex scenarios' do
-      context 'with multiple concurrent sync sessions' do
-        let(:sync_session1) { instance_double(SyncSession, id: 1) }
+      context 'with sync session injected via constructor' do
         let(:sync_session2) { instance_double(SyncSession, id: 2) }
-        let(:active_sessions) { double('active_sessions') }
-
-        before do
-          allow(SyncSession).to receive(:active).and_return(active_sessions)
+        let(:processor_with_session2) do
+          Services::EmailProcessing::Processor.new(email_account, metrics_collector: metrics_collector, sync_session: sync_session2)
         end
 
-        it 'uses the most recent active sync session' do
-          allow(active_sessions).to receive(:last).and_return(sync_session2)
-
+        it 'uses the sync session provided at construction time' do
           expect(Services::ConflictDetectionService).to receive(:new).with(
             sync_session2,
             metrics_collector: metrics_collector
@@ -42,26 +38,19 @@ RSpec.describe 'Services::EmailProcessing::Processor - Conflict Detection', type
           allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(false)
 
           email_data = { body: 'Transaction $100', date: Time.current }
-          processor.send(:detect_and_handle_conflict, email_data)
+          processor_with_session2.send(:detect_and_handle_conflict, email_data)
         end
 
-        it 'handles sync session switching during processing' do
-          # Simulate session change between calls
-          call_count = 0
-          allow(active_sessions).to receive(:last) do
-            call_count += 1
-            call_count == 1 ? sync_session1 : sync_session2
-          end
-
+        it 'consistently uses the same sync session across multiple calls' do
           allow(Services::ConflictDetectionService).to receive(:new).and_return(conflict_detector)
           allow(parsing_strategy).to receive(:parse_email).and_return({ amount: 100 })
           allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(false)
 
           email_data = { body: 'Transaction $100', date: Time.current }
 
-          # Process twice to simulate session change
-          processor.send(:detect_and_handle_conflict, email_data)
-          processor.send(:detect_and_handle_conflict, email_data)
+          # Process twice — should use the same session both times
+          processor_with_session2.send(:detect_and_handle_conflict, email_data)
+          processor_with_session2.send(:detect_and_handle_conflict, email_data)
         end
       end
 
@@ -218,8 +207,8 @@ RSpec.describe 'Services::EmailProcessing::Processor - Conflict Detection', type
           allow(parsing_strategy).to receive(:parse_email).and_return({ amount: 100 })
         end
 
-        it 'handles database connection errors during session lookup' do
-          allow(SyncSession).to receive(:active)
+        it 'handles database connection errors during conflict detection service initialization' do
+          allow(Services::ConflictDetectionService).to receive(:new)
             .and_raise(ActiveRecord::ConnectionNotEstablished, 'Database connection lost')
           allow(Rails.logger).to receive(:error)
 
@@ -288,13 +277,12 @@ RSpec.describe 'Services::EmailProcessing::Processor - Conflict Detection', type
         let(:email_data) { { body: 'Transaction', date: Time.current } }
 
         before do
-          allow(SyncSession).to receive_message_chain(:active, :last).and_return(sync_session)
           allow(parsing_strategy).to receive(:parse_email).and_return({ amount: 100 })
         end
 
         it 'passes metrics collector through to conflict detection service' do
           expect(Services::ConflictDetectionService).to receive(:new).with(
-            sync_session,
+            sync_session_for_processor,
             metrics_collector: metrics_collector
           ).and_return(conflict_detector)
 
@@ -306,12 +294,8 @@ RSpec.describe 'Services::EmailProcessing::Processor - Conflict Detection', type
         it 'works without metrics collector' do
           processor_no_metrics = Services::EmailProcessing::Processor.new(email_account)
 
-          allow(Services::ConflictDetectionService).to receive(:new).with(
-            sync_session,
-            metrics_collector: nil
-          ).and_return(conflict_detector)
-
-          allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(false)
+          # Without a sync_session, conflict detection is skipped and returns false
+          expect(Services::ConflictDetectionService).not_to receive(:new)
 
           result = processor_no_metrics.send(:detect_and_handle_conflict, email_data)
           expect(result).to be false

@@ -5,7 +5,11 @@ module Services::EmailProcessing
     def initialize(email_account, imap_service: nil, email_processor: nil, sync_session_account: nil, metrics_collector: nil)
       @email_account = email_account
       @imap_service = imap_service || Services::ImapConnectionService.new(email_account)
-      @email_processor = email_processor || Processor.new(email_account, metrics_collector: metrics_collector)
+      @email_processor = email_processor || Processor.new(
+        email_account,
+        metrics_collector: metrics_collector,
+        sync_session: sync_session_account&.sync_session
+      )
       @sync_session_account = sync_session_account
       @metrics_collector = metrics_collector
       @errors = []

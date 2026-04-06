@@ -96,7 +96,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'metrics integration', type: 
 
       it 'passes metrics collector to email processor' do
         expect(Services::EmailProcessing::Processor).to receive(:new)
-          .with(email_account, metrics_collector: metrics_collector)
+          .with(email_account, hash_including(metrics_collector: metrics_collector))
           .and_return(mock_email_processor)
 
         fetcher = described_class.new(email_account, metrics_collector: metrics_collector)
@@ -127,7 +127,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'metrics integration', type: 
 
       it 'creates processor without metrics collector' do
         expect(Services::EmailProcessing::Processor).to receive(:new)
-          .with(email_account, metrics_collector: nil)
+          .with(email_account, hash_including(metrics_collector: nil))
           .and_return(mock_email_processor)
 
         fetcher = described_class.new(email_account, metrics_collector: nil)
@@ -336,7 +336,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'metrics integration', type: 
     it 'passes metrics to processor during initialization' do
       # Create a new fetcher to test initialization
       expect(Services::EmailProcessing::Processor).to receive(:new)
-        .with(email_account, metrics_collector: metrics_collector)
+        .with(email_account, hash_including(metrics_collector: metrics_collector))
         .and_call_original
 
       described_class.new(email_account, metrics_collector: metrics_collector)
@@ -344,7 +344,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'metrics integration', type: 
 
     it 'creates processor without metrics when not provided' do
       expect(Services::EmailProcessing::Processor).to receive(:new)
-        .with(email_account, metrics_collector: nil)
+        .with(email_account, hash_including(metrics_collector: nil))
         .and_call_original
 
       described_class.new(email_account)

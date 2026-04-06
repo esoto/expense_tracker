@@ -2,9 +2,10 @@ module Services::EmailProcessing
   class Processor
     attr_reader :email_account, :errors, :metrics_collector
 
-    def initialize(email_account, metrics_collector: nil)
+    def initialize(email_account, metrics_collector: nil, sync_session: nil)
       @email_account = email_account
       @metrics_collector = metrics_collector
+      @sync_session = sync_session
       @errors = []
     end
 
@@ -24,7 +25,8 @@ module Services::EmailProcessing
 
         # Call progress callback if provided
         if progress_callback
-          progress_callback.call(index + 1, detected_expenses_count)
+          expense_data = result[:expense_created] ? result.slice(:expense_data) : nil
+          progress_callback.call(index + 1, detected_expenses_count, expense_data)
         end
       end
 
@@ -80,11 +82,17 @@ module Services::EmailProcessing
         { processed: true, expense_created: false, conflict_detected: true }
       else
         # Queue job to parse and create expense
-        ProcessEmailJob.perform_later(email_account.id, email_data)
+        ProcessEmailJob.perform_later(email_account.id, email_data, @sync_session&.id)
 
         # For now, we assume transaction emails will create expenses
         # In a real implementation, we'd track this through the job
-        { processed: true, expense_created: true }
+        {
+          processed: true,
+          expense_created: true,
+          expense_data: email_data.slice(:subject).merge(
+            merchant_name: email_data[:body]&.match(/(?:Comercio|comercio|merchant|establecimiento)[\s:]+([^\n\r]+)/i)&.captures&.first&.strip
+          )
+        }
       end
 
     rescue StandardError => e
@@ -283,8 +291,8 @@ module Services::EmailProcessing
       expense_data[:raw_email_content] = email_data[:body]
       expense_data[:transaction_date] ||= email_data[:date]
 
-      # Get current sync session (if any)
-      sync_session = SyncSession.active.last
+      # Use the explicitly threaded sync session (avoids global lookup race condition)
+      sync_session = @sync_session
 
       if sync_session
         # Use conflict detection service with metrics tracking

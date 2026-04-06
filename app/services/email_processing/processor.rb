@@ -25,7 +25,7 @@ module Services::EmailProcessing
 
         # Call progress callback if provided
         if progress_callback
-          expense_data = result[:expense_created] ? result.slice(:expense_data) : nil
+          expense_data = result[:expense_created] ? result[:expense_data] : nil
           progress_callback.call(index + 1, detected_expenses_count, expense_data)
         end
       end

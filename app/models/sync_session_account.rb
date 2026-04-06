@@ -91,7 +91,8 @@ class SyncSessionAccount < ApplicationRecord
     else
       sync_session.complete!
     end
-  rescue ActiveRecord::RecordInvalid => e
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::StaleObjectError => e
+    # StaleObjectError means another thread already completed/failed the session — desired outcome achieved
     Rails.logger.error "[SyncSessionAccount] Failed to auto-complete session #{sync_session.id}: #{e.message}"
   end
 end

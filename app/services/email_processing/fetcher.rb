@@ -129,7 +129,7 @@ module Services::EmailProcessing
       # Support both Expense objects and Hash (from progress callback)
       if expense.is_a?(Hash)
         merchant = expense[:merchant_name].presence || "Comercio desconocido"
-        return "Gasto detectado en #{merchant}"
+        return merchant
       end
 
       amount = ActiveSupport::NumberHelper.number_to_currency(

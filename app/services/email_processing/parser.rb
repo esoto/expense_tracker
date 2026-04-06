@@ -19,7 +19,11 @@ module Services::EmailProcessing
       return nil unless parsing_rule
 
       begin
-        parsed_data = @pre_parsed_data || begin
+        parsed_data = if @pre_parsed_data
+          # Convert amount back from String to BigDecimal (serialized as String
+          # in Processor to avoid ActiveJob Float rounding on financial values)
+          @pre_parsed_data.merge(amount: BigDecimal(@pre_parsed_data[:amount].to_s))
+        else
           strategy = Services::EmailProcessing::StrategyFactory.create_strategy(parsing_rule, email_content: email_content)
           strategy.parse_email(email_content)
         end

@@ -162,7 +162,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
     context 'with pre-parsed data' do
       let(:pre_parsed_data) do
         {
-          amount: 100.0,
+          amount: '100.00',
           transaction_date: Date.current,
           merchant_name: 'Test Store',
           description: 'Purchase',
@@ -193,6 +193,36 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
           result = job.perform(email_account_id, email_data, nil, pre_parsed_data)
           expect(result).to eq(expense)
         end
+      end
+    end
+
+    context 'BigDecimal precision through serialization' do
+      let(:pre_parsed_data) do
+        {
+          amount: '95000.50',
+          transaction_date: Date.current,
+          merchant_name: 'Test Store',
+          description: 'Purchase',
+          email_account_id: email_account_id,
+          raw_email_content: 'Transaction body'
+        }
+      end
+
+      before do
+        allow(EmailAccount).to receive(:find_by).with(id: email_account_id).and_return(email_account)
+      end
+
+      it 'preserves financial precision when amount is passed as String' do
+        received_pre_parsed = nil
+        allow(Services::EmailProcessing::Parser).to receive(:new) do |_account, _data, pre_parsed_data:|
+          received_pre_parsed = pre_parsed_data
+          parser
+        end
+        allow(parser).to receive(:parse_expense).and_return(expense)
+
+        job.perform(email_account_id, email_data, nil, pre_parsed_data)
+
+        expect(received_pre_parsed[:amount]).to eq('95000.50')
       end
     end
 

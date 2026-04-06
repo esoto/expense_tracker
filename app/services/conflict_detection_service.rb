@@ -120,17 +120,20 @@ module Services
       scope = scope.where(amount: min_amount..max_amount)
     end
 
-    # Pre-filter by merchant similarity using pg_trgm (low threshold to avoid false negatives)
-    if new_expense_data[:merchant_name].present?
-      normalized = new_expense_data[:merchant_name].to_s.downcase.strip
-      scope = scope.where(
-        "merchant_normalized IS NULL OR similarity(COALESCE(merchant_normalized, ''), ?) >= 0.2",
-        normalized
-      )
-    end
+    # Batch-compute merchant and description similarity scores in the query
+    # so calculate_similarity can read them without N+1 DB round-trips.
+    merchant = new_expense_data[:merchant_name].to_s.downcase.strip
+    description = new_expense_data[:description].to_s.downcase.strip
 
-    # Limit to reasonable number of candidates
-    scope.limit(20)
+    scope.select(
+      "expenses.*",
+      Arel.sql(ActiveRecord::Base.sanitize_sql_array(
+        [ "similarity(COALESCE(merchant_normalized, ''), ?) AS merchant_similarity", merchant ]
+      )),
+      Arel.sql(ActiveRecord::Base.sanitize_sql_array(
+        [ "similarity(COALESCE(LOWER(description), ''), ?) AS description_similarity", description ]
+      ))
+    ).limit(20)
   end
 
   def calculate_similarity(existing_expense, new_expense_data)
@@ -180,21 +183,29 @@ module Services
       score += (date_score * weights[:date] / 100.0)
     end
 
-    # Merchant similarity (fuzzy match)
+    # Merchant similarity — use pre-computed DB score if available
     if new_expense_data[:merchant_name]
-      merchant_score = string_similarity(
-        existing_expense.merchant_name.to_s.downcase,
-        new_expense_data[:merchant_name].to_s.downcase
-      )
+      merchant_score = if existing_expense.respond_to?(:merchant_similarity) && existing_expense.merchant_similarity
+        (existing_expense.merchant_similarity.to_f * 100.0).round(2)
+      else
+        string_similarity(
+          existing_expense.merchant_name.to_s.downcase,
+          new_expense_data[:merchant_name].to_s.downcase
+        )
+      end
       score += (merchant_score * weights[:merchant] / 100.0)
     end
 
-    # Description similarity
+    # Description similarity — use pre-computed DB score if available
     if new_expense_data[:description]
-      desc_score = string_similarity(
-        existing_expense.description.to_s.downcase,
-        new_expense_data[:description].to_s.downcase
-      )
+      desc_score = if existing_expense.respond_to?(:description_similarity) && existing_expense.description_similarity
+        (existing_expense.description_similarity.to_f * 100.0).round(2)
+      else
+        string_similarity(
+          existing_expense.description.to_s.downcase,
+          new_expense_data[:description].to_s.downcase
+        )
+      end
       score += (desc_score * weights[:description] / 100.0)
     end
 

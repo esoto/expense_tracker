@@ -18,6 +18,8 @@ module Services
   # Errors raised inside the yielded block propagate naturally — callers
   # retain control over their own error handling.
   def with_session
+    raise ConnectionError, "Session already active (nested with_session is not supported)" if @active_session
+
     validate_account!
 
     begin

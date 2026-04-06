@@ -159,22 +159,18 @@ export default class extends Controller {
       progressBar.style.width = `${data.progress_percentage}%`
     }
 
-    // Update processed count
+    // Update processed count (preserve styled child element)
     const processedText = accountElement.querySelector('[data-account-processed]')
     if (processedText) {
-      processedText.innerHTML = `
-        <span class="text-lg font-semibold text-slate-900">
-          ${data.processed_emails || 0} / ${data.total_emails || 0}
-        </span>
-      `
+      const target = processedText.querySelector('p') || processedText
+      target.textContent = `${data.processed_emails || 0} / ${data.total_emails || 0}`
     }
 
-    // Update detected expenses
+    // Update detected expenses (preserve styled child element)
     const detectedText = accountElement.querySelector('[data-account-detected]')
     if (detectedText) {
-      detectedText.innerHTML = `
-        <span class="text-lg font-semibold text-emerald-600">${data.detected_expenses || 0}</span>
-      `
+      const target = detectedText.querySelector('p') || detectedText
+      target.textContent = `${data.detected_expenses || 0}`
     }
   }
 
@@ -202,7 +198,7 @@ export default class extends Controller {
     const statusBadge = document.querySelector('[data-sync-status]')
     if (statusBadge) {
       statusBadge.className = 'px-3 py-1 rounded-full text-sm font-medium inline-flex items-center bg-emerald-100 text-emerald-800'
-      statusBadge.innerHTML = 'Completado'
+      statusBadge.textContent = 'Completado'
     }
     
     // Don't reload - let user see the final state
@@ -227,16 +223,28 @@ export default class extends Controller {
       type === 'error' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
       'bg-slate-50 text-slate-700 border border-slate-200'
     }`
-    notification.innerHTML = `
-      <div class="flex items-center">
-        <span>${message}</span>
-        <button class="ml-4 text-current opacity-70 hover:opacity-100" onclick="this.parentElement.parentElement.remove()">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
-      </div>
-    `
+    const flexDiv = document.createElement('div')
+    flexDiv.className = 'flex items-center'
+    const messageSpan = document.createElement('span')
+    messageSpan.textContent = message
+    const closeBtn = document.createElement('button')
+    closeBtn.className = 'ml-4 text-current opacity-70 hover:opacity-100'
+    closeBtn.addEventListener('click', () => notification.remove())
+    const closeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    closeSvg.setAttribute('class', 'w-4 h-4')
+    closeSvg.setAttribute('fill', 'none')
+    closeSvg.setAttribute('stroke', 'currentColor')
+    closeSvg.setAttribute('viewBox', '0 0 24 24')
+    const closePath = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    closePath.setAttribute('stroke-linecap', 'round')
+    closePath.setAttribute('stroke-linejoin', 'round')
+    closePath.setAttribute('stroke-width', '2')
+    closePath.setAttribute('d', 'M6 18L18 6M6 6l12 12')
+    closeSvg.appendChild(closePath)
+    closeBtn.appendChild(closeSvg)
+    flexDiv.appendChild(messageSpan)
+    flexDiv.appendChild(closeBtn)
+    notification.appendChild(flexDiv)
     
     document.body.appendChild(notification)
     

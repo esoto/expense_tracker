@@ -159,16 +159,18 @@ export default class extends Controller {
       progressBar.style.width = `${data.progress_percentage}%`
     }
 
-    // Update processed count
+    // Update processed count (preserve styled child element)
     const processedText = accountElement.querySelector('[data-account-processed]')
     if (processedText) {
-      processedText.textContent = `${data.processed_emails || 0} / ${data.total_emails || 0}`
+      const target = processedText.querySelector('p') || processedText
+      target.textContent = `${data.processed_emails || 0} / ${data.total_emails || 0}`
     }
 
-    // Update detected expenses
+    // Update detected expenses (preserve styled child element)
     const detectedText = accountElement.querySelector('[data-account-detected]')
     if (detectedText) {
-      detectedText.textContent = `${data.detected_expenses || 0}`
+      const target = detectedText.querySelector('p') || detectedText
+      target.textContent = `${data.detected_expenses || 0}`
     }
   }
 

@@ -1126,20 +1126,8 @@ export default class extends Controller {
   // WebSocket support detection
   isWebSocketSupported() {
     try {
-      // Check for WebSocket support
-      if (!window.WebSocket && !window.MozWebSocket) {
-        this.log("warn", "WebSocket not supported by browser")
-        return false
-      }
-      
-      // Check if WebSocket is blocked (corporate firewall, etc)
-      // This is a heuristic - if we can't create a WebSocket object, it might be blocked
-      const testWs = new WebSocket('wss://echo.websocket.org/')
-      testWs.close()
-      
-      return true
+      return 'WebSocket' in window && window.WebSocket !== undefined
     } catch (error) {
-      this.log("warn", "WebSocket appears to be blocked", error)
       return false
     }
   }

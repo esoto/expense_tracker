@@ -120,6 +120,15 @@ module Services
       scope = scope.where(amount: min_amount..max_amount)
     end
 
+    # Pre-filter by merchant similarity using pg_trgm (low threshold to avoid false negatives)
+    if new_expense_data[:merchant_name].present?
+      normalized = new_expense_data[:merchant_name].to_s.downcase.strip
+      scope = scope.where(
+        "merchant_normalized IS NULL OR similarity(COALESCE(merchant_normalized, ''), ?) >= 0.2",
+        normalized
+      )
+    end
+
     # Limit to reasonable number of candidates
     scope.limit(20)
   end
@@ -201,42 +210,14 @@ module Services
 
   def string_similarity(str1, str2)
     return 100.0 if str1 == str2
-    return 0.0 if str1.empty? || str2.empty?
+    return 0.0 if str1.blank? || str2.blank?
 
-    # Simple character-based similarity
-    # In production, consider using Levenshtein distance or other algorithms
-    longer = [ str1.length, str2.length ].max
-    edit_distance = levenshtein_distance(str1, str2)
-
-    ((longer - edit_distance) * 100.0 / longer).round(2)
-  end
-
-  def levenshtein_distance(str1, str2)
-    # Simple Levenshtein distance implementation
-    m = str1.length
-    n = str2.length
-
-    return n if m == 0
-    return m if n == 0
-
-    # Create distance matrix
-    d = Array.new(m + 1) { Array.new(n + 1) }
-
-    (0..m).each { |i| d[i][0] = i }
-    (0..n).each { |j| d[0][j] = j }
-
-    (1..n).each do |j|
-      (1..m).each do |i|
-        cost = str1[i - 1] == str2[j - 1] ? 0 : 1
-        d[i][j] = [
-          d[i - 1][j] + 1,      # deletion
-          d[i][j - 1] + 1,      # insertion
-          d[i - 1][j - 1] + cost # substitution
-        ].min
-      end
-    end
-
-    d[m][n]
+    result = ActiveRecord::Base.connection.select_value(
+      ActiveRecord::Base.sanitize_sql_array(
+        [ "SELECT similarity(?, ?)", str1.to_s.downcase, str2.to_s.downcase ]
+      )
+    )
+    (result.to_f * 100.0).round(2)
   end
 
   def determine_conflict_type(score, existing_expense, new_expense_data)
@@ -304,7 +285,7 @@ module Services
       conflict_data: {
         detection_timestamp: Time.current,
         detection_method: "automatic",
-        algorithm_version: "1.0"
+        algorithm_version: "2.0"
       }
     )
 

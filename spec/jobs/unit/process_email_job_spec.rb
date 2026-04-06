@@ -40,7 +40,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
 
         context 'when parsing succeeds' do
           before do
-            allow(Services::EmailProcessing::Parser).to receive(:new).with(email_account, email_data).and_return(parser)
+            allow(Services::EmailProcessing::Parser).to receive(:new).with(email_account, email_data, pre_parsed_data: nil).and_return(parser)
             allow(parser).to receive(:parse_expense).and_return(expense)
           end
 
@@ -50,7 +50,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
           end
 
           it 'creates a parser with correct parameters' do
-            expect(Services::EmailProcessing::Parser).to receive(:new).with(email_account, email_data).and_return(parser)
+            expect(Services::EmailProcessing::Parser).to receive(:new).with(email_account, email_data, pre_parsed_data: nil).and_return(parser)
             job.perform(email_account_id, email_data)
           end
 
@@ -74,7 +74,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
           let(:parser_errors) { [ 'Amount not found', 'Invalid date format' ] }
 
           before do
-            allow(Services::EmailProcessing::Parser).to receive(:new).with(email_account, email_data).and_return(parser)
+            allow(Services::EmailProcessing::Parser).to receive(:new).with(email_account, email_data, pre_parsed_data: nil).and_return(parser)
             allow(parser).to receive(:parse_expense).and_return(nil)
             allow(parser).to receive(:errors).and_return(parser_errors)
             allow(job).to receive(:save_failed_parsing)
@@ -110,7 +110,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
 
         context 'when parsing succeeds' do
           before do
-            allow(Services::EmailProcessing::Parser).to receive(:new).with(email_account, email_data).and_return(parser)
+            allow(Services::EmailProcessing::Parser).to receive(:new).with(email_account, email_data, pre_parsed_data: nil).and_return(parser)
             allow(parser).to receive(:parse_expense).and_return(expense)
           end
 
@@ -144,7 +144,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
           let(:parser_errors) { [ 'Parsing error' ] }
 
           before do
-            allow(Services::EmailProcessing::Parser).to receive(:new).with(email_account, email_data).and_return(parser)
+            allow(Services::EmailProcessing::Parser).to receive(:new).with(email_account, email_data, pre_parsed_data: nil).and_return(parser)
             allow(parser).to receive(:parse_expense).and_return(nil)
             allow(parser).to receive(:errors).and_return(parser_errors)
             allow(job).to receive(:save_failed_parsing)
@@ -155,6 +155,43 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
             expect(metrics_collector).to receive(:flush_buffer)
             job.perform(email_account_id, email_data, active_sync_session_id)
           end
+        end
+      end
+    end
+
+    context 'with pre-parsed data' do
+      let(:pre_parsed_data) do
+        {
+          amount: 100.0,
+          transaction_date: Date.current,
+          merchant_name: 'Test Store',
+          description: 'Purchase',
+          email_account_id: email_account_id,
+          raw_email_content: 'Transaction body'
+        }
+      end
+
+      before do
+        allow(EmailAccount).to receive(:find_by).with(id: email_account_id).and_return(email_account)
+      end
+
+      context 'without sync session' do
+        before do
+          allow(Services::EmailProcessing::Parser).to receive(:new)
+            .with(email_account, email_data, pre_parsed_data: pre_parsed_data).and_return(parser)
+          allow(parser).to receive(:parse_expense).and_return(expense)
+        end
+
+        it 'passes pre_parsed_data to Parser' do
+          expect(Services::EmailProcessing::Parser).to receive(:new)
+            .with(email_account, email_data, pre_parsed_data: pre_parsed_data).and_return(parser)
+
+          job.perform(email_account_id, email_data, nil, pre_parsed_data)
+        end
+
+        it 'processes the email successfully with pre-parsed data' do
+          result = job.perform(email_account_id, email_data, nil, pre_parsed_data)
+          expect(result).to eq(expense)
         end
       end
     end
@@ -188,7 +225,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
 
       context 'when email_data is nil' do
         it 'handles nil email_data gracefully' do
-          allow(Services::EmailProcessing::Parser).to receive(:new).with(email_account, nil).and_return(parser)
+          allow(Services::EmailProcessing::Parser).to receive(:new).with(email_account, nil, pre_parsed_data: nil).and_return(parser)
           allow(parser).to receive(:parse_expense).and_return(nil)
           allow(parser).to receive(:errors).and_return([ 'Invalid email data' ])
           allow(job).to receive(:save_failed_parsing)
@@ -199,7 +236,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
 
       context 'when email_data is empty hash' do
         it 'handles empty email_data gracefully' do
-          allow(Services::EmailProcessing::Parser).to receive(:new).with(email_account, {}).and_return(parser)
+          allow(Services::EmailProcessing::Parser).to receive(:new).with(email_account, {}, pre_parsed_data: nil).and_return(parser)
           allow(parser).to receive(:parse_expense).and_return(nil)
           allow(parser).to receive(:errors).and_return([ 'Empty email data' ])
           allow(job).to receive(:save_failed_parsing)

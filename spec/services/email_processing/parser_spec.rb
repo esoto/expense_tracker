@@ -51,6 +51,19 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, performance: t
       parser = Services::EmailProcessing::Parser.new(email_account, email_data)
       expect(parser.parsing_rule).to be_nil
     end
+
+    it 'accepts optional pre_parsed_data keyword argument' do
+      pre_parsed = { amount: BigDecimal('100.00'), transaction_date: Date.current }
+      parsing_rule
+      parser = Services::EmailProcessing::Parser.new(email_account, email_data, pre_parsed_data: pre_parsed)
+      expect(parser.instance_variable_get(:@pre_parsed_data)).to eq(pre_parsed)
+    end
+
+    it 'defaults pre_parsed_data to nil' do
+      parsing_rule
+      parser = Services::EmailProcessing::Parser.new(email_account, email_data)
+      expect(parser.instance_variable_get(:@pre_parsed_data)).to be_nil
+    end
   end
 
   describe '#parse_expense', performance: true do
@@ -99,6 +112,49 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, performance: t
         expense = food_parser.parse_expense
         expect(expense).to be_a(Expense)
         expect(expense.category.name).to eq('Alimentación')
+      end
+    end
+
+    context 'with pre_parsed_data provided' do
+      let(:pre_parsed) do
+        {
+          amount: BigDecimal('95000.00'),
+          transaction_date: Date.new(2025, 8, 1),
+          merchant_name: 'PTA LEONA SOC',
+          description: 'COMPRA',
+          email_account_id: email_account.id,
+          raw_email_content: sample_bac_email
+        }
+      end
+
+      before do
+        category # ensure category exists
+      end
+
+      it 'skips StrategyFactory parsing when pre_parsed_data is available' do
+        parsing_rule
+        parser_with_pre_parsed = Services::EmailProcessing::Parser.new(
+          email_account, email_data, pre_parsed_data: pre_parsed
+        )
+
+        expect(Services::EmailProcessing::StrategyFactory).not_to receive(:create_strategy)
+
+        result = parser_with_pre_parsed.parse_expense
+        expect(result).to be_a(Expense)
+        expect(result.amount).to eq(BigDecimal('95000.00'))
+        expect(result.merchant_name).to eq('PTA LEONA SOC')
+      end
+
+      it 'falls back to StrategyFactory when pre_parsed_data is nil' do
+        parsing_rule
+        parser_without_pre_parsed = Services::EmailProcessing::Parser.new(
+          email_account, email_data, pre_parsed_data: nil
+        )
+
+        expect(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy).and_call_original
+
+        result = parser_without_pre_parsed.parse_expense
+        expect(result).to be_a(Expense)
       end
     end
 

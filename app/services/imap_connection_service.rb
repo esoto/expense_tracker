@@ -25,6 +25,8 @@ module Services
     raise AuthenticationError, "Authentication failed: #{e.message}"
   rescue Net::IMAP::Error => e
     raise ConnectionError, "IMAP error: #{e.message}"
+  rescue StandardError => e
+    raise ConnectionError, "Unexpected error: #{e.message}"
   ensure
     session = @active_session
     @active_session = nil

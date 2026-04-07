@@ -212,7 +212,7 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
             .with(wait: 5.seconds)
             .and_return(job_double)
           expect(job_double).to receive(:perform_later)
-            .with(sync_session_id)
+            .with(sync_session_id, 1)
 
           job.perform(sync_session_id)
         end
@@ -235,7 +235,7 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
             .with(wait: 5.seconds)
             .and_return(job_double)
           expect(job_double).to receive(:perform_later)
-            .with(sync_session_id)
+            .with(sync_session_id, 1)
 
           job.perform(sync_session_id)
         end

@@ -1,23 +1,25 @@
 class SyncStatusChannel < ApplicationCable::Channel
   def subscribed
     if params[:session_id].present?
-      session = SyncSession.find_by(id: params[:session_id])
+      # PER-383: Memoize the session at subscribe time so all subsequent actions
+      # use this fixed reference rather than re-fetching from client-controlled params.
+      @sync_session = SyncSession.find_by(id: params[:session_id])
       ip_address = connection.current_session_info&.dig(:ip_address) || "unknown"
       session_id = connection.current_session_info&.dig(:session_id) || "unknown"
       timestamp = Time.current.iso8601
 
-      if session && can_access_session?(session)
+      if @sync_session && can_access_session?(@sync_session)
         # Use stream_for to ensure proper isolation
-        stream_for session
+        stream_for @sync_session
 
         # Log successful subscription for monitoring
-        Rails.logger.info "[SECURITY] SyncStatusChannel subscription successful: Session=#{session_id[0..8]}..., SyncSession=#{session.id}, IP=#{ip_address}, Time=#{timestamp}"
+        Rails.logger.info "[SECURITY] SyncStatusChannel subscription successful: Session=#{session_id[0..8]}..., SyncSession=#{@sync_session.id}, IP=#{ip_address}, Time=#{timestamp}"
 
         # Send initial status on subscription
-        transmit_initial_status(session)
+        transmit_initial_status(@sync_session)
       else
         # Log unauthorized subscription attempt with detailed context
-        session_exists = session ? "exists" : "not_found"
+        session_exists = @sync_session ? "exists" : "not_found"
         Rails.logger.warn "[SECURITY] Unauthorized SyncStatusChannel subscription: Session=#{session_id[0..8]}..., SyncSession=#{params[:session_id]}, Status=#{session_exists}, IP=#{ip_address}, Time=#{timestamp}"
         reject
       end
@@ -50,11 +52,8 @@ class SyncStatusChannel < ApplicationCable::Channel
     session_id = connection.current_session_info&.dig(:session_id) || "unknown"
     Rails.logger.debug "SyncStatusChannel: Updates resumed for session #{session_id}"
 
-    # Send latest status when resuming
-    if params[:session_id].present?
-      session = SyncSession.find_by(id: params[:session_id])
-      transmit_current_status(session) if session && can_access_session?(session)
-    end
+    # PER-383: Use memoized @sync_session — never re-fetch from client-controlled params
+    transmit_current_status(@sync_session) if @sync_session
   end
 
   # Action to request current status (used after reconnection)
@@ -62,10 +61,8 @@ class SyncStatusChannel < ApplicationCable::Channel
     session_id = connection.current_session_info&.dig(:session_id) || "unknown"
     Rails.logger.debug "SyncStatusChannel: Status requested by session #{session_id}"
 
-    if params[:session_id].present?
-      session = SyncSession.find_by(id: params[:session_id])
-      transmit_current_status(session) if session && can_access_session?(session)
-    end
+    # PER-383: Use memoized @sync_session — never re-fetch from client-controlled params
+    transmit_current_status(@sync_session) if @sync_session
   end
 
   # Class methods for broadcasting with enhanced reliability
@@ -326,10 +323,12 @@ class SyncStatusChannel < ApplicationCable::Channel
       stored_ip = session.metadata&.dig("ip_address")
       current_ip = connection.current_session_info[:ip_address]
 
-      # If no IP stored (legacy), allow for backward compatibility but log it
+      # PER-383: Legacy sessions with no stored IP must be verified by user ownership
+      # rather than silently granted access (which was a cross-session data leak vector).
       if stored_ip.nil?
-        Rails.logger.info "[SECURITY] Legacy session access granted - no IP stored: Session=#{rails_session_id[0..8]}..., SyncSession=#{session.id}, IP=#{current_ip}, Time=#{timestamp}"
-        return true
+        Rails.logger.warn "[SECURITY] Legacy session #{session.id} — no IP metadata, checking user ownership"
+        return session.user_id == current_user&.id if session.respond_to?(:user_id)
+        return true # last resort fallback for truly legacy sessions
       end
 
       # Check IP address match

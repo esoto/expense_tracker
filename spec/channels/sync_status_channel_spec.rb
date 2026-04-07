@@ -305,15 +305,17 @@ RSpec.describe SyncStatusChannel, type: :channel, unit: true do
         allow(Rails.env).to receive(:test?).and_call_original
       end
 
-      it "respects authentication rules when sending status on resume" do
-        # Create session that won't be accessible due to auth rules
+      it "uses the memoized session instead of re-fetching from tampered params on resume" do
+        # PER-383: resume_updates now uses @sync_session memoized at subscribe time.
+        # Tampering params after subscribe has no effect — the originally subscribed
+        # session is always used, preventing cross-session data access.
         restricted_session = create(:sync_session, session_token: "secret_token")
         subscription.params[:session_id] = restricted_session.id
 
         perform :resume_updates
 
-        # Should not transmit status if can't access session
-        expect(transmissions.size).to eq(1) # Only initial subscription transmission
+        # Status is transmitted for the originally subscribed session (not the tampered one)
+        expect(transmissions.last).to include("type" => "status_update")
       end
     end
   end
@@ -1154,6 +1156,7 @@ RSpec.describe SyncStatusChannel, type: :channel, unit: true do
           ip_address: "127.0.0.1"
         })
 
+
         subscribe(session_id: sync_session.id)
 
         accounts_data = transmissions.last["accounts"]
@@ -1179,6 +1182,115 @@ RSpec.describe SyncStatusChannel, type: :channel, unit: true do
 
         accounts_data = transmissions.last["accounts"]
         expect(accounts_data).to eq([])
+      end
+    end
+  end
+
+  # PER-383: Cross-session data leak prevention
+  describe "cross-session data isolation (PER-383)", unit: true do
+    let(:session_a) { create(:sync_session) }
+    let(:session_b) { create(:sync_session) }
+
+    before do
+      stub_connection(current_session_info: {
+        session_id: "subscriber_session",
+        sync_session_id: nil,
+        verified_at: Time.current,
+        ip_address: "127.0.0.1"
+      })
+    end
+
+    describe "session memoization at subscribe time" do
+      it "memoizes the session by streaming only for the subscribed session" do
+        subscribe(session_id: session_a.id)
+
+        expect(subscription).to be_confirmed
+        expect(subscription).to have_stream_for(session_a)
+        expect(subscription).not_to have_stream_for(session_b)
+      end
+    end
+
+    describe "#resume_updates cross-session isolation" do
+      before { subscribe(session_id: session_a.id) }
+
+      it "uses the memoized session, ignoring post-subscribe param changes" do
+        initial_transmission_count = transmissions.size
+
+        # Tamper params to a non-existent session ID after subscribing to session_a
+        subscription.params[:session_id] = 999_999
+
+        # resume_updates must use @sync_session (session_a) not re-fetch from params
+        perform :resume_updates
+
+        # Memoized session_a was used — a status_update was transmitted
+        expect(transmissions.size).to be > initial_transmission_count
+        expect(transmissions.last["type"]).to eq("status_update")
+      end
+
+      it "does not serve data for session_b when subscribed to session_a" do
+        # Tamper params to session_b after subscribing to session_a
+        subscription.params[:session_id] = session_b.id
+
+        perform :resume_updates
+
+        # Only session_a data should ever be transmitted; no session_b stream
+        expect(subscription).not_to have_stream_for(session_b)
+      end
+    end
+
+    describe "#request_status cross-session isolation" do
+      before { subscribe(session_id: session_a.id) }
+
+      it "still responds using the memoized session even when params are tampered" do
+        subscription.params[:session_id] = session_b.id
+
+        perform :request_status
+
+        # Should transmit a status_update (using memoized session_a)
+        expect(transmissions.last).to include("type" => "status_update")
+      end
+
+      it "transmits the correct session status when params unchanged" do
+        perform :request_status
+
+        expect(transmissions.last).to include(
+          "type" => "status_update",
+          "status" => session_a.status
+        )
+      end
+    end
+
+    describe "legacy IP fallback ownership check (PER-383)" do
+      before do
+        allow(Rails.env).to receive(:test?).and_return(false)
+      end
+
+      after do
+        allow(Rails.env).to receive(:test?).and_call_original
+      end
+
+      context "when session has no stored IP (legacy session)" do
+        let(:legacy_session) do
+          session = create(:sync_session, metadata: {}, created_at: 1.hour.ago)
+          # Bypass the before_create callback — simulate truly legacy record with no token
+          session.update_column(:session_token, nil)
+          session
+        end
+
+        it "logs a warning instead of silently granting access" do
+          stub_connection(current_session_info: {
+            session_id: "test_session_yyy",
+            sync_session_id: nil, # no session_id match => falls through to IP check
+            verified_at: Time.current,
+            ip_address: "10.0.0.1"
+          })
+
+          expect(Rails.logger).to receive(:warn).with(
+            match(/Legacy session .+ — no IP metadata, checking user ownership/)
+          ).at_least(:once)
+
+          subscribe(session_id: legacy_session.id)
+        end
       end
     end
   end

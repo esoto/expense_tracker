@@ -352,7 +352,7 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
 
         it 'reschedules the job for 5 seconds later', unit: true do
           expect(described_class).to receive(:set).with(wait: 5.seconds).and_return(job_double)
-          expect(job_double).to receive(:perform_later).with(sync_session_id)
+          expect(job_double).to receive(:perform_later).with(sync_session_id, 1)
           subject.perform(sync_session_id)
         end
 
@@ -407,7 +407,7 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
           allow(account1).to receive(:failed?).and_return(false)
           allow(sync_session).to receive(:sync_session_accounts).and_return([ account1 ])
           allow(described_class).to receive(:set).with(wait: 5.seconds).and_return(job_double)
-          allow(job_double).to receive(:perform_later).with(sync_session_id)
+          allow(job_double).to receive(:perform_later).with(sync_session_id, 1)
         end
 
         it 'checks both completed and failed status for each account', unit: true do
@@ -621,6 +621,71 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
       it 'can be performed immediately with perform_now', unit: true do
         allow(SyncSession).to receive(:find_by).with(id: sync_session_id).and_return(nil)
         expect { described_class.perform_now(sync_session_id) }.not_to raise_error
+      end
+    end
+
+    # PER-386: Max reschedule limit to prevent unbounded job accumulation
+    describe 'reschedule counter (PER-386)' do
+      let(:account1) { instance_double('SyncSessionAccount') }
+      let(:job_double) { instance_double(ActiveJob::ConfiguredJob) }
+
+      before do
+        allow(SyncSession).to receive(:find_by).with(id: sync_session_id).and_return(sync_session)
+        allow(sync_session).to receive(:reload)
+        allow(sync_session).to receive(:running?).and_return(true)
+        allow(account1).to receive(:completed?).and_return(false)
+        allow(account1).to receive(:failed?).and_return(false)
+        allow(sync_session).to receive(:sync_session_accounts).and_return([ account1 ])
+      end
+
+      it 'passes incremented reschedule_count when rescheduling', unit: true do
+        allow(described_class).to receive(:set).with(wait: 5.seconds).and_return(job_double)
+        expect(job_double).to receive(:perform_later).with(sync_session_id, 1)
+        subject.perform(sync_session_id, 0)
+      end
+
+      it 'increments the reschedule counter on each cycle', unit: true do
+        allow(described_class).to receive(:set).with(wait: 5.seconds).and_return(job_double)
+        expect(job_double).to receive(:perform_later).with(sync_session_id, 43)
+        subject.perform(sync_session_id, 42)
+      end
+
+      it 'stops rescheduling when MAX_RESCHEDULES is reached', unit: true do
+        allow(sync_session).to receive(:fail!)
+        expect(described_class).not_to receive(:set)
+        subject.perform(sync_session_id, described_class::MAX_RESCHEDULES)
+      end
+
+      it 'fails the session with a monitor timeout message at MAX_RESCHEDULES', unit: true do
+        allow(sync_session).to receive(:fail!)
+        expect(sync_session).to receive(:fail!).with("Monitor timeout — max reschedules reached")
+        subject.perform(sync_session_id, described_class::MAX_RESCHEDULES)
+      end
+
+      it 'logs a warning when MAX_RESCHEDULES is reached', unit: true do
+        allow(sync_session).to receive(:fail!)
+        expect(logger).to receive(:warn).with(
+          "[SyncSessionMonitor] Max reschedules reached for session #{sync_session_id}"
+        )
+        subject.perform(sync_session_id, described_class::MAX_RESCHEDULES)
+      end
+
+      it 'does not fail non-running sessions when MAX_RESCHEDULES is reached', unit: true do
+        allow(sync_session).to receive(:running?).and_return(false)
+        expect(sync_session).not_to receive(:fail!)
+        # Should still return early due to running? check before the counter matters
+        expect(described_class).not_to receive(:set)
+        subject.perform(sync_session_id, described_class::MAX_RESCHEDULES)
+      end
+
+      it 'defines MAX_RESCHEDULES as 120', unit: true do
+        expect(described_class::MAX_RESCHEDULES).to eq(120)
+      end
+
+      it 'still accepts perform without reschedule_count (defaults to 0)', unit: true do
+        allow(described_class).to receive(:set).with(wait: 5.seconds).and_return(job_double)
+        expect(job_double).to receive(:perform_later).with(sync_session_id, 1)
+        subject.perform(sync_session_id)
       end
     end
   end

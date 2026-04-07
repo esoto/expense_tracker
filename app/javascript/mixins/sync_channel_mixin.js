@@ -124,7 +124,11 @@ export const syncChannelMixin = {
    * Uses the Financial Confidence palette (emerald/rose/slate).
    */
   showNotification(message, type = 'info') {
+    const existing = document.querySelector('[data-sync-notification]')
+    if (existing) existing.remove()
+
     const notification = document.createElement('div')
+    notification.dataset.syncNotification = ''
     notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 ${
       type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
       type === 'error' ? 'bg-rose-50 text-rose-700 border border-rose-200' :

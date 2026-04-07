@@ -281,7 +281,7 @@ RSpec.describe Services::Categorization::PatternLearner do
       end
     end
 
-    context "performance" do
+    context "performance", :slow do
       let(:hundred_corrections) do
         100.times.map do |i|
           {

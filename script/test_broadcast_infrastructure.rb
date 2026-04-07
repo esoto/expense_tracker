@@ -19,7 +19,6 @@ class BroadcastInfrastructureTest
     test_broadcast_reliability_service
     test_broadcast_analytics
     test_broadcast_error_handler
-    test_progress_batch_collector
     test_sync_status_channel_integration
 
     puts "\n✅ All tests completed successfully!"
@@ -85,32 +84,6 @@ class BroadcastInfrastructureTest
     assert stats.key?(:time_window), "Error statistics should include time window"
 
     puts "✓ BroadcastErrorHandler circuit breaker and monitoring working correctly"
-  end
-
-  def test_progress_batch_collector
-    puts "\n📦 Testing ProgressBatchCollector..."
-
-    # Create a mock sync session
-    sync_session = create_mock_sync_session
-
-    # Test batch collector initialization
-    collector = ProgressBatchCollector.new(sync_session)
-    assert collector.active?, "Batch collector should be active after initialization"
-
-    # Test adding updates
-    collector.add_progress_update(processed: 50, total: 100, detected: 10)
-    collector.add_activity_update(activity_type: 'test', message: 'Test message')
-
-    # Test statistics
-    stats = collector.stats
-    assert stats.is_a?(Hash), "Batch collector stats should return a hash"
-    assert stats.key?(:sync_session_id), "Stats should include session ID"
-
-    # Clean up
-    collector.stop
-    assert !collector.active?, "Batch collector should be inactive after stop"
-
-    puts "✓ ProgressBatchCollector batching and statistics working correctly"
   end
 
   def test_sync_status_channel_integration

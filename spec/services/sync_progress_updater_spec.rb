@@ -7,17 +7,7 @@ RSpec.describe Services::SyncProgressUpdater, type: :service, integration: true 
   let(:email_account2) { build_stubbed(:email_account, id: 2) }
   let(:service) { described_class.new(sync_session) }
 
-  # Mock the batch collector to avoid thread creation overhead
   before do
-    batch_collector = instance_double(Services::ProgressBatchCollector)
-    allow(Services::ProgressBatchCollector).to receive(:new).and_return(batch_collector)
-    allow(batch_collector).to receive(:add_progress_update)
-    allow(batch_collector).to receive(:add_account_update)
-    allow(batch_collector).to receive(:add_activity_update)
-    allow(batch_collector).to receive(:add_critical_update)
-    allow(batch_collector).to receive(:stop)
-    allow(batch_collector).to receive(:stats).and_return({})
-
     # Mock sync_session methods
     allow(sync_session).to receive(:broadcast_dashboard_update)
   end

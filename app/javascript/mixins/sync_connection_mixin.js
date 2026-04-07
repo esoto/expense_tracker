@@ -312,8 +312,9 @@ export const syncConnectionMixin = {
   },
 
   handleOnline() {
-    this.log("info", "Network online")
+    const wasConnected = this.connectionStateValue === "connected"
 
+    this.log("info", "Network online")
     this.connectionStateValue = "reconnecting"
     this.updateConnectionStatus(errorMessages.getStatus("reconnecting"))
 
@@ -322,7 +323,7 @@ export const syncConnectionMixin = {
     this.retryCountValue = 0
     this.resumeUpdates()
 
-    if (!this.pollingMode && (!this.subscription || this.connectionStateValue !== "connected")) {
+    if (!this.pollingMode && !wasConnected) {
       this.scheduleReconnect()
     }
   },

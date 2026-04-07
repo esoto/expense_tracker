@@ -13,7 +13,6 @@ pin "services/sync_error_classifier", to: "services/sync_error_classifier.js"
 pin "services/sync_state_cache", to: "services/sync_state_cache.js"
 pin "mixins/sync_channel_mixin", to: "mixins/sync_channel_mixin.js"
 pin "mixins/sync_connection_mixin", to: "mixins/sync_connection_mixin.js"
-pin "progress_throttler", to: "progress_throttler.js"
 pin "chart.js", to: "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/+esm"
 # chartjs-adapter-date-fns is NOT pinned here.
 # The old .bundle.min.js variant is a UMD build that relies on window.Chart, which is

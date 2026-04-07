@@ -407,7 +407,7 @@ RSpec.describe Services::BroadcastReliabilityService, type: :service, integratio
 end
 
 RSpec.describe Services::BroadcastReliabilityService, "stdout output",
-               type: :service, unit: true, needs_broadcasting: true do
+               type: :service, unit: true, broadcast: true do
   let(:sync_session) { create(:sync_session) }
 
   before do

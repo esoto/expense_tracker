@@ -167,18 +167,24 @@ class SyncSession < ApplicationRecord
     duration / processed_emails
   end
 
+  # Process-global toggle used exclusively by the test suite (see spec/support/performance_optimizations.rb).
+  # Not thread-safe: intended for sequential RSpec examples only. Do not call from application code.
+  def self.broadcasting_enabled?
+    @broadcasting_enabled || false
+  end
+
+  def self.enable_broadcasting!
+    @broadcasting_enabled = true
+  end
+
+  def self.disable_broadcasting!
+    @broadcasting_enabled = false
+  end
+
   private
 
   def should_broadcast?
-    # Don't broadcast in non-test environments unless specifically enabled
-    return true unless Rails.env.test?
-
-    # In test environment, check if the current test wants broadcasting
-    # This works by checking the current RSpec example metadata
-    return false unless defined?(RSpec) && RSpec.current_example
-
-    # Check if the test has needs_broadcasting: true metadata
-    RSpec.current_example.metadata[:needs_broadcasting] == true
+    !Rails.env.test? || self.class.broadcasting_enabled?
   end
 
   def generate_session_token

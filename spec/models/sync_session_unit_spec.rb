@@ -505,8 +505,10 @@ RSpec.describe SyncSession, type: :model, unit: true, broadcast: true do
         expect(session.job_ids).to eq([ "existing", "new_job" ])
       end
 
-      it "handles nil job_ids array" do
-        session.job_ids = nil
+      it "handles nil job_ids array in the database" do
+        # write nil directly to DB to simulate missing/null column value;
+        # in-memory dirty assignment is not used because with_lock reloads from DB.
+        session.update_column(:job_ids, nil)
         session.add_job_id("job1")
         expect(session.job_ids).to eq([ "job1" ])
       end
@@ -522,9 +524,51 @@ RSpec.describe SyncSession, type: :model, unit: true, broadcast: true do
         expect(session.job_ids).to include("123")
       end
 
-      it "saves the record" do
-        expect(session).to receive(:save!)
+      it "persists the record via update_column" do
+        expect(session).to receive(:update_column).with(:job_ids, anything)
         session.add_job_id("job")
+      end
+    end
+
+    describe "#batch_add_job_ids", :unit do
+      let(:session) { create(:sync_session, job_ids: []) }
+
+      it "adds all job IDs in a single DB write regardless of count" do
+        ids = %w[job_1 job_2 job_3 job_4 job_5]
+        expect(session).to receive(:update_column).exactly(:once).with(:job_ids, anything)
+        session.batch_add_job_ids(ids)
+      end
+
+      it "merges with existing job_ids" do
+        session.update_column(:job_ids, [ "existing" ])
+        session.job_ids = [ "existing" ]
+        session.batch_add_job_ids([ "new_1", "new_2" ])
+        expect(session.job_ids).to eq([ "existing", "new_1", "new_2" ])
+      end
+
+      it "persists merged IDs to the database" do
+        session.batch_add_job_ids([ "a", "b" ])
+        expect(session.reload.job_ids).to eq([ "a", "b" ])
+      end
+
+      it "converts all IDs to strings" do
+        session.batch_add_job_ids([ 1, 2, 3 ])
+        expect(session.job_ids).to eq([ "1", "2", "3" ])
+      end
+
+      it "ignores nil and blank entries" do
+        session.batch_add_job_ids([ "good", nil, "", "   " ])
+        expect(session.job_ids).to eq([ "good" ])
+      end
+
+      it "does nothing when given an empty array" do
+        expect(session).not_to receive(:update_column)
+        session.batch_add_job_ids([])
+      end
+
+      it "does nothing when given nil" do
+        expect(session).not_to receive(:update_column)
+        session.batch_add_job_ids(nil)
       end
     end
 

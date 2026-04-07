@@ -154,7 +154,6 @@ RSpec.describe ProcessEmailsJob, type: :job, unit: true do
     let(:job) { described_class.new }
 
     it "enqueues jobs for active accounts", :unit do
-      active_accounts = [ email_account ]
       active_relation = double("ActiveRecord::Relation")
       allow(active_relation).to receive(:count).and_return(1)
       allow(active_relation).to receive(:find_each).and_yield(email_account)
@@ -164,6 +163,73 @@ RSpec.describe ProcessEmailsJob, type: :job, unit: true do
       expect(described_class).to receive(:perform_later).once
 
       job.send(:process_all_accounts, 1.week.ago)
+    end
+
+    context "batch job ID tracking (PER-369)", :unit do
+      let(:sync_session) { create(:sync_session) }
+
+      before do
+        job.instance_variable_set(:@sync_session, sync_session)
+      end
+
+      it "calls batch_add_job_ids exactly once regardless of account count" do
+        accounts = create_list(:email_account, 3)
+        active_relation = double("ActiveRecord::Relation")
+        allow(active_relation).to receive(:count).and_return(3)
+        allow(active_relation).to receive(:find_each)
+          .and_yield(accounts[0]).and_yield(accounts[1]).and_yield(accounts[2])
+        allow(EmailAccount).to receive(:active).and_return(active_relation)
+        allow(described_class).to receive(:perform_later)
+          .and_return(double(respond_to?: true, provider_job_id: "job_1"),
+                      double(respond_to?: true, provider_job_id: "job_2"),
+                      double(respond_to?: true, provider_job_id: "job_3"))
+
+        expect(sync_session).to receive(:batch_add_job_ids).exactly(:once).with([ "job_1", "job_2", "job_3" ])
+
+        job.send(:process_all_accounts, 1.week.ago)
+      end
+
+      it "does not call batch_add_job_ids when no sync session" do
+        job.instance_variable_set(:@sync_session, nil)
+
+        active_relation = double("ActiveRecord::Relation")
+        allow(active_relation).to receive(:count).and_return(1)
+        allow(active_relation).to receive(:find_each).and_yield(email_account)
+        allow(EmailAccount).to receive(:active).and_return(active_relation)
+        allow(described_class).to receive(:perform_later).and_return(double(respond_to?: true, provider_job_id: "j1"))
+
+        expect(sync_session).not_to receive(:batch_add_job_ids)
+
+        job.send(:process_all_accounts, 1.week.ago)
+      end
+
+      it "skips blank provider_job_ids from the collected batch" do
+        second_account = create(:email_account)
+        active_relation = double("ActiveRecord::Relation")
+        allow(active_relation).to receive(:count).and_return(2)
+        allow(active_relation).to receive(:find_each)
+          .and_yield(email_account).and_yield(second_account)
+        allow(EmailAccount).to receive(:active).and_return(active_relation)
+        allow(described_class).to receive(:perform_later)
+          .and_return(double(respond_to?: true, provider_job_id: "good_id"),
+                      double(respond_to?: true, provider_job_id: nil))
+
+        expect(sync_session).to receive(:batch_add_job_ids).with([ "good_id" ])
+
+        job.send(:process_all_accounts, 1.week.ago)
+      end
+
+      it "does not call batch_add_job_ids when all provider_job_ids are blank" do
+        active_relation = double("ActiveRecord::Relation")
+        allow(active_relation).to receive(:count).and_return(1)
+        allow(active_relation).to receive(:find_each).and_yield(email_account)
+        allow(EmailAccount).to receive(:active).and_return(active_relation)
+        allow(described_class).to receive(:perform_later).and_return(double(respond_to?: true, provider_job_id: nil))
+
+        expect(sync_session).not_to receive(:batch_add_job_ids)
+
+        job.send(:process_all_accounts, 1.week.ago)
+      end
     end
   end
 

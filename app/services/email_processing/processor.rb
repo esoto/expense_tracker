@@ -205,71 +205,77 @@ module Services::EmailProcessing
     end
 
     def extract_text_from_html(html_content)
-      begin
-        # Handle encoding properly
-        text = html_content.dup
+      return "" if html_content.nil? || html_content.empty?
 
-        # Convert to UTF-8 if not already, handling various encodings
-        unless text.encoding == Encoding::UTF_8
-          # Try to convert to UTF-8 from the current encoding
-          begin
-            text = text.encode("UTF-8", invalid: :replace, undef: :replace, replace: "?")
-          rescue Encoding::UndefinedConversionError, Encoding::InvalidByteSequenceError
-            # Force to binary then to UTF-8 with replacement
-            text = text.force_encoding("BINARY").encode("UTF-8", invalid: :replace, undef: :replace, replace: "?")
-          end
+      begin
+        # Decode quoted-printable transport encoding before HTML parsing.
+        # Nokogiri parses HTML structure but does not handle QP soft line breaks
+        # (=\r\n) or QP-encoded byte sequences (=XX) — those must be stripped first.
+        decoded = decode_quoted_printable(html_content)
+
+        # Strip C0 control characters (except tab, LF, CR) before handing to
+        # Nokogiri. Null bytes (\x00) and other low-value control characters
+        # cause libxml2 to abort parsing and return an empty document.
+        decoded = decoded.gsub(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/, "")
+
+        # Nokogiri handles tag removal, entity decoding (named + numeric, including
+        # all Spanish accented characters), and malformed/partial HTML gracefully.
+        doc = Nokogiri::HTML(decoded)
+
+        # Remove nodes that would otherwise leak raw CSS/JS text into the output.
+        doc.xpath("//style | //script | //noscript").each(&:remove)
+
+        # Insert a space before block-level elements so adjacent text from
+        # separate blocks does not run together when #text collapses the tree.
+        doc.xpath("//*[self::p or self::h1 or self::h2 or self::h3 or self::h4 or
+                        self::h5 or self::h6 or self::div or self::li or self::td or
+                        self::th or self::br]").each do |node|
+          node.prepend_child(Nokogiri::XML::Text.new(" ", doc))
         end
 
-        # Remove quoted-printable encoding first
-        text = text.gsub(/=\r?\n/, "")
-        text = text.gsub(/=([0-9A-F]{2})/i) { [ $1 ].pack("H*") }
+        text = doc.text
 
-        # Ensure text is valid UTF-8 after quoted-printable decode
-        text = text.force_encoding("UTF-8").scrub("?")
-
-        # Remove HTML tags but preserve important content
-        text = text.gsub(/<style[^>]*>.*?<\/style>/mi, "")
-        text = text.gsub(/<script[^>]*>.*?<\/script>/mi, "")
-        text = text.gsub(/<[^>]+>/, " ")
-
-        # Decode HTML entities (comprehensive list for Spanish)
-        text = text.gsub(/&nbsp;/, " ")
-        text = text.gsub(/&amp;/, "&")
-        text = text.gsub(/&lt;/, "<")
-        text = text.gsub(/&gt;/, ">")
-        text = text.gsub(/&quot;/, '"')
-        text = text.gsub(/&#39;/, "'")
-        text = text.gsub(/&aacute;/, "á")
-        text = text.gsub(/&eacute;/, "é")
-        text = text.gsub(/&iacute;/, "í")
-        text = text.gsub(/&oacute;/, "ó")
-        text = text.gsub(/&uacute;/, "ú")
-        text = text.gsub(/&ntilde;/, "ñ")
-        text = text.gsub(/&Aacute;/, "Á")
-        text = text.gsub(/&Eacute;/, "É")
-        text = text.gsub(/&Iacute;/, "Í")
-        text = text.gsub(/&Oacute;/, "Ó")
-        text = text.gsub(/&Uacute;/, "Ú")
-        text = text.gsub(/&Ntilde;/, "Ñ")
-        text = text.gsub(/&iexcl;/, "¡")
-        text = text.gsub(/&iquest;/, "¿")
-
-        # Decode numeric HTML entities (decimal)
-        text = text.gsub(/&#(\d+);/) { [ $1.to_i ].pack("U*") }
-
-        # Decode numeric HTML entities (hexadecimal)
-        text = text.gsub(/&#x([0-9A-Fa-f]+);/) { [ $1.to_i(16) ].pack("U*") }
-
-        # Normalize whitespace
-        text = text.gsub(/\s+/, " ").strip
-
-        text
+        # Normalize whitespace to a single space and strip leading/trailing space.
+        text.gsub(/\s+/, " ").strip
       rescue Encoding::CompatibilityError, Encoding::UndefinedConversionError => e
-        # Fallback: just remove HTML tags without decoding entities
-        Rails.logger.warn "HTML encoding error: #{e.message}"
-        simple_text = html_content.gsub(/<[^>]+>/, " ").gsub(/\s+/, " ").strip
-        simple_text.force_encoding("UTF-8")
+        # Fallback: strip tags without entity decoding when Nokogiri cannot parse
+        # due to an irrecoverable encoding conflict.
+        # Force binary encoding before regex to avoid a second Encoding::CompatibilityError
+        # from gsub when html_content itself has an incompatible encoding.
+        Rails.logger.warn "[EmailProcessing] Encoding error in HTML extraction: #{e.message}"
+        simple_text = html_content.dup
+          .force_encoding("BINARY")
+          .gsub(/<[^>]+>/, " ")
+          .gsub(/\s+/, " ")
+          .strip
+          .force_encoding("UTF-8")
+          .scrub("?")
       end
+    end
+
+    # Decodes quoted-printable transport encoding and ensures UTF-8 output.
+    # QP is a MIME encoding used by many email servers (especially for HTML parts):
+    #   - Soft line breaks: "=\r\n" or "=\n" are transport artefacts and must be removed.
+    #   - Encoded bytes:    "=XX" (two hex digits) represent a single raw byte.
+    def decode_quoted_printable(content)
+      text = content.dup
+
+      unless text.encoding == Encoding::UTF_8
+        begin
+          text = text.encode("UTF-8", invalid: :replace, undef: :replace, replace: "?")
+        rescue Encoding::UndefinedConversionError, Encoding::InvalidByteSequenceError
+          text = text.force_encoding("BINARY").encode("UTF-8", invalid: :replace, undef: :replace, replace: "?")
+        end
+      end
+
+      # Remove soft line breaks inserted by QP encoding.
+      text = text.gsub(/=\r?\n/, "")
+
+      # Decode QP byte sequences ("=XX") back to their raw byte values.
+      text = text.gsub(/=([0-9A-F]{2})/i) { [ $1 ].pack("H*") }
+
+      # Scrub any invalid byte sequences introduced during QP decoding.
+      text.force_encoding("UTF-8").scrub("?")
     end
 
     def build_from_address(envelope)

@@ -453,17 +453,29 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
     end
   end
 
-  describe '#extract_text_from_html', integration: true do
+  describe '#extract_text_from_html', unit: true do
     it 'removes HTML tags and normalizes text' do
       html = '<html><body><h1>Title</h1><p>Content here</p></body></html>'
       result = processor.send(:extract_text_from_html, html)
       expect(result).to eq('Title Content here')
     end
 
-    it 'decodes HTML entities' do
+    it 'decodes named HTML entities including Spanish accented characters' do
       html = 'M&aacute;s informaci&oacute;n &amp; detalles'
       result = processor.send(:extract_text_from_html, html)
       expect(result).to eq('Más información & detalles')
+    end
+
+    it 'decodes uppercase Spanish named entities' do
+      html = '&Aacute;ngel &Eacute;xito &Iacute;ndice &Oacute;scar &Uacute;til &Ntilde;o&ntilde;o'
+      result = processor.send(:extract_text_from_html, html)
+      expect(result).to eq('Ángel Éxito Índice Óscar Útil Ñoño')
+    end
+
+    it 'decodes numeric decimal and hexadecimal HTML entities' do
+      html = '&#193; &#x00E9;'
+      result = processor.send(:extract_text_from_html, html)
+      expect(result).to eq('Á é')
     end
 
     it 'removes style and script tags completely' do
@@ -486,21 +498,43 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
       expect(result).to eq('Content')
     end
 
+    it 'handles malformed/partial HTML without raising' do
+      html = '<p>Unclosed tag <b>bold text <p>Second paragraph'
+      expect { processor.send(:extract_text_from_html, html) }.not_to raise_error
+    end
+
+    it 'returns extracted text from malformed HTML' do
+      html = '<p>Unclosed tag <b>bold text'
+      result = processor.send(:extract_text_from_html, html)
+      expect(result).to include('Unclosed tag')
+      expect(result).to include('bold text')
+    end
+
+    it 'returns empty string for nil input' do
+      result = processor.send(:extract_text_from_html, nil)
+      expect(result).to eq('')
+    end
+
+    it 'returns empty string for empty string input' do
+      result = processor.send(:extract_text_from_html, '')
+      expect(result).to eq('')
+    end
+
+    it 'normalizes multiple whitespace characters to single space' do
+      html = '<p>Word1   Word2</p><p>  Word3  </p>'
+      result = processor.send(:extract_text_from_html, html)
+      expect(result).to eq('Word1 Word2 Word3')
+    end
+
     it 'covers the encoding error rescue block for CompatibilityError' do
-      # Test the rescue block functionality by creating a controlled scenario
       html = "<html><body>Test content</body></html>"
 
-      # Create a test double that simulates the actual rescue block execution
       expect(Rails.logger).to receive(:warn).with(/HTML encoding error:/)
 
-      # Mock just the specific part that would trigger the rescue
-      original_method = processor.method(:extract_text_from_html)
       allow(processor).to receive(:extract_text_from_html) do |content|
         begin
-          # Simulate an encoding compatibility error
           raise Encoding::CompatibilityError.new("test encoding error")
         rescue Encoding::CompatibilityError, Encoding::UndefinedConversionError => e
-          # Execute the actual rescue block code (lines 184-187)
           Rails.logger.warn "HTML encoding error: #{e.message}"
           simple_text = content.gsub(/<[^>]+>/, " ").gsub(/\s+/, " ").strip
           simple_text.force_encoding("UTF-8")
@@ -513,19 +547,14 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
     end
 
     it 'covers the encoding error rescue block for UndefinedConversionError' do
-      # Test the rescue block functionality by creating a controlled scenario
       html = "<html><body>Test content</body></html>"
 
-      # Create a test double that simulates the actual rescue block execution
       expect(Rails.logger).to receive(:warn).with(/HTML encoding error:/)
 
-      # Mock just the specific part that would trigger the rescue
       allow(processor).to receive(:extract_text_from_html) do |content|
         begin
-          # Simulate an undefined conversion error
           raise Encoding::UndefinedConversionError.new("test conversion error")
         rescue Encoding::CompatibilityError, Encoding::UndefinedConversionError => e
-          # Execute the actual rescue block code (lines 184-187)
           Rails.logger.warn "HTML encoding error: #{e.message}"
           simple_text = content.gsub(/<[^>]+>/, " ").gsub(/\s+/, " ").strip
           simple_text.force_encoding("UTF-8")
@@ -535,6 +564,56 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
       result = processor.send(:extract_text_from_html, html)
       expect(result).to eq("Test content")
       expect(result.encoding.name).to eq('UTF-8')
+    end
+  end
+
+  describe '#decode_quoted_printable', unit: true do
+    it 'removes QP soft line breaks (CRLF)' do
+      input = "Hello=\r\nWorld"
+      result = processor.send(:decode_quoted_printable, input)
+      expect(result).to eq('HelloWorld')
+    end
+
+    it 'removes QP soft line breaks (LF only)' do
+      input = "Hello=\nWorld"
+      result = processor.send(:decode_quoted_printable, input)
+      expect(result).to eq('HelloWorld')
+    end
+
+    it 'decodes QP hex-encoded bytes' do
+      input = "caf=E9"
+      result = processor.send(:decode_quoted_printable, input)
+      expect(result).to include('caf')
+    end
+
+    it 'decodes uppercase QP sequences' do
+      input = "=41=42=43"
+      result = processor.send(:decode_quoted_printable, input)
+      expect(result).to eq('ABC')
+    end
+
+    it 'decodes lowercase QP sequences' do
+      input = "=61=62=63"
+      result = processor.send(:decode_quoted_printable, input)
+      expect(result).to eq('abc')
+    end
+
+    it 'returns UTF-8 encoded string' do
+      input = "plain text"
+      result = processor.send(:decode_quoted_printable, input)
+      expect(result.encoding.name).to eq('UTF-8')
+    end
+
+    it 'converts ASCII-8BIT input to UTF-8' do
+      input = "plain text".encode("ASCII-8BIT")
+      result = processor.send(:decode_quoted_printable, input)
+      expect(result.encoding.name).to eq('UTF-8')
+    end
+
+    it 'leaves plain text unchanged (no QP markers)' do
+      input = "Hello World, no encoding here"
+      result = processor.send(:decode_quoted_printable, input)
+      expect(result).to eq('Hello World, no encoding here')
     end
   end
 

@@ -390,7 +390,11 @@ export const syncConnectionMixin = {
     if (!this.sessionIdValue) return
 
     try {
-      const response = await fetch(`/api/sync_sessions/${this.sessionIdValue}/status`, {
+      const url = new URL(`/api/sync_sessions/${this.sessionIdValue}/status`, window.location.origin)
+      if (this.sessionTokenValue) {
+        url.searchParams.set('token', this.sessionTokenValue)
+      }
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

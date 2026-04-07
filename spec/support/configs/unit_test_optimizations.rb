@@ -104,8 +104,7 @@ module UnitTestOptimizations
     # Preload common service classes
     common_classes = [
       'Services::Categorization::EnhancedCategorizationService',
-      'Services::ExpenseFilterService',
-      'Services::Email::ProcessingService'
+      'Services::ExpenseFilterService'
     ]
 
     common_classes.each do |class_name|

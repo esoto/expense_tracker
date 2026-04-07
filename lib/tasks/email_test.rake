@@ -7,15 +7,15 @@ namespace :email do
     puts "=" * 50
 
     # Check email accounts
-    puts "\n📧 Email Accounts:"
+    puts "\nEmail Accounts:"
     if EmailAccount.count == 0
-      puts "  ❌ No email accounts found!"
-      puts "  💡 Please create an email account first"
+      puts "  No email accounts found!"
+      puts "  Please create an email account first"
       exit
     end
 
     EmailAccount.find_each do |account|
-      puts "  - #{account.email} (#{account.provider}) - #{account.active? ? '✅ Active' : '⚠️ Inactive'}"
+      puts "  - #{account.email} (#{account.provider}) - #{account.active? ? 'Active' : 'Inactive'}"
       puts "    Bank: #{account.bank_name}"
       puts "    IMAP: #{account.imap_server}:#{account.imap_port}"
       puts "    OAuth: #{account.oauth_configured? ? 'Yes' : 'No'}"
@@ -23,65 +23,28 @@ namespace :email do
     end
 
     # Check service loading
-    puts "\n🔧 Service Loading:"
+    puts "\nService Loading:"
     begin
-      service_class = Services::Email::ProcessingService
-      puts "  ✅ Services::Email::ProcessingService loaded successfully"
+      Services::EmailProcessing::Fetcher
+      puts "  Services::EmailProcessing::Fetcher loaded successfully"
     rescue NameError => e
-      puts "  ❌ Failed to load service: #{e.message}"
+      puts "  Failed to load service: #{e.message}"
       exit
     end
 
     # Check categorization engine
-    puts "\n🤖 Categorization Engine:"
+    puts "\nCategorization Engine:"
     begin
-      engine = Services::Categorization::Engine.create
-      puts "  ✅ Categorization engine initialized"
+      Services::Categorization::Engine.create
+      puts "  Categorization engine initialized"
     rescue => e
-      puts "  ❌ Failed to initialize: #{e.message}"
-    end
-
-    # Test connection for each active account
-    puts "\n🔗 Testing Connections:"
-    EmailAccount.active.find_each do |account|
-      puts "\n  Testing #{account.email}..."
-
-      begin
-        service = Services::Email::ProcessingService.new(account)
-
-        # Test connection with timeout
-        result = Timeout.timeout(10) do
-          service.test_connection
-        end
-
-        if result[:success]
-          puts "    ✅ Connection successful!"
-        else
-          puts "    ❌ Connection failed: #{result[:message]}"
-
-          # Common issues and solutions
-          if result[:message].include?("password")
-            puts "    💡 Check if password is correct or use OAuth"
-          elsif result[:message].include?("IMAP")
-            puts "    💡 Check IMAP settings or firewall"
-          elsif result[:message].include?("SSL")
-            puts "    💡 SSL/TLS configuration issue"
-          end
-        end
-      rescue Timeout::Error
-        puts "    ⏱️ Connection timeout - server might be unreachable"
-        puts "    💡 Check network connection and IMAP server settings"
-      rescue => e
-        puts "    💥 Error: #{e.message}"
-        puts "    💡 #{e.class.name}"
-      end
+      puts "  Failed to initialize: #{e.message}"
     end
 
     # Development mode info
     if Rails.env.development?
-      puts "\n📝 Development Mode Notes:"
-      puts "  - Email sync will create sample data if connection fails"
-      puts "  - Real IMAP connections require valid credentials"
+      puts "\nDevelopment Mode Notes:"
+      puts "  - Email sync requires valid IMAP credentials"
       puts "  - Consider using OAuth for Gmail accounts"
     end
 

@@ -97,6 +97,26 @@ export const syncChannelMixin = {
       case 'failed':
         this.handleFailure(data)
         break
+      case 'batch_update':
+        if (data.updates && Array.isArray(data.updates)) {
+          data.updates.forEach(update => this.applyUpdate ? this.applyUpdate(update) : this.handleUpdate(update))
+        }
+        break
+      case 'status_update':
+        // Normalize account shape: server uses 'id', client expects 'account_id'
+        if (data.accounts && Array.isArray(data.accounts)) {
+          data.accounts.forEach(account => {
+            this.updateAccount({
+              account_id: account.id || account.account_id,
+              status: account.status,
+              progress: account.progress,
+              processed: account.processed,
+              total: account.total
+            })
+          })
+        }
+        if (data.status) this.updateProgress(data)
+        break
       default:
         this.updateStatus(data)
     }

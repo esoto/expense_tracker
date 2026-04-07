@@ -229,6 +229,26 @@ const SyncWidgetController = class extends Controller {
       case 'failed':
         this.handleFailure(data)
         break
+      case 'batch_update':
+        if (data.updates && Array.isArray(data.updates)) {
+          data.updates.forEach(update => this.applyUpdate ? this.applyUpdate(update) : this.handleUpdate(update))
+        }
+        break
+      case 'status_update':
+        // Normalize account shape: server uses 'id', client expects 'account_id'
+        if (data.accounts && Array.isArray(data.accounts)) {
+          data.accounts.forEach(account => {
+            this.updateAccount({
+              account_id: account.id || account.account_id,
+              status: account.status,
+              progress: account.progress,
+              processed: account.processed,
+              total: account.total
+            })
+          })
+        }
+        if (data.status) this.updateProgress(data)
+        break
       default:
         this.updateStatus(data)
     }
@@ -382,14 +402,14 @@ const SyncWidgetController = class extends Controller {
   updateStatusIcon(element, status) {
     element.textContent = ''
     const templateMap = {
-      processing: 'iconProcessingTarget',
-      running: 'iconProcessingTarget',
-      completed: 'iconCompletedTarget',
-      failed: 'iconFailedTarget'
+      processing: 'iconProcessing',
+      running: 'iconProcessing',
+      completed: 'iconCompleted',
+      failed: 'iconFailed'
     }
     const targetName = templateMap[status]
-    if (targetName && this[`has${targetName.charAt(0).toUpperCase() + targetName.slice(1)}`]) {
-      element.appendChild(this[targetName].content.cloneNode(true))
+    if (targetName && this[`has${targetName.charAt(0).toUpperCase() + targetName.slice(1)}Target`]) {
+      element.appendChild(this[`${targetName}Target`].content.cloneNode(true))
     } else {
       const dot = document.createElement('div')
       dot.className = 'h-4 w-4 rounded-full bg-slate-300'
@@ -478,7 +498,7 @@ const SyncWidgetController = class extends Controller {
 
     if (this.subscription && this.connectionStateValue === "connected") {
       try {
-        this.subscription.perform('pause_sync')
+        this.subscription.perform('pause_updates')
       } catch (error) {
         this.log("error", "Error pausing sync", error)
       }
@@ -527,7 +547,7 @@ const SyncWidgetController = class extends Controller {
 
     if (this.subscription && this.connectionStateValue === "connected") {
       try {
-        this.subscription.perform('resume_sync')
+        this.subscription.perform('resume_updates')
         this.requestLatestStatus()
       } catch (error) {
         this.log("error", "Error resuming sync", error)

@@ -505,8 +505,10 @@ RSpec.describe SyncSession, type: :model, unit: true, needs_broadcasting: true d
         expect(session.job_ids).to eq([ "existing", "new_job" ])
       end
 
-      it "handles nil job_ids array" do
-        session.job_ids = nil
+      it "handles nil job_ids array in the database" do
+        # write nil directly to DB to simulate missing/null column value;
+        # in-memory dirty assignment is not used because with_lock reloads from DB.
+        session.update_column(:job_ids, nil)
         session.add_job_id("job1")
         expect(session.job_ids).to eq([ "job1" ])
       end

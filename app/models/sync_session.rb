@@ -124,19 +124,24 @@ class SyncSession < ApplicationRecord
 
   def add_job_id(job_id)
     return unless job_id.present?
-    new_ids = (job_ids || []) + [ job_id.to_s ]
-    update_column(:job_ids, new_ids)
-    self.job_ids = new_ids
+    with_lock do
+      new_ids = (reload.job_ids || []) + [ job_id.to_s ]
+      update_column(:job_ids, new_ids)
+      self.job_ids = new_ids
+    end
   end
 
   # Collect multiple job IDs in one DB write — use this when dispatching
   # per-account jobs in a loop to avoid serial write-lock contention.
+  # Wraps the read-modify-write in a row lock to prevent lost updates.
   def batch_add_job_ids(new_job_ids)
     ids_to_add = Array(new_job_ids).map(&:to_s).reject(&:blank?)
     return if ids_to_add.empty?
-    merged = (job_ids || []) + ids_to_add
-    update_column(:job_ids, merged)
-    self.job_ids = merged
+    with_lock do
+      merged = (reload.job_ids || []) + ids_to_add
+      update_column(:job_ids, merged)
+      self.job_ids = merged
+    end
   end
 
   def cancel_all_jobs

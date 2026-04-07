@@ -203,11 +203,14 @@ class SyncSession < ApplicationRecord
 
     # Broadcast to dashboard using Turbo Streams
     begin
+      # Fetch active accounts once with latest expense preloaded to avoid N+1
+      accounts_with_latest = active_accounts_with_latest_expense
+
       # Get dashboard data for the partial
       dashboard_data = {
         active_sync_session: active? ? self : nil,
-        email_accounts: EmailAccount.active.order(:bank_name, :email),
-        last_sync_info: build_sync_info_for_dashboard
+        email_accounts: accounts_with_latest,
+        last_sync_info: build_sync_info_for_dashboard(accounts_with_latest)
       }
 
       # Broadcast Turbo Stream update to the dashboard
@@ -223,14 +226,24 @@ class SyncSession < ApplicationRecord
     end
   end
 
-  def build_sync_info_for_dashboard
+  def build_sync_info_for_dashboard(accounts = nil)
+    # Accept pre-loaded accounts to avoid N+1; fall back to fetching if not provided
+    accounts ||= active_accounts_with_latest_expense
+
     # Build sync info similar to Services::DashboardService
     sync_data = {}
 
-    EmailAccount.active.each do |account|
-      last_expense = account.expenses.order(created_at: :desc).first
+    accounts.each do |account|
+      # Use the preloaded latest_expense attribute when available; otherwise query.
+      # has_attribute? works for both standard columns and SQL-aliased virtual attributes.
+      last_expense_time = if account.has_attribute?(:latest_expense_created_at)
+        account.latest_expense_created_at
+      else
+        account.expenses.order(created_at: :desc).first&.created_at
+      end
+
       sync_data[account.id] = {
-        last_sync: last_expense&.created_at,
+        last_sync: last_expense_time,
         account: account
       }
     end
@@ -239,5 +252,23 @@ class SyncSession < ApplicationRecord
     sync_data[:running_job_count] = active? ? 1 : 0
 
     sync_data
+  end
+
+  def active_accounts_with_latest_expense
+    # Single query: fetch active accounts with their latest expense created_at
+    # using a LEFT JOIN on a subquery that finds the max created_at per account.
+    # This eliminates the N+1 of querying each account's expenses individually.
+    EmailAccount
+      .active
+      .select("email_accounts.*, latest_expenses.created_at AS latest_expense_created_at")
+      .joins(
+        "LEFT JOIN (
+          SELECT email_account_id, MAX(created_at) AS created_at
+          FROM expenses
+          WHERE deleted_at IS NULL
+          GROUP BY email_account_id
+        ) AS latest_expenses ON latest_expenses.email_account_id = email_accounts.id"
+      )
+      .order(:bank_name, :email)
   end
 end

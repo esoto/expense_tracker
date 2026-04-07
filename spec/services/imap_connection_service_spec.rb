@@ -191,6 +191,16 @@ RSpec.describe Services::ImapConnectionService, integration: true do
       allow(mock_imap).to receive(:disconnect)
     end
 
+    context 'deprecation warning', :unit do
+      it 'logs a warning when called directly outside with_session' do
+        expect(Rails.logger).to receive(:warn).with(
+          "[ImapConnectionService] with_connection called outside with_session — consider using with_session for connection reuse"
+        )
+
+        service.with_connection { |_imap| }
+      end
+    end
+
     context 'with valid account' do
       it 'creates connection, authenticates, selects inbox, and cleans up' do
         expect(Net::IMAP).to receive(:new).with('imap.test.com', port: 993, ssl: true)

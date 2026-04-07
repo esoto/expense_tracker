@@ -103,6 +103,7 @@ module Services
   end
 
   def with_connection
+    Rails.logger.warn "[ImapConnectionService] with_connection called outside with_session — consider using with_session for connection reuse"
     validate_account!
 
     imap = create_connection

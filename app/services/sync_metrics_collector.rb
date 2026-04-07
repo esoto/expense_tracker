@@ -190,14 +190,11 @@ module Services
     return if @metrics_buffer.empty?
 
     begin
-      SyncMetric.import!(@metrics_buffer, validate: false)
+      SyncMetric.import!(@metrics_buffer)
       @metrics_buffer.clear
-    rescue ActiveRecord::RecordInvalid => e
+    rescue ActiveRecord::RecordInvalid, ActiveRecord::StatementInvalid,
+           ActiveRecord::Deadlocked, ActiveRecord::ConnectionNotEstablished => e
       Rails.logger.error "Failed to save metrics: #{e.message}"
-      # Try saving individually
-      @metrics_buffer.each do |metric|
-        metric.save rescue Rails.logger.error("Failed to save metric: #{metric.errors.full_messages}")
-      end
       @metrics_buffer.clear
     end
   end

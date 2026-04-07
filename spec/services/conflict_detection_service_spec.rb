@@ -279,7 +279,11 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
       expect {
         result = service.send(:calculate_similarity, zero_amount_expense, expense_data)
       }.not_to raise_error
+
       expect(result).to be_a(Numeric)
+      # When existing.amount == 0 and new.amount != 0, amount_ratio is Float::INFINITY
+      # so amount_score == 0 (contributes 0 of 35 points). The score is well below 90.
+      expect(result).to be < 90
     end
   end
 

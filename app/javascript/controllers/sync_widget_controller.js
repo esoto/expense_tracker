@@ -41,7 +41,10 @@ const SyncWidgetController = class extends Controller {
     "accountCount",
     "accountProgressBar",
     "connectionWarning",
-    "connectionMessage"
+    "connectionMessage",
+    "iconProcessing",
+    "iconCompleted",
+    "iconFailed"
   ]
 
   static values = {
@@ -366,68 +369,19 @@ const SyncWidgetController = class extends Controller {
 
   updateStatusIcon(element, status) {
     element.textContent = ''
-    const svgNS = 'http://www.w3.org/2000/svg'
-
-    switch (status) {
-      case 'processing':
-      case 'running': {
-        const svg = document.createElementNS(svgNS, 'svg')
-        svg.setAttribute('aria-hidden', 'true')
-        svg.setAttribute('class', 'animate-spin h-4 w-4 text-teal-700')
-        svg.setAttribute('fill', 'none')
-        svg.setAttribute('viewBox', '0 0 24 24')
-        const circle = document.createElementNS(svgNS, 'circle')
-        circle.setAttribute('class', 'opacity-25')
-        circle.setAttribute('cx', '12'); circle.setAttribute('cy', '12')
-        circle.setAttribute('r', '10')
-        circle.setAttribute('stroke', 'currentColor')
-        circle.setAttribute('stroke-width', '4')
-        const path = document.createElementNS(svgNS, 'path')
-        path.setAttribute('class', 'opacity-75')
-        path.setAttribute('fill', 'currentColor')
-        path.setAttribute('d', 'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z')
-        svg.appendChild(circle)
-        svg.appendChild(path)
-        element.appendChild(svg)
-        break
-      }
-      case 'completed': {
-        const svg = document.createElementNS(svgNS, 'svg')
-        svg.setAttribute('aria-hidden', 'true')
-        svg.setAttribute('class', 'h-4 w-4 text-emerald-600')
-        svg.setAttribute('fill', 'none')
-        svg.setAttribute('stroke', 'currentColor')
-        svg.setAttribute('viewBox', '0 0 24 24')
-        const path = document.createElementNS(svgNS, 'path')
-        path.setAttribute('stroke-linecap', 'round')
-        path.setAttribute('stroke-linejoin', 'round')
-        path.setAttribute('stroke-width', '2')
-        path.setAttribute('d', 'M5 13l4 4L19 7')
-        svg.appendChild(path)
-        element.appendChild(svg)
-        break
-      }
-      case 'failed': {
-        const svg = document.createElementNS(svgNS, 'svg')
-        svg.setAttribute('aria-hidden', 'true')
-        svg.setAttribute('class', 'h-4 w-4 text-rose-600')
-        svg.setAttribute('fill', 'none')
-        svg.setAttribute('stroke', 'currentColor')
-        svg.setAttribute('viewBox', '0 0 24 24')
-        const path = document.createElementNS(svgNS, 'path')
-        path.setAttribute('stroke-linecap', 'round')
-        path.setAttribute('stroke-linejoin', 'round')
-        path.setAttribute('stroke-width', '2')
-        path.setAttribute('d', 'M6 18L18 6M6 6l12 12')
-        svg.appendChild(path)
-        element.appendChild(svg)
-        break
-      }
-      default: {
-        const dot = document.createElement('div')
-        dot.className = 'h-4 w-4 rounded-full bg-slate-300'
-        element.appendChild(dot)
-      }
+    const templateMap = {
+      processing: 'iconProcessingTarget',
+      running: 'iconProcessingTarget',
+      completed: 'iconCompletedTarget',
+      failed: 'iconFailedTarget'
+    }
+    const targetName = templateMap[status]
+    if (targetName && this[`has${targetName.charAt(0).toUpperCase() + targetName.slice(1)}`]) {
+      element.appendChild(this[targetName].content.cloneNode(true))
+    } else {
+      const dot = document.createElement('div')
+      dot.className = 'h-4 w-4 rounded-full bg-slate-300'
+      element.appendChild(dot)
     }
   }
 

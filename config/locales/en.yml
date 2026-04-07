@@ -154,6 +154,20 @@ en:
 
   # Email accounts
   email_accounts:
+    index:
+      title: "Email Accounts"
+      empty: "No email accounts configured."
+    new:
+      title: "New Email Account"
+    edit:
+      title: "Edit Email Account"
+    show:
+      title: "Email Account"
+    form:
+      email: "Email"
+      password: "Password"
+      active: "Active account"
+      create: "Create account"
     flash:
       created: "Email account created successfully."
       updated: "Email account updated successfully."
@@ -375,6 +389,10 @@ en:
       heading: "Expense Dashboard"
       subheading: "Complete summary of your finances"
       sync_section_heading: "Email Synchronization"
+      by_category: "Expenses by Category"
+      top_merchants: "Top Merchants"
+      recent: "Recent Expenses"
+      monthly_trend: "Monthly Trend"
       syncing_status: "Synchronizing..."
       overall_progress: "Overall progress"
       emails_count: "%{processed} / %{total} emails"
@@ -413,6 +431,16 @@ en:
 
   # Sync sessions
   sync_sessions:
+    index:
+      title: "Synchronization Hub"
+      in_progress: "Synchronization in Progress"
+      last_sync_title: "Last Synchronization"
+
+    show:
+      title: "Synchronization Details"
+      cancel: "Cancel Synchronization"
+      account_details: "Details by Account"
+
     statuses:
       pending: "Pending"
       running: "Running"
@@ -434,6 +462,26 @@ en:
 
   # Budgets
   budgets:
+    index:
+      title: "Budgets"
+      new_budget: "New Budget"
+      amount: "Amount:"
+      create_first: "Create your first budget"
+    new:
+      title: "New Budget"
+    edit:
+      title: "Edit Budget"
+    form:
+      amount: "Amount"
+      start_date: "Start date"
+      description: "Description"
+      create: "Create Budget"
+      update: "Update Budget"
+    progress:
+      label: "Budget"
+      remaining: "Remaining"
+      exceeded: "Exceeded"
+      no_budget: "No budget defined"
     periods:
       daily: "Daily"
       weekly: "Weekly"
@@ -459,6 +507,11 @@ en:
     view: "View"
     are_you_sure: "Are you sure?"
     unauthorized: "Unauthorized"
+    skip_to_main_content: "Skip to main content"
+    skip_to_navigation: "Skip to navigation"
+    main_navigation: "Main navigation"
+    open_navigation_menu: "Open navigation menu"
+    mobile_navigation_menu: "Mobile navigation menu"
 
   # Admin Composite Patterns
   admin:

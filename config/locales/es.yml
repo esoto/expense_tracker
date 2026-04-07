@@ -127,6 +127,20 @@ es:
       
   # Email accounts
   email_accounts:
+    index:
+      title: "Cuentas de Correo"
+      empty: "No hay cuentas de correo configuradas."
+    new:
+      title: "Nueva Cuenta de Correo"
+    edit:
+      title: "Editar Cuenta de Correo"
+    show:
+      title: "Cuenta de Correo"
+    form:
+      email: "Correo electrónico"
+      password: "Contraseña"
+      active: "Cuenta activa"
+      create: "Crear cuenta"
     flash:
       created: "Cuenta de correo creada exitosamente."
       updated: "Cuenta de correo actualizada exitosamente."
@@ -348,6 +362,10 @@ es:
       heading: "Dashboard de Gastos"
       subheading: "Resumen completo de tus finanzas"
       sync_section_heading: "Sincronización de Correos"
+      by_category: "Gastos por Categoría"
+      top_merchants: "Comercios con Más Gastos"
+      recent: "Gastos Recientes"
+      monthly_trend: "Tendencia Mensual"
       syncing_status: "Sincronizando..."
       overall_progress: "Progreso general"
       emails_count: "%{processed} / %{total} correos"
@@ -391,6 +409,16 @@ es:
 
   # Sync sessions
   sync_sessions:
+    index:
+      title: "Centro de Sincronización"
+      in_progress: "Sincronización en Progreso"
+      last_sync_title: "Última Sincronización"
+
+    show:
+      title: "Detalles de Sincronización"
+      cancel: "Cancelar Sincronización"
+      account_details: "Detalles por Cuenta"
+
     statuses:
       pending: "Pendiente"
       running: "En ejecución"
@@ -412,6 +440,26 @@ es:
 
   # Budgets
   budgets:
+    index:
+      title: "Presupuestos"
+      new_budget: "Nuevo Presupuesto"
+      amount: "Monto:"
+      create_first: "Crear tu primer presupuesto"
+    new:
+      title: "Nuevo Presupuesto"
+    edit:
+      title: "Editar Presupuesto"
+    form:
+      amount: "Monto"
+      start_date: "Fecha de inicio"
+      description: "Descripción"
+      create: "Crear Presupuesto"
+      update: "Actualizar Presupuesto"
+    progress:
+      label: "Presupuesto"
+      remaining: "Queda"
+      exceeded: "Excedido"
+      no_budget: "Sin presupuesto definido"
     periods:
       daily: "Diario"
       weekly: "Semanal"
@@ -447,6 +495,11 @@ es:
     view: "Ver"
     are_you_sure: "¿Estás seguro?"
     unauthorized: "No autorizado"
+    skip_to_main_content: "Saltar al contenido principal"
+    skip_to_navigation: "Saltar a la navegación"
+    main_navigation: "Navegación principal"
+    open_navigation_menu: "Abrir menú de navegación"
+    mobile_navigation_menu: "Menú de navegación móvil"
 
   # Admin Patterns
   admin:

@@ -1,7 +1,7 @@
 <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
   <div class="md:flex md:items-center md:justify-between">
     <div class="flex-1 min-w-0">
-      <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:text-3xl sm:truncate">Editar Cuenta de Correo</h2>
+      <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:text-3xl sm:truncate"><%= t("email_accounts.edit.title") %></h2>
     </div>
   </div>
 
@@ -27,12 +27,12 @@
 
         <div class="space-y-6">
           <div>
-            <%= form.label :email, "Correo electrónico", class: "block text-sm font-medium text-slate-700" %>
+            <%= form.label :email, t("email_accounts.form.email"), class: "block text-sm font-medium text-slate-700" %>
             <%= form.email_field :email, class: "mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm" %>
           </div>
 
           <div>
-            <%= form.label :password, "Contraseña", class: "block text-sm font-medium text-slate-700" %>
+            <%= form.label :password, t("email_accounts.form.password"), class: "block text-sm font-medium text-slate-700" %>
             <%= form.password_field :password, placeholder: "Dejar en blanco para mantener la actual", class: "mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm" %>
             <p class="mt-2 text-sm text-slate-500">Solo ingresa una nueva contraseña si deseas cambiarla.</p>
           </div>
@@ -66,7 +66,7 @@
 
           <div class="flex items-center">
             <%= form.check_box :active, class: "h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded" %>
-            <%= form.label :active, "Cuenta activa", class: "ml-2 block text-sm text-slate-900" %>
+            <%= form.label :active, t("email_accounts.form.active"), class: "ml-2 block text-sm text-slate-900" %>
           </div>
         </div>
 

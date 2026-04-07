@@ -13,7 +13,7 @@
     <!-- Progress Bar -->
     <div class="relative">
       <div class="flex items-center justify-between text-xs mb-1">
-        <span class="text-slate-600">Presupuesto</span>
+        <span class="text-slate-600"><%= t("budgets.progress.label") %></span>
         <span class="font-medium text-<%= budget[:status_color] %>">
           <%= budget[:usage_percentage] %>% usado
         </span>
@@ -37,7 +37,7 @@
           de <%= budget[:formatted_amount] %>
         </span>
         <span class="text-xs font-medium <%= remaining_amount_color_class(budget[:status]) %>">
-          <%= budget[:remaining] >= 0 ? 'Queda' : 'Excedido' %>:
+          <%= budget[:remaining] >= 0 ? t("budgets.progress.remaining") : t("budgets.progress.exceeded") %>:
           <%= budget[:formatted_remaining] %>
         </span>
       </div>
@@ -83,7 +83,7 @@
         <svg aria-hidden="true" class="w-4 h-4 text-amber-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
-        <span class="text-xs text-slate-600">Sin presupuesto definido</span>
+        <span class="text-xs text-slate-600"><%= t("budgets.progress.no_budget") %></span>
       </div>
       <button type="button"
               class="text-xs font-medium text-teal-700 hover:text-teal-800 transition-colors"

@@ -1,6 +1,15 @@
 class ProcessEmailJob < ApplicationJob
   queue_as :email_processing
 
+  # Retry with exponential back-off on transient database contention (overrides ApplicationJob default)
+  retry_on ActiveRecord::Deadlocked, wait: :polynomially_longer, attempts: 5
+
+  # Retry on connection loss (e.g. brief DB restart) — not covered by parent class
+  retry_on ActiveRecord::ConnectionNotEstablished, wait: 5.seconds, attempts: 3
+
+  # Discard when job arguments reference a record that no longer exists (inherited, explicit for clarity)
+  discard_on ActiveJob::DeserializationError
+
   TRUNCATE_SIZE = 10_000  # Store only 10KB for large emails
 
   def perform(email_account_id, email_data, sync_session_id = nil, pre_parsed_data = nil)

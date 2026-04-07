@@ -503,6 +503,33 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
     end
   end
 
+  describe 'retry and discard configuration', :unit do
+    subject(:rescue_handlers) { described_class.rescue_handlers }
+
+    it 'retries on ActiveRecord::Deadlocked' do
+      handler_classes = rescue_handlers.map(&:first)
+      expect(handler_classes).to include('ActiveRecord::Deadlocked')
+    end
+
+    it 'retries on ActiveRecord::ConnectionNotEstablished' do
+      handler_classes = rescue_handlers.map(&:first)
+      expect(handler_classes).to include('ActiveRecord::ConnectionNotEstablished')
+    end
+
+    it 'discards on ActiveJob::DeserializationError' do
+      handler_classes = rescue_handlers.map(&:first)
+      expect(handler_classes).to include('ActiveJob::DeserializationError')
+    end
+
+    it 'discards the job when DeserializationError is raised' do
+      allow(EmailAccount).to receive(:find_by).and_raise(ActiveJob::DeserializationError)
+
+      expect {
+        described_class.perform_now(email_account_id, email_data)
+      }.not_to raise_error
+    end
+  end
+
   describe 'constants' do
     it 'defines TRUNCATE_SIZE as 10_000' do
       expect(described_class::TRUNCATE_SIZE).to eq(10_000)

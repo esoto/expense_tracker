@@ -1,6 +1,12 @@
 class SyncSessionMonitorJob < ApplicationJob
   queue_as :email_processing
 
+  # Gracefully stop polling when the SyncSession record is deleted mid-poll
+  discard_on ActiveJob::DeserializationError
+
+  # Retry on transient database deadlocks with exponential back-off (overrides ApplicationJob default)
+  retry_on ActiveRecord::Deadlocked, wait: :polynomially_longer, attempts: 3
+
   def perform(sync_session_id)
     sync_session = SyncSession.find_by(id: sync_session_id)
     return unless sync_session

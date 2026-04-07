@@ -378,6 +378,28 @@ RSpec.describe SyncSessionMonitorJob, type: :job, unit: true do
     end
   end
 
+  describe 'retry and discard configuration', :unit do
+    subject(:rescue_handlers) { described_class.rescue_handlers }
+
+    it 'retries on ActiveRecord::Deadlocked' do
+      handler_classes = rescue_handlers.map(&:first)
+      expect(handler_classes).to include('ActiveRecord::Deadlocked')
+    end
+
+    it 'discards on ActiveJob::DeserializationError' do
+      handler_classes = rescue_handlers.map(&:first)
+      expect(handler_classes).to include('ActiveJob::DeserializationError')
+    end
+
+    it 'discards the job when DeserializationError is raised, preventing re-poll on deleted session' do
+      allow(SyncSession).to receive(:find_by).and_raise(ActiveJob::DeserializationError)
+
+      expect {
+        described_class.perform_now(sync_session_id)
+      }.not_to raise_error
+    end
+  end
+
   describe 'ActiveJob interface' do
     it 'responds to perform_later' do
       expect(described_class).to respond_to(:perform_later)

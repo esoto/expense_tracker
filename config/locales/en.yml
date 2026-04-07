@@ -28,23 +28,225 @@
 #       enabled: "ON"
 
 en:
+  # Application-wide translations
   hello: "Hello world"
-  budgets:
-    periods:
-      daily: "Daily"
-      weekly: "Weekly"
-      monthly: "Monthly"
-      yearly: "Yearly"
-  expenses:
-    flash:
-      bulk_destroy_empty: "You must select at least one expense to delete."
+
+  # Navigation
+  nav:
+    dashboard: "Dashboard"
+    expenses: "Expenses"
+    categorize: "Categorize"
+    analytics: "Analytics"
+    accounts: "Accounts"
+    sync: "Synchronization"
+    patterns: "Patterns"
+    settings: "Settings"
+    new_expense: "New Expense"
+    new_expense_aria: "Create a new expense"
+    language: "Language"
+    switch_language: "Switch language to %{language}"
+
+  # Sync Status Widget
+  sync:
+    title: "Synchronization Status"
+    status:
+      idle: "Idle"
+      running: "Running"
+      completed: "Completed"
+      failed: "Failed"
+      paused: "Paused"
+      connecting: "Connecting..."
+      connected: "Connected"
+      disconnected: "Disconnected"
+      reconnecting: "Reconnecting..."
+
+    messages:
+      starting: "Starting synchronization..."
+      processing: "Processing emails..."
+      completed: "Synchronization completed successfully"
+      failed: "Synchronization failed"
+      no_emails: "No new emails found"
+
+    stats:
+      processed: "Emails processed"
+      detected: "Expenses detected"
+      remaining: "Time remaining"
+      progress: "Progress"
+
+    actions:
+      start: "Start Synchronization"
+      stop: "Stop"
+      retry: "Retry"
+      view_details: "View Details"
+
+  # Error messages
+  errors:
+    connection:
+      failed: "Failed to connect to server"
+      lost: "Connection to server was lost"
+      timeout: "Connection timed out"
+      refused: "Server refused the connection"
+      network: "Network error. Check your connection"
+      offline: "No internet connection"
+      online: "Connection restored"
+      websocket_unsupported: "Your browser doesn't support real-time connections"
+      firewall: "Connection may be blocked by firewall"
+      ssl: "SSL certificate error"
+
+    auth:
+      expired: "Your session has expired"
+      invalid: "Invalid credentials"
+      unauthorized: "Unauthorized"
+      token_invalid: "Security token is invalid"
+      token_expired: "Security token has expired"
+
+    sync:
+      email_connection: "Failed to connect to email server"
+      email_auth: "Email authentication error"
+      rate_limit: "Too many requests"
+      parsing_error: "Error processing emails"
+      duplicate_detected: "Duplicate transactions detected"
+      no_emails: "No new emails found"
+      account_locked: "Account temporarily locked"
+      quota_exceeded: "Synchronization limit exceeded"
+      processing_error: "Error processing transactions"
+      invalid_format: "Email format not recognized"
+
+    server:
+      internal: "Internal server error"
+      maintenance: "Service under maintenance"
+      overloaded: "Server overloaded"
+      unavailable: "Service unavailable"
+      timeout: "Server did not respond"
+
+    recovery:
+      retrying: "Retrying connection..."
+      retry_in: "Retrying in %{seconds} seconds"
+      max_retries: "Maximum retry attempts reached"
+      manual_retry: "Click to retry"
+      recovered: "Connection recovered"
+      switching_mode: "Switching to alternate mode"
+      degraded_mode: "Limited mode active"
+
+  # Actions
+  actions:
+    retry: "Retry"
+    dismiss: "Dismiss"
+    reload: "Reload page"
+    check_connection: "Check connection"
+    contact_support: "Contact support"
+    view_details: "View details"
+    report_issue: "Report issue"
+
+  # Toast notifications
+  toast:
+    close: "Close notification"
+
+  # Time formatting
+  time:
+    seconds: "%{count} seconds"
+    minutes:
+      one: "1 minute"
+      other: "%{count} minutes"
+    hours:
+      one: "1 hour"
+      other: "%{count} hours"
+
+  # Email accounts
   email_accounts:
+    flash:
+      created: "Email account created successfully."
+      updated: "Email account updated successfully."
+      deleted: "Email account deleted successfully."
+
     providers:
       gmail: "Gmail"
       outlook: "Outlook"
       yahoo: "Yahoo"
       custom: "Custom"
       manual: "Manual"
+
+    bank_names:
+      bac: "BAC San José"
+      bcr: "Banco de Costa Rica"
+      bn: "Banco Nacional"
+      promerica: "Promerica"
+      scotiabank: "Scotiabank"
+      davivienda: "Davivienda"
+
+  # Expenses
+  expenses:
+    titles:
+      index: "Expenses - Expense Tracker"
+      dashboard: "Dashboard - Expense Tracker"
+      new: "New Expense - Expense Tracker"
+      edit: "Edit %{name} - Expense Tracker"
+      show: "%{name} - Expense Tracker"
+      show_no_merchant: "No merchant - Expense Tracker"
+
+    card:
+      no_merchant: "No merchant"
+      no_category: "No category"
+      status:
+        pending: "Pending"
+        duplicate: "Duplicate"
+        failed: "Failed"
+        unknown: "Unknown"
+      actions:
+        categorize_label: "Categorize expense"
+        categorize: "Category"
+        status_label: "Change expense status"
+        status: "Status"
+        edit_label: "Edit expense"
+        delete_label: "Delete expense"
+
+    flash:
+      created: "Expense created successfully."
+      updated: "Expense updated successfully."
+      deleted: "Expense deleted. You can undo this action."
+      delete_error: "Error deleting expense. Please try again."
+      duplicated: "Expense duplicated successfully"
+      sync_error: "Error starting synchronization. Please try again."
+      not_found: "Expense not found or you don't have permission to view it."
+      not_authorized: "You don't have permission to modify this expense."
+      category_invalid: "Invalid category"
+      category_updated: "Category updated successfully"
+      category_blank: "Please select a category"
+      category_error: "Error updating category"
+      suggestion_accepted: "Suggestion accepted"
+      suggestion_none: "No suggestion available"
+      suggestion_accept_error: "Error accepting suggestion"
+      suggestion_rejected: "Suggestion rejected"
+      suggestion_reject_error: "Error rejecting suggestion"
+      status_invalid: "Invalid status"
+      status_updated: "Status updated successfully"
+      status_error: "Error updating status"
+      bulk_destroy_empty: "You must select at least one expense to delete."
+
+    actions:
+      back_to_dashboard: "← Back to Dashboard"
+      new: "New Expense"
+      create: "Create Expense"
+      update: "Update Expense"
+      delete_confirm: "Are you sure you want to delete this expense?"
+      delete_title: "Delete expense (Delete)"
+      delete_aria: "Delete expense"
+
+    categories:
+      food: "Food"
+      transport: "Transport"
+      utilities: "Utilities"
+      entertainment: "Entertainment"
+      health: "Health"
+      shopping: "Shopping"
+      other: "Other"
+
+    status:
+      pending: "Pending"
+      confirmed: "Confirmed"
+      rejected: "Rejected"
+
+  # Sync sessions
   sync_sessions:
     statuses:
       pending: "Pending"
@@ -54,11 +256,51 @@ en:
       cancelled: "Cancelled"
       processing: "Processing"
       waiting: "Waiting"
+
+    flash:
+      started: "Synchronization started successfully"
+      not_active: "This synchronization is not active"
+      cancelled: "Synchronization cancelled successfully"
+      cancel_error: "Error cancelling synchronization"
+      restarted: "Synchronization restarted successfully"
+      create_error: "Error creating synchronization"
+      not_found: "Synchronization not found"
+      unexpected_error: "An unexpected error occurred. Please try again."
+
+  # Budgets
+  budgets:
+    periods:
+      daily: "Daily"
+      weekly: "Weekly"
+      monthly: "Monthly"
+      yearly: "Yearly"
+
+  # Common
+  common:
+    loading: "Loading..."
+    saving: "Saving..."
+    saved: "Saved"
+    save: "Save"
+    cancel: "Cancel"
+    confirm: "Confirm"
+    delete: "Delete"
+    edit: "Edit"
+    new: "New"
+    back: "Back"
+    search: "Search"
+    filter: "Filter"
+    export: "Export"
+    import: "Import"
+    view: "View"
+    are_you_sure: "Are you sure?"
+    unauthorized: "Unauthorized"
+
+  # Admin Composite Patterns
   admin:
     composite_patterns:
       new:
         title: "New Composite Pattern"
-        subtitle: "Create a new rule combining multiple patterns with logical operators"
+        subtitle: "Create a new rule that combines multiple patterns with logical operators"
       edit:
         title: "Edit Composite Pattern"
         subtitle: "Modify the configuration of"
@@ -90,10 +332,39 @@ en:
       breadcrumb:
         new: "New"
         edit: "Edit"
+        index: "Composite Patterns"
+      actions:
+        edit: "Edit"
+        back: "Back"
+      show:
+        details_title: "Pattern Details"
+        performance_title: "Performance"
+        component_patterns_title: "Component Patterns"
+        category_label: "Category"
+        operator_label: "Operator"
+        confidence_label: "Confidence Weight"
+        status_label: "Status"
+        created_by_label: "Created by"
+        usage_count_label: "Times Used"
+        success_count_label: "Successes"
+        success_rate_label: "Success Rate"
+        effective_confidence_label: "Effective Confidence"
+        pattern_type_col: "Type"
+        pattern_value_col: "Value"
+        pattern_category_col: "Category"
+        pattern_confidence_col: "Confidence"
+        pattern_status_col: "Status"
+        active: "Active"
+        inactive: "Inactive"
+        user: "User"
+        system: "System"
+        no_patterns: "No component patterns associated."
     pattern_management:
       toggle_active:
         pattern_activated: "Pattern activated"
         pattern_deactivated: "Pattern deactivated"
+
+  # ActiveRecord attribute translations
   activerecord:
     attributes:
       email_account:

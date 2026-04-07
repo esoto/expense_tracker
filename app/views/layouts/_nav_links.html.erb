@@ -30,7 +30,22 @@
         class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm block text-center",
         'aria-label': t("nav.new_expense_aria") %>
   </div>
+  <div class="pt-2 mt-2 border-t border-slate-200 flex items-center gap-2 px-3">
+    <span class="text-xs text-slate-500"><%= t("nav.language") %>:</span>
+    <% I18n.available_locales.each do |loc| %>
+      <%= button_to locale_path(locale: loc), method: :patch, class: "text-xs px-2 py-1 rounded #{I18n.locale == loc ? 'bg-teal-100 text-teal-700 font-semibold' : 'text-slate-500 hover:text-teal-700 hover:bg-slate-50'}", 'aria-label': t("nav.switch_language", language: loc.to_s.upcase) do %>
+        <%= loc.to_s.upcase %>
+      <% end %>
+    <% end %>
+  </div>
 <% else %>
+  <div class="flex items-center gap-1 border-l border-slate-200 ml-2 pl-3">
+    <% I18n.available_locales.each do |loc| %>
+      <%= button_to locale_path(locale: loc), method: :patch, class: "text-xs px-2 py-1 rounded transition-colors #{I18n.locale == loc ? 'bg-teal-100 text-teal-700 font-semibold' : 'text-slate-400 hover:text-teal-700 hover:bg-slate-50'}", 'aria-label': t("nav.switch_language", language: loc.to_s.upcase) do %>
+        <%= loc.to_s.upcase %>
+      <% end %>
+    <% end %>
+  </div>
   <%= link_to t("nav.new_expense"), new_expense_path,
       class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm",
       'aria-label': t("nav.new_expense_aria") %>

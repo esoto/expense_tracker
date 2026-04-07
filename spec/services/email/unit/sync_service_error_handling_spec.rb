@@ -271,57 +271,56 @@ RSpec.describe Services::Email::SyncService, 'Error Handling and Edge Cases', un
     end
 
     describe 'conflict detection edge cases' do
-      it 'handles expenses with nil descriptions' do
-        expense1 = instance_double(Expense,
-          id: 1,
-          transaction_date: Date.today,
-          amount: BigDecimal('100'),
-          description: nil
-        )
-        expense2 = instance_double(Expense,
-          id: 2,
-          transaction_date: Date.today,
-          amount: BigDecimal('100'),
-          description: nil
-        )
-
-        allow(expense1).to receive(:amount).and_return(BigDecimal('100'))
-        allow(expense2).to receive(:amount).and_return(BigDecimal('100'))
-
-        expense_relation = double('expense_relation')
-        allow(Expense).to receive(:where).and_return(expense_relation)
-        allow(expense_relation).to receive(:group_by) do |&block|
-          { [ Date.today, BigDecimal('100') ] => [ expense1, expense2 ] }
-        end
+      it 'returns empty array when no sync session is present' do
+        expect(Expense).not_to receive(:where)
 
         conflicts = service.detect_conflicts
 
-        expect(conflicts).to be_empty # nil descriptions don't match
+        expect(conflicts).to be_empty
       end
 
-      it 'handles empty description strings' do
-        result = service.send(:similar_descriptions?, '', '')
-        expect(result).to be false
+      it 'returns empty array when no recent expenses exist and session is present' do
+        sync_session = instance_double(SyncSession, id: 1)
+        service.instance_variable_set(:@sync_session, sync_session)
+
+        allow(Expense).to receive(:where)
+          .with(created_at: (mock_time - 1.hour)..mock_time)
+          .and_return([])
+
+        conflicts = service.detect_conflicts
+
+        expect(conflicts).to be_empty
       end
 
-      it 'handles special characters in descriptions' do
-        result = service.send(:similar_descriptions?,
-          '!@#$%^&*()',
-          '!@#$%^&*()'
-        )
-        expect(result).to be false # No actual words to compare
-      end
+      it 'delegates to ConflictDetectionService when session is present' do
+        sync_session = instance_double(SyncSession, id: 1)
+        service.instance_variable_set(:@sync_session, sync_session)
 
-      it 'handles very long descriptions' do
-        # Create descriptions with high word overlap
-        # The & operator returns unique common elements, not all duplicates
-        # So we need many different matching words to get > 0.7 similarity
-        words = (1..100).map { |i| "word#{i}" }.join(' ')
-        long_desc1 = words + ' extra1'
-        long_desc2 = words + ' extra2'
+        expense_attrs = {
+          'id' => 1, 'amount' => BigDecimal('100'), 'transaction_date' => Date.today,
+          'merchant_name' => 'Test Store', 'description' => 'Purchase',
+          'currency' => 'crc', 'email_account_id' => 5, 'category_id' => nil
+        }
+        expense = instance_double(Expense)
+        allow(expense).to receive(:attributes).and_return(expense_attrs)
 
-        result = service.send(:similar_descriptions?, long_desc1, long_desc2)
-        expect(result).to be true # 100 common words out of 101 = 0.99 > 0.7
+        allow(Expense).to receive(:where)
+          .with(created_at: (mock_time - 1.hour)..mock_time)
+          .and_return([ expense ])
+
+        conflict_detection_service = instance_double(Services::ConflictDetectionService)
+        allow(Services::ConflictDetectionService)
+          .to receive(:new).with(sync_session)
+          .and_return(conflict_detection_service)
+
+        mock_conflicts = [ instance_double(SyncConflict) ]
+        expect(conflict_detection_service)
+          .to receive(:detect_conflicts_batch).with([ expense_attrs.symbolize_keys ])
+          .and_return(mock_conflicts)
+
+        result = service.detect_conflicts
+
+        expect(result).to eq(mock_conflicts)
       end
     end
 
@@ -443,17 +442,15 @@ RSpec.describe Services::Email::SyncService, 'Error Handling and Edge Cases', un
         expect(new_service.sync_session).to be_nil
       end
 
-      it 'handles very large conflict arrays' do
+      it 'returns zero counts when no session is present regardless of legacy conflicts passed' do
         large_conflicts = Array.new(10000) do |i|
           { type: 'duplicate', expenses: [ i, i + 1 ], confidence: 0.8 }
         end
 
-        allow(Expense).to receive(:find).and_raise(ActiveRecord::RecordNotFound)
-
         result = service.resolve_conflicts(large_conflicts)
 
-        expect(result[:total]).to eq(10000)
-        expect(result[:resolved]).to eq(0) # No expenses found
+        expect(result[:resolved]).to eq(0)
+        expect(result[:total]).to eq(0)
       end
     end
   end

@@ -358,5 +358,46 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
         expect(score).to be_between(25, 90)
       end
     end
+
+    context '#find_candidate_expenses' do
+      it 'excludes the source expense from candidates when :id is provided' do
+        expense = create(:expense,
+          email_account: email_account,
+          amount: 100.00,
+          transaction_date: Date.today,
+          merchant_name: 'Self Store',
+          status: 'processed'
+        )
+
+        candidates = service.send(:find_candidate_expenses, {
+          id: expense.id,
+          amount: 100.00,
+          transaction_date: Date.today,
+          merchant_name: 'Self Store',
+          email_account_id: email_account.id
+        })
+
+        expect(candidates.map(&:id)).not_to include(expense.id)
+      end
+
+      it 'does not filter by id when :id is absent' do
+        expense = create(:expense,
+          email_account: email_account,
+          amount: 100.00,
+          transaction_date: Date.today,
+          merchant_name: 'No-Id Store',
+          status: 'processed'
+        )
+
+        candidates = service.send(:find_candidate_expenses, {
+          amount: 100.00,
+          transaction_date: Date.today,
+          merchant_name: 'No-Id Store',
+          email_account_id: email_account.id
+        })
+
+        expect(candidates.map(&:id)).to include(expense.id)
+      end
+    end
   end
 end

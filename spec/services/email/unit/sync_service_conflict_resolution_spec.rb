@@ -6,394 +6,228 @@ RSpec.describe Services::Email::SyncService, 'Conflict Detection and Resolution'
   let(:service) { described_class.new(options) }
   let(:options) { {} }
   let(:mock_time) { Time.zone.parse('2024-01-15 16:45:00') }
+  let(:sync_session) { instance_double(SyncSession, id: 42) }
 
   before do
     allow(Time).to receive(:current).and_return(mock_time)
   end
 
   describe '#detect_conflicts' do
-    let(:expense1) do
-      instance_double(Expense,
-        id: 1,
-        transaction_date: Date.parse('2024-01-15'),
-        amount: BigDecimal('100.50'),
-        description: 'Compra en Supermercado ABC',
-        created_at: mock_time - 30.minutes
-      )
-    end
-
-    let(:expense2) do
-      instance_double(Expense,
-        id: 2,
-        transaction_date: Date.parse('2024-01-15'),
-        amount: BigDecimal('100.50'),
-        description: 'Compra Supermercado ABC',
-        created_at: mock_time - 25.minutes
-      )
-    end
-
-    let(:expense3) do
-      instance_double(Expense,
-        id: 3,
-        transaction_date: Date.parse('2024-01-15'),
-        amount: BigDecimal('100.51'),
-        description: 'Pago de servicios',
-        created_at: mock_time - 20.minutes
-      )
-    end
-
-    let(:expense4) do
-      instance_double(Expense,
-        id: 4,
-        transaction_date: Date.parse('2024-01-14'),
-        amount: BigDecimal('100.50'),
-        description: 'Compra en Supermercado ABC',
-        created_at: mock_time - 15.minutes
-      )
-    end
-
-    before do
-      allow(expense1).to receive(:amount).and_return(BigDecimal('100.50'))
-      allow(expense2).to receive(:amount).and_return(BigDecimal('100.50'))
-      allow(expense3).to receive(:amount).and_return(BigDecimal('100.51'))
-      allow(expense4).to receive(:amount).and_return(BigDecimal('100.50'))
-    end
-
-    context 'with recent expenses' do
-      before do
-        # Default empty result for Expense.where
-        allow(Expense).to receive(:where).with(created_at: (mock_time - 1.hour)..mock_time)
-          .and_return([])
+    context 'without a sync session' do
+      it 'returns an empty array' do
+        expect(service.detect_conflicts).to eq([])
       end
 
-      it 'detects duplicates with same date and amount' do
-        expenses = [ expense1, expense2 ]
-        expense_relation = double('expense_relation')
+      it 'does not query the database' do
+        expect(Expense).not_to receive(:where)
+        service.detect_conflicts
+      end
+    end
 
-        allow(Expense).to receive(:where).and_return(expense_relation)
-        allow(expense_relation).to receive(:group_by) do |&block|
-          grouped = {}
-          expenses.each do |exp|
-            key = block.call(exp)
-            grouped[key] ||= []
-            grouped[key] << exp
-          end
-          grouped
-        end
-
-        conflicts = service.detect_conflicts
-
-        expect(conflicts).to include(
-          hash_including(
-            type: 'duplicate',
-            expenses: [ 1, 2 ],
-            confidence: 0.8
-          )
-        )
+    context 'with a sync session' do
+      let(:service) do
+        svc = described_class.new(options)
+        svc.instance_variable_set(:@sync_session, sync_session)
+        svc
       end
 
-      it 'does not detect conflicts for different dates' do
-        expenses = [ expense1, expense4 ]
-        expense_relation = double('expense_relation')
-
-        allow(Expense).to receive(:where).and_return(expense_relation)
-        allow(expense_relation).to receive(:group_by) do |&block|
-          grouped = {}
-          expenses.each do |exp|
-            key = block.call(exp)
-            grouped[key] ||= []
-            grouped[key] << exp
-          end
-          grouped
-        end
-
-        conflicts = service.detect_conflicts
-
-        expect(conflicts).to be_empty
-      end
-
-      it 'groups by rounded amounts to handle floating point precision' do
-        expense_with_precision = instance_double(Expense,
-          id: 5,
+      let(:expense1_attrs) do
+        {
+          id: 1,
+          amount: BigDecimal('100.50'),
           transaction_date: Date.parse('2024-01-15'),
-          amount: BigDecimal('100.504999999'),
-          description: 'Compra en Supermercado ABC',  # Same description as expense1
-          created_at: mock_time - 10.minutes
-        )
-        allow(expense_with_precision).to receive(:amount).and_return(BigDecimal('100.504999999'))
-
-        expenses = [ expense1, expense_with_precision ]
-
-        allow(Expense).to receive(:where).with(created_at: (mock_time - 1.hour)..mock_time)
-          .and_return(expenses)
-
-        conflicts = service.detect_conflicts
-
-        # Should group together as both round to 100.50
-        expect(conflicts.length).to eq(1)
+          merchant_name: 'Supermercado ABC',
+          description: 'Compra en Supermercado ABC',
+          currency: 'crc',
+          email_account_id: 7,
+          category_id: nil,
+          status: 'processed'
+        }
       end
 
-      it 'handles empty expense list' do
-        allow(Expense).to receive(:where).with(created_at: (mock_time - 1.hour)..mock_time)
+      let(:expense2_attrs) do
+        {
+          id: 2,
+          amount: BigDecimal('100.50'),
+          transaction_date: Date.parse('2024-01-15'),
+          merchant_name: 'Supermercado ABC',
+          description: 'Compra Supermercado ABC',
+          currency: 'crc',
+          email_account_id: 7,
+          category_id: 3,
+          status: 'processed'
+        }
+      end
+
+      let(:expense1) do
+        dbl = instance_double(Expense)
+        allow(dbl).to receive(:attributes).and_return(expense1_attrs.transform_keys(&:to_s))
+        dbl
+      end
+
+      let(:expense2) do
+        dbl = instance_double(Expense)
+        allow(dbl).to receive(:attributes).and_return(expense2_attrs.transform_keys(&:to_s))
+        dbl
+      end
+
+      let(:conflict_detection_service) do
+        instance_double(Services::ConflictDetectionService)
+      end
+
+      before do
+        allow(Services::ConflictDetectionService)
+          .to receive(:new).with(sync_session).and_return(conflict_detection_service)
+      end
+
+      it 'returns empty array when no recent expenses exist' do
+        allow(Expense).to receive(:where)
+          .with(created_at: (mock_time - 1.hour)..mock_time)
           .and_return([])
 
-        conflicts = service.detect_conflicts
-
-        expect(conflicts).to eq([])
+        expect(service.detect_conflicts).to eq([])
+        expect(conflict_detection_service).not_to receive(:detect_conflicts_batch)
       end
 
-      it 'only creates conflicts for groups with 2+ expenses' do
-        expenses = [ expense1 ] # Single expense
+      it 'delegates to ConflictDetectionService#detect_conflicts_batch with full expense attributes' do
+        allow(Expense).to receive(:where)
+          .with(created_at: (mock_time - 1.hour)..mock_time)
+          .and_return([ expense1, expense2 ])
 
-        allow(Expense).to receive(:where).with(created_at: (mock_time - 1.hour)..mock_time)
-          .and_return(expenses)
+        # Expect the full symbolized attributes hash (not a hand-picked subset)
+        # so ConflictDetectionService can faithfully reconstruct expenses on resolution.
+        expected_data = [
+          expense1_attrs.transform_keys(&:to_s).symbolize_keys,
+          expense2_attrs.transform_keys(&:to_s).symbolize_keys
+        ]
 
-        conflicts = service.detect_conflicts
+        mock_conflicts = [ instance_double(SyncConflict) ]
+        expect(conflict_detection_service)
+          .to receive(:detect_conflicts_batch).with(expected_data)
+          .and_return(mock_conflicts)
 
-        expect(conflicts).to be_empty
-      end
-    end
+        result = service.detect_conflicts
 
-    describe '#similar_descriptions?' do
-      it 'returns true for highly similar descriptions' do
-        result = service.send(:similar_descriptions?,
-          'Compra en Supermercado ABC',
-          'Compra Supermercado ABC'
-        )
-        expect(result).to be true
-      end
-
-      it 'returns true for descriptions with common significant words' do
-        result = service.send(:similar_descriptions?,
-          'Pago de factura electricidad CNFL',
-          'CNFL pago electricidad mensual'
-        )
-        expect(result).to be true
+        expect(result).to eq(mock_conflicts)
       end
 
-      it 'returns false for completely different descriptions' do
-        result = service.send(:similar_descriptions?,
-          'Compra en supermercado',
-          'Pago de servicios'
-        )
-        expect(result).to be false
+      it 'includes :id in each expense data hash to prevent self-match in candidate query' do
+        allow(Expense).to receive(:where)
+          .with(created_at: (mock_time - 1.hour)..mock_time)
+          .and_return([ expense1 ])
+
+        expect(conflict_detection_service)
+          .to receive(:detect_conflicts_batch) do |data|
+            expect(data.first).to include(:id)
+            []
+          end
+
+        service.detect_conflicts
       end
 
-      it 'returns false when one description is nil' do
-        result = service.send(:similar_descriptions?, nil, 'Some description')
-        expect(result).to be false
+      it 'passes the correct time window (last hour) to the expense query' do
+        expect(Expense).to receive(:where)
+          .with(created_at: (mock_time - 1.hour)..mock_time)
+          .and_return([])
 
-        result = service.send(:similar_descriptions?, 'Some description', nil)
-        expect(result).to be false
+        service.detect_conflicts
       end
 
-      it 'returns false when both descriptions are nil' do
-        result = service.send(:similar_descriptions?, nil, nil)
-        expect(result).to be false
-      end
+      it 'returns whatever ConflictDetectionService returns' do
+        allow(Expense).to receive(:where).and_return([ expense1 ])
 
-      it 'is case insensitive' do
-        result = service.send(:similar_descriptions?,
-          'COMPRA SUPERMERCADO',
-          'compra supermercado'
-        )
-        expect(result).to be true
-      end
+        returned_conflicts = [
+          instance_double(SyncConflict, id: 10),
+          instance_double(SyncConflict, id: 11)
+        ]
 
-      it 'ignores punctuation and special characters' do
-        result = service.send(:similar_descriptions?,
-          'Compra-en-Supermercado!!!',
-          'Compra en Supermercado...'
-        )
-        expect(result).to be true
-      end
+        allow(conflict_detection_service)
+          .to receive(:detect_conflicts_batch)
+          .and_return(returned_conflicts)
 
-      it 'calculates similarity based on word overlap' do
-        # 2 common words out of 3 minimum = 0.67 < 0.7 threshold
-        result = service.send(:similar_descriptions?,
-          'Compra en tienda',
-          'Compra en supermercado grande'
-        )
-        expect(result).to be false
-
-        # 3 common words out of 3 minimum = 1.0 > 0.7 threshold
-        result = service.send(:similar_descriptions?,
-          'Pago servicio agua',
-          'Pago servicio agua mensual'
-        )
-        expect(result).to be true
-      end
-
-      it 'handles empty descriptions after word extraction' do
-        result = service.send(:similar_descriptions?, '!!!', '...')
-        expect(result).to be false
+        expect(service.detect_conflicts).to eq(returned_conflicts)
       end
     end
   end
 
   describe '#resolve_conflicts' do
-    let(:expense1) { instance_double(Expense, id: 10, created_at: mock_time - 2.hours) }
-    let(:expense2) { instance_double(Expense, id: 11, created_at: mock_time - 1.hour) }
-    let(:expense3) { instance_double(Expense, id: 12, created_at: mock_time - 30.minutes) }
+    context 'without a sync session' do
+      it 'returns zero counts' do
+        result = service.resolve_conflicts
 
-    let(:conflicts) do
-      [
-        { type: 'duplicate', expenses: [ 10, 11 ], confidence: 0.8 },
-        { type: 'duplicate', expenses: [ 11, 12 ], confidence: 0.9 }
-      ]
+        expect(result).to eq({ resolved: 0, total: 0 })
+      end
     end
 
-    context 'with keep_newest strategy' do
-      it 'keeps the most recently created expense' do
-        allow(Expense).to receive(:find).with([ 10, 11 ]).and_return([ expense1, expense2 ])
-        allow(Expense).to receive(:find).with([ 11, 12 ]).and_return([ expense2, expense3 ])
+    context 'with a sync session' do
+      let(:service) do
+        svc = described_class.new(options)
+        svc.instance_variable_set(:@sync_session, sync_session)
+        svc
+      end
 
-        # First conflict: expense2 is newer than expense1
-        expect(expense1).to receive(:reload).and_return(expense1)
-        expect(expense1).to receive(:update!).with(
-          status: 'duplicate'
-        )
+      let(:conflict_detection_service) do
+        instance_double(Services::ConflictDetectionService)
+      end
 
-        # Second conflict: expense3 is newer than expense2
-        expect(expense2).to receive(:reload).and_return(expense2)
-        expect(expense2).to receive(:update!).with(
-          status: 'duplicate'
-        )
+      let(:sync_conflicts_relation) do
+        double('sync_conflicts', count: 3)
+      end
 
-        result = service.resolve_conflicts(conflicts)
+      before do
+        allow(Services::ConflictDetectionService)
+          .to receive(:new).with(sync_session).and_return(conflict_detection_service)
+        allow(sync_session).to receive(:sync_conflicts).and_return(sync_conflicts_relation)
+      end
+
+      it 'delegates to ConflictDetectionService#auto_resolve_obvious_duplicates' do
+        expect(conflict_detection_service)
+          .to receive(:auto_resolve_obvious_duplicates).and_return(2)
+
+        result = service.resolve_conflicts
 
         expect(result[:resolved]).to eq(2)
-        expect(result[:total]).to eq(2)
-      end
-
-      it 'does not mark the keeper expense as duplicate' do
-        allow(Expense).to receive(:find).with([ 10, 11 ]).and_return([ expense1, expense2 ])
-
-        expect(expense1).to receive(:reload).and_return(expense1)
-        expect(expense1).to receive(:update!).with(
-          status: 'duplicate'
-        )
-        expect(expense2).not_to receive(:update!)
-
-        service.resolve_conflicts([ conflicts.first ])
-      end
-
-      it 'handles StaleObjectError gracefully' do
-        allow(Expense).to receive(:find).with([ 10, 11 ]).and_return([ expense1, expense2 ])
-
-        expect(expense1).to receive(:reload).and_raise(
-          ActiveRecord::StaleObjectError.new(expense1, 'update')
-        )
-
-        expect(Rails.logger).to receive(:warn).with(
-          'Skipped marking expense 10 as duplicate due to concurrent modification'
-        )
-
-        result = service.resolve_conflicts([ conflicts.first ])
-
-        expect(result[:resolved]).to eq(1) # Still counts as resolved
-        expect(result[:total]).to eq(1)
-      end
-    end
-
-    context 'with different conflict types' do
-      it 'only processes duplicate type conflicts' do
-        mixed_conflicts = [
-          { type: 'duplicate', expenses: [ 10, 11 ], confidence: 0.8 },
-          { type: 'mismatch', expenses: [ 12, 13 ], confidence: 0.7 },
-          { type: 'unknown', expenses: [ 14, 15 ], confidence: 0.9 }
-        ]
-
-        allow(Expense).to receive(:find).with([ 10, 11 ]).and_return([ expense1, expense2 ])
-        allow(expense1).to receive(:reload).and_return(expense1)
-        allow(expense1).to receive(:update!)
-
-        result = service.resolve_conflicts(mixed_conflicts)
-
-        expect(result[:resolved]).to eq(1)
         expect(result[:total]).to eq(3)
       end
-    end
 
-    context 'with custom strategy' do
-      it 'ignores unsupported strategies' do
-        # Current implementation only supports keep_newest
-        # Passing keep_oldest should result in no resolution
-        result = service.resolve_conflicts(conflicts, strategy: :keep_oldest)
+      it 'returns resolved count from the service and total from session' do
+        allow(conflict_detection_service)
+          .to receive(:auto_resolve_obvious_duplicates).and_return(1)
+        allow(sync_conflicts_relation).to receive(:count).and_return(5)
 
-        # Service ignores unsupported strategies
-        expect(result[:resolved]).to eq(0)
-        expect(result[:total]).to eq(2)
-      end
-    end
+        result = service.resolve_conflicts
 
-    context 'error handling' do
-      it 'continues processing after individual conflict errors' do
-        allow(Expense).to receive(:find).with([ 10, 11 ]).and_raise(ActiveRecord::RecordNotFound)
-        allow(Expense).to receive(:find).with([ 11, 12 ]).and_return([ expense2, expense3 ])
-
-        expect(expense2).to receive(:reload).and_return(expense2)
-        expect(expense2).to receive(:update!)
-
-        result = service.resolve_conflicts(conflicts)
-
-        expect(result[:resolved]).to eq(1)
-        expect(result[:total]).to eq(2)
+        expect(result).to eq({ resolved: 1, total: 5 })
       end
 
-      it 'handles empty conflicts array' do
-        result = service.resolve_conflicts([])
+      it 'returns zero counts for unsupported strategies' do
+        result = service.resolve_conflicts([], strategy: :keep_oldest)
 
-        expect(result[:resolved]).to eq(0)
-        expect(result[:total]).to eq(0)
+        expect(result).to eq({ resolved: 0, total: 0 })
+        expect(conflict_detection_service).not_to receive(:auto_resolve_obvious_duplicates)
       end
 
-      it 'handles conflicts with missing expense IDs' do
-        invalid_conflicts = [
-          { type: 'duplicate', expenses: [], confidence: 0.8 },
-          { type: 'duplicate', expenses: [ 999 ], confidence: 0.9 }
+      it 'accepts and ignores legacy conflicts array argument' do
+        legacy_conflicts = [
+          { type: 'duplicate', expenses: [ 1, 2 ], confidence: 0.8 }
         ]
 
-        allow(Expense).to receive(:find).with([]).and_raise(ActiveRecord::RecordNotFound)
-        allow(Expense).to receive(:find).with([ 999 ]).and_raise(ActiveRecord::RecordNotFound)
+        expect(conflict_detection_service)
+          .to receive(:auto_resolve_obvious_duplicates).and_return(1)
 
-        result = service.resolve_conflicts(invalid_conflicts)
+        result = service.resolve_conflicts(legacy_conflicts)
 
-        expect(result[:resolved]).to eq(0)
-        expect(result[:total]).to eq(2)
-      end
-    end
-
-    context 'performance considerations' do
-      it 'uses reload before update to prevent stale data' do
-        allow(Expense).to receive(:find).with([ 10, 11 ]).and_return([ expense1, expense2 ])
-
-        expect(expense1).to receive(:reload).ordered.and_return(expense1)
-        expect(expense1).to receive(:update!).ordered
-
-        service.resolve_conflicts([ conflicts.first ])
+        expect(result[:resolved]).to eq(1)
       end
 
-      it 'processes conflicts sequentially to avoid deadlocks' do
-        call_order = []
+      it 'handles empty conflicts gracefully' do
+        expect(conflict_detection_service)
+          .to receive(:auto_resolve_obvious_duplicates).and_return(0)
+        allow(sync_conflicts_relation).to receive(:count).and_return(0)
 
-        allow(Expense).to receive(:find) do |ids|
-          call_order << ids
-          if ids == [ 10, 11 ]
-            [ expense1, expense2 ]
-          else
-            [ expense2, expense3 ]
-          end
-        end
+        result = service.resolve_conflicts([])
 
-        allow(expense1).to receive(:reload).and_return(expense1)
-        allow(expense1).to receive(:update!)
-        allow(expense2).to receive(:reload).and_return(expense2)
-        allow(expense2).to receive(:update!)
-
-        service.resolve_conflicts(conflicts)
-
-        expect(call_order).to eq([ [ 10, 11 ], [ 11, 12 ] ])
+        expect(result).to eq({ resolved: 0, total: 0 })
       end
     end
   end
@@ -407,24 +241,30 @@ RSpec.describe Services::Email::SyncService, 'Conflict Detection and Resolution'
       allow(ProcessEmailsJob).to receive(:perform_later)
     end
 
-    it 'detects and resolves conflicts in sync_all flow' do
-      conflicts = [
-        { type: 'duplicate', expenses: [ 1, 2 ], confidence: 0.85 }
-      ]
+    it 'calls detect_conflicts and resolve_conflicts when conflicts are found' do
+      mock_conflict = instance_double(SyncConflict)
 
-      expect(service).to receive(:detect_conflicts).and_return(conflicts)
-      expect(service).to receive(:resolve_conflicts).with(conflicts)
+      expect(service).to receive(:detect_conflicts).and_return([ mock_conflict ])
+      expect(service).to receive(:resolve_conflicts).with(no_args)
 
       result = service.sync_emails
 
       expect(result[:success]).to be true
     end
 
-    it 'detects but does not resolve when auto_resolve is false' do
-      service = described_class.new(detect_conflicts: true, auto_resolve: false)
-      conflicts = [ { type: 'duplicate', expenses: [ 1, 2 ], confidence: 0.85 } ]
+    it 'calls detect_conflicts but skips resolve_conflicts when no conflicts found' do
+      expect(service).to receive(:detect_conflicts).and_return([])
+      expect(service).not_to receive(:resolve_conflicts)
 
-      expect(service).to receive(:detect_conflicts).and_return(conflicts)
+      result = service.sync_emails
+
+      expect(result[:success]).to be true
+    end
+
+    it 'calls detect_conflicts but not resolve_conflicts when auto_resolve is false' do
+      service = described_class.new(detect_conflicts: true, auto_resolve: false)
+
+      expect(service).to receive(:detect_conflicts).and_return([ instance_double(SyncConflict) ])
       expect(service).not_to receive(:resolve_conflicts)
 
       allow(EmailAccount).to receive(:active).and_return(active_accounts)

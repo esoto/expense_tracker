@@ -133,16 +133,16 @@ RSpec.describe Services::Email::SyncService, unit: true do
         context 'with auto_resolve enabled' do
           let(:options) { { detect_conflicts: true, auto_resolve: true } }
 
-          it 'resolves conflicts automatically when detected' do
-            expect(service).to receive(:detect_conflicts).and_return(conflicts)
-            expect(service).to receive(:resolve_conflicts).with(conflicts)
+          it 'calls resolve_conflicts when conflicts are detected' do
+            expect(service).to receive(:detect_conflicts).and_return([ conflicts.first ])
+            expect(service).to receive(:resolve_conflicts).with(no_args)
 
             result = service.sync_emails
 
             expect(result[:success]).to be true
           end
 
-          it 'does not resolve when no conflicts detected' do
+          it 'skips resolve_conflicts when no conflicts detected' do
             expect(service).to receive(:detect_conflicts).and_return([])
             expect(service).not_to receive(:resolve_conflicts)
 

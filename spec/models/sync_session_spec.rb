@@ -575,10 +575,10 @@ RSpec.describe SyncSession, type: :model do
                                       email_account: email_account)
         sync_session_account.update!(job_id: 'account_job_123')
 
-        expect(SolidQueue::Job).to receive(:find_by).with(id: 'job_1').and_return(mock_job)
-        expect(SolidQueue::Job).to receive(:find_by).with(id: 'job_2').and_return(nil)
-        expect(SolidQueue::Job).to receive(:find_by).with(id: 'job_3').and_return(mock_job)
-        expect(SolidQueue::Job).to receive(:find_by).with(id: 'account_job_123').and_return(nil)
+        expect(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'job_1').and_return(mock_job)
+        expect(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'job_2').and_return(nil)
+        expect(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'job_3').and_return(mock_job)
+        expect(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'account_job_123').and_return(nil)
 
         expect(mock_job).to receive(:destroy).twice
 
@@ -596,10 +596,10 @@ RSpec.describe SyncSession, type: :model do
                                       email_account: email_account)
         sync_session_account.update!(job_id: 'account_job_123')
 
-        allow(SolidQueue::Job).to receive(:find_by).with(id: 'job_1').and_return(running_job)
-        allow(SolidQueue::Job).to receive(:find_by).with(id: 'job_2').and_return(scheduled_job)
-        allow(SolidQueue::Job).to receive(:find_by).with(id: 'job_3').and_return(ready_job)
-        allow(SolidQueue::Job).to receive(:find_by).with(id: 'account_job_123').and_return(nil)
+        allow(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'job_1').and_return(running_job)
+        allow(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'job_2').and_return(scheduled_job)
+        allow(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'job_3').and_return(ready_job)
+        allow(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'account_job_123').and_return(nil)
 
         expect(running_job).not_to receive(:destroy)
         expect(scheduled_job).to receive(:destroy)
@@ -626,9 +626,9 @@ RSpec.describe SyncSession, type: :model do
         account2 = create(:sync_session_account, sync_session: sync_session, email_account: email_account2)
         account2.update!(job_id: 'another_job_456')
 
-        expect(SolidQueue::Job).to receive(:find_by).with(id: 'dummy_job').and_return(nil)
-        expect(SolidQueue::Job).to receive(:find_by).with(id: 'account_job_123').and_return(mock_account_job)
-        expect(SolidQueue::Job).to receive(:find_by).with(id: 'another_job_456').and_return(nil)
+        expect(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'dummy_job').and_return(nil)
+        expect(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'account_job_123').and_return(mock_account_job)
+        expect(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'another_job_456').and_return(nil)
         expect(mock_account_job).to receive(:destroy)
 
         sync_session.cancel_all_jobs
@@ -647,9 +647,9 @@ RSpec.describe SyncSession, type: :model do
         another_with_job = create(:sync_session_account, sync_session: sync_session, email_account: email_account3)
         another_with_job.update!(job_id: 'another_job_456')
 
-        expect(SolidQueue::Job).to receive(:find_by).with(id: 'dummy_job').and_return(nil)
-        expect(SolidQueue::Job).to receive(:find_by).with(id: 'account_job_123').and_return(nil)
-        expect(SolidQueue::Job).to receive(:find_by).with(id: 'another_job_456').and_return(nil)
+        expect(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'dummy_job').and_return(nil)
+        expect(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'account_job_123').and_return(nil)
+        expect(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'another_job_456').and_return(nil)
 
         sync_session.cancel_all_jobs
       end
@@ -662,7 +662,7 @@ RSpec.describe SyncSession, type: :model do
       end
 
       it 'logs errors when job cancellation fails for main jobs' do
-        allow(SolidQueue::Job).to receive(:find_by).with(id: 'failing_job').and_raise(StandardError.new('Job cancellation failed'))
+        allow(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'failing_job').and_raise(StandardError.new('Job cancellation failed'))
 
         sync_session.cancel_all_jobs
 
@@ -674,8 +674,8 @@ RSpec.describe SyncSession, type: :model do
         account = create(:sync_session_account, sync_session: sync_session, email_account: email_account)
         account.update!(job_id: 'account_job_123')
 
-        allow(SolidQueue::Job).to receive(:find_by).with(id: 'failing_job').and_return(nil)
-        allow(SolidQueue::Job).to receive(:find_by).with(id: 'account_job_123').and_raise(StandardError.new('Account job failed'))
+        allow(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'failing_job').and_return(nil)
+        allow(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'account_job_123').and_raise(StandardError.new('Account job failed'))
 
         sync_session.cancel_all_jobs
 
@@ -691,9 +691,9 @@ RSpec.describe SyncSession, type: :model do
 
         sync_session.update!(job_ids: [ 'failing_job', 'working_job' ])
 
-        allow(SolidQueue::Job).to receive(:find_by).with(id: 'failing_job').and_raise(StandardError.new('Job failed'))
-        allow(SolidQueue::Job).to receive(:find_by).with(id: 'working_job').and_return(working_job)
-        allow(SolidQueue::Job).to receive(:find_by).with(id: 'account_job_123').and_return(nil)
+        allow(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'failing_job').and_raise(StandardError.new('Job failed'))
+        allow(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'working_job').and_return(working_job)
+        allow(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'account_job_123').and_return(nil)
 
         expect(working_job).to receive(:destroy)
 
@@ -713,7 +713,7 @@ RSpec.describe SyncSession, type: :model do
         sync_session.sync_session_accounts.destroy_all
         sync_session.update!(job_ids: [ 'job_1' ])
 
-        expect(SolidQueue::Job).to receive(:find_by).with(id: 'job_1').and_return(nil)
+        expect(SolidQueue::Job).to receive(:find_by).with(active_job_id: 'job_1').and_return(nil)
         expect { sync_session.cancel_all_jobs }.not_to raise_error
       end
     end

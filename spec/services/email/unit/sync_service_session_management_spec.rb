@@ -44,7 +44,7 @@ RSpec.describe Services::Email::SyncService, 'Session Management', unit: true do
             status: 'pending'
           )
 
-          expect(ProcessEmailsJob).to receive(:perform_later).ordered.with(10)
+          expect(ProcessEmailsJob).to receive(:perform_later).ordered.with(10, sync_session_id: 100)
 
           allow(EmailAccount).to receive(:find_by).with(id: 10).and_return(email_account)
           allow(email_account).to receive(:active?).and_return(true)

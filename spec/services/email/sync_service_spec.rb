@@ -10,7 +10,7 @@ RSpec.describe Services::Email::SyncService, integration: true do
       let(:email_account) { create(:email_account, :bac, email: "test_bac_#{SecureRandom.hex(4)}@test.com") }
 
       it 'syncs specific active account successfully' do
-        expect(ProcessEmailsJob).to receive(:perform_later).with(email_account.id)
+        expect(ProcessEmailsJob).to receive(:perform_later).with(email_account.id, sync_session_id: nil)
 
         result = service.sync_emails(email_account_id: email_account.id)
 
@@ -52,7 +52,7 @@ RSpec.describe Services::Email::SyncService, integration: true do
         create(:email_account, :bac, email: "test_bac_#{SecureRandom.hex(4)}@test.com")
         create(:email_account, :gmail, email: "test_gmail_#{SecureRandom.hex(4)}@test.com")
 
-        expect(ProcessEmailsJob).to receive(:perform_later).with(no_args)
+        expect(ProcessEmailsJob).to receive(:perform_later).with(sync_session_id: nil)
 
         result = service.sync_emails
 
@@ -64,7 +64,7 @@ RSpec.describe Services::Email::SyncService, integration: true do
       it 'handles plural correctly for single account' do
         create(:email_account, :bac, email: "test_bac_#{SecureRandom.hex(4)}@test.com")
 
-        expect(ProcessEmailsJob).to receive(:perform_later).with(no_args)
+        expect(ProcessEmailsJob).to receive(:perform_later).with(sync_session_id: nil)
 
         result = service.sync_emails
 
@@ -109,7 +109,7 @@ RSpec.describe Services::Email::SyncService, integration: true do
       end
 
       it 'enqueues job for valid active account' do
-        expect(ProcessEmailsJob).to receive(:perform_later).with(email_account.id)
+        expect(ProcessEmailsJob).to receive(:perform_later).with(email_account.id, sync_session_id: nil)
 
         result = service.send(:sync_specific_account, email_account.id)
 
@@ -134,7 +134,7 @@ RSpec.describe Services::Email::SyncService, integration: true do
         create(:email_account, :gmail, email: "test_gmail_#{SecureRandom.hex(4)}@test.com")
         create(:email_account, :inactive, email: "test_inactive_#{SecureRandom.hex(4)}@test.com")
 
-        expect(ProcessEmailsJob).to receive(:perform_later).with(no_args)
+        expect(ProcessEmailsJob).to receive(:perform_later).with(sync_session_id: nil)
 
         result = service.send(:sync_all_accounts)
 

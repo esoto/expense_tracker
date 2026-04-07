@@ -226,15 +226,34 @@ RSpec.describe SyncSessionAccount, type: :model, unit: true do
       allow(sync_session).to receive(:update_progress)
     end
 
-    it "updates progress columns" do
+    it "updates progress columns (excluding detected_expenses) via update_columns" do
       freeze_time do
+        mock_relation = double("relation")
+        allow(SyncSessionAccount).to receive(:where).and_return(mock_relation)
+        allow(mock_relation).to receive(:update_all)
+        allow(mock_relation).to receive(:pick).with(:detected_expenses).and_return(3)
+
         expect(account).to receive(:update_columns).with(
           processed_emails: 20,
           total_emails: 50,
-          detected_expenses: 8,
           updated_at: Time.current
         )
         account.update_progress(20, 50, 3)
+      end
+    end
+
+    it "uses a SQL-level increment for detected_expenses to avoid lost-update race condition" do
+      freeze_time do
+        allow(account).to receive(:update_columns)
+        mock_relation = double("relation")
+
+        # The increment must be issued as a raw SQL update so concurrent writers
+        # never overwrite each other with a stale in-memory value.
+        allow(SyncSessionAccount).to receive(:where).with(id: account.id).and_return(mock_relation)
+        expect(mock_relation).to receive(:update_all).with("detected_expenses = detected_expenses + 5")
+        allow(mock_relation).to receive(:pick).with(:detected_expenses).and_return(5)
+
+        account.update_progress(20, 50, 5)
       end
     end
 

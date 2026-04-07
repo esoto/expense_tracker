@@ -184,7 +184,8 @@
               <div class="flex justify-between items-center">
                 <span class="text-xs text-slate-600">Velocidad</span>
                 <span class="text-xs font-medium text-slate-900">
-                  <%= (@sync_session.processed_emails.to_f / ((@sync_session.completed_at - @sync_session.started_at) / 60)).round(1) %> emails/min
+                  <% duration = [(@sync_session.completed_at - @sync_session.started_at), 1].max %>
+                  <%= (@sync_session.processed_emails.to_f / (duration / 60)).round(1) %> emails/min
                 </span>
               </div>
               <div class="flex justify-between items-center">

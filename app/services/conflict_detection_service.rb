@@ -153,7 +153,7 @@ module Services
     # Amount similarity (exact match = 100%, within 1% = 90%, within 5% = 70%, etc.)
     if new_expense_data[:amount]
       amount_diff = (existing_expense.amount - new_expense_data[:amount].to_f).abs
-      amount_ratio = amount_diff / existing_expense.amount
+      amount_ratio = existing_expense.amount.zero? ? 0.0 : amount_diff / existing_expense.amount
 
       amount_score = if amount_ratio == 0
         100

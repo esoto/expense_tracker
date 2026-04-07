@@ -28,7 +28,7 @@
 
     <!-- Error Message Section -->
     <% if @error_message.present? %>
-      <div class="px-6 py-4 bg-rose-50 border-b border-rose-200">
+      <div class="px-6 py-4 bg-rose-50 border-b border-rose-200" aria-live="assertive">
         <div class="flex items-center">
           <div class="flex-shrink-0">
             <svg aria-hidden="true" class="h-5 w-5 text-rose-400" viewBox="0 0 20 20" fill="currentColor">
@@ -65,7 +65,7 @@
 
           <div>
             <h2 class="text-lg font-semibold text-slate-900">Sincronización de Correos</h2>
-            <p class="text-sm text-slate-600" data-sync-widget-target="statusText">
+            <p class="text-sm text-slate-600" aria-live="polite" data-sync-widget-target="statusText">
               <% if @active_sync_session %>
                 <span class="inline-flex items-center">
                   <span class="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></span>
@@ -138,6 +138,11 @@
           <div class="relative">
             <div class="overflow-hidden h-3 text-xs flex rounded-full bg-slate-200">
               <div class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-teal-600 to-teal-700 transition-all duration-500 ease-out"
+                   role="progressbar"
+                   aria-valuenow="<%= @active_sync_session.progress_percentage %>"
+                   aria-valuemin="0"
+                   aria-valuemax="100"
+                   aria-label="Sync progress"
                    data-sync-widget-target="progressBar"
                    style="width: <%= @active_sync_session.progress_percentage %>%">
                 <div class="h-full bg-white opacity-20 animate-pulse"></div>
@@ -296,6 +301,7 @@
 
     <!-- Connection Status Indicator -->
     <div class="hidden px-4 py-2 bg-amber-50 border-t border-amber-200"
+         aria-live="assertive"
          data-sync-widget-target="connectionWarning">
       <div class="flex items-center text-sm text-amber-800">
         <svg aria-hidden="true" class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">

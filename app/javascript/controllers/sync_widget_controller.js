@@ -95,6 +95,9 @@ const SyncWidgetController = class extends Controller {
       this.enablePollingMode()
     } else if (this.activeValue && this.sessionIdValue && this.sessionIdValue > 0) {
       this.subscribeToChannel()
+      if (window.accessibilityManager) {
+        window.accessibilityManager.announce('Sincronización iniciada')
+      }
     }
 
     this.log("info", "Sync widget initialized", {
@@ -240,6 +243,7 @@ const SyncWidgetController = class extends Controller {
 
     if (this.hasProgressBarTarget) {
       this.progressBarTarget.style.width = `${percentage}%`
+      this.progressBarTarget.setAttribute('aria-valuenow', percentage)
     }
 
     if (this.hasProgressIndicatorTarget) {
@@ -336,6 +340,9 @@ const SyncWidgetController = class extends Controller {
 
     const message = `Sincronización completada: ${data.detected_expenses || 0} gastos detectados de ${data.processed_emails || 0} correos`
     this.showToast(message, "success", 7000)
+    if (window.accessibilityManager) {
+      window.accessibilityManager.announce(message)
+    }
 
     setTimeout(() => {
       SyncStateCache.clearCachedState(this.sessionIdValue)
@@ -355,6 +362,11 @@ const SyncWidgetController = class extends Controller {
       log: this.log.bind(this),
       sendErrorToServer: this.sendErrorToServer.bind(this)
     })
+
+    const failureMessage = `Error en sincronización: ${data.error || 'Error desconocido'}`
+    if (window.accessibilityManager) {
+      window.accessibilityManager.announce(failureMessage, 'assertive')
+    }
 
     if (this.hasProgressBarTarget) {
       this.progressBarTarget.classList.add('bg-rose-600')
@@ -473,6 +485,9 @@ const SyncWidgetController = class extends Controller {
     }
 
     this.showToast("Sincronización pausada", "info")
+    if (window.accessibilityManager) {
+      window.accessibilityManager.announce('Sincronización pausada')
+    }
   }
 
   resumeSync() {
@@ -520,6 +535,9 @@ const SyncWidgetController = class extends Controller {
     }
 
     this.showToast("Sincronización reanudada", "success")
+    if (window.accessibilityManager) {
+      window.accessibilityManager.announce('Sincronización reanudada')
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -527,6 +545,11 @@ const SyncWidgetController = class extends Controller {
   // ---------------------------------------------------------------------------
 
   updateConnectionStatus(status) {
+    if (window.accessibilityManager) {
+      const isError = ['disconnected', 'offline', 'error', 'rejected'].includes(this.connectionStateValue)
+      window.accessibilityManager.announce(status, isError ? 'assertive' : 'polite')
+    }
+
     if (this.hasConnectionStatusTarget) {
       this.connectionStatusTarget.textContent = status
 

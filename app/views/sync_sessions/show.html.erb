@@ -64,10 +64,15 @@
       <div class="mb-4">
         <div class="flex justify-between text-sm text-slate-600 mb-2">
           <span>Progreso total</span>
-          <span class="font-medium" data-sync-session-detail-target="progressPercentage"><%= @sync_session.progress_percentage %>% completado</span>
+          <span class="font-medium" aria-live="polite" data-sync-session-detail-target="progressPercentage"><%= @sync_session.progress_percentage %>% completado</span>
         </div>
         <div class="w-full bg-white rounded-full h-4 shadow-inner">
           <div class="bg-gradient-to-r from-teal-500 to-emerald-500 h-4 rounded-full transition-all duration-500 flex items-center justify-end pr-2"
+               role="progressbar"
+               aria-valuenow="<%= @sync_session.progress_percentage %>"
+               aria-valuemin="0"
+               aria-valuemax="100"
+               aria-label="Sync progress"
                data-sync-session-detail-target="progressBar"
                style="width: <%= @sync_session.progress_percentage %>%">
             <% if @sync_session.progress_percentage > 10 %>
@@ -195,7 +200,7 @@
 
       <% if @sync_session.error_details? %>
         <!-- Error details -->
-        <div class="bg-rose-50 rounded-xl border border-rose-200 p-6">
+        <div class="bg-rose-50 rounded-xl border border-rose-200 p-6" aria-live="assertive">
           <h3 class="text-lg font-semibold text-rose-900 mb-4">Detalles del Error</h3>
           <p class="text-sm text-rose-700 whitespace-pre-wrap"><%= @sync_session.error_details %></p>
         </div>

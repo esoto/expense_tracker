@@ -228,6 +228,65 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
     end
   end
 
+  describe '#calculate_similarity with zero-amount expense', :unit do
+    let(:zero_amount_expense) do
+      build(:expense,
+        amount: 0.00,
+        transaction_date: Date.today,
+        merchant_name: 'Test Store',
+        description: 'Purchase',
+        currency: 'crc'
+      )
+    end
+
+    it 'does not raise ZeroDivisionError when existing expense amount is zero' do
+      expense_data = {
+        amount: 0.00,
+        transaction_date: Date.today,
+        merchant_name: 'Test Store',
+        description: 'Purchase',
+        currency: 'crc'
+      }
+
+      expect {
+        service.send(:calculate_similarity, zero_amount_expense, expense_data)
+      }.not_to raise_error
+    end
+
+    it 'treats zero-amount expenses with zero new amount as exact match (ratio 0)' do
+      expense_data = {
+        amount: 0.00,
+        transaction_date: Date.today,
+        merchant_name: 'Test Store',
+        description: 'Purchase',
+        currency: 'crc'
+      }
+
+      score = service.send(:calculate_similarity, zero_amount_expense, expense_data)
+      expect(score).to be >= 95
+    end
+
+    it 'returns a numeric score (not an error) when existing amount is zero and new amount is non-zero' do
+      expense_data = {
+        amount: 50.00,
+        transaction_date: Date.today,
+        merchant_name: 'Test Store',
+        description: 'Purchase',
+        currency: 'crc'
+      }
+
+      result = nil
+      expect {
+        result = service.send(:calculate_similarity, zero_amount_expense, expense_data)
+      }.not_to raise_error
+
+      expect(result).to be_a(Numeric)
+      # When existing.amount == 0 and new.amount != 0, amount_ratio is Float::INFINITY
+      # so amount_score == 0 (contributes 0 of 35 points). The score is well below 90.
+      expect(result).to be < 90
+    end
+  end
+
   describe '#create_conflict transaction safety', :unit do
     # Use `let!` (or an explicit `before`) to ensure existing_expense is persisted
     # before the `change(Expense, :count)` matcher takes its baseline snapshot.

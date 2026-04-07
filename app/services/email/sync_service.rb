@@ -148,7 +148,7 @@ module Services::Email
         # Create session if tracking is enabled
         create_session(email_account) if @options[:track_session]
 
-        ProcessEmailsJob.perform_later(email_account.id)
+        ProcessEmailsJob.perform_later(email_account.id, sync_session_id: @sync_session&.id)
 
         {
           success: true,
@@ -168,7 +168,7 @@ module Services::Email
         # Create session if tracking is enabled
         create_session if @options[:track_session]
 
-        ProcessEmailsJob.perform_later
+        ProcessEmailsJob.perform_later(sync_session_id: @sync_session&.id)
 
         # Detect and resolve conflicts if enabled
         if @options[:detect_conflicts]

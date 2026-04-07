@@ -43,7 +43,7 @@ RSpec.describe Services::Email::SyncService, unit: true do
         expect(result[:success]).to be true
         expect(result[:message]).to include('test@example.com')
         expect(result[:email_account]).to eq(active_account)
-        expect(ProcessEmailsJob).to have_received(:perform_later).with(1)
+        expect(ProcessEmailsJob).to have_received(:perform_later).with(1, sync_session_id: nil)
       end
 
       it 'includes session_id when track_session is enabled' do
@@ -58,6 +58,19 @@ RSpec.describe Services::Email::SyncService, unit: true do
         result = service.sync_emails(email_account_id: 1)
 
         expect(result[:session_id]).to eq(99)
+      end
+
+      it 'forwards sync_session_id to ProcessEmailsJob when session is created' do
+        service = described_class.new(track_session: true)
+        mock_session = instance_double(SyncSession, id: 42)
+
+        allow(SyncSession).to receive(:create!).and_return(mock_session)
+        allow(mock_session).to receive_message_chain(:sync_session_accounts, :create!)
+        allow(EmailAccount).to receive(:find_by).with(id: 1).and_return(active_account)
+
+        expect(ProcessEmailsJob).to receive(:perform_later).with(1, sync_session_id: 42)
+
+        service.sync_emails(email_account_id: 1)
       end
 
       it 'raises SyncError for non-existent account' do
@@ -93,7 +106,20 @@ RSpec.describe Services::Email::SyncService, unit: true do
         expect(result[:success]).to be true
         expect(result[:message]).to include('3 cuentas de correo')
         expect(result[:account_count]).to eq(3)
-        expect(ProcessEmailsJob).to have_received(:perform_later).with(no_args)
+        expect(ProcessEmailsJob).to have_received(:perform_later).with(sync_session_id: nil)
+      end
+
+      it 'forwards sync_session_id to ProcessEmailsJob for sync_all_accounts path' do
+        service = described_class.new(track_session: true)
+        mock_session = instance_double(SyncSession, id: 77)
+
+        allow(EmailAccount).to receive(:active).and_return(active_accounts)
+        allow(active_accounts).to receive(:count).and_return(2)
+        allow(SyncSession).to receive(:create!).and_return(mock_session)
+
+        expect(ProcessEmailsJob).to receive(:perform_later).with(sync_session_id: 77)
+
+        service.sync_emails
       end
 
       it 'handles singular correctly for single account' do

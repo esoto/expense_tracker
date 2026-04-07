@@ -579,13 +579,18 @@ RSpec.describe SyncSession, type: :model, unit: true, broadcast: true do
         allow(SolidQueue::Job).to receive(:find_by).and_return(nil)
       end
 
-      it "attempts to cancel each job" do
+      it "looks up each job by active_job_id (not internal id)" do
         job_mock = double("job", scheduled?: true, destroy: true)
 
-        expect(SolidQueue::Job).to receive(:find_by).with(id: "job1").and_return(job_mock)
-        expect(SolidQueue::Job).to receive(:find_by).with(id: "job2").and_return(job_mock)
+        expect(SolidQueue::Job).to receive(:find_by).with(active_job_id: "job1").and_return(job_mock)
+        expect(SolidQueue::Job).to receive(:find_by).with(active_job_id: "job2").and_return(job_mock)
         expect(job_mock).to receive(:destroy).twice
 
+        session.cancel_all_jobs
+      end
+
+      it "does NOT use the internal database id field for job lookup" do
+        expect(SolidQueue::Job).not_to receive(:find_by).with(id: anything)
         session.cancel_all_jobs
       end
 
@@ -606,13 +611,13 @@ RSpec.describe SyncSession, type: :model, unit: true, broadcast: true do
         expect { session.cancel_all_jobs }.not_to raise_error
       end
 
-      it "also cancels account-specific jobs" do
+      it "also cancels account-specific jobs by active_job_id" do
         account = create(:sync_session_account,
           sync_session: session,
           job_id: "account_job")
 
         job_mock = double("job", scheduled?: true, destroy: true)
-        expect(SolidQueue::Job).to receive(:find_by).with(id: "account_job").and_return(job_mock)
+        expect(SolidQueue::Job).to receive(:find_by).with(active_job_id: "account_job").and_return(job_mock)
         expect(job_mock).to receive(:destroy)
 
         session.cancel_all_jobs

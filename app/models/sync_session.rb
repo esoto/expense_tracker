@@ -149,7 +149,7 @@ class SyncSession < ApplicationRecord
 
     job_ids.each do |job_id|
       begin
-        job = SolidQueue::Job.find_by(id: job_id)
+        job = SolidQueue::Job.find_by(active_job_id: job_id)
         job&.destroy if job&.scheduled? || job&.ready?
       rescue => e
         Rails.logger.error "Failed to cancel job #{job_id}: #{e.message}"
@@ -159,7 +159,7 @@ class SyncSession < ApplicationRecord
     # Also cancel account-specific jobs
     sync_session_accounts.where.not(job_id: nil).each do |account|
       begin
-        job = SolidQueue::Job.find_by(id: account.job_id)
+        job = SolidQueue::Job.find_by(active_job_id: account.job_id)
         job&.destroy if job&.scheduled? || job&.ready?
       rescue => e
         Rails.logger.error "Failed to cancel job #{account.job_id}: #{e.message}"

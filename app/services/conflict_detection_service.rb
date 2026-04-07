@@ -153,7 +153,15 @@ module Services
     # Amount similarity (exact match = 100%, within 1% = 90%, within 5% = 70%, etc.)
     if new_expense_data[:amount]
       amount_diff = (existing_expense.amount - new_expense_data[:amount].to_f).abs
-      amount_ratio = amount_diff / existing_expense.amount
+      # Guard against ZeroDivisionError when existing amount is zero.
+      # If both amounts are zero the diff is also zero → exact match (100).
+      # If existing is zero but new is non-zero we cannot compute a meaningful
+      # percentage ratio, so we score the amount component as 0 (no match).
+      amount_ratio = if existing_expense.amount.zero?
+        amount_diff.zero? ? 0.0 : Float::INFINITY
+      else
+        amount_diff / existing_expense.amount
+      end
 
       amount_score = if amount_ratio == 0
         100

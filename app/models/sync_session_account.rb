@@ -51,13 +51,16 @@ class SyncSessionAccount < ApplicationRecord
   def update_progress(processed, total, detected = 0)
     retries = 0
     begin
-      # Use update_columns to avoid callbacks and optimistic locking for progress updates
+      # Use update_columns to avoid callbacks and optimistic locking for progress updates.
+      # detected_expenses uses a separate SQL-increment update to prevent lost-updates under
+      # concurrent writers (two writers reading the same value and clobbering each other).
       update_columns(
         processed_emails: processed,
         total_emails: total,
-        detected_expenses: detected_expenses + detected,
         updated_at: Time.current
       )
+      self.class.where(id: id).update_all("detected_expenses = detected_expenses + #{detected.to_i}")
+      self.detected_expenses = self.class.where(id: id).pick(:detected_expenses)
 
       # Update parent session progress
       sync_session.update_progress

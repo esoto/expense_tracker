@@ -11,6 +11,12 @@ RSpec.describe ApplicationController, type: :controller, unit: true do
     allow(controller).to receive(:authenticate_user!).and_return(true)
   end
 
+  around do |example|
+    original_locale = I18n.locale
+    example.run
+    I18n.locale = original_locale
+  end
+
   describe "browser version requirements", unit: true do
     it "allows modern browsers" do
       # Set a modern user agent that supports required features
@@ -30,6 +36,32 @@ RSpec.describe ApplicationController, type: :controller, unit: true do
       # Verify that the controller has browser compatibility checks
       # This is verified by successful loading and inheritance
       expect(ApplicationController.superclass).to eq(ActionController::Base)
+    end
+  end
+
+  describe "set_locale", unit: true do
+    it "sets I18n.locale from session when valid" do
+      session[:locale] = "en"
+
+      get :index
+
+      expect(I18n.locale).to eq(:en)
+    end
+
+    it "keeps default locale when session locale is nil" do
+      session[:locale] = nil
+
+      get :index
+
+      expect(I18n.locale).to eq(I18n.default_locale)
+    end
+
+    it "keeps default locale when session has invalid locale" do
+      session[:locale] = "fr"
+
+      get :index
+
+      expect(I18n.locale).to eq(I18n.default_locale)
     end
   end
 

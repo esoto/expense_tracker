@@ -1,6 +1,9 @@
 Rails.application.routes.draw do
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
+  # Locale switching
+  patch "locale", to: "locale#update", as: :locale
+
   # Mount ActionCable for WebSocket connections
   mount ActionCable.server => "/cable"
 

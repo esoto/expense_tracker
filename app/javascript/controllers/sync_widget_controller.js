@@ -49,6 +49,7 @@ const SyncWidgetController = class extends Controller {
 
   static values = {
     sessionId: Number,
+    sessionToken: String,
     active: Boolean,
     enableWebsocket: { type: Boolean, default: true },
     connectionState: { type: String, default: "disconnected" },

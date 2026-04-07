@@ -37,7 +37,8 @@ export const syncChannelMixin = {
       this.subscription = this.consumer.subscriptions.create(
         {
           channel: "SyncStatusChannel",
-          session_id: this.sessionIdValue
+          session_id: this.sessionIdValue,
+          session_token: this.sessionTokenValue
         },
         {
           connected: () => {

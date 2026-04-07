@@ -3,6 +3,7 @@
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
        data-controller="sync-widget"
        data-sync-widget-session-id-value="<%= @active_sync_session&.id || 0 %>"
+       data-sync-widget-session-token-value="<%= @active_sync_session&.session_token %>"
        data-sync-widget-active-value="<%= @active_sync_session.present? %>"
        data-sync-widget-websocket-url-value="<%= Rails.application.config.action_cable.url %>"
        <% if @active_sync_session.present? %>data-sync-widget-enable-websocket-value="true"<% else %>data-sync-widget-enable-websocket-value="false"<% end %>>

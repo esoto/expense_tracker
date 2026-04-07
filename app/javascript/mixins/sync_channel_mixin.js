@@ -93,16 +93,9 @@ export const syncChannelMixin = {
         break
       case 'completed':
         this.handleCompletion(data)
-        if (window.accessibilityManager) {
-          const completedMessage = `Sincronización completada: ${data.detected_expenses || 0} gastos detectados de ${data.processed_emails || 0} correos`
-          window.accessibilityManager.announce(completedMessage)
-        }
         break
       case 'failed':
         this.handleFailure(data)
-        if (window.accessibilityManager) {
-          window.accessibilityManager.announce(`Error en sincronización: ${data.error || 'Error desconocido'}`, 'assertive')
-        }
         break
       default:
         this.updateStatus(data)

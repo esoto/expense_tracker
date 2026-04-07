@@ -18,3 +18,9 @@ Chart.register(...registerables);
 // explicitly before importing chartkick.
 window.Chart = Chart;
 import "chartkick"
+import AccessibilityManager from "utilities/accessibility_manager"
+
+// Initialize AccessibilityManager once DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  window.accessibilityManager = new AccessibilityManager()
+})

@@ -667,7 +667,7 @@ export default class FilterStateManager {
     
     if (this.state.statuses && this.state.statuses.length > 0) {
       const statusText = this.state.statuses.map(s =>
-        s === 'pending' ? t("expenses.status.pending") : t("expenses.status.reviewed")
+        t(`expenses.status.${s}`)
       ).join(', ')
       parts.push(`Estado: ${statusText}`)
     }

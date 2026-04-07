@@ -132,7 +132,7 @@ class SyncSessionsController extends Controller {
     }
 
     // Show completion notification
-    this.showNotification(t("sync.messages.completed"), "success")
+    this.showNotification(t("sync.notifications.completed", { detected: 0, processed: 0 }), "success")
 
     // Don't reload - let user continue viewing real-time updates
   }

@@ -89,7 +89,7 @@ export default class extends Controller {
           tooltip: {
             callbacks: {
               afterLabel: function(context) {
-                if (context.dataset.label === 'Precisión %') {
+                if (context.datasetIndex === 0) {
                   const dataIndex = context.dataIndex
                   const item = data[dataIndex]
                   return `${t("patterns.status.accepted")}${item.accepted}\n${t("patterns.status.rejected")}${item.rejected}\n${t("patterns.status.corrected")}${item.corrected}`

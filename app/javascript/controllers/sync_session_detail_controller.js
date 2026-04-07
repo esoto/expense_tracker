@@ -118,7 +118,7 @@ class SyncSessionDetailController extends Controller {
     this.updateProgress(data)
 
     // Show completion notification
-    this.showNotification(t("sync.messages.completed"), "success")
+    this.showNotification(t("sync.notifications.completed", { detected: data.detected_expenses || 0, processed: data.processed_emails || 0 }), "success")
 
     // Update status badge
     const statusBadge = document.querySelector('[data-sync-status]')

@@ -73,8 +73,8 @@ export default class extends Controller {
     if (params.get('status')) {
       const statusLabels = {
         'pending': t("expenses.status.pending"),
-        'processed': t("expenses.status.reviewed"),
-        'failed': t("expenses.status.ignored"),
+        'processed': t("expenses.status.processed"),
+        'failed': t("expenses.status.failed"),
         'duplicate': t("expenses.status.duplicate"),
         'uncategorized': t("expenses.status.uncategorized")
       }

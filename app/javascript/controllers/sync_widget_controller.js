@@ -649,13 +649,21 @@ const SyncWidgetController = class extends Controller {
   }
 
   sendErrorToServer(message, data) {
+    // Throttle: max 1 report per second, deduplicated by message
+    const now = Date.now()
+    if (!this._errorReportLog) this._errorReportLog = {}
+    if (this._errorReportLog[message] && now - this._errorReportLog[message] < 1000) return
+    this._errorReportLog[message] = now
+
+    // Only report in production (check server-rendered meta tag)
+    const env = document.querySelector('meta[name="rails-env"]')?.content
+    if (env && env !== 'production') return
+
     const payload = {
       message,
       data,
       sessionId: this.sessionIdValue,
-      timestamp: Date.now(),
-      userAgent: navigator.userAgent,
-      url: window.location.href,
+      timestamp: now,
       errorCount: this.errorCount,
       pollingMode: this.pollingMode,
       connectionState: this.connectionStateValue
@@ -668,8 +676,8 @@ const SyncWidgetController = class extends Controller {
         'X-CSRF-Token': document.querySelector('[name="csrf-token"]')?.content
       },
       body: JSON.stringify(payload)
-    }).catch(error => {
-      console.error('Failed to report error to server:', error)
+    }).catch(() => {
+      // Silently fail — avoid recursive error reporting
     })
   }
 }

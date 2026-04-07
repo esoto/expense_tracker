@@ -97,62 +97,45 @@ module Services::Email
         }
       end
 
-      # Detect conflicts (simplified)
+      # Detect conflicts by delegating to ConflictDetectionService.
+      # When a sync_session is present the service uses pg_trgm similarity
+      # and weighted scoring instead of the old in-memory word-overlap heuristic.
+      # Falls back to an empty result when no session is available.
       def detect_conflicts
-        conflicts = []
+        return [] unless @sync_session
 
-        # Find potential duplicate expenses
         recent_expenses = Expense.where(created_at: 1.hour.ago..Time.current)
-
-        recent_expenses.group_by { |e| [ e.transaction_date, e.amount.round(2) ] }.each do |_, expenses|
-          next if expenses.count < 2
-
-          expenses.combination(2).each do |exp1, exp2|
-            if similar_descriptions?(exp1.description, exp2.description)
-              conflicts << {
-                type: "duplicate",
-                expenses: [ exp1.id, exp2.id ],
-                confidence: 0.8
-              }
-            end
-          end
+        expense_data = recent_expenses.map do |e|
+          {
+            id: e.id,
+            amount: e.amount,
+            transaction_date: e.transaction_date,
+            merchant_name: e.merchant_name,
+            description: e.description,
+            currency: e.currency,
+            email_account_id: e.email_account_id
+          }
         end
 
-        conflicts
+        return [] if expense_data.empty?
+
+        service = Services::ConflictDetectionService.new(@sync_session)
+        service.detect_conflicts_batch(expense_data)
       end
 
-      # Resolve conflicts automatically
-      def resolve_conflicts(conflicts, strategy: :keep_newest)
-        resolved = 0
+      # Resolve conflicts by delegating to ConflictDetectionService.
+      # When a sync_session is present, auto-resolves obvious duplicates
+      # (≥95% similarity) via the service. The legacy conflicts array argument
+      # is kept for backward compatibility but is ignored in favour of the
+      # session-scoped conflicts managed by ConflictDetectionService.
+      def resolve_conflicts(_conflicts = [], strategy: :keep_newest)
+        return { resolved: 0, total: 0 } unless @sync_session && strategy == :keep_newest
 
-        conflicts.each do |conflict|
-          case conflict[:type]
-          when "duplicate"
-            if strategy == :keep_newest
-              begin
-                expenses = Expense.find(conflict[:expenses])
-                keeper = expenses.max_by(&:created_at)
+        service = Services::ConflictDetectionService.new(@sync_session)
+        resolved_count = service.auto_resolve_obvious_duplicates
+        total = @sync_session.sync_conflicts.count
 
-                expenses.each do |expense|
-                  next if expense == keeper
-                  begin
-                    expense.reload.update!(status: "duplicate")
-                  rescue ActiveRecord::StaleObjectError
-                    # Expense was modified concurrently, skip marking as duplicate
-                    Rails.logger.warn "Skipped marking expense #{expense.id} as duplicate due to concurrent modification"
-                  end
-                end
-
-                resolved += 1
-              rescue ActiveRecord::RecordNotFound
-                # Skip if expenses don't exist
-                Rails.logger.warn "Skipped conflict resolution - expenses not found: #{conflict[:expenses]}"
-              end
-            end
-          end
-        end
-
-        { resolved: resolved, total: conflicts.count }
+        { resolved: resolved_count, total: total }
       end
 
       private
@@ -195,8 +178,8 @@ module Services::Email
 
         # Detect and resolve conflicts if enabled
         if @options[:detect_conflicts]
-          conflicts = detect_conflicts
-          resolve_conflicts(conflicts) if conflicts.any? && @options[:auto_resolve]
+          detect_conflicts
+          resolve_conflicts if @options[:auto_resolve]
         end
 
         {
@@ -245,20 +228,6 @@ module Services::Email
 
       def calculate_conflicts(time_window)
         SyncSession.where(created_at: time_window.ago..Time.current).sum(:conflicts_detected)
-      end
-
-      def similar_descriptions?(desc1, desc2)
-        return false if desc1.nil? || desc2.nil?
-
-        # Simple similarity check
-        words1 = desc1.downcase.split(/\W+/)
-        words2 = desc2.downcase.split(/\W+/)
-
-        common = words1 & words2
-        return false if common.empty?
-
-        similarity = common.length.to_f / [ words1.length, words2.length ].min
-        similarity > 0.7
       end
     end
 end

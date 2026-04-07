@@ -523,9 +523,9 @@ RSpec.describe SyncSession, type: :model do
     end
 
     context 'error handling' do
-      it 'raises error if save fails due to validation' do
-        allow(sync_session).to receive(:save!).and_raise(ActiveRecord::RecordInvalid)
-        expect { sync_session.add_job_id('job_123') }.to raise_error(ActiveRecord::RecordInvalid)
+      it 'raises error if update_column fails' do
+        allow(sync_session).to receive(:update_column).and_raise(ActiveRecord::StatementInvalid)
+        expect { sync_session.add_job_id('job_123') }.to raise_error(ActiveRecord::StatementInvalid)
       end
     end
   end

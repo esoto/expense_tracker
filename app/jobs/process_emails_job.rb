@@ -138,14 +138,19 @@ class ProcessEmailsJob < ApplicationJob
 
     Rails.logger.info "Processing emails for #{email_accounts.count} active accounts"
 
+    collected_job_ids = []
+
     email_accounts.find_each do |email_account|
       # Process each account in a separate job to isolate failures
       job = ProcessEmailsJob.perform_later(email_account.id, since: since, sync_session_id: @sync_session&.id)
 
-      # Track job ID if we have a sync session
-      if @sync_session && job.respond_to?(:provider_job_id)
-        @sync_session.add_job_id(job.provider_job_id)
+      # Collect job IDs to batch-write after the loop (avoids per-row write-lock contention)
+      if @sync_session && job.respond_to?(:provider_job_id) && job.provider_job_id.present?
+        collected_job_ids << job.provider_job_id
       end
     end
+
+    # Single DB write for all collected job IDs (PER-369)
+    @sync_session.batch_add_job_ids(collected_job_ids) if @sync_session && collected_job_ids.any?
   end
 end

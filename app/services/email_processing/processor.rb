@@ -20,12 +20,12 @@ module Services::EmailProcessing
         result = process_single_email(message_id, imap_service)
         if result[:processed]
           processed_count += 1
-          detected_expenses_count += 1 if result[:expense_created]
+          detected_expenses_count += 1 if result[:expense_enqueued]
         end
 
         # Call progress callback if provided
         if progress_callback
-          expense_data = result[:expense_created] ? result[:expense_data] : nil
+          expense_data = result[:expense_enqueued] ? result[:expense_data] : nil
           progress_callback.call(index + 1, detected_expenses_count, expense_data)
         end
       end
@@ -92,11 +92,10 @@ module Services::EmailProcessing
         end
         ProcessEmailJob.perform_later(email_account.id, email_data, @sync_session&.id, pre_parsed)
 
-        # For now, we assume transaction emails will create expenses
-        # In a real implementation, we'd track this through the job
         {
           processed: true,
-          expense_created: true,
+          expense_created: false,
+          expense_enqueued: true,
           expense_data: email_data.slice(:subject).merge(
             merchant_name: email_data[:body]&.match(/(?:Comercio|comercio|merchant|establecimiento)[\s:]+([^\n\r]+)/i)&.captures&.first&.strip
           )

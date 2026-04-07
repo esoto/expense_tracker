@@ -381,6 +381,8 @@ export const syncConnectionMixin = {
       this.pollingTimer = null
       this.log("info", "Stopped polling")
     }
+    // Clean up polling indicator element if present
+    document.getElementById('polling-indicator')?.remove()
   },
 
   async pollForUpdates() {

@@ -31,6 +31,19 @@ module Services::Email
         fallback_decode(text, replacement)
       end
 
+      # Decodes quoted-printable transport encoding and ensures UTF-8 output.
+      # QP is a MIME encoding used by many email servers (especially for HTML parts):
+      #   - Soft line breaks: "=\r\n" or "=\n" are transport artefacts and must be removed.
+      #   - Encoded bytes:    "=XX" (two hex digits) represent a single raw byte.
+      def decode_quoted_printable(text)
+        # Work in binary to avoid encoding incompatibility when inserting
+        # decoded bytes (e.g. \xC3\xB1) into a UTF-8 string.
+        binary = text.dup.force_encoding(Encoding::ASCII_8BIT)
+        decoded = binary.gsub(/=\r?\n/n, "".b)
+                        .gsub(/=([0-9A-Fa-f]{2})/n) { [ $1 ].pack("H*") }
+        decoded.force_encoding(Encoding::UTF_8)
+      end
+
       private
 
       def detect_and_convert(text, replacement)
@@ -69,15 +82,6 @@ module Services::Email
 
         # Last resort
         text.force_encoding("UTF-8").scrub(replacement)
-      end
-
-      def decode_quoted_printable(text)
-        # Work in binary to avoid encoding incompatibility when inserting
-        # decoded bytes (e.g. \xC3\xB1) into a UTF-8 string.
-        binary = text.dup.force_encoding(Encoding::ASCII_8BIT)
-        decoded = binary.gsub(/=\r?\n/n, "".b)
-                        .gsub(/=([0-9A-Fa-f]{2})/n) { [ $1 ].pack("H*") }
-        decoded.force_encoding(Encoding::UTF_8)
       end
 
       def detect_encoding(text)

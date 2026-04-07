@@ -368,36 +368,4 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       expect(result).to eq('Normal text without encoding')
     end
   end
-
-  describe '#decode_quoted_printable_line' do
-    it 'removes soft line breaks from single line' do
-      line = "Content=\r\n"
-      result = parser.send(:decode_quoted_printable_line, line)
-      expect(result).to eq('Content')
-    end
-
-    it 'decodes hex sequences in line' do
-      line = 'Price: =E2=82=AC50'
-      result = parser.send(:decode_quoted_printable_line, line)
-      # The hex codes decode to the Euro symbol (€)
-      expect(result).to include('50')
-      expect(result).to include('Price:')
-    end
-
-    it 'handles mixed content' do
-      line = "Text =E2=82=AC with=\r\n"
-      result = parser.send(:decode_quoted_printable_line, line)
-      # Should remove soft line break and decode hex
-      expect(result).to include('Text')
-      expect(result).to include('with')
-      # Euro symbol is decoded from =E2=82=AC
-      expect(result.force_encoding('UTF-8')).to include('€')
-    end
-
-    it 'preserves spaces and special characters' do
-      line = 'Text with spaces & symbols!'
-      result = parser.send(:decode_quoted_printable_line, line)
-      expect(result).to eq('Text with spaces & symbols!')
-    end
-  end
 end

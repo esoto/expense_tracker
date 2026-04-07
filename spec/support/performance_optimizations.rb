@@ -4,10 +4,18 @@
 # Disables expensive operations that aren't needed for most tests
 
 RSpec.configure do |config|
+  # Enable broadcasting for tests that explicitly opt in via `broadcast: true` metadata
+  config.around(:each, broadcast: true) do |example|
+    SyncSession.enable_broadcasting!
+    example.run
+  ensure
+    SyncSession.disable_broadcasting!
+  end
+
   # Global stubs for broadcasting operations
   config.before(:each) do |example|
     # Skip this setup for tests that explicitly need broadcasting or are testing broadcasting
-    unless example.metadata[:needs_broadcasting] ||
+    unless example.metadata[:broadcast] ||
            example.file_path.include?('sync_status_channel_spec') ||
            example.file_path.include?('broadcast_analytics_spec')
       # Stub SyncStatusChannel broadcasts

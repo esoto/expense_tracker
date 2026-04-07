@@ -63,7 +63,7 @@ module Services::EmailProcessing
       envelope = imap_service.fetch_envelope(message_id)
       return { processed: false, expense_created: false } unless envelope
 
-      subject = envelope.subject || ""
+      subject = decode_subject(envelope.subject || "")
 
       # Check if this is a transaction email based on subject
       unless transaction_email?(subject)
@@ -130,7 +130,7 @@ module Services::EmailProcessing
       {
         message_id: message_id,
         from: build_from_address(envelope),
-        subject: envelope.subject,
+        subject: decode_subject(envelope.subject || ""),
         date: envelope.date,
         body: body_data
       }
@@ -254,6 +254,15 @@ module Services::EmailProcessing
           .force_encoding("UTF-8")
           .scrub("?")
       end
+    end
+
+    # Decodes RFC 2047 encoded-words (e.g. =?UTF-8?Q?Notificaci=C3=B3n?=)
+    # that Net::IMAP returns raw from the ENVELOPE.
+    def decode_subject(raw_subject)
+      Mail::Encodings.value_decode(raw_subject)
+    rescue => e
+      Rails.logger.warn "[EmailProcessing] Failed to decode subject: #{e.message}"
+      raw_subject
     end
 
     def build_from_address(envelope)

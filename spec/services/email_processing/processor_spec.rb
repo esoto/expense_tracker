@@ -211,6 +211,40 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
     end
   end
 
+  describe '#decode_subject', unit: true do
+    it 'decodes RFC 2047 quoted-printable encoded subjects' do
+      encoded = "=?UTF-8?Q?Notificaci=C3=B3n_de_transacci=C3=B3n_AUTO_MERCADO?="
+      result = processor.send(:decode_subject, encoded)
+      expect(result).to eq("Notificación de transacción AUTO MERCADO")
+    end
+
+    it 'decodes multi-part RFC 2047 subjects' do
+      encoded = "=?UTF-8?Q?Notificaci=C3=B3n_de_transacci=C3=B3n_AUTO_M?= =?UTF-8?Q?ERCADO_CARTAGO?="
+      result = processor.send(:decode_subject, encoded)
+      expect(result).to include("Notificación de transacción")
+      expect(result).to include("AUTO MERCADO")
+    end
+
+    it 'returns plain subjects unchanged' do
+      result = processor.send(:decode_subject, "Plain subject")
+      expect(result).to eq("Plain subject")
+    end
+
+    it 'handles empty string' do
+      result = processor.send(:decode_subject, "")
+      expect(result).to eq("")
+    end
+  end
+
+  describe '#transaction_email? with encoded subjects', unit: true do
+    it 'matches after RFC 2047 decoding via process_email_with_metrics' do
+      # Verify that transaction_email? works with already-decoded subjects
+      decoded = "Notificación de transacción AUTO MERCADO CARTAGO F 07-04-2026 - 12:09"
+      result = processor.send(:transaction_email?, decoded)
+      expect(result).to be true
+    end
+  end
+
   describe '#extract_email_data', integration: true do
     let(:message_id) { 123 }
     let(:envelope) do

@@ -41,7 +41,7 @@ module Services::Email
         binary = text.dup.force_encoding(Encoding::ASCII_8BIT)
         decoded = binary.gsub(/=\r?\n/n, "".b)
                         .gsub(/=([0-9A-Fa-f]{2})/n) { [ $1 ].pack("H*") }
-        decoded.force_encoding(Encoding::UTF_8)
+        decoded.force_encoding(Encoding::UTF_8).scrub("?")
       end
 
       private

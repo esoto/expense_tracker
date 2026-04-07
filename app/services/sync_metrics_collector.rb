@@ -192,7 +192,8 @@ module Services
     begin
       SyncMetric.import!(@metrics_buffer)
       @metrics_buffer.clear
-    rescue ActiveRecord::RecordInvalid, ActiveRecord::StatementInvalid => e
+    rescue ActiveRecord::RecordInvalid, ActiveRecord::StatementInvalid,
+           ActiveRecord::Deadlocked, ActiveRecord::ConnectionNotEstablished => e
       Rails.logger.error "Failed to save metrics: #{e.message}"
       @metrics_buffer.clear
     end

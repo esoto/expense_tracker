@@ -6,6 +6,7 @@
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
        data-controller="sync-widget"
        data-sync-widget-session-id-value="<%= active_sync_session&.id || 0 %>"
+       data-sync-widget-session-token-value="<%= active_sync_session&.session_token %>"
        data-sync-widget-active-value="<%= active_sync_session.present? %>">
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg font-semibold text-slate-900">Sincronización de Correos</h2>

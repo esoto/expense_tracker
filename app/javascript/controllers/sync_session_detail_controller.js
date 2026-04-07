@@ -17,6 +17,7 @@ class SyncSessionDetailController extends Controller {
 
   static values = {
     sessionId: Number,
+    sessionToken: String,
     active: Boolean
   }
 

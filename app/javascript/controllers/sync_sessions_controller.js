@@ -14,6 +14,7 @@ class SyncSessionsController extends Controller {
 
   static values = {
     sessionId: Number,
+    sessionToken: String,
     autoRefresh: Boolean
   }
 

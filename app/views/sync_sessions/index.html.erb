@@ -25,7 +25,8 @@
   <% if @active_session %>
     <div class="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 mb-8"
          data-controller="sync-sessions"
-         data-sync-sessions-session-id-value="<%= @active_session.id %>">
+         data-sync-sessions-session-id-value="<%= @active_session.id %>"
+         data-sync-sessions-session-token-value="<%= @active_session.session_token %>">
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-3">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>

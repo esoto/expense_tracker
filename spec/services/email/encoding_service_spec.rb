@@ -192,4 +192,46 @@ RSpec.describe Services::Email::EncodingService do
       end
     end
   end
+
+  describe '.decode_quoted_printable', unit: true do
+    it 'removes CRLF soft line breaks' do
+      result = described_class.decode_quoted_printable("Hello=\r\nWorld")
+      expect(result).to eq("HelloWorld")
+    end
+
+    it 'removes LF-only soft line breaks' do
+      result = described_class.decode_quoted_printable("Hello=\nWorld")
+      expect(result).to eq("HelloWorld")
+    end
+
+    it 'decodes hex-encoded bytes' do
+      result = described_class.decode_quoted_printable("caf=C3=A9")
+      expect(result).to eq("café")
+    end
+
+    it 'handles mixed case hex sequences' do
+      result = described_class.decode_quoted_printable("=41=62=43")
+      expect(result).to eq("AbC")
+    end
+
+    it 'returns valid UTF-8' do
+      result = described_class.decode_quoted_printable("plain text")
+      expect(result.encoding).to eq(Encoding::UTF_8)
+      expect(result.valid_encoding?).to be true
+    end
+
+    it 'scrubs malformed byte sequences instead of raising' do
+      # =FF=FE are not valid UTF-8 byte sequences
+      result = described_class.decode_quoted_printable("test=FF=FEend")
+      expect(result.encoding).to eq(Encoding::UTF_8)
+      expect(result.valid_encoding?).to be true
+      expect(result).to include("test")
+      expect(result).to include("end")
+    end
+
+    it 'leaves text without QP markers unchanged' do
+      result = described_class.decode_quoted_printable("Hello World")
+      expect(result).to eq("Hello World")
+    end
+  end
 end

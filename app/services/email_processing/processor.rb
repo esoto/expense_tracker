@@ -210,7 +210,11 @@ module Services::EmailProcessing
         # Decode quoted-printable transport encoding before HTML parsing.
         # Nokogiri parses HTML structure but does not handle QP soft line breaks
         # (=\r\n) or QP-encoded byte sequences (=XX) — those must be stripped first.
-        decoded = decode_quoted_printable(html_content)
+        decoded = Services::Email::EncodingService.decode_quoted_printable(html_content)
+
+        # Ensure valid UTF-8 before attempting gsub with byte ranges.
+        # Scrub invalid sequences that may exist after QP decoding.
+        decoded = decoded.scrub("?")
 
         # Strip C0 control characters (except tab, LF, CR) before handing to
         # Nokogiri. Null bytes (\x00) and other low-value control characters
@@ -250,31 +254,6 @@ module Services::EmailProcessing
           .force_encoding("UTF-8")
           .scrub("?")
       end
-    end
-
-    # Decodes quoted-printable transport encoding and ensures UTF-8 output.
-    # QP is a MIME encoding used by many email servers (especially for HTML parts):
-    #   - Soft line breaks: "=\r\n" or "=\n" are transport artefacts and must be removed.
-    #   - Encoded bytes:    "=XX" (two hex digits) represent a single raw byte.
-    def decode_quoted_printable(content)
-      text = content.dup
-
-      unless text.encoding == Encoding::UTF_8
-        begin
-          text = text.encode("UTF-8", invalid: :replace, undef: :replace, replace: "?")
-        rescue Encoding::UndefinedConversionError, Encoding::InvalidByteSequenceError
-          text = text.force_encoding("BINARY").encode("UTF-8", invalid: :replace, undef: :replace, replace: "?")
-        end
-      end
-
-      # Remove soft line breaks inserted by QP encoding.
-      text = text.gsub(/=\r?\n/, "")
-
-      # Decode QP byte sequences ("=XX") back to their raw byte values.
-      text = text.gsub(/=([0-9A-F]{2})/i) { [ $1 ].pack("H*") }
-
-      # Scrub any invalid byte sequences introduced during QP decoding.
-      text.force_encoding("UTF-8").scrub("?")
     end
 
     def build_from_address(envelope)

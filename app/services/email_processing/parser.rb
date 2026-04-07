@@ -232,7 +232,8 @@ module Services::EmailProcessing
         # Truncate individual lines if they're too long
         line = line[0...1000] if line.length > 1000
 
-        decoded_line = decode_quoted_printable_line(line)
+        # Decode quoted-printable and convert to UTF-8 using EncodingService
+        decoded_line = Services::Email::EncodingService.decode_quoted_printable(line)
         # Force to UTF-8 and scrub each line
         final_line = decoded_line.force_encoding("UTF-8").scrub
         processed << final_line
@@ -250,19 +251,8 @@ module Services::EmailProcessing
     def process_standard_email(content)
       # Convert to string and dup to avoid frozen string issues
       content = content.to_s.dup
-      # Force to binary first to handle any encoding issues
-      content = content.force_encoding("BINARY")
-      # Remove soft line breaks
-      content = content.gsub(/=\r\n/, "")
-      # Decode quoted-printable (handle both uppercase and lowercase hex)
-      content = content.gsub(/=([A-Fa-f0-9]{2})/i) { [ $1.hex ].pack("C") }
-      # Force to UTF-8 and scrub invalid sequences
-      content.force_encoding("UTF-8").scrub
-    end
-
-    def decode_quoted_printable_line(line)
-      line.gsub(/=\r\n/, "")
-          .gsub(/=([A-Fa-f0-9]{2})/i) { [ $1.hex ].pack("C") }
+      # Delegate QP decoding to EncodingService (handles BINARY conversion and UTF-8)
+      Services::Email::EncodingService.decode_quoted_printable(content)
     end
   end
 end

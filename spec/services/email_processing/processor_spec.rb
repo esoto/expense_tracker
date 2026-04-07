@@ -567,56 +567,6 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
     end
   end
 
-  describe '#decode_quoted_printable', unit: true do
-    it 'removes QP soft line breaks (CRLF)' do
-      input = "Hello=\r\nWorld"
-      result = processor.send(:decode_quoted_printable, input)
-      expect(result).to eq('HelloWorld')
-    end
-
-    it 'removes QP soft line breaks (LF only)' do
-      input = "Hello=\nWorld"
-      result = processor.send(:decode_quoted_printable, input)
-      expect(result).to eq('HelloWorld')
-    end
-
-    it 'decodes QP hex-encoded bytes' do
-      input = "caf=E9"
-      result = processor.send(:decode_quoted_printable, input)
-      expect(result).to include('caf')
-    end
-
-    it 'decodes uppercase QP sequences' do
-      input = "=41=42=43"
-      result = processor.send(:decode_quoted_printable, input)
-      expect(result).to eq('ABC')
-    end
-
-    it 'decodes lowercase QP sequences' do
-      input = "=61=62=63"
-      result = processor.send(:decode_quoted_printable, input)
-      expect(result).to eq('abc')
-    end
-
-    it 'returns UTF-8 encoded string' do
-      input = "plain text"
-      result = processor.send(:decode_quoted_printable, input)
-      expect(result.encoding.name).to eq('UTF-8')
-    end
-
-    it 'converts ASCII-8BIT input to UTF-8' do
-      input = "plain text".encode("ASCII-8BIT")
-      result = processor.send(:decode_quoted_printable, input)
-      expect(result.encoding.name).to eq('UTF-8')
-    end
-
-    it 'leaves plain text unchanged (no QP markers)' do
-      input = "Hello World, no encoding here"
-      result = processor.send(:decode_quoted_printable, input)
-      expect(result).to eq('Hello World, no encoding here')
-    end
-  end
-
   describe '#build_from_address', integration: true do
     context 'with valid from address' do
       let(:envelope) do

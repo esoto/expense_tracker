@@ -286,10 +286,10 @@ module Services
 
     new_expense = Expense.new(expense_attrs)
 
-    ActiveRecord::Base.transaction(requires_new: true) do
+    conflict = ActiveRecord::Base.transaction(requires_new: true) do
       new_expense.save! if conflict_type == "duplicate" || conflict_type == "similar"
 
-      conflict = sync_session.sync_conflicts.create!(
+      sync_session.sync_conflicts.create!(
         existing_expense: existing_expense,
         new_expense: new_expense,
         conflict_type: conflict_type,
@@ -301,12 +301,12 @@ module Services
           algorithm_version: "2.0"
         }
       )
-
-      # Broadcast conflict detection
-      broadcast_conflict_detected(conflict)
-
-      conflict
     end
+
+    # Broadcast AFTER transaction commits to avoid sending stale IDs
+    broadcast_conflict_detected(conflict)
+
+    conflict
   rescue => e
     Rails.logger.error "[ConflictDetection] Failed to create conflict: #{e.message}"
     add_error("Failed to create conflict: #{e.message}")

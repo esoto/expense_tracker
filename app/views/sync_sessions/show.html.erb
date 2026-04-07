@@ -29,7 +29,7 @@
   <!-- Header -->
   <div class="flex items-center justify-between mb-8">
     <div>
-      <h1 class="text-3xl font-bold text-slate-900">Detalles de Sincronización</h1>
+      <h1 class="text-3xl font-bold text-slate-900"><%= t("sync_sessions.show.title") %></h1>
       <p class="text-slate-600 mt-2">Revisa el progreso y resultados de esta sesión</p>
     </div>
     <div class="flex gap-3">
@@ -39,7 +39,7 @@
           <svg aria-hidden="true" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
-          Cancelar Sincronización
+          <%= t("sync_sessions.show.cancel") %>
         <% end %>
       <% elsif @sync_session.failed? || @sync_session.cancelled? %>
         <%= button_to retry_sync_session_path(@sync_session), method: :post,
@@ -203,7 +203,7 @@
     <!-- Right column - Account details -->
     <div class="lg:col-span-2">
       <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h3 class="text-lg font-semibold text-slate-900 mb-6">Detalles por Cuenta</h3>
+        <h3 class="text-lg font-semibold text-slate-900 mb-6"><%= t("sync_sessions.show.account_details") %></h3>
         <div class="space-y-4">
           <% @session_accounts.includes(:email_account).each do |account| %>
             <div class="border border-slate-200 rounded-lg overflow-hidden hover:border-slate-300 transition-colors"

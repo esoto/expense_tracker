@@ -384,6 +384,11 @@ es:
       resolve_conflicts: "Resolver Conflictos"
       conflict_message: "Se detectaron transacciones duplicadas o similares que requieren tu atención"
 
+  # Sync Conflicts
+  sync_conflicts:
+    index:
+      title: "Conflictos de Sincronización"
+
   # Sync sessions
   sync_sessions:
     statuses:
@@ -413,6 +418,16 @@ es:
       monthly: "Mensual"
       yearly: "Anual"
 
+  # Analytics
+  analytics:
+    dashboard:
+      title: "Panel de Analíticas de Patrones"
+      last_7_days: "Últimos 7 Días"
+      last_30_days: "Últimos 30 Días"
+      last_year: "Último Año"
+      performance_trends: "Tendencias de Desempeño"
+      top_patterns: "Patrones con Mejor Desempeño"
+
   # Common
   common:
     loading: "Cargando..."
@@ -433,8 +448,21 @@ es:
     are_you_sure: "¿Estás seguro?"
     unauthorized: "No autorizado"
 
-  # Admin Composite Patterns
+  # Admin Patterns
   admin:
+    patterns:
+      index:
+        title: "Patrones de Categorización"
+        new_pattern: "Nuevo Patrón"
+      new:
+        title: "Nuevo Patrón de Categorización"
+      edit:
+        title: "Editar Patrón de Categorización"
+      show:
+        title: "Detalles del Patrón"
+        quick_test: "Prueba Rápida"
+      test:
+        title: "Probar Patrones de Categorización"
     composite_patterns:
       new:
         title: "Nuevo Patrón Compuesto"

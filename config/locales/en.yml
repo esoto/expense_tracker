@@ -535,3 +535,34 @@ en:
       email_account:
         provider: "Provider"
         bank_name: "Bank name"
+
+  # Admin Patterns (temporary - will be reordered)
+  admin_patterns_inline:
+    patterns:
+      index:
+        title: "Categorization Patterns"
+        new_pattern: "New Pattern"
+      new:
+        title: "New Categorization Pattern"
+      edit:
+        title: "Edit Categorization Pattern"
+      show:
+        title: "Pattern Details"
+        quick_test: "Quick Test"
+      test:
+        title: "Test Categorization Patterns"
+
+  # Sync Conflicts (temporary - will be reordered)
+  sync_conflicts_inline:
+    index:
+      title: "Synchronization Conflicts"
+
+  # Analytics (temporary - will be reordered)
+  analytics_inline:
+    dashboard:
+      title: "Pattern Analytics Dashboard"
+      last_7_days: "Last 7 Days"
+      last_30_days: "Last 30 Days"
+      last_year: "Last Year"
+      performance_trends: "Performance Trends"
+      top_patterns: "Top Performing Patterns"

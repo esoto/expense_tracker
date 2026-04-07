@@ -4,7 +4,8 @@
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">Panel de Analíticas de Patrones</h1>
+        <h1 class="text-2xl font-bold text-slate-900"%>
+        <h1 class="text-2xl font-bold text-slate-900"><%= t("analytics.dashboard.title") %>/h1>
         <p class="text-slate-600 mt-1">Monitorear y optimizar el desempeño de patrones de categorización</p>
       </div>
 
@@ -14,10 +15,10 @@
         <select data-action="change->pattern-analytics-filters#updateTimeRange"
                 data-pattern-analytics-filters-target="timePeriod"
                 class="rounded-lg border-slate-200 text-sm focus:border-teal-500 focus:ring-teal-500">
-          <option value="week" <%= 'selected' if params[:time_period] == 'week' %>>Últimos 7 Días</option>
-          <option value="month" <%= 'selected' if params[:time_period] == 'month' || params[:time_period].blank? %>>Últimos 30 Días</option>
+          <option value="week" <%= 'selected' if params[:time_period] == 'week' %>%><%= t("analytics.dashboard.last_7_days") %>/option>
+          <option value="month" <%= 'selected' if params[:time_period] == 'month' || params[:time_period].blank? %>%><%= t("analytics.dashboard.last_30_days") %>/option>
           <option value="quarter" <%= 'selected' if params[:time_period] == 'quarter' %>>Últimos 3 Meses</option>
-          <option value="year" <%= 'selected' if params[:time_period] == 'year' %>>Último Año</option>
+          <option value="year" <%= 'selected' if params[:time_period] == 'year' %>%><%= t("analytics.dashboard.last_year") %>/option>
           <option value="today" <%= 'selected' if params[:time_period] == 'today' %>>Hoy</option>
         </select>
 
@@ -104,7 +105,8 @@
   <!-- Trend Chart -->
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-slate-900">Tendencias de Desempeño</h2>
+      <h2 class="text-lg font-semibold text-slate-900"%>
+      <h2 class="text-lg font-semibold text-slate-900"><%= t("analytics.dashboard.performance_trends") %>/h2>
       <div class="flex gap-2" data-controller="trend-interval">
         <button data-action="click->trend-interval#setInterval"
                 data-interval="daily"
@@ -135,7 +137,8 @@
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
     <!-- Top Performing Patterns -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <h2 class="text-lg font-semibold text-slate-900 mb-4">Patrones con Mejor Desempeño</h2>
+      <h2 class="text-lg font-semibold text-slate-900 mb-4"%>
+      <h2 class="text-lg font-semibold text-slate-900 mb-4"><%= t("analytics.dashboard.top_patterns") %>/h2>
       <div class="space-y-3">
         <% @top_patterns.each do |pattern| %>
           <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">

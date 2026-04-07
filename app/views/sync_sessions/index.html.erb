@@ -2,7 +2,7 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
   <!-- Header con gradiente -->
   <div class="bg-gradient-to-r from-teal-700 to-teal-600 rounded-xl shadow-lg p-8 text-white mb-8">
-    <h1 class="text-3xl font-bold mb-2">Centro de Sincronización</h1>
+    <h1 class="text-3xl font-bold mb-2"><%= t("sync_sessions.index.title") %></h1>
     <p class="text-teal-100">Gestiona y monitorea las sincronizaciones de tus cuentas de email</p>
     <!-- Stats summary -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
@@ -30,7 +30,7 @@
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-3">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
-          <h2 class="text-xl font-semibold text-slate-900">Sincronización en Progreso</h2>
+          <h2 class="text-xl font-semibold text-slate-900"><%= t("sync_sessions.index.in_progress") %></h2>
         </div>
         <%= button_to t("common.cancel"), cancel_sync_session_path(@active_session), method: :post,
             class: "bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium py-2 px-4 rounded-lg shadow-sm" %>
@@ -96,7 +96,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
-        <h3 class="text-lg font-semibold text-slate-900 ml-3">Última Sincronización</h3>
+        <h3 class="text-lg font-semibold text-slate-900 ml-3"><%= t("sync_sessions.index.last_sync_title") %></h3>
       </div>
       <% if @last_completed_session && @last_completed_session.completed_at %>
         <p class="text-sm text-slate-600"><%= time_ago_in_words(@last_completed_session.completed_at) %> atrás</p>

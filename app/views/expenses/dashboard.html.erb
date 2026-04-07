@@ -6,15 +6,15 @@
 <div class="space-y-6 overflow-x-hidden">
   <!-- Header -->
   <div class="text-center">
-    <h1 class="text-3xl font-bold text-slate-900">Dashboard de Gastos</h1>
-    <p class="text-slate-600 mt-2">Resumen completo de tus finanzas</p>
+    <h1 class="text-3xl font-bold text-slate-900"><%= t("expenses.dashboard.heading") %></h1>
+    <p class="text-slate-600 mt-2"><%= t("expenses.dashboard.subheading") %></p>
   </div>
 
   <!-- Email Sync Section -->
   <%= turbo_frame_tag "sync_status_section" do %>
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6" data-controller="sync-widget" data-sync-widget-session-id-value="<%= @active_sync_session&.id || 0 %>" data-sync-widget-session-token-value="<%= @active_sync_session&.session_token %>" data-sync-widget-active-value="<%= @active_sync_session.present? %>">
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-slate-900">Sincronización de Correos</h2>
+      <h2 class="text-lg font-semibold text-slate-900"><%= t("expenses.dashboard.sync_section_heading") %></h2>
       <% if @active_sync_session %>
       <div class="flex items-center text-teal-700">
         <svg aria-hidden="true" class="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -390,7 +390,7 @@
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
   <!-- Monthly Trend -->
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-    <h2 class="text-lg font-semibold text-slate-900 mb-4">Tendencia Mensual</h2>
+    <h2 class="text-lg font-semibold text-slate-900 mb-4"><%= t("expenses.dashboard.monthly_trend") %></h2>
     <%= line_chart @monthly_data,
           prefix: "₡",
           thousands: ",",
@@ -401,7 +401,7 @@
 
   <!-- Category Breakdown -->
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-    <h2 class="text-lg font-semibold text-slate-900 mb-4">Gastos por Categoría</h2>
+    <h2 class="text-lg font-semibold text-slate-900 mb-4"><%= t("expenses.dashboard.by_category") %></h2>
     <%= pie_chart @sorted_categories.first(8),
           prefix: "₡",
           thousands: ",",
@@ -413,7 +413,7 @@
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
   <!-- Top Merchants -->
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-    <h2 class="text-lg font-semibold text-slate-900 mb-4">Comercios con Más Gastos</h2>
+    <h2 class="text-lg font-semibold text-slate-900 mb-4"><%= t("expenses.dashboard.top_merchants") %></h2>
     <div class="space-y-3">
       <% @top_merchants.each_with_index do |(merchant, amount), index| %>
       <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
@@ -473,7 +473,7 @@
   <div class="px-6 py-4 border-b border-slate-200">
     <div class="flex items-center justify-between">
       <div class="flex items-center space-x-4">
-        <h2 class="text-lg font-semibold text-slate-900">Gastos Recientes</h2>
+        <h2 class="text-lg font-semibold text-slate-900"><%= t("expenses.dashboard.recent") %></h2>
         <% if @expense_filter_result && @expense_filter_result.metadata[:filters_applied].to_i > 0 %>
         <span class="px-2 py-1 text-xs font-medium bg-teal-100 text-teal-700 rounded-full">
           <%= @expense_filter_result.metadata[:filters_applied].to_i %> filtros activos

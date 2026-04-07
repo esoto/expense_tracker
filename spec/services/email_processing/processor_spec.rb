@@ -234,12 +234,26 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
       result = processor.send(:decode_subject, "")
       expect(result).to eq("")
     end
+
+    it 'decodes RFC 2047 Base64 encoded subjects' do
+      # "Notificación de transacción" in Base64
+      encoded = "=?UTF-8?B?Tm90aWZpY2FjacOzbiBkZSB0cmFuc2FjY2nDs24=?="
+      result = processor.send(:decode_subject, encoded)
+      expect(result).to eq("Notificación de transacción")
+    end
   end
 
-  describe '#transaction_email? with encoded subjects', unit: true do
-    it 'matches after RFC 2047 decoding via process_email_with_metrics' do
-      # Verify that transaction_email? works with already-decoded subjects
+  describe '#transaction_email? with decoded subjects', unit: true do
+    it 'matches decoded QP subject containing transacción' do
       decoded = "Notificación de transacción AUTO MERCADO CARTAGO F 07-04-2026 - 12:09"
+      result = processor.send(:transaction_email?, decoded)
+      expect(result).to be true
+    end
+
+    it 'matches decoded B64 subject containing transacción' do
+      # Simulate what decode_subject returns from a Base64 encoded subject
+      encoded = "=?UTF-8?B?Tm90aWZpY2FjacOzbiBkZSB0cmFuc2FjY2nDs24gQVVUTyBNRVJDQURP?="
+      decoded = processor.send(:decode_subject, encoded)
       result = processor.send(:transaction_email?, decoded)
       expect(result).to be true
     end

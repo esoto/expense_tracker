@@ -1,3 +1,4 @@
+<%= turbo_stream_from @sync_session %>
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
      data-controller="sync-session-detail"
      data-sync-session-detail-session-id-value="<%= @sync_session.id %>"
@@ -115,17 +116,7 @@
           <div>
             <dt class="text-sm text-slate-600">Estado</dt>
             <dd class="mt-1">
-              <span class="px-3 py-1 rounded-full text-sm font-medium inline-flex items-center
-                <%= @sync_session.completed? ? 'bg-emerald-100 text-emerald-800' :
-                    @sync_session.failed? ? 'bg-rose-100 text-rose-800' :
-                    @sync_session.cancelled? ? 'bg-amber-100 text-amber-800' :
-                    @sync_session.running? ? 'bg-teal-100 text-teal-800' :
-                    'bg-slate-100 text-slate-800' %>">
-                <% if @sync_session.running? %>
-                  <div class="animate-pulse w-2 h-2 bg-teal-600 rounded-full mr-2"></div>
-                <% end %>
-                <%= t("sync_sessions.statuses.#{@sync_session.status}", default: @sync_session.status.humanize) %>
-              </span>
+              <%= render "sync_sessions/session_status_badge", session: @sync_session %>
             </dd>
           </div>
           <div>
@@ -229,14 +220,7 @@
                     <p class="text-sm text-slate-600"><%= account.email_account.email %></p>
                   </div>
                 </div>
-                <span class="px-3 py-1 rounded-full text-xs font-medium
-                  <%= account.completed? ? 'bg-emerald-100 text-emerald-800' :
-                      account.failed? ? 'bg-rose-100 text-rose-800' :
-                      account.processing? ? 'bg-teal-100 text-teal-800' :
-                      'bg-slate-100 text-slate-800' %>"
-                      data-account-status>
-                  <%= t("sync_sessions.statuses.#{account.status}", default: account.status.humanize) %>
-                </span>
+                <%= render "sync_sessions/account_status_badge", account: account %>
               </div>
 
               <!-- Account details -->

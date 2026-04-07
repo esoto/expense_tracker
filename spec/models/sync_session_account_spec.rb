@@ -341,6 +341,59 @@ RSpec.describe SyncSessionAccount, type: :model do
     end
   end
 
+  describe '#broadcast_account_status_badge', :unit do
+    let(:sync_session) { create(:sync_session, :running) }
+    let(:session_account) { create(:sync_session_account, sync_session: sync_session, status: 'processing') }
+
+    before { SyncSession.enable_broadcasting! }
+    after { SyncSession.disable_broadcasting! }
+
+    it 'broadcasts replace to sync_sessions_index when status changes' do
+      # Stub out session-level broadcasts
+      allow(sync_session).to receive(:broadcast_replace_to)
+      allow(sync_session).to receive(:update_progress)
+
+      expect(session_account).to receive(:broadcast_replace_to).with(
+        "sync_sessions_index",
+        target: "status_sync_session_account_#{session_account.id}",
+        partial: "sync_sessions/account_status_badge",
+        locals: { account: session_account }
+      )
+      allow(session_account).to receive(:broadcast_replace_to).with(
+        session_account.sync_session,
+        hash_including(target: "status_sync_session_account_#{session_account.id}")
+      )
+
+      session_account.update!(status: "completed")
+    end
+
+    it 'broadcasts replace to session-specific stream when status changes' do
+      allow(sync_session).to receive(:broadcast_replace_to)
+      allow(sync_session).to receive(:update_progress)
+
+      expect(session_account).to receive(:broadcast_replace_to).with(
+        session_account.sync_session,
+        target: "status_sync_session_account_#{session_account.id}",
+        partial: "sync_sessions/account_status_badge",
+        locals: { account: session_account }
+      )
+      allow(session_account).to receive(:broadcast_replace_to).with(
+        "sync_sessions_index",
+        hash_including(target: "status_sync_session_account_#{session_account.id}")
+      )
+
+      session_account.update!(status: "completed")
+    end
+
+    it 'does not broadcast when status has not changed' do
+      allow(sync_session).to receive(:broadcast_replace_to)
+
+      expect(session_account).not_to receive(:broadcast_replace_to)
+
+      session_account.update!(processed_emails: 10)
+    end
+  end
+
   describe 'edge cases and error handling' do
     describe 'concurrent updates' do
       let(:sync_session) { create(:sync_session) }

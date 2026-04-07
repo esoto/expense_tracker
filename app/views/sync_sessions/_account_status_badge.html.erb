@@ -1,0 +1,9 @@
+<%= turbo_frame_tag dom_id(account, :status) do %>
+  <span class="px-3 py-1 rounded-full text-xs font-medium
+    <%= account.completed? ? 'bg-emerald-100 text-emerald-800' :
+        account.failed? ? 'bg-rose-100 text-rose-800' :
+        account.processing? ? 'bg-teal-100 text-teal-800' :
+        'bg-slate-100 text-slate-800' %>">
+    <%= t("sync_sessions.statuses.#{account.status}", default: account.status.humanize) %>
+  </span>
+<% end %>

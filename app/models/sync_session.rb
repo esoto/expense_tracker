@@ -21,6 +21,7 @@ class SyncSession < ApplicationRecord
 
   # Broadcast to dashboard for real-time updates
   after_update_commit :broadcast_dashboard_update
+  after_update_commit :broadcast_status_badge, if: :saved_change_to_status?
 
   # Add callbacks for better error tracking
   before_save :track_status_changes
@@ -216,6 +217,25 @@ class SyncSession < ApplicationRecord
     if failed?
       Rails.logger.error "SyncSession #{id} failed: #{error_details}"
     end
+  end
+
+  def broadcast_status_badge
+    return unless should_broadcast?
+
+    broadcast_replace_to(
+      "sync_sessions_index",
+      target: dom_id(self, :status),
+      partial: "sync_sessions/session_status_badge",
+      locals: { session: self }
+    )
+    broadcast_replace_to(
+      self,
+      target: dom_id(self, :status),
+      partial: "sync_sessions/session_status_badge",
+      locals: { session: self }
+    )
+  rescue StandardError => e
+    Rails.logger.error "Error broadcasting status badge update: #{e.message}"
   end
 
   def broadcast_dashboard_update

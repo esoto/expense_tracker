@@ -228,6 +228,63 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
     end
   end
 
+  describe '#create_conflict transaction safety', :unit do
+    # Use `let!` (or an explicit `before`) to ensure existing_expense is persisted
+    # before the `change(Expense, :count)` matcher takes its baseline snapshot.
+    # Using plain `let` would cause the record to be created lazily inside the
+    # `expect { ... }` block, falsely inflating the count delta.
+    let!(:existing_expense) { create(:expense, email_account: email_account, status: :processed) }
+
+    let(:new_expense_data) do
+      {
+        email_account_id: email_account.id,
+        amount: 100.00,
+        transaction_date: Date.today,
+        merchant_name: 'Test Store',
+        description: 'Purchase at Test Store',
+        currency: 'crc'
+      }
+    end
+
+    it 'rolls back the expense when sync_conflicts.create! raises' do
+      # Simulate sync_conflicts.create! raising after the expense is saved.
+      # Stub SyncConflict#save! to raise so the AR association create! bubbles an error
+      # without needing to intercept the collection proxy (which changes each call).
+      allow_any_instance_of(SyncConflict).to receive(:save!).and_raise(
+        ActiveRecord::RecordInvalid.new(SyncConflict.new)
+      )
+
+      expect {
+        service.send(
+          :create_conflict,
+          existing_expense: existing_expense,
+          new_expense_data: new_expense_data,
+          conflict_type: 'duplicate',
+          similarity_score: 95.0,
+          differences: {}
+        )
+      }.not_to change(Expense, :count)
+    end
+
+    it 'returns nil and adds an error when the transaction fails' do
+      allow_any_instance_of(SyncConflict).to receive(:save!).and_raise(
+        ActiveRecord::RecordInvalid.new(SyncConflict.new)
+      )
+
+      result = service.send(
+        :create_conflict,
+        existing_expense: existing_expense,
+        new_expense_data: new_expense_data,
+        conflict_type: 'duplicate',
+        similarity_score: 95.0,
+        differences: {}
+      )
+
+      expect(result).to be_nil
+      expect(service.errors).not_to be_empty
+    end
+  end
+
   describe 'similarity calculation', integration: true do
     let(:expense1) do
       build(:expense,

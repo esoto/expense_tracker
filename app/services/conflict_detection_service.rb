@@ -285,25 +285,28 @@ module Services
     expense_attrs[:deleted_at] = Time.current if conflict_type.in?(%w[duplicate similar])
 
     new_expense = Expense.new(expense_attrs)
-    new_expense.save! if conflict_type == "duplicate" || conflict_type == "similar"
 
-    conflict = sync_session.sync_conflicts.create!(
-      existing_expense: existing_expense,
-      new_expense: new_expense,
-      conflict_type: conflict_type,
-      similarity_score: similarity_score,
-      differences: differences,
-      conflict_data: {
-        detection_timestamp: Time.current,
-        detection_method: "automatic",
-        algorithm_version: "2.0"
-      }
-    )
+    ActiveRecord::Base.transaction(requires_new: true) do
+      new_expense.save! if conflict_type == "duplicate" || conflict_type == "similar"
 
-    # Broadcast conflict detection
-    broadcast_conflict_detected(conflict)
+      conflict = sync_session.sync_conflicts.create!(
+        existing_expense: existing_expense,
+        new_expense: new_expense,
+        conflict_type: conflict_type,
+        similarity_score: similarity_score,
+        differences: differences,
+        conflict_data: {
+          detection_timestamp: Time.current,
+          detection_method: "automatic",
+          algorithm_version: "2.0"
+        }
+      )
 
-    conflict
+      # Broadcast conflict detection
+      broadcast_conflict_detected(conflict)
+
+      conflict
+    end
   rescue => e
     Rails.logger.error "[ConflictDetection] Failed to create conflict: #{e.message}"
     add_error("Failed to create conflict: #{e.message}")

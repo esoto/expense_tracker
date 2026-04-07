@@ -1213,44 +1213,47 @@ RSpec.describe SyncStatusChannel, type: :channel, unit: true do
     describe "#resume_updates cross-session isolation" do
       before { subscribe(session_id: session_a.id) }
 
-      it "uses the memoized session, ignoring post-subscribe param changes" do
-        initial_transmission_count = transmissions.size
-
-        # Tamper params to a non-existent session ID after subscribing to session_a
-        subscription.params[:session_id] = 999_999
-
-        # resume_updates must use @sync_session (session_a) not re-fetch from params
-        perform :resume_updates
-
-        # Memoized session_a was used — a status_update was transmitted
-        expect(transmissions.size).to be > initial_transmission_count
-        expect(transmissions.last["type"]).to eq("status_update")
-      end
-
-      it "does not serve data for session_b when subscribed to session_a" do
+      it "transmits session_a data even when params are tampered to session_b" do
         # Tamper params to session_b after subscribing to session_a
         subscription.params[:session_id] = session_b.id
 
         perform :resume_updates
 
-        # Only session_a data should ever be transmitted; no session_b stream
+        # Must transmit session_a's status, NOT session_b's
+        last = transmissions.last
+        expect(last["type"]).to eq("status_update")
+        expect(last["status"]).to eq(session_a.reload.status)
+        # Confirm it is NOT session_b's status in a way that would only differ if data leak occurred
+        # Both sessions have the same factory status, so we verify via the stream — only session_a
         expect(subscription).not_to have_stream_for(session_b)
+      end
+
+      it "transmits session_a data even when params are tampered to a non-existent id" do
+        subscription.params[:session_id] = 999_999
+
+        perform :resume_updates
+
+        expect(transmissions.last).to include(
+          "type" => "status_update",
+          "status" => session_a.reload.status
+        )
       end
     end
 
     describe "#request_status cross-session isolation" do
       before { subscribe(session_id: session_a.id) }
 
-      it "still responds using the memoized session even when params are tampered" do
+      it "transmits session_a data even when params are tampered to session_b" do
         subscription.params[:session_id] = session_b.id
 
         perform :request_status
 
-        # Should transmit a status_update (using memoized session_a)
+        # Must reflect session_a's identity — only session_a stream exists
         expect(transmissions.last).to include("type" => "status_update")
+        expect(subscription).not_to have_stream_for(session_b)
       end
 
-      it "transmits the correct session status when params unchanged" do
+      it "transmits the correct session_a status when params unchanged" do
         perform :request_status
 
         expect(transmissions.last).to include(
@@ -1277,19 +1280,24 @@ RSpec.describe SyncStatusChannel, type: :channel, unit: true do
           session
         end
 
-        it "logs a warning instead of silently granting access" do
+        it "logs a warning and denies access when ownership cannot be verified" do
           stub_connection(current_session_info: {
             session_id: "test_session_yyy",
             sync_session_id: nil, # no session_id match => falls through to IP check
             verified_at: Time.current,
             ip_address: "10.0.0.1"
+            # no admin_user_id key => cannot verify ownership
           })
 
-          expect(Rails.logger).to receive(:warn).with(
-            match(/Legacy session .+ — no IP metadata, checking user ownership/)
-          ).at_least(:once)
+          allow(Rails.logger).to receive(:warn)
 
           subscribe(session_id: legacy_session.id)
+
+          # Must be rejected — fail-closed when ownership cannot be verified
+          expect(subscription).to be_rejected
+          expect(Rails.logger).to have_received(:warn).with(
+            match(/Legacy session .+ — no IP metadata, checking user ownership/)
+          ).at_least(:once)
         end
       end
     end

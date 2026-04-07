@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { t } from "services/i18n"
 
 /**
  * Toast Container Controller
@@ -65,7 +66,7 @@ export default class extends Controller {
         <button type="button" 
                 class="ml-auto -mx-1.5 -my-1.5 rounded-lg p-1.5 inline-flex h-8 w-8 items-center justify-center hover:bg-white/20 transition-colors"
                 data-action="click->toast#remove"
-                aria-label="Cerrar notificación">
+                aria-label="${t("common.actions.close_notification")}">
           <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>

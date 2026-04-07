@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { Chart, registerables } from 'chart.js'
+import { t } from "services/i18n"
 
 Chart.register(...registerables)
 
@@ -57,7 +58,7 @@ export default class extends Controller {
         labels: labels,
         datasets: [
           {
-            label: 'Precisión %',
+            label: t("patterns.chart.accuracy"),
             data: data.map(d => d.accuracy),
             borderColor: '#0F766E',
             backgroundColor: 'rgba(15, 118, 110, 0.1)',
@@ -65,7 +66,7 @@ export default class extends Controller {
             yAxisID: 'y'
           },
           {
-            label: 'Uso Total',
+            label: t("patterns.chart.total_usage"),
             data: data.map(d => d.total),
             borderColor: '#D97706',
             backgroundColor: 'rgba(217, 119, 6, 0.1)',
@@ -88,10 +89,10 @@ export default class extends Controller {
           tooltip: {
             callbacks: {
               afterLabel: function(context) {
-                if (context.dataset.label === 'Precisión %') {
+                if (context.datasetIndex === 0) {
                   const dataIndex = context.dataIndex
                   const item = data[dataIndex]
-                  return `Aceptados: ${item.accepted}\nRechazados: ${item.rejected}\nCorregidos: ${item.corrected}`
+                  return `${t("patterns.status.accepted")}${item.accepted}\n${t("patterns.status.rejected")}${item.rejected}\n${t("patterns.status.corrected")}${item.corrected}`
                 }
                 return ''
               }
@@ -110,7 +111,7 @@ export default class extends Controller {
             position: 'left',
             title: {
               display: true,
-              text: 'Precisión %'
+              text: t("patterns.chart.accuracy")
             },
             min: 0,
             max: 100
@@ -121,7 +122,7 @@ export default class extends Controller {
             position: 'right',
             title: {
               display: true,
-              text: 'Uso Total'
+              text: t("patterns.chart.total_usage")
             },
             grid: {
               drawOnChartArea: false
@@ -136,10 +137,10 @@ export default class extends Controller {
     this.element.innerHTML = `
       <div class="flex items-center justify-center h-full">
         <div class="text-center">
-          <p class="text-slate-500">No se pudo cargar los datos de tendencia</p>
+          <p class="text-slate-500">${t("patterns.errors.load_failed")}</p>
           <button class="mt-2 px-4 py-2 bg-teal-700 text-white rounded-lg text-sm"
                   data-action="click->pattern-trend-chart#retry">
-            Reintentar
+            ${t("common.actions.retry")}
           </button>
         </div>
       </div>

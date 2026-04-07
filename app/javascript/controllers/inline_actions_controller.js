@@ -1,6 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 import { shouldSuppressShortcut } from "utilities/keyboard_shortcut_helpers"
 import { createUndoNotification } from "utilities/undo_notification_helper"
+import { t } from "services/i18n"
 
 export default class extends Controller {
   static targets = ["actionsContainer", "categoryDropdown", "deleteConfirmation", "statusButton", "duplicateButton"]
@@ -199,7 +200,7 @@ export default class extends Controller {
     })
     .then(response => {
       if (response.ok) {
-        this.showToast('Categoría actualizada', 'success')
+        this.showToast(t("expenses.notifications.category_updated"), 'success')
         return response.text()
       } else {
         throw new Error('Failed to update category')
@@ -212,7 +213,7 @@ export default class extends Controller {
     })
     .catch(error => {
       console.error('Error updating category:', error)
-      this.showToast('Error al actualizar categoría', 'error')
+      this.showToast(t("expenses.errors.category_update_failed"), 'error')
     })
     .finally(() => {
       // Re-enable the button
@@ -244,7 +245,7 @@ export default class extends Controller {
       if (response.ok) {
         this.element.dataset.inlineActionsCurrentStatusValue = newStatus
         this.showToast(
-          newStatus === 'processed' ? 'Marcado como revisado' : 'Marcado como pendiente',
+          newStatus === 'processed' ? t("expenses.status.reviewed") : t("expenses.status.pending"),
           'success'
         )
         return response.text()
@@ -259,7 +260,7 @@ export default class extends Controller {
     })
     .catch(error => {
       console.error('Error:', error)
-      this.showToast('Error al actualizar estado', 'error')
+      this.showToast(t("expenses.errors.status_update_failed"), 'error')
     })
   }
 
@@ -278,7 +279,7 @@ export default class extends Controller {
     })
     .then(response => {
       if (response.ok) {
-        this.showToast('Gasto duplicado exitosamente', 'success')
+        this.showToast(t("expenses.notifications.duplicated_success"), 'success')
         return response.text()
       } else {
         throw new Error('Failed to duplicate')
@@ -291,7 +292,7 @@ export default class extends Controller {
     })
     .catch(error => {
       console.error('Error:', error)
-      this.showToast('Error al duplicar gasto', 'error')
+      this.showToast(t("expenses.errors.duplicate_failed"), 'error')
     })
   }
 
@@ -363,13 +364,13 @@ export default class extends Controller {
       if (data.undo_id) {
         this.showUndoNotification(data.undo_id, data.undo_time_remaining, data.message)
       } else {
-        this.showToast('Gasto eliminado', 'success')
+        this.showToast(t("expenses.notifications.deleted"), 'success')
       }
     })
     .catch(error => {
       console.error('Error deleting expense:', error)
       this.element.classList.remove('opacity-50', 'pointer-events-none')
-      this.showToast('Error al eliminar gasto', 'error')
+      this.showToast(t("expenses.errors.delete_failed"), 'error')
     })
   }
 

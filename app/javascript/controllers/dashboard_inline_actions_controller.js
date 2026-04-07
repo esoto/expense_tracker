@@ -1,6 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 import { shouldSuppressShortcut } from "utilities/keyboard_shortcut_helpers"
 import { createUndoNotification } from "utilities/undo_notification_helper"
+import { t } from "services/i18n"
 
 // Dashboard Inline Actions Controller for Epic 3 Task 3.3
 // Handles quick actions: categorize, status toggle, duplicate, and delete
@@ -102,7 +103,7 @@ export default class extends Controller {
     const categoryName = event.currentTarget.dataset.categoryName
     
     this.hideCategoryDropdown()
-    this.showLoadingState("Categorizando...")
+    this.showLoadingState(t("common.status.categorizing"))
     
     // Update category via API
     fetch(`/expenses/${this.expenseIdValue}/correct_category`, {
@@ -125,12 +126,12 @@ export default class extends Controller {
     .then(data => {
       const categoryColor = data.color || data.expense?.category?.color || '#6B7280'
       this.updateCategoryDisplay(categoryId, categoryName, categoryColor)
-      this.showToast(`Categorizado como "${categoryName}"`, "success")
+      this.showToast(t("expenses.notifications.categorized_as", { category: categoryName }), "success")
       this.hideLoadingState()
     })
     .catch(error => {
       console.error("Error updating category:", error)
-      this.showToast("Error al categorizar el gasto", "error")
+      this.showToast(t("expenses.errors.categorize_failed"), "error")
       this.hideLoadingState()
     })
   }
@@ -141,7 +142,7 @@ export default class extends Controller {
     const currentStatus = this.currentStatusValue
     const newStatus = currentStatus === "pending" ? "processed" : "pending"
     
-    this.showLoadingState("Actualizando estado...")
+    this.showLoadingState(t("common.status.updating_status"))
     
     // Update status via API
     fetch(`/expenses/${this.expenseIdValue}/update_status`, {
@@ -170,7 +171,7 @@ export default class extends Controller {
     })
     .catch(error => {
       console.error("Error updating status:", error)
-      this.showToast("Error al actualizar el estado", "error")
+      this.showToast(t("expenses.errors.status_update_failed"), "error")
       this.hideLoadingState()
     })
   }
@@ -179,7 +180,7 @@ export default class extends Controller {
   duplicateExpense(event) {
     event.preventDefault()
     
-    this.showLoadingState("Duplicando gasto...")
+    this.showLoadingState(t("common.status.duplicating"))
     
     // Duplicate via API
     fetch(`/expenses/${this.expenseIdValue}/duplicate`, {
@@ -196,7 +197,7 @@ export default class extends Controller {
       throw new Error("Failed to duplicate expense")
     })
     .then(data => {
-      this.showToast("Gasto duplicado exitosamente", "success")
+      this.showToast(t("expenses.notifications.duplicated_success"), "success")
       this.hideLoadingState()
       
       // Refresh the dashboard to show the new expense
@@ -206,7 +207,7 @@ export default class extends Controller {
     })
     .catch(error => {
       console.error("Error duplicating expense:", error)
-      this.showToast("Error al duplicar el gasto", "error")
+      this.showToast(t("expenses.errors.duplicate_failed"), "error")
       this.hideLoadingState()
     })
   }
@@ -250,7 +251,7 @@ export default class extends Controller {
     event.preventDefault()
     
     this.hideDeleteConfirmation()
-    this.showLoadingState("Eliminando...")
+    this.showLoadingState(t("common.status.deleting"))
     
     // Delete via API
     fetch(`/expenses/${this.expenseIdValue}`, {
@@ -271,12 +272,12 @@ export default class extends Controller {
       if (data.undo_id) {
         this.showUndoNotification(data.undo_id, data.undo_time_remaining, data.message)
       } else {
-        this.showToast("Gasto eliminado exitosamente", "success")
+        this.showToast(t("expenses.notifications.deleted_success"), "success")
       }
     })
     .catch(error => {
       console.error("Error deleting expense:", error)
-      this.showToast("Error al eliminar el gasto", "error")
+      this.showToast(t("expenses.errors.delete_failed"), "error")
       this.hideLoadingState()
     })
   }

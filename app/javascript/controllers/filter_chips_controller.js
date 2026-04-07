@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { t } from "services/i18n"
 
 /**
  * Filter Chips Controller
@@ -71,11 +72,11 @@ export default class extends Controller {
     // Status filter
     if (params.get('status')) {
       const statusLabels = {
-        'pending': 'Pendiente',
-        'processed': 'Procesado',
-        'failed': 'Fallido',
-        'duplicate': 'Duplicado',
-        'uncategorized': 'Sin categoría'
+        'pending': t("expenses.status.pending"),
+        'processed': t("expenses.status.processed"),
+        'failed': t("expenses.status.failed"),
+        'duplicate': t("expenses.status.duplicate"),
+        'uncategorized': t("expenses.status.uncategorized")
       }
       filters.status = {
         type: 'status',
@@ -140,7 +141,7 @@ export default class extends Controller {
     // Add label
     const label = document.createElement('span')
     label.className = 'text-sm font-medium text-slate-600'
-    label.textContent = 'Filtros activos:'
+    label.textContent = t("filters.labels.active_filters")
     chipsWrapper.appendChild(label)
     
     // Add filter chips
@@ -153,7 +154,7 @@ export default class extends Controller {
     if (filterCount > 1) {
       const clearAllBtn = document.createElement('button')
       clearAllBtn.className = 'text-sm text-rose-600 hover:text-rose-700 font-medium ml-2'
-      clearAllBtn.textContent = 'Limpiar todos'
+      clearAllBtn.textContent = t("common.actions.clear_all")
       clearAllBtn.setAttribute('data-action', 'click->filter-chips#clearAllFilters')
       clearAllBtn.setAttribute('data-filter-chips-target', 'clearAll')
       chipsWrapper.appendChild(clearAllBtn)

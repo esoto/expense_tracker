@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { syncChannelMixin } from "mixins/sync_channel_mixin"
+import { t } from "services/i18n"
 
 class SyncSessionDetailController extends Controller {
   static targets = [
@@ -78,7 +79,7 @@ class SyncSessionDetailController extends Controller {
     const statusBadge = accountElement.querySelector('[data-account-status]')
     if (statusBadge) {
       const statusText = data.status === 'processing' ? 'Procesando' :
-                        data.status === 'completed' ? 'Completado' :
+                        data.status === 'completed' ? t("expenses.status.processed") :
                         data.status === 'failed' ? 'Error' : data.status
 
       statusBadge.textContent = statusText
@@ -117,13 +118,13 @@ class SyncSessionDetailController extends Controller {
     this.updateProgress(data)
 
     // Show completion notification
-    this.showNotification("Sincronización completada exitosamente", "success")
+    this.showNotification(t("sync.notifications.completed", { detected: data.detected_expenses || 0, processed: data.processed_emails || 0 }), "success")
 
     // Update status badge
     const statusBadge = document.querySelector('[data-sync-status]')
     if (statusBadge) {
       statusBadge.className = 'px-3 py-1 rounded-full text-sm font-medium inline-flex items-center bg-emerald-100 text-emerald-800'
-      statusBadge.textContent = 'Completado'
+      statusBadge.textContent = t("expenses.status.processed")
     }
 
     // Don't reload - let user see the final state
@@ -132,7 +133,7 @@ class SyncSessionDetailController extends Controller {
   handleFailure(data) {
 
     // Show error notification
-    this.showNotification(`Error en sincronización: ${data.error || 'Error desconocido'}`, "error")
+    this.showNotification(t("sync.notifications.failed", { error: data.error || 'Error desconocido' }), "error")
 
     // Update UI to show error state
     if (this.hasProgressBarTarget) {

@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { t } from "services/i18n"
 
 export default class extends Controller {
   static targets = ["categorySelect", "expandIcon", "expenseList"]
@@ -74,17 +75,17 @@ export default class extends Controller {
     const categoryId = select?.value
     
     if (!categoryId) {
-      this.showNotification('Por favor selecciona una categoría', 'error')
+      this.showNotification(t("expenses.errors.category_required"), 'error')
       return
     }
-    
+
     const expenseIds = Array.from(this.selectedExpenses.get(groupId) || [])
-    
+
     if (expenseIds.length === 0) {
-      this.showNotification('No hay gastos seleccionados', 'error')
+      this.showNotification(t("expenses.errors.none_selected"), 'error')
       return
     }
-    
+
     this.submitCategorization(expenseIds, categoryId, groupId)
   }
 
@@ -92,11 +93,11 @@ export default class extends Controller {
     const button = event.currentTarget
     const categoryId = button.dataset.categoryId
     const groupId = button.dataset.groupId
-    
+
     const expenseIds = Array.from(this.selectedExpenses.get(groupId) || [])
-    
+
     if (expenseIds.length === 0) {
-      this.showNotification('No hay gastos seleccionados', 'error')
+      this.showNotification(t("expenses.errors.none_selected"), 'error')
       return
     }
     
@@ -134,7 +135,7 @@ export default class extends Controller {
     })
     .catch(error => {
       console.error('Error:', error)
-      this.showNotification('Ocurrió un error. Por favor intenta de nuevo.', 'error')
+      this.showNotification(t("common.errors.try_again"), 'error')
       this.hideProgress()
       this.enableGroupButtons(groupId)
     })
@@ -213,7 +214,7 @@ export default class extends Controller {
     .then(html => Turbo.renderStreamMessage(html))
     .catch(error => {
       console.error('Error:', error)
-      this.showNotification('La categorización automática falló', 'error')
+      this.showNotification(t("categories.errors.auto_failed"), 'error')
     })
   }
 

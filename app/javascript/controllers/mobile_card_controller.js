@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { t } from "services/i18n"
 
 /**
  * Mobile Card Controller
@@ -152,7 +153,7 @@ export default class extends Controller {
     })
     .then(response => {
       if (response.ok) {
-        this._showToast("Categoría actualizada", "success")
+        this._showToast(t("expenses.notifications.category_updated"), "success")
         return response.text()
       } else {
         throw new Error("Failed to update category")
@@ -165,7 +166,7 @@ export default class extends Controller {
     })
     .catch(error => {
       console.error("[mobile-card] selectCategory failed:", error)
-      this._showToast("Error al actualizar categoría", "error")
+      this._showToast(t("expenses.errors.category_update_failed"), "error")
     })
     .finally(() => {
       this._selectingCategory = false
@@ -193,7 +194,7 @@ export default class extends Controller {
 
   confirmDelete(event) {
     event.stopPropagation()
-    if (confirm("¿Estás seguro de eliminar este gasto?")) {
+    if (confirm(t("expenses.confirmations.delete_expense"))) {
       this.element.classList.add("opacity-50", "pointer-events-none")
       fetch(`/expenses/${this.expenseIdValue}`, {
         method: "DELETE",

@@ -1,4 +1,5 @@
 // Filter State Manager Utility for Task 3.8
+import { t } from "services/i18n"
 // Centralizes filter state persistence logic across URL, LocalStorage, and Session
 // Provides comprehensive state management with smart defaults and validation
 
@@ -665,18 +666,18 @@ export default class FilterStateManager {
     }
     
     if (this.state.statuses && this.state.statuses.length > 0) {
-      const statusText = this.state.statuses.map(s => 
-        s === 'pending' ? 'pendiente' : 'procesado'
+      const statusText = this.state.statuses.map(s =>
+        t(`expenses.status.${s}`)
       ).join(', ')
       parts.push(`Estado: ${statusText}`)
     }
     
     if (this.state.period) {
       const periodMap = {
-        today: 'Hoy',
-        week: 'Esta semana',
-        month: 'Este mes',
-        year: 'Este año',
+        today: t("common.dates.today"),
+        week: t("filters.periods.last_7_days"),
+        month: t("filters.periods.this_month"),
+        year: t("filters.periods.this_year"),
         all: 'Todo'
       }
       parts.push(periodMap[this.state.period] || this.state.period)

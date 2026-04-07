@@ -47,7 +47,9 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         # Note: StringIO won't be closed in this case without ensure block
       end
 
-      it 'processes content in streaming fashion' do
+      it 'processes content in streaming fashion (PER-378: up to byte budget, not 100-line cap)' do
+        # 150 short lines ("Line\n" = 5 bytes each = 750 bytes total), well under 100KB.
+        # All 150 lines should be processed after the line-cap removal.
         lines_processed = 0
         stringio = StringIO.new
 
@@ -58,7 +60,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         end
 
         parser.send(:process_large_email, "Line\n" * 150)
-        expect(lines_processed).to eq(100) # Only first 100 lines
+        expect(lines_processed).to eq(150) # All lines processed within byte budget
       end
 
       describe 'memory allocation patterns' do
@@ -138,15 +140,16 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
     end
 
     describe 'line processing limits' do
-      it 'processes exactly 100 lines for large emails' do
+      it 'processes all lines within the byte budget for large emails (PER-378)' do
+        # 200 lines × ~9 bytes = ~1.8KB, well under the 100KB byte budget.
+        # All 200 lines should appear in the result.
         lines = (1..200).map { |i| "Line #{i}" }
         content = lines.join("\n")
 
         result = parser.send(:process_large_email, content)
 
-        # Count actual lines in result
         result_lines = result.split("\n").size
-        expect(result_lines).to be <= 100
+        expect(result_lines).to eq(200)
       end
 
       it 'handles very long lines efficiently' do
@@ -158,13 +161,14 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         expect(result).to include(long_line[0..100]) # Should include start of long line
       end
 
-      it 'handles many short lines efficiently' do
-        # 10,000 very short lines
+      it 'handles many short lines and stops at the 100KB byte budget (PER-378)' do
+        # 10,000 lines × 2 bytes = 20KB, under the 100KB budget — all lines included.
         content = "X\n" * 10_000
 
         result = parser.send(:process_large_email, content)
         lines_in_result = result.count("\n")
-        expect(lines_in_result).to be <= 100
+        # All 10,000 lines fit within 100KB byte budget
+        expect(lines_in_result).to eq(10_000)
       end
     end
   end

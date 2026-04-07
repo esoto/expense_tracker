@@ -26,11 +26,14 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       let(:large_content) { "Line %d: Some transaction data\n" }
       let(:full_content) { (1..200).map { |i| large_content % i }.join }
 
-      it 'processes only first 100 lines' do
+      it 'processes all lines within the 100KB byte budget (PER-378: line cap removed)' do
+        # full_content is 200 lines, each ~30 bytes = ~6KB total, well under 100KB.
+        # All lines should be present after the fix.
         result = parser.send(:process_large_email, full_content)
         expect(result).to include('Line 99')
         expect(result).to include('Line 100')
-        expect(result).not_to include('Line 101')
+        expect(result).to include('Line 101')
+        expect(result).to include('Line 200')
       end
 
       it 'logs warning about large email size' do
@@ -366,13 +369,14 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         expect(result).to include('Line 100')
       end
 
-      it 'handles exactly 101 lines' do
+      it 'handles exactly 101 lines (all included, byte budget not exceeded)' do
+        # PER-378: the 100-line hard cap is gone; 101 short lines fit in the byte budget.
         lines = (1..101).map { |i| "Line #{i}" }
         content = lines.join("\n")
 
         result = parser.send(:process_large_email, content)
         expect(result).to include('Line 100')
-        expect(result).not_to include('Line 101')
+        expect(result).to include('Line 101')
       end
     end
 

@@ -291,6 +291,45 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, performance: t
       result = parser.send(:valid_parsed_data?, data)
       expect(result).to be false
     end
+
+    # PER-377: transaction_date type validation
+    it 'returns false when transaction_date is an empty string', :unit do
+      data = { amount: BigDecimal('100.00'), transaction_date: '' }
+      result = parser.send(:valid_parsed_data?, data)
+      expect(result).to be false
+    end
+
+    it 'returns true when transaction_date is a parseable string (Rails adds to_date to String)', :unit do
+      # ActiveSupport adds to_date to String, so a string passes the type check.
+      # A malformed date string would then raise at parse time (rescued by parse_expense).
+      data = { amount: BigDecimal('100.00'), transaction_date: '2025-08-01' }
+      result = parser.send(:valid_parsed_data?, data)
+      expect(result).to be true
+    end
+
+    it 'returns false when transaction_date is an integer', :unit do
+      data = { amount: BigDecimal('100.00'), transaction_date: 12345 }
+      result = parser.send(:valid_parsed_data?, data)
+      expect(result).to be false
+    end
+
+    it 'returns false when transaction_date is an arbitrary object without to_date', :unit do
+      data = { amount: BigDecimal('100.00'), transaction_date: Object.new }
+      result = parser.send(:valid_parsed_data?, data)
+      expect(result).to be false
+    end
+
+    it 'returns true when transaction_date is a Date object', :unit do
+      data = { amount: BigDecimal('100.00'), transaction_date: Date.new(2025, 8, 1) }
+      result = parser.send(:valid_parsed_data?, data)
+      expect(result).to be true
+    end
+
+    it 'returns true when transaction_date is a Time object (responds to to_date)', :unit do
+      data = { amount: BigDecimal('100.00'), transaction_date: Time.current }
+      result = parser.send(:valid_parsed_data?, data)
+      expect(result).to be true
+    end
   end
 
   describe '#find_duplicate_expense', performance: true do
@@ -682,17 +721,21 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, performance: t
     end
 
     context 'when email is larger than MAX_EMAIL_SIZE' do
-      it 'processes only first 100 lines' do
-        # Create lines that will exceed 50KB
+      it 'processes all lines up to the 100KB byte budget (not hard-capped at 100 lines)' do
+        # PER-378: line-count cap was removed in favour of byte-budget truncation.
+        # Lines are ~116 bytes each so 1000 lines ~= 116KB; the 100KB limit kicks in
+        # around line 862, well past the old 100-line cap.
         lines = Array.new(1000) { |i| "Line #{i}: Transaction data with more content to make it larger #{' ' * 100}" }
         email_data[:body] = lines.join("\n")
 
         parser = described_class.new(email_account, email_data)
         processed_content = parser.send(:email_content)
 
-        # Should contain first 100 lines (0-99)
+        # Content past line 100 is now included (until the byte cap)
         expect(processed_content).to include("Line 99")
-        expect(processed_content).not_to include("Line 100")
+        expect(processed_content).to include("Line 100")
+        # Byte budget is respected
+        expect(processed_content.bytesize).to be <= 105_000
       end
 
       it 'logs a warning for large emails' do
@@ -701,6 +744,37 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, performance: t
 
         expect(Rails.logger).to receive(:warn).with(/Large email detected: \d+ bytes/)
         parser.send(:email_content)
+      end
+
+      # PER-378: byte-budget truncation must not discard transaction data past line 100
+      it 'includes transaction data located past line 100', :unit do
+        # Build a large email where transaction data appears after line 100.
+        # Use 200 lines of filler (each ~260 bytes) so the body exceeds 50KB,
+        # then append the real transaction lines.
+        filler_line = "This is a filler line with some extra padding to make it wide enough. " * 4
+        filler = Array.new(200) { filler_line }.join("\n")
+        transaction_block = <<~BLOCK
+          Comercio: PTA LEONA SOC Ciudad: SAN JOSE
+          Fecha: Ago 1, 2025, 14:16
+          Monto: CRC 95,000.00
+          Tipo de Transacción: COMPRA
+        BLOCK
+        email_data[:body] = filler + "\n" + transaction_block
+
+        parser = described_class.new(email_account, email_data)
+        processed_content = parser.send(:email_content)
+
+        expect(processed_content).to include("PTA LEONA SOC")
+        expect(processed_content).to include("CRC 95,000.00")
+      end
+
+      it 'still stops at the 100KB byte safety limit to prevent memory bloat', :unit do
+        # One giant line way past 100KB; byte limit must kick in
+        email_data[:body] = "A" * 200_000  # 200KB
+        parser = described_class.new(email_account, email_data)
+
+        processed_content = parser.send(:email_content)
+        expect(processed_content.bytesize).to be <= 105_000  # 100KB hard limit + small overhead
       end
     end
   end

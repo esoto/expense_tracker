@@ -61,7 +61,18 @@ module Services::EmailProcessing
     end
 
     def valid_parsed_data?(parsed_data)
-      parsed_data[:amount].present? && parsed_data[:transaction_date].present?
+      return false unless parsed_data[:amount].present? && parsed_data[:transaction_date].present?
+
+      # Coerce transaction_date to Date — reject if unparseable
+      unless parsed_data[:transaction_date].is_a?(Date) || parsed_data[:transaction_date].is_a?(Time)
+        begin
+          parsed_data[:transaction_date] = parsed_data[:transaction_date].to_date
+        rescue NoMethodError, ArgumentError, TypeError
+          return false
+        end
+      end
+
+      true
     end
 
     def create_expense(parsed_data)
@@ -216,11 +227,8 @@ module Services::EmailProcessing
       # Force to string and handle encoding issues
       content = content.to_s.force_encoding("BINARY")
 
-      lines_processed = 0
       bytes_accumulated = 0
       content.each_line do |line|
-        break if lines_processed >= 100  # Process only first 100 lines
-
         # Truncate individual lines if they're too long
         line = line[0...1000] if line.length > 1000
 
@@ -228,7 +236,6 @@ module Services::EmailProcessing
         # Force to UTF-8 and scrub each line
         final_line = decoded_line.force_encoding("UTF-8").scrub
         processed << final_line
-        lines_processed += 1
         bytes_accumulated += final_line.bytesize
 
         # Safety check: if we've accumulated way too much, stop

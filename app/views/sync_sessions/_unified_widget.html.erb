@@ -104,12 +104,10 @@
             <% end %>
           <% else %>
             <!-- Start Sync Button -->
-            <%= link_to "Iniciar Sincronización", sync_sessions_path,
+            <%= button_to "Iniciar Sincronización", sync_sessions_path,
+                method: :post,
                 class: "inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-teal-700 rounded-lg hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all transform hover:scale-105 cursor-pointer",
-                data: {
-                  turbo_method: :post,
-                  turbo_stream: true
-                } %>
+                data: { turbo_submits_with: "Sincronizando..." } %>
           <% end %>
         </div>
       </div>
@@ -285,7 +283,8 @@
               class: "inline-flex items-center px-4 py-2 bg-teal-700 text-white text-sm font-medium rounded-lg hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all cursor-pointer",
               data: {
                 turbo_method: :post,
-                turbo_stream: true
+                turbo_stream: true,
+                turbo_submits_with: "Sincronizando..."
               } %>
 
           <%= link_to sync_sessions_path,

@@ -191,7 +191,8 @@
       </p>
       <%= form_with url: sync_sessions_path, method: :post, class: "inline-block" do |form| %>
         <%= form.submit "Iniciar sincronización",
-            class: "inline-flex items-center px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white font-medium rounded-lg transition-colors duration-200 text-sm cursor-pointer" %>
+            class: "inline-flex items-center px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white font-medium rounded-lg transition-colors duration-200 text-sm cursor-pointer",
+            data: { turbo_submits_with: "Sincronizando..." } %>
       <% end %>
     </div>
   <% end %>

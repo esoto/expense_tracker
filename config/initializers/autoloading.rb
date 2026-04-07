@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 # Configure Services namespace for app/services directory
-# This allows using Services::Email::ProcessingService, Services::BulkCategorization::BatchProcessor, etc.
-# instead of Email::ProcessingService, BulkCategorization::BatchProcessor
+# This allows using Services::EmailProcessing::Fetcher, Services::BulkCategorization::BatchProcessor, etc.
+# instead of EmailProcessing::Fetcher, BulkCategorization::BatchProcessor
 #
 # Rails by default treats app/services as a root namespace (like app/models),
 # but we want a Services:: prefix for better organization and to avoid naming conflicts.

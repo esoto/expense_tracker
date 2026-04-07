@@ -73,7 +73,7 @@ module Services::Categorization
   # == Canonical entry point for background jobs and email processing
   #
   # Engine is the primary production categorization service used by:
-  # - Services::Email::ProcessingService  (single-expense categorization during email sync)
+  # - Services::EmailProcessing::Parser    (single-expense categorization during email sync)
   # - Services::BulkCategorization::*    (bulk operations via EngineFactory.default)
   #
   # It is the recommended entry point whenever you need to categorize an expense

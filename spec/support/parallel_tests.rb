@@ -89,8 +89,6 @@ module TestPerformanceOptimizations
     case file_path
     when /sync_progress_updater_spec/
       3.0 # Known slow test
-    when /progress_batch_collector_spec/
-      2.0 # Thread-heavy test
     when /_service_spec/
       1.5 # Services tend to be slower
     when /_controller_spec/

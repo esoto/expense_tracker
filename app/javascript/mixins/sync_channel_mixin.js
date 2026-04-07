@@ -41,11 +41,11 @@ export const syncChannelMixin = {
         },
         {
           connected: () => {
-            // Connection established
+            this.showNotification('Conectado al servidor', 'success')
           },
 
           disconnected: () => {
-            // Connection lost
+            this.showNotification('Conexión perdida con el servidor', 'error')
           },
 
           received: (data) => {
@@ -53,7 +53,7 @@ export const syncChannelMixin = {
           },
 
           rejected: () => {
-            console.error("Subscription rejected by server")
+            this.showNotification('Conexión rechazada por el servidor', 'error')
           }
         }
       )

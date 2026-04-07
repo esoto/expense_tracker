@@ -636,10 +636,8 @@ RSpec.describe SyncSession, type: :model, unit: true, needs_broadcasting: true d
   describe "private methods" do
     describe "#broadcast_dashboard_update" do
       before do
-        # Mock EmailAccount.active to avoid database queries
-        email_accounts_relation = instance_double(ActiveRecord::Relation)
-        allow(EmailAccount).to receive(:active).and_return(email_accounts_relation)
-        allow(email_accounts_relation).to receive(:order).with(:bank_name, :email).and_return([])
+        # Stub active_accounts_with_latest_expense to avoid DB queries
+        allow(sync_session).to receive(:active_accounts_with_latest_expense).and_return([])
 
         # Mock the broadcast method
         allow(sync_session).to receive(:broadcast_replace_to)
@@ -673,7 +671,9 @@ RSpec.describe SyncSession, type: :model, unit: true, needs_broadcasting: true d
       let(:expense) { create(:expense, email_account: account) }
 
       before do
-        allow(EmailAccount).to receive_message_chain(:active).and_return([ account ])
+        expense # ensure expense is created
+        # Stub active_accounts_with_latest_expense to return pre-loaded accounts
+        allow(session).to receive(:active_accounts_with_latest_expense).and_return([ account ])
       end
 
       it "builds sync info hash" do

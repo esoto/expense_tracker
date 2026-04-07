@@ -718,4 +718,96 @@ RSpec.describe SyncSession, type: :model do
       end
     end
   end
+
+  describe '#active_accounts_with_latest_expense', :unit do
+    let(:sync_session) { build(:sync_session, status: 'running') }
+
+    it 'returns active email accounts ordered by bank_name and email' do
+      account1 = create(:email_account, active: true, bank_name: 'Zbank', email: 'z@example.com')
+      account2 = create(:email_account, active: true, bank_name: 'Abank', email: 'a@example.com')
+      create(:email_account, active: false, bank_name: 'Mbank', email: 'm@example.com')
+
+      results = sync_session.send(:active_accounts_with_latest_expense)
+      expect(results.map(&:id)).to eq([ account2.id, account1.id ])
+    end
+
+    it 'excludes inactive accounts' do
+      create(:email_account, active: false)
+      results = sync_session.send(:active_accounts_with_latest_expense)
+      expect(results).to be_empty
+    end
+
+    it 'exposes latest_expense_created_at attribute from joined subquery' do
+      account = create(:email_account, active: true)
+      old_expense = create(:expense, email_account: account, created_at: 2.days.ago)
+      new_expense = create(:expense, email_account: account, created_at: 1.hour.ago)
+
+      results = sync_session.send(:active_accounts_with_latest_expense)
+      expect(results.first.latest_expense_created_at.to_i).to eq(new_expense.created_at.to_i)
+    end
+
+    it 'returns nil latest_expense_created_at for accounts with no expenses' do
+      create(:email_account, active: true)
+
+      results = sync_session.send(:active_accounts_with_latest_expense)
+      expect(results.first.latest_expense_created_at).to be_nil
+    end
+
+    it 'issues only a single database query regardless of account count', :unit do
+      create_list(:email_account, 5, active: true).each do |account|
+        create(:expense, email_account: account)
+      end
+
+      expect {
+        sync_session.send(:active_accounts_with_latest_expense).load
+      }.to make_database_queries(count: 1)
+    end
+  end
+
+  describe '#build_sync_info_for_dashboard', :unit do
+    let(:sync_session) { build(:sync_session, status: 'running') }
+
+    it 'builds a hash keyed by account id with last_sync and account entries' do
+      account = create(:email_account, active: true)
+      expense = create(:expense, email_account: account, created_at: 30.minutes.ago)
+
+      allow(sync_session).to receive(:active_accounts_with_latest_expense).and_call_original
+
+      result = sync_session.send(:build_sync_info_for_dashboard)
+
+      expect(result[account.id]).to include(:last_sync, :account)
+      expect(result[account.id][:account]).to eq(account)
+    end
+
+    it 'sets has_running_jobs based on active? status' do
+      running_session = build(:sync_session, status: 'running')
+      allow(running_session).to receive(:active_accounts_with_latest_expense).and_return([])
+
+      result = running_session.send(:build_sync_info_for_dashboard)
+
+      expect(result[:has_running_jobs]).to be true
+      expect(result[:running_job_count]).to eq(1)
+    end
+
+    it 'sets has_running_jobs to false when not active' do
+      completed_session = build(:sync_session, status: 'completed')
+      allow(completed_session).to receive(:active_accounts_with_latest_expense).and_return([])
+
+      result = completed_session.send(:build_sync_info_for_dashboard)
+
+      expect(result[:has_running_jobs]).to be false
+      expect(result[:running_job_count]).to eq(0)
+    end
+
+    it 'does not issue N+1 queries when building sync info for multiple accounts', :unit do
+      accounts = create_list(:email_account, 5, active: true)
+      accounts.each { |a| create(:expense, email_account: a) }
+
+      preloaded = sync_session.send(:active_accounts_with_latest_expense).to_a
+
+      expect {
+        sync_session.send(:build_sync_info_for_dashboard, preloaded)
+      }.to make_database_queries(count: 0)
+    end
+  end
 end

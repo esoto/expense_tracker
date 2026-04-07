@@ -61,9 +61,18 @@ module Services::EmailProcessing
     end
 
     def valid_parsed_data?(parsed_data)
-      parsed_data[:amount].present? &&
-        parsed_data[:transaction_date].present? &&
-        parsed_data[:transaction_date].respond_to?(:to_date)
+      return false unless parsed_data[:amount].present? && parsed_data[:transaction_date].present?
+
+      # Coerce transaction_date to Date — reject if unparseable
+      unless parsed_data[:transaction_date].is_a?(Date) || parsed_data[:transaction_date].is_a?(Time)
+        begin
+          parsed_data[:transaction_date] = parsed_data[:transaction_date].to_date
+        rescue NoMethodError, ArgumentError, TypeError
+          return false
+        end
+      end
+
+      true
     end
 
     def create_expense(parsed_data)

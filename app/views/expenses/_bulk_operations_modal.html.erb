@@ -22,20 +22,20 @@
       <div class="bg-teal-700 px-6 py-4">
         <div class="flex items-center justify-between">
           <h3 id="bulk_operations_title" class="text-lg font-semibold text-white">
-            Operaciones en Lote
+            <%= t("expenses.bulk.title") %>
           </h3>
           <button type="button"
                   data-bulk-operations-target="closeButton"
                   data-action="click->bulk-operations#close"
                   class="rounded-lg bg-teal-600 p-1 text-white hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-white"
-                  aria-label="Cerrar modal">
+                  aria-label="<%= t('expenses.bulk.close_modal') %>">
             <svg aria-hidden="true" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
           </button>
         </div>
         <p class="mt-1 text-sm text-teal-100">
-          <span data-bulk-operations-target="selectedCount">0</span> gastos seleccionados
+          <span data-bulk-operations-target="selectedCount">0</span> <%= t("expenses.bulk.selected_count") %>
         </p>
       </div>
 
@@ -43,7 +43,7 @@
       <div class="px-6 py-4">
         <!-- Operation Type Selection -->
         <div class="space-y-4">
-          <h4 class="text-sm font-medium text-slate-700">Selecciona una operación:</h4>
+          <h4 class="text-sm font-medium text-slate-700"><%= t("expenses.bulk.select_operation") %></h4>
 
           <div class="space-y-3">
             <!-- Categorize Option -->
@@ -58,10 +58,10 @@
                   <svg aria-hidden="true" class="mr-2 h-5 w-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
                   </svg>
-                  <span class="text-sm font-medium text-slate-900">Categorizar</span>
+                  <span class="text-sm font-medium text-slate-900"><%= t("expenses.bulk.categorize_title") %></span>
                 </div>
                 <p class="mt-1 text-sm text-slate-600">
-                  Asignar una categoría a todos los gastos seleccionados
+                  <%= t("expenses.bulk.categorize_description") %>
                 </p>
               </div>
             </label>
@@ -78,10 +78,10 @@
                   <svg aria-hidden="true" class="mr-2 h-5 w-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                   </svg>
-                  <span class="text-sm font-medium text-slate-900">Actualizar Estado</span>
+                  <span class="text-sm font-medium text-slate-900"><%= t("expenses.bulk.status_title") %></span>
                 </div>
                 <p class="mt-1 text-sm text-slate-600">
-                  Cambiar el estado de todos los gastos seleccionados
+                  <%= t("expenses.bulk.status_description") %>
                 </p>
               </div>
             </label>
@@ -98,10 +98,10 @@
                   <svg aria-hidden="true" class="mr-2 h-5 w-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                   </svg>
-                  <span class="text-sm font-medium text-slate-900">Eliminar</span>
+                  <span class="text-sm font-medium text-slate-900"><%= t("expenses.bulk.delete_title") %></span>
                 </div>
                 <p class="mt-1 text-sm text-slate-600">
-                  Eliminar permanentemente todos los gastos seleccionados
+                  <%= t("expenses.bulk.delete_description") %>
                 </p>
               </div>
             </label>
@@ -115,12 +115,12 @@
              data-bulk-operations-target="operationSection">
           <div>
             <label for="bulk_category" class="block text-sm font-medium text-slate-700">
-              Seleccionar Categoría
+              <%= t("expenses.bulk.select_category") %>
             </label>
             <select id="bulk_category"
                     data-bulk-operations-target="categorySelect"
                     class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
-              <option value="">-- Selecciona una categoría --</option>
+              <option value=""><%= t("expenses.bulk.select_category_prompt") %></option>
               <% Category.order(:name).each do |category| %>
                 <option value="<%= category.id %>"><%= category.name %></option>
               <% end %>
@@ -134,16 +134,16 @@
              data-bulk-operations-target="operationSection">
           <div>
             <label for="bulk_status" class="block text-sm font-medium text-slate-700">
-              Nuevo Estado
+              <%= t("expenses.bulk.select_status") %>
             </label>
             <select id="bulk_status"
                     data-bulk-operations-target="statusSelect"
                     class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500">
-              <option value="">-- Selecciona un estado --</option>
-              <option value="pending">Pendiente</option>
-              <option value="processed">Procesado</option>
-              <option value="failed">Fallido</option>
-              <option value="duplicate">Duplicado</option>
+              <option value=""><%= t("expenses.bulk.select_status_prompt") %></option>
+              <option value="pending"><%= t("expenses.bulk.status_pending") %></option>
+              <option value="processed"><%= t("expenses.bulk.status_processed") %></option>
+              <option value="failed"><%= t("expenses.bulk.status_failed") %></option>
+              <option value="duplicate"><%= t("expenses.bulk.status_duplicate") %></option>
             </select>
           </div>
         </div>
@@ -161,11 +161,11 @@
               </div>
               <div class="ml-3">
                 <h3 class="text-sm font-medium text-rose-800">
-                  Advertencia: Los gastos eliminados se pueden deshacer dentro de un tiempo limitado.
+                  <%= t("expenses.bulk.delete_warning_title") %>
                 </h3>
                 <div class="mt-2 text-sm text-rose-700">
                   <p>
-                    Estás a punto de eliminar <span data-bulk-operations-target="selectedCount" class="font-semibold">0</span> gastos.
+                    <%= t("expenses.bulk.delete_warning_message", count: '<span data-bulk-operations-target="selectedCount" class="font-semibold">0</span>') %>
                   </p>
                 </div>
                 <div class="mt-4">
@@ -175,7 +175,7 @@
                            data-action="change->bulk-operations#toggleDeleteConfirmation"
                            class="h-4 w-4 rounded border-rose-300 text-rose-600 focus:ring-rose-500">
                     <span class="ml-2 text-sm text-rose-700">
-                      Confirmo que deseo eliminar estos gastos
+                      <%= t("expenses.bulk.delete_confirm_checkbox") %>
                     </span>
                   </label>
                 </div>
@@ -188,8 +188,8 @@
         <div class="mt-6 hidden" data-bulk-operations-target="progressContainer">
           <div class="space-y-2">
             <div class="flex justify-between text-sm">
-              <span class="text-slate-600" data-bulk-operations-target="progressText">Procesando...</span>
-              <span class="font-medium text-slate-900" data-bulk-operations-target="progressPercentage">0%</span>
+              <span class="text-slate-600" data-bulk-operations-target="progressText"><%= t("expenses.bulk.processing") %></span>
+              <span class="font-medium text-slate-900" data-bulk-operations-target="progressPercentage"><%= t("expenses.bulk.processing_percentage") %></span>
             </div>
             <div class="h-2 overflow-hidden rounded-full bg-slate-200">
               <div class="h-full bg-teal-600 transition-all duration-300"
@@ -218,7 +218,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <div class="ml-3">
-              <h3 class="text-sm font-medium text-rose-800">Error al procesar la operación</h3>
+              <h3 class="text-sm font-medium text-rose-800"><%= t("expenses.bulk.error_title") %></h3>
               <ul class="mt-2 list-disc list-inside text-sm text-rose-700"
                   data-bulk-operations-target="errorList">
               </ul>
@@ -234,14 +234,14 @@
                   data-bulk-operations-target="cancelButton"
                   data-action="click->bulk-operations#close"
                   class="rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-500">
-            Cancelar
+            <%= t("expenses.bulk.cancel_button") %>
           </button>
           <button type="button"
                   data-bulk-operations-target="submitButton"
                   data-action="click->bulk-operations#submit"
                   disabled="disabled"
                   class="rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed">
-            Ejecutar
+            <%= t("expenses.bulk.submit_button") %>
           </button>
         </div>
       </div>

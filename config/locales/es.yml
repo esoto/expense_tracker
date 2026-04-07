@@ -127,6 +127,20 @@ es:
       
   # Email accounts
   email_accounts:
+    index:
+      title: "Cuentas de Correo"
+      empty: "No hay cuentas de correo configuradas."
+    new:
+      title: "Nueva Cuenta de Correo"
+    edit:
+      title: "Editar Cuenta de Correo"
+    show:
+      title: "Cuenta de Correo"
+    form:
+      email: "Correo electrónico"
+      password: "Contraseña"
+      active: "Cuenta activa"
+      create: "Crear cuenta"
     flash:
       created: "Cuenta de correo creada exitosamente."
       updated: "Cuenta de correo actualizada exitosamente."
@@ -218,9 +232,193 @@ es:
       pending: "Pendiente"
       confirmed: "Confirmado"
       rejected: "Rechazado"
-      
+      processed: "Procesado"
+      failed: "Fallido"
+
+    index:
+      heading: "Gastos"
+      back_to_dashboard: "← Volver al Dashboard"
+      filter_button: "Filtrar"
+      all_categories: "Todas las categorías"
+      all_banks: "Todos los bancos"
+      start_date_placeholder: "Fecha inicio"
+      end_date_placeholder: "Fecha fin"
+      clear_filters: "Limpiar"
+      summary_title: "Resumen por Categoría"
+      summary_show: "Ver resumen"
+      summary_hide: "Ocultar resumen"
+      list_title: "Lista de Gastos"
+      selection_counter: "gastos seleccionados"
+      view_toggle_tooltip: "Cambiar modo de vista"
+      view_toggle_compact: "Vista Compacta"
+      toggle_selection_tooltip: "Activar modo de selección"
+      toggle_selection_label: "Selección Múltiple"
+      period_day: "Hoy"
+      period_week: "Esta Semana"
+      period_month: "Este Mes"
+      period_year: "Este Año"
+      pagination_showing: "Mostrando %{from}-%{to} de %{total} gastos"
+      pagination_showing_all: "Mostrando %{count} gastos"
+      clear_selection: "Limpiar selección"
+      bulk_operations: "Operaciones en Lote"
+      table_header_date: "Fecha"
+      table_header_merchant: "Comercio"
+      table_header_category: "Categoría"
+      table_header_amount: "Monto"
+      table_header_bank: "Banco"
+      table_header_status: "Estado"
+      table_header_actions: "Acciones"
+      select_all_expenses: "Seleccionar todos los gastos visibles"
+
+    show:
+      heading: "Detalle del Gasto"
+      error_no_merchant: "⚠️ Sin comercio (error de procesamiento)"
+      info_title: "Información del Gasto"
+      transaction_date: "Fecha de Transacción"
+      merchant: "Comercio"
+      description: "Descripción"
+      no_description: "Sin descripción"
+      category: "Categoría"
+      bank: "Banco"
+      email_account: "Cuenta de Email"
+      manual_entry: "Entrada manual"
+      metadata_title: "Metadatos"
+      created: "Creado"
+      updated: "Última actualización"
+      id: "ID"
+      parsed_data: "Datos parseados"
+      parsed_data_available: "Disponible"
+      raw_email_title: "Contenido del Email Original"
+      raw_email_show: "Mostrar contenido del email"
+      status_processed: "✓ Procesado"
+      status_pending: "⏳ Pendiente"
+      status_duplicate: "⚠️ Duplicado"
+
+    new:
+      heading: "Crear Nuevo Gasto"
+      subheading: "Agrega un gasto manualmente al sistema"
+
+    edit:
+      heading: "Editar Gasto"
+      subheading: "Modifica la información del gasto"
+
+    form:
+      errors_found: "Se encontraron %{count} error"
+      errors_found_plural: "Se encontraron %{count} errores"
+      amount_label: "Monto"
+      amount_placeholder: "95000.00"
+      currency_label: "Moneda"
+      transaction_date_label: "Fecha de Transacción"
+      merchant_label: "Comercio"
+      merchant_placeholder: "Nombre del comercio"
+      description_label: "Descripción"
+      description_placeholder: "Descripción de la transacción"
+      category_label: "Categoría"
+      category_prompt: "Seleccionar categoría"
+      email_account_label: "Cuenta de Email"
+      email_account_prompt: "Entrada manual"
+      notes_label: "Notas"
+      notes_placeholder: "Notas adicionales (opcional)"
+
+    inline_actions:
+      change_category_tooltip: "Cambiar categoría (C)"
+      mark_reviewed_tooltip: "Marcar como revisado (R)"
+      mark_pending_tooltip: "Marcar como pendiente (R)"
+      duplicate_tooltip: "Duplicar gasto (D)"
+      confirm_deletion_title: "Confirmar eliminación"
+      confirm_deletion_message: "¿Estás seguro de eliminar este gasto? Podrás restaurarlo desde el historial."
+      confirm_button: "Eliminar"
+      cancel_button: "Cancelar"
+
+    bulk:
+      title: "Operaciones en Lote"
+      selected_count: "gastos seleccionados"
+      close_modal: "Cerrar modal"
+      select_operation: "Selecciona una operación:"
+      categorize_title: "Categorizar"
+      categorize_description: "Asignar una categoría a todos los gastos seleccionados"
+      status_title: "Actualizar Estado"
+      status_description: "Cambiar el estado de todos los gastos seleccionados"
+      delete_title: "Eliminar"
+      delete_description: "Eliminar permanentemente todos los gastos seleccionados"
+      select_category: "Seleccionar Categoría"
+      select_category_prompt: "-- Selecciona una categoría --"
+      select_status: "Nuevo Estado"
+      select_status_prompt: "-- Selecciona un estado --"
+      status_pending: "Pendiente"
+      status_processed: "Procesado"
+      status_failed: "Fallido"
+      status_duplicate: "Duplicado"
+      delete_warning_title: "Advertencia: Los gastos eliminados se pueden deshacer dentro de un tiempo limitado."
+      delete_warning_message: "Estás a punto de eliminar %{count} gastos."
+      delete_confirm_checkbox: "Confirmo que deseo eliminar estos gastos"
+      processing: "Procesando..."
+      processing_percentage: "0%"
+      error_title: "Error al procesar la operación"
+      cancel_button: "Cancelar"
+      submit_button: "Ejecutar"
+
+    dashboard:
+      heading: "Dashboard de Gastos"
+      subheading: "Resumen completo de tus finanzas"
+      sync_section_heading: "Sincronización de Correos"
+      by_category: "Gastos por Categoría"
+      top_merchants: "Comercios con Más Gastos"
+      recent: "Gastos Recientes"
+      monthly_trend: "Tendencia Mensual"
+      syncing_status: "Sincronizando..."
+      overall_progress: "Progreso general"
+      emails_count: "%{processed} / %{total} correos"
+      expenses_detected: "gastos detectados"
+      time_remaining: "restante"
+      sync_all_button: "Sincronizar Todos los Correos"
+      sync_all_description: "Busca nuevos gastos en todas las cuentas de correo activas"
+      individual_sync_title: "Sincronizar cuenta individual:"
+      no_accounts_configured: "No hay cuentas de correo configuradas."
+      setup_account: "Configurar cuenta"
+      sync_status_title: "Estado de sincronización:"
+      last_sync: "Último: %{time}"
+      no_sync_data: "Sin datos"
+      sync_in_progress: "Sincronización en progreso"
+      total_expenses: "TOTAL DE GASTOS"
+      vs_previous_month: "vs mes anterior"
+      annual_budget: "Presupuesto Anual"
+      budget_used: "%{percentage}% usado"
+      budget_available: "Disponible"
+      budget_exceeded: "Excedido"
+      transactions: "Transacciones"
+      average: "Promedio"
+      categories: "Categorías"
+      this_month: "Este Mes"
+      this_week: "Esta Semana"
+      today: "Hoy"
+      monthly_trend: "Tendencia Mensual"
+      view_full_year: "Ver gastos del año completo"
+      view_this_month: "Ver gastos de este mes"
+      view_this_week: "Ver gastos de esta semana"
+      view_today: "Ver gastos de hoy"
+      pending_conflicts: "%{count} conflicto pendiente"
+      pending_conflicts_plural: "%{count} conflictos pendientes"
+      resolve_conflicts: "Resolver Conflictos"
+      conflict_message: "Se detectaron transacciones duplicadas o similares que requieren tu atención"
+
+  # Sync Conflicts
+  sync_conflicts:
+    index:
+      title: "Conflictos de Sincronización"
+
   # Sync sessions
   sync_sessions:
+    index:
+      title: "Centro de Sincronización"
+      in_progress: "Sincronización en Progreso"
+      last_sync_title: "Última Sincronización"
+
+    show:
+      title: "Detalles de Sincronización"
+      cancel: "Cancelar Sincronización"
+      account_details: "Detalles por Cuenta"
+
     statuses:
       pending: "Pendiente"
       running: "En ejecución"
@@ -242,11 +440,41 @@ es:
 
   # Budgets
   budgets:
+    index:
+      title: "Presupuestos"
+      new_budget: "Nuevo Presupuesto"
+      amount: "Monto:"
+      create_first: "Crear tu primer presupuesto"
+    new:
+      title: "Nuevo Presupuesto"
+    edit:
+      title: "Editar Presupuesto"
+    form:
+      amount: "Monto"
+      start_date: "Fecha de inicio"
+      description: "Descripción"
+      create: "Crear Presupuesto"
+      update: "Actualizar Presupuesto"
+    progress:
+      label: "Presupuesto"
+      remaining: "Queda"
+      exceeded: "Excedido"
+      no_budget: "Sin presupuesto definido"
     periods:
       daily: "Diario"
       weekly: "Semanal"
       monthly: "Mensual"
       yearly: "Anual"
+
+  # Analytics
+  analytics:
+    dashboard:
+      title: "Panel de Analíticas de Patrones"
+      last_7_days: "Últimos 7 Días"
+      last_30_days: "Últimos 30 Días"
+      last_year: "Último Año"
+      performance_trends: "Tendencias de Desempeño"
+      top_patterns: "Patrones con Mejor Desempeño"
 
   # Common
   common:
@@ -267,9 +495,27 @@ es:
     view: "Ver"
     are_you_sure: "¿Estás seguro?"
     unauthorized: "No autorizado"
+    skip_to_main_content: "Saltar al contenido principal"
+    skip_to_navigation: "Saltar a la navegación"
+    main_navigation: "Navegación principal"
+    open_navigation_menu: "Abrir menú de navegación"
+    mobile_navigation_menu: "Menú de navegación móvil"
 
-  # Admin Composite Patterns
+  # Admin Patterns
   admin:
+    patterns:
+      index:
+        title: "Patrones de Categorización"
+        new_pattern: "Nuevo Patrón"
+      new:
+        title: "Nuevo Patrón de Categorización"
+      edit:
+        title: "Editar Patrón de Categorización"
+      show:
+        title: "Detalles del Patrón"
+        quick_test: "Prueba Rápida"
+      test:
+        title: "Probar Patrones de Categorización"
     composite_patterns:
       new:
         title: "Nuevo Patrón Compuesto"

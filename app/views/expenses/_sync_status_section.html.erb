@@ -9,14 +9,14 @@
        data-sync-widget-session-token-value="<%= active_sync_session&.session_token %>"
        data-sync-widget-active-value="<%= active_sync_session.present? %>">
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-slate-900">Sincronización de Correos</h2>
+      <h2 class="text-lg font-semibold text-slate-900"><%= t("expenses.dashboard.sync_section_heading") %></h2>
       <% if active_sync_session %>
         <div class="flex items-center text-teal-700">
           <svg aria-hidden="true" class="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          <span class="text-sm font-medium">Sincronizando...</span>
+          <span class="text-sm font-medium"><%= t("expenses.dashboard.syncing_status") %></span>
           <span class="text-sm ml-2" data-sync-widget-target="progressPercentage"><%= active_sync_session.progress_percentage %>%</span>
         </div>
       <% end %>
@@ -26,10 +26,9 @@
     <% if active_sync_session %>
       <div class="mb-4" data-sync-widget-target="activeSection">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-sm text-slate-600">Progreso general</span>
+          <span class="text-sm text-slate-600"><%= t("expenses.dashboard.overall_progress") %></span>
           <span class="text-sm font-medium text-slate-900">
-            <span data-sync-widget-target="processedCount"><%= active_sync_session.processed_emails %></span> /
-            <%= active_sync_session.total_emails %> correos
+            <%= t("expenses.dashboard.emails_count", processed: '<span data-sync-widget-target="processedCount">' + active_sync_session.processed_emails.to_s + '</span>', total: active_sync_session.total_emails) %>
           </span>
         </div>
         <div class="w-full bg-slate-200 rounded-full h-2">
@@ -39,11 +38,11 @@
         </div>
         <div class="flex items-center justify-between mt-2">
           <span class="text-xs text-slate-600">
-            <span data-sync-widget-target="detectedCount"><%= active_sync_session.detected_expenses %></span> gastos detectados
+            <span data-sync-widget-target="detectedCount"><%= active_sync_session.detected_expenses %></span> <%= t("expenses.dashboard.expenses_detected") %>
           </span>
           <% if active_sync_session.estimated_time_remaining %>
             <span class="text-xs text-slate-600" data-sync-widget-target="timeRemaining">
-              <%= distance_of_time_in_words(active_sync_session.estimated_time_remaining) %> restante
+              <%= distance_of_time_in_words(active_sync_session.estimated_time_remaining) %> <%= t("expenses.dashboard.time_remaining") %>
             </span>
           <% end %>
         </div>
@@ -55,11 +54,11 @@
       <div class="space-y-4">
         <%= form_with url: sync_emails_expenses_path, method: :post, class: "space-y-4" do |form| %>
           <div class="flex flex-col space-y-2">
-            <%= form.submit "Sincronizar Todos los Correos",
+            <%= form.submit t("expenses.dashboard.sync_all_button"),
                 class: "w-full bg-teal-700 hover:bg-teal-800 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 #{active_sync_session ? 'opacity-50 cursor-not-allowed' : ''}",
                 disabled: active_sync_session.present? %>
             <p class="text-xs text-slate-600">
-              Busca nuevos gastos en todas las cuentas de correo activas
+              <%= t("expenses.dashboard.sync_all_description") %>
             </p>
           </div>
         <% end %>
@@ -67,7 +66,7 @@
         <% if email_accounts.any? %>
           <!-- Individual Account Sync -->
           <div class="border-t pt-4">
-            <h3 class="text-sm font-medium text-slate-700 mb-2">Sincronizar cuenta individual:</h3>
+            <h3 class="text-sm font-medium text-slate-700 mb-2"><%= t("expenses.dashboard.individual_sync_title") %></h3>
             <div class="space-y-2">
               <% email_accounts.each do |account| %>
                 <%= form_with url: sync_emails_expenses_path, method: :post, class: "flex items-center space-x-2" do |form| %>
@@ -90,8 +89,8 @@
                 </div>
                 <div class="ml-3">
                   <p class="text-sm text-amber-800">
-                    No hay cuentas de correo configuradas.
-                    <%= link_to "Configurar cuenta", email_accounts_path, class: "font-medium underline" %>
+                    <%= t("expenses.dashboard.no_accounts_configured") %>
+                    <%= link_to t("expenses.dashboard.setup_account"), email_accounts_path, class: "font-medium underline" %>
                   </p>
                 </div>
               </div>
@@ -103,7 +102,7 @@
 
       <!-- Sync Status -->
       <div class="space-y-4">
-        <h3 class="text-sm font-medium text-slate-700">Estado de sincronización:</h3>
+        <h3 class="text-sm font-medium text-slate-700"><%= t("expenses.dashboard.sync_status_title") %></h3>
         <% if email_accounts.any? %>
           <div class="space-y-3" data-sync-widget-target="accountsList">
             <% email_accounts.each do |account| %>
@@ -136,9 +135,9 @@
                   </div>
                   <p class="text-xs text-slate-600 mt-1" data-progress-text>
                     <% if last_sync_info && last_sync_info[account.id] && last_sync_info[account.id][:last_sync] %>
-                      Último: <%= last_sync_info[account.id][:last_sync].strftime("%d/%m %H:%M") %>
+                      <%= t("expenses.dashboard.last_sync", time: last_sync_info[account.id][:last_sync].strftime("%d/%m %H:%M")) %>
                     <% else %>
-                      Sin datos
+                      <%= t("expenses.dashboard.no_sync_data") %>
                     <% end %>
                   </p>
                 </div>
@@ -146,7 +145,7 @@
             <% end %>
         </div>
         <% else %>
-          <p class="text-sm text-slate-600">No hay cuentas de correo configuradas.</p>
+          <p class="text-sm text-slate-600"><%= t("expenses.dashboard.no_accounts_configured") %></p>
         <% end %>
 
         <% if active_sync_session %>
@@ -157,7 +156,7 @@
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
               <span class="text-sm text-teal-800">
-                Sincronización en progreso
+                <%= t("expenses.dashboard.sync_in_progress") %>
               </span>
             </div>
           </div>

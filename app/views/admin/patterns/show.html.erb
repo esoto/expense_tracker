@@ -2,7 +2,8 @@
   <!-- Header -->
   <div class="flex justify-between items-start mb-6">
     <div>
-      <h1 class="text-3xl font-bold text-slate-900">Detalles del Patrón</h1>
+      <h1 class="text-3xl font-bold text-slate-900"%>
+      <h1 class="text-3xl font-bold text-slate-900"><%= t("admin.patterns.show.title") %></h1>
       <p class="text-slate-600 mt-1">Ver el desempeño y detalles del patrón</p>
     </div>
     <div class="flex space-x-2">
@@ -235,7 +236,8 @@
 
       <!-- Quick Test -->
       <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h2 class="text-xl font-semibold text-slate-900 mb-4">Prueba Rápida</h2>
+        <h2 class="text-xl font-semibold text-slate-900 mb-4"%>
+        <h2 class="text-xl font-semibold text-slate-900 mb-4"><%= t("admin.patterns.show.quick_test") %></h2>
 
         <%= form_with url: admin_test_single_pattern_path(@pattern),
                       method: :get,

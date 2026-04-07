@@ -93,7 +93,7 @@ RSpec.describe "Mobile Expense Cards", type: :view, unit: true do
     let(:template_source) { File.read(Rails.root.join("app/views/expenses/index.html.erb")) }
 
     it "renders filter toggle button for mobile" do
-      expect(template_source).to include("Filtrar")
+      expect(template_source).to include('t("expenses.index.filter_button")')
     end
 
     it "has collapsible controller on filters" do
@@ -117,16 +117,16 @@ RSpec.describe "Mobile Expense Cards", type: :view, unit: true do
     let(:template_source) { File.read(Rails.root.join("app/views/expenses/index.html.erb")) }
 
     it "renders summary toggle button" do
-      expect(template_source).to include("Ver resumen")
+      expect(template_source).to include('t("expenses.index.summary_show")')
     end
 
     it "has collapsible controller on category summary section" do
       # The category summary section reuses the same collapsible controller
-      expect(template_source).to include("Resumen por Categoría")
+      expect(template_source).to include('t("expenses.index.summary_title")')
     end
 
     it "wraps category grid in a collapsible content target" do
-      expect(template_source).to match(/Ver resumen/)
+      expect(template_source).to include('t("expenses.index.summary_show")')
     end
   end
 
@@ -151,7 +151,7 @@ RSpec.describe "Mobile Expense Cards", type: :view, unit: true do
     end
 
     it "includes Lista de Gastos heading" do
-      expect(template_source).to include("Lista de Gastos")
+      expect(template_source).to include('t("expenses.index.list_title")')
     end
 
     it "no longer uses the old separate mobile expense_cards container" do

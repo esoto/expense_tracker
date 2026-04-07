@@ -1,8 +1,8 @@
 <%# Budget management page %>
 <div class="container mx-auto px-4 py-8">
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-bold text-slate-900">Presupuestos</h1>
-    <%= link_to "Nuevo Presupuesto", new_budget_path,
+    <h1 class="text-3xl font-bold text-slate-900"><%= t("budgets.index.title") %></h1>
+    <%= link_to t("budgets.index.new_budget"), new_budget_path,
         class: "bg-teal-700 hover:bg-teal-800 text-white font-medium px-4 py-2 rounded-lg shadow-sm transition-colors",
         data: { turbo_frame: "_top" } %>
   </div>
@@ -62,7 +62,7 @@
   <% else %>
     <div class="bg-slate-50 rounded-lg p-8 text-center">
       <p class="text-slate-600 mb-4">No tienes presupuestos configurados.</p>
-      <%= link_to "Crear tu primer presupuesto", new_budget_path,
+      <%= link_to t("budgets.index.create_first"), new_budget_path,
           class: "text-teal-700 hover:text-teal-800 font-medium" %>
     </div>
   <% end %>

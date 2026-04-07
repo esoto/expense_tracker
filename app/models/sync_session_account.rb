@@ -1,8 +1,13 @@
 class SyncSessionAccount < ApplicationRecord
+  include ActionView::RecordIdentifier
+  include Turbo::Broadcastable
+
   belongs_to :sync_session
   belongs_to :email_account
 
   validates :status, presence: true, inclusion: { in: %w[pending waiting processing completed failed] }
+
+  after_update_commit :broadcast_account_status_badge, if: :saved_change_to_status?
 
   scope :active, -> { where(status: %w[processing]) }
   scope :completed, -> { where(status: "completed") }
@@ -76,6 +81,25 @@ class SyncSessionAccount < ApplicationRecord
   end
 
   private
+
+  def broadcast_account_status_badge
+    return unless sync_session.class.broadcasting_enabled? || !Rails.env.test?
+
+    broadcast_replace_to(
+      "sync_sessions_index",
+      target: dom_id(self, :status),
+      partial: "sync_sessions/account_status_badge",
+      locals: { account: self }
+    )
+    broadcast_replace_to(
+      sync_session,
+      target: dom_id(self, :status),
+      partial: "sync_sessions/account_status_badge",
+      locals: { account: self }
+    )
+  rescue StandardError => e
+    Rails.logger.error "Error broadcasting account status badge update: #{e.message}"
+  end
 
   def check_session_completion
     return unless sync_session.running?

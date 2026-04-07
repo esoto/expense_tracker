@@ -444,6 +444,70 @@ RSpec.describe SyncSession, type: :model do
     end
   end
 
+  describe '#broadcast_status_badge', :unit do
+    let(:sync_session) { create(:sync_session, :running) }
+
+    before { SyncSession.enable_broadcasting! }
+    after { SyncSession.disable_broadcasting! }
+
+    it 'broadcasts replace to sync_sessions_index when status changes' do
+      expect(sync_session).to receive(:broadcast_replace_to).with(
+        "sync_sessions_index",
+        target: "status_sync_session_#{sync_session.id}",
+        partial: "sync_sessions/session_status_badge",
+        locals: { session: sync_session }
+      )
+      # Also expect the session-specific broadcast
+      allow(sync_session).to receive(:broadcast_replace_to).with(
+        sync_session,
+        target: "status_sync_session_#{sync_session.id}",
+        partial: "sync_sessions/session_status_badge",
+        locals: { session: sync_session }
+      )
+      # Allow the existing dashboard broadcast
+      allow(sync_session).to receive(:broadcast_replace_to).with(
+        "dashboard_sync_updates",
+        hash_including(target: "sync_status_section")
+      )
+
+      sync_session.update!(status: "completed", completed_at: Time.current)
+    end
+
+    it 'broadcasts replace to session-specific stream when status changes' do
+      expect(sync_session).to receive(:broadcast_replace_to).with(
+        sync_session,
+        target: "status_sync_session_#{sync_session.id}",
+        partial: "sync_sessions/session_status_badge",
+        locals: { session: sync_session }
+      )
+      # Allow other broadcasts
+      allow(sync_session).to receive(:broadcast_replace_to).with(
+        "sync_sessions_index",
+        hash_including(target: "status_sync_session_#{sync_session.id}")
+      )
+      allow(sync_session).to receive(:broadcast_replace_to).with(
+        "dashboard_sync_updates",
+        hash_including(target: "sync_status_section")
+      )
+
+      sync_session.update!(status: "completed", completed_at: Time.current)
+    end
+
+    it 'does not broadcast when status has not changed' do
+      expect(sync_session).not_to receive(:broadcast_replace_to).with(
+        "sync_sessions_index",
+        hash_including(target: "status_sync_session_#{sync_session.id}")
+      )
+      # Allow other broadcasts (dashboard update fires on any update)
+      allow(sync_session).to receive(:broadcast_replace_to).with(
+        "dashboard_sync_updates",
+        hash_including(target: "sync_status_section")
+      )
+
+      sync_session.update!(processed_emails: 10)
+    end
+  end
+
   describe 'additional scopes' do
     # Performance: let! required — scope results depend on these records existing
     let!(:failed_session)    { create(:sync_session, :failed) }

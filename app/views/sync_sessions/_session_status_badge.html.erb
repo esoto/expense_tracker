@@ -1,0 +1,10 @@
+<%= turbo_frame_tag dom_id(session, :status) do %>
+  <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
+    <%= session.completed? ? 'bg-emerald-100 text-emerald-800' :
+        session.failed? ? 'bg-rose-100 text-rose-800' :
+        session.cancelled? ? 'bg-amber-100 text-amber-800' :
+        session.running? ? 'bg-teal-100 text-teal-800 animate-pulse' :
+        'bg-slate-100 text-slate-800' %>">
+    <%= t("sync_sessions.statuses.#{session.status}", default: session.status.humanize) %>
+  </span>
+<% end %>

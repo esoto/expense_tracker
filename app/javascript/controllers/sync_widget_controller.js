@@ -119,10 +119,8 @@ const SyncWidgetController = class extends Controller {
       this.updateThrottleTimer = null
     }
 
-    if (this.pollingTimer) {
-      clearInterval(this.pollingTimer)
-      this.pollingTimer = null
-    }
+    // Use stopPolling() to also clean up the polling indicator DOM element
+    this.stopPolling()
 
     if (this.visibilityHandler) {
       document.removeEventListener('visibilitychange', this.visibilityHandler)

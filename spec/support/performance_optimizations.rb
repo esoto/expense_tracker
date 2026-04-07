@@ -4,12 +4,14 @@
 # Disables expensive operations that aren't needed for most tests
 
 RSpec.configure do |config|
-  # Enable broadcasting for tests that explicitly opt in via `broadcast: true` metadata
+  # Enable broadcasting for tests that explicitly opt in via `broadcast: true` metadata.
+  # Snapshot the prior value so nested or concurrent enable/disable calls are not clobbered.
   config.around(:each, broadcast: true) do |example|
+    was_enabled = SyncSession.broadcasting_enabled?
     SyncSession.enable_broadcasting!
     example.run
   ensure
-    SyncSession.disable_broadcasting!
+    was_enabled ? SyncSession.enable_broadcasting! : SyncSession.disable_broadcasting!
   end
 
   # Global stubs for broadcasting operations

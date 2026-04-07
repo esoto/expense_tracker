@@ -167,6 +167,8 @@ class SyncSession < ApplicationRecord
     duration / processed_emails
   end
 
+  # Process-global toggle used exclusively by the test suite (see spec/support/performance_optimizations.rb).
+  # Not thread-safe: intended for sequential RSpec examples only. Do not call from application code.
   def self.broadcasting_enabled?
     @broadcasting_enabled || false
   end

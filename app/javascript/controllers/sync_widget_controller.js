@@ -657,7 +657,7 @@ const SyncWidgetController = class extends Controller {
 
     // Only report in production (check server-rendered meta tag)
     const env = document.querySelector('meta[name="rails-env"]')?.content
-    if (env && env !== 'production') return
+    if (!env || env !== 'production') return
 
     const payload = {
       message,

@@ -43,6 +43,8 @@ en:
     settings: "Settings"
     new_expense: "New Expense"
     new_expense_aria: "Create a new expense"
+    language: "Language"
+    switch_language: "Switch language to %{language}"
 
   # Sync Status Widget
   sync:

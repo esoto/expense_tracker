@@ -16,7 +16,9 @@ es:
     settings: "Configuración"
     new_expense: "Nuevo Gasto"
     new_expense_aria: "Crear un nuevo gasto"
-    
+    language: "Idioma"
+    switch_language: "Cambiar idioma a %{language}"
+
   # Sync Status Widget
   sync:
     title: "Estado de Sincronización"

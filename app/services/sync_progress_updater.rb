@@ -1,10 +1,9 @@
 module Services
   class SyncProgressUpdater
-  attr_reader :sync_session, :batch_collector, :metrics_collector
+  attr_reader :sync_session, :metrics_collector
 
   def initialize(sync_session, metrics_collector: nil)
     @sync_session = sync_session
-    @batch_collector = ProgressBatchCollector.new(sync_session) if sync_session
     @metrics_collector = metrics_collector || (SyncMetricsCollector.new(sync_session) if sync_session)
   end
 
@@ -14,8 +13,8 @@ module Services
     # Use a single query with calculated fields for better performance
     update_with_aggregated_data
 
-    # Use batched progress updates for better performance
-    broadcast_progress_update_batched
+    # Broadcast progress update
+    broadcast_progress_update
 
     true
   rescue ActiveRecord::StaleObjectError
@@ -35,15 +34,6 @@ module Services
       total_emails: total,
       detected_expenses: detected,
       status: determine_account_status(processed, total)
-    )
-
-    # Use batched account update for better performance
-    batch_collector&.add_account_update(
-      account_id: account_id,
-      status: account.status,
-      processed: processed,
-      total: total,
-      detected: detected
     )
 
     # Update session progress after account update
@@ -110,70 +100,6 @@ module Services
 
     # Also trigger Turbo Stream broadcast for dashboard
     sync_session.broadcast_dashboard_update if sync_session.respond_to?(:broadcast_dashboard_update)
-  end
-
-  # New batched broadcasting method for improved performance
-  def broadcast_progress_update_batched
-    return unless batch_collector
-
-    # Add progress update to batch collector
-    batch_collector.add_progress_update(
-      processed: sync_session.processed_emails,
-      total: sync_session.total_emails,
-      detected: sync_session.detected_expenses,
-      metadata: {
-        session_id: sync_session.id,
-        status: sync_session.status,
-        progress_percentage: sync_session.progress_percentage
-      }
-    )
-
-    # Also trigger Turbo Stream broadcast for dashboard (non-batched)
-    sync_session.broadcast_dashboard_update if sync_session.respond_to?(:broadcast_dashboard_update)
-  rescue StandardError => e
-    Rails.logger.error "Error broadcasting batched progress update: #{e.message}"
-    # Fallback to direct broadcasting
-    broadcast_progress_update
-  end
-
-  # Add activity updates to batch
-  def add_activity_update(activity_type, message)
-    return unless batch_collector
-
-    batch_collector.add_activity_update(
-      activity_type: activity_type,
-      message: message
-    )
-  rescue StandardError => e
-    Rails.logger.error "Error adding activity update to batch: #{e.message}"
-    # Fallback to direct broadcast
-    SyncStatusChannel.broadcast_activity(sync_session, activity_type, message)
-  end
-
-  # Add critical updates (bypass batching)
-  def add_critical_update(type, message, data = {})
-    return unless batch_collector
-
-    batch_collector.add_critical_update(
-      type: type,
-      message: message,
-      data: data
-    )
-  rescue StandardError => e
-    Rails.logger.error "Error adding critical update: #{e.message}"
-  end
-
-  # Stop batch collector and flush remaining updates
-  def finalize
-    return unless batch_collector
-
-    batch_collector.stop
-    @batch_collector = nil
-  end
-
-  # Get batch collector statistics for monitoring
-  def batch_stats
-    batch_collector&.stats || {}
   end
   end
 end

@@ -101,23 +101,17 @@ module Services::Email
       # When a sync_session is present the service uses pg_trgm similarity
       # and weighted scoring instead of the old in-memory word-overlap heuristic.
       # Falls back to an empty result when no session is available.
+      #
+      # Full expense attributes are forwarded so that ConflictDetectionService
+      # can faithfully reconstruct the expense on resolution, and the source :id
+      # is included so find_candidate_expenses can exclude self-matches.
       def detect_conflicts
         return [] unless @sync_session
 
         recent_expenses = Expense.where(created_at: 1.hour.ago..Time.current)
-        expense_data = recent_expenses.map do |e|
-          {
-            id: e.id,
-            amount: e.amount,
-            transaction_date: e.transaction_date,
-            merchant_name: e.merchant_name,
-            description: e.description,
-            currency: e.currency,
-            email_account_id: e.email_account_id
-          }
-        end
+        return [] if recent_expenses.empty?
 
-        return [] if expense_data.empty?
+        expense_data = recent_expenses.map { |e| e.attributes.symbolize_keys }
 
         service = Services::ConflictDetectionService.new(@sync_session)
         service.detect_conflicts_batch(expense_data)
@@ -178,8 +172,8 @@ module Services::Email
 
         # Detect and resolve conflicts if enabled
         if @options[:detect_conflicts]
-          detect_conflicts
-          resolve_conflicts if @options[:auto_resolve]
+          conflicts = detect_conflicts
+          resolve_conflicts if conflicts.any? && @options[:auto_resolve]
         end
 
         {

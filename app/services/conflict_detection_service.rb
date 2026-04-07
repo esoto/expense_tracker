@@ -101,6 +101,10 @@ module Services
     # Build query to find potential matches
     scope = Expense.where(status: [ :processed, :pending ])
 
+    # Exclude the source expense itself to prevent self-match when batch-detecting
+    # conflicts among already-persisted expenses (e.g. from SyncService#detect_conflicts).
+    scope = scope.where.not(id: new_expense_data[:id]) if new_expense_data[:id].present?
+
     # Must be from same account
     if new_expense_data[:email_account_id]
       scope = scope.where(email_account_id: new_expense_data[:email_account_id])

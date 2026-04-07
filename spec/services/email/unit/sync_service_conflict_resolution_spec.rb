@@ -31,28 +31,44 @@ RSpec.describe Services::Email::SyncService, 'Conflict Detection and Resolution'
         svc
       end
 
-      let(:expense1) do
-        instance_double(Expense,
+      let(:expense1_attrs) do
+        {
           id: 1,
           amount: BigDecimal('100.50'),
           transaction_date: Date.parse('2024-01-15'),
           merchant_name: 'Supermercado ABC',
           description: 'Compra en Supermercado ABC',
           currency: 'crc',
-          email_account_id: 7
-        )
+          email_account_id: 7,
+          category_id: nil,
+          status: 'processed'
+        }
       end
 
-      let(:expense2) do
-        instance_double(Expense,
+      let(:expense2_attrs) do
+        {
           id: 2,
           amount: BigDecimal('100.50'),
           transaction_date: Date.parse('2024-01-15'),
           merchant_name: 'Supermercado ABC',
           description: 'Compra Supermercado ABC',
           currency: 'crc',
-          email_account_id: 7
-        )
+          email_account_id: 7,
+          category_id: 3,
+          status: 'processed'
+        }
+      end
+
+      let(:expense1) do
+        dbl = instance_double(Expense)
+        allow(dbl).to receive(:attributes).and_return(expense1_attrs.transform_keys(&:to_s))
+        dbl
+      end
+
+      let(:expense2) do
+        dbl = instance_double(Expense)
+        allow(dbl).to receive(:attributes).and_return(expense2_attrs.transform_keys(&:to_s))
+        dbl
       end
 
       let(:conflict_detection_service) do
@@ -73,30 +89,16 @@ RSpec.describe Services::Email::SyncService, 'Conflict Detection and Resolution'
         expect(conflict_detection_service).not_to receive(:detect_conflicts_batch)
       end
 
-      it 'delegates to ConflictDetectionService#detect_conflicts_batch' do
+      it 'delegates to ConflictDetectionService#detect_conflicts_batch with full expense attributes' do
         allow(Expense).to receive(:where)
           .with(created_at: (mock_time - 1.hour)..mock_time)
           .and_return([ expense1, expense2 ])
 
+        # Expect the full symbolized attributes hash (not a hand-picked subset)
+        # so ConflictDetectionService can faithfully reconstruct expenses on resolution.
         expected_data = [
-          {
-            id: 1,
-            amount: BigDecimal('100.50'),
-            transaction_date: Date.parse('2024-01-15'),
-            merchant_name: 'Supermercado ABC',
-            description: 'Compra en Supermercado ABC',
-            currency: 'crc',
-            email_account_id: 7
-          },
-          {
-            id: 2,
-            amount: BigDecimal('100.50'),
-            transaction_date: Date.parse('2024-01-15'),
-            merchant_name: 'Supermercado ABC',
-            description: 'Compra Supermercado ABC',
-            currency: 'crc',
-            email_account_id: 7
-          }
+          expense1_attrs.transform_keys(&:to_s).symbolize_keys,
+          expense2_attrs.transform_keys(&:to_s).symbolize_keys
         ]
 
         mock_conflicts = [ instance_double(SyncConflict) ]
@@ -107,6 +109,20 @@ RSpec.describe Services::Email::SyncService, 'Conflict Detection and Resolution'
         result = service.detect_conflicts
 
         expect(result).to eq(mock_conflicts)
+      end
+
+      it 'includes :id in each expense data hash to prevent self-match in candidate query' do
+        allow(Expense).to receive(:where)
+          .with(created_at: (mock_time - 1.hour)..mock_time)
+          .and_return([ expense1 ])
+
+        expect(conflict_detection_service)
+          .to receive(:detect_conflicts_batch) do |data|
+            expect(data.first).to include(:id)
+            []
+          end
+
+        service.detect_conflicts
       end
 
       it 'passes the correct time window (last hour) to the expense query' do
@@ -225,9 +241,20 @@ RSpec.describe Services::Email::SyncService, 'Conflict Detection and Resolution'
       allow(ProcessEmailsJob).to receive(:perform_later)
     end
 
-    it 'calls detect_conflicts and resolve_conflicts in sync_all flow' do
-      expect(service).to receive(:detect_conflicts)
+    it 'calls detect_conflicts and resolve_conflicts when conflicts are found' do
+      mock_conflict = instance_double(SyncConflict)
+
+      expect(service).to receive(:detect_conflicts).and_return([ mock_conflict ])
       expect(service).to receive(:resolve_conflicts).with(no_args)
+
+      result = service.sync_emails
+
+      expect(result[:success]).to be true
+    end
+
+    it 'calls detect_conflicts but skips resolve_conflicts when no conflicts found' do
+      expect(service).to receive(:detect_conflicts).and_return([])
+      expect(service).not_to receive(:resolve_conflicts)
 
       result = service.sync_emails
 
@@ -237,7 +264,7 @@ RSpec.describe Services::Email::SyncService, 'Conflict Detection and Resolution'
     it 'calls detect_conflicts but not resolve_conflicts when auto_resolve is false' do
       service = described_class.new(detect_conflicts: true, auto_resolve: false)
 
-      expect(service).to receive(:detect_conflicts)
+      expect(service).to receive(:detect_conflicts).and_return([ instance_double(SyncConflict) ])
       expect(service).not_to receive(:resolve_conflicts)
 
       allow(EmailAccount).to receive(:active).and_return(active_accounts)

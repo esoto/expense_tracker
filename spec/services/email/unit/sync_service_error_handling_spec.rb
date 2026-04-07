@@ -296,15 +296,13 @@ RSpec.describe Services::Email::SyncService, 'Error Handling and Edge Cases', un
         sync_session = instance_double(SyncSession, id: 1)
         service.instance_variable_set(:@sync_session, sync_session)
 
-        expense = instance_double(Expense,
-          id: 1,
-          amount: BigDecimal('100'),
-          transaction_date: Date.today,
-          merchant_name: 'Test Store',
-          description: 'Purchase',
-          currency: 'crc',
-          email_account_id: 5
-        )
+        expense_attrs = {
+          'id' => 1, 'amount' => BigDecimal('100'), 'transaction_date' => Date.today,
+          'merchant_name' => 'Test Store', 'description' => 'Purchase',
+          'currency' => 'crc', 'email_account_id' => 5, 'category_id' => nil
+        }
+        expense = instance_double(Expense)
+        allow(expense).to receive(:attributes).and_return(expense_attrs)
 
         allow(Expense).to receive(:where)
           .with(created_at: (mock_time - 1.hour)..mock_time)
@@ -317,7 +315,7 @@ RSpec.describe Services::Email::SyncService, 'Error Handling and Edge Cases', un
 
         mock_conflicts = [ instance_double(SyncConflict) ]
         expect(conflict_detection_service)
-          .to receive(:detect_conflicts_batch)
+          .to receive(:detect_conflicts_batch).with([ expense_attrs.symbolize_keys ])
           .and_return(mock_conflicts)
 
         result = service.detect_conflicts

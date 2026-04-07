@@ -115,5 +115,4 @@ RSpec.describe ExpensesController, type: :request, unit: true do
       end
     end
   end
-
 end

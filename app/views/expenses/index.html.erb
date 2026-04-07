@@ -32,7 +32,7 @@
        data-filter-persistence-auto-restore-value="true"
        data-filter-persistence-auto-save-value="true">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4">
-      <h1 class="text-2xl font-bold text-slate-900 mb-4 md:mb-0">Gastos</h1>
+      <h1 class="text-2xl font-bold text-slate-900 mb-4 md:mb-0"><%= t("expenses.index.heading") %></h1>
       <!-- Summary Stats -->
       <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
         <div class="bg-teal-50 rounded-lg p-3">
@@ -41,11 +41,11 @@
         </div>
         <div class="bg-emerald-50 rounded-lg p-3">
           <div class="text-2xl font-bold text-emerald-600"><%= @expense_count %></div>
-          <div class="text-sm text-slate-600">Gastos</div>
+          <div class="text-sm text-slate-600"><%= t("nav.expenses") %></div>
         </div>
         <div class="bg-amber-50 rounded-lg p-3 col-span-2 md:col-span-1">
           <div class="text-2xl font-bold text-amber-600"><%= @categories_summary.length %></div>
-          <div class="text-sm text-slate-600">Categorías</div>
+          <div class="text-sm text-slate-600"><%= t("expenses.dashboard.categories") %></div>
         </div>
       </div>
     </div>
@@ -62,7 +62,7 @@
           <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
           </svg>
-          Filtrar
+          <%= t("expenses.index.filter_button") %>
           <% active_count = [params[:category], params[:bank], params[:start_date], params[:end_date]].count(&:present?) %>
           <% if active_count > 0 %>
             <span data-collapsible-target="badge"
@@ -81,27 +81,27 @@
                       } do |form| %>
         <div class="flex-1">
           <%= form.select :category, options_from_collection_for_select(Category.all, :name, :name, params[:category]),
-                { include_blank: "Todas las categorías" },
+                { include_blank: t("expenses.index.all_categories") },
                 { class: "w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500",
                   data: { "filter-persistence-target": "filterInput" } } %>
         </div>
         <div class="flex-1">
           <%= form.select :bank,
-                options_for_select([["Todos los bancos", ""]] + @bank_names.map { |name| [name, name] }, params[:bank]),
+                options_for_select([[t("expenses.index.all_banks"), ""]] + @bank_names.map { |name| [name, name] }, params[:bank]),
                 {}, { class: "w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500",
                       data: { "filter-persistence-target": "filterInput" } } %>
         </div>
         <div class="flex flex-wrap gap-2">
-          <%= form.date_field :start_date, value: params[:start_date], placeholder: "Fecha inicio",
+          <%= form.date_field :start_date, value: params[:start_date], placeholder: t("expenses.index.start_date_placeholder"),
                 class: "flex-1 min-w-0 rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500",
                 data: { "filter-persistence-target": "filterInput" } %>
-          <%= form.date_field :end_date, value: params[:end_date], placeholder: "Fecha fin",
+          <%= form.date_field :end_date, value: params[:end_date], placeholder: t("expenses.index.end_date_placeholder"),
                 class: "flex-1 min-w-0 rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500",
                 data: { "filter-persistence-target": "filterInput" } %>
         </div>
         <div class="flex flex-wrap gap-2">
           <%= form.submit t("common.filter"), class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg shadow-sm" %>
-          <%= link_to "Limpiar", expenses_path, class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg" %>
+          <%= link_to t("expenses.index.clear_filters"), expenses_path, class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg" %>
         </div>
         <% end %>
       </div>
@@ -113,15 +113,15 @@
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
        data-controller="collapsible">
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-slate-900">Resumen por Categoría</h2>
+      <h2 class="text-lg font-semibold text-slate-900"><%= t("expenses.index.summary_title") %></h2>
       <button type="button"
               data-collapsible-target="toggleButton"
               data-action="click->collapsible#toggle"
               aria-expanded="false"
               class="md:hidden text-sm text-teal-700 font-medium hover:text-teal-800">
         <span data-collapsible-label
-              data-collapsible-label-closed="Ver resumen"
-              data-collapsible-label-open="Ocultar resumen">Ver resumen</span>
+              data-collapsible-label-closed="<%= t('expenses.index.summary_show') %>"
+              data-collapsible-label-open="<%= t('expenses.index.summary_hide') %>"><%= t("expenses.index.summary_show") %></span>
       </button>
     </div>
     <div data-collapsible-target="content" class="hidden md:block">
@@ -147,12 +147,12 @@
     <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
-          <h2 class="text-lg font-semibold text-slate-900">Lista de Gastos</h2>
+          <h2 class="text-lg font-semibold text-slate-900"><%= t("expenses.index.list_title") %></h2>
 
           <!-- Selection Counter -->
           <span class="hidden text-sm font-medium text-teal-700 bg-teal-100 px-3 py-1 rounded-lg"
                 data-batch-selection-target="selectionCounter">
-            0 gastos seleccionados
+            0 <%= t("expenses.index.selection_counter") %>
           </span>
 
           <!-- View Toggle Button (desktop only) -->
@@ -160,8 +160,8 @@
                   data-view-toggle-target="toggleButton"
                   data-action="click->view-toggle#toggle"
                   class="hidden md:inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
-                  aria-label="Cambiar modo de vista"
-                  title="Cambiar entre vista compacta y expandida (Ctrl+Shift+V)">
+                  aria-label="<%= t('expenses.index.view_toggle_tooltip') %>"
+                  title="<%= t('expenses.index.view_toggle_tooltip') %> (Ctrl+Shift+V)">
 
             <!-- Compact Icon -->
             <svg aria-hidden="true" data-view-toggle-target="compactIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -173,25 +173,25 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path>
             </svg>
 
-            <span data-view-toggle-target="buttonText">Vista Compacta</span>
+            <span data-view-toggle-target="buttonText"><%= t("expenses.index.view_toggle_compact") %></span>
           </button>
 
           <!-- Batch Selection Mode Toggle (desktop only) -->
           <button type="button"
                   data-action="click->batch-selection#toggleSelectionMode"
                   class="hidden md:inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
-                  aria-label="Activar modo de selección"
-                  title="Activar selección múltiple (Ctrl+Shift+A)">
+                  aria-label="<%= t('expenses.index.toggle_selection_tooltip') %>"
+                  title="<%= t('expenses.index.toggle_selection_tooltip') %> (Ctrl+Shift+A)">
             <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
             </svg>
-            <span>Selección Múltiple</span>
+            <span><%= t("expenses.index.toggle_selection_label") %></span>
           </button>
         </div>
 
         <% if @active_period %>
           <span class="text-sm text-slate-600">
-            Período: <%= { "day" => "Hoy", "week" => "Esta Semana", "month" => "Este Mes", "year" => "Este Año" }[@active_period] || @active_period.capitalize %>
+            Período: <%= { "day" => t("expenses.index.period_day"), "week" => t("expenses.index.period_week"), "month" => t("expenses.index.period_month"), "year" => t("expenses.index.period_year") }[@active_period] || @active_period.capitalize %>
           </span>
         <% elsif @date_from && @date_to %>
           <span class="text-sm text-slate-600">
@@ -215,13 +215,13 @@
                class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded"
                aria-label="Seleccionar todos los gastos visibles">
       </div>
-      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Fecha</div>
-      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Comercio</div>
-      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Categoría</div>
-      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Monto</div>
-      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" data-view-toggle-target="expandedColumns">Banco</div>
-      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" data-view-toggle-target="expandedColumns">Estado</div>
-      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" data-view-toggle-target="expandedColumns">Acciones</div>
+      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"><%= t("expenses.index.table_header_date") %></div>
+      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"><%= t("expenses.index.table_header_merchant") %></div>
+      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"><%= t("expenses.index.table_header_category") %></div>
+      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"><%= t("expenses.index.table_header_amount") %></div>
+      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" data-view-toggle-target="expandedColumns"><%= t("expenses.index.table_header_bank") %></div>
+      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" data-view-toggle-target="expandedColumns"><%= t("expenses.index.table_header_status") %></div>
+      <div class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" data-view-toggle-target="expandedColumns"><%= t("expenses.index.table_header_actions") %></div>
     </div>
 
     <!-- Unified expense items list (single loop — eliminates double render) -->
@@ -237,11 +237,11 @@
         <% if @pagy && @pagy.pages > 1 %>
           <%= pagy_financial_nav(@pagy) %>
           <p class="text-sm text-slate-600">
-            Mostrando <%= @pagy.from %>-<%= @pagy.to %> de <%= number_with_delimiter(@pagy.count) %> gastos
+            <%= t("expenses.index.pagination_showing", from: @pagy.from, to: @pagy.to, total: number_with_delimiter(@pagy.count)) %>
           </p>
         <% else %>
           <p class="text-sm text-slate-600">
-            Mostrando <%= number_with_delimiter(@expenses.respond_to?(:size) ? @expenses.size : @expenses.length) %> gastos
+            <%= t("expenses.index.pagination_showing_all", count: number_with_delimiter(@expenses.respond_to?(:size) ? @expenses.size : @expenses.length)) %>
           </p>
         <% end %>
       </div>
@@ -261,7 +261,7 @@
               <span data-batch-selection-target="selectedCount">0</span>
               <span class="text-slate-600">de</span>
               <span data-batch-selection-target="totalCount">0</span>
-              <span class="text-slate-600">gastos seleccionados</span>
+              <span class="text-slate-600"><%= t("expenses.index.selection_counter") %></span>
             </span>
           </div>
 
@@ -270,7 +270,7 @@
                   data-batch-selection-target="clearSelectionButton"
                   data-action="click->batch-selection#clearSelection"
                   class="text-sm text-slate-600 hover:text-slate-900 underline">
-            Limpiar selección
+            <%= t("expenses.index.clear_selection") %>
           </button>
         </div>
 
@@ -284,7 +284,7 @@
             <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
             </svg>
-            Operaciones en Lote
+            <%= t("expenses.index.bulk_operations") %>
           </button>
         </div>
       </div>

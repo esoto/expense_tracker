@@ -164,8 +164,8 @@
             <button type="button"
                     class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-white border border-slate-200 hover:bg-teal-50 hover:border-teal-300 transition-colors"
                     data-action="click-><%= controller_name %>#toggleCategoryDropdown"
-                    title="Cambiar categoría (C)"
-                    aria-label="Cambiar categoría">
+                    title="<%= t('expenses.inline_actions.change_category_tooltip') %>"
+                    aria-label="<%= t('expenses.inline_actions.change_category_tooltip') %>">
               <svg aria-hidden="true" class="w-4 h-4 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
               </svg>
@@ -195,8 +195,8 @@
                   class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-white border border-slate-200 hover:bg-emerald-50 hover:border-emerald-300 transition-colors"
                   data-<%= controller_name %>-target="statusButton"
                   data-action="click-><%= controller_name %>#toggleStatus"
-                  title="<%= expense.status == 'pending' ? 'Marcar como revisado (R)' : 'Marcar como pendiente (R)' %>"
-                  aria-label="<%= expense.status == 'pending' ? 'Marcar como revisado' : 'Marcar como pendiente' %>">
+                  title="<%= expense.status == 'pending' ? t('expenses.inline_actions.mark_reviewed_tooltip') : t('expenses.inline_actions.mark_pending_tooltip') %>"
+                  aria-label="<%= expense.status == 'pending' ? t('expenses.inline_actions.mark_reviewed_tooltip') : t('expenses.inline_actions.mark_pending_tooltip') %>">
             <% if expense.status == 'pending' %>
             <svg aria-hidden="true" class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -213,8 +213,8 @@
                   class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-white border border-slate-200 hover:bg-amber-50 hover:border-amber-300 transition-colors"
                   data-<%= controller_name %>-target="duplicateButton"
                   data-action="click-><%= controller_name %>#duplicateExpense"
-                  title="Duplicar gasto (D)"
-                  aria-label="Duplicar gasto">
+                  title="<%= t('expenses.inline_actions.duplicate_tooltip') %>"
+                  aria-label="<%= t('expenses.inline_actions.duplicate_tooltip') %>">
             <svg aria-hidden="true" class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
             </svg>
@@ -242,20 +242,20 @@
                   </svg>
                 </div>
                 <div class="flex-1">
-                  <h3 class="text-sm font-semibold text-slate-900">Confirmar eliminación</h3>
-                  <p class="text-xs text-slate-600 mt-1">¿Estás seguro de eliminar este gasto? Podrás restaurarlo desde el historial.</p>
+                  <h3 class="text-sm font-semibold text-slate-900"><%= t("expenses.inline_actions.confirm_deletion_title") %></h3>
+                  <p class="text-xs text-slate-600 mt-1"><%= t("expenses.inline_actions.confirm_deletion_message") %></p>
                 </div>
               </div>
               <div class="flex gap-2">
                 <button type="button"
                         class="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-rose-600 rounded-lg hover:bg-rose-700 transition-colors"
                         data-action="click-><%= controller_name %>#confirmDelete">
-                  Eliminar
+                  <%= t("expenses.inline_actions.confirm_button") %>
                 </button>
                 <button type="button"
                         class="flex-1 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
                         data-action="click-><%= controller_name %>#cancelDelete">
-                  Cancelar
+                  <%= t("expenses.inline_actions.cancel_button") %>
                 </button>
               </div>
             </div>

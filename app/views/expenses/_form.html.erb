@@ -1,7 +1,13 @@
 <%= form_with model: expense, class: "space-y-6" do |form| %>
   <% if expense.errors.any? %>
     <div class="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg">
-      <h4 class="font-bold">Se encontraron <%= pluralize(expense.errors.count, "error") %>:</h4>
+      <h4 class="font-bold">
+        <% if expense.errors.count == 1 %>
+          <%= t("expenses.form.errors_found", count: expense.errors.count) %>:
+        <% else %>
+          <%= t("expenses.form.errors_found_plural", count: expense.errors.count) %>:
+        <% end %>
+      </h4>
       <ul class="list-disc list-inside mt-2">
         <% expense.errors.full_messages.each do |message| %>
           <li><%= message %></li>
@@ -13,14 +19,14 @@
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     <!-- Amount -->
     <div>
-      <%= form.label :amount, "Monto", class: "block text-sm font-medium text-slate-700 mb-2" %>
-      <%= form.number_field :amount, step: 0.01, placeholder: "95000.00",
+      <%= form.label :amount, t("expenses.form.amount_label"), class: "block text-sm font-medium text-slate-700 mb-2" %>
+      <%= form.number_field :amount, step: 0.01, placeholder: t("expenses.form.amount_placeholder"),
           class: "w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
     </div>
 
     <!-- Currency -->
     <div>
-      <%= form.label :currency, "Moneda", class: "block text-sm font-medium text-slate-700 mb-2" %>
+      <%= form.label :currency, t("expenses.form.currency_label"), class: "block text-sm font-medium text-slate-700 mb-2" %>
       <%= form.select :currency,
           options_for_select(Expense.currencies.keys.map { |key| [key.upcase, key] }, expense.currency),
           {},
@@ -29,7 +35,7 @@
 
     <!-- Transaction Date -->
     <div>
-      <%= form.label :transaction_date, "Fecha de Transacción", class: "block text-sm font-medium text-slate-700 mb-2" %>
+      <%= form.label :transaction_date, t("expenses.form.transaction_date_label"), class: "block text-sm font-medium text-slate-700 mb-2" %>
       <%= form.date_field :transaction_date, value: expense.transaction_date&.strftime("%Y-%m-%d"),
           class: "w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
     </div>
@@ -37,42 +43,42 @@
 
   <!-- Merchant Name -->
   <div>
-    <%= form.label :merchant_name, "Comercio", class: "block text-sm font-medium text-slate-700 mb-2" %>
-    <%= form.text_field :merchant_name, placeholder: "Nombre del comercio",
+    <%= form.label :merchant_name, t("expenses.form.merchant_label"), class: "block text-sm font-medium text-slate-700 mb-2" %>
+    <%= form.text_field :merchant_name, placeholder: t("expenses.form.merchant_placeholder"),
         class: "w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
   </div>
 
   <!-- Description -->
   <div>
-    <%= form.label :description, "Descripción", class: "block text-sm font-medium text-slate-700 mb-2" %>
-    <%= form.text_field :description, placeholder: "Descripción de la transacción",
+    <%= form.label :description, t("expenses.form.description_label"), class: "block text-sm font-medium text-slate-700 mb-2" %>
+    <%= form.text_field :description, placeholder: t("expenses.form.description_placeholder"),
         class: "w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
     <!-- Category -->
     <div>
-      <%= form.label :category_id, "Categoría", class: "block text-sm font-medium text-slate-700 mb-2" %>
+      <%= form.label :category_id, t("expenses.form.category_label"), class: "block text-sm font-medium text-slate-700 mb-2" %>
       <%= form.select :category_id,
           options_from_collection_for_select(@categories, :id, :name, expense.category_id),
-          { include_blank: "Seleccionar categoría" },
+          { include_blank: t("expenses.form.category_prompt") },
           { class: "w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" } %>
     </div>
 
     <!-- Email Account -->
     <div>
-      <%= form.label :email_account_id, "Cuenta de Email", class: "block text-sm font-medium text-slate-700 mb-2" %>
+      <%= form.label :email_account_id, t("expenses.form.email_account_label"), class: "block text-sm font-medium text-slate-700 mb-2" %>
       <%= form.select :email_account_id,
           options_from_collection_for_select(@email_accounts, :id, :email, expense.email_account_id),
-          { include_blank: "Entrada manual" },
+          { include_blank: t("expenses.form.email_account_prompt") },
           { class: "w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" } %>
     </div>
   </div>
 
   <!-- Notes -->
   <div>
-    <%= form.label :notes, "Notas", class: "block text-sm font-medium text-slate-700 mb-2" %>
-    <%= form.text_area :notes, rows: 3, placeholder: "Notas adicionales (opcional)",
+    <%= form.label :notes, t("expenses.form.notes_label"), class: "block text-sm font-medium text-slate-700 mb-2" %>
+    <%= form.text_area :notes, rows: 3, placeholder: t("expenses.form.notes_placeholder"),
         class: "w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
   </div>
 

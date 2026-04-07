@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { shouldSuppressShortcut } from "utilities/keyboard_shortcut_helpers"
+import { t } from "services/i18n"
 
 /**
  * View Toggle Controller
@@ -160,7 +161,7 @@ export default class extends Controller {
     
     // Update button text
     if (this.hasButtonTextTarget) {
-      this.buttonTextTarget.textContent = this.compactValue ? 'Vista Expandida' : 'Vista Compacta'
+      this.buttonTextTarget.textContent = this.compactValue ? t("common.labels.expanded_view") : t("common.labels.compact_view")
     }
     
     // Update button icons

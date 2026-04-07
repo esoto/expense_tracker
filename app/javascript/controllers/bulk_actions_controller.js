@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { t } from "services/i18n"
 
 export default class extends Controller {
   static targets = ["checkbox", "selectAll", "resolveButton"]
@@ -54,7 +55,7 @@ export default class extends Controller {
     const conflictIds = this.selectedConflictIds()
     
     if (conflictIds.length === 0) {
-      this.showError('No hay conflictos seleccionados')
+      this.showError(t("conflicts.errors.none_selected"))
       return
     }
     
@@ -66,7 +67,7 @@ export default class extends Controller {
     const button = event.currentTarget
     button.disabled = true
     const originalText = button.textContent
-    button.textContent = 'Procesando...'
+    button.textContent = t("common.status.processing")
     
     try {
       const response = await fetch(this.urlValue, {
@@ -100,7 +101,7 @@ export default class extends Controller {
       }
     } catch (error) {
       console.error('Error in bulk resolve:', error)
-      this.showError('Error de conexión')
+      this.showError(t("common.errors.connection"))
     } finally {
       button.disabled = false
       button.textContent = originalText
@@ -115,7 +116,7 @@ export default class extends Controller {
         <div class="flex items-center justify-center min-h-screen px-4">
           <div class="fixed inset-0 bg-slate-900 opacity-75"></div>
           <div class="relative bg-white rounded-xl p-6 max-w-md w-full">
-            <h3 class="text-lg font-semibold mb-4">Seleccionar Acción de Resolución</h3>
+            <h3 class="text-lg font-semibold mb-4">${t("conflicts.labels.select_resolution")}</h3>
             <p class="text-sm text-slate-600 mb-4">
               ¿Cómo deseas resolver los ${this.selectedConflictIds().length} conflictos seleccionados?
             </p>

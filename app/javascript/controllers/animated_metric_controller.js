@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { t } from "services/i18n"
 
 // Animated Metric Controller
 // Provides smooth number animations and trend indicators for dashboard metrics
@@ -91,7 +92,7 @@ export default class extends Controller {
         <span class="${color} font-semibold">
           ${arrow} ${sign}${Math.abs(value).toFixed(1)}%
         </span>
-        <span class="text-slate-500 text-sm ml-2">vs mes anterior</span>
+        <span class="text-slate-500 text-sm ml-2">${t("analytics.metric.comparison")}</span>
       `
     }, 100)
   }

@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { syncChannelMixin } from "mixins/sync_channel_mixin"
+import { t } from "services/i18n"
 
 class SyncSessionsController extends Controller {
   static targets = [
@@ -126,12 +127,12 @@ class SyncSessionsController extends Controller {
       const statusBadge = row.querySelector('[data-status-badge]')
       if (statusBadge) {
         statusBadge.className = 'px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800'
-        statusBadge.textContent = 'Completado'
+        statusBadge.textContent = t("expenses.status.processed")
       }
     }
 
     // Show completion notification
-    this.showNotification("Sincronización completada exitosamente", "success")
+    this.showNotification(t("sync.messages.completed"), "success")
 
     // Don't reload - let user continue viewing real-time updates
   }
@@ -139,7 +140,7 @@ class SyncSessionsController extends Controller {
   handleFailure(data) {
 
     // Show error notification
-    this.showNotification(`Error en sincronización: ${data.error || 'Error desconocido'}`, "error")
+    this.showNotification(t("sync.notifications.failed", { error: data.error || 'Error desconocido' }), "error")
 
     // Update UI to show error state
     if (this.hasProgressBarTarget) {

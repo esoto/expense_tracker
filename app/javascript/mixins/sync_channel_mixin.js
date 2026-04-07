@@ -1,4 +1,5 @@
 import { getSharedConsumer } from "services/sync_cable_consumer"
+import { t } from "services/i18n"
 
 /**
  * Shared mixin for sync channel Stimulus controllers.
@@ -42,11 +43,11 @@ export const syncChannelMixin = {
         },
         {
           connected: () => {
-            this.showNotification('Conectado al servidor', 'success')
+            this.showNotification(t("sync.notifications.connected"), 'success')
           },
 
           disconnected: () => {
-            this.showNotification('Conexión perdida con el servidor', 'error')
+            this.showNotification(t("sync.notifications.disconnected"), 'error')
           },
 
           received: (data) => {
@@ -54,7 +55,7 @@ export const syncChannelMixin = {
           },
 
           rejected: () => {
-            this.showNotification('Conexión rechazada por el servidor', 'error')
+            this.showNotification(t("sync.notifications.rejected"), 'error')
           }
         }
       )

@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { t } from "services/i18n"
 
 export default class extends Controller {
   static targets = ["mergeOptions"]
@@ -31,7 +32,7 @@ export default class extends Controller {
     // Disable button and show loading
     button.disabled = true
     const originalText = button.textContent
-    button.textContent = 'Procesando...'
+    button.textContent = t("common.status.processing")
     
     try {
       const response = await fetch(`/sync_conflicts/${conflictId}/resolve`, {
@@ -49,7 +50,7 @@ export default class extends Controller {
       const data = await response.json()
       
       if (data.success) {
-        this.showSuccess('Conflicto resuelto exitosamente')
+        this.showSuccess(t("conflicts.notifications.resolved"))
         
         // Update the conflict row if it exists
         const row = document.getElementById(`conflict_${conflictId}`)
@@ -71,13 +72,13 @@ export default class extends Controller {
         // Close modal after short delay
         setTimeout(() => this.close(), 1500)
       } else {
-        this.showError(data.errors?.join(', ') || 'Error al resolver el conflicto')
+        this.showError(data.errors?.join(', ') || t("conflicts.errors.resolve_failed"))
         button.disabled = false
         button.textContent = originalText
       }
     } catch (error) {
       console.error('Error resolving conflict:', error)
-      this.showError('Error de conexión')
+      this.showError(t("common.errors.connection"))
       button.disabled = false
       button.textContent = originalText
     }
@@ -132,7 +133,7 @@ export default class extends Controller {
       <div class="flex items-center justify-center min-h-screen px-4">
         <div class="fixed inset-0 bg-slate-900 opacity-75"></div>
         <div class="relative bg-white rounded-xl p-6 max-w-2xl w-full">
-          <h3 class="text-lg font-semibold mb-4">Vista Previa de Fusión</h3>
+          <h3 class="text-lg font-semibold mb-4">${t("conflicts.labels.merge_preview")}</h3>
           <div class="space-y-2 max-h-96 overflow-y-auto">
             ${Object.entries(changes).map(([field, change]) => `
               <div class="flex justify-between p-2 bg-slate-50 rounded">
@@ -146,9 +147,9 @@ export default class extends Controller {
             `).join('')}
           </div>
           <div class="mt-4 flex justify-end space-x-2">
-            <button onclick="this.closest('.fixed').remove()" 
+            <button onclick="this.closest('.fixed').remove()"
                     class="px-4 py-2 border border-slate-300 rounded-lg">
-              Cerrar
+              ${t("common.actions.close")}
             </button>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { t } from "services/i18n"
 
 // Simple version for testing
 export default class extends Controller {
@@ -45,7 +46,7 @@ export default class extends Controller {
       dropdown.classList.add("hidden")
     }
     // Show toast
-    this.showToast("Categoría actualizada")
+    this.showToast(t("expenses.notifications.category_updated"))
   }
   
   toggleStatus(event) {
@@ -55,7 +56,7 @@ export default class extends Controller {
   
   duplicateExpense(event) {
     event.preventDefault()
-    this.showToast("Gasto duplicado exitosamente")
+    this.showToast(t("expenses.notifications.duplicated_success"))
   }
   
   showDeleteConfirmation(event) {
@@ -80,7 +81,7 @@ export default class extends Controller {
     if (confirmation) {
       confirmation.classList.add("hidden")
     }
-    this.showToast("Gasto eliminado")
+    this.showToast(t("expenses.notifications.deleted"))
     
     // Remove row after a delay
     setTimeout(() => {

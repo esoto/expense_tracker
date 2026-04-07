@@ -2,6 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 import { syncConnectionMixin } from "mixins/sync_connection_mixin"
 import { SyncErrorClassifier } from "services/sync_error_classifier"
 import { SyncStateCache } from "services/sync_state_cache"
+import { t } from "services/i18n"
 
 /**
  * SyncWidgetController — DOM-focused controller for the live sync progress widget.
@@ -97,7 +98,7 @@ const SyncWidgetController = class extends Controller {
     } else if (this.activeValue && this.sessionIdValue && this.sessionIdValue > 0) {
       this.subscribeToChannel()
       if (window.accessibilityManager) {
-        window.accessibilityManager.announce('Sincronización iniciada')
+        window.accessibilityManager.announce(t("sync.notifications.started"))
       }
     }
 
@@ -357,7 +358,7 @@ const SyncWidgetController = class extends Controller {
       this.detectedCountTarget.textContent = data.detected_expenses
     }
 
-    const message = `Sincronización completada: ${data.detected_expenses || 0} gastos detectados de ${data.processed_emails || 0} correos`
+    const message = t("sync.notifications.completed", { detected: data.detected_expenses || 0, processed: data.processed_emails || 0 })
     this.showToast(message, "success", 7000)
     if (window.accessibilityManager) {
       window.accessibilityManager.announce(message)
@@ -382,7 +383,7 @@ const SyncWidgetController = class extends Controller {
       sendErrorToServer: this.sendErrorToServer.bind(this)
     })
 
-    const failureMessage = `Error en sincronización: ${data.error || 'Error desconocido'}`
+    const failureMessage = t("sync.notifications.failed", { error: data.error || 'Error desconocido' })
     if (window.accessibilityManager) {
       window.accessibilityManager.announce(failureMessage, 'assertive')
     }
@@ -491,7 +492,7 @@ const SyncWidgetController = class extends Controller {
       const dot = document.createElement('span')
       dot.className = 'w-2 h-2 bg-amber-500 rounded-full mr-2'
       span.appendChild(dot)
-      span.appendChild(document.createTextNode('Sincronización pausada'))
+      span.appendChild(document.createTextNode(t("sync.status.paused")))
       this.statusTextTarget.appendChild(span)
     }
 
@@ -503,9 +504,9 @@ const SyncWidgetController = class extends Controller {
       }
     }
 
-    this.showToast("Sincronización pausada", "info")
+    this.showToast(t("sync.notifications.paused"), "info")
     if (window.accessibilityManager) {
-      window.accessibilityManager.announce('Sincronización pausada')
+      window.accessibilityManager.announce(t("sync.notifications.paused"))
     }
   }
 
@@ -528,7 +529,7 @@ const SyncWidgetController = class extends Controller {
       path.setAttribute('d', 'M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z')
       svg.appendChild(path)
       this.pauseButtonTarget.appendChild(svg)
-      this.pauseButtonTarget.appendChild(document.createTextNode('Pausar'))
+      this.pauseButtonTarget.appendChild(document.createTextNode(t("sync.actions.pause")))
       this.pauseButtonTarget.classList.remove('bg-amber-50', 'border-amber-300', 'text-amber-700')
       this.pauseButtonTarget.classList.add('bg-white', 'border-slate-300', 'text-slate-700')
     }
@@ -540,7 +541,7 @@ const SyncWidgetController = class extends Controller {
       const dot = document.createElement('span')
       dot.className = 'w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse'
       span.appendChild(dot)
-      span.appendChild(document.createTextNode('Sincronización en progreso'))
+      span.appendChild(document.createTextNode(t("sync.status.in_progress")))
       this.statusTextTarget.appendChild(span)
     }
 
@@ -553,9 +554,9 @@ const SyncWidgetController = class extends Controller {
       }
     }
 
-    this.showToast("Sincronización reanudada", "success")
+    this.showToast(t("sync.notifications.resumed"), "success")
     if (window.accessibilityManager) {
-      window.accessibilityManager.announce('Sincronización reanudada')
+      window.accessibilityManager.announce(t("sync.notifications.resumed"))
     }
   }
 
@@ -621,7 +622,7 @@ const SyncWidgetController = class extends Controller {
   showCacheIndicator() {
     const indicator = document.createElement('div')
     indicator.className = 'fixed top-4 right-4 z-40 px-3 py-1 text-xs bg-amber-100 text-amber-700 rounded-lg'
-    indicator.textContent = 'Datos desde caché'
+    indicator.textContent = t("sync.status.cache_indicator")
     document.body.appendChild(indicator)
 
     setTimeout(() => {

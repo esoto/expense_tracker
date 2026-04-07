@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { Chart, registerables } from "chart.js"
+import { t } from "services/i18n"
 
 // Register Chart.js components once
 Chart.register(...registerables)
@@ -193,7 +194,7 @@ export default class extends Controller {
   buildDatasets(chartData) {
     return [
       {
-        label: 'Precisión %',
+        label: t("patterns.chart.accuracy"),
         data: chartData.accuracy,
         borderColor: '#0F766E',
         backgroundColor: 'rgba(15, 118, 110, 0.1)',
@@ -295,7 +296,7 @@ export default class extends Controller {
         position: 'left',
         title: {
           display: true,
-          text: 'Precisión %',
+          text: t("patterns.chart.accuracy"),
           font: {
             size: 12
           }
@@ -384,9 +385,9 @@ export default class extends Controller {
     
     // Show relative dates for recent data
     if (date.toDateString() === today.toDateString()) {
-      return 'Hoy'
+      return t("common.dates.today")
     } else if (date.toDateString() === yesterday.toDateString()) {
-      return 'Ayer'
+      return t("common.dates.yesterday")
     } else {
       return date.toLocaleDateString('es-ES', {
         month: 'short',
@@ -464,7 +465,7 @@ export default class extends Controller {
   }
   
   // Show error state
-  showError(message = 'No se pudo cargar los datos del gráfico') {
+  showError(message = t("patterns.errors.chart_load_failed")) {
     if (this.hasErrorTarget) {
       this.errorTarget.classList.remove('hidden')
       const errorMessage = this.errorTarget.querySelector('[data-error-message]')
@@ -483,7 +484,7 @@ export default class extends Controller {
             <p class="text-slate-500">${message}</p>
             <button class="mt-3 text-teal-600 hover:text-teal-700 text-sm font-medium"
                     data-action="click->pattern-chart#loadChart">
-              Intentar de nuevo
+              ${t("common.actions.try_again")}
             </button>
           </div>
         </div>

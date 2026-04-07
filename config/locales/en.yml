@@ -577,20 +577,6 @@ en:
         user: "User"
         system: "System"
         no_patterns: "No component patterns associated."
-    pattern_management:
-      toggle_active:
-        pattern_activated: "Pattern activated"
-        pattern_deactivated: "Pattern deactivated"
-
-  # ActiveRecord attribute translations
-  activerecord:
-    attributes:
-      email_account:
-        provider: "Provider"
-        bank_name: "Bank name"
-
-  # Admin Patterns (temporary - will be reordered)
-  admin_patterns_inline:
     patterns:
       index:
         title: "Categorization Patterns"
@@ -604,14 +590,25 @@ en:
         quick_test: "Quick Test"
       test:
         title: "Test Categorization Patterns"
+    pattern_management:
+      toggle_active:
+        pattern_activated: "Pattern activated"
+        pattern_deactivated: "Pattern deactivated"
 
-  # Sync Conflicts (temporary - will be reordered)
-  sync_conflicts_inline:
+  # ActiveRecord attribute translations
+  activerecord:
+    attributes:
+      email_account:
+        provider: "Provider"
+        bank_name: "Bank name"
+
+  # Sync Conflicts
+  sync_conflicts:
     index:
       title: "Synchronization Conflicts"
 
-  # Analytics (temporary - will be reordered)
-  analytics_inline:
+  # Analytics
+  analytics:
     dashboard:
       title: "Pattern Analytics Dashboard"
       last_7_days: "Last 7 Days"

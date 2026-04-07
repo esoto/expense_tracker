@@ -7,7 +7,10 @@ class SyncSessionMonitorJob < ApplicationJob
   # Retry on transient database deadlocks with exponential back-off (overrides ApplicationJob default)
   retry_on ActiveRecord::Deadlocked, wait: :polynomially_longer, attempts: 3
 
-  def perform(sync_session_id)
+  # PER-386: Cap rescheduling to ~10 minutes (120 × 5s) to prevent unbounded job accumulation
+  MAX_RESCHEDULES = 120
+
+  def perform(sync_session_id, reschedule_count = 0)
     sync_session = SyncSession.find_by(id: sync_session_id)
     return unless sync_session
 
@@ -21,6 +24,13 @@ class SyncSessionMonitorJob < ApplicationJob
     if sync_session.started_at && sync_session.started_at < 30.minutes.ago
       sync_session.fail!("Sync timed out after 30 minutes")
       Rails.logger.warn "Sync session #{sync_session_id} force-failed: exceeded 30-minute timeout"
+      return
+    end
+
+    # PER-386: Stop rescheduling once the cap is reached
+    if reschedule_count >= MAX_RESCHEDULES
+      Rails.logger.warn "[SyncSessionMonitor] Max reschedules reached for session #{sync_session_id}"
+      sync_session.fail!("Monitor timeout — max reschedules reached") if sync_session.running?
       return
     end
 
@@ -50,8 +60,8 @@ class SyncSessionMonitorJob < ApplicationJob
         end
       end
     else
-      # Still processing, check again in 5 seconds
-      SyncSessionMonitorJob.set(wait: 5.seconds).perform_later(sync_session_id)
+      # Still processing, check again in 5 seconds with incremented counter
+      SyncSessionMonitorJob.set(wait: 5.seconds).perform_later(sync_session_id, reschedule_count + 1)
     end
   rescue => e
     Rails.logger.error "Error monitoring sync session #{sync_session_id}: #{e.message}"

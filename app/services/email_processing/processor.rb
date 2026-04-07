@@ -223,7 +223,7 @@ module Services::EmailProcessing
         doc = Nokogiri::HTML(decoded)
 
         # Remove nodes that would otherwise leak raw CSS/JS text into the output.
-        doc.xpath("//style | //script").each(&:remove)
+        doc.xpath("//style | //script | //noscript").each(&:remove)
 
         # Insert a space before block-level elements so adjacent text from
         # separate blocks does not run together when #text collapses the tree.
@@ -240,9 +240,16 @@ module Services::EmailProcessing
       rescue Encoding::CompatibilityError, Encoding::UndefinedConversionError => e
         # Fallback: strip tags without entity decoding when Nokogiri cannot parse
         # due to an irrecoverable encoding conflict.
-        Rails.logger.warn "HTML encoding error: #{e.message}"
-        simple_text = html_content.gsub(/<[^>]+>/, " ").gsub(/\s+/, " ").strip
-        simple_text.force_encoding("UTF-8")
+        # Force binary encoding before regex to avoid a second Encoding::CompatibilityError
+        # from gsub when html_content itself has an incompatible encoding.
+        Rails.logger.warn "[EmailProcessing] Encoding error in HTML extraction: #{e.message}"
+        simple_text = html_content.dup
+          .force_encoding("BINARY")
+          .gsub(/<[^>]+>/, " ")
+          .gsub(/\s+/, " ")
+          .strip
+          .force_encoding("UTF-8")
+          .scrub("?")
       end
     end
 

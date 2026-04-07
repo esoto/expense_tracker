@@ -265,6 +265,7 @@ class SyncSession < ApplicationRecord
         "LEFT JOIN (
           SELECT email_account_id, MAX(created_at) AS created_at
           FROM expenses
+          WHERE deleted_at IS NULL
           GROUP BY email_account_id
         ) AS latest_expenses ON latest_expenses.email_account_id = email_accounts.id"
       )

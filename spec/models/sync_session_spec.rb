@@ -746,6 +746,14 @@ RSpec.describe SyncSession, type: :model do
       expect(results.first.latest_expense_created_at.to_i).to eq(new_expense.created_at.to_i)
     end
 
+    it 'excludes soft-deleted expenses from latest_expense_created_at' do
+      account = create(:email_account, active: true)
+      create(:expense, email_account: account, created_at: 1.hour.ago, deleted_at: Time.current)
+
+      results = sync_session.send(:active_accounts_with_latest_expense)
+      expect(results.first.latest_expense_created_at).to be_nil
+    end
+
     it 'returns nil latest_expense_created_at for accounts with no expenses' do
       create(:email_account, active: true)
 

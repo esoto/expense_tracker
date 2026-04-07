@@ -630,6 +630,7 @@ const SyncWidgetController = class extends Controller {
   // ---------------------------------------------------------------------------
 
   log(level, message, data = {}) {
+    // Console logging only in debug mode
     if (this.debugValue || this.element.dataset.debug === 'true') {
       const timestamp = new Date().toISOString()
       const prefix = `[${timestamp}] SyncWidget:`
@@ -639,10 +640,11 @@ const SyncWidgetController = class extends Controller {
       } else {
         console[level](prefix, message)
       }
+    }
 
-      if (level === 'error' && window.Rails && window.Rails.env === 'production') {
-        this.sendErrorToServer(message, data)
-      }
+    // Error reporting always active (server-side handles environment check)
+    if (level === 'error') {
+      this.sendErrorToServer(message, data)
     }
   }
 

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'rails_helper'
+require 'benchmark'
 
 RSpec.describe Services::BulkOperations::DeletionService, type: :service, unit: true do
   let(:email_account) { create(:email_account) }

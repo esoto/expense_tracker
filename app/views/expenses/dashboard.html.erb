@@ -14,13 +14,13 @@
 <!-- Enhanced Key Metrics with Visual Hierarchy -->
 <div class="space-y-6">
   <!-- Primary Metric Card - 1.5x Larger with Tooltip and Navigation -->
-  <div id="primary-metric-card" class="bg-gradient-to-br from-teal-700 to-teal-800 rounded-2xl shadow-xl p-8 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] cursor-pointer relative" role="button" tabindex="0" aria-label="Ver gastos del año completo" data-controller="animated-metric tooltip dashboard-card-navigation" data-animated-metric-container-target="container" data-animated-metric-to-value="<%= @total_metrics[:metrics][:total_amount] %>" data-animated-metric-prefix-value="₡" data-animated-metric-trend-value-value="<%= @month_metrics[:trends][:amount_change] %>" data-animated-metric-is-increase-value="<%= @month_metrics[:trends][:is_increase] %>" data-tooltip-trend-data-value='<%= @total_metrics[:trend_data].to_json %>' data-tooltip-metric-label-value="Total de Gastos (Año)" data-tooltip-position-value="bottom" data-dashboard-card-navigation-period-value="year" data-dashboard-card-navigation-date-from-value="<%= @total_metrics[:date_range].first %>" data-dashboard-card-navigation-date-to-value="<%= @total_metrics[:date_range].last %>" data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
+  <div id="primary-metric-card" class="bg-gradient-to-br from-teal-700 to-teal-800 rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] cursor-pointer relative" role="button" tabindex="0" aria-label="Ver gastos del año completo" data-controller="animated-metric tooltip dashboard-card-navigation" data-animated-metric-container-target="container" data-animated-metric-to-value="<%= @total_metrics[:metrics][:total_amount] %>" data-animated-metric-prefix-value="₡" data-animated-metric-trend-value-value="<%= @month_metrics[:trends][:amount_change] %>" data-animated-metric-is-increase-value="<%= @month_metrics[:trends][:is_increase] %>" data-tooltip-trend-data-value='<%= @total_metrics[:trend_data].to_json %>' data-tooltip-metric-label-value="Total de Gastos (Año)" data-tooltip-position-value="bottom" data-dashboard-card-navigation-period-value="year" data-dashboard-card-navigation-date-from-value="<%= @total_metrics[:date_range].first %>" data-dashboard-card-navigation-date-to-value="<%= @total_metrics[:date_range].last %>" data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
 
     <div class="flex items-start justify-between mb-4">
       <div>
         <h3 class="text-lg font-medium text-teal-100 mb-2">TOTAL DE GASTOS</h3>
         <div class="flex items-baseline">
-          <span class="text-5xl font-bold tracking-tight" data-animated-metric-target="value">₡<%= number_with_delimiter(@total_expenses.to_i) %></span>
+          <span class="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight" data-animated-metric-target="value">₡<%= number_with_delimiter(@total_expenses.to_i) %></span>
         </div>
       </div>
       <div class="p-4 bg-white/10 rounded-xl backdrop-blur-sm">
@@ -82,7 +82,7 @@
     <% end %>
 
     <!-- Additional Stats -->
-    <div class="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-white/20">
+    <div class="grid grid-cols-3 gap-2 sm:gap-4 mt-6 pt-6 border-t border-white/20">
       <div>
         <p class="text-teal-100 text-xs uppercase tracking-wide">Transacciones</p>
         <p class="text-2xl font-bold mt-1"><%= number_with_delimiter(@total_metrics[:metrics][:transaction_count]) %></p>
@@ -149,8 +149,7 @@
 </div>
 
 <!-- Conflict Alert (if any pending conflicts) -->
-<% pending_conflicts_count = SyncConflict.unresolved.count %>
-<% if pending_conflicts_count > 0 %>
+<% if @pending_conflicts_count.to_i > 0 %>
 <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
   <div class="flex items-center justify-between">
     <div class="flex items-center">
@@ -159,7 +158,7 @@
       </svg>
       <div>
         <p class="text-sm font-medium text-amber-900">
-          <%= pending_conflicts_count %> <%= pending_conflicts_count == 1 ? 'conflicto pendiente' : 'conflictos pendientes' %> de resolución
+          <%= @pending_conflicts_count %> <%= @pending_conflicts_count == 1 ? 'conflicto pendiente' : 'conflictos pendientes' %> de resolución
         </p>
         <p class="text-xs text-amber-700 mt-1">
           Se detectaron transacciones duplicadas o similares que requieren tu atención

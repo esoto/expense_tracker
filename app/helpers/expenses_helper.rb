@@ -189,5 +189,4 @@ module ExpensesHelper
       "text-slate-500"
     end
   end
-
 end

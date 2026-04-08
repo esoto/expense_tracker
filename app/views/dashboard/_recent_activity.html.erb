@@ -1,0 +1,43 @@
+<% if @recent_expenses.present? %>
+  <div class="divide-y divide-slate-100 dark:divide-slate-700">
+    <% @recent_expenses.each do |expense| %>
+      <div class="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="text-sm text-slate-500 dark:text-slate-400 w-20 shrink-0">
+            <%= relative_date(expense.transaction_date) %>
+          </span>
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+              <%= truncate(expense.merchant_name, length: 25) %>
+            </p>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <% if expense.category %>
+                <span class="w-2 h-2 rounded-full shrink-0" style="background-color: <%= expense.category.color || '#64748b' %>"></span>
+                <span class="text-xs text-slate-500 dark:text-slate-400"><%= expense.category.name %></span>
+              <% else %>
+                <span class="w-2 h-2 rounded-full shrink-0 bg-slate-400"></span>
+                <span class="text-xs text-slate-500 dark:text-slate-400"><%= t("dashboard.v2.uncategorized_label", default: "Sin categoría") %></span>
+              <% end %>
+            </div>
+          </div>
+        </div>
+        <span class="text-sm font-medium text-slate-900 dark:text-slate-100 tabular-nums whitespace-nowrap ml-4">
+          <%= number_to_currency(expense.amount, unit: "₡") %>
+        </span>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+    <%= link_to expenses_path, class: "text-sm font-medium text-teal-700 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300" do %>
+      <%= t("dashboard.v2.view_all_expenses", default: "View all expenses") %> &rarr;
+    <% end %>
+  </div>
+<% else %>
+  <div class="flex flex-col items-center justify-center py-8 text-center">
+    <svg class="w-10 h-10 text-slate-300 dark:text-slate-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+    </svg>
+    <p class="text-sm text-slate-500 dark:text-slate-400"><%= t("dashboard.v2.no_recent_expenses", default: "No hay gastos recientes") %></p>
+  </div>
+<% end %>

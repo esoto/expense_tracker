@@ -1,0 +1,28 @@
+<% if @insights.present? %>
+  <section aria-label="<%= t('dashboard.v2.insights_label', default: 'Actionable insights') %>" class="mb-8">
+    <div class="flex flex-wrap gap-4">
+      <% @insights.each do |insight| %>
+        <%
+          card_classes = case insight[:variant]
+                         when :warning
+                           "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-300"
+                         when :success
+                           "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-700 dark:text-emerald-300"
+                         else
+                           "bg-teal-50 border-teal-200 text-teal-700 dark:bg-teal-900/20 dark:border-teal-700 dark:text-teal-300"
+                         end
+        %>
+        <div class="flex items-center gap-3 px-4 py-3 rounded-lg border <%= card_classes %> flex-1 min-w-[200px]">
+          <span class="text-lg flex-shrink-0" aria-hidden="true"><%= insight[:icon] %></span>
+          <span class="text-sm font-medium">
+            <% if insight[:link_path].present? %>
+              <%= link_to insight[:message], insight[:link_path], class: "underline hover:no-underline" %>
+            <% else %>
+              <%= insight[:message] %>
+            <% end %>
+          </span>
+        </div>
+      <% end %>
+    </div>
+  </section>
+<% end %>

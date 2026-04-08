@@ -1,0 +1,45 @@
+<header class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">
+      <%= t("dashboard.v2.title", default: "Dashboard") %>
+    </h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+      <%= l(Date.current, format: :long).sub(/\d+\s*/, "") rescue Date.current.strftime("%B %Y") %>
+    </p>
+  </div>
+
+  <div
+    aria-live="polite"
+    data-controller="sync-status-indicator"
+    data-sync-status-indicator-active-value="<%= @sync_status[:active] %>"
+    data-sync-status-indicator-last-sync-value="<%= @sync_status[:last_sync]&.iso8601 %>"
+    class="mt-2 sm:mt-0"
+  >
+    <% if @sync_status[:active] %>
+      <%# Active state: spinner + "Syncing..." %>
+      <span class="inline-flex items-center text-sm text-teal-600 dark:text-teal-400">
+        <svg class="animate-spin h-4 w-4 mr-1.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+        </svg>
+        <%= t("dashboard.v2.syncing", default: "Syncing") %><%= "&hellip;".html_safe %>
+      </span>
+    <% elsif @sync_status[:last_sync].present? %>
+      <%# Idle state: clock icon + "Last synced Xh ago" %>
+      <span class="inline-flex items-center text-sm text-slate-500 dark:text-slate-400">
+        <svg class="h-4 w-4 mr-1.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <%= t("dashboard.v2.last_synced_ago", time: time_ago_in_words(@sync_status[:last_sync]), default: "Last synced %{time} ago") %>
+      </span>
+    <% else %>
+      <%# Never synced state %>
+      <span class="inline-flex items-center text-sm text-slate-400 dark:text-slate-500">
+        <svg class="h-4 w-4 mr-1.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <%= t("dashboard.v2.not_synced_yet", default: "Not synced yet") %>
+      </span>
+    <% end %>
+  </div>
+</header>

@@ -1,12 +1,14 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" data-controller="dashboard-v2">
+  <%# === Header === %>
+  <%= render "dashboard/header" %>
+
   <%# === Metrics Section === %>
   <section aria-label="<%= t('dashboard.v2.metrics_label', default: 'Monthly metrics') %>">
-    <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-6">
-      <%= t("dashboard.v2.title", default: "Dashboard") %>
-    </h1>
-
     <%= render "dashboard/metric_cards" %>
   </section>
+
+  <%# === Insights Section === %>
+  <%= render "dashboard/insights_row" %>
 
   <%# === Budget Section === %>
   <section aria-label="<%= t('dashboard.v2.budgets_label', default: 'Budget progress') %>" class="mb-8">
@@ -15,16 +17,6 @@
 
   <%# === Charts Section === %>
   <%= render "dashboard/charts_row" %>
-
-  <%# === Sync Status Section === %>
-  <section aria-label="<%= t('dashboard.v2.sync_label', default: 'Sync status') %>" class="mb-8">
-    <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
-      <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
-        <%= t("dashboard.v2.sync_status", default: "Sync Status") %>
-      </h2>
-      <%# Placeholder: sync status indicator will be rendered here %>
-    </div>
-  </section>
 
   <%# === Recent Expenses Section === %>
   <section aria-label="<%= t('dashboard.v2.recent_expenses_label', default: 'Recent expenses') %>">

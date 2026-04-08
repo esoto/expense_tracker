@@ -1,13 +1,57 @@
 <section aria-label="<%= t('dashboard.v2.charts_label', default: 'Charts') %>" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-  <%# === Monthly Trend (placeholder for PER-414) === %>
-  <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
+  <%# === Monthly Trend Line Chart (PER-414) === %>
+  <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4" data-controller="chart-skeleton">
     <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
       <%= t("dashboard.v2.monthly_trend", default: "Monthly Trend") %>
     </h2>
-    <%# @monthly_trend — Hash of {date => amount}, 6 months. Chart will be wired in PER-414. %>
-    <div class="flex items-center justify-center h-[300px] text-slate-500 dark:text-slate-400">
-      <p><%= t("dashboard.v2.monthly_trend_placeholder", default: "Trend chart coming soon") %></p>
-    </div>
+
+    <% if @monthly_trend.present? %>
+      <%
+        budget_amount = @budgets.is_a?(Hash) &&
+                        @budgets[:has_budget] &&
+                        @budgets[:general_budget].is_a?(Hash) &&
+                        @budgets[:general_budget][:amount]
+
+        spending_series = { name: t("dashboard.v2.spending_label", default: "Spending"), data: @monthly_trend }
+
+        if budget_amount
+          budget_series = {
+            name: t("dashboard.v2.budget_label", default: "Budget"),
+            data: @monthly_trend.keys.index_with { budget_amount }
+          }
+          chart_data = [spending_series, budget_series]
+        else
+          chart_data = [spending_series]
+        end
+      %>
+      <div class="chart-skeleton-container">
+        <div data-chart-skeleton-target="skeleton" class="chart-skeleton-overlay" aria-hidden="true">
+          <div class="chart-skeleton-line"></div>
+        </div>
+        <div data-chart-skeleton-target="chart">
+          <%= line_chart chart_data,
+                prefix: "₡",
+                thousands: ",",
+                height: "300px",
+                colors: ["#0F766E", "#D97706"],
+                discrete: true,
+                library: {
+                  datasets: [
+                    { borderDash: nil },
+                    { borderDash: [5, 5] }
+                  ]
+                } %>
+        </div>
+      </div>
+    <% else %>
+      <div class="flex flex-col items-center justify-center h-[300px] text-slate-500 dark:text-slate-400">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-3 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 17l6-6 4 4 8-8" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 3h4v4" />
+        </svg>
+        <p><%= t("dashboard.v2.no_trend_data", default: "No hay datos de tendencia") %></p>
+      </div>
+    <% end %>
   </div>
 
   <%# === Category Breakdown Horizontal Bar Chart === %>

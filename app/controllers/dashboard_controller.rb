@@ -22,6 +22,9 @@ class DashboardController < ApplicationController
       @daily_average = 0.0
     end
 
+    # TODO: DashboardService queries are globally scoped (not per-account).
+    # This mirrors the existing ExpensesController#dashboard behavior.
+    # A follow-up ticket should scope all data to the selected account(s).
     dashboard_service = Services::DashboardService.new
     dashboard_data = dashboard_service.analytics
 
@@ -29,8 +32,9 @@ class DashboardController < ApplicationController
     category_data = dashboard_data[:category_breakdown]
     @category_breakdown = category_data[:sorted]&.first(10) || []
 
-    # Monthly trend — 6 months for line chart
-    @monthly_trend = dashboard_data[:monthly_trend]
+    # Monthly trend — last 6 calendar months for line chart
+    trend_data = dashboard_data[:monthly_trend] || {}
+    @monthly_trend = trend_data.sort_by { |date, _| date }.last(6).to_h
 
     # Sync status — lightweight
     sync_sessions = dashboard_data[:sync_sessions] || {}

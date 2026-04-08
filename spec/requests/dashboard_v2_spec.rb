@@ -14,6 +14,15 @@ RSpec.describe "Dashboard V2", type: :request, unit: true do
   end
 
   describe "GET /dashboard-v2" do
+    context "when unauthenticated" do
+      before { reset! }
+
+      it "redirects to login" do
+        get "/dashboard-v2"
+        expect(response).to redirect_to(admin_login_path)
+      end
+    end
+
     context "with data" do
       let!(:email_account) { create(:email_account, active: true) }
       let!(:category) { create(:category, name: "Food") }
@@ -52,9 +61,10 @@ RSpec.describe "Dashboard V2", type: :request, unit: true do
         expect(assigns(:category_breakdown).size).to be <= 10
       end
 
-      it "provides monthly trend data" do
+      it "provides monthly trend data limited to 6 months" do
         get "/dashboard-v2"
         expect(assigns(:monthly_trend)).to be_a(Hash)
+        expect(assigns(:monthly_trend).size).to be <= 6
       end
 
       it "provides sync status" do

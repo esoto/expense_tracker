@@ -176,15 +176,22 @@
 <!-- Charts Row -->
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
   <!-- Monthly Trend -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6" data-controller="chart-skeleton">
     <h2 class="text-lg font-semibold text-slate-900 mb-4"><%= t("expenses.dashboard.monthly_trend") %></h2>
     <% if @monthly_data.present? %>
-      <%= line_chart @monthly_data,
-            prefix: "₡",
-            thousands: ",",
-            height: "300px",
-            colors: ["#0F766E"],
-            discrete: true %>
+      <div class="chart-skeleton-container">
+        <div data-chart-skeleton-target="skeleton" class="chart-skeleton-overlay" aria-hidden="true">
+          <div class="chart-skeleton-line"></div>
+        </div>
+        <div data-chart-skeleton-target="chart">
+          <%= line_chart @monthly_data,
+                prefix: "₡",
+                thousands: ",",
+                height: "300px",
+                colors: ["#0F766E"],
+                discrete: true %>
+        </div>
+      </div>
     <% else %>
       <div class="flex flex-col items-center justify-center py-12 text-slate-400">
         <svg aria-hidden="true" class="w-12 h-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -197,14 +204,21 @@
   </div>
 
   <!-- Category Breakdown -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6" data-controller="chart-skeleton">
     <h2 class="text-lg font-semibold text-slate-900 mb-4"><%= t("expenses.dashboard.by_category") %></h2>
     <% if @sorted_categories.present? %>
-      <%= pie_chart @sorted_categories.first(8),
-            prefix: "₡",
-            thousands: ",",
-            height: "300px",
-            colors: chart_colors %>
+      <div class="chart-skeleton-container">
+        <div data-chart-skeleton-target="skeleton" class="chart-skeleton-overlay" aria-hidden="true">
+          <div class="chart-skeleton-pie"></div>
+        </div>
+        <div data-chart-skeleton-target="chart">
+          <%= pie_chart @sorted_categories.first(8),
+                prefix: "₡",
+                thousands: ",",
+                height: "300px",
+                colors: chart_colors %>
+        </div>
+      </div>
     <% else %>
       <div class="flex flex-col items-center justify-center py-12 text-slate-400">
         <svg aria-hidden="true" class="w-12 h-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

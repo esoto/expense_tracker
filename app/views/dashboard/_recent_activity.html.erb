@@ -12,7 +12,8 @@
             </p>
             <div class="flex items-center gap-1.5 mt-0.5">
               <% if expense.category %>
-                <span class="w-2 h-2 rounded-full shrink-0" style="background-color: <%= expense.category.color || '#64748b' %>"></span>
+                <% safe_color = (expense.category.color.to_s.match?(/\A#[0-9a-fA-F]{3,6}\z/) ? expense.category.color : "#64748b") %>
+                <span class="w-2 h-2 rounded-full shrink-0" style="background-color: <%= safe_color %>"></span>
                 <span class="text-xs text-slate-500 dark:text-slate-400"><%= expense.category.name %></span>
               <% else %>
                 <span class="w-2 h-2 rounded-full shrink-0 bg-slate-400"></span>

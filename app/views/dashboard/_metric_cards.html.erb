@@ -19,17 +19,22 @@
   <% budget_remaining = budget[:remaining] || 0 %>
   <% budget_formatted_remaining = budget[:formatted_remaining] || number_to_currency(0) %>
   <% budget_status = budget[:status] || "on_track" %>
-  <% budget_status_color = case budget_status.to_s
-       when "on_track", "under" then "emerald"
-       when "warning", "caution" then "amber"
-       when "over", "exceeded", "danger" then "rose"
-       else "emerald"
+  <%# Use explicit full class strings to avoid Tailwind PurgeCSS stripping dynamic classes %>
+  <% budget_classes = case budget_status.to_s
+       when "on_track", "under"
+         { bg: "bg-emerald-50", icon: "text-emerald-600", amount: "text-emerald-700" }
+       when "warning", "caution"
+         { bg: "bg-amber-50", icon: "text-amber-600", amount: "text-amber-700" }
+       when "over", "exceeded", "danger"
+         { bg: "bg-rose-50", icon: "text-rose-600", amount: "text-rose-700" }
+       else
+         { bg: "bg-emerald-50", icon: "text-emerald-600", amount: "text-emerald-700" }
      end %>
 <% else %>
   <% budget_remaining = 0 %>
   <% budget_formatted_remaining = number_to_currency(0) %>
   <% budget_status = "no_budget" %>
-  <% budget_status_color = "slate" %>
+  <% budget_classes = { bg: "bg-slate-50", icon: "text-slate-500", amount: "text-slate-700" } %>
 <% end %>
 
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -97,8 +102,8 @@
        data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
 
     <div class="flex items-center justify-between mb-3">
-      <div class="p-2 rounded-lg bg-<%= budget_status_color %>-50">
-        <svg aria-hidden="true" class="w-6 h-6 text-<%= budget_status_color %>-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="p-2 rounded-lg <%= budget_classes[:bg] %>">
+        <svg aria-hidden="true" class="w-6 h-6 <%= budget_classes[:icon] %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
         </svg>
       </div>
@@ -106,7 +111,7 @@
 
     <div>
       <p class="text-sm font-medium text-slate-600 mb-1"><%= t("dashboard.v2.budget_remaining", default: "Budget Remaining") %></p>
-      <p class="text-2xl font-bold text-<%= budget_status_color %>-700" data-animated-metric-target="value">
+      <p class="text-2xl font-bold <%= budget_classes[:amount] %>" data-animated-metric-target="value">
         ₡<%= number_with_delimiter(budget_remaining.to_i.abs) %>
       </p>
       <p class="text-xs text-slate-500 mt-1">

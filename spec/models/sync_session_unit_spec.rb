@@ -695,7 +695,7 @@ RSpec.describe SyncSession, type: :model, unit: true, broadcast: true do
       end
 
       it "broadcasts turbo stream update" do
-        expect(sync_session).to receive(:broadcast_replace_to).with(
+        expect(sync_session).to receive(:broadcast_update_to).with(
           "dashboard_sync_updates",
           hash_including(
             target: "sync_status_section",
@@ -707,7 +707,7 @@ RSpec.describe SyncSession, type: :model, unit: true, broadcast: true do
       end
 
       it "handles errors gracefully" do
-        allow(sync_session).to receive(:broadcast_replace_to).and_raise(StandardError)
+        allow(sync_session).to receive(:broadcast_update_to).and_raise(StandardError)
         expect(Rails.logger).to receive(:error).twice # Once for message, once for backtrace
 
         expect { sync_session.send(:broadcast_dashboard_update) }.not_to raise_error

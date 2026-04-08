@@ -116,6 +116,9 @@ Rails.application.routes.draw do
     post "bulk_update_status", action: :bulk_update_status, as: :bulk_update_status_expenses
     delete "bulk_destroy", action: :bulk_destroy, as: :bulk_destroy_expenses
   end
+  # Dashboard v2 (temporary dev route)
+  get "dashboard-v2", to: "dashboard#show"
+
   # Core expense CRUD routes
   resources :expenses, except: [] do
     collection do

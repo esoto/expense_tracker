@@ -179,16 +179,18 @@
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6" data-controller="chart-skeleton">
     <h2 class="text-lg font-semibold text-slate-900 mb-4"><%= t("expenses.dashboard.monthly_trend") %></h2>
     <% if @monthly_data.present? %>
-      <div data-chart-skeleton-target="skeleton" class="chart-skeleton" aria-hidden="true">
-        <div class="chart-skeleton-line"></div>
-      </div>
-      <div data-chart-skeleton-target="chart">
-        <%= line_chart @monthly_data,
-              prefix: "₡",
-              thousands: ",",
-              height: "300px",
-              colors: ["#0F766E"],
-              discrete: true %>
+      <div class="chart-skeleton-container">
+        <div data-chart-skeleton-target="skeleton" class="chart-skeleton-overlay" aria-hidden="true">
+          <div class="chart-skeleton-line"></div>
+        </div>
+        <div data-chart-skeleton-target="chart">
+          <%= line_chart @monthly_data,
+                prefix: "₡",
+                thousands: ",",
+                height: "300px",
+                colors: ["#0F766E"],
+                discrete: true %>
+        </div>
       </div>
     <% else %>
       <div class="flex flex-col items-center justify-center py-12 text-slate-400">
@@ -205,15 +207,17 @@
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6" data-controller="chart-skeleton">
     <h2 class="text-lg font-semibold text-slate-900 mb-4"><%= t("expenses.dashboard.by_category") %></h2>
     <% if @sorted_categories.present? %>
-      <div data-chart-skeleton-target="skeleton" class="chart-skeleton" aria-hidden="true">
-        <div class="chart-skeleton-pie"></div>
-      </div>
-      <div data-chart-skeleton-target="chart">
-        <%= pie_chart @sorted_categories.first(8),
-              prefix: "₡",
-              thousands: ",",
-              height: "300px",
-              colors: chart_colors %>
+      <div class="chart-skeleton-container">
+        <div data-chart-skeleton-target="skeleton" class="chart-skeleton-overlay" aria-hidden="true">
+          <div class="chart-skeleton-pie"></div>
+        </div>
+        <div data-chart-skeleton-target="chart">
+          <%= pie_chart @sorted_categories.first(8),
+                prefix: "₡",
+                thousands: ",",
+                height: "300px",
+                colors: chart_colors %>
+        </div>
       </div>
     <% else %>
       <div class="flex flex-col items-center justify-center py-12 text-slate-400">

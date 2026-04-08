@@ -8,23 +8,36 @@ export default class extends Controller {
   connect() {
     if (!this.hasSkeletonTarget || !this.hasChartTarget) return
 
+    // Chart may already be rendered (Turbo cache restore, fast render)
+    if (this.chartTarget.querySelector("svg, canvas")) {
+      this.hideSkeleton()
+      return
+    }
+
     this.observer = new MutationObserver(() => {
       if (this.chartTarget.querySelector("svg, canvas")) {
-        this.skeletonTarget.classList.add("hidden")
-        this.observer.disconnect()
+        this.hideSkeleton()
       }
     })
 
     this.observer.observe(this.chartTarget, { childList: true, subtree: true })
 
-    // Fallback: hide skeleton after 3s regardless
+    // Fallback: hide skeleton after 5s only if chart rendered
     this.timeout = setTimeout(() => {
-      this.skeletonTarget.classList.add("hidden")
-      this.observer?.disconnect()
-    }, 3000)
+      if (this.chartTarget.querySelector("svg, canvas")) {
+        this.hideSkeleton()
+      }
+      // If chart didn't render, keep skeleton visible as loading indicator
+    }, 5000)
   }
 
   disconnect() {
+    this.observer?.disconnect()
+    clearTimeout(this.timeout)
+  }
+
+  hideSkeleton() {
+    this.skeletonTarget.classList.add("hidden")
     this.observer?.disconnect()
     clearTimeout(this.timeout)
   }

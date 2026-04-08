@@ -1,0 +1,60 @@
+<%# Secondary Metric Card Component
+  Local variables:
+  - card_id: HTML id (e.g., "month-metric-card")
+  - metrics: Hash with :metrics, :trends, :budgets, :trend_data, :date_range
+  - icon_bg_class: Tailwind bg class (e.g., "bg-amber-100")
+  - icon_color_class: Tailwind text class (e.g., "text-amber-600")
+  - icon_svg_path: SVG path d attribute for the icon
+  - label: Display label (e.g., t("expenses.dashboard.this_month"))
+  - period: Period value for navigation ("month", "week", "day")
+  - tooltip_label: Tooltip metric label text
+  - period_label: Budget progress period label
+  - trend_key: Which trend key to use (:amount_change or :count_change), defaults to :amount_change
+%>
+<% trend_key ||= :amount_change %>
+
+<div id="<%= card_id %>"
+     class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative"
+     role="button"
+     tabindex="0"
+     aria-label="<%= label %>"
+     data-controller="animated-metric tooltip dashboard-card-navigation"
+     data-animated-metric-container-target="container"
+     data-animated-metric-to-value="<%= metrics[:metrics][:total_amount] %>"
+     data-animated-metric-prefix-value="₡"
+     data-tooltip-trend-data-value='<%= metrics[:trend_data].to_json %>'
+     data-tooltip-metric-label-value="<%= tooltip_label %>"
+     data-tooltip-position-value="top"
+     data-dashboard-card-navigation-period-value="<%= period %>"
+     data-dashboard-card-navigation-date-from-value="<%= metrics[:date_range].first %>"
+     data-dashboard-card-navigation-date-to-value="<%= metrics[:date_range].last %>"
+     data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
+  <div class="flex items-center justify-between mb-3">
+    <div class="p-2 rounded-lg <%= icon_bg_class %>">
+      <svg aria-hidden="true" class="w-6 h-6 <%= icon_color_class %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="<%= icon_svg_path %>"></path>
+      </svg>
+    </div>
+    <% trend_value = metrics[:trends][trend_key] %>
+    <% if trend_value != 0 %>
+    <% is_increase = trend_key == :count_change ? trend_value > 0 : metrics[:trends][:is_increase] %>
+    <span class="text-xs font-medium <%= is_increase ? 'text-rose-600' : 'text-emerald-600' %>">
+      <%= is_increase ? '+' : '' %><%= trend_value.round(0) %>%
+    </span>
+    <% end %>
+  </div>
+  <div>
+    <p class="text-sm font-medium text-slate-600 mb-1"><%= label %></p>
+    <p class="text-2xl font-bold text-slate-900" data-animated-metric-target="value">
+      ₡<%= number_with_delimiter(metrics[:metrics][:total_amount].to_i) %>
+    </p>
+    <p class="text-xs text-slate-500 mt-2">
+      <%= metrics[:metrics][:transaction_count] %> <%= t("expenses.dashboard.transactions").downcase %>
+    </p>
+
+    <%= render 'shared/budget_progress',
+          budget_data: metrics[:budgets],
+          metric_amount: metrics[:metrics][:total_amount],
+          period_label: period_label %>
+  </div>
+</div>

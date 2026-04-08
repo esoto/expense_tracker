@@ -61,7 +61,12 @@
           <%= budget[:usage_percentage] %>% usado
         </span>
       </div>
-      <div class="w-full bg-white/20 rounded-full h-2 overflow-hidden">
+      <div class="w-full bg-white/20 rounded-full h-2 overflow-hidden"
+           role="progressbar"
+           aria-label="Presupuesto anual - <%= budget[:usage_percentage] %>% usado"
+           aria-valuenow="<%= budget[:usage_percentage] %>"
+           aria-valuemin="0"
+           aria-valuemax="100">
         <div class="h-2 rounded-full transition-all duration-500 ease-out <%= budget[:status] == :exceeded ? 'bg-rose-400' : budget[:status] == :critical ? 'bg-rose-300' : budget[:status] == :warning ? 'bg-amber-400' : 'bg-emerald-400' %>" style="width: <%= [budget[:usage_percentage], 100].min %>%">
         </div>
       </div>
@@ -93,111 +98,43 @@
     </div>
   </div>
 
-  <!-- Secondary Metrics Cards - Regular Size -->
+  <!-- Secondary Metrics Cards -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <!-- Este Mes Card with Tooltip, Budget and Navigation -->
-    <div id="month-metric-card" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative" role="button" tabindex="0" aria-label="Ver gastos de este mes" data-controller="animated-metric tooltip dashboard-card-navigation" data-animated-metric-container-target="container" data-animated-metric-to-value="<%= @month_metrics[:metrics][:total_amount] %>" data-animated-metric-prefix-value="₡" data-tooltip-trend-data-value='<%= @month_metrics[:trend_data].to_json %>' data-tooltip-metric-label-value="Gastos del Mes" data-tooltip-position-value="top" data-dashboard-card-navigation-period-value="month" data-dashboard-card-navigation-date-from-value="<%= @month_metrics[:date_range].first %>" data-dashboard-card-navigation-date-to-value="<%= @month_metrics[:date_range].last %>" data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
-      <div class="flex items-center justify-between mb-3">
-        <div class="p-2 rounded-lg bg-amber-100">
-          <svg aria-hidden="true" class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-          </svg>
-        </div>
-        <% if @month_metrics[:trends][:count_change] != 0 %>
-        <span class="text-xs font-medium <%= @month_metrics[:trends][:count_change] > 0 ? 'text-rose-600' : 'text-emerald-600' %>">
-          <%= @month_metrics[:trends][:count_change] > 0 ? '+' : '' %><%= @month_metrics[:trends][:count_change].round(0) %>%
-        </span>
-        <% end %>
-      </div>
-      <div>
-        <p class="text-sm font-medium text-slate-600 mb-1">Este Mes</p>
-        <p class="text-2xl font-bold text-slate-900" data-animated-metric-target="value">
-          ₡<%= number_with_delimiter(@month_metrics[:metrics][:total_amount].to_i) %>
-        </p>
-        <p class="text-xs text-slate-500 mt-2">
-          <%= @month_metrics[:metrics][:transaction_count] %> transacciones
-        </p>
+    <%= render 'expenses/metric_card',
+          card_id: 'month-metric-card',
+          metrics: @month_metrics,
+          icon_bg_class: 'bg-amber-100',
+          icon_color_class: 'text-amber-600',
+          icon_svg_path: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+          label: t('expenses.dashboard.this_month'),
+          period: 'month',
+          tooltip_label: t('expenses.dashboard.tooltip_month'),
+          period_label: t('expenses.dashboard.this_month'),
+          trend_key: :count_change %>
 
-        <!-- Budget Progress -->
-        <%= render 'shared/budget_progress',
-              budget_data: @month_metrics[:budgets],
-              metric_amount: @month_metrics[:metrics][:total_amount],
-              period_label: 'Este Mes' %>
-      </div>
-    </div>
+    <%= render 'expenses/metric_card',
+          card_id: 'week-metric-card',
+          metrics: @week_metrics,
+          icon_bg_class: 'bg-teal-100',
+          icon_color_class: 'text-teal-700',
+          icon_svg_path: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+          label: t('expenses.dashboard.this_week'),
+          period: 'week',
+          tooltip_label: t('expenses.dashboard.tooltip_week'),
+          period_label: t('expenses.dashboard.this_week') %>
 
-    <!-- Esta Semana Card with Tooltip, Budget and Navigation -->
-    <div id="week-metric-card" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative" role="button" tabindex="0" aria-label="Ver gastos de esta semana" data-controller="animated-metric tooltip dashboard-card-navigation" data-animated-metric-container-target="container" data-animated-metric-to-value="<%= @week_metrics[:metrics][:total_amount] %>" data-animated-metric-prefix-value="₡" data-tooltip-trend-data-value='<%= @week_metrics[:trend_data].to_json %>' data-tooltip-metric-label-value="Gastos de la Semana" data-tooltip-position-value="top" data-dashboard-card-navigation-period-value="week" data-dashboard-card-navigation-date-from-value="<%= @week_metrics[:date_range].first %>" data-dashboard-card-navigation-date-to-value="<%= @week_metrics[:date_range].last %>" data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
-      <div class="flex items-center justify-between mb-3">
-        <div class="p-2 rounded-lg bg-teal-100">
-          <svg aria-hidden="true" class="w-6 h-6 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-          </svg>
-        </div>
-        <% if @week_metrics[:trends][:amount_change] != 0 %>
-        <span class="text-xs font-medium <%= @week_metrics[:trends][:is_increase] ? 'text-rose-600' : 'text-emerald-600' %>">
-          <%= @week_metrics[:trends][:is_increase] ? '+' : '' %><%= @week_metrics[:trends][:amount_change].round(0) %>%
-        </span>
-        <% end %>
-      </div>
-      <div>
-        <p class="text-sm font-medium text-slate-600 mb-1">Esta Semana</p>
-        <p class="text-2xl font-bold text-slate-900" data-animated-metric-target="value">
-          ₡<%= number_with_delimiter(@week_metrics[:metrics][:total_amount].to_i) %>
-        </p>
-        <p class="text-xs text-slate-500 mt-2">
-          <%= @week_metrics[:metrics][:transaction_count] %> transacciones
-        </p>
-
-        <!-- Budget Progress -->
-        <%= render 'shared/budget_progress',
-              budget_data: @week_metrics[:budgets],
-              metric_amount: @week_metrics[:metrics][:total_amount],
-              period_label: 'Esta Semana' %>
-      </div>
-    </div>
-
-    <!-- Hoy Card with Tooltip, Budget and Navigation -->
-    <div id="day-metric-card" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative" role="button" tabindex="0" aria-label="Ver gastos de hoy" data-controller="animated-metric tooltip dashboard-card-navigation" data-animated-metric-container-target="container" data-animated-metric-to-value="<%= @day_metrics[:metrics][:total_amount] %>" data-animated-metric-prefix-value="₡" data-tooltip-trend-data-value='<%= @day_metrics[:trend_data].to_json %>' data-tooltip-metric-label-value="Gastos de Hoy" data-tooltip-position-value="top" data-dashboard-card-navigation-period-value="day" data-dashboard-card-navigation-date-from-value="<%= @day_metrics[:date_range].first %>" data-dashboard-card-navigation-date-to-value="<%= @day_metrics[:date_range].last %>" data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
-      <div class="flex items-center justify-between mb-3">
-        <div class="p-2 rounded-lg bg-emerald-100">
-          <svg aria-hidden="true" class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-        </div>
-        <% if @day_metrics[:trends][:amount_change] != 0 %>
-        <span class="text-xs font-medium <%= @day_metrics[:trends][:is_increase] ? 'text-rose-600' : 'text-emerald-600' %>">
-          <%= @day_metrics[:trends][:is_increase] ? '+' : '' %><%= @day_metrics[:trends][:amount_change].round(0) %>%
-        </span>
-        <% end %>
-      </div>
-      <div>
-        <p class="text-sm font-medium text-slate-600 mb-1">Hoy</p>
-        <p class="text-2xl font-bold text-slate-900" data-animated-metric-target="value">
-          ₡<%= number_with_delimiter(@day_metrics[:metrics][:total_amount].to_i) %>
-        </p>
-        <p class="text-xs text-slate-500 mt-2">
-          <%= @day_metrics[:metrics][:transaction_count] %> transacciones
-        </p>
-
-        <!-- Budget Progress -->
-        <%= render 'shared/budget_progress',
-              budget_data: @day_metrics[:budgets],
-              metric_amount: @day_metrics[:metrics][:total_amount],
-              period_label: 'Hoy' %>
-      </div>
-    </div>
+    <%= render 'expenses/metric_card',
+          card_id: 'day-metric-card',
+          metrics: @day_metrics,
+          icon_bg_class: 'bg-emerald-100',
+          icon_color_class: 'text-emerald-600',
+          icon_svg_path: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+          label: t('expenses.dashboard.today'),
+          period: 'day',
+          tooltip_label: t('expenses.dashboard.tooltip_today'),
+          period_label: t('expenses.dashboard.today') %>
   </div>
 </div>
-
-  <!-- Email Sync Section (Turbo Stream target for real-time updates) -->
-  <%= turbo_frame_tag "sync_status_section" do %>
-    <%= render 'expenses/sync_status_section',
-          active_sync_session: @active_sync_session,
-          email_accounts: @email_accounts,
-          last_sync_info: @last_sync_info %>
-  <% end %>
-
 
 <div class="overflow-x-hidden">
 
@@ -237,7 +174,7 @@
 <% end %>
 
 <!-- Charts Row -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
   <!-- Monthly Trend -->
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
     <h2 class="text-lg font-semibold text-slate-900 mb-4"><%= t("expenses.dashboard.monthly_trend") %></h2>
@@ -260,7 +197,7 @@
 </div>
 
 <!-- Detailed Tables -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
   <!-- Top Merchants -->
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
     <h2 class="text-lg font-semibold text-slate-900 mb-4"><%= t("expenses.dashboard.top_merchants") %></h2>

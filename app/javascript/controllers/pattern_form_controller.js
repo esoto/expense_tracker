@@ -123,7 +123,8 @@ export default class extends Controller {
       case 'time':
         // For time patterns, we'd need the actual datetime
         // This is a simplified check - supports Spanish keywords
-        const timePatterns = ['mañana', 'tarde', 'atardecer', 'noche', 'fin de semana', 'entre semana']
+        const timePatterns = ['mañana', 'tarde', 'atardecer', 'noche', 'fin de semana', 'entre semana',
+                               'morning', 'afternoon', 'evening', 'night', 'weekend', 'weekday']
         if (timePatterns.includes(value.toLowerCase())) {
           return true // Can't properly test without datetime
         }

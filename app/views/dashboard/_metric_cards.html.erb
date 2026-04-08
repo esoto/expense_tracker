@@ -1,0 +1,202 @@
+<%# Dashboard Metric Cards — Primary (monthly total) + 3 Secondary cards
+  Expected instance variables:
+  - @monthly_metrics: Hash with :total_amount, :transaction_count, :uncategorized_count, etc.
+  - @monthly_trends: Hash with :amount_change, :is_increase, :previous_period_total, etc.
+  - @budgets: Hash from MetricsCalculator with :has_budget, :general_budget, etc.
+  - @daily_average: Float
+  - @uncategorized_count: Integer
+%>
+
+<% month_start = Date.current.beginning_of_month.to_s %>
+<% month_end = Date.current.end_of_month.to_s %>
+<% total_amount = @monthly_metrics[:total_amount] || 0 %>
+<% trend_change = @monthly_trends[:amount_change] || 0 %>
+<% is_increase = @monthly_trends[:is_increase] || false %>
+
+<%# Determine budget remaining values %>
+<% if @budgets && @budgets[:has_budget] && @budgets[:general_budget] %>
+  <% budget = @budgets[:general_budget] %>
+  <% budget_remaining = budget[:remaining] || 0 %>
+  <% budget_formatted_remaining = budget[:formatted_remaining] || number_to_currency(0) %>
+  <% budget_status = budget[:status] || "on_track" %>
+  <% budget_status_color = case budget_status.to_s
+       when "on_track", "under" then "emerald"
+       when "warning", "caution" then "amber"
+       when "over", "exceeded", "danger" then "rose"
+       else "emerald"
+     end %>
+<% else %>
+  <% budget_remaining = 0 %>
+  <% budget_formatted_remaining = number_to_currency(0) %>
+  <% budget_status = "no_budget" %>
+  <% budget_status_color = "slate" %>
+<% end %>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+
+  <%# ═══ PRIMARY CARD: Monthly Total ═══ %>
+  <div id="primary-metric-card"
+       class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative"
+       role="button"
+       tabindex="0"
+       aria-label="<%= t('dashboard.v2.month_total', default: 'Month Total') %> — <%= number_to_currency(total_amount) %>"
+       data-controller="animated-metric dashboard-card-navigation"
+       data-animated-metric-container-target="container"
+       data-animated-metric-to-value="<%= total_amount %>"
+       data-animated-metric-prefix-value="₡"
+       data-animated-metric-trend-value-value="<%= trend_change %>"
+       data-animated-metric-is-increase-value="<%= is_increase %>"
+       data-dashboard-card-navigation-period-value="month"
+       data-dashboard-card-navigation-date-from-value="<%= month_start %>"
+       data-dashboard-card-navigation-date-to-value="<%= month_end %>"
+       data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
+
+    <div class="flex items-center justify-between mb-3">
+      <div class="p-2 rounded-lg bg-teal-50">
+        <svg aria-hidden="true" class="w-6 h-6 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      </div>
+      <% if trend_change != 0 %>
+        <span data-animated-metric-target="trend"
+              class="text-xs font-medium <%= is_increase ? 'text-rose-600' : 'text-emerald-600' %>">
+          <%= is_increase ? "+" : "" %><%= trend_change.round(1) %>%
+        </span>
+      <% end %>
+    </div>
+
+    <div>
+      <p class="text-sm font-medium text-slate-600 mb-1"><%= t("dashboard.v2.month_total", default: "Month Total") %></p>
+      <p class="text-3xl font-bold text-slate-900" data-animated-metric-target="value">
+        ₡<%= number_with_delimiter(total_amount.to_i) %>
+      </p>
+      <p class="text-xs text-slate-500 mt-1">
+        <%= @monthly_metrics[:transaction_count] || 0 %> <%= t("expenses.dashboard.transactions", default: "transactions").downcase %>
+      </p>
+    </div>
+
+    <%= render "shared/budget_progress",
+          budget_data: @budgets,
+          metric_amount: total_amount,
+          period_label: t("dashboard.v2.month_total", default: "Month Total") %>
+  </div>
+
+  <%# ═══ SECONDARY CARD 1: Budget Remaining ═══ %>
+  <div id="budget-remaining-card"
+       class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative"
+       role="button"
+       tabindex="0"
+       aria-label="<%= t('dashboard.v2.budget_remaining', default: 'Budget Remaining') %> — <%= budget_formatted_remaining %>"
+       data-controller="animated-metric dashboard-card-navigation"
+       data-animated-metric-container-target="container"
+       data-animated-metric-to-value="<%= budget_remaining %>"
+       data-animated-metric-prefix-value="₡"
+       data-dashboard-card-navigation-period-value="month"
+       data-dashboard-card-navigation-date-from-value="<%= month_start %>"
+       data-dashboard-card-navigation-date-to-value="<%= month_end %>"
+       data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
+
+    <div class="flex items-center justify-between mb-3">
+      <div class="p-2 rounded-lg bg-<%= budget_status_color %>-50">
+        <svg aria-hidden="true" class="w-6 h-6 text-<%= budget_status_color %>-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+        </svg>
+      </div>
+    </div>
+
+    <div>
+      <p class="text-sm font-medium text-slate-600 mb-1"><%= t("dashboard.v2.budget_remaining", default: "Budget Remaining") %></p>
+      <p class="text-2xl font-bold text-<%= budget_status_color %>-700" data-animated-metric-target="value">
+        ₡<%= number_with_delimiter(budget_remaining.to_i.abs) %>
+      </p>
+      <p class="text-xs text-slate-500 mt-1">
+        <% if budget_status.to_s == "no_budget" %>
+          <%= t("budgets.progress.no_budget", default: "No budget set") %>
+        <% elsif budget_remaining >= 0 %>
+          <%= t("budgets.progress.remaining", default: "remaining") %>
+        <% else %>
+          <span class="text-rose-600 font-medium"><%= t("budgets.progress.exceeded", default: "exceeded") %></span>
+        <% end %>
+      </p>
+    </div>
+  </div>
+
+  <%# ═══ SECONDARY CARD 2: Daily Average ═══ %>
+  <div id="daily-average-card"
+       class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative"
+       role="button"
+       tabindex="0"
+       aria-label="<%= t('dashboard.v2.daily_average', default: 'Daily Average') %> — <%= number_to_currency(@daily_average) %>"
+       data-controller="animated-metric dashboard-card-navigation"
+       data-animated-metric-container-target="container"
+       data-animated-metric-to-value="<%= @daily_average %>"
+       data-animated-metric-prefix-value="₡"
+       data-animated-metric-decimals-value="2"
+       data-dashboard-card-navigation-period-value="month"
+       data-dashboard-card-navigation-date-from-value="<%= month_start %>"
+       data-dashboard-card-navigation-date-to-value="<%= month_end %>"
+       data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
+
+    <div class="flex items-center justify-between mb-3">
+      <div class="p-2 rounded-lg bg-teal-50">
+        <svg aria-hidden="true" class="w-6 h-6 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+      </div>
+    </div>
+
+    <div>
+      <p class="text-sm font-medium text-slate-600 mb-1"><%= t("dashboard.v2.daily_average", default: "Daily Average") %></p>
+      <p class="text-2xl font-bold text-slate-900" data-animated-metric-target="value">
+        ₡<%= number_with_delimiter(@daily_average.round(2)) %>
+      </p>
+      <p class="text-xs text-slate-500 mt-1">
+        <%= t("dashboard.v2.per_day", default: "per day this month") %>
+      </p>
+    </div>
+  </div>
+
+  <%# ═══ SECONDARY CARD 3: Uncategorized ═══ %>
+  <% uncategorized_warning = @uncategorized_count.to_i > 0 %>
+  <div id="uncategorized-card"
+       class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative"
+       role="button"
+       tabindex="0"
+       aria-label="<%= t('dashboard.v2.uncategorized', default: 'Uncategorized') %> — <%= @uncategorized_count %>"
+       data-controller="animated-metric dashboard-card-navigation"
+       data-animated-metric-container-target="container"
+       data-animated-metric-to-value="<%= @uncategorized_count %>"
+       data-dashboard-card-navigation-period-value="month"
+       data-dashboard-card-navigation-date-from-value="<%= month_start %>"
+       data-dashboard-card-navigation-date-to-value="<%= month_end %>"
+       data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
+
+    <div class="flex items-center justify-between mb-3">
+      <div class="p-2 rounded-lg <%= uncategorized_warning ? 'bg-amber-50' : 'bg-slate-100' %>">
+        <svg aria-hidden="true" class="w-6 h-6 <%= uncategorized_warning ? 'text-amber-600' : 'text-slate-500' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+        </svg>
+      </div>
+      <% if uncategorized_warning %>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+          <%= t("dashboard.v2.needs_review", default: "Needs review") %>
+        </span>
+      <% end %>
+    </div>
+
+    <div>
+      <p class="text-sm font-medium text-slate-600 mb-1"><%= t("dashboard.v2.uncategorized", default: "Uncategorized") %></p>
+      <p class="text-2xl font-bold <%= uncategorized_warning ? 'text-amber-700' : 'text-slate-900' %>" data-animated-metric-target="value">
+        <%= @uncategorized_count %>
+      </p>
+      <p class="text-xs text-slate-500 mt-1">
+        <% if uncategorized_warning %>
+          <%= t("dashboard.v2.expenses_need_categorization", default: "expenses need categorization") %>
+        <% else %>
+          <%= t("dashboard.v2.all_categorized", default: "all expenses categorized") %>
+        <% end %>
+      </p>
+    </div>
+  </div>
+
+</div>

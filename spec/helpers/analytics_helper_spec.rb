@@ -205,10 +205,10 @@ RSpec.describe AnalyticsHelper, type: :helper, unit: true do
     it "includes expected color palette" do
       colors = helper.chart_colors
 
-      expect(colors).to include("#0F766E") # teal
-      expect(colors).to include("#D97706") # amber
-      expect(colors).to include("#FB7185") # rose
-      expect(colors).to include("#10B981") # emerald
+      expect(colors).to include("#0F766E") # teal-700
+      expect(colors).to include("#D97706") # amber-600
+      expect(colors).to include("#E11D48") # rose-600
+      expect(colors).to include("#059669") # emerald-600
     end
   end
 

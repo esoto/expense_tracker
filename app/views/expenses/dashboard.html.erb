@@ -203,7 +203,8 @@
       <%= pie_chart @sorted_categories.first(8),
             prefix: "₡",
             thousands: ",",
-            height: "300px" %>
+            height: "300px",
+            colors: chart_colors %>
     <% else %>
       <div class="flex flex-col items-center justify-center py-12 text-slate-400">
         <svg aria-hidden="true" class="w-12 h-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

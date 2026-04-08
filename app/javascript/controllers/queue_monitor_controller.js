@@ -100,7 +100,7 @@ export default class extends Controller {
       }
     } catch (error) {
       console.error("Error al obtener estado de la cola:", error)
-      this.showError("Error al cargar estado de la cola")
+      this.showError(t("queue.errors.load_status"))
     }
   }
 
@@ -297,7 +297,7 @@ export default class extends Controller {
               <span class="text-xs px-2 py-0.5 bg-rose-100 text-rose-700 rounded-full">${job.queue_name}</span>
             </div>
             <div class="text-xs text-rose-600 mt-1">${errorMessage}</div>
-            <div class="text-xs text-slate-500 mt-1">Falló el ${failedAt}</div>
+            <div class="text-xs text-slate-500 mt-1">${t("queue.status.failed_at")}${failedAt}</div>
           </div>
           <div class="flex items-center space-x-1 ml-4">
             <button data-job-id="${job.id}"
@@ -370,11 +370,11 @@ export default class extends Controller {
         this.showSuccess(result.message)
         this.fetchQueueStatus()
       } else {
-        this.showError(result.error || "Operación fallida")
+        this.showError(result.error || t("queue.errors.operation_failed"))
       }
     } catch (error) {
       console.error("Error al cambiar pausa:", error)
-      this.showError("Error al cambiar pausa de la cola")
+      this.showError(t("queue.errors.toggle_pause"))
     }
   }
 
@@ -396,14 +396,14 @@ export default class extends Controller {
       const result = await response.json()
 
       if (result.success) {
-        this.showSuccess(`Trabajo ${jobId} encolado para reintentar`)
+        this.showSuccess(t("queue.notifications.job_queued_retry", { jobId }))
         this.fetchQueueStatus()
       } else {
-        this.showError(result.error || "Error al reintentar trabajo")
+        this.showError(result.error || t("queue.errors.retry_job"))
       }
     } catch (error) {
       console.error("Error al reintentar trabajo:", error)
-      this.showError("Error al reintentar trabajo")
+      this.showError(t("queue.errors.retry_job"))
     }
   }
 
@@ -425,14 +425,14 @@ export default class extends Controller {
       const result = await response.json()
 
       if (result.success) {
-        this.showSuccess(`Trabajo ${jobId} limpiado`)
+        this.showSuccess(t("queue.notifications.job_cleared", { jobId }))
         this.fetchQueueStatus()
       } else {
-        this.showError(result.error || "Error al limpiar trabajo")
+        this.showError(result.error || t("queue.errors.clear_job"))
       }
     } catch (error) {
       console.error("Error al limpiar trabajo:", error)
-      this.showError("Error al limpiar trabajo")
+      this.showError(t("queue.errors.clear_job"))
     }
   }
 
@@ -460,11 +460,11 @@ export default class extends Controller {
         this.showSuccess(result.message)
         this.fetchQueueStatus()
       } else {
-        this.showError(result.error || "Error al reintentar trabajos")
+        this.showError(result.error || t("queue.errors.retry_all_failed"))
       }
     } catch (error) {
       console.error("Error al reintentar todos los trabajos:", error)
-      this.showError("Error al reintentar todos los trabajos fallidos")
+      this.showError(t("queue.errors.retry_all"))
     }
   }
 
@@ -472,11 +472,11 @@ export default class extends Controller {
   async clearAllFailed(event) {
     event.preventDefault()
 
-    if (!confirm("¿Estás seguro de que deseas limpiar todos los trabajos fallidos? Esta acción no se puede deshacer.")) {
+    if (!confirm(t("queue.confirmations.clear_all_jobs"))) {
       return
     }
 
-    this.showError("Limpiar todo aún no está implementado")
+    this.showError(t("queue.errors.clear_all_not_implemented"))
   }
 
   // Update last refresh time
@@ -497,7 +497,7 @@ export default class extends Controller {
 
   // Extract error message from error JSON
   extractErrorMessage(error) {
-    if (!error) return "Error desconocido"
+    if (!error) return t("queue.errors.unknown_error")
 
     try {
       // If it's a string, try to parse it as JSON
@@ -505,7 +505,7 @@ export default class extends Controller {
         const parsed = JSON.parse(error)
         return parsed.message || parsed.error || error
       }
-      return error.message || error.error || "Error desconocido"
+      return error.message || error.error || t("queue.errors.unknown_error")
     } catch {
       // If parsing fails, return first 100 chars of the error
       return error.substring(0, 100) + (error.length > 100 ? "..." : "")

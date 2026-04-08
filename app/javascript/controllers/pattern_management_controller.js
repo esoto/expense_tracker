@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { shouldSuppressShortcut } from "utilities/keyboard_shortcut_helpers"
+import { t } from "services/i18n"
 
 export default class extends Controller {
   static targets = ["importModal", "searchField"]
@@ -130,7 +131,7 @@ export default class extends Controller {
   }
   
   bulkDelete() {
-    if (confirm('¿Estás seguro de que deseas eliminar los patrones seleccionados?')) {
+    if (confirm(t('patterns.confirmations.delete_selected'))) {
       this.performBulkAction('delete')
     }
   }

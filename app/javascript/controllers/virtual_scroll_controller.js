@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { t } from "services/i18n"
 
 /**
  * Virtual Scroll Controller
@@ -313,7 +314,7 @@ export default class extends Controller {
       }
     } catch (error) {
       console.error('Error loading more items:', error)
-      this.showError('Error al cargar más gastos')
+      this.showError(t('expenses.errors.load_more'))
     } finally {
       this.loadingValue = false
       this.loaderTarget.style.display = 'none'
@@ -362,7 +363,7 @@ export default class extends Controller {
           <span class="px-2 py-1 text-xs rounded-full bg-${data.category.color}-100 text-${data.category.color}-800">
             ${data.category.name}
           </span>
-        ` : '<span class="text-slate-500">Sin categoría</span>'}
+        ` : `<span class="text-slate-500">${t('expenses.labels.uncategorized')}</span>`}
       </td>
       <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
         ${data.currency === 'USD' ? '$' : '₡'}${this.formatAmount(data.amount)}

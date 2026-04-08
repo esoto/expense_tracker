@@ -1,6 +1,7 @@
 // Accessibility Manager for Dashboard Features
 // Task 3.9: Dashboard Accessibility
 // Provides utilities for WCAG 2.1 AA compliance
+import { t } from "services/i18n"
 
 export default class AccessibilityManager {
   constructor() {
@@ -24,7 +25,7 @@ export default class AccessibilityManager {
     
     // Announce page load completion
     setTimeout(() => {
-      this.announce('Página cargada. Use Tab para navegar o presione Alt+H para ayuda con atajos de teclado.')
+      this.announce(t('a11y.announcements.page_loaded'))
     }, 1000)
   }
   
@@ -63,7 +64,7 @@ export default class AccessibilityManager {
       this.lastFocusedElement = document.activeElement
       this.activeModal = e.detail.modal
       this.trapFocus(this.activeModal)
-      this.announce('Modal abierto', 'assertive')
+      this.announce(t('a11y.announcements.modal_opened'), 'assertive')
     })
     
     // Restore focus when modal closes
@@ -73,7 +74,7 @@ export default class AccessibilityManager {
         this.lastFocusedElement = null
       }
       this.activeModal = null
-      this.announce('Modal cerrado', 'assertive')
+      this.announce(t('a11y.announcements.modal_closed'), 'assertive')
     })
   }
   
@@ -213,19 +214,19 @@ export default class AccessibilityManager {
   // Show keyboard shortcuts help
   showKeyboardShortcuts() {
     const shortcuts = [
-      'Tab/Shift+Tab: Navegar entre elementos',
-      'Enter/Espacio: Activar botón o enlace',
-      'Escape: Cerrar modales o limpiar filtros',
-      'Flechas: Navegar en listas y filtros',
-      'Alt+1: Ir a filtros rápidos',
-      'Alt+2: Ir a lista de gastos',
-      'Alt+3: Ir a acciones de selección',
-      'Ctrl+Shift+S: Activar selección múltiple',
-      'Ctrl+Shift+V: Cambiar vista',
-      'C: Categorizar (en lista de gastos)',
-      'S: Cambiar estado (en lista de gastos)',
-      'D: Duplicar (en lista de gastos)',
-      'Del: Eliminar (en lista de gastos)'
+      t('a11y.shortcuts.tab_navigate'),
+      t('a11y.shortcuts.enter_activate'),
+      t('a11y.shortcuts.escape_close'),
+      t('a11y.shortcuts.arrows_navigate'),
+      t('a11y.shortcuts.alt1_filters'),
+      t('a11y.shortcuts.alt2_list'),
+      t('a11y.shortcuts.alt3_selection'),
+      t('a11y.shortcuts.ctrl_shift_s'),
+      t('a11y.shortcuts.ctrl_shift_v'),
+      t('a11y.shortcuts.c_categorize'),
+      t('a11y.shortcuts.s_status'),
+      t('a11y.shortcuts.d_duplicate'),
+      t('a11y.shortcuts.del_delete')
     ]
     
     const helpText = shortcuts.join('\n')
@@ -241,11 +242,11 @@ export default class AccessibilityManager {
       <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
         <div class="flex items-center justify-between mb-4">
           <h2 id="shortcuts-title" class="text-lg font-semibold text-slate-900">
-            Atajos de Teclado
+            ${t('a11y.shortcuts.title')}
           </h2>
-          <button type="button" 
+          <button type="button"
                   class="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                  aria-label="Cerrar ayuda">
+                  aria-label="${t('a11y.shortcuts.close_help')}">
             <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
@@ -260,10 +261,10 @@ export default class AccessibilityManager {
           `).join('')}
         </div>
         <div class="mt-4 pt-4 border-t border-slate-200">
-          <button type="button" 
+          <button type="button"
                   class="w-full px-4 py-2 bg-teal-700 text-white rounded-lg hover:bg-teal-800 transition-colors"
-                  aria-label="Cerrar ayuda de atajos">
-            Cerrar
+                  aria-label="${t('a11y.shortcuts.close_help_shortcuts')}">
+            ${t('a11y.shortcuts.close_button')}
           </button>
         </div>
       </div>
@@ -272,11 +273,11 @@ export default class AccessibilityManager {
     // Close handlers
     const closeModal = () => {
       document.body.removeChild(modal)
-      this.announce('Ayuda de atajos cerrada')
+      this.announce(t('a11y.announcements.shortcuts_closed'))
     }
-    
-    modal.querySelector('button[aria-label="Cerrar ayuda"]').addEventListener('click', closeModal)
-    modal.querySelector('button[aria-label="Cerrar ayuda de atajos"]').addEventListener('click', closeModal)
+
+    modal.querySelector(`button[aria-label="${t('a11y.shortcuts.close_help')}"]`).addEventListener('click', closeModal)
+    modal.querySelector(`button[aria-label="${t('a11y.shortcuts.close_help_shortcuts')}"]`).addEventListener('click', closeModal)
     
     modal.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
@@ -292,7 +293,7 @@ export default class AccessibilityManager {
     
     document.body.appendChild(modal)
     this.trapFocus(modal)
-    this.announce('Ayuda de atajos de teclado abierta', 'assertive')
+    this.announce(t('a11y.announcements.shortcuts_opened'), 'assertive')
   }
   
   // Focus on filters section
@@ -302,7 +303,7 @@ export default class AccessibilityManager {
     
     if (filtersSection) {
       filtersSection.focus()
-      this.announce('Enfocado en filtros rápidos')
+      this.announce(t('a11y.announcements.filters_focused'))
     }
   }
   
@@ -313,7 +314,7 @@ export default class AccessibilityManager {
     
     if (expenseList) {
       expenseList.focus()
-      this.announce('Enfocado en lista de gastos')
+      this.announce(t('a11y.announcements.expense_list_focused'))
     }
   }
   
@@ -325,10 +326,10 @@ export default class AccessibilityManager {
       const firstButton = toolbar.querySelector('button')
       if (firstButton) {
         firstButton.focus()
-        this.announce('Enfocado en acciones de selección')
+        this.announce(t('a11y.announcements.selection_focused'))
       }
     } else {
-      this.announce('Modo de selección no activo')
+      this.announce(t('a11y.announcements.selection_mode_inactive'))
     }
   }
   
@@ -376,7 +377,7 @@ export default class AccessibilityManager {
   // Update selection count announcements
   announceSelectionChange(count, total) {
     if (count === 0) {
-      this.announce('Selección limpiada')
+      this.announce(t('a11y.announcements.selection_cleared'))
     } else if (count === total) {
       this.announce(`Todos los ${total} gastos seleccionados`)
     } else {
@@ -443,12 +444,12 @@ export default class AccessibilityManager {
   // Add high contrast mode support
   enableHighContrastMode() {
     document.body.classList.add('high-contrast-mode')
-    this.announce('Modo de alto contraste activado')
+    this.announce(t('a11y.announcements.high_contrast_enabled'))
   }
   
   disableHighContrastMode() {
     document.body.classList.remove('high-contrast-mode')
-    this.announce('Modo de alto contraste desactivado')
+    this.announce(t('a11y.announcements.high_contrast_disabled'))
   }
 }
 

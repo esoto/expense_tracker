@@ -1,0 +1,49 @@
+.chart-skeleton {
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-skeleton.hidden {
+  display: none;
+}
+
+/* Line chart skeleton */
+.chart-skeleton-line {
+  width: 100%;
+  height: 100%;
+  background:
+    linear-gradient(90deg, transparent 0%, rgba(15, 118, 110, 0.08) 50%, transparent 100%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 58px,
+      rgba(148, 163, 184, 0.15) 58px,
+      rgba(148, 163, 184, 0.15) 59px
+    );
+  background-size: 200% 100%, 100% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
+
+/* Pie chart skeleton */
+.chart-skeleton-pie {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: conic-gradient(
+    rgba(15, 118, 110, 0.12) 0deg 120deg,
+    rgba(217, 119, 6, 0.12) 120deg 200deg,
+    rgba(5, 150, 105, 0.12) 200deg 280deg,
+    rgba(148, 163, 184, 0.12) 280deg 360deg
+  );
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  background-size: 200% 100%;
+}
+
+@keyframes skeleton-shimmer {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}

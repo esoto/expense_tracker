@@ -255,7 +255,7 @@ class SyncSession < ApplicationRecord
       }
 
       # Broadcast Turbo Stream update to the dashboard
-      broadcast_update_to(
+      broadcast_replace_to(
         "dashboard_sync_updates",
         target: "sync_status_widget",
         partial: "sync_sessions/unified_widget",

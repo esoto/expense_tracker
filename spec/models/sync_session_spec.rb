@@ -465,7 +465,7 @@ RSpec.describe SyncSession, type: :model do
         locals: { session: sync_session }
       )
       # Allow the existing dashboard broadcast
-      allow(sync_session).to receive(:broadcast_update_to).with(
+      allow(sync_session).to receive(:broadcast_replace_to).with(
         "dashboard_sync_updates",
         hash_including(target: "sync_status_widget")
       )
@@ -485,7 +485,7 @@ RSpec.describe SyncSession, type: :model do
         "sync_sessions_index",
         hash_including(target: "status_sync_session_#{sync_session.id}")
       )
-      allow(sync_session).to receive(:broadcast_update_to).with(
+      allow(sync_session).to receive(:broadcast_replace_to).with(
         "dashboard_sync_updates",
         hash_including(target: "sync_status_widget")
       )
@@ -499,7 +499,7 @@ RSpec.describe SyncSession, type: :model do
         hash_including(target: "status_sync_session_#{sync_session.id}")
       )
       # Allow other broadcasts (dashboard update fires on any update)
-      allow(sync_session).to receive(:broadcast_update_to).with(
+      allow(sync_session).to receive(:broadcast_replace_to).with(
         "dashboard_sync_updates",
         hash_including(target: "sync_status_widget")
       )

@@ -235,6 +235,9 @@ class ExpensesController < ApplicationController
     # Load categories once for expense row partials (avoids N+1 queries)
     @categories = Category.all.order(:name)
 
+    # Precompute conflict count for dashboard alert (moved from view)
+    @pending_conflicts_count = SyncConflict.unresolved.count
+
     # Handle AJAX requests for partial updates (Task 3.6)
     if request.xhr? && params[:partial] == "expenses_list"
       render partial: "expenses/dashboard_expense_list", locals: {

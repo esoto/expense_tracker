@@ -149,8 +149,7 @@
 </div>
 
 <!-- Conflict Alert (if any pending conflicts) -->
-<% pending_conflicts_count = SyncConflict.unresolved.count %>
-<% if pending_conflicts_count > 0 %>
+<% if @pending_conflicts_count.to_i > 0 %>
 <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
   <div class="flex items-center justify-between">
     <div class="flex items-center">
@@ -159,7 +158,7 @@
       </svg>
       <div>
         <p class="text-sm font-medium text-amber-900">
-          <%= pending_conflicts_count %> <%= pending_conflicts_count == 1 ? 'conflicto pendiente' : 'conflictos pendientes' %> de resolución
+          <%= @pending_conflicts_count %> <%= @pending_conflicts_count == 1 ? 'conflicto pendiente' : 'conflictos pendientes' %> de resolución
         </p>
         <p class="text-xs text-amber-700 mt-1">
           Se detectaron transacciones duplicadas o similares que requieren tu atención

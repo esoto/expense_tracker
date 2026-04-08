@@ -698,8 +698,8 @@ RSpec.describe SyncSession, type: :model, unit: true, broadcast: true do
         expect(sync_session).to receive(:broadcast_update_to).with(
           "dashboard_sync_updates",
           hash_including(
-            target: "sync_status_section",
-            partial: "expenses/sync_status_section"
+            target: "sync_status_widget",
+            partial: "sync_sessions/unified_widget"
           )
         )
 

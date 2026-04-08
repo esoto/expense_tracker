@@ -363,6 +363,7 @@ es:
       subheading: "Resumen completo de tus finanzas"
       sync_section_heading: "Sincronización de Correos"
       by_category: "Gastos por Categoría"
+      by_bank: "Gastos por Banco"
       top_merchants: "Comercios con Más Gastos"
       recent: "Gastos Recientes"
       monthly_trend: "Tendencia Mensual"

@@ -75,8 +75,8 @@ RSpec.describe "expenses/dashboard.html.erb", type: :view, unit: true do
     # Check for the primary metric card with gradient background
     expect(rendered).to have_css('.bg-gradient-to-br.from-teal-700.to-teal-800')
 
-    # Check for the "TOTAL DE GASTOS" heading
-    expect(rendered).to have_content('TOTAL DE GASTOS')
+    # Check for the total expenses heading (i18n)
+    expect(rendered).to have_content(I18n.t("expenses.dashboard.total_expenses"))
 
     # Check for animated metric controller (can be combined with other controllers)
     expect(rendered).to have_css('[data-controller*="animated-metric"]')

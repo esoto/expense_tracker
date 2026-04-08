@@ -306,36 +306,36 @@
         <h2 class="text-lg font-semibold text-slate-900"><%= t("expenses.dashboard.recent") %></h2>
         <% if @expense_filter_result && @expense_filter_result.metadata[:filters_applied].to_i > 0 %>
         <span class="px-2 py-1 text-xs font-medium bg-teal-100 text-teal-700 rounded-full">
-          <%= @expense_filter_result.metadata[:filters_applied].to_i %> filtros activos
+          <%= t("expenses.dashboard.filters_active", count: @expense_filter_result.metadata[:filters_applied].to_i) %>
         </span>
         <% end %>
       </div>
 
       <div class="flex items-center space-x-2">
         <!-- Batch Selection Toggle (Task 3.4) -->
-        <button type="button" class="p-2 text-slate-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors" data-action="click->dashboard-expenses#toggleSelectionMode" title="Modo de selección múltiple (Ctrl+Shift+S)" aria-label="Activar selección múltiple">
+        <button type="button" class="p-2 text-slate-600 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors" data-action="click->dashboard-expenses#toggleSelectionMode" title="<%= t('expenses.dashboard.toggle_selection_hint') %>" aria-label="<%= t('expenses.dashboard.toggle_selection_aria') %>">
           <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
           </svg>
         </button>
 
         <!-- View Toggle (Task 3.2: Dashboard Compact View Toggle) -->
-        <div class="dashboard-expenses-toggle" role="group" aria-label="Vista" title="Atajo: Ctrl+Shift+V">
-          <button type="button" class="<%= @expense_view_mode == 'compact' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900' %>" data-action="click->dashboard-expenses#setViewMode" data-mode="compact" data-dashboard-expenses-target="compactButton" aria-pressed="<%= @expense_view_mode == 'compact' %>" aria-label="Vista compacta">
+        <div class="dashboard-expenses-toggle" role="group" aria-label="<%= t('expenses.dashboard.view_label') %>" title="<%= t('expenses.dashboard.view_shortcut_hint') %>">
+          <button type="button" class="<%= @expense_view_mode == 'compact' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900' %>" data-action="click->dashboard-expenses#setViewMode" data-mode="compact" data-dashboard-expenses-target="compactButton" aria-pressed="<%= @expense_view_mode == 'compact' %>" aria-label="<%= t('expenses.dashboard.view_compact') %>">
             <svg aria-hidden="true" class="view-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
-            <span class="view-label">Compacta</span>
+            <span class="view-label"><%= t("expenses.dashboard.view_compact_label") %></span>
           </button>
-          <button type="button" class="<%= @expense_view_mode == 'expanded' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900' %>" data-action="click->dashboard-expenses#setViewMode" data-mode="expanded" data-dashboard-expenses-target="expandedButton" aria-pressed="<%= @expense_view_mode == 'expanded' %>" aria-label="Vista expandida">
+          <button type="button" class="<%= @expense_view_mode == 'expanded' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900' %>" data-action="click->dashboard-expenses#setViewMode" data-mode="expanded" data-dashboard-expenses-target="expandedButton" aria-pressed="<%= @expense_view_mode == 'expanded' %>" aria-label="<%= t('expenses.dashboard.view_expanded') %>">
             <svg aria-hidden="true" class="view-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h8m-8 4h16M4 18h11"></path>
             </svg>
-            <span class="view-label">Expandida</span>
+            <span class="view-label"><%= t("expenses.dashboard.view_expanded_label") %></span>
           </button>
         </div>
 
-        <%= link_to "Ver todos", expenses_path, class: "text-teal-700 hover:text-teal-800 text-sm font-medium" %>
+        <%= link_to t("expenses.dashboard.view_all"), expenses_path, class: "text-teal-700 hover:text-teal-800 text-sm font-medium" %>
       </div>
     </div>
 
@@ -352,7 +352,7 @@
 
       <% if @expense_quick_filters[:statuses]&.any? { |s| s[:status] == 'uncategorized' } %>
       <button type="button" class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition-colors" data-action="click->dashboard-expenses#filterByStatus" data-status="uncategorized">
-        Sin categorizar
+        <%= t("expenses.dashboard.uncategorized") %>
         <span class="ml-1">(<%= @expense_quick_filters[:statuses].find { |s| s[:status] == 'uncategorized' }[:count] %>)</span>
       </button>
       <% end %>
@@ -362,7 +362,7 @@
         <svg aria-hidden="true" class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
-        Limpiar filtros
+        <%= t("expenses.dashboard.clear_filters") %>
       </button>
       <% end %>
     </div>
@@ -385,49 +385,49 @@
   <% end %>
 
   <!-- Batch Selection Toolbar (Task 3.4) -->
-  <div class="hidden px-6 py-3 bg-teal-50 border-b border-teal-200" data-dashboard-expenses-target="selectionToolbar" role="toolbar" aria-label="Acciones de selección">
+  <div class="hidden px-6 py-3 bg-teal-50 border-b border-teal-200" data-dashboard-expenses-target="selectionToolbar" role="toolbar" aria-label="<%= t('expenses.dashboard.selection_toolbar_aria') %>">
     <div class="flex items-center justify-between">
       <div class="flex items-center space-x-4">
         <!-- Select All Checkbox -->
         <div class="flex items-center">
-          <input type="checkbox" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500" data-dashboard-expenses-target="selectAllCheckbox" data-action="change->dashboard-expenses#selectAll" aria-label="Seleccionar todos">
+          <input type="checkbox" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500" data-dashboard-expenses-target="selectAllCheckbox" data-action="change->dashboard-expenses#selectAll" aria-label="<%= t('expenses.dashboard.select_all') %>">
           <label class="ml-2 text-sm font-medium text-slate-700">
-            Seleccionar todos
+            <%= t("expenses.dashboard.select_all") %>
           </label>
         </div>
 
         <!-- Selection Count -->
         <div class="text-sm text-slate-600">
-          <span data-dashboard-expenses-target="selectedCount">0</span> seleccionados
+          <span data-dashboard-expenses-target="selectedCount">0</span> <%= t("expenses.dashboard.selected") %>
         </div>
       </div>
 
       <!-- Bulk Actions -->
       <div class="flex items-center space-x-2">
-        <button type="button" class="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" data-action="click->dashboard-expenses#bulkCategorize" title="Categorizar seleccionados">
+        <button type="button" class="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" data-action="click->dashboard-expenses#bulkCategorize" title="<%= t('expenses.dashboard.bulk_categorize_title') %>">
           <svg aria-hidden="true" class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
           </svg>
-          Categorizar
+          <%= t("expenses.dashboard.bulk_categorize") %>
         </button>
 
-        <button type="button" class="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" data-action="click->dashboard-expenses#bulkUpdateStatus" title="Actualizar estado">
+        <button type="button" class="px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" data-action="click->dashboard-expenses#bulkUpdateStatus" title="<%= t('expenses.dashboard.bulk_update_status_title') %>">
           <svg aria-hidden="true" class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
-          Estado
+          <%= t("expenses.dashboard.bulk_status") %>
         </button>
 
-        <button type="button" class="px-3 py-1.5 text-sm font-medium text-white bg-rose-600 border border-rose-600 rounded-lg hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" data-action="click->dashboard-expenses#bulkDelete" title="Eliminar seleccionados">
+        <button type="button" class="px-3 py-1.5 text-sm font-medium text-white bg-rose-600 border border-rose-600 rounded-lg hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" data-action="click->dashboard-expenses#bulkDelete" title="<%= t('expenses.dashboard.bulk_delete_title') %>">
           <svg aria-hidden="true" class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
           </svg>
-          Eliminar
+          <%= t("expenses.dashboard.bulk_delete") %>
         </button>
 
         <div class="w-px h-6 bg-slate-300"></div>
 
-        <button type="button" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors" data-action="click->dashboard-expenses#disableSelectionMode" title="Salir del modo de selección (Esc)">
+        <button type="button" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors" data-action="click->dashboard-expenses#disableSelectionMode" title="<%= t('expenses.dashboard.exit_selection_hint') %>">
           <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
@@ -450,7 +450,7 @@
       <!-- Category Filters -->
       <% if @expense_filter_result&.quick_filters&.dig(:categories)&.any? %>
       <div class="flex flex-wrap items-center gap-2">
-        <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Categorías:</span>
+        <span class="text-xs font-medium text-slate-500 uppercase tracking-wider"><%= t("expenses.dashboard.filter_categories") %>:</span>
         <% @expense_filter_result.quick_filters[:categories].each do |category| %>
         <button type="button"
                 class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full border transition-all duration-200 bg-white text-slate-700 border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-teal-500"
@@ -473,7 +473,7 @@
         <!-- Status Filters -->
         <% if @expense_filter_result&.quick_filters&.dig(:statuses)&.any? %>
         <div class="flex flex-wrap items-center gap-2">
-          <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Estado:</span>
+          <span class="text-xs font-medium text-slate-500 uppercase tracking-wider"><%= t("expenses.dashboard.filter_status") %>:</span>
           <% @expense_filter_result.quick_filters[:statuses].each do |status| %>
           <button type="button"
                   class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full border transition-all duration-200 bg-white text-slate-700 border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-teal-500"
@@ -502,7 +502,7 @@
         <!-- Period Filters -->
         <% if @expense_filter_result&.quick_filters&.dig(:recent_periods)&.any? %>
         <div class="flex flex-wrap items-center gap-2">
-          <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Período:</span>
+          <span class="text-xs font-medium text-slate-500 uppercase tracking-wider"><%= t("expenses.dashboard.filter_period") %>:</span>
           <% @expense_filter_result.quick_filters[:recent_periods].each do |period| %>
           <button type="button"
                   class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full border transition-all duration-200 bg-white text-slate-700 border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-teal-500"
@@ -527,11 +527,11 @@
                 class="hidden items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-rose-600 hover:text-rose-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-rose-500"
                 data-dashboard-filter-chips-target="clearButton"
                 data-action="click->dashboard-filter-chips#clearAllFilters"
-                title="Limpiar todos los filtros (Esc)">
+                title="<%= t('expenses.dashboard.clear_all_filters_hint') %>">
           <svg aria-hidden="true" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
-          <span>Limpiar filtros</span>
+          <span><%= t("expenses.dashboard.clear_filters") %></span>
           <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-rose-600 rounded-full hidden" data-dashboard-filter-chips-target="filterCount">0</span>
         </button>
 
@@ -542,7 +542,7 @@
                   class="p-1.5 text-slate-400 hover:text-teal-600 transition-colors"
                   data-dashboard-filter-persistence-target="shareButton"
                   data-action="click->dashboard-filter-persistence#shareFilters"
-                  title="Compartir filtros">
+                  title="<%= t('expenses.dashboard.share_filters') %>">
             <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a3 3 0 10-2.684-2.684m0 0a3 3 0 00-2.684 2.684M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
@@ -553,7 +553,7 @@
                   class="p-1.5 text-slate-400 hover:text-rose-600 transition-colors"
                   data-dashboard-filter-persistence-target="resetButton"
                   data-action="click->dashboard-filter-persistence#resetFilters"
-                  title="Restablecer filtros y preferencias">
+                  title="<%= t('expenses.dashboard.reset_filters') %>">
             <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
             </svg>
@@ -568,7 +568,7 @@
 
       <!-- Active Filters Summary (shown when filters are applied) -->
       <div class="hidden text-xs text-slate-600" id="active-filters-summary">
-        <span class="font-medium">Filtros activos:</span>
+        <span class="font-medium"><%= t("expenses.dashboard.active_filters_label") %>:</span>
         <span id="active-filters-text"></span>
       </div>
 
@@ -671,12 +671,12 @@
       <svg aria-hidden="true" class="dashboard-expenses-empty-icon mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
       </svg>
-      <h3 class="dashboard-expenses-empty-title mt-3 text-sm font-medium text-slate-900">No hay gastos</h3>
+      <h3 class="dashboard-expenses-empty-title mt-3 text-sm font-medium text-slate-900"><%= t("expenses.dashboard.empty_title") %></h3>
       <p class="dashboard-expenses-empty-text mt-1 text-sm text-slate-500">
         <% if @expense_filter_result && @expense_filter_result.metadata[:filters_applied].to_i > 0 %>
-        No se encontraron gastos con los filtros aplicados.
+        <%= t("expenses.dashboard.empty_with_filters") %>
         <% else %>
-        Aún no tienes gastos registrados.
+        <%= t("expenses.dashboard.empty_no_expenses") %>
         <% end %>
       </p>
     </div>
@@ -687,7 +687,7 @@
   <% if @recent_expenses.any? && @expense_filter_result && @expense_filter_result.metadata[:has_more] %>
   <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 text-center">
     <button type="button" class="px-4 py-2 text-sm font-medium text-teal-700 bg-white border border-teal-300 rounded-lg hover:bg-teal-50 transition-colors" data-action="click->dashboard-expenses#loadMore">
-      Cargar más gastos
+      <%= t("expenses.dashboard.load_more") %>
     </button>
   </div>
   <% end %>
@@ -697,12 +697,12 @@
   <div class="px-6 py-3 bg-slate-50 border-t border-slate-200">
     <div class="flex items-center justify-between text-xs text-slate-600">
       <span>
-        Total mostrado: <span class="font-medium text-slate-900">₡<%= number_with_delimiter(@expense_summary_stats[:total_amount].to_i) %></span>
+        <%= t("expenses.dashboard.summary_total_shown") %>: <span class="font-medium text-slate-900">₡<%= number_with_delimiter(@expense_summary_stats[:total_amount].to_i) %></span>
       </span>
       <span>
-        <%= @expense_summary_stats[:total_count] %> gastos •
-        <%= @expense_summary_stats[:unique_merchants] %> comercios •
-        <%= @expense_summary_stats[:unique_categories] %> categorías
+        <%= @expense_summary_stats[:total_count] %> <%= t("expenses.dashboard.summary_expenses") %> •
+        <%= @expense_summary_stats[:unique_merchants] %> <%= t("expenses.dashboard.summary_merchants") %> •
+        <%= @expense_summary_stats[:unique_categories] %> <%= t("expenses.dashboard.summary_categories") %>
       </span>
     </div>
   </div>

@@ -219,6 +219,15 @@ class ExpensesController < ApplicationController
     @category_totals = category_data[:totals]
     @sorted_categories = category_data[:sorted]
 
+    # Limit pie chart to 5 categories + "Other" for readability (PER-408)
+    if @sorted_categories.present? && @sorted_categories.size > 5
+      @pie_chart_categories = @sorted_categories.first(5)
+      other_total = @sorted_categories.drop(5).sum { |_, v| v }
+      @pie_chart_categories << [I18n.t("expenses.dashboard.other_category"), other_total] if other_total > 0
+    else
+      @pie_chart_categories = @sorted_categories
+    end
+
     @monthly_data = dashboard_data[:monthly_trend]
     @bank_totals = dashboard_data[:bank_breakdown]
     @top_merchants = dashboard_data[:top_merchants]

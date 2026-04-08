@@ -57,6 +57,7 @@ RSpec.describe "expenses/dashboard.html.erb", type: :view, unit: true do
     assign(:recent_expenses, [])
     assign(:category_totals, {})
     assign(:sorted_categories, [])
+    assign(:pie_chart_categories, [])
     assign(:monthly_data, {})
     assign(:bank_totals, [])
     assign(:top_merchants, [])

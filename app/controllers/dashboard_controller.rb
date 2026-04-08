@@ -47,6 +47,17 @@ class DashboardController < ApplicationController
     @recent_expenses = Expense.includes(:category, :email_account)
                               .order(transaction_date: :desc, created_at: :desc)
                               .limit(8)
+
+    # Actionable insights
+    insights_service = Services::DashboardInsightsService.new(
+      monthly_metrics: @monthly_metrics,
+      monthly_trends: @monthly_trends,
+      budgets: @budgets,
+      uncategorized_count: @uncategorized_count,
+      daily_average: @daily_average,
+      category_breakdown: @category_breakdown
+    )
+    @insights = insights_service.insights
   end
 
   private

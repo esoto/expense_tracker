@@ -211,8 +211,10 @@
                         </svg>
                       </div>
                     <% else %>
-                      <div class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center">
-                        <div class="w-2 h-2 rounded-full bg-slate-400"></div>
+                      <div class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center" title="<%= t('sync_sessions.widget.status_idle') %>">
+                        <svg aria-hidden="true" class="h-3 w-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M20 12H4"></path>
+                        </svg>
                       </div>
                     <% end %>
                   </div>

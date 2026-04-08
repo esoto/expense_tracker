@@ -133,9 +133,15 @@
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
                     <% elsif last_sync_info[account.id] %>
-                      <div class="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                      <span class="inline-flex items-center text-xs font-medium text-emerald-700">
+                        <span class="w-2 h-2 bg-emerald-400 rounded-full mr-1.5" aria-hidden="true"></span>
+                        <%= t("expenses.dashboard.sync_status_synced") %>
+                      </span>
                     <% else %>
-                      <div class="w-2 h-2 bg-slate-400 rounded-full"></div>
+                      <span class="inline-flex items-center text-xs font-medium text-slate-500">
+                        <span class="w-2 h-2 bg-slate-400 rounded-full mr-1.5" aria-hidden="true"></span>
+                        <%= t("expenses.dashboard.sync_status_pending") %>
+                      </span>
                     <% end %>
                   </div>
                   <p class="text-xs text-slate-600 mt-1" data-progress-text>

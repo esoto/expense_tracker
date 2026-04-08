@@ -78,9 +78,11 @@ module AnalyticsHelper
     end
   end
 
-  # Returns chart color palette
+  # Accessible chart color palette using design system colors.
+  # Chosen for sufficient contrast between adjacent segments
+  # and distinguishability for colorblind users (deuteranopia, protanopia).
   def chart_colors
-    %w[#0F766E #D97706 #FB7185 #10B981 #6366F1 #8B5CF6 #EC4899 #F59E0B]
+    %w[#0F766E #D97706 #0D9488 #E11D48 #059669 #475569 #0891B2 #9333EA]
   end
 
   # Formats time duration

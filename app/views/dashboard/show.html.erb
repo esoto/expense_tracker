@@ -1,0 +1,78 @@
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" data-controller="dashboard-v2">
+  <%# === Metrics Section === %>
+  <section aria-label="<%= t('dashboard.v2.metrics_label', default: 'Monthly metrics') %>">
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-6">
+      <%= t("dashboard.v2.title", default: "Dashboard") %>
+    </h1>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <%# Month total %>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
+        <p class="text-sm text-slate-500 dark:text-slate-400"><%= t("dashboard.v2.month_total", default: "Month Total") %></p>
+        <p class="text-2xl font-bold text-slate-900 dark:text-slate-100"><%= number_to_currency(@monthly_metrics[:total_amount] || 0) %></p>
+      </div>
+
+      <%# Transaction count %>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
+        <p class="text-sm text-slate-500 dark:text-slate-400"><%= t("dashboard.v2.transactions", default: "Transactions") %></p>
+        <p class="text-2xl font-bold text-slate-900 dark:text-slate-100"><%= @monthly_metrics[:transaction_count] || 0 %></p>
+      </div>
+
+      <%# Daily average %>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
+        <p class="text-sm text-slate-500 dark:text-slate-400"><%= t("dashboard.v2.daily_average", default: "Daily Average") %></p>
+        <p class="text-2xl font-bold text-slate-900 dark:text-slate-100"><%= number_to_currency(@daily_average) %></p>
+      </div>
+
+      <%# Uncategorized %>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
+        <p class="text-sm text-slate-500 dark:text-slate-400"><%= t("dashboard.v2.uncategorized", default: "Uncategorized") %></p>
+        <p class="text-2xl font-bold text-slate-900 dark:text-slate-100"><%= @uncategorized_count %></p>
+      </div>
+    </div>
+  </section>
+
+  <%# === Budget Section === %>
+  <section aria-label="<%= t('dashboard.v2.budgets_label', default: 'Budget progress') %>" class="mb-8">
+    <%# Placeholder: budget progress bars will be rendered here %>
+  </section>
+
+  <%# === Charts Section === %>
+  <section aria-label="<%= t('dashboard.v2.charts_label', default: 'Charts') %>" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <%# Monthly trend line chart %>
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
+        <%= t("dashboard.v2.monthly_trend", default: "Monthly Trend") %>
+      </h2>
+      <%# Placeholder: line chart will be rendered here %>
+    </div>
+
+    <%# Category breakdown horizontal bar chart %>
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
+        <%= t("dashboard.v2.category_breakdown", default: "Category Breakdown") %>
+      </h2>
+      <%# Placeholder: horizontal bar chart will be rendered here %>
+    </div>
+  </section>
+
+  <%# === Sync Status Section === %>
+  <section aria-label="<%= t('dashboard.v2.sync_label', default: 'Sync status') %>" class="mb-8">
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-2">
+        <%= t("dashboard.v2.sync_status", default: "Sync Status") %>
+      </h2>
+      <%# Placeholder: sync status indicator will be rendered here %>
+    </div>
+  </section>
+
+  <%# === Recent Expenses Section === %>
+  <section aria-label="<%= t('dashboard.v2.recent_expenses_label', default: 'Recent expenses') %>">
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
+        <%= t("dashboard.v2.recent_expenses", default: "Recent Expenses") %>
+      </h2>
+      <%# Placeholder: recent expenses table will be rendered here %>
+    </div>
+  </section>
+</div>

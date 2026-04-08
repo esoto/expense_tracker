@@ -43,6 +43,7 @@ module Services
         {
           type: :spending_velocity,
           severity: :warning,
+          variant: :warning,
           icon: "⚠️",
           message: "Projected to exceed budget by ₡#{format_number(excess)}",
           link_path: nil
@@ -51,6 +52,7 @@ module Services
         {
           type: :spending_velocity,
           severity: :info,
+          variant: :success,
           icon: "✅",
           message: "On track to stay within budget",
           link_path: nil
@@ -62,6 +64,7 @@ module Services
       {
         type: :uncategorized_items,
         severity: :info,
+        variant: :info,
         icon: "🏷️",
         message: "#{@uncategorized_count} expenses need categorization",
         link_path: nil

@@ -4,7 +4,7 @@
       <%= t("dashboard.v2.title", default: "Dashboard") %>
     </h1>
     <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
-      <%= Date.current.strftime("%B %Y") %>
+      <%= l(Date.current, format: :long).sub(/\d+\s*/, "") rescue Date.current.strftime("%B %Y") %>
     </p>
   </div>
 
@@ -22,7 +22,7 @@
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
         </svg>
-        Syncing<%= "&hellip;".html_safe %>
+        <%= t("dashboard.v2.syncing", default: "Syncing") %><%= "&hellip;".html_safe %>
       </span>
     <% elsif @sync_status[:last_sync].present? %>
       <%# Idle state: clock icon + "Last synced Xh ago" %>
@@ -30,7 +30,7 @@
         <svg class="h-4 w-4 mr-1.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        Last synced <%= time_ago_in_words(@sync_status[:last_sync]) %> ago
+        <%= t("dashboard.v2.last_synced_ago", time: time_ago_in_words(@sync_status[:last_sync]), default: "Last synced %{time} ago") %>
       </span>
     <% else %>
       <%# Never synced state %>
@@ -38,7 +38,7 @@
         <svg class="h-4 w-4 mr-1.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        Not synced yet
+        <%= t("dashboard.v2.not_synced_yet", default: "Not synced yet") %>
       </span>
     <% end %>
   </div>

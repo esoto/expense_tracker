@@ -54,3 +54,10 @@
   50% { opacity: 1; }
   100% { opacity: 0.6; }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-skeleton-line,
+  .chart-skeleton-pie {
+    animation: none;
+  }
+}

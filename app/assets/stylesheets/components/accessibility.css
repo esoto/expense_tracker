@@ -134,7 +134,8 @@ a {
   /* Remove transforms that cause motion */
   .hover\:scale-105:hover,
   .hover\:-translate-y-1:hover,
-  .hover\:scale-110:hover {
+  .hover\:scale-110:hover,
+  .hover\:scale-\[1\.02\]\:hover {
     transform: none !important;
   }
 }

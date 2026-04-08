@@ -31,7 +31,12 @@
             <%= t("expenses.dashboard.emails_count", processed: '<span data-sync-widget-target="processedCount">' + active_sync_session.processed_emails.to_s + '</span>', total: active_sync_session.total_emails) %>
           </span>
         </div>
-        <div class="w-full bg-slate-200 rounded-full h-2">
+        <div class="w-full bg-slate-200 rounded-full h-2"
+             role="progressbar"
+             aria-label="<%= t('expenses.dashboard.overall_progress') %>"
+             aria-valuenow="<%= active_sync_session.progress_percentage %>"
+             aria-valuemin="0"
+             aria-valuemax="100">
           <div class="bg-teal-700 h-2 rounded-full transition-all duration-300 ease-out"
                data-sync-widget-target="progressBar"
                style="width: <%= active_sync_session.progress_percentage %>%"></div>

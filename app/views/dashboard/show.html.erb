@@ -14,23 +14,7 @@
   </section>
 
   <%# === Charts Section === %>
-  <section aria-label="<%= t('dashboard.v2.charts_label', default: 'Charts') %>" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-    <%# Monthly trend line chart %>
-    <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
-      <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
-        <%= t("dashboard.v2.monthly_trend", default: "Monthly Trend") %>
-      </h2>
-      <%# Placeholder: line chart will be rendered here %>
-    </div>
-
-    <%# Category breakdown horizontal bar chart %>
-    <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
-      <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
-        <%= t("dashboard.v2.category_breakdown", default: "Category Breakdown") %>
-      </h2>
-      <%# Placeholder: horizontal bar chart will be rendered here %>
-    </div>
-  </section>
+  <%= render "dashboard/charts_row" %>
 
   <%# === Sync Status Section === %>
   <section aria-label="<%= t('dashboard.v2.sync_label', default: 'Sync status') %>" class="mb-8">

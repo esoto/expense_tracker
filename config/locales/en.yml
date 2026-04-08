@@ -390,6 +390,7 @@ en:
       subheading: "Complete summary of your finances"
       sync_section_heading: "Email Synchronization"
       by_category: "Expenses by Category"
+      by_bank: "Expenses by Bank"
       top_merchants: "Top Merchants"
       recent: "Recent Expenses"
       monthly_trend: "Monthly Trend"

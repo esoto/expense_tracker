@@ -874,3 +874,7 @@ es:
       email_account:
         provider: "Proveedor"
         bank_name: "Nombre del banco"
+
+  shared:
+    close_modal: "Cerrar"
+    close_notification: "Cerrar notificación"

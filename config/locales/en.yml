@@ -901,3 +901,7 @@ en:
       active_label: "Active:"
       usage_label: "Usage:"
       confidence_label: "Confidence:"
+
+  shared:
+    close_modal: "Close"
+    close_notification: "Close notification"

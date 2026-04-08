@@ -337,7 +337,7 @@ export default class AccessibilityManager {
   handleGlobalEscape() {
     // Close any open modals
     if (this.activeModal) {
-      const closeButton = this.activeModal.querySelector('[data-dismiss], [aria-label*="cerrar" i]')
+      const closeButton = this.activeModal.querySelector('[data-dismiss]')
       if (closeButton) {
         closeButton.click()
         return

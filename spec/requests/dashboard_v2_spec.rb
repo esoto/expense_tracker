@@ -45,7 +45,7 @@ RSpec.describe "Dashboard V2", type: :request, unit: true do
       it "includes monthly metrics" do
         get "/dashboard-v2"
         expect(response.body).to include("Month Total")
-        expect(response.body).to include("Transactions")
+        expect(response.body).to include("Budget Remaining")
         expect(response.body).to include("Daily Average")
         expect(response.body).to include("Uncategorized")
       end

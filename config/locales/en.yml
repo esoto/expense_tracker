@@ -429,6 +429,7 @@ en:
       empty_chart_hint: "Add expenses to see your monthly trends"
       empty_categories: "No categories yet"
       empty_categories_hint: "Categorize expenses to see the breakdown"
+      other_category: "Other"
       empty_merchants: "No merchant data available"
       empty_banks: "No bank data available"
       view_full_year: "View full year expenses"

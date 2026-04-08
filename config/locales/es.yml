@@ -402,6 +402,7 @@ es:
       empty_chart_hint: "Agrega gastos para ver tus tendencias mensuales"
       empty_categories: "Aún no hay categorías"
       empty_categories_hint: "Categoriza gastos para ver el desglose"
+      other_category: "Otros"
       empty_merchants: "No hay datos de comercios disponibles"
       empty_banks: "No hay datos de bancos disponibles"
       view_full_year: "Ver gastos del año completo"

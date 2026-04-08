@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import FilterStateManager from "utilities/filter_state_manager"
+import { t } from "services/i18n"
 
 // Dashboard Virtual Scroll Controller for Epic 3 Task 3.7
 // Implements high-performance virtual scrolling for large expense datasets
@@ -431,14 +432,14 @@ export default class extends Controller {
     } else {
       badge.style.backgroundColor = ''
       badge.textContent = '?'
-      badge.title = 'Sin categoría'
+      badge.title = t('expenses.labels.uncategorized')
       badge.classList.add('uncategorized')
     }
     
     // Update expense details
     node.querySelector('.expense-merchant').textContent = expense.merchant_name || 'Comercio desconocido'
     node.querySelector('.expense-metadata .date').textContent = this.formatDate(expense.transaction_date)
-    node.querySelector('.expense-metadata .category').textContent = expense.category?.name || 'Sin categoría'
+    node.querySelector('.expense-metadata .category').textContent = expense.category?.name || t('expenses.labels.uncategorized')
     node.querySelector('.expense-metadata .bank').textContent = expense.bank_name
     
     // Update amount
@@ -846,7 +847,7 @@ export default class extends Controller {
         this.loadMoreItems()
       }, delay)
     } else {
-      this.showError("Error al cargar más gastos. Por favor, recarga la página.")
+      this.showError(t("expenses.errors.load_more"))
       this.loadState.retryCount = 0
     }
   }
@@ -962,7 +963,7 @@ export default class extends Controller {
         <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"></path>
         </svg>
-        <span>Posición restaurada</span>
+        <span>${t("expenses.labels.position_restored")}</span>
       </div>
     `
     

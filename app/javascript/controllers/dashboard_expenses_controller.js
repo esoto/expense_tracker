@@ -1,6 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 import { Turbo } from "@hotwired/turbo-rails"
 import { shouldSuppressShortcut } from "utilities/keyboard_shortcut_helpers"
+import { t } from "services/i18n"
 
 // Dashboard Expenses Controller for Epic 3 Task 3.2
 // Manages view toggle between compact and expanded modes with responsive behavior
@@ -131,7 +132,7 @@ export default class extends Controller {
     if (this.hasExpandedButtonTarget) {
       this.expandedButtonTarget.disabled = true
       this.expandedButtonTarget.classList.add("opacity-50", "cursor-not-allowed")
-      this.expandedButtonTarget.title = "Vista expandida no disponible en móvil"
+      this.expandedButtonTarget.title = t("a11y.announcements.expanded_view_unavailable")
     }
   }
   
@@ -150,7 +151,7 @@ export default class extends Controller {
     
     // Don't allow expanded mode on mobile
     if (mode === "expanded" && this.isMobileValue) {
-      this.announce("Vista expandida no disponible en dispositivos móviles")
+      this.announce(t("a11y.announcements.expanded_view_unavailable"))
       return
     }
     
@@ -313,13 +314,13 @@ export default class extends Controller {
         button.remove()
       } else {
         button.disabled = false
-        button.textContent = "Cargar más gastos"
+        button.textContent = t("expenses.labels.load_more")
       }
     })
     .catch(error => {
       console.error("Error loading more expenses:", error)
       button.disabled = false
-      button.textContent = "Error - Intentar de nuevo"
+      button.textContent = t("expenses.labels.load_more_error")
     })
   }
   
@@ -328,7 +329,7 @@ export default class extends Controller {
     event.preventDefault()
     const expenseId = event.currentTarget.dataset.expenseId
     
-    if (!confirm("¿Estás seguro de que quieres eliminar este gasto?")) {
+    if (!confirm(t("expenses.confirmations.delete_single"))) {
       return
     }
     
@@ -357,7 +358,7 @@ export default class extends Controller {
           
           setTimeout(() => {
             row.remove()
-            this.announce("Gasto eliminado exitosamente")
+            this.announce(t("expenses.notifications.deleted_success"))
             
             // Check if list is empty
             if (this.expenseRowTargets.length === 0) {
@@ -371,7 +372,7 @@ export default class extends Controller {
       .catch(error => {
         console.error("Error deleting expense:", error)
         row.classList.remove("opacity-50", "pointer-events-none")
-        this.announce("Error al eliminar el gasto")
+        this.announce(t("expenses.errors.delete_failed"))
       })
     }
   }
@@ -500,7 +501,7 @@ export default class extends Controller {
     this.updateSelectionUI()
     
     // Update accessibility
-    this.announce("Modo de selección activado. Usa la barra espaciadora para seleccionar elementos.")
+    this.announce(t("a11y.announcements.selection_mode_enabled"))
     
     // Focus first visible row for keyboard users
     const firstVisibleRow = this.expenseRowTargets.find(row => !row.classList.contains("hidden"))
@@ -549,7 +550,7 @@ export default class extends Controller {
       selectionButton.classList.add("text-slate-600")
     }
     
-    this.announce("Modo de selección desactivado")
+    this.announce(t("a11y.announcements.selection_mode_disabled"))
   }
   
   // Handle individual checkbox selection
@@ -756,7 +757,7 @@ export default class extends Controller {
     
     // Don't allow expanded mode on mobile
     if (newMode === "expanded" && this.isMobileValue) {
-      this.announce("Vista expandida no disponible en dispositivos móviles")
+      this.announce(t("a11y.announcements.expanded_view_unavailable"))
       return
     }
     
@@ -927,7 +928,7 @@ export default class extends Controller {
       this.announce(`${count} ${count === 1 ? 'elemento seleccionado' : 'elementos seleccionados'}`)
     } else if (this.selectionModeValue) {
       // Only announce empty selection in selection mode
-      this.announce("Ningún elemento seleccionado")
+      this.announce(t("a11y.announcements.no_items_selected"))
     }
   }
   
@@ -938,10 +939,10 @@ export default class extends Controller {
     event?.preventDefault()
     
     if (this.selectedIdsValue.length === 0) {
-      this.showToast("Por favor selecciona al menos un gasto", "warning")
+      this.showToast(t("expenses.errors.select_one"), "warning")
       return
     }
-    
+
     const count = this.selectedIdsValue.length
     this.showBulkDeleteModal(count)
   }
@@ -953,7 +954,7 @@ export default class extends Controller {
       <div class="bulk-modal-overlay" data-bulk-modal="delete">
         <div class="bulk-modal-container">
           <div class="bulk-modal-header bg-rose-50 border-rose-200">
-            <h3 class="text-lg font-semibold text-rose-900">Confirmar Eliminación</h3>
+            <h3 class="text-lg font-semibold text-rose-900">${t("expenses.bulk.confirm_delete_title")}</h3>
             <button type="button" class="bulk-modal-close" data-action="click->dashboard-expenses#closeBulkModal">
               <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -969,10 +970,10 @@ export default class extends Controller {
               </div>
               <div class="flex-1">
                 <p class="text-sm text-slate-900">
-                  ¿Estás seguro de que quieres eliminar <strong>${count} ${count === 1 ? 'gasto' : 'gastos'}</strong>?
+                  ${t("expenses.bulk.delete_confirm_body")} <strong>${count} ${count === 1 ? t("expenses.bulk.delete_expense_singular") : t("expenses.bulk.delete_expense_plural")}</strong>?
                 </p>
                 <p class="mt-2 text-sm text-slate-600">
-                  Los gastos se eliminarán pero podrás deshacer esta acción durante los próximos 30 segundos.
+                  ${t("expenses.bulk.delete_undo_note")}
                 </p>
               </div>
             </div>
@@ -981,15 +982,15 @@ export default class extends Controller {
             <button type="button" 
                     class="btn-secondary w-full sm:w-auto px-4 py-2"
                     data-action="click->dashboard-expenses#closeBulkModal">
-              Cancelar
+              ${t("expenses.bulk.cancel")}
             </button>
-            <button type="button" 
+            <button type="button"
                     class="btn-danger w-full sm:w-auto px-4 py-2"
                     data-action="click->dashboard-expenses#confirmBulkDelete">
               <svg aria-hidden="true" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
               </svg>
-              Eliminar ${count === 1 ? 'Gasto' : `${count} Gastos`}
+              ${t("expenses.bulk.confirm_delete_title")} (${count})
             </button>
           </div>
         </div>
@@ -1064,13 +1065,13 @@ export default class extends Controller {
         }
       } else {
         this.closeBulkModal()
-        this.showToast(data.message || "Error al eliminar gastos", "error")
+        this.showToast(data.message || t("expenses.errors.delete_bulk_failed"), "error")
       }
     })
     .catch(error => {
       console.error("Error in bulk delete:", error)
       this.closeBulkModal()
-      this.showToast("Error al eliminar gastos", "error")
+      this.showToast(t("expenses.errors.delete_bulk_failed"), "error")
     })
   }
   
@@ -1079,10 +1080,10 @@ export default class extends Controller {
     event?.preventDefault()
     
     if (this.selectedIdsValue.length === 0) {
-      this.showToast("Por favor selecciona al menos un gasto", "warning")
+      this.showToast(t("expenses.errors.select_one"), "warning")
       return
     }
-    
+
     this.showBulkCategorizeModal()
   }
   
@@ -1111,7 +1112,7 @@ export default class extends Controller {
           <div class="bulk-modal-overlay" data-bulk-modal="categorize">
             <div class="bulk-modal-container">
               <div class="bulk-modal-header bg-teal-50 border-teal-200">
-                <h3 class="text-lg font-semibold text-teal-900">Categorizar Gastos</h3>
+                <h3 class="text-lg font-semibold text-teal-900">${t("expenses.bulk.categorize_title")}</h3>
                 <button type="button" class="bulk-modal-close" data-action="click->dashboard-expenses#closeBulkModal">
                   <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -1121,24 +1122,23 @@ export default class extends Controller {
               <form data-action="submit->dashboard-expenses#confirmBulkCategorize">
                 <div class="bulk-modal-body">
                   <p class="text-sm text-slate-700 mb-4">
-                    Selecciona una categoría para aplicar a <strong>${count} ${count === 1 ? 'gasto' : 'gastos'}</strong>:
+                    ${t("expenses.bulk.select_category_for")} <strong>${count} ${count === 1 ? t("expenses.bulk.delete_expense_singular") : t("expenses.bulk.delete_expense_plural")}</strong>:
                   </p>
                   <div class="form-group">
                     <label for="bulk-category-select" class="block text-sm font-medium text-slate-700 mb-2">
-                      Categoría
+                      ${t("expenses.bulk.category_label")}
                     </label>
                     <select id="bulk-category-select" 
                             name="category_id" 
                             class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                             required>
-                      <option value="">Seleccionar categoría...</option>
+                      <option value="">${t("expenses.labels.select_category")}</option>
                       ${categoryOptions}
                     </select>
                   </div>
                   <div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                     <p class="text-xs text-amber-800">
-                      <strong>Nota:</strong> Esta acción actualizará la categoría de todos los gastos seleccionados y 
-                      registrará la corrección para mejorar las sugerencias futuras del sistema.
+                      ${t("expenses.bulk.category_note")}
                     </p>
                   </div>
                 </div>
@@ -1146,14 +1146,14 @@ export default class extends Controller {
                   <button type="button" 
                           class="btn-secondary w-full sm:w-auto px-4 py-2"
                           data-action="click->dashboard-expenses#closeBulkModal">
-                    Cancelar
+                    ${t("expenses.bulk.cancel")}
                   </button>
-                  <button type="submit" 
+                  <button type="submit"
                           class="btn-primary w-full sm:w-auto px-4 py-2">
                     <svg aria-hidden="true" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
                     </svg>
-                    Aplicar Categoría
+                    ${t("expenses.bulk.apply_category")}
                   </button>
                 </div>
               </form>
@@ -1170,7 +1170,7 @@ export default class extends Controller {
       })
       .catch(error => {
         console.error("Error fetching categories:", error)
-        this.showToast("Error al cargar categorías", "error")
+        this.showToast(t("expenses.errors.load_categories"), "error")
       })
   }
   
@@ -1183,7 +1183,7 @@ export default class extends Controller {
     const categoryId = formData.get('category_id')
     
     if (!categoryId) {
-      this.showToast("Por favor selecciona una categoría", "warning")
+      this.showToast(t("expenses.errors.category_required"), "warning")
       return
     }
     
@@ -1232,9 +1232,9 @@ export default class extends Controller {
           <svg aria-hidden="true" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
           </svg>
-          Aplicar Categoría
+          ${t("expenses.bulk.apply_category")}
         `
-        this.showToast(data.message || "Error al categorizar gastos", "error")
+        this.showToast(data.message || t("expenses.errors.categorize_bulk_failed"), "error")
       }
     })
     .catch(error => {
@@ -1244,9 +1244,9 @@ export default class extends Controller {
         <svg aria-hidden="true" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
         </svg>
-        Aplicar Categoría
+        ${t("expenses.bulk.apply_category")}
       `
-      this.showToast("Error al categorizar gastos", "error")
+      this.showToast(t("expenses.errors.categorize_bulk_failed"), "error")
     })
   }
   
@@ -1255,10 +1255,10 @@ export default class extends Controller {
     event?.preventDefault()
     
     if (this.selectedIdsValue.length === 0) {
-      this.showToast("Por favor selecciona al menos un gasto", "warning")
+      this.showToast(t("expenses.errors.select_one"), "warning")
       return
     }
-    
+
     this.showBulkStatusModal()
   }
   
@@ -1270,7 +1270,7 @@ export default class extends Controller {
       <div class="bulk-modal-overlay" data-bulk-modal="status">
         <div class="bulk-modal-container">
           <div class="bulk-modal-header bg-amber-50 border-amber-200">
-            <h3 class="text-lg font-semibold text-amber-900">Actualizar Estado</h3>
+            <h3 class="text-lg font-semibold text-amber-900">${t("expenses.bulk.status_title")}</h3>
             <button type="button" class="bulk-modal-close" data-action="click->dashboard-expenses#closeBulkModal">
               <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -1288,18 +1288,18 @@ export default class extends Controller {
                     <input type="radio" name="status" value="pending" class="text-amber-600 focus:ring-amber-500" required>
                     <span class="ml-3 flex items-center">
                       <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                        Pendiente
+                        ${t("expenses.status.pending")}
                       </span>
-                      <span class="ml-2 text-sm text-slate-600">Requiere revisión</span>
+                      <span class="ml-2 text-sm text-slate-600">${t("expenses.status.requires_review")}</span>
                     </span>
                   </label>
                   <label class="flex items-center p-3 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
                     <input type="radio" name="status" value="processed" class="text-emerald-600 focus:ring-emerald-500" required>
                     <span class="ml-3 flex items-center">
                       <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                        Procesado
+                        ${t("expenses.status.processed")}
                       </span>
-                      <span class="ml-2 text-sm text-slate-600">Completamente revisado</span>
+                      <span class="ml-2 text-sm text-slate-600">${t("expenses.status.fully_reviewed")}</span>
                     </span>
                   </label>
                 </div>
@@ -1309,14 +1309,14 @@ export default class extends Controller {
               <button type="button" 
                       class="btn-secondary w-full sm:w-auto px-4 py-2"
                       data-action="click->dashboard-expenses#closeBulkModal">
-                Cancelar
+                ${t("expenses.bulk.cancel")}
               </button>
               <button type="submit" 
                       class="btn-primary bg-amber-600 hover:bg-amber-700 w-full sm:w-auto px-4 py-2">
                 <svg aria-hidden="true" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
-                Actualizar Estado
+                ${t("expenses.bulk.update_status")}
               </button>
             </div>
           </form>
@@ -1336,7 +1336,7 @@ export default class extends Controller {
     const status = formData.get('status')
     
     if (!status) {
-      this.showToast("Por favor selecciona un estado", "warning")
+      this.showToast(t("expenses.errors.select_status"), "warning")
       return
     }
     
@@ -1383,9 +1383,9 @@ export default class extends Controller {
           <svg aria-hidden="true" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
-          Actualizar Estado
+          ${t("expenses.bulk.update_status")}
         `
-        this.showToast(data.message || "Error al actualizar estado", "error")
+        this.showToast(data.message || t("expenses.errors.status_bulk_failed"), "error")
       }
     })
     .catch(error => {
@@ -1395,9 +1395,9 @@ export default class extends Controller {
         <svg aria-hidden="true" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
         </svg>
-        Actualizar Estado
+        ${t("expenses.bulk.update_status")}
       `
-      this.showToast("Error al actualizar estado", "error")
+      this.showToast(t("expenses.errors.status_bulk_failed"), "error")
     })
   }
   

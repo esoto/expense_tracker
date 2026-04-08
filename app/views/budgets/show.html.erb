@@ -12,38 +12,38 @@
     </div>
 
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-      <h2 class="text-xl font-semibold text-slate-900 mb-4">Detalles del Presupuesto</h2>
+      <h2 class="text-xl font-semibold text-slate-900 mb-4"><%= t("budgets.show.budget_details_title") %></h2>
 
       <div class="grid md:grid-cols-2 gap-4">
         <div>
-          <p class="text-sm text-slate-500">Período</p>
+          <p class="text-sm text-slate-500"><%= t("budgets.show.period_label") %></p>
           <p class="font-medium text-slate-900"><%= t("budgets.periods.#{@budget.period}", default: @budget.period.humanize) %></p>
         </div>
 
         <div>
-          <p class="text-sm text-slate-500">Categoría</p>
-          <p class="font-medium text-slate-900"><%= @budget.category&.name || "General" %></p>
+          <p class="text-sm text-slate-500"><%= t("budgets.show.category_label") %></p>
+          <p class="font-medium text-slate-900"><%= @budget.category&.name || t("budgets.show.general") %></p>
         </div>
 
         <div>
-          <p class="text-sm text-slate-500">Monto</p>
+          <p class="text-sm text-slate-500"><%= t("budgets.show.amount_label") %></p>
           <p class="font-medium text-slate-900"><%= @budget.formatted_amount %></p>
         </div>
 
         <div>
-          <p class="text-sm text-slate-500">Moneda</p>
+          <p class="text-sm text-slate-500"><%= t("budgets.show.currency_label") %></p>
           <p class="font-medium text-slate-900"><%= @budget.currency %></p>
         </div>
 
         <div>
-          <p class="text-sm text-slate-500">Fecha de inicio</p>
+          <p class="text-sm text-slate-500"><%= t("budgets.show.start_date_label") %></p>
           <p class="font-medium text-slate-900"><%= l(@budget.start_date, format: :long) %></p>
         </div>
 
         <div>
-          <p class="text-sm text-slate-500">Estado</p>
+          <p class="text-sm text-slate-500"><%= t("budgets.show.status_label") %></p>
           <p class="font-medium <%= @budget.active? ? 'text-emerald-600' : 'text-slate-400' %>">
-            <%= @budget.active? ? 'Activo' : 'Inactivo' %>
+            <%= @budget.active? ? t("budgets.show.status_active") : t("budgets.show.status_inactive") %>
           </p>
         </div>
       </div>
@@ -51,44 +51,44 @@
 
     <% if @budget_stats %>
       <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h2 class="text-xl font-semibold text-slate-900 mb-4">Estadísticas</h2>
+        <h2 class="text-xl font-semibold text-slate-900 mb-4"><%= t("budgets.show.stats_title") %></h2>
 
         <div class="grid md:grid-cols-3 gap-4">
           <div>
-            <p class="text-sm text-slate-500">Gasto actual</p>
+            <p class="text-sm text-slate-500"><%= t("budgets.show.current_spend_label") %></p>
             <p class="font-medium text-slate-900">
               <%= number_to_currency(@budget_stats[:current_spend], unit: @budget.currency_symbol, precision: 0) %>
             </p>
           </div>
 
           <div>
-            <p class="text-sm text-slate-500">Porcentaje usado</p>
+            <p class="text-sm text-slate-500"><%= t("budgets.show.usage_percentage_label") %></p>
             <p class="font-medium <%= @budget.status_color %>">
               <%= @budget_stats[:usage_percentage] %>%
             </p>
           </div>
 
           <div>
-            <p class="text-sm text-slate-500">Monto restante</p>
+            <p class="text-sm text-slate-500"><%= t("budgets.show.remaining_label") %></p>
             <p class="font-medium text-slate-900">
               <%= number_to_currency(@budget_stats[:remaining], unit: @budget.currency_symbol, precision: 0) %>
             </p>
           </div>
 
           <div>
-            <p class="text-sm text-slate-500">Días restantes</p>
-            <p class="font-medium text-slate-900"><%= @budget_stats[:days_remaining] %> días</p>
+            <p class="text-sm text-slate-500"><%= t("budgets.show.days_remaining_label") %></p>
+            <p class="font-medium text-slate-900"><%= t("budgets.show.days_remaining_value", count: @budget_stats[:days_remaining]) %></p>
           </div>
 
           <div>
-            <p class="text-sm text-slate-500">Promedio diario necesario</p>
+            <p class="text-sm text-slate-500"><%= t("budgets.show.daily_average_needed_label") %></p>
             <p class="font-medium text-slate-900">
               <%= number_to_currency(@budget_stats[:daily_average_needed], unit: @budget.currency_symbol, precision: 0) %>
             </p>
           </div>
 
           <div>
-            <p class="text-sm text-slate-500">Estado</p>
+            <p class="text-sm text-slate-500"><%= t("budgets.show.budget_status_label") %></p>
             <p class="font-medium <%= @budget.status_color %>">
               <%= @budget.status_message %>
             </p>

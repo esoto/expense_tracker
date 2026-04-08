@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { shouldSuppressShortcut } from "utilities/keyboard_shortcut_helpers"
+import { t } from "services/i18n"
 
 /**
  * Accessibility Enhanced Controller
@@ -221,7 +222,7 @@ export default class extends Controller {
     const skipLink = document.createElement('a')
     skipLink.href = '#expense-actions'
     skipLink.className = 'sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-teal-700 text-white px-4 py-2 rounded-lg z-50'
-    skipLink.textContent = 'Saltar a acciones de gastos'
+    skipLink.textContent = t('a11y.skip_links.expense_actions')
     skipLink.setAttribute('data-accessibility-enhanced-target', 'skipLink')
     
     // Insert at beginning of body
@@ -231,7 +232,7 @@ export default class extends Controller {
     skipLink.addEventListener('click', (e) => {
       e.preventDefault()
       this.focusFirstAction()
-      this.announce('Navegado a acciones de gastos')
+      this.announce(t('a11y.announcements.navigated_to_actions'))
     })
   }
   
@@ -328,14 +329,14 @@ export default class extends Controller {
     this.element.querySelectorAll('button:not([aria-label])').forEach(button => {
       const text = button.textContent.trim()
       if (!text) {
-        button.setAttribute('aria-label', 'Acción sin etiqueta')
+        button.setAttribute('aria-label', t('a11y.errors.no_label'))
       }
     })
     
     // Add descriptions to complex elements
     this.element.querySelectorAll('[data-expense-id]').forEach(row => {
       const expenseId = row.dataset.expenseId
-      row.setAttribute('aria-label', `Gasto ${expenseId}`)
+      row.setAttribute('aria-label', `${t('a11y.labels.expense')} ${expenseId}`)
     })
   }
   
@@ -360,7 +361,7 @@ export default class extends Controller {
       
       // Enhance focus behavior
       button.addEventListener('focus', () => {
-        this.announce(`${this.getActionLabel(button)} enfocado`)
+        this.announce(this.getActionLabel(button))
       })
     })
   }
@@ -373,7 +374,7 @@ export default class extends Controller {
     const expenseList = this.element.querySelector('[data-controller*="batch-selection"]')
     if (expenseList) {
       expenseList.setAttribute('role', 'feed')
-      expenseList.setAttribute('aria-label', 'Lista de gastos')
+      expenseList.setAttribute('aria-label', t('a11y.labels.expense_list'))
       expenseList.setAttribute('aria-busy', 'false')
     }
     
@@ -390,7 +391,7 @@ export default class extends Controller {
       const amount = (row.querySelector('td:nth-child(4)') || row.querySelector('[data-amount]'))?.textContent.trim()
 
       if (date && merchant && amount) {
-        row.setAttribute('aria-label', `Gasto: ${merchant} el ${date} por ${amount}`)
+        row.setAttribute('aria-label', `${t('a11y.labels.expense')}: ${merchant} el ${date} por ${amount}`)
       }
     })
   }
@@ -402,7 +403,7 @@ export default class extends Controller {
     const firstAction = this.element.querySelector('button[data-accessibility-enhanced-target="actionButton"]:first-of-type')
     if (firstAction) {
       firstAction.focus()
-      this.announce('Primera acción enfocada')
+      this.announce(t('a11y.announcements.first_focused'))
     }
   }
   
@@ -411,7 +412,7 @@ export default class extends Controller {
     const lastAction = actions[actions.length - 1]
     if (lastAction) {
       lastAction.focus()
-      this.announce('Última acción enfocada')
+      this.announce(t('a11y.announcements.last_focused'))
     }
   }
   
@@ -487,25 +488,25 @@ export default class extends Controller {
     const text = button.textContent.trim()
     const action = button.dataset.action || ''
     
-    if (action.includes('edit')) return 'Editar gasto'
-    if (action.includes('delete')) return 'Eliminar gasto'
-    if (action.includes('duplicate')) return 'Duplicar gasto'
-    if (action.includes('status')) return 'Cambiar estado'
-    if (action.includes('category')) return 'Cambiar categoría'
-    
-    return text || 'Acción'
+    if (action.includes('edit')) return t('a11y.action_labels.edit_expense')
+    if (action.includes('delete')) return t('a11y.action_labels.delete_expense')
+    if (action.includes('duplicate')) return t('a11y.action_labels.duplicate_expense')
+    if (action.includes('status')) return t('a11y.action_labels.change_status')
+    if (action.includes('category')) return t('a11y.action_labels.change_category')
+
+    return text || t('a11y.action_labels.unlabeled_action')
   }
   
   getActionDescription(button) {
     const action = button.dataset.action || ''
     
-    if (action.includes('edit')) return 'Presiona Enter para editar este gasto'
-    if (action.includes('delete')) return 'Presiona Enter para eliminar este gasto. Podrás restaurarlo desde el historial.'
-    if (action.includes('duplicate')) return 'Presiona Enter para crear una copia de este gasto'
-    if (action.includes('status')) return 'Presiona Enter para cambiar el estado del gasto'
-    if (action.includes('category')) return 'Presiona Enter para cambiar la categoría del gasto'
-    
-    return 'Presiona Enter para ejecutar esta acción'
+    if (action.includes('edit')) return t('a11y.shortcuts.press_enter_edit')
+    if (action.includes('delete')) return t('a11y.shortcuts.press_enter_delete')
+    if (action.includes('duplicate')) return t('a11y.shortcuts.press_enter_duplicate')
+    if (action.includes('status')) return t('a11y.shortcuts.press_enter_status')
+    if (action.includes('category')) return t('a11y.shortcuts.press_enter_category')
+
+    return t('a11y.shortcuts.press_enter_execute')
   }
   
   triggerQuickAction(type) {
@@ -516,7 +517,7 @@ export default class extends Controller {
     const actionButton = focusedRow.querySelector(`button[data-action*="${type}"]`)
     if (actionButton) {
       actionButton.click()
-      this.announce(`Acción ${type} ejecutada`)
+      this.announce(this.getActionLabel(actionButton))
     }
   }
   
@@ -524,7 +525,7 @@ export default class extends Controller {
     this.element.querySelectorAll('[data-action-menu]').forEach(menu => {
       menu.style.display = 'none'
     })
-    this.announce('Menús cerrados')
+    this.announce(t('a11y.announcements.menus_closed'))
   }
   
   /**

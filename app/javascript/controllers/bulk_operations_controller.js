@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { t } from "services/i18n"
 
 /**
  * Bulk Operations Controller
@@ -173,9 +174,9 @@ export default class extends Controller {
    */
   updateSubmitButton(operationType) {
     const buttonTexts = {
-      categorize: 'Categorizar Gastos',
-      status: 'Actualizar Estado',
-      delete: 'Eliminar Gastos'
+      categorize: t('bulk_operations.operations.categorize'),
+      status: t('bulk_operations.operations.status'),
+      delete: t('bulk_operations.operations.delete')
     }
     
     const buttonClasses = {
@@ -186,7 +187,7 @@ export default class extends Controller {
     
     if (this.hasSubmitButtonTarget) {
       // Update text
-      this.submitButtonTarget.textContent = buttonTexts[operationType] || 'Ejecutar'
+      this.submitButtonTarget.textContent = buttonTexts[operationType] || t('bulk_operations.operations.execute')
       
       // Enable button for non-delete operations
       if (operationType !== 'delete') {
@@ -264,7 +265,7 @@ export default class extends Controller {
         this.handleError(result)
       }
     } catch (error) {
-      this.handleError({ message: 'Error de conexión. Por favor, intenta nuevamente.' })
+      this.handleError({ message: t('bulk_operations.errors.connection') })
     }
   }
 
@@ -275,26 +276,26 @@ export default class extends Controller {
     const operation = this.currentOperationValue
     
     if (!operation) {
-      this.showError('Por favor selecciona un tipo de operación')
+      this.showError(t('bulk_operations.errors.no_operation_selected'))
       return false
     }
-    
+
     switch (operation) {
       case 'categorize':
         if (!this.hasCategorySelectTarget || !this.categorySelectTarget.value) {
-          this.showError('Por favor selecciona una categoría')
+          this.showError(t('bulk_operations.errors.no_category_selected'))
           return false
         }
         break
       case 'status':
         if (!this.hasStatusSelectTarget || !this.statusSelectTarget.value) {
-          this.showError('Por favor selecciona un estado')
+          this.showError(t('bulk_operations.errors.no_status_selected'))
           return false
         }
         break
       case 'delete':
         if (!this.hasConfirmCheckboxTarget || !this.confirmCheckboxTarget.checked) {
-          this.showError('Por favor confirma la eliminación')
+          this.showError(t('bulk_operations.errors.confirm_deletion'))
           return false
         }
         break
@@ -336,7 +337,7 @@ export default class extends Controller {
           data: baseData
         }
       default:
-        throw new Error('Operación no válida')
+        throw new Error(t('bulk_operations.errors.invalid_operation'))
     }
   }
 
@@ -360,7 +361,7 @@ export default class extends Controller {
     }
     
     // Initialize progress
-    this.updateProgress(0, `Procesando ${this.selectedCountValue} gastos...`)
+    this.updateProgress(0, t('bulk_operations.progress.processing', { count: this.selectedCountValue }))
   }
 
   /**
@@ -388,7 +389,7 @@ export default class extends Controller {
     // Returns: { success: true, updated_count, failed_count, errors, undo_operation_id }
     const affectedCount = result.affected_count || result.updated_count || this.selectedCountValue
     const failures = result.failures || (result.errors && result.errors.length > 0 ? result.errors.map((e, i) => ({ id: i, error: e })) : [])
-    const message = result.message || 'Operación completada exitosamente'
+    const message = result.message || t('bulk_operations.notifications.completed')
 
     // Update progress to 100%
     this.updateProgress(100, message)
@@ -452,7 +453,7 @@ export default class extends Controller {
     }
     
     // Show error
-    this.showError(error.message || 'Ocurrió un error al procesar la operación')
+    this.showError(error.message || t('bulk_operations.errors.processing_error'))
     
     // Show detailed errors if available
     if (error.errors && Array.isArray(error.errors)) {
@@ -492,14 +493,14 @@ export default class extends Controller {
    */
   showPartialErrors(failures) {
     if (failures.length > 0 && this.hasErrorContainerTarget) {
-      const message = `${failures.length} gastos no pudieron ser procesados`
+      const message = t('bulk_operations.partial_errors.items_failed', { count: failures.length })
       this.errorContainerTarget.classList.remove('hidden')
-      
+
       if (this.hasErrorListTarget) {
         this.errorListTarget.innerHTML = `
           <li class="font-semibold">${message}</li>
-          ${failures.slice(0, 5).map(f => `<li class="ml-4">• Gasto #${f.id}: ${f.error}</li>`).join('')}
-          ${failures.length > 5 ? `<li class="ml-4 text-slate-500">... y ${failures.length - 5} más</li>` : ''}
+          ${failures.slice(0, 5).map(f => `<li class="ml-4">• ${t('bulk_operations.partial_errors.expense_item', { id: f.id, error: f.error })}</li>`).join('')}
+          ${failures.length > 5 ? `<li class="ml-4 text-slate-500">${t('bulk_operations.partial_errors.more_items', { count: failures.length - 5 })}</li>` : ''}
         `
       }
     }

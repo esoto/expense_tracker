@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import FilterStateManager from "utilities/filter_state_manager"
+import { t } from "services/i18n"
 
 // Dashboard Filter Persistence Controller for Task 3.8
 // Manages persistent filter state across browser sessions and page navigation
@@ -245,10 +246,10 @@ export default class extends Controller {
     
     let suggestionText = []
     if (suggestions.suggestedCategories) {
-      suggestionText.push('categorías frecuentes')
+      suggestionText.push(t('filters.suggestions.frequent_categories'))
     }
     if (suggestions.suggestedPeriod) {
-      suggestionText.push(`período "${suggestions.suggestedPeriod}"`)
+      suggestionText.push(`${t('filters.suggestions.period')} "${suggestions.suggestedPeriod}"`)
     }
     
     notification.innerHTML = `
@@ -449,7 +450,7 @@ export default class extends Controller {
         <svg aria-hidden="true" class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
         </svg>
-        <span class="text-sm text-slate-700">Filtros actualizados desde otra pestaña</span>
+        <span class="text-sm text-slate-700">${t('filters.notifications.updated_from_tab')}</span>
       </div>
     `
     
@@ -601,7 +602,7 @@ export default class extends Controller {
   resetFilters(event) {
     event?.preventDefault()
     
-    if (!confirm('¿Estás seguro de que quieres restablecer todos los filtros y preferencias?')) {
+    if (!confirm(t('filters.confirmations.reset_all'))) {
       return
     }
     

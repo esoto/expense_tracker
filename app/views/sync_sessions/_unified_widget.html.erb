@@ -65,15 +65,15 @@
           </div>
 
           <div>
-            <h2 class="text-lg font-semibold text-slate-900">Sincronización de Correos</h2>
+            <h2 class="text-lg font-semibold text-slate-900"><%= t("sync_sessions.widget.title") %></h2>
             <p class="text-sm text-slate-600" aria-live="polite" data-sync-widget-target="statusText">
               <% if @active_sync_session %>
                 <span class="inline-flex items-center">
                   <span class="w-2 h-2 bg-emerald-500 rounded-full mr-2 animate-pulse"></span>
-                  Sincronización en progreso
+                  <%= t("sync_sessions.widget.in_progress") %>
                 </span>
               <% else %>
-                <span class="text-slate-500">Sin actividad</span>
+                <span class="text-slate-500"><%= t("sync_sessions.widget.no_activity") %></span>
               <% end %>
             </p>
           </div>
@@ -87,11 +87,11 @@
                     data-action="click->sync-widget#togglePause"
                     data-sync-widget-target="pauseButton"
                     class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-colors"
-                    aria-label="Pausar sincronización">
+                    aria-label="<%= t("sync_sessions.widget.pause_aria") %>">
               <svg aria-hidden="true" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
-              Pausar
+              <%= t("sync_sessions.widget.pause") %>
             </button>
 
             <!-- View Details -->
@@ -101,14 +101,14 @@
               <svg aria-hidden="true" class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
               </svg>
-              Ver detalles
+              <%= t("sync_sessions.widget.view_details") %>
             <% end %>
           <% else %>
             <!-- Start Sync Button -->
-            <%= button_to "Iniciar Sincronización", sync_sessions_path,
+            <%= button_to t("sync_sessions.widget.start_sync"), sync_sessions_path,
                 method: :post,
                 class: "inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-teal-700 rounded-lg hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all transform hover:scale-105 cursor-pointer",
-                data: { turbo_submits_with: "Sincronizando..." } %>
+                data: { turbo_submits_with: t("sync_sessions.widget.syncing") } %>
           <% end %>
         </div>
       </div>
@@ -122,7 +122,7 @@
         <!-- Main Progress Bar -->
         <div class="mb-4">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-sm font-medium text-slate-700">Progreso General</span>
+            <span class="text-sm font-medium text-slate-700"><%= t("sync_sessions.widget.overall_progress") %></span>
             <div class="flex items-center space-x-2">
               <span class="text-2xl font-bold text-teal-700" data-sync-widget-target="progressPercentage">
                 <%= @active_sync_session.progress_percentage %>%
@@ -160,11 +160,11 @@
               <span class="text-slate-600">
                 <span class="font-medium text-emerald-600" data-sync-widget-target="detectedCount">
                   <%= @active_sync_session.detected_expenses %>
-                </span> gastos detectados
+                </span> <%= t("sync_sessions.widget.expenses_detected") %>
               </span>
               <span class="text-slate-400">•</span>
               <span class="text-slate-600">
-                <span class="font-medium" data-sync-widget-target="errorCount">0</span> errores
+                <span class="font-medium" data-sync-widget-target="errorCount">0</span> <%= t("sync_sessions.widget.errors") %>
               </span>
             </div>
             <% if @active_sync_session.estimated_time_remaining %>
@@ -173,7 +173,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
                 <span data-sync-widget-target="timeRemaining">
-                  <%= distance_of_time_in_words(@active_sync_session.estimated_time_remaining) %> restante
+                  <%= distance_of_time_in_words(@active_sync_session.estimated_time_remaining) %> <%= t("sync_sessions.widget.time_remaining") %>
                 </span>
               </div>
             <% end %>
@@ -269,23 +269,23 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
           </svg>
         </div>
-        <h3 class="text-lg font-medium text-slate-900 mb-1">No hay sincronización activa</h3>
+        <h3 class="text-lg font-medium text-slate-900 mb-1"><%= t("sync_sessions.widget.no_active_sync") %></h3>
         <p class="text-sm text-slate-600 mb-6">
           <% if @last_completed_sync %>
             Última sincronización completada hace <%= time_ago_in_words(@last_completed_sync.completed_at) %>
           <% else %>
-            Comienza tu primera sincronización para importar gastos
+            <%= t("sync_sessions.widget.first_sync_prompt") %>
           <% end %>
         </p>
 
         <!-- Quick Action Buttons -->
         <div class="flex items-center justify-center space-x-3">
-          <%= link_to "Sincronizar Todas las Cuentas", sync_sessions_path,
+          <%= link_to t("sync_sessions.widget.sync_all"), sync_sessions_path,
               class: "inline-flex items-center px-4 py-2 bg-teal-700 text-white text-sm font-medium rounded-lg hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all cursor-pointer",
               data: {
                 turbo_method: :post,
                 turbo_stream: true,
-                turbo_submits_with: "Sincronizando..."
+                turbo_submits_with: t("sync_sessions.widget.syncing")
               } %>
 
           <%= link_to sync_sessions_path,
@@ -293,7 +293,7 @@
             <svg aria-hidden="true" class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            Ver Historial
+            <%= t("sync_sessions.widget.view_history") %>
           <% end %>
         </div>
       </div>
@@ -307,7 +307,7 @@
         <svg aria-hidden="true" class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
         </svg>
-        <span data-sync-widget-target="connectionMessage">Reconectando...</span>
+        <span data-sync-widget-target="connectionMessage"><%= t("sync_sessions.widget.reconnecting") %></span>
       </div>
     </div>
   </div>

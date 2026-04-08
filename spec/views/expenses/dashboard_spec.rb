@@ -65,6 +65,7 @@ RSpec.describe "expenses/dashboard.html.erb", type: :view, unit: true do
     assign(:active_sync_session, nil)
     assign(:last_completed_sync, nil)
     assign(:primary_email_account, email_account)
+    assign(:pending_conflicts_count, 0) # Instance variable @pending_conflicts_count
   end
 
   it "renders the enhanced primary metric card" do

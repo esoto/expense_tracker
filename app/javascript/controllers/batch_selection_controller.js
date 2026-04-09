@@ -40,9 +40,6 @@ export default class extends Controller {
     // Initialize timeout tracking for announcements
     this.announcementTimeout = null
 
-    // Track pending animation frame to allow cancellation
-    this.toolbarAnimationFrame = null
-
     // Set up keyboard navigation
     this.setupKeyboardNavigation()
 
@@ -75,11 +72,6 @@ export default class extends Controller {
       this.announcementTimeout = null
     }
 
-    // Cancel any pending toolbar animation frame
-    if (this.toolbarAnimationFrame) {
-      cancelAnimationFrame(this.toolbarAnimationFrame)
-      this.toolbarAnimationFrame = null
-    }
   }
 
   /**
@@ -272,17 +264,12 @@ export default class extends Controller {
       this.masterCheckboxTarget.indeterminate = false
     }
     
-    // Cancel any pending toolbar animation frame to prevent race condition
-    if (this.toolbarAnimationFrame) {
-      cancelAnimationFrame(this.toolbarAnimationFrame)
-      this.toolbarAnimationFrame = null
-    }
-
     // Immediately hide toolbar before updating UI
     if (this.hasSelectionToolbarTarget) {
-      this.selectionToolbarTarget.classList.remove('flex', 'animate-slide-up')
-      this.selectionToolbarTarget.classList.add('hidden')
-      this.selectionToolbarTarget.style.display = 'none'
+      this.selectionToolbarTarget.classList.add('translate-y-full')
+      this.selectionToolbarTarget.classList.remove('translate-y-0')
+      this.selectionToolbarTarget.setAttribute('aria-hidden', 'true')
+      this.selectionToolbarTarget.setAttribute('inert', '')
     }
 
     // Force update UI to ensure all elements are hidden
@@ -323,40 +310,18 @@ export default class extends Controller {
       }
     }
     
-    // Update selection toolbar visibility
+    // Update selection toolbar visibility via CSS transform (slide up/down)
     if (this.hasSelectionToolbarTarget) {
       if (selectedCount > 0) {
-        // Cancel any pending hide-state animation frame to avoid race conditions
-        if (this.toolbarAnimationFrame) {
-          cancelAnimationFrame(this.toolbarAnimationFrame)
-          this.toolbarAnimationFrame = null
-        }
-
-        // Remove any forced display style
-        this.selectionToolbarTarget.style.display = ''
-        this.selectionToolbarTarget.classList.remove('hidden')
-        this.selectionToolbarTarget.classList.add('flex')
-
-        // Animate toolbar appearance
-        this.toolbarAnimationFrame = requestAnimationFrame(() => {
-          this.toolbarAnimationFrame = null
-          // Only add animation class if toolbar is still supposed to be visible
-          if (this.selectedIdsValue.length > 0) {
-            this.selectionToolbarTarget.classList.add('animate-slide-up')
-          }
-        })
+        this.selectionToolbarTarget.classList.remove('translate-y-full')
+        this.selectionToolbarTarget.classList.add('translate-y-0')
+        this.selectionToolbarTarget.removeAttribute('aria-hidden')
+        this.selectionToolbarTarget.removeAttribute('inert')
       } else {
-        // Cancel any pending show animation frame to prevent race condition
-        if (this.toolbarAnimationFrame) {
-          cancelAnimationFrame(this.toolbarAnimationFrame)
-          this.toolbarAnimationFrame = null
-        }
-
-        // Ensure toolbar is completely hidden
-        this.selectionToolbarTarget.classList.remove('flex', 'animate-slide-up')
-        this.selectionToolbarTarget.classList.add('hidden')
-        // Force display none to ensure it's really hidden
-        this.selectionToolbarTarget.style.display = 'none'
+        this.selectionToolbarTarget.classList.add('translate-y-full')
+        this.selectionToolbarTarget.classList.remove('translate-y-0')
+        this.selectionToolbarTarget.setAttribute('aria-hidden', 'true')
+        this.selectionToolbarTarget.setAttribute('inert', '')
       }
     }
     

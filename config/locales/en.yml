@@ -383,6 +383,7 @@ en:
       status_duplicate: "Duplicate"
       delete_warning_title: "Warning: Deleted expenses can be restored within a limited time."
       delete_warning_message: "You are about to delete %{count} expenses."
+      delete_warning_message_html: "You are about to delete %{count} expenses."
       delete_confirm_checkbox: "I confirm that I want to delete these expenses"
       processing: "Processing..."
       processing_percentage: "0%"

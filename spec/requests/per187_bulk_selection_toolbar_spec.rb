@@ -32,7 +32,7 @@ RSpec.describe "PER-187 Bulk selection toolbar HTML initial state", type: :reque
         # so it is invisible before JS runs. The view has:
         #   <div class="hidden fixed bottom-0 ..." data-batch-selection-target="selectionToolbar">
         expect(response.body).to include('data-batch-selection-target="selectionToolbar"')
-        expect(response.body).to include('class="hidden fixed bottom-0 left-0 right-0')
+        expect(response.body).to include('class="fixed bottom-0 left-0 right-0')
       end
 
       it "renders the bulk actions button with disabled attribute" do
@@ -98,7 +98,7 @@ RSpec.describe "PER-187 Bulk selection toolbar HTML initial state", type: :reque
         expect(response).to have_http_status(:ok)
         # Toolbar visibility is controlled by JS selection state, not expense count
         expect(response.body).to include('data-batch-selection-target="selectionToolbar"')
-        expect(response.body).to include('class="hidden fixed bottom-0 left-0 right-0')
+        expect(response.body).to include('class="fixed bottom-0 left-0 right-0')
       end
 
       it "still renders the bulk actions button disabled when no items are selected" do

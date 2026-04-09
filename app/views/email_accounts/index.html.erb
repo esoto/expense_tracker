@@ -9,6 +9,33 @@
     </div>
   </div>
 
+  <!-- Bank Breakdown Summary -->
+  <div class="mt-8">
+    <div class="bg-white rounded-lg shadow p-4">
+      <h2 class="text-lg font-semibold text-slate-900 mb-4"><%= t("email_accounts.bank_breakdown.title") %></h2>
+      <% if @bank_breakdown.any? %>
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead>
+            <tr>
+              <th scope="col" class="px-3 py-2 text-left text-sm font-medium text-slate-500"><%= t("email_accounts.bank_breakdown.bank") %></th>
+              <th scope="col" class="px-3 py-2 text-right text-sm font-medium text-slate-500"><%= t("email_accounts.bank_breakdown.total") %></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <% @bank_breakdown.each do |bank_name, amount| %>
+              <tr>
+                <td class="px-3 py-2 text-sm text-slate-900"><%= bank_name %></td>
+                <td class="px-3 py-2 text-right text-sm font-medium text-slate-900 tabular-nums">₡<%= number_with_delimiter(amount.to_i) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="text-sm text-slate-500"><%= t("email_accounts.bank_breakdown.empty") %></p>
+      <% end %>
+    </div>
+  </div>
+
   <div class="mt-8 flex flex-col">
     <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
       <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">

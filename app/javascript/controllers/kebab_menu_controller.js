@@ -11,10 +11,13 @@ export default class extends Controller {
 
   connect() {
     this.closeHandler = this.closeOnClickOutside.bind(this)
+    this.turboCloseHandler = this.close.bind(this)
+    document.addEventListener("turbo:before-render", this.turboCloseHandler)
   }
 
   disconnect() {
     document.removeEventListener("click", this.closeHandler)
+    document.removeEventListener("turbo:before-render", this.turboCloseHandler)
   }
 
   toggle(event) {

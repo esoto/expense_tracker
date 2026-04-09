@@ -223,6 +223,12 @@ es:
       delete_confirm: "¿Estás seguro de que quieres eliminar este gasto?"
       delete_title: "Eliminar gasto (Delete)"
       delete_aria: "Eliminar gasto"
+      menu_label: "Acciones"
+      mark_processed: "Marcar Procesado"
+      mark_pending: "Marcar Pendiente"
+      duplicate: "Duplicar"
+      edit: "Editar"
+      delete: "Eliminar"
 
     categories:
       food: "Alimentación"

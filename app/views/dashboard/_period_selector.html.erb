@@ -1,0 +1,37 @@
+<%# Period selector — segmented control for switching dashboard time periods %>
+<%
+  current_period = local_assigns.fetch(:period, "month")
+  periods = [
+    { key: "month",      label: t("dashboard.v2.this_month", default: "This Month") },
+    { key: "last_month", label: t("dashboard.v2.last_month", default: "Last Month") },
+    { key: "quarter",    label: t("dashboard.v2.this_quarter", default: "This Quarter") },
+    { key: "year",       label: t("dashboard.v2.this_year", default: "This Year") }
+  ]
+%>
+<nav
+  aria-label="<%= t('dashboard.v2.period_selector_label', default: 'Period selector') %>"
+  data-controller="period-selector"
+  data-period-selector-active-value="<%= current_period %>"
+  class="mt-3"
+  role="tablist"
+>
+  <div class="inline-flex rounded-lg p-1 bg-slate-100 dark:bg-slate-700">
+    <% periods.each do |p| %>
+      <% active = current_period == p[:key] %>
+      <%= link_to p[:label],
+            dashboard_v2_path(period: p[:key]),
+            data: {
+              turbo_frame: "dashboard-body",
+              period_selector_target: "tab",
+              period: p[:key]
+            },
+            role: "tab",
+            aria: { selected: active, current: (active ? "true" : nil) },
+            class: [
+              "px-3 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap",
+              "focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1",
+              active ? "bg-teal-700 text-white shadow-sm" : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+            ].join(" ") %>
+    <% end %>
+  </div>
+</nav>

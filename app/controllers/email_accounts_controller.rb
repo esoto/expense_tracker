@@ -4,6 +4,7 @@ class EmailAccountsController < ApplicationController
   # GET /email_accounts
   def index
     @email_accounts = EmailAccount.all
+    @bank_breakdown = Expense.group(:bank_name).sum(:amount).sort_by { |_, v| -v }
   end
 
   # GET /email_accounts/1

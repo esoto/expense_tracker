@@ -173,6 +173,11 @@ en:
       updated: "Email account updated successfully."
       deleted: "Email account deleted successfully."
 
+    bank_breakdown:
+      title: "Bank Breakdown"
+      bank: "Bank"
+      total: "Total"
+      empty: "No expense data available yet."
     providers:
       gmail: "Gmail"
       outlook: "Outlook"

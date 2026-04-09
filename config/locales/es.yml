@@ -146,6 +146,11 @@ es:
       updated: "Cuenta de correo actualizada exitosamente."
       deleted: "Cuenta de correo eliminada exitosamente."
 
+    bank_breakdown:
+      title: "Desglose por Banco"
+      bank: "Banco"
+      total: "Total"
+      empty: "No hay datos de gastos disponibles aún."
     providers:
       gmail: "Gmail"
       outlook: "Outlook"

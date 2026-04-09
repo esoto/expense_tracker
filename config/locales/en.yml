@@ -78,8 +78,6 @@ en:
     actions:
       start: "Start Synchronization"
       stop: "Stop"
-      retry: "Retry"
-      view_details: "View Details"
 
   # Error messages
   errors:
@@ -102,18 +100,6 @@ en:
       token_invalid: "Security token is invalid"
       token_expired: "Security token has expired"
 
-    sync:
-      email_connection: "Failed to connect to email server"
-      email_auth: "Email authentication error"
-      rate_limit: "Too many requests"
-      parsing_error: "Error processing emails"
-      duplicate_detected: "Duplicate transactions detected"
-      no_emails: "No new emails found"
-      account_locked: "Account temporarily locked"
-      quota_exceeded: "Synchronization limit exceeded"
-      processing_error: "Error processing transactions"
-      invalid_format: "Email format not recognized"
-
     server:
       internal: "Internal server error"
       maintenance: "Service under maintenance"
@@ -129,30 +115,6 @@ en:
       recovered: "Connection recovered"
       switching_mode: "Switching to alternate mode"
       degraded_mode: "Limited mode active"
-
-  # Actions
-  actions:
-    retry: "Retry"
-    dismiss: "Dismiss"
-    reload: "Reload page"
-    check_connection: "Check connection"
-    contact_support: "Contact support"
-    view_details: "View details"
-    report_issue: "Report issue"
-
-  # Toast notifications
-  toast:
-    close: "Close notification"
-
-  # Time formatting
-  time:
-    seconds: "%{count} seconds"
-    minutes:
-      one: "1 minute"
-      other: "%{count} minutes"
-    hours:
-      one: "1 hour"
-      other: "%{count} hours"
 
   # Email accounts
   email_accounts:

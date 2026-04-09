@@ -15,7 +15,7 @@ Rails.application.routes.draw do
       resources :categories, only: [ :index ]
 
       # Categorization patterns management
-      resources :patterns do
+      resources :patterns, except: [:new, :edit] do
         collection do
           get :statistics
         end
@@ -118,15 +118,11 @@ Rails.application.routes.draw do
   end
   # Dashboard — primary dashboard
   get "dashboard", to: "dashboard#show", as: :dashboard_page
-  get "dashboard-v2", to: redirect("/dashboard") # backwards compat
-
-  # Old dashboard — temporary alias for one release cycle
-  get "old-dashboard", to: "expenses#dashboard"
 
   # Core expense CRUD routes
   resources :expenses, except: [] do
     collection do
-      get :dashboard  # Old dashboard — kept for named route compatibility
+      get :dashboard
       post :sync_emails
       get :virtual_scroll  # Task 3.7: Virtual scrolling endpoint
     end
@@ -171,7 +167,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :sync_conflicts do
+  resources :sync_conflicts, only: [:index, :show] do
     member do
       post :resolve
       post :undo

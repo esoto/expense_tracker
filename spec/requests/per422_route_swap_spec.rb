@@ -32,20 +32,8 @@ RSpec.describe "PER-422: Route swap — new dashboard is root", type: :request, 
     end
   end
 
-  describe "dashboard-v2 backwards compatibility" do
-    it "redirects /dashboard-v2 to /dashboard" do
-      get "/dashboard-v2"
-      expect(response).to redirect_to("/dashboard")
-    end
-  end
-
   describe "old dashboard" do
     let!(:email_account) { create(:email_account, active: true) }
-
-    it "is accessible at /old-dashboard" do
-      get "/old-dashboard"
-      expect(response).to have_http_status(:success)
-    end
 
     it "is still accessible at /expenses/dashboard" do
       get dashboard_expenses_path

@@ -10,10 +10,6 @@ export default class extends Controller {
   static values = { active: { type: String, default: "month" } }
   static targets = ["tab"]
 
-  static ACTIVE_CLASSES = ["bg-teal-700", "text-white", "shadow-sm"]
-  static INACTIVE_CLASSES = ["bg-slate-100", "text-slate-700", "hover:bg-slate-200",
-    "dark:bg-slate-700", "dark:text-slate-300", "dark:hover:bg-slate-600"]
-
   connect() {
     this.keydownHandler = this.handleKeydown.bind(this)
     this.element.addEventListener("keydown", this.keydownHandler)

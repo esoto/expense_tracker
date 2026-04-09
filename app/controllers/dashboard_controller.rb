@@ -1,19 +1,12 @@
 class DashboardController < ApplicationController
+  VALID_PERIODS = %w[month last_month quarter year].freeze
+
   def show
-    @period = params[:period].presence || "month"
+    @period = VALID_PERIODS.include?(params[:period]) ? params[:period] : "month"
     @primary_email_account = EmailAccount.active.first
 
     if @primary_email_account
-      calculator_period = case @period
-      when "month", "last_month", "quarter" then :month
-      when "year" then :year
-      else :month
-      end
-
-      reference_date = case @period
-      when "last_month" then 1.month.ago.to_date
-      else Date.current
-      end
+      calculator_period, reference_date = period_calculator_args(@period)
 
       month_result = Services::MetricsCalculator.new(
         email_account: @primary_email_account,
@@ -73,6 +66,16 @@ class DashboardController < ApplicationController
   end
 
   private
+
+  def period_calculator_args(period)
+    case period
+    when "month"      then [ :month, Date.current ]
+    when "last_month" then [ :month, 1.month.ago.to_date ]
+    when "quarter"    then [ :month, Date.current ] # MetricsCalculator uses :month; we aggregate 3 months in view
+    when "year"       then [ :year, Date.current ]
+    else [ :month, Date.current ]
+    end
+  end
 
   def calculate_daily_average(month_total)
     return 0.0 if month_total.nil? || month_total.zero?

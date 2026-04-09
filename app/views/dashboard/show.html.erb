@@ -3,6 +3,9 @@
   <%= render "dashboard/header" %>
 
   <%= turbo_frame_tag "dashboard-body" do %>
+    <%# === Period Selector (inside frame so active state updates) === %>
+    <%= render "dashboard/period_selector", period: @period %>
+
     <%# === Metrics Section === %>
     <section aria-label="<%= t('dashboard.v2.metrics_label', default: 'Monthly metrics') %>">
       <%= render "dashboard/metric_cards" %>

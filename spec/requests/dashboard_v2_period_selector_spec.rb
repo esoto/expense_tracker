@@ -114,11 +114,10 @@ RSpec.describe "Dashboard V2 Period Selector", type: :request, unit: true do
     end
 
     context "invalid period" do
-      it "falls back to month for unknown period values" do
+      it "normalizes unknown period values to month" do
         get "/dashboard-v2", params: { period: "invalid" }
         expect(response).to have_http_status(:success)
-        expect(assigns(:period)).to eq("invalid")
-        # Should still render successfully with month fallback
+        expect(assigns(:period)).to eq("month")
       end
     end
 

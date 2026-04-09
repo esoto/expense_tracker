@@ -15,7 +15,7 @@
   class="mt-3"
   role="tablist"
 >
-  <div class="inline-flex rounded-lg p-1 bg-slate-100 dark:bg-slate-700">
+  <div class="inline-flex rounded-lg p-1 bg-slate-100">
     <% periods.each do |p| %>
       <% active = current_period == p[:key] %>
       <%= link_to p[:label],
@@ -30,7 +30,7 @@
             class: [
               "px-3 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap",
               "focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-1",
-              active ? "bg-teal-700 text-white shadow-sm" : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+              active ? "bg-teal-700 text-white shadow-sm" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
             ].join(" ") %>
     <% end %>
   </div>

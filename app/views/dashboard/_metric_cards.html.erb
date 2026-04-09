@@ -41,7 +41,7 @@
 
   <%# ═══ PRIMARY CARD: Monthly Total ═══ %>
   <div id="primary-metric-card"
-       class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative"
+       class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:border-teal-300 cursor-pointer relative"
        role="button"
        tabindex="0"
        aria-label="<%= t('dashboard.v2.month_total', default: 'Month Total') %> — <%= number_to_currency(total_amount) %>"
@@ -88,7 +88,7 @@
 
   <%# ═══ SECONDARY CARD 1: Budget Remaining ═══ %>
   <div id="budget-remaining-card"
-       class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative"
+       class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:border-teal-300 cursor-pointer relative"
        role="button"
        tabindex="0"
        aria-label="<%= t('dashboard.v2.budget_remaining', default: 'Budget Remaining') %> — <%= budget_formatted_remaining %>"
@@ -128,7 +128,7 @@
 
   <%# ═══ SECONDARY CARD 2: Daily Average ═══ %>
   <div id="daily-average-card"
-       class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative"
+       class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:border-teal-300 cursor-pointer relative"
        role="button"
        tabindex="0"
        aria-label="<%= t('dashboard.v2.daily_average', default: 'Daily Average') %> — <%= number_to_currency(@daily_average) %>"
@@ -164,7 +164,7 @@
   <%# ═══ SECONDARY CARD 3: Uncategorized ═══ %>
   <% uncategorized_warning = @uncategorized_count.to_i > 0 %>
   <div id="uncategorized-card"
-       class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-300 cursor-pointer relative"
+       class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:border-teal-300 cursor-pointer relative"
        role="button"
        tabindex="0"
        aria-label="<%= t('dashboard.v2.uncategorized', default: 'Uncategorized') %> — <%= @uncategorized_count %>"

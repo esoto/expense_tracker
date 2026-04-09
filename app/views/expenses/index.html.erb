@@ -138,7 +138,9 @@
 
     <!-- Selection Counter (shown when items selected) -->
     <div class="hidden px-4 py-2 bg-teal-50 border-b border-teal-200"
-         data-batch-selection-target="selectionCounter">
+         data-batch-selection-target="selectionCounter"
+         role="status"
+         aria-live="polite">
       <span class="text-sm font-medium text-teal-700">
         0 <%= t("expenses.index.selection_counter") %>
       </span>

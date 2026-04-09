@@ -105,7 +105,14 @@
       "Bash(cp app/views/expenses/index.html.erb /tmp/pr-review-224/source/app/views/expenses/index.html.erb)",
       "Bash(mkdir -p /tmp/pr-review-224/source/app/views/expenses)",
       "Bash(git branch:*)",
-      "Bash(psql -U esoto -d postgres -c \"SELECT count\\(*\\) FROM pg_stat_activity WHERE datname LIKE ''''expense_tracker_test%'''';\")"
+      "Bash(psql -U esoto -d postgres -c \"SELECT count\\(*\\) FROM pg_stat_activity WHERE datname LIKE ''''expense_tracker_test%'''';\")",
+      "Bash(python3 /Users/esoto/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.5.0/.claude/skills/ui-ux-pro-max/scripts/search.py \"finance expense tracker dashboard personal\" --design-system -p \"Expense Tracker\")",
+      "Bash(python3 /Users/esoto/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.5.0/.claude/skills/ui-ux-pro-max/scripts/search.py \"dashboard analytics metrics KPI\" --domain ux -n 15)",
+      "Bash(python3 /Users/esoto/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.5.0/.claude/skills/ui-ux-pro-max/scripts/search.py \"trend comparison proportion real-time\" --domain chart -n 10)",
+      "Bash(python3 /Users/esoto/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.5.0/.claude/skills/ui-ux-pro-max/scripts/search.py \"finance expense budget personal tracker\" --domain product -n 10)",
+      "mcp__linear__list_teams",
+      "mcp__linear__list_projects",
+      "mcp__linear__save_issue"
     ],
     "deny": []
   }

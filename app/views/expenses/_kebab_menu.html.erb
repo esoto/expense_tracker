@@ -1,0 +1,73 @@
+<%# Kebab (three-dot) menu for expense row actions
+    Locals: expense (Expense)
+%>
+<% next_status = expense.status == "processed" ? "pending" : "processed" %>
+<div data-controller="kebab-menu" class="relative">
+  <button type="button"
+          data-action="click->kebab-menu#toggle"
+          class="p-1.5 rounded-md hover:bg-slate-100 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
+          aria-haspopup="true"
+          aria-expanded="false"
+          aria-label="<%= t('expenses.actions.menu_label', default: 'Acciones') %> — <%= expense.merchant_name %>">
+    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+      <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+    </svg>
+  </button>
+
+  <div data-kebab-menu-target="menu"
+       class="hidden fixed bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-[60] w-44"
+       role="menu"
+       aria-label="<%= t('expenses.actions.menu_label', default: 'Acciones') %>">
+
+    <%# Categorize — links to edit page with category focus %>
+    <%= link_to edit_expense_path(expense, focus: "category"), class: "w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer transition-colors", role: "menuitem" do %>
+      <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+      </svg>
+      <%= t("expenses.actions.categorize", default: "Categorizar") %>
+    <% end %>
+
+    <%# Mark as processed/pending — includes status param %>
+    <%= link_to update_status_expense_path(expense, status: next_status),
+        class: "w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer transition-colors",
+        role: "menuitem",
+        data: { turbo_method: :patch } do %>
+      <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <%= next_status == "processed" ? t("expenses.actions.mark_processed", default: "Marcar Procesado") : t("expenses.actions.mark_pending", default: "Marcar Pendiente") %>
+    <% end %>
+
+    <%# Duplicate %>
+    <%= link_to duplicate_expense_path(expense),
+        class: "w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer transition-colors",
+        role: "menuitem",
+        data: { turbo_method: :post } do %>
+      <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+      </svg>
+      <%= t("expenses.actions.duplicate", default: "Duplicar") %>
+    <% end %>
+
+    <%# Edit %>
+    <%= link_to edit_expense_path(expense), class: "w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer transition-colors", role: "menuitem" do %>
+      <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+      </svg>
+      <%= t("expenses.actions.edit", default: "Editar") %>
+    <% end %>
+
+    <div class="border-t border-slate-100 my-1"></div>
+
+    <%# Delete (destructive — separated) %>
+    <%= link_to expense_path(expense),
+        class: "w-full text-left px-3 py-2 text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors",
+        role: "menuitem",
+        data: { turbo_method: :delete, turbo_confirm: t("expenses.actions.delete_confirm", default: "¿Eliminar este gasto?") } do %>
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+      </svg>
+      <%= t("expenses.actions.delete", default: "Eliminar") %>
+    <% end %>
+  </div>
+</div>

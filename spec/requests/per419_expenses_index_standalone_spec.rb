@@ -235,44 +235,44 @@ RSpec.describe "PER-419: Expenses index standalone verification", type: :request
       expect(response.body).to include('data-view-toggle-target="itemList"')
     end
 
-    it "renders the expanded columns targets for desktop headers" do
-      expect(response.body).to include('data-view-toggle-target="expandedColumns"')
+    it "renders the item list target" do
+      expect(response.body).to include('data-view-toggle-target="itemList"')
     end
   end
 
-  describe "inline actions on expense items" do
+  describe "kebab menu on expense items" do
     before { get expenses_path }
 
-    it "renders inline-actions expense-id value on expense rows" do
+    it "renders inline-actions controller on expense rows" do
       expect(response.body).to include("data-inline-actions-expense-id-value=\"#{expense.id}\"")
     end
 
-    it "renders inline-actions current-status value on expense rows" do
-      expect(response.body).to include('data-inline-actions-current-status-value="processed"')
+    it "renders kebab-menu controller on expense rows" do
+      expect(response.body).to include('data-controller="kebab-menu"')
     end
 
-    it "renders the category dropdown toggle action" do
-      expect(response.body).to include("click->inline-actions#toggleCategoryDropdown")
+    it "renders kebab toggle action" do
+      expect(response.body).to include("click->kebab-menu#toggle")
     end
 
-    it "renders the status toggle action" do
-      expect(response.body).to include("click->inline-actions#toggleStatus")
+    it "renders kebab dropdown with edit link" do
+      expect(response.body).to include("Editar")
     end
 
-    it "renders the duplicate action" do
-      expect(response.body).to include("click->inline-actions#duplicateExpense")
+    it "renders kebab dropdown with delete link" do
+      expect(response.body).to include("Eliminar")
     end
 
-    it "renders the delete confirmation action" do
-      expect(response.body).to include("click->inline-actions#showDeleteConfirmation")
+    it "renders kebab dropdown with categorize action" do
+      expect(response.body).to include("Categorizar")
     end
 
-    it "renders the category dropdown target" do
-      expect(response.body).to include('data-inline-actions-target="categoryDropdown"')
+    it "renders kebab dropdown with status toggle" do
+      expect(response.body).to match(/Marcar Procesado|Marcar Pendiente/)
     end
 
-    it "renders the delete confirmation target" do
-      expect(response.body).to include('data-inline-actions-target="deleteConfirmation"')
+    it "renders kebab dropdown with duplicate action" do
+      expect(response.body).to include("Duplicar")
     end
   end
 

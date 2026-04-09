@@ -18,9 +18,11 @@ export default class extends Controller {
   }
 
   connect() {
+    this._animationFrameId = null
+
     // Initialize with animation
     this.animateValue()
-    
+
     // Animate trend if present
     if (this.hasTrendTarget && this.hasTrendValueValue) {
       this.animateTrend()
@@ -30,9 +32,14 @@ export default class extends Controller {
     if (this.hasSparklineTarget) {
       this.drawSparkline()
     }
+  }
 
-    // Add hover effect
-    this.addHoverEffects()
+  disconnect() {
+    // Cancel any pending animation frame to prevent stale state on Turbo back-navigation
+    if (this._animationFrameId) {
+      cancelAnimationFrame(this._animationFrameId)
+      this._animationFrameId = null
+    }
   }
 
   animateValue() {
@@ -55,7 +62,7 @@ export default class extends Controller {
       this.valueTarget.textContent = this.formatNumber(current)
 
       if (progress < 1) {
-        requestAnimationFrame(animate)
+        this._animationFrameId = requestAnimationFrame(animate)
       } else {
         // Final value to ensure accuracy
         this.valueTarget.textContent = this.formatNumber(end)
@@ -65,7 +72,7 @@ export default class extends Controller {
       }
     }
 
-    requestAnimationFrame(animate)
+    this._animationFrameId = requestAnimationFrame(animate)
   }
 
   animateTrend() {
@@ -180,20 +187,6 @@ export default class extends Controller {
     setTimeout(() => {
       this.containerTarget.classList.remove('animate-pulse-once')
     }, 600)
-  }
-
-  addHoverEffects() {
-    if (!this.hasContainerTarget) return
-    
-    this.containerTarget.addEventListener('mouseenter', () => {
-      this.containerTarget.style.transform = 'translateY(-2px)'
-      this.containerTarget.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-    })
-    
-    this.containerTarget.addEventListener('mouseleave', () => {
-      this.containerTarget.style.transform = 'translateY(0)'
-      this.containerTarget.style.boxShadow = ''
-    })
   }
 
   // Public method to update the value (can be called from other controllers or Turbo)

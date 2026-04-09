@@ -229,6 +229,11 @@ es:
       duplicate: "Duplicar"
       edit: "Editar"
       delete: "Eliminar"
+    delete_modal:
+      title: "Eliminar Gasto"
+      message: "¿Estás seguro de que deseas eliminar este gasto?"
+      warning: "Esta acción no se puede deshacer."
+      confirm_button: "Eliminar Gasto"
 
     categories:
       food: "Alimentación"

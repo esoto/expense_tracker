@@ -42,6 +42,7 @@ class SyncConflict < ApplicationRecord
   scope :recent, -> { order(created_at: :desc) }
   scope :for_session, ->(session_id) { where(sync_session_id: session_id) }
   scope :with_expenses, -> { includes(:existing_expense, :new_expense) }
+  scope :actionable, -> { where.not(conflict_type: "duplicate") }
 
   # Callbacks
   before_validation :calculate_similarity_score, if: :should_calculate_similarity?

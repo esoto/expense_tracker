@@ -30,7 +30,7 @@ RSpec.describe "SyncConflicts select-all page structure", type: :request, unit: 
       sync_session: sync_session,
       status: "pending",
       bulk_resolvable: true,
-      conflict_type: "duplicate"
+      conflict_type: "similar"
     )
   end
 

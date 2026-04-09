@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe "Dashboard V2", type: :request, unit: true do
+RSpec.describe "Dashboard", type: :request, unit: true do
   let(:admin_user) { create(:admin_user) }
 
   before do
@@ -13,12 +13,12 @@ RSpec.describe "Dashboard V2", type: :request, unit: true do
       .and_return(double("intermediate", where: jobs_relation))
   end
 
-  describe "GET /dashboard-v2" do
+  describe "GET /dashboard" do
     context "when unauthenticated" do
       before { reset! }
 
       it "redirects to login" do
-        get "/dashboard-v2"
+        get "/dashboard"
         expect(response).to redirect_to(admin_login_path)
       end
     end
@@ -38,12 +38,12 @@ RSpec.describe "Dashboard V2", type: :request, unit: true do
       end
 
       it "renders successfully" do
-        get "/dashboard-v2"
+        get "/dashboard"
         expect(response).to have_http_status(:success)
       end
 
       it "includes monthly metrics" do
-        get "/dashboard-v2"
+        get "/dashboard"
         expect(response.body).to include("Month Total")
         expect(response.body).to include("Budget Remaining")
         expect(response.body).to include("Daily Average")
@@ -51,47 +51,47 @@ RSpec.describe "Dashboard V2", type: :request, unit: true do
       end
 
       it "limits recent expenses to 8" do
-        get "/dashboard-v2"
+        get "/dashboard"
         expect(assigns(:recent_expenses).size).to eq(8)
       end
 
       it "provides category breakdown limited to 10" do
-        get "/dashboard-v2"
+        get "/dashboard"
         expect(assigns(:category_breakdown)).to be_an(Array)
         expect(assigns(:category_breakdown).size).to be <= 10
       end
 
       it "provides monthly trend data limited to 6 months" do
-        get "/dashboard-v2"
+        get "/dashboard"
         expect(assigns(:monthly_trend)).to be_a(Hash)
         expect(assigns(:monthly_trend).size).to be <= 6
       end
 
       it "provides sync status" do
-        get "/dashboard-v2"
+        get "/dashboard"
         expect(assigns(:sync_status)).to include(:last_sync, :active)
       end
 
       it "provides daily average" do
-        get "/dashboard-v2"
+        get "/dashboard"
         expect(assigns(:daily_average)).to be_a(Float)
         expect(assigns(:daily_average)).to be > 0
       end
 
       it "provides uncategorized count" do
-        get "/dashboard-v2"
+        get "/dashboard"
         expect(assigns(:uncategorized_count)).to be_an(Integer)
       end
 
       it "provides budget data" do
-        get "/dashboard-v2"
+        get "/dashboard"
         expect(assigns(:budgets)).to be_present
       end
     end
 
     context "without email account" do
       it "renders successfully with empty defaults" do
-        get "/dashboard-v2"
+        get "/dashboard"
         expect(response).to have_http_status(:success)
         expect(assigns(:monthly_metrics)[:total_amount]).to eq(0.0)
         expect(assigns(:daily_average)).to eq(0.0)
@@ -103,7 +103,7 @@ RSpec.describe "Dashboard V2", type: :request, unit: true do
       let!(:email_account) { create(:email_account, active: true) }
 
       it "has no filters, batch selection, or pagination" do
-        get "/dashboard-v2"
+        get "/dashboard"
         body = response.body
 
         # No expense management controls

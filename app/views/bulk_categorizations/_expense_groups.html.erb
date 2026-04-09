@@ -33,7 +33,7 @@
               <%= group[:count] %> gasto<%= "s" if group[:count] != 1 %>
             </span>
             <span class="text-sm font-semibold text-slate-900">
-              ₡<%= number_with_delimiter(group[:total_amount].to_i) %>
+              <%= currency_symbol(group[:expenses].first) %><%= number_with_delimiter(group[:total_amount].to_i) %>
             </span>
           </div>
         </div>
@@ -148,7 +148,7 @@
 
               <div class="flex items-center space-x-3">
                 <span class="text-sm font-semibold text-slate-900">
-                  ₡<%= number_with_delimiter(expense.amount.to_i) %>
+                  <%= currency_symbol(expense) %><%= number_with_delimiter(expense.amount.to_i) %>
                 </span>
 
                 <!-- Individual Category Override -->

@@ -26,6 +26,11 @@ const translations = {
         resume: "Reanudar"
       }
     },
+    sync_sessions: {
+      progress: "Progreso",
+      expenses_label: "gastos",
+      processing: "Procesando"
+    },
     expenses: {
       notifications: {
         category_updated: "Categoría actualizada",
@@ -432,6 +437,11 @@ const translations = {
         pause: "Pause",
         resume: "Resume"
       }
+    },
+    sync_sessions: {
+      progress: "Progress",
+      expenses_label: "expenses",
+      processing: "Processing"
     },
     expenses: {
       notifications: {

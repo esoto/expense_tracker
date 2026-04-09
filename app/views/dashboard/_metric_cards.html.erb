@@ -90,7 +90,7 @@
   <%= link_to budgets_path, id: "budget-remaining-card",
        class: "bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:border-teal-300 cursor-pointer relative block no-underline",
        aria: { label: "#{t('dashboard.v2.budget_remaining', default: 'Budget Remaining')} — #{budget_formatted_remaining}" },
-       data: { controller: "animated-metric", animated_metric_container_target: "container", animated_metric_to_value: budget_remaining, animated_metric_prefix_value: "₡" } do %>
+       data: { turbo_frame: "_top", controller: "animated-metric", animated_metric_container_target: "container", animated_metric_to_value: budget_remaining, animated_metric_prefix_value: "₡" } do %>
 
     <div class="flex items-center justify-between mb-3">
       <div class="p-2 rounded-lg <%= budget_classes[:bg] %>">
@@ -157,7 +157,7 @@
   <%= link_to bulk_categorizations_path, id: "uncategorized-card",
        class: "bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:border-teal-300 cursor-pointer relative block no-underline",
        aria: { label: "#{t('dashboard.v2.uncategorized', default: 'Uncategorized')} — #{@uncategorized_count}" },
-       data: { controller: "animated-metric", animated_metric_container_target: "container", animated_metric_to_value: @uncategorized_count } do %>
+       data: { turbo_frame: "_top", controller: "animated-metric", animated_metric_container_target: "container", animated_metric_to_value: @uncategorized_count } do %>
 
     <div class="flex items-center justify-between mb-3">
       <div class="p-2 rounded-lg <%= uncategorized_warning ? 'bg-amber-50' : 'bg-slate-100' %>">

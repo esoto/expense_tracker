@@ -30,7 +30,7 @@ RSpec.describe "I18n translations (PER-119)", unit: true do
     end
 
     it "provides an analytics nav label" do
-      expect(I18n.t("nav.analytics")).to eq("Analytics")
+      expect(I18n.t("nav.analytics")).to eq("Analíticas")
     end
 
     it "provides an accounts nav label" do
@@ -41,8 +41,21 @@ RSpec.describe "I18n translations (PER-119)", unit: true do
       expect(I18n.t("nav.sync")).to eq("Sincronización")
     end
 
-    it "provides a patterns nav label" do
-      expect(I18n.t("nav.patterns")).to eq("Patrones")
+    it "provides a budgets nav label" do
+      expect(I18n.t("nav.budgets")).to eq("Presupuestos")
+    end
+
+    it "provides a categories nav label" do
+      expect(I18n.t("nav.categories")).to eq("Categorías")
+    end
+
+    it "provides admin nav labels" do
+      expect(I18n.t("admin.nav.patterns")).to eq("Patrones")
+      expect(I18n.t("admin.nav.composite_patterns")).to eq("Patrones Compuestos")
+      expect(I18n.t("admin.nav.analytics")).to eq("Analíticas")
+      expect(I18n.t("admin.nav.sync_performance")).to eq("Rendimiento Sync")
+      expect(I18n.t("admin.nav.back_to_app")).to eq("← Volver a la App")
+      expect(I18n.t("admin.nav.logout")).to eq("Cerrar Sesión")
     end
 
     it "provides a new expense nav label" do

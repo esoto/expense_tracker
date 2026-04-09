@@ -57,7 +57,7 @@
       </span>
 
       <span class="text-sm font-bold text-slate-900 flex-shrink-0">
-        ₡<%= number_with_delimiter(expense.amount.to_i) %>
+        <%= currency_symbol(expense) %><%= number_with_delimiter(expense.amount.to_i) %>
       </span>
     </div>
 
@@ -148,7 +148,7 @@
 
     <%# Amount %>
     <div class="px-3 py-2.5 text-right text-[13px] font-medium text-slate-900 tabular-nums whitespace-nowrap">
-      ₡<%= number_with_delimiter(expense.amount.to_i) %>
+      <%= currency_symbol(expense) %><%= number_with_delimiter(expense.amount.to_i) %>
     </div>
 
     <%# Status %>

@@ -19,7 +19,7 @@
     <% periods.each do |p| %>
       <% active = current_period == p[:key] %>
       <%= link_to p[:label],
-            dashboard_v2_path(period: p[:key]),
+            dashboard_page_path(period: p[:key]),
             data: {
               turbo_frame: "dashboard-body",
               period_selector_target: "tab",

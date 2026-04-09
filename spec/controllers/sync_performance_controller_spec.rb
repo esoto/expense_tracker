@@ -1,8 +1,10 @@
 require 'rails_helper'
 
 RSpec.describe SyncPerformanceController, type: :controller do
+  let(:admin_user) { create(:admin_user, :with_session) }
+
   before do
-    allow(controller).to receive(:authenticate_user!).and_return(true)
+    authenticate_admin_in_controller(admin_user)
   end
 
   describe "GET #index" do

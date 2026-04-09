@@ -31,12 +31,6 @@ class SyncSessionsController < ApplicationController
       session[:sync_session_id] = @sync_session.id
 
       respond_to do |format|
-        format.turbo_stream do
-          # Handle turbo stream requests - update the widget in place
-          prepare_widget_data
-          render turbo_stream: turbo_stream.replace("sync_status_widget",
-            partial: "sync_sessions/unified_widget")
-        end
         format.html do
           redirect_to sync_sessions_path, notice: t("sync_sessions.flash.started")
         end
@@ -126,13 +120,6 @@ class SyncSessionsController < ApplicationController
 
   def handle_creation_error(result)
     respond_to do |format|
-      format.turbo_stream do
-        @error_message = result.message || "Error al crear la sincronización"
-        @active_sync_session = nil
-        @last_completed_sync = SyncSession.completed.recent.first
-        render turbo_stream: turbo_stream.replace("sync_status_widget",
-          partial: "sync_sessions/unified_widget")
-      end
       format.html do
         case result.error
         when :sync_limit_exceeded

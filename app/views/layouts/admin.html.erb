@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="<%= I18n.locale %>">
   <head>
     <title><%= content_for(:title) || "Administrador - Expense Tracker" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -31,7 +31,7 @@
     <!-- Admin Navigation -->
     <nav class="bg-white shadow-sm border-b border-slate-200"
          role="navigation"
-         aria-label="Navegación de administrador">
+         aria-label="<%= t('admin.nav.aria_label') %>">
       <div class="max-w-7xl mx-auto px-4">
         <div class="flex justify-between items-center py-4">
           <div class="flex items-center space-x-4">
@@ -40,17 +40,26 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
               </svg>
             </div>
-            <span class="text-xl font-bold text-slate-900">Admin - Expense Tracker</span>
+            <span class="text-xl font-bold text-slate-900"><%= t("admin.nav.title") %></span>
           </div>
 
           <div class="flex items-center space-x-3">
-            <%= link_to "Patrones", admin_patterns_path,
+            <%= link_to t("admin.nav.patterns"), admin_patterns_path,
+                class: "text-sm font-medium transition-colors #{request.path.start_with?('/admin/patterns') ? 'text-teal-700' : 'text-slate-600 hover:text-teal-700'}",
+                'aria-current': (request.path.start_with?('/admin/patterns') ? 'page' : nil) %>
+            <%= link_to t("admin.nav.composite_patterns"), admin_composite_patterns_path,
+                class: "text-sm font-medium transition-colors #{request.path.start_with?('/admin/composite_patterns') ? 'text-teal-700' : 'text-slate-600 hover:text-teal-700'}",
+                'aria-current': (request.path.start_with?('/admin/composite_patterns') ? 'page' : nil) %>
+            <%= link_to t("admin.nav.analytics"), analytics_pattern_dashboard_index_path,
+                class: "text-sm font-medium transition-colors #{request.path.start_with?('/analytics') ? 'text-teal-700' : 'text-slate-600 hover:text-teal-700'}",
+                'aria-current': (request.path.start_with?('/analytics') ? 'page' : nil) %>
+            <%= link_to t("admin.nav.sync_performance"), sync_performance_path,
+                class: "text-sm font-medium transition-colors #{request.path.start_with?('/sync_performance') ? 'text-teal-700' : 'text-slate-600 hover:text-teal-700'}",
+                'aria-current': (request.path.start_with?('/sync_performance') ? 'page' : nil) %>
+            <span class="border-l border-slate-200 h-4"></span>
+            <%= link_to t("admin.nav.back_to_app"), expenses_path,
                 class: "text-sm font-medium text-slate-600 hover:text-teal-700 transition-colors" %>
-            <%= link_to "Patrones Compuestos", admin_composite_patterns_path,
-                class: "text-sm font-medium text-slate-600 hover:text-teal-700 transition-colors" %>
-            <%= link_to "← Volver a la App", expenses_path,
-                class: "text-sm font-medium text-slate-600 hover:text-teal-700 transition-colors" %>
-            <%= link_to "Cerrar Sesión",
+            <%= link_to t("admin.nav.logout"),
                 admin_logout_path,
                 data: { turbo_method: :delete },
                 class: "text-sm font-medium text-rose-600 hover:text-rose-700 transition-colors" %>

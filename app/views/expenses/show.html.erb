@@ -19,7 +19,7 @@
 
     <!-- Amount Display -->
     <div class="text-center py-6 bg-slate-50 rounded-lg mb-6">
-      <div class="text-4xl font-bold text-slate-900 mb-2">₡<%= number_with_delimiter(@expense.amount.to_i) %></div>
+      <div class="text-4xl font-bold text-slate-900 mb-2"><%= currency_symbol(@expense) %><%= number_with_delimiter(@expense.amount.to_i) %></div>
       <div class="text-lg text-slate-600">
         <% if @expense.merchant_name? %>
         <%= @expense.merchant_name %>

@@ -9,6 +9,9 @@ class SyncConflictsController < ApplicationController
       SyncConflict.includes(:existing_expense, :new_expense)
     end
 
+    # Exclude 100% duplicate matches — they are auto-handled and just noise
+    @conflicts = @conflicts.actionable
+
     # Apply filters
     @conflicts = @conflicts.where(status: params[:status]) if params[:status].present?
     @conflicts = @conflicts.where(conflict_type: params[:type]) if params[:type].present?
@@ -22,6 +25,9 @@ class SyncConflictsController < ApplicationController
     else
       SyncConflict.all
     end
+
+    # Exclude 100% duplicates from stats too
+    base_scope = base_scope.actionable
 
     # Apply same filters as main query for stats
     base_scope = base_scope.where(status: params[:status]) if params[:status].present?

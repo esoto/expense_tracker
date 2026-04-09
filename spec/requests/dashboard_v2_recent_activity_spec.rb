@@ -15,7 +15,7 @@ RSpec.describe "Dashboard V2 Recent Activity", type: :request, unit: true do
       .and_return(double("intermediate", where: jobs_relation))
   end
 
-  describe "GET /dashboard-v2" do
+  describe "GET /dashboard" do
     context "recent activity section" do
       let!(:email_account) { create(:email_account, active: true) }
       let!(:category) { create(:category, name: "Alimentacion", color: "#4ECDC4") }
@@ -33,30 +33,30 @@ RSpec.describe "Dashboard V2 Recent Activity", type: :request, unit: true do
       end
 
       it "renders the recent activity section" do
-        get "/dashboard-v2"
+        get "/dashboard"
         expect(response).to have_http_status(:success)
         expect(response.body).to include("Recent Expenses")
       end
 
       it "shows merchant names" do
-        get "/dashboard-v2"
+        get "/dashboard"
         expenses.each do |expense|
           expect(response.body).to include(expense.merchant_name)
         end
       end
 
       it "shows formatted amounts with colon currency symbol" do
-        get "/dashboard-v2"
+        get "/dashboard"
         expect(response.body).to include("₡")
       end
 
       it "shows category badges" do
-        get "/dashboard-v2"
+        get "/dashboard"
         expect(response.body).to include("Alimentacion")
       end
 
       it "includes 'View all expenses' link" do
-        get "/dashboard-v2"
+        get "/dashboard"
         expect(response.body).to include("View all expenses")
         expect(response.body).to include(expenses_path)
       end
@@ -72,7 +72,7 @@ RSpec.describe "Dashboard V2 Recent Activity", type: :request, unit: true do
           )
         end
 
-        get "/dashboard-v2"
+        get "/dashboard"
         expect(assigns(:recent_expenses).size).to eq(8)
       end
     end
@@ -81,7 +81,7 @@ RSpec.describe "Dashboard V2 Recent Activity", type: :request, unit: true do
       let!(:email_account) { create(:email_account, active: true) }
 
       it "shows empty state message when there are no expenses" do
-        get "/dashboard-v2"
+        get "/dashboard"
         expect(response.body).to include("No hay gastos recientes")
       end
     end
@@ -98,7 +98,7 @@ RSpec.describe "Dashboard V2 Recent Activity", type: :request, unit: true do
       end
 
       it "shows 'Sin categoría' for expenses without a category" do
-        get "/dashboard-v2"
+        get "/dashboard"
         expect(response.body).to include("Sin categor")
       end
     end

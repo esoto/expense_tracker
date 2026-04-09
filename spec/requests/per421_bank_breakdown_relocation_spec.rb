@@ -60,7 +60,7 @@ RSpec.describe "PER-421: Bank breakdown relocation", type: :request, unit: true 
     end
   end
 
-  describe "Dashboard v2 (GET /dashboard-v2)" do
+  describe "Dashboard v2 (GET /dashboard)" do
     before do
       # Mock SolidQueue::Job used by DashboardService#sync_info
       jobs_relation = double("jobs_relation", exists?: false, count: 0)
@@ -70,7 +70,7 @@ RSpec.describe "PER-421: Bank breakdown relocation", type: :request, unit: true 
     end
 
     it "does NOT contain bank breakdown" do
-      get dashboard_v2_path
+      get dashboard_page_path
       expect(response).to have_http_status(:ok)
       expect(response.body).not_to include(I18n.t("email_accounts.bank_breakdown.title"))
       expect(response.body).not_to include("bank-breakdown")

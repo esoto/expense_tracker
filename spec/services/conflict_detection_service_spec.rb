@@ -31,17 +31,15 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
     context 'when exact duplicate exists' do
       before { existing_expense }
 
-      it 'creates a duplicate conflict' do
+      it 'skips obvious duplicates with high similarity (>=95%)' do
         conflict = service.detect_conflict_for_expense(new_expense_data)
-
-        expect(conflict).to be_present
-        expect(conflict.conflict_type).to eq('duplicate')
-        expect(conflict.similarity_score).to be >= 90
+        expect(conflict).to be_nil
       end
 
-      it 'associates with the existing expense' do
-        conflict = service.detect_conflict_for_expense(new_expense_data)
-        expect(conflict.existing_expense).to eq(existing_expense)
+      it 'does not create a conflict record for obvious duplicates' do
+        expect {
+          service.detect_conflict_for_expense(new_expense_data)
+        }.not_to change(SyncConflict, :count)
       end
     end
 
@@ -62,12 +60,9 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
     context 'when conflict_type is duplicate' do
       before { existing_expense }
 
-      it 'saves the new expense with deleted_at set' do
+      it 'skips creating conflict for obvious duplicates' do
         conflict = service.detect_conflict_for_expense(new_expense_data)
-
-        expect(conflict).to be_present
-        expect(conflict.conflict_type).to eq('duplicate')
-        expect(conflict.new_expense.deleted_at).to be_present
+        expect(conflict).to be_nil
       end
     end
 
@@ -163,12 +158,12 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
         )
       end
 
-      it 'returns array of conflicts' do
+      it 'returns array (obvious duplicates are skipped)' do
         conflicts = service.detect_conflicts_batch(new_expenses_data)
 
         expect(conflicts).to be_an(Array)
-        expect(conflicts.size).to eq(1)
-        expect(conflicts.first).to be_a(SyncConflict)
+        # Obvious duplicates (>=95% similarity) are now skipped entirely
+        expect(conflicts.compact).to be_empty
       end
     end
   end
@@ -313,16 +308,30 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
         ActiveRecord::RecordInvalid.new(SyncConflict.new)
       )
 
+      # Use a non-duplicate type so it doesn't hit the early-return guard
       expect {
         service.send(
           :create_conflict,
           existing_expense: existing_expense,
           new_expense_data: new_expense_data,
-          conflict_type: 'duplicate',
-          similarity_score: 95.0,
+          conflict_type: 'needs_review',
+          similarity_score: 50.0,
           differences: {}
         )
       }.not_to change(Expense, :count)
+    end
+
+    it 'skips obvious duplicates (>=95% similarity) without creating records' do
+      result = service.send(
+        :create_conflict,
+        existing_expense: existing_expense,
+        new_expense_data: new_expense_data,
+        conflict_type: 'duplicate',
+        similarity_score: 95.0,
+        differences: {}
+      )
+
+      expect(result).to be_nil
     end
 
     it 'returns nil and adds an error when the transaction fails' do
@@ -330,12 +339,13 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
         ActiveRecord::RecordInvalid.new(SyncConflict.new)
       )
 
+      # Use a non-duplicate type so it doesn't get skipped
       result = service.send(
         :create_conflict,
         existing_expense: existing_expense,
         new_expense_data: new_expense_data,
-        conflict_type: 'duplicate',
-        similarity_score: 95.0,
+        conflict_type: 'needs_review',
+        similarity_score: 50.0,
         differences: {}
       )
 

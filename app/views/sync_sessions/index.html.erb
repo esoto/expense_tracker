@@ -1,78 +1,80 @@
 <%= turbo_stream_from "sync_sessions_index" %>
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-  <!-- Header con gradiente -->
+  <%# Header with gradient %>
   <div class="bg-gradient-to-r from-teal-700 to-teal-600 rounded-xl shadow-lg p-8 text-white mb-8">
     <h1 class="text-3xl font-bold mb-2"><%= t("sync_sessions.index.title") %></h1>
-    <p class="text-teal-100">Gestiona y monitorea las sincronizaciones de tus cuentas de email</p>
-    <!-- Stats summary -->
+    <p class="text-teal-100"><%= t("sync_sessions.index.subtitle") %></p>
+    <%# Stats summary %>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
       <div class="bg-white/10 rounded-lg p-4">
-        <p class="text-teal-100 text-sm">Cuentas Activas</p>
+        <p class="text-teal-100 text-sm"><%= t("sync_sessions.index.active_accounts") %></p>
         <p class="text-2xl font-bold"><%= @active_accounts_count %></p>
       </div>
       <div class="bg-white/10 rounded-lg p-4">
-        <p class="text-teal-100 text-sm">Sincronizaciones Hoy</p>
+        <p class="text-teal-100 text-sm"><%= t("sync_sessions.index.syncs_today") %></p>
         <p class="text-2xl font-bold"><%= @today_sync_count %></p>
       </div>
       <div class="bg-white/10 rounded-lg p-4">
-        <p class="text-teal-100 text-sm">Gastos Detectados (Mes)</p>
+        <p class="text-teal-100 text-sm"><%= t("sync_sessions.index.expenses_detected_month") %></p>
         <p class="text-2xl font-bold"><%= @monthly_expenses_detected %></p>
       </div>
     </div>
   </div>
 
-  <!-- Active sync session -->
-  <% if @active_session %>
-    <div class="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 mb-8"
-         data-controller="sync-sessions"
-         data-sync-sessions-session-id-value="<%= @active_session.id %>"
-         data-sync-sessions-session-token-value="<%= @active_session.session_token %>">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-3">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
-          <h2 class="text-xl font-semibold text-slate-900"><%= t("sync_sessions.index.in_progress") %></h2>
-        </div>
-        <%= button_to t("common.cancel"), cancel_sync_session_path(@active_session), method: :post,
-            class: "bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium py-2 px-4 rounded-lg shadow-sm" %>
-      </div>
-
-      <!-- Progress bar -->
-      <div class="mb-4">
-        <div class="flex justify-between text-sm text-slate-600 mb-2">
-          <span data-sync-sessions-target="progressText">Progreso: <%= @active_session.progress_percentage %>%</span>
-          <span data-sync-sessions-target="processedCount"><%= @active_session.processed_emails %> / <%= @active_session.total_emails %> emails</span>
-        </div>
-        <div class="w-full bg-slate-200 rounded-full h-3">
-          <div class="bg-amber-600 h-3 rounded-full transition-all duration-500"
-               data-sync-sessions-target="progressBar"
-               style="width: <%= @active_session.progress_percentage %>%"></div>
-        </div>
-      </div>
-
-      <!-- Active accounts grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <% @active_session.sync_session_accounts.includes(:email_account).each do |account| %>
-          <div class="bg-white rounded-lg p-4 border border-slate-200"
-               data-sync-sessions-target="accountCard"
-               data-account-id="<%= account.email_account.id %>">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-sm font-medium text-slate-900"><%= account.email_account.bank_name %></span>
-              <%= render "sync_sessions/account_status_badge", account: account %>
-            </div>
-            <p class="text-xs text-slate-600 mb-2"><%= account.email_account.email %></p>
-            <div class="flex justify-between text-xs text-slate-500" data-account-counts>
-              <span><%= account.processed_emails %> / <%= account.total_emails %></span>
-              <span><%= account.detected_expenses %> gastos</span>
-            </div>
+  <%# Active sync session %>
+  <div id="sync_active_session">
+    <% if @active_session %>
+      <div class="bg-amber-50 border-2 border-amber-200 rounded-xl p-6 mb-8"
+           data-controller="sync-sessions"
+           data-sync-sessions-session-id-value="<%= @active_session.id %>"
+           data-sync-sessions-session-token-value="<%= @active_session.session_token %>">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
+            <h2 class="text-xl font-semibold text-slate-900"><%= t("sync_sessions.index.in_progress") %></h2>
           </div>
-        <% end %>
-      </div>
-    </div>
-  <% end %>
+          <%= button_to t("common.cancel"), cancel_sync_session_path(@active_session), method: :post,
+              class: "bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium py-2 px-4 rounded-lg shadow-sm" %>
+        </div>
 
-  <!-- Quick actions -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    <!-- Sync all -->
+        <%# Progress bar %>
+        <div class="mb-4">
+          <div class="flex justify-between text-sm text-slate-600 mb-2">
+            <span data-sync-sessions-target="progressText"><%= t("sync_sessions.index.progress") %>: <%= @active_session.progress_percentage %>%</span>
+            <span data-sync-sessions-target="processedCount"><%= @active_session.processed_emails %> / <%= @active_session.total_emails %> <%= t("sync_sessions.index.emails") %></span>
+          </div>
+          <div class="w-full bg-slate-200 rounded-full h-3">
+            <div class="bg-amber-600 h-3 rounded-full transition-all duration-500"
+                 data-sync-sessions-target="progressBar"
+                 style="width: <%= @active_session.progress_percentage %>%"></div>
+          </div>
+        </div>
+
+        <%# Active accounts grid %>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <% @active_session.sync_session_accounts.includes(:email_account).each do |account| %>
+            <div class="bg-white rounded-lg p-4 border border-slate-200"
+                 data-sync-sessions-target="accountCard"
+                 data-account-id="<%= account.email_account.id %>">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-slate-900"><%= account.email_account.bank_name %></span>
+                <%= render "sync_sessions/account_status_badge", account: account %>
+              </div>
+              <p class="text-xs text-slate-600 mb-2"><%= account.email_account.email %></p>
+              <div class="flex justify-between text-xs text-slate-500" data-account-counts>
+                <span><%= account.processed_emails %> / <%= account.total_emails %></span>
+                <span><%= account.detected_expenses %> <%= t("sync_sessions.index.expenses_label") %></span>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <%# Quick actions %>
+  <div id="sync_quick_actions" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <%# Sync all %>
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
       <div class="flex items-center mb-4">
         <div class="bg-teal-100 p-3 rounded-lg">
@@ -80,15 +82,15 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
           </svg>
         </div>
-        <h3 class="text-lg font-semibold text-slate-900 ml-3">Sincronizar Todo</h3>
+        <h3 class="text-lg font-semibold text-slate-900 ml-3"><%= t("sync_sessions.index.sync_all") %></h3>
       </div>
-      <p class="text-sm text-slate-600 mb-4">Sincroniza todas las cuentas activas</p>
-      <%= button_to "Iniciar Sincronización", sync_sessions_path, method: :post,
+      <p class="text-sm text-slate-600 mb-4"><%= t("sync_sessions.index.sync_all_description") %></p>
+      <%= button_to t("sync_sessions.index.start_sync"), sync_sessions_path, method: :post,
           class: "w-full bg-teal-700 hover:bg-teal-800 text-white font-medium py-2 px-4 rounded-lg shadow-sm transition-colors",
           disabled: @active_session.present? %>
     </div>
 
-    <!-- Last sync info -->
+    <%# Last sync info %>
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
       <div class="flex items-center mb-4">
         <div class="bg-slate-100 p-3 rounded-lg">
@@ -99,14 +101,14 @@
         <h3 class="text-lg font-semibold text-slate-900 ml-3"><%= t("sync_sessions.index.last_sync_title") %></h3>
       </div>
       <% if @last_completed_session && @last_completed_session.completed_at %>
-        <p class="text-sm text-slate-600"><%= time_ago_in_words(@last_completed_session.completed_at) %> atrás</p>
-        <p class="text-2xl font-bold text-slate-900 mt-2"><%= @last_completed_session.detected_expenses %> gastos</p>
+        <p class="text-sm text-slate-600"><%= t("sync_sessions.index.time_ago", time: time_ago_in_words(@last_completed_session.completed_at)) %></p>
+        <p class="text-2xl font-bold text-slate-900 mt-2"><%= t("sync_sessions.index.expenses_count", count: @last_completed_session.detected_expenses) %></p>
       <% else %>
-        <p class="text-sm text-slate-600">No hay sincronizaciones previas</p>
+        <p class="text-sm text-slate-600"><%= t("sync_sessions.index.no_previous_syncs") %></p>
       <% end %>
     </div>
 
-    <!-- System health -->
+    <%# System health %>
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
       <div class="flex items-center mb-4">
         <div class="bg-emerald-100 p-3 rounded-lg">
@@ -114,19 +116,19 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
-        <h3 class="text-lg font-semibold text-slate-900 ml-3">Estado del Sistema</h3>
+        <h3 class="text-lg font-semibold text-slate-900 ml-3"><%= t("sync_sessions.index.system_health") %></h3>
       </div>
-      <p class="text-sm text-slate-600">Todas las cuentas operativas</p>
-      <p class="text-2xl font-bold text-emerald-600 mt-2">Saludable</p>
+      <p class="text-sm text-slate-600"><%= t("sync_sessions.index.all_accounts_operational") %></p>
+      <p class="text-2xl font-bold text-emerald-600 mt-2"><%= t("sync_sessions.index.healthy") %></p>
     </div>
   </div>
 
-  <!-- Sync history -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+  <%# Sync history %>
+  <div id="sync_history" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-xl font-semibold text-slate-900">Historial de Sincronizaciones</h2>
+      <h2 class="text-xl font-semibold text-slate-900"><%= t("sync_sessions.index.sync_history") %></h2>
       <div class="flex items-center gap-2">
-        <span class="text-sm text-emerald-600">✓ Actualización en tiempo real activa</span>
+        <span class="text-sm text-emerald-600"><%= t("sync_sessions.index.realtime_active") %></span>
       </div>
     </div>
 
@@ -134,18 +136,18 @@
       <table class="min-w-full divide-y divide-slate-200">
         <thead>
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Iniciada</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Duración</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Estado</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Cuentas</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Emails</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Gastos</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Acciones</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"><%= t("sync_sessions.index.table.started") %></th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"><%= t("sync_sessions.index.table.duration") %></th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"><%= t("sync_sessions.index.table.status") %></th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"><%= t("sync_sessions.index.table.accounts") %></th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"><%= t("sync_sessions.index.table.emails") %></th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"><%= t("sync_sessions.index.table.expenses") %></th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"><%= t("sync_sessions.index.table.actions") %></th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-slate-200">
           <% @recent_sessions.each do |session| %>
-            <tr class="hover:bg-slate-50" data-session-id="<%= session.id %>">
+            <tr class="hover:bg-slate-50" id="<%= dom_id(session) %>" data-session-id="<%= session.id %>">
               <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
                 <%= session.created_at.strftime("%d/%m %H:%M") %>
               </td>
@@ -159,7 +161,9 @@
                 <% end %>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <%= render "sync_sessions/session_status_badge", session: session %>
+                <turbo-frame id="<%= dom_id(session, :status) %>">
+                  <%= render "sync_sessions/session_status_badge", session: session %>
+                </turbo-frame>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
                 <%= session.sync_session_accounts.count %>
@@ -178,7 +182,7 @@
                 <%= session.detected_expenses %>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                <%= link_to "Ver Detalles", sync_session_path(session),
+                <%= link_to t("sync_sessions.index.table.view_details"), sync_session_path(session),
                     class: "text-teal-600 hover:text-teal-900 font-medium" %>
               </td>
             </tr>
@@ -188,5 +192,3 @@
     </div>
   </div>
 </div>
-
-<!-- Auto-refresh removed - using real-time Action Cable updates instead -->

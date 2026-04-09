@@ -284,6 +284,14 @@ module Services
   end
 
   def create_conflict(existing_expense:, new_expense_data:, conflict_type:, similarity_score:, differences:)
+    # Skip creating conflict records for obvious duplicates (≥95% similarity).
+    # These are noise — the existing expense is always kept and the duplicate is discarded.
+    if conflict_type == "duplicate" && similarity_score >= 95.0
+      Rails.logger.info "[ConflictDetection] Skipped obvious duplicate (#{similarity_score}%): " \
+                        "existing=##{existing_expense.id} merchant=#{existing_expense.merchant_name}"
+      return nil
+    end
+
     # Create temporary expense for new data (will be saved if resolution keeps it)
     # Ensure all required fields are present
     expense_attrs = new_expense_data.merge(

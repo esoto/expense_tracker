@@ -119,7 +119,6 @@ RSpec.describe ApplicationController, type: :controller, unit: true do
         CategoriesController,
         EmailAccountsController,
         SyncConflictsController,
-        SyncPerformanceController,
         SyncSessionsController,
         BulkCategorizationsController,
         BulkCategorizationActionsController,

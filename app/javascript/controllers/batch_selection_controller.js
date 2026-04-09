@@ -268,6 +268,8 @@ export default class extends Controller {
     if (this.hasSelectionToolbarTarget) {
       this.selectionToolbarTarget.classList.add('translate-y-full')
       this.selectionToolbarTarget.classList.remove('translate-y-0')
+      this.selectionToolbarTarget.setAttribute('aria-hidden', 'true')
+      this.selectionToolbarTarget.setAttribute('inert', '')
     }
 
     // Force update UI to ensure all elements are hidden
@@ -313,9 +315,13 @@ export default class extends Controller {
       if (selectedCount > 0) {
         this.selectionToolbarTarget.classList.remove('translate-y-full')
         this.selectionToolbarTarget.classList.add('translate-y-0')
+        this.selectionToolbarTarget.removeAttribute('aria-hidden')
+        this.selectionToolbarTarget.removeAttribute('inert')
       } else {
         this.selectionToolbarTarget.classList.add('translate-y-full')
         this.selectionToolbarTarget.classList.remove('translate-y-0')
+        this.selectionToolbarTarget.setAttribute('aria-hidden', 'true')
+        this.selectionToolbarTarget.setAttribute('inert', '')
       }
     }
     

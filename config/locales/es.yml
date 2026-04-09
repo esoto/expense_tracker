@@ -51,8 +51,6 @@ es:
     actions:
       start: "Iniciar Sincronización"
       stop: "Detener"
-      retry: "Reintentar"
-      view_details: "Ver Detalles"
       
   # Error messages
   errors:
@@ -74,18 +72,6 @@ es:
       unauthorized: "No autorizado"
       token_invalid: "Token de seguridad inválido"
       token_expired: "Token de seguridad expirado"
-      
-    sync:
-      email_connection: "No se pudo conectar con el servidor de correo"
-      email_auth: "Error de autenticación con el correo"
-      rate_limit: "Demasiadas solicitudes"
-      parsing_error: "Error al procesar los correos"
-      duplicate_detected: "Se detectaron transacciones duplicadas"
-      no_emails: "No se encontraron correos nuevos"
-      account_locked: "Cuenta bloqueada temporalmente"
-      quota_exceeded: "Límite de sincronización excedido"
-      processing_error: "Error al procesar las transacciones"
-      invalid_format: "Formato de correo no reconocido"
       
     server:
       internal: "Error interno del servidor"

@@ -51,33 +51,4 @@ RSpec.describe ApplicationHelper, type: :helper, unit: true do
     end
   end
 
-  describe '#format_date', unit: true do
-    it 'formats date correctly' do
-      date = Date.new(2024, 8, 3)
-      expect(helper.format_date(date)).to eq('August 03, 2024')
-    end
-
-    it 'returns N/A for nil date' do
-      expect(helper.format_date(nil)).to eq('N/A')
-    end
-
-    it 'returns N/A for blank date' do
-      expect(helper.format_date('')).to eq('N/A')
-    end
-
-    it 'handles leap year date' do
-      date = Date.new(2024, 2, 29)
-      expect(helper.format_date(date)).to eq('February 29, 2024')
-    end
-
-    it 'handles first day of year' do
-      date = Date.new(2024, 1, 1)
-      expect(helper.format_date(date)).to eq('January 01, 2024')
-    end
-
-    it 'handles last day of year' do
-      date = Date.new(2024, 12, 31)
-      expect(helper.format_date(date)).to eq('December 31, 2024')
-    end
-  end
 end

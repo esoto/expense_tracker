@@ -112,67 +112,6 @@ module ExpensesHelper
     end
   end
 
-  # Returns suggested category display
-  def suggested_category_display(expense)
-    return "" unless expense.ml_suggested_category_id.present?
-
-    suggested = expense.ml_suggested_category
-    content_tag :div, class: "flex items-center gap-2 p-2 bg-amber-50 rounded-lg border border-amber-200" do
-      concat content_tag(:span, "Sugerencia:", class: "text-xs font-medium text-amber-800")
-      concat content_tag(:span, suggested.name,
-                        class: "inline-flex px-2 py-1 text-xs font-medium rounded-full",
-                        style: "background-color: #{suggested.color}20; color: #{suggested.color};")
-      concat content_tag(:div, class: "ml-auto flex gap-1") do
-        concat button_to "✓",
-                        accept_suggestion_expense_path(expense),
-                        method: :post,
-                        class: "px-2 py-1 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700",
-                        title: "Aceptar sugerencia",
-                        data: { turbo_frame: "expense_#{expense.id}_category" }
-        concat button_to "✗",
-                        reject_suggestion_expense_path(expense),
-                        method: :post,
-                        class: "px-2 py-1 text-xs bg-rose-600 text-white rounded hover:bg-rose-700",
-                        title: "Rechazar sugerencia",
-                        data: { turbo_frame: "expense_#{expense.id}_category" }
-      end
-    end
-  end
-
-  # Returns the learning indicator for recently corrected expenses
-  def learning_indicator(expense)
-    return "" unless expense.ml_last_corrected_at?
-
-    if expense.ml_last_corrected_at > 1.hour.ago
-      content_tag :span,
-                  "📚",
-                  class: "ml-1 text-xs",
-                  title: "Sistema aprendiendo de esta corrección",
-                  data: {
-                    controller: "tooltip",
-                    tooltip_content_value: "El sistema está aprendiendo de tu corrección para mejorar futuras categorizaciones"
-                  }
-    else
-      ""
-    end
-  end
-
-  # Mobile-friendly confidence display
-  def mobile_confidence_display(expense)
-    return "" unless expense.ml_confidence.present?
-
-    level = expense.confidence_level
-    percentage = expense.confidence_percentage
-
-    content_tag :div, class: "flex items-center justify-between mt-2 pt-2 border-t border-slate-100" do
-      left_span = content_tag(:span, "Confianza:", class: "text-xs text-slate-500")
-      right_div = content_tag(:div, class: "flex items-center gap-2") do
-        confidence_icon(level) + content_tag(:span, "#{percentage}%", class: "text-xs font-medium #{confidence_text_color(level)}")
-      end
-      left_span + right_div
-    end
-  end
-
   private
 
   def confidence_text_color(level)

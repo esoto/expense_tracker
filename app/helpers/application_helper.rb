@@ -11,11 +11,6 @@ module ApplicationHelper
     datetime.strftime("%B %d, %Y at %I:%M %p")
   end
 
-  def format_date(date)
-    return "N/A" if date.blank?
-    date.strftime("%B %d, %Y")
-  end
-
   def flash_css_class(type)
     case type.to_sym
     when :notice, :success

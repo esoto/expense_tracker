@@ -15,7 +15,7 @@ RSpec.describe "Dashboard V2 Charts", type: :request, unit: true do
       .and_return(double("intermediate", where: jobs_relation))
   end
 
-  describe "GET /dashboard-v2 charts section" do
+  describe "GET /dashboard charts section" do
     context "with category data" do
       let!(:email_account) { create(:email_account, active: true) }
       let!(:food_category) { create(:category, name: "Alimentación") }
@@ -42,14 +42,14 @@ RSpec.describe "Dashboard V2 Charts", type: :request, unit: true do
       end
 
       it "renders the charts row partial" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         expect(response).to have_http_status(:success)
         expect(response.body).to include("Category Breakdown")
       end
 
       it "renders the category horizontal bar chart" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         body = response.body
         # Chartkick bar_chart renders a script instantiating BarChart
@@ -57,20 +57,20 @@ RSpec.describe "Dashboard V2 Charts", type: :request, unit: true do
       end
 
       it "renders the monthly trend placeholder" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         body = response.body
         expect(body).to include("Monthly Trend")
       end
 
       it "includes the chart-skeleton controller wrapper" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         expect(response.body).to include('data-controller="chart-skeleton"')
       end
 
       it "uses teal color for chart" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         expect(response.body).to include("#0F766E")
       end
@@ -78,14 +78,14 @@ RSpec.describe "Dashboard V2 Charts", type: :request, unit: true do
 
     context "without category data" do
       it "renders the empty state message" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         expect(response).to have_http_status(:success)
         expect(response.body).to include("No hay datos de categorías")
       end
 
       it "does not render a bar chart when no data exists" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         expect(response.body).not_to include('Chartkick["BarChart"]')
       end

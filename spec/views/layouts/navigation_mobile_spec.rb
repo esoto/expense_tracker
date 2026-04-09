@@ -69,12 +69,21 @@ RSpec.describe "Navigation mobile responsiveness", type: :controller, unit: true
     it "contains all navigation links in the desktop menu" do
       expect(nav_html).to include("Dashboard")
       expect(nav_html).to include("Gastos")
-      expect(nav_html).to include("Categorizar")
-      expect(nav_html).to include("Analytics")
+      expect(nav_html).to include("Presupuestos")
+      expect(nav_html).not_to include("Categorizar")
+      expect(nav_html).to include("Nuevo Gasto")
+    end
+
+    it "contains settings dropdown with config links" do
+      expect(nav_html).to include("Configuración")
       expect(nav_html).to include("Cuentas")
       expect(nav_html).to include("Sincronización")
-      expect(nav_html).to include("Patrones")
-      expect(nav_html).to include("Nuevo Gasto")
+      expect(nav_html).to include("Conflictos")
+    end
+
+    it "does not include admin-only links" do
+      expect(nav_html).not_to include("Patrones")
+      expect(nav_html).not_to include("Analíticas")
     end
   end
 
@@ -106,12 +115,19 @@ RSpec.describe "Navigation mobile responsiveness", type: :controller, unit: true
     it "contains all navigation links in the mobile menu" do
       expect(mobile_menu_html).to include("Dashboard")
       expect(mobile_menu_html).to include("Gastos")
-      expect(mobile_menu_html).to include("Categorizar")
-      expect(mobile_menu_html).to include("Analytics")
+      expect(mobile_menu_html).to include("Presupuestos")
+      expect(mobile_menu_html).to include("Nuevo Gasto")
+    end
+
+    it "contains settings section with config links" do
+      expect(mobile_menu_html).to include("Configuración")
       expect(mobile_menu_html).to include("Cuentas")
       expect(mobile_menu_html).to include("Sincronización")
-      expect(mobile_menu_html).to include("Patrones")
-      expect(mobile_menu_html).to include("Nuevo Gasto")
+    end
+
+    it "does not include admin-only links" do
+      expect(mobile_menu_html).not_to include("Patrones")
+      expect(mobile_menu_html).not_to include("Analíticas")
     end
 
     it "includes opacity transition classes for smooth animation" do
@@ -167,7 +183,7 @@ RSpec.describe "Navigation mobile responsiveness", type: :controller, unit: true
       desktop_match = nav_html.match(/class="hidden md:flex[^"]*".*?<\/div>/m)
       expect(desktop_match).to be_present
 
-      %w[Dashboard Gastos Categorizar Analytics Cuentas Sincronización Patrones].each do |link_text|
+      %w[Dashboard Gastos Presupuestos].each do |link_text|
         expect(desktop_match[0]).to include(link_text)
         expect(mobile_menu_html).to include(link_text)
       end

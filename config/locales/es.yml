@@ -8,11 +8,13 @@ es:
   nav:
     dashboard: "Dashboard"
     expenses: "Gastos"
+    budgets: "Presupuestos"
     categorize: "Categorizar"
-    analytics: "Analytics"
+    analytics: "Analíticas"
     accounts: "Cuentas"
+    categories: "Categorías"
     sync: "Sincronización"
-    patterns: "Patrones"
+    conflicts: "Conflictos"
     settings: "Configuración"
     new_expense: "Nuevo Gasto"
     new_expense_aria: "Crear un nuevo gasto"
@@ -481,8 +483,35 @@ es:
   sync_sessions:
     index:
       title: "Centro de Sincronización"
+      subtitle: "Gestiona y monitorea las sincronizaciones de tus cuentas de email"
       in_progress: "Sincronización en Progreso"
+      active_accounts: "Cuentas Activas"
+      syncs_today: "Sincronizaciones Hoy"
+      expenses_detected_month: "Gastos Detectados (Mes)"
+      progress: "Progreso"
+      emails: "emails"
+      expenses_label: "gastos"
+      sync_all: "Sincronizar Todo"
+      sync_all_description: "Sincroniza todas las cuentas activas"
+      start_sync: "Iniciar Sincronización"
       last_sync_title: "Última Sincronización"
+      time_ago: "%{time} atrás"
+      expenses_count: "%{count} gastos"
+      no_previous_syncs: "No hay sincronizaciones previas"
+      system_health: "Estado del Sistema"
+      all_accounts_operational: "Todas las cuentas operativas"
+      healthy: "Saludable"
+      sync_history: "Historial de Sincronizaciones"
+      realtime_active: "Actualización en tiempo real activa"
+      table:
+        started: "Iniciada"
+        duration: "Duración"
+        status: "Estado"
+        accounts: "Cuentas"
+        emails: "Emails"
+        expenses: "Gastos"
+        actions: "Acciones"
+        view_details: "Ver Detalles"
 
     show:
       title: "Detalles de Sincronización"
@@ -775,8 +804,17 @@ es:
     open_navigation_menu: "Abrir menú de navegación"
     mobile_navigation_menu: "Menú de navegación móvil"
 
-  # Admin Patterns
+  # Admin
   admin:
+    nav:
+      aria_label: "Navegación de administrador"
+      title: "Admin - Expense Tracker"
+      patterns: "Patrones"
+      composite_patterns: "Patrones Compuestos"
+      analytics: "Analíticas"
+      sync_performance: "Rendimiento Sync"
+      back_to_app: "← Volver a la App"
+      logout: "Cerrar Sesión"
     patterns:
       index:
         title: "Patrones de Categorización"

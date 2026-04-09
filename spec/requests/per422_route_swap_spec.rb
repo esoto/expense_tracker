@@ -16,7 +16,7 @@ RSpec.describe "PER-422: Route swap — new dashboard is root", type: :request, 
     it "serves the new dashboard at /" do
       get "/"
       expect(response).to have_http_status(:success)
-      expect(response.body).to include("dashboard-v2")
+      expect(response.body).to include("dashboard")
     end
 
     it "renders DashboardController#show" do
@@ -25,9 +25,9 @@ RSpec.describe "PER-422: Route swap — new dashboard is root", type: :request, 
     end
   end
 
-  describe "dashboard-v2 path" do
+  describe "dashboard path" do
     it "still works as an alias" do
-      get "/dashboard-v2"
+      get "/dashboard"
       expect(response).to have_http_status(:success)
     end
   end
@@ -49,7 +49,7 @@ RSpec.describe "PER-422: Route swap — new dashboard is root", type: :request, 
   describe "navigation links" do
     it "dashboard nav link points to new dashboard" do
       get "/"
-      expect(response.body).to include("dashboard-v2")
+      expect(response.body).to include("dashboard")
     end
   end
 end

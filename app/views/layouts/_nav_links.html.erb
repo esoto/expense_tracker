@@ -2,29 +2,34 @@
 <% mobile = local_assigns.fetch(:mobile, false) %>
 <% base_class = mobile ? "text-slate-600 hover:text-teal-700 hover:bg-slate-50 px-3 py-2 rounded-md text-sm font-medium" : "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium" %>
 
-<%= link_to t("nav.dashboard"), dashboard_v2_path,
-    class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path == dashboard_v2_path || request.path == '/'}",
-    'aria-current': ((request.path == dashboard_v2_path || request.path == '/') ? 'page' : nil) %>
+<%# ── Primary navigation links ── %>
+<%= link_to t("nav.dashboard"), dashboard_page_path,
+    class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path == dashboard_page_path || request.path == '/'}",
+    'aria-current': ((request.path == dashboard_page_path || request.path == '/') ? 'page' : nil) %>
 <%= link_to t("nav.expenses"), expenses_path,
     class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path == expenses_path}",
     'aria-current': (request.path == expenses_path ? 'page' : nil) %>
-<%= link_to t("nav.categorize"), bulk_categorizations_path,
-    class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path.start_with?('/bulk_categorizations')}",
-    'aria-current': (request.path.start_with?('/bulk_categorizations') ? 'page' : nil) %>
-<%= link_to t("nav.analytics"), analytics_pattern_dashboard_index_path,
-    class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path.start_with?('/analytics')}",
-    'aria-current': (request.path.start_with?('/analytics') ? 'page' : nil) %>
-<%= link_to t("nav.accounts"), email_accounts_path,
-    class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path == email_accounts_path}",
-    'aria-current': (request.path == email_accounts_path ? 'page' : nil) %>
-<%= link_to t("nav.sync"), sync_sessions_path,
-    class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path.start_with?('/sync_sessions')}",
-    'aria-current': (request.path.start_with?('/sync_sessions') ? 'page' : nil) %>
-<%= link_to t("nav.patterns"), admin_patterns_path,
-    class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path.start_with?('/admin')}",
-    'aria-current': (request.path.start_with?('/admin') ? 'page' : nil) %>
+<%= link_to t("nav.budgets"), budgets_path,
+    class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path.start_with?('/budgets')}",
+    'aria-current': (request.path.start_with?('/budgets') ? 'page' : nil) %>
+<%# Bulk categorization removed from nav — single-expense categorization via edit page %>
+<%# ── Settings dropdown (desktop) / Settings section (mobile) ── %>
+<% settings_active = request.path == email_accounts_path || request.path.start_with?('/sync_sessions') || request.path.start_with?('/sync_conflicts') %>
 
 <% if mobile %>
+  <div class="pt-2 mt-2 border-t border-slate-200">
+    <span class="px-3 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wider"><%= t("nav.settings") %></span>
+    <%= link_to t("nav.accounts"), email_accounts_path,
+        class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path == email_accounts_path}",
+        'aria-current': (request.path == email_accounts_path ? 'page' : nil) %>
+    <%= link_to t("nav.sync"), sync_sessions_path,
+        class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path.start_with?('/sync_sessions')}",
+        'aria-current': (request.path.start_with?('/sync_sessions') ? 'page' : nil) %>
+    <%= link_to t("nav.conflicts"), sync_conflicts_path,
+        class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path.start_with?('/sync_conflicts')}",
+        'aria-current': (request.path.start_with?('/sync_conflicts') ? 'page' : nil) %>
+  </div>
+
   <div class="pt-2 mt-2 border-t border-slate-200">
     <%= link_to t("nav.new_expense"), new_expense_path,
         class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm block text-center",
@@ -39,6 +44,61 @@
     <% end %>
   </div>
 <% else %>
+  <%# Desktop settings dropdown %>
+  <div class="relative" data-controller="nav-dropdown">
+    <button type="button"
+            class="inline-flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer <%= settings_active ? 'bg-teal-50 text-teal-700' : 'text-slate-600 hover:text-teal-700' %>"
+            data-nav-dropdown-target="button"
+            data-action="click->nav-dropdown#toggle"
+            aria-haspopup="true"
+            aria-expanded="false">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+      <%= t("nav.settings") %>
+      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+      </svg>
+    </button>
+
+    <div class="hidden absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50 w-48"
+         data-nav-dropdown-target="menu"
+         role="menu"
+         aria-label="<%= t('nav.settings') %>">
+      <%= link_to email_accounts_path,
+          class: "block px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors #{'bg-teal-50 text-teal-700' if request.path == email_accounts_path}",
+          role: "menuitem" do %>
+        <span class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+          <%= t("nav.accounts") %>
+        </span>
+      <% end %>
+      <%= link_to sync_sessions_path,
+          class: "block px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors #{'bg-teal-50 text-teal-700' if request.path.start_with?('/sync_sessions')}",
+          role: "menuitem" do %>
+        <span class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          <%= t("nav.sync") %>
+        </span>
+      <% end %>
+      <%= link_to sync_conflicts_path,
+          class: "block px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors #{'bg-teal-50 text-teal-700' if request.path.start_with?('/sync_conflicts')}",
+          role: "menuitem" do %>
+        <span class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+          <%= t("nav.conflicts") %>
+        </span>
+      <% end %>
+    </div>
+  </div>
+
   <div class="flex items-center gap-1 border-l border-slate-200 ml-2 pl-3">
     <% I18n.available_locales.each do |loc| %>
       <%= button_to locale_path(locale: loc), method: :patch, class: "text-xs px-2 py-1 rounded transition-colors #{I18n.locale == loc ? 'bg-teal-100 text-teal-700 font-semibold' : 'text-slate-400 hover:text-teal-700 hover:bg-slate-50'}", 'aria-label': t("nav.switch_language", language: loc.to_s.upcase) do %>

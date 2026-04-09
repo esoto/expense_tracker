@@ -15,7 +15,7 @@ RSpec.describe "Dashboard V2 Trend Chart", type: :request, unit: true do
       .and_return(double("intermediate", where: jobs_relation))
   end
 
-  describe "GET /dashboard-v2 trend chart section" do
+  describe "GET /dashboard trend chart section" do
     context "with trend data and budget" do
       let!(:email_account) { create(:email_account, active: true) }
       let!(:category) { create(:category, name: "Alimentación") }
@@ -40,50 +40,50 @@ RSpec.describe "Dashboard V2 Trend Chart", type: :request, unit: true do
       end
 
       it "renders the line chart with spending data" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         expect(response).to have_http_status(:success)
         expect(response.body).to include('Chartkick["LineChart"]')
       end
 
       it "renders the Monthly Trend heading" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         expect(response.body).to include("Monthly Trend")
       end
 
       it "includes teal color for spending line" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         expect(response.body).to include("#0F766E")
       end
 
       it "includes amber color for budget line" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         expect(response.body).to include("#D97706")
       end
 
       it "shows the budget line label" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         expect(response.body).to include("Budget")
       end
 
       it "shows the spending line label" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         expect(response.body).to include("Spending")
       end
 
       it "includes the chart-skeleton controller wrapper" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         expect(response.body).to include('data-controller="chart-skeleton"')
       end
 
       it "does not render the placeholder text" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         expect(response.body).not_to include("Trend chart coming soon")
       end
@@ -105,7 +105,7 @@ RSpec.describe "Dashboard V2 Trend Chart", type: :request, unit: true do
       end
 
       it "renders the line chart with only spending data" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         body = response.body
         expect(body).to include('Chartkick["LineChart"]')
@@ -113,7 +113,7 @@ RSpec.describe "Dashboard V2 Trend Chart", type: :request, unit: true do
       end
 
       it "renders only one data series without a budget line" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         body = response.body
         # Chartkick renders series data as JSON with "name" keys
@@ -125,20 +125,20 @@ RSpec.describe "Dashboard V2 Trend Chart", type: :request, unit: true do
 
     context "without trend data" do
       it "renders the empty state message" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         expect(response).to have_http_status(:success)
         expect(response.body).to include("No hay datos de tendencia")
       end
 
       it "does not render a line chart" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         expect(response.body).not_to include('Chartkick["LineChart"]')
       end
 
       it "renders the line chart icon in empty state" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         # SVG path element for line chart icon
         expect(response.body).to include("M3 17l6-6 4 4 8-8")

@@ -16,7 +16,7 @@
           <span class="text-lg flex-shrink-0" aria-hidden="true"><%= insight[:icon] %></span>
           <span class="text-sm font-medium">
             <% if insight[:link_path].present? %>
-              <%= link_to insight[:message], insight[:link_path], class: "underline hover:no-underline" %>
+              <%= link_to insight[:message], insight[:link_path], class: "underline hover:no-underline", data: { turbo_frame: "_top" } %>
             <% else %>
               <%= insight[:message] %>
             <% end %>

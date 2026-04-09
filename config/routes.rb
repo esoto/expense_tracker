@@ -116,8 +116,9 @@ Rails.application.routes.draw do
     post "bulk_update_status", action: :bulk_update_status, as: :bulk_update_status_expenses
     delete "bulk_destroy", action: :bulk_destroy, as: :bulk_destroy_expenses
   end
-  # Dashboard v2 — now the primary dashboard
-  get "dashboard-v2", to: "dashboard#show", as: :dashboard_v2
+  # Dashboard — primary dashboard
+  get "dashboard", to: "dashboard#show", as: :dashboard_page
+  get "dashboard-v2", to: redirect("/dashboard") # backwards compat
 
   # Old dashboard — temporary alias for one release cycle
   get "old-dashboard", to: "expenses#dashboard"

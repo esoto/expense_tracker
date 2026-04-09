@@ -35,11 +35,13 @@ en:
   nav:
     dashboard: "Dashboard"
     expenses: "Expenses"
+    budgets: "Budgets"
     categorize: "Categorize"
     analytics: "Analytics"
     accounts: "Accounts"
+    categories: "Categories"
     sync: "Synchronization"
-    patterns: "Patterns"
+    conflicts: "Conflicts"
     settings: "Settings"
     new_expense: "New Expense"
     new_expense_aria: "Create a new expense"
@@ -503,8 +505,35 @@ en:
   sync_sessions:
     index:
       title: "Synchronization Hub"
+      subtitle: "Manage and monitor your email account synchronizations"
       in_progress: "Synchronization in Progress"
+      active_accounts: "Active Accounts"
+      syncs_today: "Syncs Today"
+      expenses_detected_month: "Expenses Detected (Month)"
+      progress: "Progress"
+      emails: "emails"
+      expenses_label: "expenses"
+      sync_all: "Sync All"
+      sync_all_description: "Synchronize all active accounts"
+      start_sync: "Start Synchronization"
       last_sync_title: "Last Synchronization"
+      time_ago: "%{time} ago"
+      expenses_count: "%{count} expenses"
+      no_previous_syncs: "No previous synchronizations"
+      system_health: "System Health"
+      all_accounts_operational: "All accounts operational"
+      healthy: "Healthy"
+      sync_history: "Synchronization History"
+      realtime_active: "Real-time updates active"
+      table:
+        started: "Started"
+        duration: "Duration"
+        status: "Status"
+        accounts: "Accounts"
+        emails: "Emails"
+        expenses: "Expenses"
+        actions: "Actions"
+        view_details: "View Details"
 
     show:
       title: "Synchronization Details"
@@ -736,8 +765,17 @@ en:
     open_navigation_menu: "Open navigation menu"
     mobile_navigation_menu: "Mobile navigation menu"
 
-  # Admin Composite Patterns
+  # Admin
   admin:
+    nav:
+      aria_label: "Admin navigation"
+      title: "Admin - Expense Tracker"
+      patterns: "Patterns"
+      composite_patterns: "Composite Patterns"
+      analytics: "Analytics"
+      sync_performance: "Sync Performance"
+      back_to_app: "← Back to App"
+      logout: "Log Out"
     composite_patterns:
       new:
         title: "New Composite Pattern"

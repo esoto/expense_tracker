@@ -1,6 +1,6 @@
 require "csv"
 
-class SyncPerformanceController < ApplicationController
+class SyncPerformanceController < Admin::BaseController
   before_action :set_date_range, only: [ :index, :export ]
 
   def index

@@ -242,7 +242,8 @@
                 </div>
                 <div class="flex items-center">
                   <div class="w-24 bg-slate-200 rounded-full h-2 mr-3">
-                    <div class="bg-teal-700 h-2 rounded-full" style="width: <%= (peak[:count].to_f / @peak_times[:peak_hours].first[:count] * 100).round %>%"></div>
+                    <% max_count = @peak_times[:peak_hours].first[:count].to_f %>
+                    <div class="bg-teal-700 h-2 rounded-full" style="width: <%= max_count > 0 ? (peak[:count].to_f / max_count * 100).round : 0 %>%"></div>
                   </div>
                   <span class="text-sm font-medium text-slate-900"><%= peak[:count] %></span>
                 </div>

@@ -22,10 +22,17 @@ class SyncSessionsController extends Controller {
   connect() {
     if (this.sessionIdValue) {
       this.subscribeToChannel()
+      // Polling fallback — Action Cable async adapter doesn't work cross-process.
+      // Poll every 5 seconds while sync is active to keep the UI updated.
+      this.pollInterval = setInterval(() => this.pollStatus(), 5000)
     }
   }
 
   disconnect() {
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval)
+      this.pollInterval = null
+    }
     this.disconnectChannel()
   }
 
@@ -39,7 +46,7 @@ class SyncSessionsController extends Controller {
     // Update progress text
     if (this.hasProgressTextTarget) {
       const percentage = data.progress_percentage || 0
-      this.progressTextTarget.textContent = `Progreso: ${percentage}%`
+      this.progressTextTarget.textContent = `${t("sync_sessions.progress")}: ${percentage}%`
     }
 
     // Update processed count
@@ -49,7 +56,7 @@ class SyncSessionsController extends Controller {
 
     // Update detected expenses
     if (this.hasDetectedCountTarget) {
-      this.detectedCountTarget.textContent = `${data.detected_expenses || 0} gastos`
+      this.detectedCountTarget.textContent = `${data.detected_expenses || 0} ${t("sync_sessions.expenses_label")}`
     }
 
     // Update the session row in the history table
@@ -95,7 +102,7 @@ class SyncSessionsController extends Controller {
       // Update status badge
       const statusBadge = accountCard.querySelector('[data-status-badge]')
       if (statusBadge) {
-        statusBadge.textContent = data.status === 'processing' ? 'Procesando' : data.status
+        statusBadge.textContent = data.status === 'processing' ? t("sync_sessions.processing") : data.status
         statusBadge.className = data.status === 'processing'
           ? 'text-xs px-2 py-1 rounded-full bg-teal-100 text-teal-700'
           : 'text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700'
@@ -108,7 +115,7 @@ class SyncSessionsController extends Controller {
         const processed = document.createElement('span')
         processed.textContent = `${data.processed || 0} / ${data.total || 0}`
         const detected = document.createElement('span')
-        detected.textContent = `${data.detected || 0} gastos`
+        detected.textContent = `${data.detected || 0} ${t("sync_sessions.expenses_label")}`
         countsElement.appendChild(processed)
         countsElement.appendChild(detected)
       }
@@ -131,10 +138,13 @@ class SyncSessionsController extends Controller {
       }
     }
 
-    // Show completion notification
+    // Show completion notification and reload after a short delay
+    // so the history table and stats refresh with final data
     this.showNotification(t("sync.notifications.completed", { detected: 0, processed: 0 }), "success")
 
-    // Don't reload - let user continue viewing real-time updates
+    setTimeout(() => {
+      window.location.reload()
+    }, 2000)
   }
 
   handleFailure(data) {
@@ -146,6 +156,48 @@ class SyncSessionsController extends Controller {
     if (this.hasProgressBarTarget) {
       this.progressBarTarget.classList.add('bg-rose-600')
       this.progressBarTarget.classList.remove('bg-amber-600')
+    }
+  }
+
+  async pollStatus() {
+    if (!this.sessionIdValue) return
+
+    try {
+      const response = await fetch(`/sync_sessions/status?sync_session_id=${this.sessionIdValue}`, {
+        headers: { "Accept": "application/json" }
+      })
+
+      if (!response.ok) return
+
+      const data = await response.json()
+
+      if (data.status === "completed" || data.status === "failed") {
+        clearInterval(this.pollInterval)
+        this.pollInterval = null
+
+        if (data.status === "completed") {
+          this.handleCompletion(data)
+        } else {
+          this.handleFailure(data)
+        }
+      } else {
+        this.updateProgress(data)
+
+        if (data.accounts && Array.isArray(data.accounts)) {
+          data.accounts.forEach(account => {
+            this.updateAccount({
+              account_id: account.id || account.account_id,
+              status: account.status,
+              progress: account.progress,
+              processed: account.processed,
+              total: account.total,
+              detected: account.detected
+            })
+          })
+        }
+      }
+    } catch (error) {
+      // Silently fail — Action Cable is the primary mechanism
     }
   }
 }

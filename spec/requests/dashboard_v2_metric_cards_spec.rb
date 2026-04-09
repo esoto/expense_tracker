@@ -13,7 +13,7 @@ RSpec.describe "Dashboard V2 Metric Cards", type: :request, unit: true do
       .and_return(double("intermediate", where: jobs_relation))
   end
 
-  describe "GET /dashboard-v2" do
+  describe "GET /dashboard" do
     context "with data" do
       let!(:email_account) { create(:email_account, active: true) }
       let!(:category) { create(:category, name: "Food") }
@@ -36,7 +36,7 @@ RSpec.describe "Dashboard V2 Metric Cards", type: :request, unit: true do
           merchant_name: "UncategorizedMerchant")
       end
 
-      before { get "/dashboard-v2" }
+      before { get "/dashboard" }
 
       it "renders the metric cards section" do
         expect(response).to have_http_status(:success)
@@ -127,7 +127,7 @@ RSpec.describe "Dashboard V2 Metric Cards", type: :request, unit: true do
     end
 
     context "without email account (empty state)" do
-      before { get "/dashboard-v2" }
+      before { get "/dashboard" }
 
       it "renders metric cards with zero values" do
         expect(response).to have_http_status(:success)
@@ -149,7 +149,7 @@ RSpec.describe "Dashboard V2 Metric Cards", type: :request, unit: true do
           merchant_name: "AllCategorizedMerchant")
       end
 
-      before { get "/dashboard-v2" }
+      before { get "/dashboard" }
 
       it "does not show warning styling for uncategorized when count is zero" do
         # When uncategorized_count is 0, the uncategorized card should not

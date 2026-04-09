@@ -15,7 +15,7 @@ RSpec.describe "Dashboard V2 Insights", type: :request, unit: true do
       .and_return(double("intermediate", where: jobs_relation))
   end
 
-  describe "GET /dashboard-v2" do
+  describe "GET /dashboard" do
     context "when insights exist" do
       let!(:email_account) { create(:email_account, active: true) }
       let!(:category) { create(:category, name: "Food") }
@@ -31,14 +31,14 @@ RSpec.describe "Dashboard V2 Insights", type: :request, unit: true do
       end
 
       it "renders the insights row section" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         expect(response).to have_http_status(:success)
         expect(response.body).to include('aria-label="Actionable insights"')
       end
 
       it "displays uncategorized insight when uncategorized expenses exist" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         expect(response.body).to include("expenses need categorization")
       end
@@ -59,7 +59,7 @@ RSpec.describe "Dashboard V2 Insights", type: :request, unit: true do
       it "does not render the insights row when no insights exist" do
         # No uncategorized expenses, and total_amount with no budget means no budget insights
         allow_any_instance_of(Services::DashboardInsightsService).to receive(:insights).and_return([])
-        get "/dashboard-v2"
+        get "/dashboard"
 
         expect(response.body).not_to include('aria-label="Actionable insights"')
       end
@@ -88,7 +88,7 @@ RSpec.describe "Dashboard V2 Insights", type: :request, unit: true do
       end
 
       it "renders spending projection insight" do
-        get "/dashboard-v2"
+        get "/dashboard"
 
         expect(response).to have_http_status(:success)
         body = response.body

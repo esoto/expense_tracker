@@ -240,28 +240,24 @@ RSpec.describe "expenses/_expense_item.html.erb", type: :view, unit: true do
   describe "desktop row layout" do
     before { render_item(processed_expense) }
 
-    it "renders the inline-actions actionsContainer target" do
-      expect(rendered).to have_css('[data-inline-actions-target="actionsContainer"]', visible: :all)
+    it "renders the kebab menu controller" do
+      expect(rendered).to have_css('[data-controller="kebab-menu"]', visible: :all)
     end
 
-    it "renders the category dropdown for desktop" do
-      expect(rendered).to have_css('[data-inline-actions-target="categoryDropdown"]', visible: :all)
+    it "renders the kebab menu toggle button" do
+      expect(rendered).to have_css('[data-action="click->kebab-menu#toggle"]', visible: :all)
     end
 
-    it "renders the delete confirmation modal" do
-      expect(rendered).to have_css('[data-inline-actions-target="deleteConfirmation"]', visible: :all)
+    it "renders the kebab menu dropdown target" do
+      expect(rendered).to have_css('[data-kebab-menu-target="menu"]', visible: :all)
     end
 
-    it "renders expandedColumns targets for view toggle" do
-      expect(rendered).to have_css('[data-view-toggle-target="expandedColumns"]', visible: :all, minimum: 3)
+    it "renders category as compact color dot + name" do
+      expect(rendered).to have_css(".w-2.h-2.rounded-full", visible: :all)
     end
 
-    it "has category options in the desktop dropdown" do
-      expect(rendered).to have_css("[data-category-id='#{category.id}']", visible: :all)
-    end
-
-    it "has category name in the desktop dropdown" do
-      expect(rendered).to have_css("[data-category-name='Alimentación']", visible: :all)
+    it "renders the status badge" do
+      expect(rendered).to have_css("turbo-frame#expense_#{processed_expense.id}_status", visible: :all)
     end
   end
 
@@ -272,8 +268,8 @@ RSpec.describe "expenses/_expense_item.html.erb", type: :view, unit: true do
     context "when expense has a category" do
       before { render_item(processed_expense) }
 
-      it "renders the category turbo-frame with the correct ID" do
-        expect(rendered).to have_css("turbo-frame#expense_#{processed_expense.id}_category")
+      it "renders the category name" do
+        expect(rendered).to have_text("Alimentación")
       end
 
       it "renders the mobile category name span for Turbo Stream updates" do

@@ -250,6 +250,12 @@ en:
       delete_confirm: "Are you sure you want to delete this expense?"
       delete_title: "Delete expense (Delete)"
       delete_aria: "Delete expense"
+      menu_label: "Actions"
+      mark_processed: "Mark Processed"
+      mark_pending: "Mark Pending"
+      duplicate: "Duplicate"
+      edit: "Edit"
+      delete: "Delete"
 
     categories:
       food: "Food"

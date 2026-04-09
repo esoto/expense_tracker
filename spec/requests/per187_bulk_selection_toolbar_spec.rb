@@ -74,10 +74,8 @@ RSpec.describe "PER-187 Bulk selection toolbar HTML initial state", type: :reque
         get expenses_path
 
         expect(response).to have_http_status(:ok)
-        # The selection counter span has `hidden` as its first class:
-        #   <span class="hidden text-sm ..." data-batch-selection-target="selectionCounter">
         expect(response.body).to include('data-batch-selection-target="selectionCounter"')
-        expect(response.body).to include('class="hidden text-sm font-medium text-teal-700')
+        expect(response.body).to include('class="hidden px-4 py-2 bg-teal-50')
       end
     end
 

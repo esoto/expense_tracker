@@ -26,9 +26,16 @@ RSpec.describe "PER-422: Route swap — new dashboard is root", type: :request, 
   end
 
   describe "dashboard path" do
-    it "still works as an alias" do
+    it "serves the primary dashboard" do
       get "/dashboard"
       expect(response).to have_http_status(:success)
+    end
+  end
+
+  describe "dashboard-v2 backwards compatibility" do
+    it "redirects /dashboard-v2 to /dashboard" do
+      get "/dashboard-v2"
+      expect(response).to redirect_to("/dashboard")
     end
   end
 

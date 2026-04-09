@@ -197,7 +197,7 @@ class SyncSessionsController extends Controller {
         }
       }
     } catch (error) {
-      // Silently fail — Action Cable is the primary mechanism
+      console.debug("[SyncSessions] Poll failed:", error)
     }
   }
 }

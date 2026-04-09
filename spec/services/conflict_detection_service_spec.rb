@@ -308,13 +308,14 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
         ActiveRecord::RecordInvalid.new(SyncConflict.new)
       )
 
+      # Use a non-duplicate type so it doesn't hit the early-return guard
       expect {
         service.send(
           :create_conflict,
           existing_expense: existing_expense,
           new_expense_data: new_expense_data,
-          conflict_type: 'duplicate',
-          similarity_score: 95.0,
+          conflict_type: 'needs_review',
+          similarity_score: 50.0,
           differences: {}
         )
       }.not_to change(Expense, :count)

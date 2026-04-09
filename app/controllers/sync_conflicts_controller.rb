@@ -10,7 +10,7 @@ class SyncConflictsController < ApplicationController
     end
 
     # Exclude 100% duplicate matches — they are auto-handled and just noise
-    @conflicts = @conflicts.where.not(conflict_type: "duplicate")
+    @conflicts = @conflicts.actionable
 
     # Apply filters
     @conflicts = @conflicts.where(status: params[:status]) if params[:status].present?
@@ -27,7 +27,7 @@ class SyncConflictsController < ApplicationController
     end
 
     # Exclude 100% duplicates from stats too
-    base_scope = base_scope.where.not(conflict_type: "duplicate")
+    base_scope = base_scope.actionable
 
     # Apply same filters as main query for stats
     base_scope = base_scope.where(status: params[:status]) if params[:status].present?

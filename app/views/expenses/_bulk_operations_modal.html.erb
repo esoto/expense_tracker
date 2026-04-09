@@ -166,7 +166,7 @@
                 </h3>
                 <div class="mt-2 text-sm text-rose-700">
                   <p>
-                    <%= t("expenses.bulk.delete_warning_message", count: '<span data-bulk-operations-target="selectedCount" class="font-semibold">0</span>') %>
+                    <%= t("expenses.bulk.delete_warning_message_html", count: tag.span("0", data: { bulk_operations_target: "selectedCount" }, class: "font-semibold")) %>
                   </p>
                 </div>
                 <div class="mt-4">

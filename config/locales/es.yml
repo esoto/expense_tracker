@@ -356,6 +356,7 @@ es:
       status_duplicate: "Duplicado"
       delete_warning_title: "Advertencia: Los gastos eliminados se pueden deshacer dentro de un tiempo limitado."
       delete_warning_message: "Estás a punto de eliminar %{count} gastos."
+      delete_warning_message_html: "Estás a punto de eliminar %{count} gastos."
       delete_confirm_checkbox: "Confirmo que deseo eliminar estos gastos"
       processing: "Procesando..."
       processing_percentage: "0%"

@@ -18,214 +18,132 @@
 <% end %>
 
 <div class="space-y-6" data-controller="accessibility-enhanced">
-  <!-- Filter Chips Display -->
-  <div data-controller="filter-chips"
-       data-filter-chips-base-url-value="/expenses"
-       data-filter-chips-target="container"
-       class="hidden bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+  <!-- Header with Summary Stats -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900"><%= t("expenses.index.heading") %></h1>
+        <p class="text-sm text-slate-500 mt-1"><%= t("expenses.index.subtitle", default: "Administra y filtra todos tus gastos") %></p>
+      </div>
+      <div class="flex gap-3 text-center">
+        <div class="bg-teal-50 rounded-lg px-4 py-2 min-w-[100px]">
+          <div class="text-xl font-bold text-teal-700 tabular-nums">₡<%= number_with_delimiter(@total_amount.to_i) %></div>
+          <div class="text-xs text-slate-500">Total</div>
+        </div>
+        <div class="bg-emerald-50 rounded-lg px-4 py-2 min-w-[80px]">
+          <div class="text-xl font-bold text-emerald-600 tabular-nums"><%= @expense_count %></div>
+          <div class="text-xs text-slate-500"><%= t("nav.expenses") %></div>
+        </div>
+        <div class="bg-amber-50 rounded-lg px-4 py-2 min-w-[80px]">
+          <div class="text-xl font-bold text-amber-600 tabular-nums"><%= @categories_summary.length %></div>
+          <div class="text-xs text-slate-500"><%= t("expenses.dashboard.categories") %></div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Header with Summary -->
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
-       data-controller="filter-persistence"
+  <!-- Filters -->
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4"
+       data-controller="filter-persistence collapsible date-preset"
        data-filter-persistence-storage-type-value="session"
        data-filter-persistence-auto-restore-value="true"
        data-filter-persistence-auto-save-value="true">
-    <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4">
-      <h1 class="text-2xl font-bold text-slate-900 mb-4 md:mb-0"><%= t("expenses.index.heading") %></h1>
-      <!-- Summary Stats -->
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
-        <div class="bg-teal-50 rounded-lg p-3">
-          <div class="text-2xl font-bold text-teal-700">₡<%= number_with_delimiter(@total_amount.to_i) %></div>
-          <div class="text-sm text-slate-600">Total</div>
-        </div>
-        <div class="bg-emerald-50 rounded-lg p-3">
-          <div class="text-2xl font-bold text-emerald-600"><%= @expense_count %></div>
-          <div class="text-sm text-slate-600"><%= t("nav.expenses") %></div>
-        </div>
-        <div class="bg-amber-50 rounded-lg p-3 col-span-2 md:col-span-1">
-          <div class="text-2xl font-bold text-amber-600"><%= @categories_summary.length %></div>
-          <div class="text-sm text-slate-600"><%= t("expenses.dashboard.categories") %></div>
-        </div>
-      </div>
+    <%# Quick Date Presets %>
+    <div class="flex flex-wrap items-center gap-2 mb-4">
+      <span class="text-xs font-medium text-slate-500 uppercase tracking-wider mr-1"><%= t("expenses.index.period_label", default: "Periodo") %>:</span>
+      <button type="button" data-date-preset-target="preset" data-date-preset-period="this_month" data-action="click->date-preset#select"
+              class="px-3 py-1.5 rounded-full text-xs font-medium bg-teal-700 text-white shadow-sm cursor-pointer"><%= t("expenses.index.preset_this_month", default: "Este Mes") %></button>
+      <button type="button" data-date-preset-target="preset" data-date-preset-period="last_month" data-action="click->date-preset#select"
+              class="px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer transition-colors"><%= t("expenses.index.preset_last_month", default: "Mes Anterior") %></button>
+      <button type="button" data-date-preset-target="preset" data-date-preset-period="this_quarter" data-action="click->date-preset#select"
+              class="px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer transition-colors"><%= t("expenses.index.preset_this_quarter", default: "Este Trimestre") %></button>
+      <button type="button" data-date-preset-target="preset" data-date-preset-period="year_to_date" data-action="click->date-preset#select"
+              class="px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer transition-colors"><%= t("expenses.index.preset_year_to_date", default: "Año Completo") %></button>
+      <button type="button" data-date-preset-target="preset" data-date-preset-period="custom" data-action="click->date-preset#select"
+              class="px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer transition-colors"><%= t("expenses.index.preset_custom", default: "Personalizado") %></button>
     </div>
 
-    <!-- Filters with Date Presets -->
-    <div data-controller="collapsible date-preset">
-      <%# Quick Date Presets %>
-      <div class="flex flex-wrap items-center gap-2 mb-4">
-        <span class="text-xs font-medium text-slate-500 uppercase tracking-wider mr-1"><%= t("expenses.index.period_label", default: "Periodo") %>:</span>
-        <button type="button" data-date-preset-target="preset" data-date-preset-period="this_month" data-action="click->date-preset#select"
-                class="px-3 py-1.5 rounded-full text-xs font-medium bg-teal-700 text-white shadow-sm cursor-pointer"><%= t("expenses.index.preset_this_month", default: "Este Mes") %></button>
-        <button type="button" data-date-preset-target="preset" data-date-preset-period="last_month" data-action="click->date-preset#select"
-                class="px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer transition-colors"><%= t("expenses.index.preset_last_month", default: "Mes Anterior") %></button>
-        <button type="button" data-date-preset-target="preset" data-date-preset-period="this_quarter" data-action="click->date-preset#select"
-                class="px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer transition-colors"><%= t("expenses.index.preset_this_quarter", default: "Este Trimestre") %></button>
-        <button type="button" data-date-preset-target="preset" data-date-preset-period="year_to_date" data-action="click->date-preset#select"
-                class="px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer transition-colors"><%= t("expenses.index.preset_year_to_date", default: "Año Completo") %></button>
-        <button type="button" data-date-preset-target="preset" data-date-preset-period="custom" data-action="click->date-preset#select"
-                class="px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer transition-colors"><%= t("expenses.index.preset_custom", default: "Personalizado") %></button>
-      </div>
-
-      <%# Mobile filter toggle %>
-      <div class="md:hidden mb-3">
-        <button type="button"
-                data-collapsible-target="toggleButton"
-                data-action="click->collapsible#toggle"
-                aria-expanded="false"
-                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
-          <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
-          </svg>
-          <%= t("expenses.index.filter_button") %>
-          <% active_count = [params[:category], params[:bank], params[:start_date], params[:end_date]].count(&:present?) %>
-          <% if active_count > 0 %>
-            <span data-collapsible-target="badge"
-                  class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-teal-600 rounded-full">
-              <%= active_count %>
-            </span>
-          <% end %>
-        </button>
-      </div>
-      <div data-collapsible-target="content" class="hidden md:block">
-        <%= form_with url: expenses_path, method: :get,
-                      class: "space-y-4 md:space-y-0 md:flex md:gap-4",
-                      local: true,
-                      data: {
-                        "filter-persistence-target": "filterForm",
-                        "date-preset-target": "form"
-                      } do |form| %>
-        <div class="flex-1">
-          <%= form.select :category, options_from_collection_for_select(Category.all, :name, :name, params[:category]),
-                { include_blank: t("expenses.index.all_categories") },
-                { class: "w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500",
-                  data: { "filter-persistence-target": "filterInput" } } %>
-        </div>
-        <div class="flex-1">
-          <%= form.select :bank,
-                options_for_select([[t("expenses.index.all_banks"), ""]] + @bank_names.map { |name| [name, name] }, params[:bank]),
-                {}, { class: "w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500",
-                      data: { "filter-persistence-target": "filterInput" } } %>
-        </div>
-        <div class="flex flex-wrap gap-2" data-date-preset-target="customDates">
-          <%= form.date_field :start_date, value: params[:start_date], placeholder: t("expenses.index.start_date_placeholder"),
-                class: "flex-1 min-w-0 rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500",
-                data: { "filter-persistence-target": "filterInput", "date-preset-target": "startDate" } %>
-          <%= form.date_field :end_date, value: params[:end_date], placeholder: t("expenses.index.end_date_placeholder"),
-                class: "flex-1 min-w-0 rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500",
-                data: { "filter-persistence-target": "filterInput", "date-preset-target": "endDate" } %>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          <%= form.submit t("common.filter"), class: "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg shadow-sm cursor-pointer" %>
-          <%= link_to t("expenses.index.clear_filters"), expenses_path,
-                class: "bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg cursor-pointer",
-                data: { action: "click->filter-persistence#clearStorage" } %>
-        </div>
-        <% end %>
-      </div>
-    </div>
-  </div>
-
-  <!-- Category Summary (when not filtered) -->
-  <% if params[:category].blank? && @categories_summary.any? %>
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6"
-       data-controller="collapsible">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-slate-900"><%= t("expenses.index.summary_title") %></h2>
+    <%# Mobile filter toggle %>
+    <div class="md:hidden mb-3">
       <button type="button"
               data-collapsible-target="toggleButton"
               data-action="click->collapsible#toggle"
               aria-expanded="false"
-              class="md:hidden text-sm text-teal-700 font-medium hover:text-teal-800">
-        <span data-collapsible-label
-              data-collapsible-label-closed="<%= t('expenses.index.summary_show') %>"
-              data-collapsible-label-open="<%= t('expenses.index.summary_hide') %>"><%= t("expenses.index.summary_show") %></span>
+              class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
+        <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+        </svg>
+        <%= t("expenses.index.filter_button") %>
+        <% active_count = [params[:category], params[:bank], params[:start_date], params[:end_date]].count(&:present?) %>
+        <% if active_count > 0 %>
+          <span data-collapsible-target="badge"
+                class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-teal-600 rounded-full">
+            <%= active_count %>
+          </span>
+        <% end %>
       </button>
     </div>
+
+    <%# Filter form %>
     <div data-collapsible-target="content" class="hidden md:block">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <% @categories_summary.first(6).each do |category_name, amount| %>
-        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-          <span class="font-medium text-slate-700"><%= category_name %></span>
-          <span class="font-bold text-slate-900">₡<%= number_with_delimiter(amount.to_i) %></span>
-        </div>
-        <% end %>
+      <%= form_with url: expenses_path, method: :get,
+                    class: "flex flex-wrap items-end gap-3",
+                    local: true,
+                    data: {
+                      "filter-persistence-target": "filterForm",
+                      "date-preset-target": "form"
+                    } do |form| %>
+      <div class="flex-1 min-w-[140px]">
+        <%= form.label :category, t("expenses.index.table_header_category", default: "Categoría"), class: "block text-xs font-medium text-slate-600 mb-1" %>
+        <%= form.select :category, options_from_collection_for_select(Category.all, :name, :name, params[:category]),
+              { include_blank: t("expenses.index.all_categories") },
+              { class: "w-full rounded-lg border border-slate-300 text-sm py-2 px-3 text-slate-700 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 cursor-pointer",
+                data: { "filter-persistence-target": "filterInput" } } %>
       </div>
+      <div class="flex-1 min-w-[140px]">
+        <%= form.label :bank, t("expenses.index.bank_label", default: "Banco"), class: "block text-xs font-medium text-slate-600 mb-1" %>
+        <%= form.select :bank,
+              options_for_select([[t("expenses.index.all_banks"), ""]] + @bank_names.map { |name| [name, name] }, params[:bank]),
+              {}, { class: "w-full rounded-lg border border-slate-300 text-sm py-2 px-3 text-slate-700 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 cursor-pointer",
+                    data: { "filter-persistence-target": "filterInput" } } %>
+      </div>
+      <div class="flex-1 min-w-[140px]" data-date-preset-target="customDates">
+        <%= form.label :start_date, t("expenses.index.start_date_label", default: "Desde"), class: "block text-xs font-medium text-slate-600 mb-1" %>
+        <%= form.date_field :start_date, value: params[:start_date],
+              class: "w-full rounded-lg border border-slate-300 text-sm py-2 px-3 text-slate-700 focus:border-teal-500 focus:ring-1 focus:ring-teal-500",
+              data: { "filter-persistence-target": "filterInput", "date-preset-target": "startDate" } %>
+      </div>
+      <div class="flex-1 min-w-[140px]" data-date-preset-target="customDatesEnd">
+        <%= form.label :end_date, t("expenses.index.end_date_label", default: "Hasta"), class: "block text-xs font-medium text-slate-600 mb-1" %>
+        <%= form.date_field :end_date, value: params[:end_date],
+              class: "w-full rounded-lg border border-slate-300 text-sm py-2 px-3 text-slate-700 focus:border-teal-500 focus:ring-1 focus:ring-teal-500",
+              data: { "filter-persistence-target": "filterInput", "date-preset-target": "endDate" } %>
+      </div>
+      <div class="flex gap-2">
+        <%= form.submit t("common.filter"), class: "px-4 py-2 bg-teal-700 text-white text-sm font-medium rounded-lg hover:bg-teal-800 shadow-sm cursor-pointer transition-colors" %>
+        <%= link_to t("expenses.index.clear_filters"), expenses_path,
+              class: "px-4 py-2 bg-slate-100 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-200 border border-slate-300 cursor-pointer transition-colors",
+              data: { action: "click->filter-persistence#clearStorage" } %>
+      </div>
+      <% end %>
     </div>
   </div>
-  <% end %>
 
-  <!-- Unified Expense List (responsive: card on mobile, row layout on desktop) -->
+  <!-- Expense Table -->
   <div id="expense_list" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden"
-       data-controller="view-toggle batch-selection virtual-scroll"
-       data-action="keydown@window->view-toggle#handleKeydown resize@window->view-toggle#handleResize"
+       data-controller="batch-selection virtual-scroll"
        data-virtual-scroll-threshold-value="<%= @expenses.count %>"
        data-virtual-scroll-enabled-value="<%= @expenses.count > 500 %>"
        role="list">
-    <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <h2 class="text-lg font-semibold text-slate-900"><%= t("expenses.index.list_title") %></h2>
 
-          <!-- Selection Counter -->
-          <span class="hidden text-sm font-medium text-teal-700 bg-teal-100 px-3 py-1 rounded-lg"
-                data-batch-selection-target="selectionCounter">
-            0 <%= t("expenses.index.selection_counter") %>
-          </span>
-
-          <!-- View Toggle Button (desktop only) -->
-          <button type="button"
-                  data-view-toggle-target="toggleButton"
-                  data-action="click->view-toggle#toggle"
-                  class="hidden md:inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
-                  aria-label="<%= t('expenses.index.view_toggle_tooltip') %>"
-                  title="<%= t('expenses.index.view_toggle_tooltip') %> (Ctrl+Shift+V)">
-
-            <!-- Compact Icon -->
-            <svg aria-hidden="true" data-view-toggle-target="compactIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-            </svg>
-
-            <!-- Expanded Icon -->
-            <svg aria-hidden="true" data-view-toggle-target="expandedIcon" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path>
-            </svg>
-
-            <span data-view-toggle-target="buttonText"><%= t("expenses.index.view_toggle_compact") %></span>
-          </button>
-
-          <!-- Batch Selection Mode Toggle (desktop only) -->
-          <button type="button"
-                  data-action="click->batch-selection#toggleSelectionMode"
-                  class="hidden md:inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
-                  aria-label="<%= t('expenses.index.toggle_selection_tooltip') %>"
-                  title="<%= t('expenses.index.toggle_selection_tooltip') %> (Ctrl+Shift+A)">
-            <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
-            </svg>
-            <span><%= t("expenses.index.toggle_selection_label") %></span>
-          </button>
-        </div>
-
-        <% if @active_period %>
-          <span class="text-sm text-slate-600">
-            Período: <%= { "day" => t("expenses.index.period_day"), "week" => t("expenses.index.period_week"), "month" => t("expenses.index.period_month"), "year" => t("expenses.index.period_year") }[@active_period] || @active_period.capitalize %>
-          </span>
-        <% elsif @date_from && @date_to %>
-          <span class="text-sm text-slate-600">
-            <% if @date_from == @date_to %>
-              <%= @date_from.strftime("%d/%m/%Y") %>
-            <% else %>
-              <%= @date_from.strftime("%d/%m/%Y") %> - <%= @date_to.strftime("%d/%m/%Y") %>
-            <% end %>
-          </span>
-        <% end %>
-      </div>
-    </div>
+    <!-- Selection Counter (shown when items selected) -->
+    <span class="hidden text-sm font-medium text-teal-700 bg-teal-100 px-3 py-1 rounded-lg"
+          data-batch-selection-target="selectionCounter">
+      0 <%= t("expenses.index.selection_counter") %>
+    </span>
 
     <!-- Desktop column headers (hidden on mobile, sticky) -->
     <div class="hidden md:grid md:grid-cols-[40px_100px_1fr_160px_120px_100px_40px] bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
-      <!-- Master Checkbox Column -->
       <div class="px-3 py-2.5 text-left">
         <input type="checkbox"
                data-batch-selection-target="masterCheckbox"
@@ -241,8 +159,8 @@
       <div class="px-2 py-2.5"></div>
     </div>
 
-    <!-- Unified expense items list (single loop — eliminates double render) -->
-    <div id="expenses_list_body" class="divide-y divide-slate-100" data-view-toggle-target="itemList">
+    <!-- Expense items -->
+    <div id="expenses_list_body" class="divide-y divide-slate-100">
       <% @expenses.each do |expense| %>
         <%= render "expense_item", expense: expense, categories: @categories %>
       <% end %>
@@ -265,11 +183,10 @@
     </div>
 
     <!-- Batch Selection Toolbar -->
-    <div class="hidden fixed bottom-0 left-0 right-0 bg-white border-t-2 border-teal-600 shadow-lg z-50 px-6 py-4"
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-teal-600 shadow-lg z-50 px-6 py-4 transform translate-y-full transition-transform duration-200"
          data-batch-selection-target="selectionToolbar">
       <div class="max-w-7xl mx-auto flex items-center justify-between">
         <div class="flex items-center gap-4">
-          <!-- Selection Summary -->
           <div class="flex items-center gap-2">
             <svg aria-hidden="true" class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
@@ -281,8 +198,6 @@
               <span class="text-slate-600"><%= t("expenses.index.selection_counter") %></span>
             </span>
           </div>
-
-          <!-- Clear Selection Button -->
           <button type="button"
                   data-batch-selection-target="clearSelectionButton"
                   data-action="click->batch-selection#clearSelection"
@@ -290,8 +205,6 @@
             <%= t("expenses.index.clear_selection") %>
           </button>
         </div>
-
-        <!-- Bulk Actions -->
         <div class="flex items-center gap-3">
           <button type="button"
                   data-batch-selection-target="bulkActionsButton"
@@ -309,10 +222,8 @@
   </div>
 </div>
 
-<% # Include bulk operations modal %>
 <%= render "bulk_operations_modal" %>
 
-<% # Add smooth scroll if requested %>
 <% if @scroll_to == "expense_list" %>
 <script nonce="<%= content_security_policy_nonce %>">
   document.addEventListener('DOMContentLoaded', function() {

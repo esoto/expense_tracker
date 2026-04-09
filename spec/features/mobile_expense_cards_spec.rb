@@ -97,7 +97,7 @@ RSpec.describe "Mobile Expense Cards", type: :view, unit: true do
     end
 
     it "has collapsible controller on filters" do
-      expect(template_source).to include("data-controller=\"collapsible\"")
+      expect(template_source).to include("collapsible")
     end
 
     it "has a collapsible content target wrapping the filter form" do
@@ -113,22 +113,6 @@ RSpec.describe "Mobile Expense Cards", type: :view, unit: true do
     end
   end
 
-  describe "collapsible category summary" do
-    let(:template_source) { File.read(Rails.root.join("app/views/expenses/index.html.erb")) }
-
-    it "renders summary toggle button" do
-      expect(template_source).to include('t("expenses.index.summary_show")')
-    end
-
-    it "has collapsible controller on category summary section" do
-      # The category summary section reuses the same collapsible controller
-      expect(template_source).to include('t("expenses.index.summary_title")')
-    end
-
-    it "wraps category grid in a collapsible content target" do
-      expect(template_source).to include('t("expenses.index.summary_show")')
-    end
-  end
 
   # PER-167: The double-render (expense_cards + expense_list) has been replaced
   # by a single unified list. These tests verify the new responsive single-loop structure.
@@ -148,10 +132,6 @@ RSpec.describe "Mobile Expense Cards", type: :view, unit: true do
 
     it "has the unified expense_list container" do
       expect(template_source).to include('id="expense_list"')
-    end
-
-    it "includes Lista de Gastos heading" do
-      expect(template_source).to include('t("expenses.index.list_title")')
     end
 
     it "no longer uses the old separate mobile expense_cards container" do

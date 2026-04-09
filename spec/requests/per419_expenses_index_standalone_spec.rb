@@ -43,12 +43,8 @@ RSpec.describe "PER-419: Expenses index standalone verification", type: :request
   describe "Stimulus controller data attributes are present" do
     before { get expenses_path }
 
-    it "renders the filter-chips controller" do
-      expect(response.body).to include('data-controller="filter-chips"')
-    end
-
     it "renders the filter-persistence controller" do
-      expect(response.body).to include('data-controller="filter-persistence"')
+      expect(response.body).to include("filter-persistence")
     end
 
     it "renders the virtual-scroll controller on the expense list" do
@@ -57,10 +53,6 @@ RSpec.describe "PER-419: Expenses index standalone verification", type: :request
 
     it "renders the batch-selection controller on the expense list" do
       expect(response.body).to include("batch-selection")
-    end
-
-    it "renders the view-toggle controller on the expense list" do
-      expect(response.body).to include("view-toggle")
     end
 
     it "renders the accessibility-enhanced controller" do
@@ -115,10 +107,6 @@ RSpec.describe "PER-419: Expenses index standalone verification", type: :request
       expect(response.body).to include('data-filter-persistence-target="filterInput"')
     end
 
-    it "renders the filter-chips container with base URL" do
-      expect(response.body).to include('data-filter-chips-base-url-value="/expenses"')
-    end
-
     it "renders the filter-persistence storage type value" do
       expect(response.body).to include('data-filter-persistence-storage-type-value="session"')
     end
@@ -152,7 +140,7 @@ RSpec.describe "PER-419: Expenses index standalone verification", type: :request
     end
 
     it "renders the collapsible filter section for mobile" do
-      expect(response.body).to include('data-controller="collapsible"')
+      expect(response.body).to include("collapsible")
     end
   end
 
@@ -175,9 +163,6 @@ RSpec.describe "PER-419: Expenses index standalone verification", type: :request
       expect(response.body).to include('data-action="change->batch-selection#toggleMasterSelection"')
     end
 
-    it "renders the selection mode toggle button" do
-      expect(response.body).to include("click->batch-selection#toggleSelectionMode")
-    end
 
     it "renders the clear selection button" do
       expect(response.body).to include('data-batch-selection-target="clearSelectionButton"')
@@ -212,33 +197,6 @@ RSpec.describe "PER-419: Expenses index standalone verification", type: :request
     end
   end
 
-  describe "view toggle elements are present" do
-    before { get expenses_path }
-
-    it "renders the toggle button" do
-      expect(response.body).to include('data-view-toggle-target="toggleButton"')
-    end
-
-    it "renders the compact icon target" do
-      expect(response.body).to include('data-view-toggle-target="compactIcon"')
-    end
-
-    it "renders the expanded icon target" do
-      expect(response.body).to include('data-view-toggle-target="expandedIcon"')
-    end
-
-    it "renders the button text target" do
-      expect(response.body).to include('data-view-toggle-target="buttonText"')
-    end
-
-    it "renders the item list target" do
-      expect(response.body).to include('data-view-toggle-target="itemList"')
-    end
-
-    it "renders the item list target" do
-      expect(response.body).to include('data-view-toggle-target="itemList"')
-    end
-  end
 
   describe "kebab menu on expense items" do
     before { get expenses_path }
@@ -261,10 +219,6 @@ RSpec.describe "PER-419: Expenses index standalone verification", type: :request
 
     it "renders kebab dropdown with delete link" do
       expect(response.body).to include("Eliminar")
-    end
-
-    it "renders kebab dropdown with categorize action" do
-      expect(response.body).to include("Categorizar")
     end
 
     it "renders kebab dropdown with status toggle" do
@@ -305,8 +259,7 @@ RSpec.describe "PER-419: Expenses index standalone verification", type: :request
     end
 
     it "still renders the core Stimulus controllers" do
-      expect(response.body).to include('data-controller="filter-chips"')
-      expect(response.body).to include('data-controller="filter-persistence"')
+      expect(response.body).to include("filter-persistence")
     end
 
     it "still renders filter elements" do

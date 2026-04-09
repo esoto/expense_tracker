@@ -116,13 +116,16 @@ Rails.application.routes.draw do
     post "bulk_update_status", action: :bulk_update_status, as: :bulk_update_status_expenses
     delete "bulk_destroy", action: :bulk_destroy, as: :bulk_destroy_expenses
   end
-  # Dashboard v2 (temporary dev route)
+  # Dashboard v2 — now the primary dashboard
   get "dashboard-v2", to: "dashboard#show", as: :dashboard_v2
+
+  # Old dashboard — temporary alias for one release cycle
+  get "old-dashboard", to: "expenses#dashboard"
 
   # Core expense CRUD routes
   resources :expenses, except: [] do
     collection do
-      get :dashboard
+      get :dashboard  # Old dashboard — kept for named route compatibility
       post :sync_emails
       get :virtual_scroll  # Task 3.7: Virtual scrolling endpoint
     end
@@ -217,5 +220,5 @@ Rails.application.routes.draw do
 
 
   # Defines the root path route ("/")
-  root "expenses#dashboard"
+  root "dashboard#show"
 end

@@ -2,9 +2,9 @@
 <% mobile = local_assigns.fetch(:mobile, false) %>
 <% base_class = mobile ? "text-slate-600 hover:text-teal-700 hover:bg-slate-50 px-3 py-2 rounded-md text-sm font-medium" : "text-slate-600 hover:text-teal-700 px-3 py-2 rounded-md text-sm font-medium" %>
 
-<%= link_to t("nav.dashboard"), dashboard_expenses_path,
-    class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path == dashboard_expenses_path}",
-    'aria-current': (request.path == dashboard_expenses_path ? 'page' : nil) %>
+<%= link_to t("nav.dashboard"), dashboard_v2_path,
+    class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path == dashboard_v2_path || request.path == '/'}",
+    'aria-current': ((request.path == dashboard_v2_path || request.path == '/') ? 'page' : nil) %>
 <%= link_to t("nav.expenses"), expenses_path,
     class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path == expenses_path}",
     'aria-current': (request.path == expenses_path ? 'page' : nil) %>

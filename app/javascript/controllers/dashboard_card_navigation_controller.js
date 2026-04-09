@@ -24,6 +24,19 @@ export default class extends Controller {
 
   disconnect() {
     this.unbindKeyboardEvents()
+    this.resetLoadingState()
+  }
+
+  /**
+   * Reset loading state — called on disconnect to clean up when
+   * Turbo restores the page from cache on back-navigation
+   */
+  resetLoadingState() {
+    this.element.classList.remove("opacity-75", "pointer-events-none")
+
+    if (this.hasLoadingIndicatorTarget) {
+      this.loadingIndicatorTarget.remove()
+    }
   }
 
   /**

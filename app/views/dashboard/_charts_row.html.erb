@@ -1,7 +1,7 @@
-<section aria-label="<%= t('dashboard.v2.charts_label', default: 'Charts') %>" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+<section aria-label="<%= t('dashboard.v2.charts_label', default: 'Charts') %>" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
   <%# === Monthly Trend Line Chart (PER-414) === %>
-  <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4" data-controller="chart-skeleton">
-    <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
+  <div class="bg-white rounded-lg shadow p-4" data-controller="chart-skeleton">
+    <h2 class="text-lg font-semibold text-slate-900 mb-4">
       <%= t("dashboard.v2.monthly_trend", default: "Monthly Trend") %>
     </h2>
 
@@ -37,15 +37,15 @@
                 discrete: true,
                 library: {
                   datasets: [
-                    { borderDash: nil },
-                    { borderDash: [5, 5] }
+                    { borderDash: nil, pointStyle: "circle", pointRadius: 4 },
+                    { borderDash: [5, 5], pointStyle: "rect", pointRadius: 4 }
                   ]
                 } %>
         </div>
       </div>
     <% else %>
-      <div class="flex flex-col items-center justify-center h-[300px] text-slate-500 dark:text-slate-400">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-3 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+      <div class="flex flex-col items-center justify-center h-[300px] text-slate-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-3 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3 17l6-6 4 4 8-8" />
           <path stroke-linecap="round" stroke-linejoin="round" d="M17 3h4v4" />
         </svg>
@@ -55,8 +55,8 @@
   </div>
 
   <%# === Category Breakdown Horizontal Bar Chart === %>
-  <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4" data-controller="chart-skeleton">
-    <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
+  <div class="bg-white rounded-lg shadow p-4" data-controller="chart-skeleton">
+    <h2 class="text-lg font-semibold text-slate-900 mb-4">
       <%= t("dashboard.v2.category_breakdown", default: "Category Breakdown") %>
     </h2>
 
@@ -75,8 +75,8 @@
         </div>
       </div>
     <% else %>
-      <div class="flex flex-col items-center justify-center h-[300px] text-slate-500 dark:text-slate-400">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-3 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+      <div class="flex flex-col items-center justify-center h-[300px] text-slate-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-3 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
         <p><%= t("dashboard.v2.no_category_data", default: "No hay datos de categorías") %></p>

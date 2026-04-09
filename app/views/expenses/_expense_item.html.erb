@@ -130,18 +130,20 @@
       <div class="text-xs text-slate-400"><%= expense.bank_name %></div>
     </div>
 
-    <%# Category (compact: color dot + name) %>
+    <%# Category (compact: color dot + name, with Turbo Frame for updates) %>
     <div class="px-3 py-2.5 text-[13px]">
-      <span class="inline-flex items-center gap-1.5">
-        <% if expense.category %>
-          <% safe_color = (expense.category.color.to_s.match?(/\A#[0-9a-fA-F]{3,6}\z/) ? expense.category.color : "#64748b") %>
-          <span class="w-2 h-2 rounded-full shrink-0" style="background-color: <%= safe_color %>"></span>
-          <span class="text-slate-700"><%= expense.category.name %></span>
-        <% else %>
-          <span class="w-2 h-2 rounded-full shrink-0 bg-slate-400"></span>
-          <span class="text-slate-500"><%= t("expenses.card.no_category", default: "Sin categoria") %></span>
-        <% end %>
-      </span>
+      <turbo-frame id="expense_<%= expense.id %>_category">
+        <span class="inline-flex items-center gap-1.5">
+          <% if expense.category %>
+            <% safe_color = (expense.category.color.to_s.match?(/\A#[0-9a-fA-F]{3,6}\z/) ? expense.category.color : "#64748b") %>
+            <span class="w-2 h-2 rounded-full shrink-0" style="background-color: <%= safe_color %>"></span>
+            <span class="text-slate-700"><%= expense.category.name %></span>
+          <% else %>
+            <span class="w-2 h-2 rounded-full shrink-0 bg-slate-400"></span>
+            <span class="text-slate-500"><%= t("expenses.card.no_category", default: "Sin categoria") %></span>
+          <% end %>
+        </span>
+      </turbo-frame>
     </div>
 
     <%# Amount %>

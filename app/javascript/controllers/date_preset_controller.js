@@ -59,7 +59,8 @@ export default class extends Controller {
   }
 
   formatDate(date) {
-    return date.toISOString().split("T")[0]
+    const pad = n => String(n).padStart(2, "0")
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
   }
 
   highlightPreset(active) {

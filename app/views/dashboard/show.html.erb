@@ -2,29 +2,31 @@
   <%# === Header === %>
   <%= render "dashboard/header" %>
 
-  <%# === Metrics Section === %>
-  <section aria-label="<%= t('dashboard.v2.metrics_label', default: 'Monthly metrics') %>">
-    <%= render "dashboard/metric_cards" %>
-  </section>
+  <%= turbo_frame_tag "dashboard-body" do %>
+    <%# === Metrics Section === %>
+    <section aria-label="<%= t('dashboard.v2.metrics_label', default: 'Monthly metrics') %>">
+      <%= render "dashboard/metric_cards" %>
+    </section>
 
-  <%# === Insights Section === %>
-  <%= render "dashboard/insights_row" %>
+    <%# === Insights Section === %>
+    <%= render "dashboard/insights_row" %>
 
-  <%# === Budget Section === %>
-  <section aria-label="<%= t('dashboard.v2.budgets_label', default: 'Budget progress') %>" class="mb-8">
-    <%# Placeholder: budget progress bars will be rendered here %>
-  </section>
+    <%# === Budget Section === %>
+    <section aria-label="<%= t('dashboard.v2.budgets_label', default: 'Budget progress') %>" class="mb-8">
+      <%# Placeholder: budget progress bars will be rendered here %>
+    </section>
 
-  <%# === Charts Section === %>
-  <%= render "dashboard/charts_row" %>
+    <%# === Charts Section === %>
+    <%= render "dashboard/charts_row" %>
 
-  <%# === Recent Expenses Section === %>
-  <section aria-label="<%= t('dashboard.v2.recent_expenses_label', default: 'Recent expenses') %>">
-    <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
-      <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
-        <%= t("dashboard.v2.recent_expenses", default: "Recent Expenses") %>
-      </h2>
-      <%= render "dashboard/recent_activity" %>
-    </div>
-  </section>
+    <%# === Recent Expenses Section === %>
+    <section aria-label="<%= t('dashboard.v2.recent_expenses_label', default: 'Recent expenses') %>">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
+        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
+          <%= t("dashboard.v2.recent_expenses", default: "Recent Expenses") %>
+        </h2>
+        <%= render "dashboard/recent_activity" %>
+      </div>
+    </section>
+  <% end %>
 </div>

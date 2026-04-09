@@ -1,12 +1,24 @@
 class DashboardController < ApplicationController
   def show
+    @period = params[:period].presence || "month"
     @primary_email_account = EmailAccount.active.first
 
     if @primary_email_account
+      calculator_period = case @period
+      when "month", "last_month", "quarter" then :month
+      when "year" then :year
+      else :month
+      end
+
+      reference_date = case @period
+      when "last_month" then 1.month.ago.to_date
+      else Date.current
+      end
+
       month_result = Services::MetricsCalculator.new(
         email_account: @primary_email_account,
-        period: :month,
-        reference_date: Date.current
+        period: calculator_period,
+        reference_date: reference_date
       ).calculate
 
       @monthly_metrics = month_result[:metrics]

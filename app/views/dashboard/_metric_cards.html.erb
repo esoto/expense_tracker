@@ -87,19 +87,10 @@
   </div>
 
   <%# ═══ SECONDARY CARD 1: Budget Remaining ═══ %>
-  <div id="budget-remaining-card"
-       class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:border-teal-300 cursor-pointer relative"
-       role="button"
-       tabindex="0"
-       aria-label="<%= t('dashboard.v2.budget_remaining', default: 'Budget Remaining') %> — <%= budget_formatted_remaining %>"
-       data-controller="animated-metric dashboard-card-navigation"
-       data-animated-metric-container-target="container"
-       data-animated-metric-to-value="<%= budget_remaining %>"
-       data-animated-metric-prefix-value="₡"
-       data-dashboard-card-navigation-period-value="month"
-       data-dashboard-card-navigation-date-from-value="<%= month_start %>"
-       data-dashboard-card-navigation-date-to-value="<%= month_end %>"
-       data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
+  <%= link_to budgets_path, id: "budget-remaining-card",
+       class: "bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:border-teal-300 cursor-pointer relative block no-underline",
+       aria: { label: "#{t('dashboard.v2.budget_remaining', default: 'Budget Remaining')} — #{budget_formatted_remaining}" },
+       data: { controller: "animated-metric", animated_metric_container_target: "container", animated_metric_to_value: budget_remaining, animated_metric_prefix_value: "₡" } do %>
 
     <div class="flex items-center justify-between mb-3">
       <div class="p-2 rounded-lg <%= budget_classes[:bg] %>">
@@ -124,7 +115,7 @@
         <% end %>
       </p>
     </div>
-  </div>
+  <% end %>
 
   <%# ═══ SECONDARY CARD 2: Daily Average ═══ %>
   <div id="daily-average-card"
@@ -163,18 +154,10 @@
 
   <%# ═══ SECONDARY CARD 3: Uncategorized ═══ %>
   <% uncategorized_warning = @uncategorized_count.to_i > 0 %>
-  <div id="uncategorized-card"
-       class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:border-teal-300 cursor-pointer relative"
-       role="button"
-       tabindex="0"
-       aria-label="<%= t('dashboard.v2.uncategorized', default: 'Uncategorized') %> — <%= @uncategorized_count %>"
-       data-controller="animated-metric dashboard-card-navigation"
-       data-animated-metric-container-target="container"
-       data-animated-metric-to-value="<%= @uncategorized_count %>"
-       data-dashboard-card-navigation-period-value="month"
-       data-dashboard-card-navigation-date-from-value="<%= month_start %>"
-       data-dashboard-card-navigation-date-to-value="<%= month_end %>"
-       data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
+  <%= link_to bulk_categorizations_path, id: "uncategorized-card",
+       class: "bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:border-teal-300 cursor-pointer relative block no-underline",
+       aria: { label: "#{t('dashboard.v2.uncategorized', default: 'Uncategorized')} — #{@uncategorized_count}" },
+       data: { controller: "animated-metric", animated_metric_container_target: "container", animated_metric_to_value: @uncategorized_count } do %>
 
     <div class="flex items-center justify-between mb-3">
       <div class="p-2 rounded-lg <%= uncategorized_warning ? 'bg-amber-50' : 'bg-slate-100' %>">
@@ -202,6 +185,6 @@
         <% end %>
       </p>
     </div>
-  </div>
+  <% end %>
 
 </div>

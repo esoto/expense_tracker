@@ -23,14 +23,14 @@
           </div>
         </div>
         <span class="text-sm font-medium text-slate-900 tabular-nums whitespace-nowrap ml-4">
-          <%= number_to_currency(expense.amount, unit: "₡") %>
+          <%= number_to_currency(expense.amount, unit: currency_symbol(expense)) %>
         </span>
       </div>
     <% end %>
   </div>
 
   <div class="mt-4 pt-4 border-t border-slate-100">
-    <%= link_to expenses_path, class: "text-sm font-medium text-teal-700 hover:text-teal-800" do %>
+    <%= link_to expenses_path, class: "text-sm font-medium text-teal-700 hover:text-teal-800", data: { turbo_frame: "_top" } do %>
       <%= t("dashboard.v2.view_all_expenses", default: "View all expenses") %> &rarr;
     <% end %>
   </div>

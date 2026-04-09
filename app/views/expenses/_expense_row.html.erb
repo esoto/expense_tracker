@@ -183,7 +183,7 @@
   </td>
 
   <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-900">
-    <%= defined?(currency_symbol) ? currency_symbol(expense) : "₡" %><%= number_with_delimiter(expense.amount.to_i) %>
+    <%= currency_symbol(expense) %><%= number_with_delimiter(expense.amount.to_i) %>
   </td>
 
   <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900" <% if local_assigns[:context] != 'dashboard' %>data-view-toggle-target="expandedColumns"<% else %>data-dashboard-expenses-target="expandedColumns"<% end %>>

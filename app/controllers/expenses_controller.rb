@@ -374,7 +374,7 @@ class ExpensesController < ApplicationController
         format.turbo_stream do
           render turbo_stream: [
             turbo_stream.replace("expense_#{@expense.id}_status", partial: "expenses/status_badge", locals: { expense: @expense }),
-            turbo_stream.replace("expense_#{@expense.id}_actions", partial: "expenses/inline_actions", locals: { expense: @expense })
+            turbo_stream.update("expense_#{@expense.id}_actions", partial: "expenses/kebab_menu", locals: { expense: @expense })
           ]
         end
         format.json { render json: { success: true, expense: expense_json(@expense) } }

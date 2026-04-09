@@ -1,0 +1,81 @@
+<%# Shared delete confirmation modal for single expense deletion.
+    Rendered once at page level, populated dynamically via Stimulus. %>
+<div data-controller="delete-confirmation"
+     data-delete-confirmation-expense-path-value="">
+
+  <div data-delete-confirmation-target="modal"
+       class="hidden fixed inset-0 z-[70] overflow-y-auto"
+       aria-labelledby="delete_confirmation_title"
+       aria-hidden="true"
+       role="dialog">
+
+    <%# Overlay %>
+    <div data-delete-confirmation-target="overlay"
+         data-action="click->delete-confirmation#close"
+         class="fixed inset-0 bg-slate-900 bg-opacity-50 transition-opacity opacity-0"></div>
+
+    <%# Panel %>
+    <div class="flex min-h-screen items-center justify-center p-4">
+      <div data-delete-confirmation-target="panel"
+           class="relative transform overflow-hidden rounded-xl bg-white shadow-xl transition-all translate-y-4 opacity-0 sm:w-full sm:max-w-md">
+
+        <%# Header %>
+        <div class="bg-rose-600 px-6 py-4">
+          <div class="flex items-center justify-between">
+            <h3 id="delete_confirmation_title" class="text-lg font-semibold text-white">
+              <%= t("expenses.delete_modal.title", default: "Eliminar Gasto") %>
+            </h3>
+            <button type="button"
+                    data-action="click->delete-confirmation#close"
+                    class="rounded-lg bg-rose-500 p-1 text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-white cursor-pointer"
+                    aria-label="<%= t("expenses.bulk.close_modal", default: "Cerrar") %>">
+              <svg aria-hidden="true" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <%# Body %>
+        <div class="px-6 py-5">
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center">
+              <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="text-sm text-slate-700">
+                <%= t("expenses.delete_modal.message", default: "¿Estás seguro de que deseas eliminar este gasto?") %>
+              </p>
+              <div class="mt-3 rounded-lg bg-slate-50 border border-slate-200 p-3">
+                <p class="text-sm font-medium text-slate-900" data-delete-confirmation-target="merchantName"></p>
+                <p class="text-sm text-slate-600 mt-0.5" data-delete-confirmation-target="amount"></p>
+              </div>
+              <p class="mt-3 text-xs text-slate-500">
+                <%= t("expenses.delete_modal.warning", default: "Esta acción no se puede deshacer.") %>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <%# Footer %>
+        <div class="bg-slate-50 px-6 py-4">
+          <div class="flex justify-end gap-3">
+            <button type="button"
+                    data-action="click->delete-confirmation#close"
+                    class="rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-500 cursor-pointer">
+              <%= t("expenses.bulk.cancel_button", default: "Cancelar") %>
+            </button>
+            <button type="button"
+                    data-delete-confirmation-target="deleteButton"
+                    data-action="click->delete-confirmation#confirm"
+                    class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 cursor-pointer">
+              <%= t("expenses.delete_modal.confirm_button", default: "Eliminar Gasto") %>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -71,4 +71,15 @@ export default class extends Controller {
       this.close()
     }
   }
+
+  requestDelete(event) {
+    event.preventDefault()
+    event.stopPropagation()
+    this.close()
+
+    const { expensePath, merchantName, amount } = event.currentTarget.dataset
+    window.dispatchEvent(new CustomEvent("expense:request-delete", {
+      detail: { expensePath, merchantName, amount }
+    }))
+  }
 }

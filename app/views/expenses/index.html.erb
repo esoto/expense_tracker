@@ -107,17 +107,21 @@
               {}, { class: "w-full rounded-lg border border-slate-300 text-sm py-2 px-3 text-slate-700 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 cursor-pointer",
                     data: { "filter-persistence-target": "filterInput" } } %>
       </div>
-      <div class="flex-1 min-w-[140px]" data-date-preset-target="customDates">
-        <%= form.label :start_date, t("expenses.index.start_date_label", default: "Desde"), class: "block text-xs font-medium text-slate-600 mb-1" %>
-        <%= form.date_field :start_date, value: params[:start_date],
-              class: "w-full rounded-lg border border-slate-300 text-sm py-2 px-3 text-slate-700 focus:border-teal-500 focus:ring-1 focus:ring-teal-500",
-              data: { "filter-persistence-target": "filterInput", "date-preset-target": "startDate" } %>
-      </div>
-      <div class="flex-1 min-w-[140px]" data-date-preset-target="customDatesEnd">
-        <%= form.label :end_date, t("expenses.index.end_date_label", default: "Hasta"), class: "block text-xs font-medium text-slate-600 mb-1" %>
-        <%= form.date_field :end_date, value: params[:end_date],
-              class: "w-full rounded-lg border border-slate-300 text-sm py-2 px-3 text-slate-700 focus:border-teal-500 focus:ring-1 focus:ring-teal-500",
-              data: { "filter-persistence-target": "filterInput", "date-preset-target": "endDate" } %>
+      <%# Custom date fields — hidden by default, JS shows when "Personalizado" is active %>
+      <div class="contents hidden"
+           data-date-preset-target="customDates">
+        <div class="flex-1 min-w-[140px]">
+          <%= form.label :start_date, t("expenses.index.start_date_label", default: "Desde"), class: "block text-xs font-medium text-slate-600 mb-1" %>
+          <%= form.date_field :start_date, value: params[:start_date],
+                class: "w-full rounded-lg border border-slate-300 text-sm py-2 px-3 text-slate-700 focus:border-teal-500 focus:ring-1 focus:ring-teal-500",
+                data: { "filter-persistence-target": "filterInput", "date-preset-target": "startDate" } %>
+        </div>
+        <div class="flex-1 min-w-[140px]">
+          <%= form.label :end_date, t("expenses.index.end_date_label", default: "Hasta"), class: "block text-xs font-medium text-slate-600 mb-1" %>
+          <%= form.date_field :end_date, value: params[:end_date],
+                class: "w-full rounded-lg border border-slate-300 text-sm py-2 px-3 text-slate-700 focus:border-teal-500 focus:ring-1 focus:ring-teal-500",
+                data: { "filter-persistence-target": "filterInput", "date-preset-target": "endDate" } %>
+        </div>
       </div>
       <div class="flex gap-2">
         <%= form.submit t("common.filter"), class: "px-4 py-2 bg-teal-700 text-white text-sm font-medium rounded-lg hover:bg-teal-800 shadow-sm cursor-pointer transition-colors" %>
@@ -229,6 +233,7 @@
 </div>
 
 <%= render "bulk_operations_modal" %>
+<%= render "delete_confirmation_modal" %>
 
 <% if @scroll_to == "expense_list" %>
 <script nonce="<%= content_security_policy_nonce %>">

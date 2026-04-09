@@ -19,6 +19,7 @@ export default class extends Controller {
 
   connect() {
     this._animationFrameId = null
+    this._timeoutIds = []
 
     // Initialize with animation
     this.animateValue()
@@ -40,6 +41,9 @@ export default class extends Controller {
       cancelAnimationFrame(this._animationFrameId)
       this._animationFrameId = null
     }
+    // Cancel any pending setTimeout callbacks
+    this._timeoutIds.forEach(id => clearTimeout(id))
+    this._timeoutIds = []
   }
 
   animateValue() {
@@ -85,7 +89,7 @@ export default class extends Controller {
     trendElement.style.transform = 'translateY(10px)'
 
     // Animate in
-    setTimeout(() => {
+    this._timeoutIds.push(setTimeout(() => {
       trendElement.style.transition = 'all 0.5s ease-out'
       trendElement.style.opacity = '1'
       trendElement.style.transform = 'translateY(0)'
@@ -101,7 +105,7 @@ export default class extends Controller {
         </span>
         <span class="text-slate-500 text-sm ml-2">${t("analytics.metric.comparison")}</span>
       `
-    }, 100)
+    }, 100))
   }
 
   drawSparkline() {
@@ -184,9 +188,9 @@ export default class extends Controller {
     if (!this.hasContainerTarget) return
     
     this.containerTarget.classList.add('animate-pulse-once')
-    setTimeout(() => {
+    this._timeoutIds.push(setTimeout(() => {
       this.containerTarget.classList.remove('animate-pulse-once')
-    }, 600)
+    }, 600))
   }
 
   // Public method to update the value (can be called from other controllers or Turbo)

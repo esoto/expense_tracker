@@ -35,7 +35,7 @@ module Admin
     end
 
     def filtered_params
-      params.except(:password, :password_confirmation, :authenticity_token).to_unsafe_h
+      request.filtered_parameters
     end
   end
 end

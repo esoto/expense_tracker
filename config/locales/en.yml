@@ -775,6 +775,7 @@ en:
       title: "Admin - Expense Tracker"
       patterns: "Patterns"
       composite_patterns: "Composite Patterns"
+      categorization_metrics: "Metrics"
       analytics: "Analytics"
       sync_performance: "Sync Performance"
       back_to_app: "← Back to App"

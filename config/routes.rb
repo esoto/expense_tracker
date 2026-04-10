@@ -99,6 +99,7 @@ Rails.application.routes.draw do
     post "patterns/:id/toggle_active", to: "pattern_management#toggle_active", as: :toggle_active_pattern
 
     resources :patterns
+    resources :categorization_metrics, only: [ :index ]
     resources :composite_patterns do
       member do
         post :toggle_active

@@ -56,12 +56,18 @@ RSpec.describe Services::Categorization::Learning::MetricsRecorder, type: :servi
       expect(metric.confidence).to be_nil
     end
 
-    it "does not raise on database errors" do
+    it "does not raise on database errors and logs the failure" do
+      logger = instance_double(ActiveSupport::Logger)
+      allow(logger).to receive(:error)
+      recorder_with_logger = described_class.new(logger: logger)
+
       allow(CategorizationMetric).to receive(:create!).and_raise(ActiveRecord::RecordInvalid)
 
       expect {
-        recorder.record(expense: expense, result: result, layer_name: "pattern")
+        recorder_with_logger.record(expense: expense, result: result, layer_name: "pattern")
       }.not_to raise_error
+
+      expect(logger).to have_received(:error).with(/Failed to record metric/)
     end
   end
 
@@ -96,12 +102,26 @@ RSpec.describe Services::Categorization::Learning::MetricsRecorder, type: :servi
       expect(metric.time_to_correction_hours).to be_between(47, 49)
     end
 
-    it "handles missing metric row gracefully" do
+    it "handles missing metric row gracefully without modifying anything" do
       other_expense = create(:expense)
 
+      recorder.record_correction(expense: other_expense, corrected_to_category: new_category)
+
+      expect(CategorizationMetric.where(was_corrected: true).count).to eq(0)
+    end
+
+    it "does not raise on correction errors and logs the failure" do
+      logger = instance_double(ActiveSupport::Logger)
+      allow(logger).to receive(:error)
+      recorder_with_logger = described_class.new(logger: logger)
+
+      allow_any_instance_of(CategorizationMetric).to receive(:update!).and_raise(ActiveRecord::RecordInvalid)
+
       expect {
-        recorder.record_correction(expense: other_expense, corrected_to_category: new_category)
+        recorder_with_logger.record_correction(expense: expense, corrected_to_category: new_category)
       }.not_to raise_error
+
+      expect(logger).to have_received(:error).with(/Failed to record correction/)
     end
 
     it "updates the most recent metric for the expense" do

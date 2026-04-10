@@ -26,7 +26,7 @@ module Services::Categorization
           api_cost: api_cost
         )
       rescue => e
-        @logger.error "[MetricsRecorder] Failed to record metric: #{e.message}"
+        @logger.error "[MetricsRecorder] Failed to record metric: #{e.class}: #{e.message}"
       end
 
       # Record a user correction on a previously categorized expense.
@@ -50,7 +50,7 @@ module Services::Categorization
           time_to_correction_hours: hours
         )
       rescue => e
-        @logger.error "[MetricsRecorder] Failed to record correction: #{e.message}"
+        @logger.error "[MetricsRecorder] Failed to record correction: #{e.class}: #{e.message}"
       end
     end
   end

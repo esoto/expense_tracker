@@ -300,10 +300,11 @@ module Services::Categorization
             options.merge(correlation_id: correlation_id)
           )
 
-          # Invalidate affected cache entries only on success
+          # Invalidate affected cache entries and record correction metrics on success
           if result.success?
             invalidate_relevant_cache(correct_category)
             @pattern_cache_service.invalidate_all if @pattern_cache_service.respond_to?(:invalidate_all)
+            metrics_recorder.record_correction(expense: expense, corrected_to_category: correct_category)
           end
 
           result
@@ -510,8 +511,8 @@ module Services::Categorization
       # Increment counter atomically
       @total_categorizations.increment
 
-      # Delegate to strategy chain
-      result = run_strategy_chain(expense, opts)
+      # Delegate to strategy chain — returns [result, layer_name] tuple
+      result, layer = run_strategy_chain(expense, opts)
 
       # Post-strategy processing (stays in Engine)
       if result.successful?
@@ -535,7 +536,6 @@ module Services::Categorization
       end
 
       # Record categorization metrics for monitoring
-      layer = result.metadata[:layer_name] || "pattern"
       metrics_recorder.record(expense: expense, result: result, layer_name: layer)
 
       result
@@ -544,16 +544,15 @@ module Services::Categorization
     # Iterate through strategies until one returns a confident result.
     # Database and connection errors are re-raised so Engine#categorize
     # can translate them into the appropriate error results.
+    # Returns [result, layer_name] tuple. Layer name is returned separately
+    # to avoid mutating the result's metadata hash.
     def run_strategy_chain(expense, opts)
       last_result = nil
-      last_layer = "unknown"
+      last_layer = "pattern"
 
       strategies.each do |strategy|
         result = strategy.call(expense, opts)
-        if result.successful?
-          result.metadata[:layer_name] = strategy.layer_name
-          return result
-        end
+        return [ result, strategy.layer_name ] if result.successful?
         last_result = result
         last_layer = strategy.layer_name
       rescue ActiveRecord::ConnectionNotEstablished, ActiveRecord::StatementInvalid, PG::Error
@@ -566,8 +565,7 @@ module Services::Categorization
 
       # Return last strategy's result (preserves processing_time_ms) or fallback
       fallback = last_result || CategorizationResult.no_match(processing_time_ms: 0.0)
-      fallback.metadata[:layer_name] = last_layer
-      fallback
+      [ fallback, last_layer ]
     end
 
     # Ordered list of categorization strategies.

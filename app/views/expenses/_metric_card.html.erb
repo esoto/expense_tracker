@@ -21,7 +21,7 @@
      data-controller="animated-metric tooltip dashboard-card-navigation"
      data-animated-metric-container-target="container"
      data-animated-metric-to-value="<%= metrics[:metrics][:total_amount] %>"
-     data-animated-metric-prefix-value="₡"
+     data-animated-metric-prefix-value="<%= default_currency_symbol %>"
      data-tooltip-trend-data-value='<%= metrics[:trend_data].to_json %>'
      data-tooltip-metric-label-value="<%= tooltip_label %>"
      data-tooltip-position-value="top"
@@ -46,7 +46,7 @@
   <div>
     <p class="text-sm font-medium text-slate-600 mb-1"><%= label %></p>
     <p class="text-2xl font-bold text-slate-900" data-animated-metric-target="value">
-      ₡<%= number_with_delimiter(metrics[:metrics][:total_amount].to_i) %>
+      <%= default_currency_symbol %><%= number_with_delimiter(metrics[:metrics][:total_amount].to_i) %>
     </p>
     <p class="text-xs text-slate-500 mt-2">
       <%= metrics[:metrics][:transaction_count] %> <%= t("expenses.dashboard.transactions").downcase %>

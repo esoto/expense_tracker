@@ -14,13 +14,13 @@
 <!-- Enhanced Key Metrics with Visual Hierarchy -->
 <div class="space-y-6">
   <!-- Primary Metric Card - 1.5x Larger with Tooltip and Navigation -->
-  <div id="primary-metric-card" class="bg-gradient-to-br from-teal-700 to-teal-800 rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] cursor-pointer relative" role="button" tabindex="0" aria-label="<%= t('expenses.dashboard.view_full_year') %>" data-controller="animated-metric tooltip dashboard-card-navigation" data-animated-metric-container-target="container" data-animated-metric-to-value="<%= @total_metrics[:metrics][:total_amount] %>" data-animated-metric-prefix-value="₡" data-animated-metric-trend-value-value="<%= @month_metrics[:trends][:amount_change] %>" data-animated-metric-is-increase-value="<%= @month_metrics[:trends][:is_increase] %>" data-tooltip-trend-data-value='<%= @total_metrics[:trend_data].to_json %>' data-tooltip-metric-label-value="<%= t('expenses.dashboard.tooltip_total_year') %>" data-tooltip-position-value="bottom" data-dashboard-card-navigation-period-value="year" data-dashboard-card-navigation-date-from-value="<%= @total_metrics[:date_range].first %>" data-dashboard-card-navigation-date-to-value="<%= @total_metrics[:date_range].last %>" data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
+  <div id="primary-metric-card" class="bg-gradient-to-br from-teal-700 to-teal-800 rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 text-white transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] cursor-pointer relative" role="button" tabindex="0" aria-label="<%= t('expenses.dashboard.view_full_year') %>" data-controller="animated-metric tooltip dashboard-card-navigation" data-animated-metric-container-target="container" data-animated-metric-to-value="<%= @total_metrics[:metrics][:total_amount] %>" data-animated-metric-prefix-value="<%= default_currency_symbol %>" data-animated-metric-trend-value-value="<%= @month_metrics[:trends][:amount_change] %>" data-animated-metric-is-increase-value="<%= @month_metrics[:trends][:is_increase] %>" data-tooltip-trend-data-value='<%= @total_metrics[:trend_data].to_json %>' data-tooltip-metric-label-value="<%= t('expenses.dashboard.tooltip_total_year') %>" data-tooltip-position-value="bottom" data-dashboard-card-navigation-period-value="year" data-dashboard-card-navigation-date-from-value="<%= @total_metrics[:date_range].first %>" data-dashboard-card-navigation-date-to-value="<%= @total_metrics[:date_range].last %>" data-action="click->dashboard-card-navigation#navigate mouseenter->dashboard-card-navigation#handleMouseEnter mouseleave->dashboard-card-navigation#handleMouseLeave keydown.enter->dashboard-card-navigation#navigate keydown.space->dashboard-card-navigation#navigate">
 
     <div class="flex items-start justify-between mb-4">
       <div>
         <h3 class="text-lg font-medium text-teal-100 mb-2"><%= t("expenses.dashboard.total_expenses") %></h3>
         <div class="flex items-baseline">
-          <span class="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight" data-animated-metric-target="value">₡<%= number_with_delimiter(@total_expenses.to_i) %></span>
+          <span class="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight" data-animated-metric-target="value"><%= default_currency_symbol %><%= number_with_delimiter(@total_expenses.to_i) %></span>
         </div>
       </div>
       <div class="p-4 bg-white/10 rounded-xl backdrop-blur-sm">
@@ -89,7 +89,7 @@
       </div>
       <div>
         <p class="text-teal-100 text-xs uppercase tracking-wide"><%= t("expenses.dashboard.average") %></p>
-        <p class="text-2xl font-bold mt-1">₡<%= number_with_delimiter(@total_metrics[:metrics][:average_amount].to_i) %></p>
+        <p class="text-2xl font-bold mt-1"><%= default_currency_symbol %><%= number_with_delimiter(@total_metrics[:metrics][:average_amount].to_i) %></p>
       </div>
       <div>
         <p class="text-teal-100 text-xs uppercase tracking-wide"><%= t("expenses.dashboard.categories") %></p>
@@ -184,7 +184,7 @@
         </div>
         <div data-chart-skeleton-target="chart">
           <%= line_chart @monthly_data,
-                prefix: "₡",
+                prefix: default_currency_symbol,
                 thousands: ",",
                 height: "300px",
                 colors: ["#0F766E"],
@@ -212,7 +212,7 @@
         </div>
         <div data-chart-skeleton-target="chart">
           <%= pie_chart @pie_chart_categories,
-                prefix: "₡",
+                prefix: default_currency_symbol,
                 thousands: ",",
                 height: "300px",
                 colors: chart_colors %>
@@ -246,7 +246,7 @@
             </div>
             <span class="font-medium text-slate-900"><%= merchant&.truncate(30) || "Unknown Merchant" %></span>
           </div>
-          <span class="font-bold text-slate-900">₡<%= number_with_delimiter(amount.to_i) %></span>
+          <span class="font-bold text-slate-900"><%= default_currency_symbol %><%= number_with_delimiter(amount.to_i) %></span>
         </div>
         <% end %>
       </div>
@@ -270,7 +270,7 @@
             </div>
             <span class="font-medium text-slate-900"><%= bank %></span>
           </div>
-          <span class="font-bold text-slate-900">₡<%= number_with_delimiter(amount.to_i) %></span>
+          <span class="font-bold text-slate-900"><%= default_currency_symbol %><%= number_with_delimiter(amount.to_i) %></span>
         </div>
         <% end %>
       </div>
@@ -697,7 +697,7 @@
   <div class="px-6 py-3 bg-slate-50 border-t border-slate-200">
     <div class="flex items-center justify-between text-xs text-slate-600">
       <span>
-        <%= t("expenses.dashboard.summary_total_shown") %>: <span class="font-medium text-slate-900">₡<%= number_with_delimiter(@expense_summary_stats[:total_amount].to_i) %></span>
+        <%= t("expenses.dashboard.summary_total_shown") %>: <span class="font-medium text-slate-900"><%= default_currency_symbol %><%= number_with_delimiter(@expense_summary_stats[:total_amount].to_i) %></span>
       </span>
       <span>
         <%= @expense_summary_stats[:total_count] %> <%= t("expenses.dashboard.summary_expenses") %> •

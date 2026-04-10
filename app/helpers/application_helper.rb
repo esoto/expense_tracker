@@ -1,9 +1,17 @@
 module ApplicationHelper
+  CURRENCY_SYMBOLS = { "crc" => "₡", "usd" => "$", "eur" => "€" }.freeze
+
   def currency_symbol(expense)
-    return "₡" if expense.crc?
-    return "$" if expense.usd?
-    return "€" if expense.eur?
-    "₡" # Default fallback
+    CURRENCY_SYMBOLS[expense.currency.to_s] || "₡"
+  end
+
+  # For aggregate views (totals, averages) where there's no single expense.
+  # Returns the dominant currency symbol based on what most expenses use.
+  def default_currency_symbol
+    @default_currency_symbol ||= begin
+      dominant = Expense.where(deleted_at: nil).group(:currency).count.max_by { |_, v| v }&.first
+      CURRENCY_SYMBOLS[dominant.to_s] || "₡"
+    end
   end
 
   def format_datetime(datetime)

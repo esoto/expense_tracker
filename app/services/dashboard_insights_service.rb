@@ -45,7 +45,7 @@ module Services
           severity: :warning,
           variant: :warning,
           icon: "⚠️",
-          message: "Projected to exceed budget by ₡#{format_number(excess)}",
+          message: "Projected to exceed budget by #{currency_symbol}#{format_number(excess)}",
           link_path: nil
         }
       else
@@ -74,6 +74,14 @@ module Services
     def format_number(amount)
       whole = amount.round(0).to_i
       whole.to_s.gsub(/(\d)(?=(\d{3})+(?!\d))/, '\\1,')
+    end
+
+    def currency_symbol
+      ApplicationHelper::CURRENCY_SYMBOLS[dominant_currency] || "₡"
+    end
+
+    def dominant_currency
+      @dominant_currency ||= Expense.where(deleted_at: nil).group(:currency).count.max_by { |_, v| v }&.first.to_s
     end
   end
 end

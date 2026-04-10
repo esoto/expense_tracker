@@ -48,7 +48,7 @@
       </div>
       <div>
         <p class="text-sm text-slate-600">Monto Total</p>
-        <p class="text-xl font-semibold text-slate-900">₡<%= number_with_delimiter(statistics[:total_amount].to_i) %></p>
+        <p class="text-xl font-semibold text-slate-900"><%= default_currency_symbol %><%= number_with_delimiter(statistics[:total_amount].to_i) %></p>
       </div>
     </div>
   </div>

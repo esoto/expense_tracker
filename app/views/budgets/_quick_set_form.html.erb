@@ -38,7 +38,7 @@
       <div>
         <%= form.label :amount, t("budgets.form.budget_amount_label"), class: "block text-sm font-medium text-slate-700 mb-1" %>
         <div class="relative">
-          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">₡</span>
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"><%= default_currency_symbol %></span>
           <%= form.number_field :amount,
               class: "w-full pl-8 pr-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
               placeholder: "0",
@@ -53,7 +53,7 @@
                     class="font-medium text-teal-700 hover:text-teal-800"
                     data-action="click->budget-quick-set#useSuggestedAmount"
                     data-suggested-amount="<%= @suggested_amount %>">
-              ₡<%= number_with_delimiter(@suggested_amount.to_i) %>
+              <%= default_currency_symbol %><%= number_with_delimiter(@suggested_amount.to_i) %>
             </button>
           </p>
         <% end %>

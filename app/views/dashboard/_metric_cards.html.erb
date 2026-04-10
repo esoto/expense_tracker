@@ -48,7 +48,7 @@
        data-controller="animated-metric dashboard-card-navigation"
        data-animated-metric-container-target="container"
        data-animated-metric-to-value="<%= total_amount %>"
-       data-animated-metric-prefix-value="₡"
+       data-animated-metric-prefix-value="<%= default_currency_symbol %>"
        data-animated-metric-trend-value-value="<%= trend_change %>"
        data-animated-metric-is-increase-value="<%= is_increase %>"
        data-dashboard-card-navigation-period-value="month"
@@ -73,7 +73,7 @@
     <div>
       <p class="text-sm font-medium text-slate-600 mb-1"><%= t("dashboard.v2.month_total", default: "Month Total") %></p>
       <p class="text-3xl font-bold text-slate-900" data-animated-metric-target="value">
-        ₡<%= number_with_delimiter(total_amount.to_i) %>
+        <%= default_currency_symbol %><%= number_with_delimiter(total_amount.to_i) %>
       </p>
       <p class="text-xs text-slate-500 mt-1">
         <%= @monthly_metrics[:transaction_count] || 0 %> <%= t("expenses.dashboard.transactions", default: "transactions").downcase %>
@@ -90,7 +90,7 @@
   <%= link_to budgets_path, id: "budget-remaining-card",
        class: "bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition-all duration-200 hover:shadow-lg hover:border-teal-300 cursor-pointer relative block no-underline",
        aria: { label: "#{t('dashboard.v2.budget_remaining', default: 'Budget Remaining')} — #{budget_formatted_remaining}" },
-       data: { turbo_frame: "_top", controller: "animated-metric", animated_metric_container_target: "container", animated_metric_to_value: budget_remaining, animated_metric_prefix_value: "₡" } do %>
+       data: { turbo_frame: "_top", controller: "animated-metric", animated_metric_container_target: "container", animated_metric_to_value: budget_remaining, animated_metric_prefix_value: default_currency_symbol } do %>
 
     <div class="flex items-center justify-between mb-3">
       <div class="p-2 rounded-lg <%= budget_classes[:bg] %>">
@@ -103,7 +103,7 @@
     <div>
       <p class="text-sm font-medium text-slate-600 mb-1"><%= t("dashboard.v2.budget_remaining", default: "Budget Remaining") %></p>
       <p class="text-2xl font-bold <%= budget_classes[:amount] %>" data-animated-metric-target="value">
-        ₡<%= number_with_delimiter(budget_remaining.to_i.abs) %>
+        <%= default_currency_symbol %><%= number_with_delimiter(budget_remaining.to_i.abs) %>
       </p>
       <p class="text-xs text-slate-500 mt-1">
         <% if budget_status.to_s == "no_budget" %>
@@ -126,7 +126,7 @@
        data-controller="animated-metric dashboard-card-navigation"
        data-animated-metric-container-target="container"
        data-animated-metric-to-value="<%= @daily_average %>"
-       data-animated-metric-prefix-value="₡"
+       data-animated-metric-prefix-value="<%= default_currency_symbol %>"
        data-animated-metric-decimals-value="2"
        data-dashboard-card-navigation-period-value="month"
        data-dashboard-card-navigation-date-from-value="<%= month_start %>"
@@ -144,7 +144,7 @@
     <div>
       <p class="text-sm font-medium text-slate-600 mb-1"><%= t("dashboard.v2.daily_average", default: "Daily Average") %></p>
       <p class="text-2xl font-bold text-slate-900" data-animated-metric-target="value">
-        ₡<%= number_with_delimiter(@daily_average.round(2)) %>
+        <%= default_currency_symbol %><%= number_with_delimiter(@daily_average.round(2)) %>
       </p>
       <p class="text-xs text-slate-500 mt-1">
         <%= t("dashboard.v2.per_day", default: "per day this month") %>

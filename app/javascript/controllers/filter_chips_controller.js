@@ -7,6 +7,10 @@ import { t } from "services/i18n"
  * Integrates with ExpenseFilterService to show and manage filter state
  */
 export default class extends Controller {
+  get currencySymbol() {
+    return document.querySelector('meta[name="currency-symbol"]')?.content || "₡"
+  }
+
   static targets = [
     "container",
     "chip",
@@ -92,11 +96,11 @@ export default class extends Controller {
       let label = 'Monto: '
       
       if (min && max) {
-        label += `₡${this.formatNumber(min)} - ₡${this.formatNumber(max)}`
+        label += `${this.currencySymbol}${this.formatNumber(min)} - ${this.currencySymbol}${this.formatNumber(max)}`
       } else if (min) {
-        label += `> ₡${this.formatNumber(min)}`
+        label += `> ${this.currencySymbol}${this.formatNumber(min)}`
       } else {
-        label += `< ₡${this.formatNumber(max)}`
+        label += `< ${this.currencySymbol}${this.formatNumber(max)}`
       }
       
       filters.amount = {

@@ -139,14 +139,11 @@ module Services
         }
       end
 
-    # Check for running jobs
-    running_jobs = SolidQueue::Job.where(
-      class_name: "ProcessEmailsJob",
-      finished_at: nil
-    ).where("created_at > ?", 5.minutes.ago)
+    # Check for running syncs via SyncSession
+    running_syncs = SyncSession.where(status: %w[pending running]).where("created_at > ?", 5.minutes.ago)
 
-    sync_data[:has_running_jobs] = running_jobs.exists?
-    sync_data[:running_job_count] = running_jobs.count
+    sync_data[:has_running_jobs] = running_syncs.exists?
+    sync_data[:running_job_count] = running_syncs.count
 
     sync_data
   end

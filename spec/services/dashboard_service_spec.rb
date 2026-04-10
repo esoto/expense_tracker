@@ -92,12 +92,7 @@ RSpec.describe Services::DashboardService, integration: true do
     end
 
     it 'generates sync info with job status' do
-      # Mock SolidQueue::Job to avoid database dependency
-      jobs_relation = double("jobs_relation", exists?: false, count: 0)
-      allow(SolidQueue::Job).to receive(:where)
-        .with(class_name: "ProcessEmailsJob", finished_at: nil)
-        .and_return(double("intermediate", where: jobs_relation))
-
+      # No active SyncSessions in test DB, so has_running_jobs should be false
       result = service.analytics
       sync_info = result[:sync_info]
 

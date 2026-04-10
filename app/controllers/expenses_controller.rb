@@ -32,8 +32,8 @@ class ExpensesController < ApplicationController
       # Build Pagy::Offset instance from the already-paginated result for navigation controls
       @pagy = Pagy::Offset.new(count: @total_count, page: @current_page, limit: @per_page) if @total_count
 
-      # Calculate summary statistics from the result
-      calculate_summary_from_result(@result)
+      # Calculate summary statistics from the full (pre-pagination) filtered scope
+      calculate_summary_statistics
     else
       # Fallback to empty result on error
       @expenses = []
@@ -223,7 +223,7 @@ class ExpensesController < ApplicationController
     if @sorted_categories.present? && @sorted_categories.size > 5
       @pie_chart_categories = @sorted_categories.first(5)
       other_total = @sorted_categories.drop(5).sum { |_, v| v }
-      @pie_chart_categories << [I18n.t("expenses.dashboard.other_category"), other_total] if other_total > 0
+      @pie_chart_categories << [ I18n.t("expenses.dashboard.other_category"), other_total ] if other_total > 0
     else
       @pie_chart_categories = @sorted_categories
     end

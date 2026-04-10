@@ -35,7 +35,7 @@ RSpec.describe ExpensesController, "pagination", type: :controller, unit: true d
       before do
         allow(Services::ExpenseFilterService).to receive(:new).and_return(filter_service)
         allow(filter_service).to receive(:call).and_return(service_result)
-        allow(controller).to receive(:calculate_summary_from_result)
+        allow(controller).to receive(:calculate_summary_statistics)
       end
 
       it "assigns a Pagy::Offset instance to @pagy" do
@@ -116,7 +116,7 @@ RSpec.describe ExpensesController, "pagination", type: :controller, unit: true d
       before do
         allow(Services::ExpenseFilterService).to receive(:new).and_return(filter_service)
         allow(filter_service).to receive(:call).and_return(service_result)
-        allow(controller).to receive(:calculate_summary_from_result)
+        allow(controller).to receive(:calculate_summary_statistics)
       end
 
       it "sets the correct page number in pagy" do
@@ -163,7 +163,7 @@ RSpec.describe ExpensesController, "pagination", type: :controller, unit: true d
       before do
         allow(Services::ExpenseFilterService).to receive(:new).and_return(filter_service)
         allow(filter_service).to receive(:call).and_return(service_result)
-        allow(controller).to receive(:calculate_summary_from_result)
+        allow(controller).to receive(:calculate_summary_statistics)
       end
 
       it "does not provide next page navigation on the last page" do
@@ -209,7 +209,7 @@ RSpec.describe ExpensesController, "pagination", type: :controller, unit: true d
       before do
         allow(Services::ExpenseFilterService).to receive(:new).and_return(filter_service)
         allow(filter_service).to receive(:call).and_return(service_result)
-        allow(controller).to receive(:calculate_summary_from_result)
+        allow(controller).to receive(:calculate_summary_statistics)
       end
 
       it "assigns a single-page pagy instance" do
@@ -280,7 +280,7 @@ RSpec.describe ExpensesController, "pagination", type: :controller, unit: true d
       before do
         allow(Services::ExpenseFilterService).to receive(:new).and_return(filter_service)
         allow(filter_service).to receive(:call).and_return(service_result)
-        allow(controller).to receive(:calculate_summary_from_result)
+        allow(controller).to receive(:calculate_summary_statistics)
       end
 
       it "assigns a pagy instance with zero count" do
@@ -297,7 +297,7 @@ RSpec.describe ExpensesController, "pagination", type: :controller, unit: true d
 
       before do
         allow(Services::ExpenseFilterService).to receive(:new).and_return(filter_service)
-        allow(controller).to receive(:calculate_summary_from_result)
+        allow(controller).to receive(:calculate_summary_statistics)
       end
 
       it "passes the page parameter to the filter service" do

@@ -838,6 +838,7 @@ es:
       title: "Admin - Expense Tracker"
       patterns: "Patrones"
       composite_patterns: "Patrones Compuestos"
+      categorization_metrics: "Métricas"
       analytics: "Analíticas"
       sync_performance: "Rendimiento Sync"
       back_to_app: "← Volver a la App"

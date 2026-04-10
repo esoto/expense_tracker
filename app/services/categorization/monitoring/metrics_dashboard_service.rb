@@ -3,50 +3,56 @@
 module Services::Categorization
   module Monitoring
     # Aggregates categorization metrics for the admin dashboard.
-    # Provides overview stats and per-layer performance breakdowns.
+    # Uses single-query conditional aggregation for efficiency.
     class MetricsDashboardService
       def overview(period: 30.days)
-        metrics = CategorizationMetric.recent(period)
-        total = metrics.count
+        result = CategorizationMetric.recent(period).pick(
+          Arel.sql("COUNT(*)"),
+          Arel.sql("COUNT(CASE WHEN was_corrected = false THEN 1 END)"),
+          Arel.sql("COUNT(CASE WHEN layer_used = 'haiku' THEN 1 END)"),
+          Arel.sql("COUNT(CASE WHEN was_corrected = true THEN 1 END)"),
+          Arel.sql("COALESCE(SUM(api_cost), 0)")
+        )
 
+        total, uncorrected, haiku, corrected, spend = result
         return empty_overview if total.zero?
 
         {
-          accuracy: percentage(metrics.uncorrected.count, total),
-          fallback_rate: percentage(metrics.for_layer("haiku").count, total),
-          correction_rate: percentage(metrics.corrected.count, total),
-          api_spend: metrics.sum(:api_cost).to_f
+          empty: false,
+          accuracy: percentage(uncorrected, total),
+          fallback_rate: percentage(haiku, total),
+          correction_rate: percentage(corrected, total),
+          api_spend: spend.to_f
         }
       end
 
       def layer_performance(period: 30.days)
-        metrics = CategorizationMetric.recent(period)
-
-        metrics.group(:layer_used).pluck(:layer_used).map do |layer|
-          layer_metrics = metrics.for_layer(layer)
-          total = layer_metrics.count
-
-          next if total.zero?
-
-          corrected_count = layer_metrics.corrected.count
-          correct_count = total - corrected_count
-
-          {
-            layer: layer,
-            total: total,
-            correct: correct_count,
-            corrected: corrected_count,
-            accuracy: percentage(correct_count, total),
-            avg_confidence: layer_metrics.average(:confidence).to_f.round(2),
-            avg_time: layer_metrics.average(:processing_time_ms).to_f.round(2)
-          }
-        end.compact
+        CategorizationMetric.recent(period)
+          .group(:layer_used)
+          .pluck(
+            :layer_used,
+            Arel.sql("COUNT(*)"),
+            Arel.sql("COUNT(CASE WHEN was_corrected = true THEN 1 END)"),
+            Arel.sql("ROUND(AVG(confidence)::numeric, 2)"),
+            Arel.sql("ROUND(AVG(processing_time_ms)::numeric, 2)")
+          ).map do |layer, total, corrected, avg_conf, avg_time|
+            correct = total - corrected
+            {
+              layer: layer,
+              total: total,
+              correct: correct,
+              corrected: corrected,
+              accuracy: percentage(correct, total),
+              avg_confidence: avg_conf.to_f,
+              avg_time: avg_time.to_f
+            }
+          end
       end
 
       private
 
       def empty_overview
-        { accuracy: 0.0, fallback_rate: 0.0, correction_rate: 0.0, api_spend: 0.0 }
+        { empty: true, accuracy: 0.0, fallback_rate: 0.0, correction_rate: 0.0, api_spend: 0.0 }
       end
 
       def percentage(numerator, denominator)

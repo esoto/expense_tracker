@@ -11,6 +11,7 @@ RSpec.describe Services::Categorization::Monitoring::MetricsDashboardService, ty
         result = service.overview(period: 30.days)
 
         expect(result).to eq(
+          empty: true,
           accuracy: 0.0,
           fallback_rate: 0.0,
           correction_rate: 0.0,
@@ -25,7 +26,7 @@ RSpec.describe Services::Categorization::Monitoring::MetricsDashboardService, ty
         create_list(:categorization_metric, 3, created_at: 5.days.ago)
         create(:categorization_metric, :corrected, created_at: 5.days.ago)
 
-        # 2 haiku layer metrics (one already counted above as corrected)
+        # 1 haiku layer metric
         create(:categorization_metric, :haiku_layer, created_at: 5.days.ago)
 
         # Outside period - should be excluded

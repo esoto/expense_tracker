@@ -50,7 +50,7 @@
             <%= link_to t("admin.nav.composite_patterns"), admin_composite_patterns_path,
                 class: "text-sm font-medium transition-colors #{request.path.start_with?('/admin/composite_patterns') ? 'text-teal-700' : 'text-slate-600 hover:text-teal-700'}",
                 'aria-current': (request.path.start_with?('/admin/composite_patterns') ? 'page' : nil) %>
-            <%= link_to "Metrics", admin_categorization_metrics_path,
+            <%= link_to t("admin.nav.categorization_metrics"), admin_categorization_metrics_path,
                 class: "text-sm font-medium transition-colors #{request.path.start_with?('/admin/categorization_metrics') ? 'text-teal-700' : 'text-slate-600 hover:text-teal-700'}",
                 'aria-current': (request.path.start_with?('/admin/categorization_metrics') ? 'page' : nil) %>
             <%= link_to t("admin.nav.analytics"), analytics_pattern_dashboard_index_path,

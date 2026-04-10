@@ -7,7 +7,7 @@
     </div>
   </div>
 
-  <% if @overview[:accuracy].zero? && @overview[:api_spend].zero? %>
+  <% if @overview[:empty] %>
     <!-- Empty State -->
     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
       <div class="bg-slate-100 text-slate-400 p-4 rounded-full inline-block mb-4">
@@ -115,6 +115,7 @@
                         when 'pg_trgm' then 'bg-slate-100 text-slate-800'
                         when 'haiku' then 'bg-amber-100 text-amber-800'
                         when 'manual' then 'bg-rose-100 text-rose-800'
+                        else 'bg-slate-100 text-slate-800'
                         end %>">
                     <%= row[:layer].titleize %>
                   </span>

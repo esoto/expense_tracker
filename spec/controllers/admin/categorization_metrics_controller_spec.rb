@@ -7,7 +7,6 @@ RSpec.describe Admin::CategorizationMetricsController, type: :controller, unit: 
 
   before do
     allow(controller).to receive(:current_admin_user).and_return(admin_user)
-    allow(controller).to receive(:log_admin_action)
   end
 
   describe "GET #index" do

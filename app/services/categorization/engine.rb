@@ -430,6 +430,9 @@ module Services::Categorization
         # Reset performance tracker
         @performance_tracker.reset! if @performance_tracker
 
+        # Clear memoized strategies so they pick up fresh service references
+        @strategies = nil
+
         # Verify engine health after reset
         unless healthy?
           @logger.error "[Engine] Engine unhealthy after reset"
@@ -511,7 +514,9 @@ module Services::Categorization
 
       # Post-strategy processing (stays in Engine)
       if result.successful?
-        # Record pattern usage for pattern-based results
+        # Record pattern usage for pattern-based results.
+        # Contract: PatternStrategy sets metadata[:matched_patterns] for pattern matches.
+        # User-preference and no_match results do not set this key.
         if result.patterns_used.present? && result.metadata[:matched_patterns]
           record_pattern_usage(result.metadata[:matched_patterns], result, opts[:correlation_id])
         end
@@ -535,9 +540,12 @@ module Services::Categorization
     # Database and connection errors are re-raised so Engine#categorize
     # can translate them into the appropriate error results.
     def run_strategy_chain(expense, opts)
+      last_result = nil
+
       strategies.each do |strategy|
         result = strategy.call(expense, opts)
         return result if result.successful?
+        last_result = result
       rescue ActiveRecord::ConnectionNotEstablished, ActiveRecord::StatementInvalid, PG::Error
         raise
       rescue => e
@@ -546,8 +554,8 @@ module Services::Categorization
         next
       end
 
-      # No strategy produced a result
-      CategorizationResult.no_match(processing_time_ms: 0.0)
+      # Return last strategy's result (preserves processing_time_ms) or fallback
+      last_result || CategorizationResult.no_match(processing_time_ms: 0.0)
     end
 
     # Ordered list of categorization strategies.

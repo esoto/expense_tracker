@@ -70,21 +70,20 @@ module Services::Categorization
 
       private
 
-      # User preference boost constant -- mirrors Engine::USER_PREFERENCE_BOOST
-      USER_PREFERENCE_BOOST = 0.15
-
       def check_user_preference(expense)
         preference = @pattern_cache_service.get_user_preference(expense.merchant_name)
         return nil unless preference
 
         base_confidence = [ preference.preference_weight / 10.0, 1.0 ].min
-        confidence = [ base_confidence + USER_PREFERENCE_BOOST, 1.0 ].min
+        confidence = [ base_confidence + Engine::USER_PREFERENCE_BOOST, 1.0 ].min
 
         CategorizationResult.from_user_preference(
           preference.category,
           confidence,
           processing_time_ms: 0.5
         )
+      rescue ActiveRecord::ConnectionNotEstablished, ActiveRecord::StatementInvalid, PG::Error
+        raise
       rescue => e
         @logger.warn "[PatternStrategy] User preference check failed: #{e.message}"
         nil

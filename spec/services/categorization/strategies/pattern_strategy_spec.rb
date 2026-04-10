@@ -178,12 +178,26 @@ RSpec.describe Services::Categorization::Strategies::PatternStrategy, :unit, typ
         expect(result.confidence).to be >= 0.85
       end
 
-      it "skips user preferences when disabled" do
+      it "skips user preferences when disabled and returns no_match without patterns" do
         result = strategy.call(expense, check_user_preferences: false)
 
-        if result.successful?
-          expect(result.method).not_to eq("user_preference")
-        end
+        # No patterns exist in this context, so with preferences disabled we get no_match
+        expect(result).to be_no_match
+      end
+
+      it "skips user preferences when disabled but still matches patterns" do
+        create(:categorization_pattern,
+               pattern_type: "merchant",
+               pattern_value: "whole foods",
+               category: category,
+               confidence_weight: 1.5,
+               usage_count: 50,
+               success_count: 45)
+
+        result = strategy.call(expense, check_user_preferences: false)
+
+        expect(result).to be_successful
+        expect(result.method).not_to eq("user_preference")
       end
     end
 
@@ -255,7 +269,14 @@ RSpec.describe Services::Categorization::Strategies::PatternStrategy, :unit, typ
         result = strategy.call(expense)
 
         expect(result).to be_successful
-        expect(result.method).not_to eq("user_preference")
+        expect(result.method).to eq("fuzzy_match")
+      end
+
+      it "re-raises database errors from user preference check" do
+        allow(pattern_cache_service).to receive(:get_user_preference)
+          .and_raise(ActiveRecord::ConnectionNotEstablished, "DB down")
+
+        expect { strategy.call(expense) }.to raise_error(ActiveRecord::ConnectionNotEstablished)
       end
     end
   end

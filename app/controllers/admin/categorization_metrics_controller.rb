@@ -7,6 +7,7 @@ module Admin
       service = Services::Categorization::Monitoring::MetricsDashboardService.new
       @overview = service.overview
       @layer_performance = service.layer_performance
+      @problem_merchants = service.problem_merchants
     end
   end
 end

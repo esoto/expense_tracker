@@ -22,11 +22,19 @@ RSpec.describe Admin::CategorizationMetricsController, type: :controller, unit: 
       ]
     end
 
+    let(:problem_merchants_data) do
+      [
+        { merchant: "walmart", category_name: "Groceries", correction_count: 5,
+          last_seen_at: 3.days.ago }
+      ]
+    end
+
     before do
       service = instance_double(Services::Categorization::Monitoring::MetricsDashboardService)
       allow(Services::Categorization::Monitoring::MetricsDashboardService).to receive(:new).and_return(service)
       allow(service).to receive(:overview).and_return(overview_data)
       allow(service).to receive(:layer_performance).and_return(layer_data)
+      allow(service).to receive(:problem_merchants).and_return(problem_merchants_data)
     end
 
     it "returns http success" do
@@ -42,6 +50,11 @@ RSpec.describe Admin::CategorizationMetricsController, type: :controller, unit: 
     it "assigns layer performance data" do
       get :index
       expect(assigns(:layer_performance)).to eq(layer_data)
+    end
+
+    it "assigns problem merchants data" do
+      get :index
+      expect(assigns(:problem_merchants)).to eq(problem_merchants_data)
     end
 
     it "renders the index template" do

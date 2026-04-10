@@ -154,4 +154,118 @@ RSpec.describe Services::Categorization::Monitoring::MetricsDashboardService, ty
       end
     end
   end
+
+  describe "#problem_merchants" do
+    context "with no vectors meeting threshold" do
+      it "returns an empty array" do
+        result = service.problem_merchants(period: 30.days)
+
+        expect(result).to eq([])
+      end
+    end
+
+    context "with vectors below correction threshold" do
+      before do
+        create(:categorization_vector, correction_count: 1, last_seen_at: 5.days.ago)
+      end
+
+      it "excludes merchants with fewer than 2 corrections" do
+        result = service.problem_merchants(period: 30.days)
+
+        expect(result).to eq([])
+      end
+    end
+
+    context "with vectors outside period" do
+      before do
+        create(:categorization_vector, correction_count: 3, last_seen_at: 60.days.ago)
+      end
+
+      it "excludes merchants outside the period" do
+        result = service.problem_merchants(period: 30.days)
+
+        expect(result).to eq([])
+      end
+    end
+
+    context "with problem merchants" do
+      let(:category) { create(:category, name: "Groceries") }
+      let(:category2) { create(:category, name: "Transport") }
+
+      before do
+        create(:categorization_vector,
+          merchant_normalized: "walmart",
+          category: category,
+          correction_count: 5,
+          last_seen_at: 3.days.ago)
+        create(:categorization_vector,
+          merchant_normalized: "uber",
+          category: category2,
+          correction_count: 2,
+          last_seen_at: 10.days.ago)
+        # Below threshold - should be excluded
+        create(:categorization_vector,
+          merchant_normalized: "starbucks",
+          correction_count: 1,
+          last_seen_at: 2.days.ago)
+      end
+
+      it "returns merchants with correction_count >= 2" do
+        result = service.problem_merchants(period: 30.days)
+
+        expect(result.length).to eq(2)
+      end
+
+      it "sorts by correction_count descending" do
+        result = service.problem_merchants(period: 30.days)
+
+        expect(result.first[:merchant]).to eq("walmart")
+        expect(result.last[:merchant]).to eq("uber")
+      end
+
+      it "includes merchant name" do
+        result = service.problem_merchants(period: 30.days)
+
+        expect(result.first[:merchant]).to eq("walmart")
+      end
+
+      it "includes category display_name" do
+        result = service.problem_merchants(period: 30.days)
+
+        expect(result.first[:category_name]).to eq(category.display_name)
+      end
+
+      it "includes correction_count" do
+        result = service.problem_merchants(period: 30.days)
+
+        expect(result.first[:correction_count]).to eq(5)
+      end
+
+      it "includes last_seen_at" do
+        result = service.problem_merchants(period: 30.days)
+
+        expect(result.first[:last_seen_at]).to be_within(1.second).of(3.days.ago)
+      end
+    end
+
+    context "with custom period" do
+      before do
+        create(:categorization_vector,
+          merchant_normalized: "recent_merchant",
+          correction_count: 3,
+          last_seen_at: 5.days.ago)
+        create(:categorization_vector,
+          merchant_normalized: "old_merchant",
+          correction_count: 3,
+          last_seen_at: 15.days.ago)
+      end
+
+      it "respects the period parameter" do
+        result = service.problem_merchants(period: 10.days)
+
+        expect(result.length).to eq(1)
+        expect(result.first[:merchant]).to eq("recent_merchant")
+      end
+    end
+  end
 end

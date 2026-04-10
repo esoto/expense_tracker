@@ -4,6 +4,8 @@ require "concurrent"
 require "ostruct"
 require_relative "ml_confidence_integration"
 require_relative "service_registry"
+require_relative "strategies/base_strategy"
+require_relative "strategies/pattern_strategy"
 
 module Services::Categorization
   # Simple circuit breaker implementation for fault tolerance
@@ -148,8 +150,6 @@ module Services::Categorization
 
     # Memory management
     MAX_PATTERN_CACHE_SIZE = 1000
-    PATTERN_BATCH_SIZE = 100
-
     # Error types for specific handling
     class CategorizationError < StandardError; end
     class DatabaseError < CategorizationError; end
@@ -430,6 +430,9 @@ module Services::Categorization
         # Reset performance tracker
         @performance_tracker.reset! if @performance_tracker
 
+        # Clear memoized strategies so they pick up fresh service references
+        @strategies = nil
+
         # Verify engine health after reset
         unless healthy?
           @logger.error "[Engine] Engine unhealthy after reset"
@@ -502,215 +505,70 @@ module Services::Categorization
 
     def perform_categorization(expense, options)
       opts = default_options.merge(options)
-      start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
       # Increment counter atomically
       @total_categorizations.increment
 
-      # Step 1: Check user preferences (highest priority)
-      if expense.merchant_name? && opts[:check_user_preferences]
-        user_result = check_user_preference_safely(expense, opts[:correlation_id])
-        if user_result
-          @successful_categorizations.increment
-          return user_result
+      # Delegate to strategy chain
+      result = run_strategy_chain(expense, opts)
+
+      # Post-strategy processing (stays in Engine)
+      if result.successful?
+        # Record pattern usage for pattern-based results.
+        # Contract: PatternStrategy sets metadata[:matched_patterns] for pattern matches.
+        # User-preference and no_match results do not set this key.
+        if result.patterns_used.present? && result.metadata[:matched_patterns]
+          record_pattern_usage(result.metadata[:matched_patterns], result, opts[:correlation_id])
         end
-      end
 
-      # Step 2: Find matching patterns efficiently
-      pattern_matches = find_pattern_matches_efficiently(expense, opts)
-
-      # Step 3: Handle no matches
-      if pattern_matches.empty?
-        return CategorizationResult.no_match(
-          processing_time_ms: calculate_duration(start_time)
-        )
-      end
-
-      # Step 4: Score and rank matches
-      scored_matches = score_and_rank_matches(expense, pattern_matches, opts)
-
-      # Step 5: Select best category
-      best_match = scored_matches.first
-
-      if best_match[:confidence] < opts[:min_confidence]
-        return CategorizationResult.no_match(
-          processing_time_ms: calculate_duration(start_time)
-        )
-      end
-
-      # Step 6: Build result
-      result = build_categorization_result(
-        expense,
-        best_match,
-        scored_matches,
-        opts,
-        calculate_duration(start_time)
-      )
-
-      # Step 6.5: Record pattern usage for matched patterns
-      record_pattern_usage(best_match[:patterns], result, opts[:correlation_id])
-
-      # Step 7: Auto-update expense if configured
-      if opts[:auto_update] && result.high_confidence?
-        if Rails.env.test?
-          # In test environment, update synchronously to ensure deterministic behavior
-          update_expense_sync(expense, result, opts[:correlation_id])
-        else
-          # In other environments, update asynchronously
-          update_expense_async(expense, result, opts[:correlation_id])
+        # Auto-update expense if configured
+        if opts[:auto_update] && result.high_confidence?
+          if Rails.env.test?
+            update_expense_sync(expense, result, opts[:correlation_id])
+          else
+            update_expense_async(expense, result, opts[:correlation_id])
+          end
         end
-      end
 
-      @successful_categorizations.increment if result.successful?
+        @successful_categorizations.increment
+      end
 
       result
     end
 
-    def check_user_preference_safely(expense, correlation_id)
-      with_circuit_breaker(:cache) do
-        preference = @pattern_cache_service.get_user_preference(expense.merchant_name)
+    # Iterate through strategies until one returns a confident result.
+    # Database and connection errors are re-raised so Engine#categorize
+    # can translate them into the appropriate error results.
+    def run_strategy_chain(expense, opts)
+      last_result = nil
 
-        return nil unless preference
+      strategies.each do |strategy|
+        result = strategy.call(expense, opts)
+        return result if result.successful?
+        last_result = result
+      rescue ActiveRecord::ConnectionNotEstablished, ActiveRecord::StatementInvalid, PG::Error
+        raise
+      rescue => e
+        @logger.warn "[Engine] Strategy #{strategy.layer_name} failed: #{e.message} " \
+                     "(correlation_id: #{opts[:correlation_id]})"
+        next
+      end
 
-        # Calculate confidence based on preference weight and usage
-        base_confidence = [ preference.preference_weight / 10.0, 1.0 ].min
-        confidence = [ base_confidence + USER_PREFERENCE_BOOST, 1.0 ].min
+      # Return last strategy's result (preserves processing_time_ms) or fallback
+      last_result || CategorizationResult.no_match(processing_time_ms: 0.0)
+    end
 
-        CategorizationResult.from_user_preference(
-          preference.category,
-          confidence,
-          processing_time_ms: 0.5
+    # Ordered list of categorization strategies.
+    # Future strategies (ML, rules, etc.) will be appended here.
+    def strategies
+      @strategies ||= [
+        Strategies::PatternStrategy.new(
+          pattern_cache_service: @pattern_cache_service,
+          fuzzy_matcher: @fuzzy_matcher,
+          confidence_calculator: @confidence_calculator,
+          logger: @logger
         )
-      end
-    rescue CircuitOpenError
-      @logger.warn "[Engine] Cache circuit open, skipping user preferences (correlation_id: #{correlation_id})"
-      nil
-    end
-
-    def find_pattern_matches_efficiently(expense, options)
-      matches = []
-
-      # Use batched pattern loading instead of loading all patterns
-      pattern_batches = load_patterns_in_batches(options)
-
-      pattern_batches.each do |patterns|
-        # Process merchant patterns
-        if expense.merchant_name?
-          merchant_patterns = patterns.select { |p| p.pattern_type == "merchant" }
-          if merchant_patterns.any?
-            merchant_matches = @fuzzy_matcher.match_pattern(
-              expense.merchant_name,
-              merchant_patterns,
-              options.slice(:min_confidence, :max_results)
-            )
-            matches.concat(process_fuzzy_matches(merchant_matches))
-          end
-        end
-
-        # Process description patterns
-        if expense.description?
-          description_patterns = patterns.select { |p| p.pattern_type.in?(%w[keyword description]) }
-          if description_patterns.any?
-            description_matches = @fuzzy_matcher.match_pattern(
-              expense.description,
-              description_patterns,
-              options.slice(:min_confidence, :max_results)
-            )
-            matches.concat(process_fuzzy_matches(description_matches))
-          end
-        end
-
-        # Check other pattern types
-        patterns.each do |pattern|
-          next if pattern.pattern_type.in?(%w[merchant keyword description])
-
-          if pattern.matches?(expense)
-            matches << {
-              pattern: pattern,
-              match_score: 1.0, # Binary match — ConfidenceCalculator handles confidence adjustment
-              match_type: pattern.pattern_type
-            }
-          end
-        end
-
-        # Early exit if we have enough matches
-        break if matches.size >= options.fetch(:max_results, 10) * 2
-      end
-
-      matches
-    end
-
-    def load_patterns_in_batches(options)
-      patterns = CategorizationPattern
-        .active
-        .includes(:category)
-        .order(usage_count: :desc, success_rate: :desc)
-
-      if options[:pattern_types].present?
-        patterns = patterns.where(pattern_type: options[:pattern_types])
-      end
-
-      # Load in batches to avoid memory bloat
-      batches = []
-      patterns.find_in_batches(batch_size: PATTERN_BATCH_SIZE) do |batch|
-        batches << batch
-        break if batches.size >= 5 # Limit to 500 patterns total
-      end
-
-      batches
-    end
-
-    def score_and_rank_matches(expense, pattern_matches, options)
-      scored = []
-
-      # Group matches by category
-      grouped = pattern_matches.group_by { |m| m[:pattern].category_id }
-
-      grouped.each_value do |matches|
-        best_match = matches.max_by { |m| m[:match_score] }
-        pattern = best_match[:pattern]
-        category = matches.first[:pattern].category
-
-        # Calculate comprehensive confidence score
-        confidence_score = @confidence_calculator.calculate(
-          expense,
-          pattern,
-          best_match[:match_score]
-        )
-
-        scored << {
-          category: category,
-          confidence: confidence_score.score,
-          confidence_score: confidence_score,
-          patterns: matches.map { |m| m[:pattern] },
-          match_type: best_match[:match_type]
-        }
-      end
-
-      # Sort by confidence descending
-      scored.sort_by! { |s| -s[:confidence] }
-
-      # Limit to top N if specified
-      if options[:max_categories]
-        scored = scored.first(options[:max_categories])
-      end
-
-      scored
-    end
-
-    def process_fuzzy_matches(match_result)
-      return [] unless match_result.success?
-
-      match_result.matches.map do |match|
-        pattern = match[:pattern] || match[:object]
-        next unless pattern.is_a?(CategorizationPattern)
-
-        {
-          pattern: pattern,
-          match_score: match[:score] || 0.0,
-          match_type: "fuzzy_match"
-        }
-      end.compact
+      ]
     end
 
     def update_expense_sync(expense, result, correlation_id)
@@ -896,34 +754,6 @@ module Services::Categorization
 
     def calculate_duration(start_time)
       (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000
-    end
-
-    def build_categorization_result(expense, best_match, all_matches, options, duration_ms)
-      alternatives = if options[:include_alternatives]
-        all_matches[1..2].map do |match|
-          {
-            category: match[:category],
-            confidence: match[:confidence]
-          }
-        end
-      else
-        []
-      end
-
-      CategorizationResult.new(
-        category: best_match[:category],
-        confidence: best_match[:confidence],
-        patterns_used: best_match[:patterns].map { |p| "#{p.pattern_type}:#{p.pattern_value}" },
-        confidence_breakdown: best_match[:confidence_score].factor_breakdown,
-        alternative_categories: alternatives,
-        processing_time_ms: duration_ms,
-        method: best_match[:match_type] || "pattern_match",
-        metadata: {
-          expense_id: expense.id,
-          patterns_evaluated: all_matches.sum { |m| m[:patterns].size },
-          confidence_factors: best_match[:confidence_score].metadata[:factors_used]
-        }
-      )
     end
 
     # Metrics methods

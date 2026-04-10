@@ -151,6 +151,8 @@ RSpec.describe Api::HealthController, type: :controller, unit: true do
     let!(:pattern2) { create(:categorization_pattern, active: false) }
 
     before do
+      # Bypass token auth for unit tests
+      allow(controller).to receive(:authenticate_metrics_token!)
       # Mock the entire metrics collection to avoid complex database mocking
       allow(controller).to receive(:collect_metrics).and_return({
         timestamp: Time.current.iso8601,
@@ -264,6 +266,42 @@ RSpec.describe Api::HealthController, type: :controller, unit: true do
       json_response = JSON.parse(response.body)
       expect(json_response["error"]).to eq("Failed to collect metrics")
       expect(json_response["message"]).to eq("Metrics error")
+    end
+
+    context "authentication" do
+      before do
+        # Use the real authenticate_metrics_token! for these tests
+        allow(controller).to receive(:authenticate_metrics_token!).and_call_original
+      end
+
+      it "returns 401 when no token is provided" do
+        get :metrics
+
+        expect(response).to have_http_status(:unauthorized)
+        json_response = JSON.parse(response.body)
+        expect(json_response["error"]).to eq("Unauthorized")
+      end
+
+      it "returns 401 when an invalid token is provided" do
+        request.headers["Authorization"] = "Bearer invalid_token"
+
+        allow(ApiToken).to receive(:authenticate).with("invalid_token").and_return(nil)
+
+        get :metrics
+
+        expect(response).to have_http_status(:unauthorized)
+      end
+
+      it "allows access with a valid token" do
+        api_token = double("ApiToken")
+        request.headers["Authorization"] = "Bearer valid_token"
+        allow(ApiToken).to receive(:authenticate).with("valid_token").and_return(api_token)
+        allow(controller).to receive(:collect_metrics).and_return({ timestamp: Time.current.iso8601 })
+
+        get :metrics
+
+        expect(response).to have_http_status(:ok)
+      end
     end
   end
 

@@ -71,7 +71,7 @@ production:
     username: <%= ENV.fetch("POSTGRES_USER") { "expense_tracker" } %>
     password: <%= ENV["POSTGRES_PASSWORD"] %>
     # Production performance settings
-    pool: <%= ENV.fetch("DB_POOL", 25) %>
+    pool: <%= ENV.fetch("DB_POOL", 35) %>
     statement_timeout: 30000  # 30 seconds
     lock_timeout: 10000       # 10 seconds
     variables:

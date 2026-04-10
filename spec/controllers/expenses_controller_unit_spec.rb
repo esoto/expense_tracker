@@ -38,7 +38,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
       allow(Services::ExpenseFilterService).to receive(:new).and_return(filter_service)
       allow(filter_service).to receive(:call).and_return(service_result)
       allow(controller).to receive(:setup_navigation_context)
-      allow(controller).to receive(:calculate_summary_from_result)
+      allow(controller).to receive(:calculate_summary_statistics)
       allow(controller).to receive(:build_filter_description).and_return("All expenses")
     end
 
@@ -68,8 +68,8 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
         expect(assigns(:per_page)).to eq(25)
       end
 
-      it "calculates summary from result" do
-        expect(controller).to receive(:calculate_summary_from_result).with(service_result)
+      it "calculates summary statistics" do
+        expect(controller).to receive(:calculate_summary_statistics)
 
         get :index
       end

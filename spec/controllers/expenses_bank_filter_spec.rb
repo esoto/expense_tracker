@@ -30,7 +30,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
     allow(Services::ExpenseFilterService).to receive(:new).and_return(filter_service)
     allow(filter_service).to receive(:call).and_return(service_result)
     allow(controller).to receive(:setup_navigation_context)
-    allow(controller).to receive(:calculate_summary_from_result)
+    allow(controller).to receive(:calculate_summary_statistics)
     allow(controller).to receive(:build_filter_description).and_return("")
   end
 

@@ -5,6 +5,7 @@ module Api
   class HealthController < ApplicationController
     skip_before_action :authenticate_user!
     skip_before_action :verify_authenticity_token
+    before_action :authenticate_metrics_token!, only: :metrics
 
     # Comprehensive health check endpoint
     # GET /api/health
@@ -71,6 +72,14 @@ module Api
     end
 
     private
+
+    def authenticate_metrics_token!
+      token = request.headers["Authorization"]&.remove("Bearer ")
+      api_token = token.present? && ApiToken.authenticate(token)
+      return if api_token
+
+      render json: { error: "Unauthorized", status: 401 }, status: :unauthorized
+    end
 
     def format_response(result)
       {

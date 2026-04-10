@@ -30,9 +30,7 @@ class Rack::Attack
       /crawler/i,
       /spider/i,
       /scraper/i,
-      /curl/i,
       /wget/i,
-      /python/i,
       /nikto/i,
       /sqlmap/i,
       /nmap/i

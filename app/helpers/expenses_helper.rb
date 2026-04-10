@@ -102,7 +102,7 @@ module ExpensesHelper
   def expense_category_badge(expense)
     if expense.category
       content_tag :span,
-                  expense.category.name,
+                  expense.category.display_name,
                   class: "inline-flex px-2 py-1 text-xs font-medium rounded-full",
                   style: "background-color: #{expense.category.color}20; color: #{expense.category.color};"
     else

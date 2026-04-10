@@ -42,7 +42,7 @@ module Services::Categorization
       [
         pattern.pattern_type,
         pattern.pattern_value,
-        pattern.category&.name,
+        pattern.category&.display_name,
         pattern.confidence_weight,
         pattern.active,
         pattern.usage_count,

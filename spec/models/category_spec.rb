@@ -103,6 +103,54 @@ RSpec.describe Category, type: :model, integration: true do
     end
   end
 
+  describe '#display_name', :unit do
+    it 'returns name when i18n_key is nil' do
+      category = Category.new(name: 'Custom Category', i18n_key: nil)
+      expect(category.display_name).to eq('Custom Category')
+    end
+
+    it 'returns translated name when i18n_key is present' do
+      category = Category.new(name: 'Alimentación', i18n_key: 'food')
+      I18n.with_locale(:en) do
+        expect(category.display_name).to eq('Food')
+      end
+    end
+
+    it 'returns Spanish translation with es locale' do
+      category = Category.new(name: 'Food', i18n_key: 'food')
+      I18n.with_locale(:es) do
+        expect(category.display_name).to eq('Alimentación')
+      end
+    end
+
+    it 'falls back to name when translation key is missing' do
+      category = Category.new(name: 'Fallback Name', i18n_key: 'nonexistent_key')
+      expect(category.display_name).to eq('Fallback Name')
+    end
+
+    it 'returns name when i18n_key is blank string' do
+      category = Category.new(name: 'Blank Key', i18n_key: '')
+      expect(category.display_name).to eq('Blank Key')
+    end
+  end
+
+  describe '#full_name with i18n', :unit do
+    it 'uses display_name for root category' do
+      category = Category.new(name: 'Alimentación', i18n_key: 'food')
+      I18n.with_locale(:en) do
+        expect(category.full_name).to eq('Food')
+      end
+    end
+
+    it 'uses display_name for parent and child' do
+      parent = create(:category, name: 'Alimentación', i18n_key: 'food')
+      child = Category.new(name: 'Restaurantes', i18n_key: 'restaurants', parent: parent)
+      I18n.with_locale(:en) do
+        expect(child.full_name).to eq('Food > Restaurants')
+      end
+    end
+  end
+
   describe 'validations edge cases', integration: true do
     it 'validates name length maximum' do
       long_name = 'a' * 256

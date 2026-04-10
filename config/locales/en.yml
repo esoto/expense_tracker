@@ -31,6 +31,32 @@ en:
   # Application-wide translations
   hello: "Hello world"
 
+  # Category display names (used by Category#display_name via i18n_key)
+  categories:
+    names:
+      food: "Food"
+      transport: "Transport"
+      utilities: "Utilities"
+      entertainment: "Entertainment"
+      health: "Health"
+      shopping: "Shopping"
+      education: "Education"
+      home: "Home"
+      uncategorized: "Uncategorized"
+      restaurants: "Restaurants"
+      supermarket: "Supermarket"
+      coffee_shop: "Coffee Shop"
+      gas: "Gas"
+      rideshare: "Rideshare"
+      bus: "Bus"
+      electricity: "Electricity"
+      water: "Water"
+      internet: "Internet"
+      phone: "Phone"
+      clothing: "Clothing"
+      electronics: "Electronics"
+      household: "Household"
+
   # Navigation
   nav:
     dashboard: "Dashboard"
@@ -233,7 +259,22 @@ en:
       entertainment: "Entertainment"
       health: "Health"
       shopping: "Shopping"
-      other: "Other"
+      education: "Education"
+      home: "Home"
+      uncategorized: "Uncategorized"
+      restaurants: "Restaurants"
+      supermarket: "Supermarket"
+      coffee_shop: "Coffee Shop"
+      gas: "Gas"
+      rideshare: "Rideshare"
+      bus: "Bus"
+      electricity: "Electricity"
+      water: "Water"
+      internet: "Internet"
+      phone: "Phone"
+      clothing: "Clothing"
+      electronics: "Electronics"
+      household: "Household"
 
     status:
       pending: "Pending"

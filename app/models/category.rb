@@ -28,9 +28,15 @@ class Category < ApplicationRecord
     !root?
   end
 
+  def display_name
+    return name unless i18n_key.present?
+
+    I18n.t("categories.names.#{i18n_key}", default: name)
+  end
+
   def full_name
-    return name if root?
-    "#{parent.name} > #{name}"
+    return display_name if root?
+    "#{parent.display_name} > #{display_name}"
   end
 
   private

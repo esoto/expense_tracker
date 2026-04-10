@@ -8,7 +8,7 @@ class CategoriesController < ApplicationController
         render json: @categories.map { |category|
           {
             id: category.id,
-            name: category.name,
+            name: category.display_name,
             color: category.color,
             parent_id: category.parent_id
           }

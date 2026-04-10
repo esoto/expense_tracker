@@ -224,9 +224,9 @@ RSpec.describe Expense, type: :model, unit: true do
         expect(expense.category_name).to eq("Food")
       end
 
-      it "returns 'Uncategorized' when category is nil" do
+      it "returns translated 'uncategorized' when category is nil" do
         expense.category = nil
-        expect(expense.category_name).to eq("Uncategorized")
+        expect(expense.category_name).to eq(I18n.t("categories.names.uncategorized"))
       end
     end
 

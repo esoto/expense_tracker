@@ -60,7 +60,7 @@
         <div class="max-h-64 overflow-y-auto">
           <%= f.select :pattern_ids,
               options_for_select(
-                @available_patterns.map { |p| ["#{p.pattern_type}: #{p.pattern_value} (#{p.category&.name})", p.id] },
+                @available_patterns.map { |p| ["#{p.pattern_type}: #{p.pattern_value} (#{p.category&.display_name})", p.id] },
                 @composite_pattern.pattern_ids
               ),
               {},

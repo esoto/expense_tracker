@@ -118,15 +118,16 @@ module Services::Patterns
         .select(
           "categories.id",
           "categories.name",
+          "categories.i18n_key",
           "COUNT(categorization_patterns.id) as pattern_count",
           "AVG(categorization_patterns.success_rate) as avg_success_rate",
           "SUM(categorization_patterns.usage_count) as total_usage"
         )
-        .group("categories.id, categories.name")
+        .group("categories.id, categories.name, categories.i18n_key")
         .map do |category|
           {
             id: category.id,
-            name: category.name,
+            name: category.display_name,
             pattern_count: category.pattern_count,
             average_success_rate: (category.avg_success_rate * 100).round(2),
             total_usage: category.total_usage
@@ -161,7 +162,7 @@ module Services::Patterns
         id: pattern.id,
         pattern_type: pattern.pattern_type,
         pattern_value: pattern.pattern_value,
-        category: pattern.category.name,
+        category: pattern.category.display_name,
         usage_count: pattern.usage_count,
         success_rate: (pattern.success_rate * 100).round(2),
         confidence_weight: pattern.confidence_weight

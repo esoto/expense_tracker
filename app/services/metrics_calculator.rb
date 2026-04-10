@@ -516,7 +516,7 @@ module Services
     {
       id: budget.id,
       name: budget.name,
-      category: budget.category&.name,
+      category: budget.category&.display_name,
       period: budget.period,
       amount: budget.amount.to_f,
       currency: budget.currency,

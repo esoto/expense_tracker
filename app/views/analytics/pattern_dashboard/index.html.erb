@@ -28,7 +28,7 @@
           <% Category.order(:name).each do |category| %>
             <option value="<%= category.id %>"
                     <%= 'selected' if params[:category_id] == category.id.to_s %>>
-              <%= category.name %>
+              <%= category.display_name %>
             </option>
           <% end %>
         </select>

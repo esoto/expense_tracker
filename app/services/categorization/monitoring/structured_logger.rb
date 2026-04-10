@@ -158,7 +158,7 @@ module Services::Categorization
           transaction_date: expense.transaction_date&.iso8601,
           result: {
             category_id: result&.category_id,
-            category_name: result&.category&.name,
+            category_name: result&.category&.display_name,
             confidence: result&.confidence,
             method: result&.method,
             rule_matched: result&.metadata&.dig(:rule_id),

@@ -8,54 +8,58 @@ puts "🌱 Seeding initial data..."
 puts "Creating expense categories..."
 
 root_categories = [
-  { name: "Alimentación", description: "Comida, restaurantes, supermercados", color: "#FF6B6B" },
-  { name: "Transporte", description: "Gasolina, Uber, taxis, transporte público", color: "#4ECDC4" },
-  { name: "Servicios", description: "Electricidad, agua, teléfono, internet", color: "#45B7D1" },
-  { name: "Entretenimiento", description: "Cine, teatro, eventos, diversión", color: "#96CEB4" },
-  { name: "Salud", description: "Medicina, doctor, hospital, farmacia", color: "#FFEAA7" },
-  { name: "Compras", description: "Ropa, electrónicos, artículos personales", color: "#DDA0DD" },
-  { name: "Educación", description: "Cursos, libros, capacitación", color: "#98D8C8" },
-  { name: "Hogar", description: "Artículos para el hogar, mantenimiento", color: "#F7DC6F" },
-  { name: "Sin Categoría", description: "Gastos sin categorizar", color: "#BDC3C7" }
+  { i18n_key: "food", description: "Comida, restaurantes, supermercados", color: "#FF6B6B" },
+  { i18n_key: "transport", description: "Gasolina, Uber, taxis, transporte público", color: "#4ECDC4" },
+  { i18n_key: "utilities", description: "Electricidad, agua, teléfono, internet", color: "#45B7D1" },
+  { i18n_key: "entertainment", description: "Cine, teatro, eventos, diversión", color: "#96CEB4" },
+  { i18n_key: "health", description: "Medicina, doctor, hospital, farmacia", color: "#FFEAA7" },
+  { i18n_key: "shopping", description: "Ropa, electrónicos, artículos personales", color: "#DDA0DD" },
+  { i18n_key: "education", description: "Cursos, libros, capacitación", color: "#98D8C8" },
+  { i18n_key: "home", description: "Artículos para el hogar, mantenimiento", color: "#F7DC6F" },
+  { i18n_key: "uncategorized", description: "Gastos sin categorizar", color: "#BDC3C7" }
 ]
 
 root_categories.each do |category_data|
-  category = Category.find_or_create_by!(name: category_data[:name]) do |cat|
+  name = I18n.t("categories.names.#{category_data[:i18n_key]}", locale: :es)
+  category = Category.find_or_create_by!(i18n_key: category_data[:i18n_key]) do |cat|
+    cat.name = name
     cat.description = category_data[:description]
     cat.color = category_data[:color]
   end
-  puts "  ✓ #{category.name}"
+  puts "  ✓ #{category.display_name}"
 end
 
 # Create subcategories
 puts "Creating subcategories..."
 
 subcategories = [
-  { parent: "Alimentación", name: "Restaurantes", description: "Comidas en restaurantes" },
-  { parent: "Alimentación", name: "Supermercado", description: "Compras de comestibles" },
-  { parent: "Alimentación", name: "Cafetería", description: "Café, desayunos, snacks" },
+  { parent_key: "food", i18n_key: "restaurants", description: "Comidas en restaurantes" },
+  { parent_key: "food", i18n_key: "supermarket", description: "Compras de comestibles" },
+  { parent_key: "food", i18n_key: "coffee_shop", description: "Café, desayunos, snacks" },
 
-  { parent: "Transporte", name: "Gasolina", description: "Combustible para vehículo" },
-  { parent: "Transporte", name: "Uber/Taxi", description: "Servicios de transporte" },
-  { parent: "Transporte", name: "Autobús", description: "Transporte público" },
+  { parent_key: "transport", i18n_key: "gas", description: "Combustible para vehículo" },
+  { parent_key: "transport", i18n_key: "rideshare", description: "Servicios de transporte" },
+  { parent_key: "transport", i18n_key: "bus", description: "Transporte público" },
 
-  { parent: "Servicios", name: "Electricidad", description: "Factura de electricidad" },
-  { parent: "Servicios", name: "Agua", description: "Factura de agua" },
-  { parent: "Servicios", name: "Internet", description: "Servicio de internet" },
-  { parent: "Servicios", name: "Teléfono", description: "Servicio telefónico" },
+  { parent_key: "utilities", i18n_key: "electricity", description: "Factura de electricidad" },
+  { parent_key: "utilities", i18n_key: "water", description: "Factura de agua" },
+  { parent_key: "utilities", i18n_key: "internet", description: "Servicio de internet" },
+  { parent_key: "utilities", i18n_key: "phone", description: "Servicio telefónico" },
 
-  { parent: "Compras", name: "Ropa", description: "Vestimenta y accesorios" },
-  { parent: "Compras", name: "Electrónicos", description: "Dispositivos electrónicos" },
-  { parent: "Compras", name: "Hogar", description: "Artículos para el hogar" }
+  { parent_key: "shopping", i18n_key: "clothing", description: "Vestimenta y accesorios" },
+  { parent_key: "shopping", i18n_key: "electronics", description: "Dispositivos electrónicos" },
+  { parent_key: "shopping", i18n_key: "household", description: "Artículos para el hogar" }
 ]
 
 subcategories.each do |subcat_data|
-  parent = Category.find_by!(name: subcat_data[:parent])
-  subcategory = Category.find_or_create_by!(name: subcat_data[:name]) do |cat|
+  parent = Category.find_by!(i18n_key: subcat_data[:parent_key])
+  name = I18n.t("categories.names.#{subcat_data[:i18n_key]}", locale: :es)
+  subcategory = Category.find_or_create_by!(i18n_key: subcat_data[:i18n_key]) do |cat|
+    cat.name = name
     cat.parent = parent
     cat.description = subcat_data[:description]
   end
-  puts "  ✓ #{parent.name} > #{subcategory.name}"
+  puts "  ✓ #{parent.display_name} > #{subcategory.display_name}"
 end
 
 # Create API tokens
@@ -88,10 +92,10 @@ parsing_rules = [
   {
     bank_name: "BAC",
     email_pattern: "(?:transacci[oó]n|notificaci[oó]n).*(?:BAC|PTA)",
-    amount_pattern: "(?:Monto)[:\\s]*₡?([\\d,]+\\.\\d{2})",
-    date_pattern: "(\\d{1,2}/\\d{1,2}/\\d{4}\\s+\\d{1,2}:\\d{2}:\\d{2})",
-    merchant_pattern: "(?:Comercio)[:\\s]+([^\\n\\r]+)",
-    description_pattern: "(?:Autorizaci[oó]n)[:\\s]+([\\d]+)"
+    amount_pattern: "(?:Monto)[:\\s]*(?:CRC|USD|₡|\\$)?\\s*([\\d,]+\\.\\d{2})",
+    date_pattern: "Fecha:\\s*(\\w+\\s+\\d{1,2},\\s*\\d{4},?\\s*\\d{1,2}:\\d{2})",
+    merchant_pattern: "Comercio:\\s*(.+?)\\s*Ciudad y país:",
+    description_pattern: "(?:Autorización)[:\\s]+(\\d+)"
   },
   {
     bank_name: "BCR",
@@ -151,7 +155,7 @@ end
 puts ""
 puts "📂 Categories created:"
 Category.root_categories.each do |category|
-  puts "  • #{category.name} (#{category.children.count} subcategories)"
+  puts "  • #{category.display_name} (#{category.children.count} subcategories)"
 end
 puts ""
 puts "🚀 Ready to use! API endpoints:"

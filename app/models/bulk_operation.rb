@@ -128,7 +128,7 @@ class BulkOperation < ApplicationRecord
       status: status.humanize,
       expenses_affected: expense_count,
       total_amount: total_amount,
-      target_category: target_category&.name,
+      target_category: target_category&.display_name,
       success_rate: success_rate,
       duration: duration_seconds,
       average_confidence: average_confidence,

@@ -32,7 +32,7 @@ module Api
           category_id: feedback_record.category_id,
           category: {
             id: feedback_record.category_id,
-            name: feedback_record.category&.name
+            name: feedback_record.category&.display_name
           },
           pattern_id: feedback_record.categorization_pattern_id,
           feedback_type: feedback_record.feedback_type,
@@ -50,7 +50,7 @@ module Api
 
         {
           id: category.id,
-          name: category.name,
+          name: category.display_name,
           color: category.color,
           parent_id: category.parent_id
         }

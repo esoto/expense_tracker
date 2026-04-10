@@ -46,7 +46,7 @@ module Api
 
         {
           id: pattern.category.id,
-          name: pattern.category.name,
+          name: pattern.category.display_name,
           color: pattern.category.color
         }
       end

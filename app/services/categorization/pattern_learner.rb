@@ -256,12 +256,12 @@ module Services::Categorization
       if predicted_category && predicted_category != correct_category
         # Weaken patterns that led to incorrect prediction
         weaken_patterns_for_category(expense, predicted_category, patterns_affected)
-        actions_taken << { action: "weakened_incorrect_patterns", category: predicted_category.name }
+        actions_taken << { action: "weakened_incorrect_patterns", category: predicted_category.display_name }
       end
 
       # Strengthen patterns for correct category
       strengthen_patterns_for_category(expense, correct_category, patterns_affected)
-      actions_taken << { action: "strengthened_correct_patterns", category: correct_category.name }
+      actions_taken << { action: "strengthened_correct_patterns", category: correct_category.display_name }
 
       # Record learning event
       record_learning_event(expense, correct_category, patterns_created.first || merchant_pattern)
@@ -303,7 +303,7 @@ module Services::Categorization
         pattern.save! unless @dry_run
 
         @metrics[:patterns_created] += 1
-        logger.info "[PatternLearner] Created merchant pattern: #{merchant_name} -> #{category.name}"
+        logger.info "[PatternLearner] Created merchant pattern: #{merchant_name} -> #{category.display_name}"
       else
         strengthen_pattern(pattern, user_correction: true)
       end
@@ -336,7 +336,7 @@ module Services::Categorization
 
             patterns << pattern
             @metrics[:patterns_created] += 1
-            logger.info "[PatternLearner] Created keyword pattern: #{keyword} -> #{category.name}"
+            logger.info "[PatternLearner] Created keyword pattern: #{keyword} -> #{category.display_name}"
           end
         else
           strengthen_pattern(pattern)

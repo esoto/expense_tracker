@@ -14,7 +14,7 @@
               <% if expense.category %>
                 <% safe_color = (expense.category.color.to_s.match?(/\A#[0-9a-fA-F]{3,6}\z/) ? expense.category.color : "#64748b") %>
                 <span class="w-2 h-2 rounded-full shrink-0" style="background-color: <%= safe_color %>"></span>
-                <span class="text-xs text-slate-500"><%= expense.category.name %></span>
+                <span class="text-xs text-slate-500"><%= expense.category.display_name %></span>
               <% else %>
                 <span class="w-2 h-2 rounded-full shrink-0 bg-slate-400"></span>
                 <span class="text-xs text-slate-500"><%= t("dashboard.v2.uncategorized_label", default: "Sin categoría") %></span>

@@ -70,7 +70,7 @@ module Services
         amount: expense.amount,
         description: expense.description,
         transaction_date: expense.transaction_date,
-        merchant_name: expense.merchant_name,
+        merchant_name: expense.display_merchant_name,
         category: expense.category ? {
           id: expense.category.id,
           name: expense.category.name,

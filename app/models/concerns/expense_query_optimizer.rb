@@ -199,26 +199,4 @@ module ExpenseQueryOptimizer
   def cache_key_with_version
     "#{model_name.cache_key}/#{id}-#{updated_at.to_i}-#{lock_version}"
   end
-
-  def soft_delete!(user_id = nil)
-    transaction do
-      self.deleted_at = Time.current
-      self.deleted_by_id = user_id if respond_to?(:deleted_by_id=)
-      self.lock_version = (lock_version || 0) + 1
-      save!(validate: false)
-    end
-  end
-
-  def restore!
-    transaction do
-      self.deleted_at = nil
-      self.deleted_by_id = nil if respond_to?(:deleted_by_id=)
-      self.lock_version = (lock_version || 0) + 1
-      save!(validate: false)
-    end
-  end
-
-  def deleted?
-    deleted_at.present?
-  end
 end

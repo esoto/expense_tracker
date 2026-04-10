@@ -251,23 +251,23 @@ RSpec.describe Expense, type: :model, unit: true do
       end
     end
 
-    describe "#merchant_name" do
+    describe "#display_merchant_name" do
       it "returns merchant_name when present" do
         expense[:merchant_name] = "Store ABC"
         expense[:merchant_normalized] = "store abc"
-        expect(expense.merchant_name).to eq("Store ABC")
+        expect(expense.display_merchant_name).to eq("Store ABC")
       end
 
       it "returns merchant_normalized when merchant_name is nil" do
         expense[:merchant_name] = nil
         expense[:merchant_normalized] = "store abc"
-        expect(expense.merchant_name).to eq("store abc")
+        expect(expense.display_merchant_name).to eq("store abc")
       end
 
       it "returns nil when both are nil" do
         expense[:merchant_name] = nil
         expense[:merchant_normalized] = nil
-        expect(expense.merchant_name).to be_nil
+        expect(expense.display_merchant_name).to be_nil
       end
     end
 

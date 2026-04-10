@@ -52,7 +52,7 @@
       <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
         <h4 class="font-medium text-slate-900 mb-2">Datos de Prueba:</h4>
         <div class="text-sm text-slate-600 space-y-1">
-          <div><strong>Comercio:</strong> <%= @test_expense.merchant_name %></div>
+          <div><strong>Comercio:</strong> <%= @test_expense.display_merchant_name %></div>
           <div><strong>Descripción:</strong> <%= @test_expense.description %></div>
           <div><strong>Monto:</strong> <%= number_to_currency(@test_expense.amount) if @test_expense.amount %></div>
           <div><strong>Fecha:</strong> <%= @test_expense.transaction_date ? l(@test_expense.transaction_date, format: :long) : "" %></div>

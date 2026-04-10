@@ -1,4 +1,4 @@
-<% content_for :title, @expense.merchant_name? ? t("expenses.titles.show", name: @expense.merchant_name) : t("expenses.titles.show_no_merchant") %>
+<% content_for :title, @expense.merchant_name? ? t("expenses.titles.show", name: @expense.display_merchant_name) : t("expenses.titles.show_no_merchant") %>
 
 <div class="max-w-3xl mx-auto space-y-6">
   <!-- Header -->
@@ -22,7 +22,7 @@
       <div class="text-4xl font-bold text-slate-900 mb-2"><%= currency_symbol(@expense) %><%= number_with_delimiter(@expense.amount.to_i) %></div>
       <div class="text-lg text-slate-600">
         <% if @expense.merchant_name? %>
-        <%= @expense.merchant_name %>
+        <%= @expense.display_merchant_name %>
         <% else %>
         <span class="text-rose-600 italic"><%= t("expenses.show.error_no_merchant") %></span>
         <% end %>
@@ -72,7 +72,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
             </svg>
             <% if @expense.merchant_name? %>
-              <%= @expense.merchant_name %>
+              <%= @expense.display_merchant_name %>
             <% else %>
               <span class="text-rose-600 italic"><%= t("expenses.show.error_no_merchant") %></span>
             <% end %>

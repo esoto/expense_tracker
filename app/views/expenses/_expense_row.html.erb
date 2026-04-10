@@ -28,7 +28,7 @@
            <% end %>
            data-expense-id="<%= expense.id %>"
            class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-slate-300 rounded"
-           aria-label="Seleccionar gasto <%= expense.merchant_name || 'sin comercio' %> de <%= expense.amount %>">
+           aria-label="Seleccionar gasto <%= expense.display_merchant_name || 'sin comercio' %> de <%= expense.amount %>">
   </td>
   <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
     <%= expense.transaction_date.strftime("%d/%m/%Y") %>
@@ -37,7 +37,7 @@
   <td class="px-6 py-4 text-sm text-slate-900">
     <div class="font-medium">
       <% if expense.merchant_name? %>
-      <%= expense.merchant_name %>
+      <%= expense.display_merchant_name %>
       <% else %>
       <span class="text-rose-600 italic">⚠️ Sin comercio (verificar)</span>
       <% end %>

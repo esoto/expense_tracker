@@ -49,14 +49,14 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'broadcasting integration', t
       let(:expense1) do
         instance_double(Expense,
                         amount: 15500.50,
-                        merchant_name: 'Automercado',
+                        display_merchant_name: 'Automercado',
                         description: 'Compra en supermercado')
       end
 
       let(:expense2) do
         instance_double(Expense,
                         amount: 3200.00,
-                        merchant_name: 'Starbucks',
+                        display_merchant_name: 'Starbucks',
                         description: 'Café')
       end
 
@@ -133,7 +133,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'broadcasting integration', t
 
     context 'when broadcasting fails' do
       let(:expense) do
-        instance_double(Expense, amount: 1000.00, merchant_name: 'Test Store')
+        instance_double(Expense, amount: 1000.00, display_merchant_name: 'Test Store')
       end
 
       before do
@@ -162,8 +162,8 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'broadcasting integration', t
     end
 
     context 'with multiple expenses in single callback' do
-      let(:expense1) { instance_double(Expense, amount: 1000, merchant_name: 'Store A') }
-      let(:expense2) { instance_double(Expense, amount: 2000, merchant_name: 'Store B') }
+      let(:expense1) { instance_double(Expense, amount: 1000, display_merchant_name: 'Store A') }
+      let(:expense2) { instance_double(Expense, amount: 2000, display_merchant_name: 'Store B') }
 
       before do
         allow(mock_email_processor).to receive(:process_emails) do |ids, service, &block|
@@ -215,37 +215,37 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'broadcasting integration', t
   describe '#format_expense_message', unit: true do
     context 'with valid expense' do
       it 'formats Costa Rican currency correctly' do
-        expense = instance_double(Expense, amount: 15500.50, merchant_name: 'Automercado')
+        expense = instance_double(Expense, amount: 15500.50, display_merchant_name: 'Automercado')
         message = fetcher.send(:format_expense_message, expense)
         expect(message).to eq('₡15,500.50 en Automercado')
       end
 
       it 'formats thousands separator correctly' do
-        expense = instance_double(Expense, amount: 1234567.89, merchant_name: 'Test')
+        expense = instance_double(Expense, amount: 1234567.89, display_merchant_name: 'Test')
         message = fetcher.send(:format_expense_message, expense)
         expect(message).to eq('₡1,234,567.89 en Test')
       end
 
       it 'formats whole numbers without unnecessary decimals' do
-        expense = instance_double(Expense, amount: 5000.00, merchant_name: 'Store')
+        expense = instance_double(Expense, amount: 5000.00, display_merchant_name: 'Store')
         message = fetcher.send(:format_expense_message, expense)
         expect(message).to eq('₡5,000.00 en Store')
       end
 
       it 'handles nil merchant' do
-        expense = instance_double(Expense, amount: 2500, merchant_name: nil)
+        expense = instance_double(Expense, amount: 2500, display_merchant_name: nil)
         message = fetcher.send(:format_expense_message, expense)
         expect(message).to eq('₡2,500.00 en Comercio desconocido')
       end
 
       it 'handles empty string merchant' do
-        expense = instance_double(Expense, amount: 3000, merchant_name: '')
+        expense = instance_double(Expense, amount: 3000, display_merchant_name: '')
         message = fetcher.send(:format_expense_message, expense)
         expect(message).to eq('₡3,000.00 en Comercio desconocido')
       end
 
       it 'preserves merchant with special characters' do
-        expense = instance_double(Expense, amount: 1500, merchant_name: 'Café & Bar')
+        expense = instance_double(Expense, amount: 1500, display_merchant_name: 'Café & Bar')
         message = fetcher.send(:format_expense_message, expense)
         expect(message).to eq('₡1,500.00 en Café & Bar')
       end
@@ -260,19 +260,19 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'broadcasting integration', t
 
     context 'with edge cases' do
       it 'handles zero amount' do
-        expense = instance_double(Expense, amount: 0, merchant_name: 'Test')
+        expense = instance_double(Expense, amount: 0, display_merchant_name: 'Test')
         message = fetcher.send(:format_expense_message, expense)
         expect(message).to eq('₡0.00 en Test')
       end
 
       it 'handles very large amounts' do
-        expense = instance_double(Expense, amount: 999999999.99, merchant_name: 'Bank')
+        expense = instance_double(Expense, amount: 999999999.99, display_merchant_name: 'Bank')
         message = fetcher.send(:format_expense_message, expense)
         expect(message).to eq('₡999,999,999.99 en Bank')
       end
 
       it 'handles negative amounts' do
-        expense = instance_double(Expense, amount: -500.50, merchant_name: 'Refund')
+        expense = instance_double(Expense, amount: -500.50, display_merchant_name: 'Refund')
         message = fetcher.send(:format_expense_message, expense)
         expect(message).to eq('-₡500.50 en Refund')
       end
@@ -334,7 +334,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'broadcasting integration', t
     end
 
     context 'when both update_progress and broadcast fail' do
-      let(:expense) { instance_double(Expense, amount: 100, merchant_name: 'Test') }
+      let(:expense) { instance_double(Expense, amount: 100, display_merchant_name: 'Test') }
 
       before do
         allow(mock_imap_service).to receive(:search_emails).and_return([ 1 ])

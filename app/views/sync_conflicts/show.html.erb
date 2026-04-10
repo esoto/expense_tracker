@@ -51,7 +51,7 @@
               </div>
               <div class="flex justify-between">
                 <dt class="text-sm text-slate-600">Comercio:</dt>
-                <dd class="text-sm font-medium text-slate-900"><%= @existing_expense.merchant_name || 'N/A' %></dd>
+                <dd class="text-sm font-medium text-slate-900"><%= @existing_expense.display_merchant_name || 'N/A' %></dd>
               </div>
               <div class="flex justify-between">
                 <dt class="text-sm text-slate-600">Categoría:</dt>
@@ -90,7 +90,7 @@
                 <div class="flex justify-between">
                   <dt class="text-sm text-slate-600">Comercio:</dt>
                   <dd class="text-sm font-medium text-slate-900 <%= 'text-rose-600' if @differences['merchant_name'] && !@differences['merchant_name'][:match] %>">
-                    <%= @new_expense.merchant_name || 'N/A' %>
+                    <%= @new_expense.display_merchant_name || 'N/A' %>
                   </dd>
                 </div>
                 <div class="flex justify-between">

@@ -8,7 +8,7 @@
           </span>
           <div class="min-w-0">
             <p class="text-sm font-medium text-slate-900 truncate">
-              <%= truncate(expense.merchant_name, length: 25) %>
+              <%= truncate(expense.display_merchant_name, length: 25) %>
             </p>
             <div class="flex items-center gap-1.5 mt-0.5">
               <% if expense.category %>

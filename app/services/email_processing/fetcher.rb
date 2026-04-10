@@ -142,7 +142,7 @@ module Services::EmailProcessing
         format: "%u%n"
       )
 
-      merchant = expense.merchant_name.presence || "Comercio desconocido"
+      merchant = expense.display_merchant_name.presence || "Comercio desconocido"
       "#{amount} en #{merchant}"
     end
   end

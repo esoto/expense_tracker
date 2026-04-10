@@ -140,7 +140,7 @@ class Api::WebhooksController < ApplicationController
       amount: expense.amount.to_f,
       formatted_amount: expense.formatted_amount,
       description: expense.display_description,
-      merchant_name: expense.merchant_name,
+      merchant_name: expense.display_merchant_name,
       transaction_date: expense.transaction_date.iso8601,
       category: expense.category_name,
       bank_name: expense.bank_name,

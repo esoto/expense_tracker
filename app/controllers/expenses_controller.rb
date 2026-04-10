@@ -223,7 +223,7 @@ class ExpensesController < ApplicationController
     if @sorted_categories.present? && @sorted_categories.size > 5
       @pie_chart_categories = @sorted_categories.first(5)
       other_total = @sorted_categories.drop(5).sum { |_, v| v }
-      @pie_chart_categories << [I18n.t("expenses.dashboard.other_category"), other_total] if other_total > 0
+      @pie_chart_categories << [ I18n.t("expenses.dashboard.other_category"), other_total ] if other_total > 0
     else
       @pie_chart_categories = @sorted_categories
     end
@@ -654,7 +654,7 @@ class ExpensesController < ApplicationController
       id: expense.id,
       amount: expense.amount.to_f.to_s,
       description: expense.description,
-      merchant_name: expense.merchant_name,
+      merchant_name: expense.display_merchant_name,
       status: expense.status,
       transaction_date: expense.transaction_date,
       category: expense.category ? {
@@ -677,7 +677,7 @@ class ExpensesController < ApplicationController
     # Optimized JSON for virtual scrolling with minimal data
     {
       id: expense.id,
-      merchant_name: expense.merchant_name,
+      merchant_name: expense.display_merchant_name,
       amount: expense.amount.to_f,
       currency: expense.currency,
       transaction_date: expense.transaction_date.to_s,

@@ -52,7 +52,7 @@ class Expense < ApplicationRecord
   end
 
   def display_description
-    description.presence || merchant_name.presence || "Unknown Transaction"
+    description.presence || display_merchant_name.presence || "Unknown Transaction"
   end
 
   def display_merchant_name

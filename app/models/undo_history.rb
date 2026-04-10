@@ -47,7 +47,7 @@ class UndoHistory < ApplicationRecord
       action_type: :soft_delete,
       record_data: record.attributes,
       user_id: user&.try(:id),
-      description: "Deleted #{record.class.name.humanize.downcase}: #{record.try(:name) || record.try(:merchant_name) || record.id}"
+      description: "Deleted #{record.class.name.humanize.downcase}: #{record.try(:name) || record.try(:display_merchant_name) || record.id}"
     )
   end
 

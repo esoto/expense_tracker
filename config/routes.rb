@@ -15,7 +15,7 @@ Rails.application.routes.draw do
       resources :categories, only: [ :index ]
 
       # Categorization patterns management
-      resources :patterns, except: [:new, :edit] do
+      resources :patterns, except: [ :new, :edit ] do
         collection do
           get :statistics
         end
@@ -167,7 +167,7 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :sync_conflicts, only: [:index, :show] do
+  resources :sync_conflicts, only: [ :index, :show ] do
     member do
       post :resolve
       post :undo

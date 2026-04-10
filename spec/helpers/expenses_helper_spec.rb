@@ -143,5 +143,4 @@ RSpec.describe ExpensesHelper, type: :helper, unit: true do
       end
     end
   end
-
 end

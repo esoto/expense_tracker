@@ -50,5 +50,4 @@ RSpec.describe ApplicationHelper, type: :helper, unit: true do
       expect(helper.format_datetime(datetime)).to eq('December 25, 2024 at 12:00 PM')
     end
   end
-
 end

@@ -49,6 +49,21 @@ module Services::Categorization
           end
       end
 
+      def problem_merchants(period: 30.days)
+        CategorizationVector
+          .includes(:category)
+          .where(correction_count: 2.., last_seen_at: period.ago..)
+          .order(correction_count: :desc)
+          .map do |vector|
+            {
+              merchant: vector.merchant_normalized,
+              category_name: vector.category.display_name,
+              correction_count: vector.correction_count,
+              last_seen_at: vector.last_seen_at
+            }
+          end
+      end
+
       private
 
       def empty_overview

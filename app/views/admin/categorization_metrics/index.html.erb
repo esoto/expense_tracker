@@ -132,5 +132,57 @@
         </table>
       </div>
     </div>
+
+    <!-- Problem Merchants -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6">
+      <div class="px-6 py-4 border-b border-slate-200">
+        <h2 class="text-lg font-semibold text-slate-900">Problem Merchants</h2>
+        <p class="text-sm text-slate-500 mt-1">Merchants with repeated categorization corrections (30 days)</p>
+      </div>
+      <% if @problem_merchants.empty? %>
+        <div class="p-8 text-center">
+          <div class="bg-emerald-100 text-emerald-600 p-3 rounded-full inline-block mb-3">
+            <svg aria-hidden="true" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <p class="text-slate-500">No problem merchants in the last 30 days.</p>
+        </div>
+      <% else %>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Merchant</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Current Category</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Corrections (30d)</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Last Seen</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-slate-200">
+              <% @problem_merchants.each do |row| %>
+                <tr class="<%= 'bg-rose-50' if row[:correction_count] >= 3 %>">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900"><%= row[:merchant] %></td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700"><%= row[:category_name] %></td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                      <%= row[:correction_count] >= 3 ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800' %>">
+                      <%= row[:correction_count] %>
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500"><%= time_ago_in_words(row[:last_seen_at]) %> ago</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    <%= link_to "View Expenses", expenses_path(search: row[:merchant]),
+                          class: "text-teal-600 hover:text-teal-800 font-medium" %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% end %>
+    </div>
   <% end %>
 </div>

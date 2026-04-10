@@ -3,7 +3,7 @@
 require "rails_helper"
 
 RSpec.describe Services::Categorization::Strategies::SimilarityStrategy, type: :service, unit: true do
-  subject(:strategy) { described_class.new }
+  subject(:strategy) { described_class.new(logger: Rails.logger) }
 
   describe "#layer_name" do
     it "returns 'pg_trgm'" do
@@ -131,27 +131,21 @@ RSpec.describe Services::Categorization::Strategies::SimilarityStrategy, type: :
       end
     end
 
-    context "when similarity is low (between 0.3 and 0.4)" do
-      let(:expense) { build(:expense, merchant_name: "wal") }
+    context "when similarity is below pg_trgm threshold" do
+      let(:expense) { build(:expense, merchant_name: "xyz unknown") }
 
       before do
         create(:categorization_vector,
-               merchant_normalized: "walmart supercenter groceries",
+               merchant_normalized: "walmart supercenter",
                category: category,
                occurrence_count: 10,
                confidence: 0.9)
       end
 
-      it "returns low confidence" do
+      it "returns no_match when similarity is below 0.3 threshold" do
         result = strategy.call(expense)
 
-        # If similarity is below 0.4, low confidence: similarity * 0.5
-        # If no vectors match at all (below 0.3 threshold), no_match
-        if result.no_match?
-          expect(result).to be_no_match
-        else
-          expect(result.confidence).to be < 0.4
-        end
+        expect(result).to be_no_match
       end
     end
 
@@ -214,16 +208,19 @@ RSpec.describe Services::Categorization::Strategies::SimilarityStrategy, type: :
                confidence: 0.9)
       end
 
-      it "includes similarity score and vector info in metadata" do
+      it "includes all expected keys in metadata" do
         result = strategy.call(expense)
 
-        expect(result.metadata).to include(:similarity_score, :vector_id)
+        expect(result.metadata).to include(
+          :similarity_score, :vector_id, :occurrence_count, :merchant_normalized
+        )
       end
 
-      it "tracks processing time" do
+      it "tracks processing time as a positive number" do
         result = strategy.call(expense)
 
-        expect(result.processing_time_ms).to be >= 0
+        expect(result.processing_time_ms).to be_a(Numeric)
+        expect(result.processing_time_ms).to be > 0
       end
     end
   end

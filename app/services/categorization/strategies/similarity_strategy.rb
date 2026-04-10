@@ -18,6 +18,11 @@ module Services::Categorization
       # Tolerance for considering two similarity scores "close"
       TIEBREAK_TOLERANCE = 0.1
 
+      # @param logger [Logger]
+      def initialize(logger: Rails.logger)
+        @logger = logger
+      end
+
       # @return [String]
       def layer_name
         "pg_trgm"
@@ -27,9 +32,9 @@ module Services::Categorization
       # against the categorization_vectors table.
       #
       # @param expense [Expense]
-      # @param options [Hash]
+      # @param _options [Hash] unused — confidence thresholds are internal to this strategy
       # @return [CategorizationResult]
-      def call(expense, options = {})
+      def call(expense, _options = {})
         start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
         normalized = normalize_merchant(expense)
@@ -37,16 +42,15 @@ module Services::Categorization
           return CategorizationResult.no_match(processing_time_ms: duration_ms(start_time))
         end
 
-        vectors = fetch_similar_vectors(normalized)
-        if vectors.empty?
+        scored_vectors = fetch_and_score_vectors(normalized)
+        if scored_vectors.empty?
           return CategorizationResult.no_match(processing_time_ms: duration_ms(start_time))
         end
 
-        best = select_best_vector(vectors, normalized, expense)
-        similarity = similarity_score(best, normalized)
-        confidence = calculate_confidence(similarity, best)
+        best = select_best_vector(scored_vectors, expense)
+        confidence = calculate_confidence(best[:similarity], best[:vector])
 
-        build_result(best, confidence, similarity, duration_ms(start_time))
+        build_result(best[:vector], confidence, best[:similarity], duration_ms(start_time))
       end
 
       private
@@ -57,59 +61,47 @@ module Services::Categorization
         MerchantNormalizer.normalize(expense.merchant_name)
       end
 
-      def fetch_similar_vectors(normalized)
+      # Single query: fetches vectors AND their similarity scores together.
+      # Eliminates N+1 by selecting similarity() as a virtual attribute.
+      def fetch_and_score_vectors(normalized)
+        quoted = CategorizationVector.connection.quote(normalized)
+
         CategorizationVector
           .for_merchant(normalized)
+          .select("categorization_vectors.*, similarity(merchant_normalized, #{quoted}) AS trgm_score")
           .includes(:category)
-          .to_a
+          .map { |v| { vector: v, similarity: v.trgm_score.to_f } }
       end
 
-      def select_best_vector(vectors, normalized, expense)
-        scored = vectors.map do |vector|
-          sim = similarity_score(vector, normalized)
-          { vector: vector, similarity: sim }
-        end
+      def select_best_vector(scored_vectors, expense)
+        scored_vectors.sort_by! { |s| -s[:similarity] }
 
-        scored.sort_by! { |s| -s[:similarity] }
-
-        top = scored.first
-        close_contenders = scored.select { |s| (top[:similarity] - s[:similarity]).abs < TIEBREAK_TOLERANCE }
+        top = scored_vectors.first
+        close_contenders = scored_vectors.select { |s| (top[:similarity] - s[:similarity]).abs < TIEBREAK_TOLERANCE }
 
         if close_contenders.size > 1 && expense.description?
           tiebreak_by_keywords(close_contenders, expense.description)
         else
-          top[:vector]
+          top
         end
       end
 
       def tiebreak_by_keywords(contenders, description)
         desc_words = description.downcase.split(/\s+/).to_set
 
-        best = contenders.max_by do |entry|
+        contenders.max_by do |entry|
           keywords = entry[:vector].description_keywords || []
           overlap = keywords.count { |kw| desc_words.include?(kw.downcase) }
           [ overlap, entry[:similarity] ]
         end
-
-        best[:vector]
-      end
-
-      def similarity_score(vector, normalized)
-        CategorizationVector
-          .where(id: vector.id)
-          .pick(Arel.sql("similarity(merchant_normalized, #{CategorizationVector.connection.quote(normalized)})"))
-          .to_f
       end
 
       def calculate_confidence(similarity, vector)
         if similarity > HIGH_SIMILARITY_THRESHOLD && vector.occurrence_count > HIGH_OCCURRENCE_THRESHOLD
-          # High confidence: 0.7 + similarity * 0.3
           0.7 + (similarity * 0.3)
         elsif similarity > MEDIUM_SIMILARITY_THRESHOLD
-          # Medium confidence: 0.4 + similarity * 0.3
           0.4 + (similarity * 0.3)
         else
-          # Low confidence: similarity * 0.5
           similarity * 0.5
         end
       end

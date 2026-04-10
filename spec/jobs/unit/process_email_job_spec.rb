@@ -522,7 +522,12 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
     end
 
     it 'discards the job when DeserializationError is raised' do
-      allow(EmailAccount).to receive(:find_by).and_raise(ActiveJob::DeserializationError)
+      deserialization_error = begin
+        raise StandardError, "Record not found"
+      rescue StandardError
+        ActiveJob::DeserializationError.new
+      end
+      allow(EmailAccount).to receive(:find_by).and_raise(deserialization_error)
 
       expect {
         described_class.perform_now(email_account_id, email_data)

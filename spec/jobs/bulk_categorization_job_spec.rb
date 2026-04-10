@@ -2,19 +2,6 @@
 
 require 'rails_helper'
 
-# Stub User class for testing since BaseJob references it
-class User
-  attr_accessor :id
-
-  def initialize(id)
-    @id = id
-  end
-
-  def self.find_by(id:)
-    new(id) if id
-  end
-end unless defined?(User)
-
 RSpec.describe BulkCategorizationJob, type: :job, unit: true do
   subject(:job) { described_class.new }
 
@@ -42,6 +29,8 @@ RSpec.describe BulkCategorizationJob, type: :job, unit: true do
     allow(Rails.logger).to receive(:info)
     allow(Rails.logger).to receive(:error)
     allow(Category).to receive(:find_by).with(id: category_id).and_return(category)
+    allow(AdminUser).to receive(:find_by).with(id: user_id).and_return(double('AdminUser', id: user_id))
+    allow(AdminUser).to receive(:find_by).with(id: nil).and_return(nil)
     allow(Rails.cache).to receive(:write)
     allow(ActionCable.server).to receive(:broadcast)
     allow(Time).to receive(:current).and_return(Time.zone.parse('2025-08-30 12:00:00'))

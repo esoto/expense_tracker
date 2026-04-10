@@ -16,20 +16,19 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
 
   before do
     # Stub constants for unit test environment
-    user_class = double('UserClass')
-    stub_const('User', user_class)
+    admin_user_class = double('AdminUserClass')
+    stub_const('AdminUser', admin_user_class)
 
     status_update_service_class = double('StatusUpdateServiceClass')
     stub_const('Services::BulkOperations::StatusUpdateService', status_update_service_class)
 
     # Mock inherited behavior from BaseJob
-    allow(User).to receive(:find_by).with(id: user.id).and_return(user)
+    allow(AdminUser).to receive(:find_by).with(id: user.id).and_return(user)
     allow(job).to receive(:track_progress)
     allow(job).to receive(:broadcast_completion)
     allow(job).to receive(:broadcast_failure)
     allow(job).to receive(:handle_job_error)
     allow(job).to receive(:job_id).and_return('test-job-id')
-    allow(job).to receive(:sleep) # Stub sleep to keep tests fast
 
     # Default service mocking - allow any parameters
     allow(Services::BulkOperations::StatusUpdateService).to receive(:new).and_return(batch_service)
@@ -78,13 +77,6 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
         expect(job).to have_received(:track_progress).with(83, "Updated status for 100 of 120 expenses...").once
         expect(job).to have_received(:track_progress).with(100, "Updated status for 120 of 120 expenses...").once
       end
-
-      it 'calls sleep to throttle large jobs' do
-        job.perform(expense_ids: expense_ids, status: status, user_id: user.id, options: options)
-
-        # Should sleep after each batch since total > 100
-        expect(job).to have_received(:sleep).with(0.1).exactly(3).times
-      end
     end
 
     context 'processes each expense exactly once' do
@@ -130,7 +122,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
     context 'with fewer expenses than batch size' do
       let(:expense_ids) { (1..30).to_a }
 
-      it 'processes all expenses in a single batch without sleep' do
+      it 'processes all expenses in a single batch' do
         single_batch_service = double('SingleBatchService', call: { success: true })
 
         allow(Services::BulkOperations::StatusUpdateService).to receive(:new)
@@ -138,7 +130,6 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
           .and_return(single_batch_service)
 
         expect(single_batch_service).to receive(:call).once
-        expect(job).not_to receive(:sleep) # No sleep for jobs with <= 100 items
 
         job.perform(expense_ids: expense_ids, status: status, user_id: user.id, options: options)
       end
@@ -155,7 +146,6 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
           .and_return(boundary_service)
 
         expect(boundary_service).to receive(:call).once
-        expect(job).not_to receive(:sleep)
 
         job.perform(expense_ids: expense_ids, status: status, user_id: user.id, options: options)
       end
@@ -177,20 +167,6 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
 
         sizes = batch_services.map { |b| b[:size] }
         expect(sizes).to eq([ 50, 50 ])
-
-        # No sleep since total == 100 (not > 100)
-        expect(job).not_to have_received(:sleep)
-      end
-    end
-
-    context 'with exactly 101 expenses (triggers sleep)' do
-      let(:expense_ids) { (1..101).to_a }
-
-      it 'triggers sleep behavior at > 100 threshold' do
-        job.perform(expense_ids: expense_ids, status: status, user_id: user.id, options: options)
-
-        # Should sleep after each batch since total > 100
-        expect(job).to have_received(:sleep).with(0.1).exactly(3).times # 2 full batches + 1 partial
       end
     end
 
@@ -199,7 +175,6 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
 
       it 'completes successfully without processing batches' do
         expect(Services::BulkOperations::StatusUpdateService).not_to receive(:new)
-        expect(job).not_to receive(:sleep)
 
         job.perform(expense_ids: expense_ids, status: status, user_id: user.id, options: options)
       end
@@ -216,7 +191,6 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
           .and_return(single_service)
 
         expect(single_service).to receive(:call).once
-        expect(job).not_to receive(:sleep)
 
         job.perform(expense_ids: expense_ids, status: status, user_id: user.id, options: options)
       end
@@ -240,7 +214,7 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
 
     context 'when user is not found' do
       before do
-        allow(User).to receive(:find_by).with(id: user.id).and_return(nil)
+        allow(AdminUser).to receive(:find_by).with(id: user.id).and_return(nil)
       end
 
       it 'proceeds with nil user' do
@@ -302,16 +276,16 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
       expect(expense_id_frequency.values.uniq).to eq([ 1 ])
     end
 
-    context 'with large batch requiring throttling' do
+    context 'with large batch' do
       let(:expense_ids) { (1..150).to_a }
 
-      it 'calls sleep after each batch for large jobs' do
+      it 'processes all batches without throttling' do
         allow(Services::BulkOperations::StatusUpdateService).to receive(:new).and_return(batch_service)
 
         job.send(:execute_operation)
 
         # 3 batches: 50, 50, 50
-        expect(job).to have_received(:sleep).with(0.1).exactly(3).times
+        expect(Services::BulkOperations::StatusUpdateService).to have_received(:new).exactly(3).times
       end
     end
 

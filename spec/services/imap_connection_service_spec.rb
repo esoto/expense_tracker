@@ -203,7 +203,7 @@ RSpec.describe Services::ImapConnectionService, integration: true do
 
     context 'with valid account' do
       it 'creates connection, authenticates, selects inbox, and cleans up' do
-        expect(Net::IMAP).to receive(:new).with('imap.test.com', port: 993, ssl: true)
+        expect(Net::IMAP).to receive(:new).with('imap.test.com', port: 993, ssl: true, open_timeout: 10, idle_response_timeout: 30)
         expect(mock_imap).to receive(:login).with('test@test.com', 'password123')
         expect(mock_imap).to receive(:select).with("INBOX")
         expect(mock_imap).to receive(:logout)

@@ -154,7 +154,9 @@ module Services
     Net::IMAP.new(
       settings[:address],
       port: settings[:port],
-      ssl: settings[:enable_ssl]
+      ssl: settings[:enable_ssl],
+      open_timeout: 10,
+      idle_response_timeout: 30
     )
   end
 

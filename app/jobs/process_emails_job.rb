@@ -1,6 +1,8 @@
 class ProcessEmailsJob < ApplicationJob
   queue_as :email_processing
 
+  limits_concurrency to: 1, key: ->(email_account_id = nil, **) { "process_emails_#{email_account_id || 'all'}" }
+
   # Add retry logic
   retry_on Services::ImapConnectionService::ConnectionError, wait: 10.seconds, attempts: 3
   retry_on Net::ReadTimeout, wait: 5.seconds, attempts: 2

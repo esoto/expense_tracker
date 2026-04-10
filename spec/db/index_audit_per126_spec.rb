@@ -437,12 +437,38 @@ RSpec.describe "PER-126 Index Audit", :unit do
 
   # ── TOTAL INDEX COUNT ────────────────────────────────────────────────────────
 
+  # ── PHASE 2 CATEGORIZATION INDEXES ──────────────────────────────────────────
+
+  describe "Phase 2 categorization indexes" do
+    it "categorization_vectors has a GiST trigram index on merchant_normalized" do
+      indexes = connection.indexes(:categorization_vectors)
+      trgm_index = indexes.find { |i| i.name == "index_categorization_vectors_on_merchant_trgm" }
+      expect(trgm_index).to be_present
+      expect(trgm_index.using).to eq(:gist)
+    end
+
+    it "categorization_vectors has a unique composite index on merchant + category" do
+      indexes = connection.indexes(:categorization_vectors)
+      composite = indexes.find { |i| i.name == "index_categorization_vectors_on_merchant_and_category" }
+      expect(composite).to be_present
+      expect(composite.unique).to be true
+    end
+
+    it "llm_categorization_cache has a unique index on merchant_normalized" do
+      indexes = connection.indexes(:llm_categorization_cache)
+      merchant_idx = indexes.find { |i| i.name == "index_llm_cache_on_merchant_normalized" }
+      expect(merchant_idx).to be_present
+      expect(merchant_idx.unique).to be true
+    end
+  end
+
   describe "total index count reflects removal" do
     it "has 208 or fewer indexes after removing 42 redundant indexes from the pre-audit total of 250" do
       total = connection.tables.sum { |t| connection.indexes(t).size }
       # Pre-audit: 250 indexes; 42 removed => current total is 208
       # +1 for categories.i18n_key unique index added in i18n migration
-      expect(total).to be <= 212  # small buffer for schema drift
+      # +11 for Phase 2 categorization tables (categorization_metrics: 6, categorization_vectors: 3, llm_categorization_cache: 2)
+      expect(total).to be <= 224  # small buffer for schema drift
     end
   end
 end

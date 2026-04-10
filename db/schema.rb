@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_10_165725) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_10_193205) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -152,6 +152,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_10_165725) do
     t.index ["parent_id"], name: "index_categories_on_parent_id"
   end
 
+  create_table "categorization_metrics", force: :cascade do |t|
+    t.decimal "api_cost", precision: 10, scale: 6, default: "0.0"
+    t.bigint "category_id"
+    t.float "confidence"
+    t.bigint "corrected_to_category_id"
+    t.datetime "created_at", null: false
+    t.bigint "expense_id", null: false
+    t.string "layer_used", null: false
+    t.float "processing_time_ms"
+    t.integer "time_to_correction_hours"
+    t.datetime "updated_at", null: false
+    t.boolean "was_corrected", default: false, null: false
+    t.index ["category_id"], name: "index_categorization_metrics_on_category_id"
+    t.index ["corrected_to_category_id"], name: "index_categorization_metrics_on_corrected_to_category_id"
+    t.index ["created_at"], name: "index_categorization_metrics_on_created_at"
+    t.index ["expense_id"], name: "index_categorization_metrics_on_expense_id"
+    t.index ["layer_used"], name: "index_categorization_metrics_on_layer_used"
+    t.index ["was_corrected"], name: "index_categorization_metrics_on_was_corrected"
+  end
+
   create_table "categorization_patterns", force: :cascade do |t|
     t.boolean "active", default: true
     t.bigint "category_id", null: false
@@ -192,6 +212,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_10_165725) do
     t.check_constraint "success_count >= 0", name: "check_success_count_non_negative"
     t.check_constraint "success_rate >= 0.0::double precision AND success_rate <= 1.0::double precision", name: "check_success_rate_range"
     t.check_constraint "usage_count >= 0", name: "check_usage_count_non_negative"
+  end
+
+  create_table "categorization_vectors", force: :cascade do |t|
+    t.bigint "category_id", null: false
+    t.float "confidence", default: 0.5, null: false
+    t.integer "correction_count", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.string "description_keywords", default: [], array: true
+    t.datetime "last_seen_at"
+    t.string "merchant_normalized", null: false
+    t.integer "occurrence_count", default: 1, null: false
+    t.datetime "updated_at", null: false
+    t.index ["category_id"], name: "index_categorization_vectors_on_category_id"
+    t.index ["merchant_normalized", "category_id"], name: "index_categorization_vectors_on_merchant_and_category", unique: true
+    t.index ["merchant_normalized"], name: "index_categorization_vectors_on_merchant_trgm", opclass: :gist_trgm_ops, using: :gist
   end
 
   create_table "composite_patterns", force: :cascade do |t|
@@ -352,6 +387,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_10_165725) do
     t.index ["failed_at", "recovered_at"], name: "idx_failed_broadcasts_status"
     t.index ["job_id"], name: "idx_failed_broadcasts_job_id", unique: true
     t.index ["target_type", "target_id"], name: "idx_failed_broadcasts_target"
+  end
+
+  create_table "llm_categorization_cache", force: :cascade do |t|
+    t.bigint "category_id", null: false
+    t.float "confidence"
+    t.decimal "cost", precision: 10, scale: 6
+    t.datetime "created_at", null: false
+    t.datetime "expires_at"
+    t.string "merchant_normalized", null: false
+    t.string "model_used", default: "claude-haiku-4-5"
+    t.integer "token_count"
+    t.datetime "updated_at", null: false
+    t.index ["category_id"], name: "index_llm_categorization_cache_on_category_id"
+    t.index ["expires_at"], name: "index_llm_cache_on_expires_at"
+    t.index ["merchant_normalized"], name: "index_llm_cache_on_merchant_normalized", unique: true
   end
 
   create_table "merchant_aliases", force: :cascade do |t|
@@ -710,13 +760,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_10_165725) do
   add_foreign_key "bulk_operation_items", "expenses"
   add_foreign_key "bulk_operations", "categories", column: "target_category_id"
   add_foreign_key "categories", "categories", column: "parent_id"
+  add_foreign_key "categorization_metrics", "categories"
+  add_foreign_key "categorization_metrics", "categories", column: "corrected_to_category_id"
+  add_foreign_key "categorization_metrics", "expenses"
   add_foreign_key "categorization_patterns", "categories"
+  add_foreign_key "categorization_vectors", "categories"
   add_foreign_key "composite_patterns", "categories"
   add_foreign_key "conflict_resolutions", "conflict_resolutions", column: "undone_by_resolution_id"
   add_foreign_key "conflict_resolutions", "sync_conflicts"
   add_foreign_key "email_parsing_failures", "email_accounts"
   add_foreign_key "expenses", "categories"
   add_foreign_key "expenses", "email_accounts"
+  add_foreign_key "llm_categorization_cache", "categories"
   add_foreign_key "merchant_aliases", "canonical_merchants"
   add_foreign_key "pattern_feedbacks", "categories"
   add_foreign_key "pattern_feedbacks", "categorization_patterns"

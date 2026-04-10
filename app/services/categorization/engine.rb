@@ -7,6 +7,7 @@ require_relative "service_registry"
 require_relative "strategies/base_strategy"
 require_relative "strategies/pattern_strategy"
 require_relative "learning/metrics_recorder"
+require_relative "learning/correction_handler"
 
 module Services::Categorization
   # Simple circuit breaker implementation for fault tolerance
@@ -304,7 +305,11 @@ module Services::Categorization
           if result.success?
             invalidate_relevant_cache(correct_category)
             @pattern_cache_service.invalidate_all if @pattern_cache_service.respond_to?(:invalidate_all)
-            metrics_recorder.record_correction(expense: expense, corrected_to_category: correct_category)
+            correction_handler.handle_correction(
+              expense: expense,
+              old_category: predicted_category,
+              new_category: correct_category
+            )
           end
 
           result
@@ -583,6 +588,10 @@ module Services::Categorization
 
     def metrics_recorder
       @metrics_recorder ||= Learning::MetricsRecorder.new(logger: @logger)
+    end
+
+    def correction_handler
+      @correction_handler ||= Learning::CorrectionHandler.new(logger: @logger)
     end
 
     def update_expense_sync(expense, result, correlation_id)

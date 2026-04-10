@@ -273,8 +273,8 @@ RSpec.describe Expense, type: :model, integration: true do
       context 'when category is nil' do
         let(:expense_without_category) { create(:expense, category: nil, email_account: email_account) }
 
-        it 'returns "Uncategorized" when category is nil' do
-          expect(expense_without_category.category_name).to eq('Uncategorized')
+        it 'returns translated "Uncategorized" when category is nil' do
+          expect(expense_without_category.category_name).to eq(I18n.t("categories.names.uncategorized"))
         end
       end
     end

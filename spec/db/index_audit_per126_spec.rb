@@ -441,7 +441,8 @@ RSpec.describe "PER-126 Index Audit", :unit do
     it "has 208 or fewer indexes after removing 42 redundant indexes from the pre-audit total of 250" do
       total = connection.tables.sum { |t| connection.indexes(t).size }
       # Pre-audit: 250 indexes; 42 removed => current total is 208
-      expect(total).to be <= 210  # small buffer for schema drift
+      # +1 for categories.i18n_key unique index added in i18n migration
+      expect(total).to be <= 212  # small buffer for schema drift
     end
   end
 end

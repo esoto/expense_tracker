@@ -3,7 +3,33 @@
 es:
   # Application-wide translations
   hello: "Hola mundo"
-  
+
+  # Category display names (used by Category#display_name via i18n_key)
+  categories:
+    names:
+      food: "Alimentación"
+      transport: "Transporte"
+      utilities: "Servicios"
+      entertainment: "Entretenimiento"
+      health: "Salud"
+      shopping: "Compras"
+      education: "Educación"
+      home: "Hogar"
+      uncategorized: "Sin Categoría"
+      restaurants: "Restaurantes"
+      supermarket: "Supermercado"
+      coffee_shop: "Cafetería"
+      gas: "Gasolina"
+      rideshare: "Uber/Taxi"
+      bus: "Autobús"
+      electricity: "Electricidad"
+      water: "Agua"
+      internet: "Internet"
+      phone: "Teléfono"
+      clothing: "Ropa"
+      electronics: "Electrónicos"
+      household: "Hogar"
+
   # Navigation
   nav:
     dashboard: "Dashboard"
@@ -230,8 +256,23 @@ es:
       entertainment: "Entretenimiento"
       health: "Salud"
       shopping: "Compras"
-      other: "Otros"
-      
+      education: "Educación"
+      home: "Hogar"
+      uncategorized: "Sin Categoría"
+      restaurants: "Restaurantes"
+      supermarket: "Supermercado"
+      coffee_shop: "Cafetería"
+      gas: "Gasolina"
+      rideshare: "Uber/Taxi"
+      bus: "Autobús"
+      electricity: "Electricidad"
+      water: "Agua"
+      internet: "Internet"
+      phone: "Teléfono"
+      clothing: "Ropa"
+      electronics: "Electrónicos"
+      household: "Hogar"
+
     status:
       pending: "Pendiente"
       confirmed: "Confirmado"

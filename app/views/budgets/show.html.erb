@@ -22,7 +22,7 @@
 
         <div>
           <p class="text-sm text-slate-500"><%= t("budgets.show.category_label") %></p>
-          <p class="font-medium text-slate-900"><%= @budget.category&.name || t("budgets.show.general") %></p>
+          <p class="font-medium text-slate-900"><%= @budget.category&.display_name || t("budgets.show.general") %></p>
         </div>
 
         <div>

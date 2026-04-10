@@ -48,7 +48,7 @@ class Expense < ApplicationRecord
   end
 
   def category_name
-    category&.name || "Uncategorized"
+    category&.display_name || "Uncategorized"
   end
 
   def display_description

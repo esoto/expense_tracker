@@ -73,7 +73,7 @@ module Services
         merchant_name: expense.display_merchant_name,
         category: expense.category ? {
           id: expense.category.id,
-          name: expense.category.name,
+          name: expense.category.display_name,
           color: expense.category.color
         } : nil,
         status: expense.status,

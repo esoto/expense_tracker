@@ -311,14 +311,14 @@ module Services::Categorization
           description: expense.description,
           amount: expense.amount,
           date: expense.transaction_date,
-          current_category: expense.category&.name,
-          new_category: Category.find(category_id)&.name,
+          current_category: expense.category&.display_name,
+          new_category: Category.find(category_id)&.display_name,
           will_change: expense.category_id != category_id
         }
       end
 
       def group_by_current_category(expenses)
-        expense_adapter.group_by { |e| e.category&.name || "Uncategorized" }
+        expense_adapter.group_by { |e| e.category&.display_name || "Uncategorized" }
                 .transform_values { |group| {
                   count: group.count,
                   amount: group.sum(&:amount)
@@ -391,7 +391,7 @@ module Services::Categorization
               expense.transaction_date,
               expense.description,
               expense.amount,
-              expense.category&.name,
+              expense.category&.display_name,
               expense.merchant_name
             ]
           end
@@ -405,7 +405,7 @@ module Services::Categorization
             date: expense.transaction_date,
             description: expense.description,
             amount: expense.amount,
-            category: expense.category&.name,
+            category: expense.category&.display_name,
             merchant: expense.merchant_name
           }
         end.to_json
@@ -465,7 +465,7 @@ module Services::Categorization
       end
 
       def group_by_category
-        expense_adapter.group_by { |e| e.category&.name || "Uncategorized" }
+        expense_adapter.group_by { |e| e.category&.display_name || "Uncategorized" }
                 .transform_values { |group| {
                   expenses: group,
                   count: group.count,
@@ -553,7 +553,7 @@ module Services::Categorization
               {
                 category: category,
                 confidence: 0.6,
-                reason: "Similar expenses in #{category.name}"
+                reason: "Similar expenses in #{category.display_name}"
               }
             end
           end
@@ -618,7 +618,7 @@ module Services::Categorization
                 action: "categorized",
                 expense_id: expense.id,
                 category_id: expense.category_id,
-                category_name: expense.category&.name
+                category_name: expense.category&.display_name
               }
             )
           rescue StandardError => e

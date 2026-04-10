@@ -67,11 +67,12 @@ module Services::Analytics
         end
 
         categories_data = query
-          .group("categories.id", "categories.name", "categories.color")
+          .group("categories.id", "categories.name", "categories.color", "categories.i18n_key")
           .select(
             "categories.id",
             "categories.name",
             "categories.color",
+            "categories.i18n_key",
             "COUNT(DISTINCT categorization_patterns.id) as pattern_count",
             "COUNT(DISTINCT CASE WHEN categorization_patterns.active = true THEN categorization_patterns.id END) as active_patterns_count",
             "COALESCE(SUM(categorization_patterns.usage_count), 0) as total_usage",
@@ -84,7 +85,7 @@ module Services::Analytics
         categories_data.map do |category|
           {
             id: category.id,
-            name: category.name,
+            name: category.display_name,
             color: category.color,
             pattern_count: category.pattern_count,
             active_patterns: category.active_patterns_count,
@@ -109,7 +110,7 @@ module Services::Analytics
             id: pattern.id,
             pattern_type: pattern.pattern_type,
             pattern_value: pattern.pattern_value,
-            category_name: pattern.category.name,
+            category_name: pattern.category.display_name,
             category_color: pattern.category.color,
             usage_count: pattern.usage_count,
             success_count: pattern.success_count,
@@ -134,7 +135,7 @@ module Services::Analytics
             id: pattern.id,
             pattern_type: pattern.pattern_type,
             pattern_value: pattern.pattern_value,
-            category_name: pattern.category.name,
+            category_name: pattern.category.display_name,
             category_color: pattern.category.color,
             usage_count: pattern.usage_count,
             success_count: pattern.success_count,
@@ -285,7 +286,7 @@ module Services::Analytics
             feedback_type: feedback.feedback_type,
             expense_description: feedback.expense&.description,
             expense_amount: feedback.expense&.amount,
-            category_name: feedback.category.name,
+            category_name: feedback.category.display_name,
             category_color: feedback.category.color,
             pattern_type: feedback.categorization_pattern&.pattern_type,
             pattern_value: feedback.categorization_pattern&.pattern_value,

@@ -9,7 +9,7 @@ RSpec.describe BulkCategorizationJob, type: :job, unit: true do
   let(:category_id) { 10 }
   let(:user_id) { 20 }
   let(:options) { { category_id: category_id, force: true } }
-  let(:category) { double('Category', id: category_id, name: 'Test Category') }
+  let(:category) { double('Category', id: category_id, name: 'Test Category', display_name: 'Test Category') }
   let(:successful_result) do
     OpenStruct.new(
       success?: true,
@@ -199,7 +199,7 @@ RSpec.describe BulkCategorizationJob, type: :job, unit: true do
 
   describe '#execute_operation (via perform)' do
     it 'extracts category_id from options' do
-      other_category = double('Category', id: 99, name: 'Other Category')
+      other_category = double('Category', id: 99, name: 'Other Category', display_name: 'Other Category')
       allow(Category).to receive(:find_by).with(id: 99).and_return(other_category)
       service_double = double('Service', call: successful_result)
       allow(Services::BulkCategorization::ApplyService).to receive(:new).and_return(service_double)

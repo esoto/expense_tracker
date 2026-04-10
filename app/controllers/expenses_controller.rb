@@ -659,7 +659,7 @@ class ExpensesController < ApplicationController
       transaction_date: expense.transaction_date,
       category: expense.category ? {
         id: expense.category.id,
-        name: expense.category.name,
+        name: expense.category.display_name,
         color: expense.category.color
       } : nil,
       ml_confidence: expense.ml_confidence,
@@ -667,7 +667,7 @@ class ExpensesController < ApplicationController
       confidence_percentage: expense.confidence_percentage,
       ml_suggested_category: expense.ml_suggested_category ? {
         id: expense.ml_suggested_category.id,
-        name: expense.ml_suggested_category.name,
+        name: expense.ml_suggested_category.display_name,
         color: expense.ml_suggested_category.color
       } : nil
     }
@@ -687,7 +687,7 @@ class ExpensesController < ApplicationController
       created_at: expense.created_at.to_s,
       category: expense.category ? {
         id: expense.category.id,
-        name: expense.category.name,
+        name: expense.category.display_name,
         color: expense.category.color
       } : nil,
       ml_confidence: expense.ml_confidence
@@ -821,7 +821,7 @@ class ExpensesController < ApplicationController
 
       # Group by category for summary
       @categories_summary = result.expenses
-        .group_by { |e| e.category&.name || "Uncategorized" }
+        .group_by { |e| e.category&.display_name || "Uncategorized" }
         .transform_values { |expenses| expenses.sum(&:amount) }
         .sort_by { |_, amount| -amount }
     else

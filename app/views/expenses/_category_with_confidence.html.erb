@@ -13,7 +13,7 @@
     <% if expense.category %>
       <span class="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full transition-all"
             style="background-color: <%= expense.category.color %>20; color: <%= expense.category.color %>;">
-        <%= expense.category.name %>
+        <%= expense.category.display_name %>
       </span>
     <% else %>
       <span class="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-600">
@@ -77,7 +77,7 @@
           <span class="text-xs text-amber-800 font-medium">Sugerencia:</span>
           <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full"
                 style="background-color: <%= expense.ml_suggested_category.color %>20; color: <%= expense.ml_suggested_category.color %>;">
-            <%= expense.ml_suggested_category.name %>
+            <%= expense.ml_suggested_category.display_name %>
           </span>
           <div class="flex gap-1 ml-2">
             <%= button_to accept_suggestion_expense_path(expense),
@@ -117,7 +117,7 @@
         <% if expense.category %>
           <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full"
                 style="background-color: <%= expense.category.color %>20; color: <%= expense.category.color %>;">
-            <%= expense.category.name %>
+            <%= expense.category.display_name %>
           </span>
         <% else %>
           <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-slate-100 text-slate-600">

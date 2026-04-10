@@ -41,7 +41,7 @@ class BulkCategorizationJob < BulkOperations::BaseJob
     end
 
     category = Category.find_by(id: category_id)
-    category_name = category&.name || "category"
+    category_name = category&.display_name || "category"
 
     {
       success: failures.empty?,

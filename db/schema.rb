@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_06_210819) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_10_165725) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -143,9 +143,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_06_210819) do
     t.string "color", limit: 7
     t.datetime "created_at", null: false
     t.text "description"
+    t.string "i18n_key"
     t.string "name", null: false
     t.integer "parent_id"
     t.datetime "updated_at", null: false
+    t.index ["i18n_key"], name: "index_categories_on_i18n_key", unique: true
     t.index ["name"], name: "index_categories_on_name"
     t.index ["parent_id"], name: "index_categories_on_parent_id"
   end

@@ -145,7 +145,7 @@ module Services::Categorization
       parts = []
 
       if successful?
-        parts << "Category: #{@category.name}"
+        parts << "Category: #{@category.display_name}"
         parts << "Confidence: #{(@confidence * 100).round(1)}% (#{confidence_level})"
         parts << "Method: #{@method.humanize}"
 
@@ -183,7 +183,7 @@ module Services::Categorization
     def to_h
       {
         category_id: @category&.id,
-        category_name: @category&.name,
+        category_name: @category&.display_name,
         confidence: @confidence.round(4),
         confidence_level: confidence_level,
         method: @method,
@@ -230,13 +230,13 @@ module Services::Categorization
     # Display methods
 
     def inspect
-      "#<CategorizationResult category=#{@category&.name} confidence=#{@confidence.round(3)} " \
+      "#<CategorizationResult category=#{@category&.display_name} confidence=#{@confidence.round(3)} " \
         "method=#{@method} patterns=#{@patterns_used.size} time=#{@processing_time_ms.round(2)}ms>"
     end
 
     def to_s
       if successful?
-        "#{@category.name} (#{(@confidence * 100).round(1)}% confidence)"
+        "#{@category.display_name} (#{(@confidence * 100).round(1)}% confidence)"
       elsif no_match?
         "No match found"
       elsif @error.present?

@@ -411,7 +411,7 @@ module Admin
         pattern.pattern_type,
         pattern.pattern_value,
         pattern.category_id,
-        pattern.category.name,
+        pattern.category.display_name,
         pattern.confidence_weight,
         pattern.active,
         pattern.usage_count,
@@ -572,7 +572,7 @@ module Admin
         id: pattern.id,
         type: pattern.pattern_type,
         value: pattern.pattern_value,
-        category: pattern.category.name,
+        category: pattern.category.display_name,
         usage: pattern.usage_count,
         success_rate: (pattern.success_rate * 100).round(2)
       }

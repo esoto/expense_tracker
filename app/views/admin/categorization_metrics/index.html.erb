@@ -1,0 +1,135 @@
+<div class="container mx-auto px-4">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-900">Categorization Metrics</h1>
+      <p class="text-slate-600 mt-1">Categorization system performance overview</p>
+    </div>
+  </div>
+
+  <% if @overview[:accuracy].zero? && @overview[:api_spend].zero? %>
+    <!-- Empty State -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
+      <div class="bg-slate-100 text-slate-400 p-4 rounded-full inline-block mb-4">
+        <svg aria-hidden="true" class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+        </svg>
+      </div>
+      <h2 class="text-xl font-semibold text-slate-900 mb-2">No metrics yet</h2>
+      <p class="text-slate-500">Categorization metrics will appear here once expenses are processed.</p>
+    </div>
+  <% else %>
+    <!-- Overview Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <!-- Accuracy Card -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+        <div class="flex items-center">
+          <div class="bg-emerald-100 text-emerald-700 p-3 rounded-lg">
+            <svg aria-hidden="true" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm text-slate-600">Overall Accuracy</p>
+            <p class="text-2xl font-bold text-slate-900"><%= number_with_precision(@overview[:accuracy], precision: 1) %>%</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fallback Rate Card -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+        <div class="flex items-center">
+          <div class="bg-amber-100 text-amber-700 p-3 rounded-lg">
+            <svg aria-hidden="true" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm text-slate-600">LLM Fallback Rate</p>
+            <p class="text-2xl font-bold text-slate-900"><%= number_with_precision(@overview[:fallback_rate], precision: 1) %>%</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Correction Rate Card -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+        <div class="flex items-center">
+          <div class="bg-rose-100 text-rose-700 p-3 rounded-lg">
+            <svg aria-hidden="true" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm text-slate-600">User Correction Rate</p>
+            <p class="text-2xl font-bold text-slate-900"><%= number_with_precision(@overview[:correction_rate], precision: 1) %>%</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- API Spend Card -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+        <div class="flex items-center">
+          <div class="bg-teal-100 text-teal-700 p-3 rounded-lg">
+            <svg aria-hidden="true" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm text-slate-600">API Spend</p>
+            <p class="text-2xl font-bold text-slate-900">$<%= number_with_precision(@overview[:api_spend], precision: 4) %></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Layer Performance Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-200">
+        <h2 class="text-lg font-semibold text-slate-900">Layer Performance</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Layer</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Total</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Correct</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Corrected</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Accuracy</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Avg Confidence</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Avg Time</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-slate-200">
+            <% @layer_performance.each do |row| %>
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                    <%= case row[:layer]
+                        when 'pattern' then 'bg-teal-100 text-teal-800'
+                        when 'pg_trgm' then 'bg-slate-100 text-slate-800'
+                        when 'haiku' then 'bg-amber-100 text-amber-800'
+                        when 'manual' then 'bg-rose-100 text-rose-800'
+                        end %>">
+                    <%= row[:layer].titleize %>
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900"><%= number_with_delimiter(row[:total]) %></td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-emerald-700"><%= number_with_delimiter(row[:correct]) %></td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-rose-700"><%= number_with_delimiter(row[:corrected]) %></td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900"><%= number_with_precision(row[:accuracy], precision: 1) %>%</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900"><%= number_with_precision(row[:avg_confidence], precision: 2) %></td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900"><%= number_with_precision(row[:avg_time], precision: 1) %> ms</td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  <% end %>
+</div>

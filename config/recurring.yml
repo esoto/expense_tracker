@@ -33,6 +33,22 @@ default: &default
     schedule: every 30 minutes
     description: "Retry failed broadcasts from the dead letter queue"
 
+  # Feed uncorrected categorizations into categorization vectors daily ("silence = acceptance")
+  categorization_learning:
+    class: CategorizationLearningJob
+    queue: low
+    priority: 10
+    schedule: every day at 3am
+    description: "Learn from uncorrected categorizations to improve similarity-based matching"
+
+  # Clean up stale categorization vectors monthly (last_seen_at > 6 months)
+  categorization_stale_cleanup:
+    class: StaleVectorCleanupJob
+    queue: low
+    priority: 10
+    schedule: every month
+    description: "Remove stale categorization vectors not seen in 6+ months"
+
   # Run data quality audit daily to check pattern coverage and detect issues
   data_quality_audit:
     class: DataQualityAuditJob

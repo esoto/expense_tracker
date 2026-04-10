@@ -27,5 +27,5 @@ Rails.application.configure do
   config.content_security_policy_nonce_directives = %w[script-src]
 
   # Report CSP violations to an endpoint for monitoring before enforcement.
-  config.content_security_policy_report_only = true
+  config.content_security_policy_report_only = false
 end

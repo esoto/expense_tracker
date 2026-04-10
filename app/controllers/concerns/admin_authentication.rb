@@ -171,21 +171,8 @@ module AdminAuthentication
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Content-Security-Policy"] = content_security_policy
-  end
-
-  def content_security_policy
-    [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-      "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-      "img-src 'self' data: https:",
-      "font-src 'self' data:",
-      "connect-src 'self'",
-      "frame-ancestors 'none'",
-      "base-uri 'self'",
-      "form-action 'self'"
-    ].join("; ")
+    # CSP is managed globally via config/initializers/content_security_policy.rb
+    # with nonce-based script-src. Do not override here with unsafe-inline.
   end
 
   # Authorization helpers

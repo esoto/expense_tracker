@@ -274,23 +274,14 @@ RSpec.shared_examples "security headers concern" do
         expect(headers["X-Content-Type-Options"]).to eq("nosniff")
         expect(headers["X-XSS-Protection"]).to eq("1; mode=block")
         expect(headers["Referrer-Policy"]).to eq("strict-origin-when-cross-origin")
-        expect(headers["Content-Security-Policy"]).to be_present
-      end
-    end
-
-    describe "#content_security_policy" do
-      let(:csp) { controller.send(:content_security_policy) }
-
-      it "includes default-src directive" do
-        expect(csp).to include("default-src 'self'")
       end
 
-      it "includes script-src directive" do
-        expect(csp).to include("script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net")
-      end
+      it "does not inject a manual CSP header that overrides the global policy" do
+        controller.send(:set_security_headers)
 
-      it "includes frame-ancestors directive" do
-        expect(csp).to include("frame-ancestors 'none'")
+        # The admin concern must not set Content-Security-Policy manually —
+        # the global nonce-based policy applies.
+        expect(headers["Content-Security-Policy"]).to be_nil
       end
     end
   end

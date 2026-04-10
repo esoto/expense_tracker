@@ -142,17 +142,21 @@ RSpec.describe AdminAuthentication, type: :controller, unit: true do
       expect(response.headers["X-Content-Type-Options"]).to eq("nosniff")
       expect(response.headers["X-XSS-Protection"]).to eq("1; mode=block")
       expect(response.headers["Referrer-Policy"]).to eq("strict-origin-when-cross-origin")
-      expect(response.headers["Content-Security-Policy"]).to include("default-src 'self'")
     end
 
-    it "includes comprehensive CSP directives" do
+    it "does not override global CSP with unsafe-inline in script-src" do
       get :index
 
+      # The global nonce-based CSP policy applies; the admin concern must not
+      # inject a manual Content-Security-Policy header with unsafe-inline.
+      # In controller specs the global CSP initializer may not run, so nil is
+      # also acceptable — it means no manual unsafe-inline override was set.
       csp = response.headers["Content-Security-Policy"]
-      expect(csp).to include("script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net")
-      expect(csp).to include("style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net")
-      expect(csp).to include("frame-ancestors 'none'")
-      expect(csp).to include("base-uri 'self'")
+      if csp
+        expect(csp).not_to include("script-src 'self' 'unsafe-inline'")
+      else
+        expect(csp).to be_nil
+      end
     end
   end
 

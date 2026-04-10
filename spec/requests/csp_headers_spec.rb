@@ -3,12 +3,12 @@
 require "rails_helper"
 
 RSpec.describe "Content Security Policy", type: :request do
-  describe "CSP report-only header", :unit do
-    it "includes Content-Security-Policy-Report-Only header" do
+  describe "CSP enforcing header", :unit do
+    it "includes Content-Security-Policy header" do
       get rails_health_check_path
 
       expect(response).to have_http_status(:success)
-      expect(response.headers["Content-Security-Policy-Report-Only"]).to be_present
+      expect(response.headers["Content-Security-Policy"]).to be_present
     end
 
     it "includes CSP header on redirect responses" do
@@ -16,20 +16,20 @@ RSpec.describe "Content Security Policy", type: :request do
 
       # Unauthenticated users are redirected to login
       expect(response).to have_http_status(:redirect)
-      expect(response.headers["Content-Security-Policy-Report-Only"]).to be_present
+      expect(response.headers["Content-Security-Policy"]).to be_present
     end
 
-    it "does not include enforcing Content-Security-Policy header" do
+    it "does not include report-only Content-Security-Policy header" do
       get rails_health_check_path
 
-      expect(response.headers["Content-Security-Policy"]).to be_nil
+      expect(response.headers["Content-Security-Policy-Report-Only"]).to be_nil
     end
   end
 
   describe "CSP directive values", :unit do
     before { get rails_health_check_path }
 
-    let(:csp_header) { response.headers["Content-Security-Policy-Report-Only"] }
+    let(:csp_header) { response.headers["Content-Security-Policy"] }
 
     it "sets default-src to self" do
       expect(csp_header).to include("default-src 'self'")
@@ -65,19 +65,19 @@ RSpec.describe "Content Security Policy", type: :request do
     it "includes a nonce in the script-src directive" do
       get rails_health_check_path
 
-      csp_header = response.headers["Content-Security-Policy-Report-Only"]
+      csp_header = response.headers["Content-Security-Policy"]
       expect(csp_header).to match(/script-src[^;]*'nonce-[A-Za-z0-9+\/=]+'/)
     end
 
     it "generates different nonces for different requests" do
       get rails_health_check_path
-      first_csp = response.headers["Content-Security-Policy-Report-Only"]
+      first_csp = response.headers["Content-Security-Policy"]
       first_nonce = first_csp[/nonce-([A-Za-z0-9+\/=]+)/, 1]
 
       # Reset session for a fresh request with a new session
       reset!
       get rails_health_check_path
-      second_csp = response.headers["Content-Security-Policy-Report-Only"]
+      second_csp = response.headers["Content-Security-Policy"]
       second_nonce = second_csp[/nonce-([A-Za-z0-9+\/=]+)/, 1]
 
       # Different requests should produce different nonces

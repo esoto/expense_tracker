@@ -13,6 +13,7 @@
 #   CategorizationLearningJob.perform_later # Enqueue for background execution
 class CategorizationLearningJob < ApplicationJob
   queue_as :low
+  retry_on StandardError, wait: :polynomially_longer, attempts: 3
 
   ACCEPTANCE_THRESHOLD = 24.hours
 

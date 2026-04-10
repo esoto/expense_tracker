@@ -12,6 +12,7 @@
 #   StaleVectorCleanupJob.perform_later # Enqueue for background execution
 class StaleVectorCleanupJob < ApplicationJob
   queue_as :low
+  retry_on StandardError, wait: :polynomially_longer, attempts: 3
 
   def perform
     Rails.logger.info "[StaleVectorCleanup] Starting monthly cleanup..."

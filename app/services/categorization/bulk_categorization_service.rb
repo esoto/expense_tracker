@@ -318,7 +318,7 @@ module Services::Categorization
       end
 
       def group_by_current_category(expenses)
-        expense_adapter.group_by { |e| e.category&.display_name || "Uncategorized" }
+        expenses.group_by { |e| e.category&.display_name || I18n.t("categories.names.uncategorized") }
                 .transform_values { |group| {
                   count: group.count,
                   amount: group.sum(&:amount)
@@ -465,7 +465,7 @@ module Services::Categorization
       end
 
       def group_by_category
-        expense_adapter.group_by { |e| e.category&.display_name || "Uncategorized" }
+        expense_adapter.group_by { |e| e.category&.display_name || I18n.t("categories.names.uncategorized") }
                 .transform_values { |group| {
                   expenses: group,
                   count: group.count,

@@ -28,7 +28,7 @@ es:
       phone: "Teléfono"
       clothing: "Ropa"
       electronics: "Electrónicos"
-      household: "Hogar"
+      household: "Artículos del Hogar"
 
   # Navigation
   nav:
@@ -271,7 +271,7 @@ es:
       phone: "Teléfono"
       clothing: "Ropa"
       electronics: "Electrónicos"
-      household: "Hogar"
+      household: "Artículos del Hogar"
 
     status:
       pending: "Pendiente"

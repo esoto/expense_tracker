@@ -163,7 +163,7 @@ module Services::Categorization
         if @alternative_categories.any?
           parts << "Alternative categories:"
           @alternative_categories.each do |alt|
-            parts << "  - #{alt[:category].name}: #{(alt[:confidence] * 100).round(1)}%"
+            parts << "  - #{alt[:category].display_name}: #{(alt[:confidence] * 100).round(1)}%"
           end
         end
       elsif no_match?
@@ -192,7 +192,7 @@ module Services::Categorization
         alternative_categories: @alternative_categories.map do |alt|
           {
             category_id: alt[:category].id,
-            category_name: alt[:category].name,
+            category_name: alt[:category].display_name,
             confidence: alt[:confidence].round(4)
           }
         end,

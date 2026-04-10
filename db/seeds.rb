@@ -155,7 +155,7 @@ end
 puts ""
 puts "📂 Categories created:"
 Category.root_categories.each do |category|
-  puts "  • #{category.name} (#{category.children.count} subcategories)"
+  puts "  • #{category.display_name} (#{category.children.count} subcategories)"
 end
 puts ""
 puts "🚀 Ready to use! API endpoints:"

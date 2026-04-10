@@ -821,7 +821,7 @@ class ExpensesController < ApplicationController
 
       # Group by category for summary
       @categories_summary = result.expenses
-        .group_by { |e| e.category&.display_name || "Uncategorized" }
+        .group_by { |e| e.category&.display_name || I18n.t("categories.names.uncategorized") }
         .transform_values { |expenses| expenses.sum(&:amount) }
         .sort_by { |_, amount| -amount }
     else

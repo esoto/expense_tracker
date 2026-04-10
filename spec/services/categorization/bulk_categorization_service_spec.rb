@@ -77,9 +77,10 @@ RSpec.describe Services::Categorization::BulkCategorizationService, type: :servi
         result = service.preview
         by_category = result[:summary][:by_current_category]
 
-        expect(by_category).to have_key("Uncategorized")
-        expect(by_category).to have_key(other_category.name)
-        expect(by_category["Uncategorized"][:count]).to eq(2)
+        uncategorized_label = I18n.t("categories.names.uncategorized")
+        expect(by_category).to have_key(uncategorized_label)
+        expect(by_category).to have_key(other_category.display_name)
+        expect(by_category[uncategorized_label][:count]).to eq(2)
       end
 
       it "estimates time saved" do
@@ -440,9 +441,9 @@ RSpec.describe Services::Categorization::BulkCategorizationService, type: :servi
       it "groups by category name" do
         groups = service.group_expenses(by: :category)
 
-        expect(groups).to have_key(category.name)
-        expect(groups).to have_key(other_category.name)
-        expect(groups).to have_key("Uncategorized")
+        expect(groups).to have_key(category.display_name)
+        expect(groups).to have_key(other_category.display_name)
+        expect(groups).to have_key(I18n.t("categories.names.uncategorized"))
       end
 
       it "sorts by total amount descending" do

@@ -48,7 +48,7 @@ class Expense < ApplicationRecord
   end
 
   def category_name
-    category&.display_name || "Uncategorized"
+    category&.display_name || I18n.t("categories.names.uncategorized")
   end
 
   def display_description

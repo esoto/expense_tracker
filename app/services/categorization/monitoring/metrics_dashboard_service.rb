@@ -49,11 +49,12 @@ module Services::Categorization
           end
       end
 
-      def problem_merchants(period: 30.days)
+      def problem_merchants(period: 30.days, limit: 20)
         CategorizationVector
           .includes(:category)
           .where(correction_count: 2.., last_seen_at: period.ago..)
           .order(correction_count: :desc)
+          .limit(limit)
           .map do |vector|
             {
               merchant: vector.merchant_normalized,

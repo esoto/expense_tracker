@@ -49,6 +49,14 @@ default: &default
     schedule: every month
     description: "Remove stale categorization vectors not seen in 6+ months"
 
+  # Weekly categorization metrics summary with ONNX trigger warnings
+  categorization_metrics_summary:
+    class: CategorizationMetricsSummaryJob
+    queue: low
+    priority: 10
+    schedule: every Sunday at 6am
+    description: "Compute weekly categorization performance summary and evaluate ONNX trigger warnings"
+
   # Run data quality audit daily to check pattern coverage and detect issues
   data_quality_audit:
     class: DataQualityAuditJob

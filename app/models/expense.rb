@@ -55,9 +55,8 @@ class Expense < ApplicationRecord
     description.presence || merchant_name.presence || "Unknown Transaction"
   end
 
-  def merchant_name
-    # Simple attribute access without computed logic to avoid circular dependencies
-    # Returns merchant_name if present, otherwise merchant_normalized
+  def display_merchant_name
+    # Returns merchant_name if present, otherwise falls back to merchant_normalized
     self[:merchant_name] || self[:merchant_normalized]
   end
 

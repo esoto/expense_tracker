@@ -141,7 +141,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, type: :service, integration: 
   describe 'private methods', integration: true do
     describe '#format_expense_message', integration: true do
       it 'formats expense with Costa Rican currency' do
-        expense = instance_double(Expense, amount: 25750.99, merchant_name: 'Walmart')
+        expense = instance_double(Expense, amount: 25750.99, display_merchant_name: 'Walmart')
         message = fetcher.send(:format_expense_message, expense)
         expect(message).to eq('₡25,750.99 en Walmart')
       end
@@ -152,13 +152,13 @@ RSpec.describe Services::EmailProcessing::Fetcher, type: :service, integration: 
       end
 
       it 'handles expense with nil merchant' do
-        expense = instance_double(Expense, amount: 1000, merchant_name: nil)
+        expense = instance_double(Expense, amount: 1000, display_merchant_name: nil)
         message = fetcher.send(:format_expense_message, expense)
         expect(message).to eq('₡1,000.00 en Comercio desconocido')
       end
 
       it 'handles expense with blank merchant' do
-        expense = instance_double(Expense, amount: 500.50, merchant_name: '   ')
+        expense = instance_double(Expense, amount: 500.50, display_merchant_name: '   ')
         message = fetcher.send(:format_expense_message, expense)
         expect(message).to eq('₡500.50 en Comercio desconocido')
       end
@@ -237,7 +237,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, type: :service, integration: 
           )
         end
 
-        let(:expense) { instance_double(Expense, amount: 1500, merchant_name: 'Test Store') }
+        let(:expense) { instance_double(Expense, amount: 1500, display_merchant_name: 'Test Store') }
 
         before do
           stub_const('SyncStatusChannel', double('SyncStatusChannel'))

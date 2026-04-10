@@ -16,6 +16,9 @@
 # - recovered_at: When the broadcast was successfully recovered
 # - recovery_notes: Manual notes about recovery process
 class FailedBroadcastStore < ApplicationRecord
+  # Allowed target types — must match BroadcastRequestValidator::ALLOWED_TARGET_TYPES
+  ALLOWED_TARGET_TYPES = %w[SyncSession User EmailAccount Expense].freeze
+
   # Error type constants
   ERROR_TYPES = %w[
     record_not_found
@@ -37,7 +40,7 @@ class FailedBroadcastStore < ApplicationRecord
 
   # Validations
   validates :channel_name, presence: true
-  validates :target_type, presence: true
+  validates :target_type, presence: true, inclusion: { in: ALLOWED_TARGET_TYPES }
   validates :target_id, presence: true, numericality: { greater_than: 0 }
   validates :priority, presence: true, inclusion: { in: PRIORITIES }
   validates :error_type, presence: true, inclusion: { in: ERROR_TYPES }
@@ -158,6 +161,7 @@ class FailedBroadcastStore < ApplicationRecord
   # @return [Boolean] Success status
   def retry_broadcast!(manual: false)
     return false unless can_retry?
+    return false unless ALLOWED_TARGET_TYPES.include?(target_type)
 
     begin
       # Find the target object
@@ -207,6 +211,8 @@ class FailedBroadcastStore < ApplicationRecord
   # Get target object if it exists
   # @return [ActiveRecord::Base, nil] Target object or nil
   def target_object
+    return nil unless ALLOWED_TARGET_TYPES.include?(target_type)
+
     target_type.constantize.find(target_id)
   rescue ActiveRecord::RecordNotFound, NameError
     nil

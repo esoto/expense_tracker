@@ -42,7 +42,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'progress tracking', type: :s
       let(:message_ids) { (1..10).to_a }
       let(:expenses) do
         (1..5).map do |i|
-          instance_double(Expense, amount: i * 1000, merchant_name: "Store #{i}")
+          instance_double(Expense, amount: i * 1000, display_merchant_name: "Store #{i}")
         end
       end
 
@@ -94,8 +94,8 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'progress tracking', type: :s
 
     context 'with batch expense detection' do
       let(:message_ids) { [ 1, 2, 3 ] }
-      let(:expense1) { instance_double(Expense, amount: 1000, merchant_name: 'Store A') }
-      let(:expense2) { instance_double(Expense, amount: 2000, merchant_name: 'Store B') }
+      let(:expense1) { instance_double(Expense, amount: 1000, display_merchant_name: 'Store A') }
+      let(:expense2) { instance_double(Expense, amount: 2000, display_merchant_name: 'Store B') }
 
       before do
         allow(mock_imap_service).to receive(:search_emails).and_return(message_ids)
@@ -161,7 +161,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'progress tracking', type: :s
 
   describe 'last_detected tracking', unit: true do
     let(:message_ids) { [ 1, 2, 3 ] }
-    let(:expense) { instance_double(Expense, amount: 1500, merchant_name: 'Test') }
+    let(:expense) { instance_double(Expense, amount: 1500, display_merchant_name: 'Test') }
 
     before do
       allow(mock_imap_service).to receive(:search_emails).and_return(message_ids)
@@ -242,7 +242,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'progress tracking', type: :s
 
     context 'when detected count decreases (data inconsistency)' do
       let(:message_ids) { [ 1, 2 ] }
-      let(:expense) { instance_double(Expense, amount: 1000, merchant_name: 'Store') }
+      let(:expense) { instance_double(Expense, amount: 1000, display_merchant_name: 'Store') }
 
       before do
         allow(mock_imap_service).to receive(:search_emails).and_return(message_ids)
@@ -295,7 +295,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'progress tracking', type: :s
             # Every 4th email has an expense
             if (index + 1) % 4 == 0
               current_expenses += 1
-              expense = instance_double(Expense, amount: 100 * (index + 1), merchant_name: "Store #{index}")
+              expense = instance_double(Expense, amount: 100 * (index + 1), display_merchant_name: "Store #{index}")
               block&.call(index + 1, current_expenses, expense)
             else
               block&.call(index + 1, current_expenses, nil)
@@ -360,7 +360,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'progress tracking', type: :s
 
   describe 'progress calculation precision', unit: true do
     let(:message_ids) { [ 1 ] }
-    let(:expense) { instance_double(Expense, amount: 1234.56, merchant_name: 'Test') }
+    let(:expense) { instance_double(Expense, amount: 1234.56, display_merchant_name: 'Test') }
 
     before do
       allow(mock_imap_service).to receive(:search_emails).and_return(message_ids)

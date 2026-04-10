@@ -535,9 +535,9 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
         expect(time_pattern.matches?(expense)).to be true
       end
 
-      it "falls back to read_attribute when attributes fail" do
+      it "falls back to merchant_name when attributes fail" do
         allow(expense).to receive(:attributes).and_raise(StandardError)
-        allow(expense).to receive(:read_attribute).with(:merchant_name).and_return("Amazon.com")
+        allow(expense).to receive(:merchant_name).and_return("Amazon.com")
         expect(pattern.matches?(expense)).to be true
       end
 

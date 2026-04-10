@@ -6,6 +6,7 @@ class UndoHistory < ApplicationRecord
   # Constants
   UNDO_WINDOW = 5.minutes
   MAX_UNDO_RECORDS = 100
+  ALLOWED_UNDOABLE_TYPES = %w[Expense].freeze
 
   # Associations
   belongs_to :undoable, polymorphic: true, optional: true
@@ -15,7 +16,7 @@ class UndoHistory < ApplicationRecord
   # Validations
   validates :action_type, presence: true
   validates :record_data, presence: true
-  validates :undoable_type, presence: true
+  validates :undoable_type, presence: true, inclusion: { in: ALLOWED_UNDOABLE_TYPES }
 
   # Scopes
   scope :recent, -> { where(created_at: UNDO_WINDOW.ago..Time.current) }
@@ -146,6 +147,7 @@ class UndoHistory < ApplicationRecord
 
   def undo_single_deletion
     return false unless undoable_type.present? && record_data.present?
+    return false unless ALLOWED_UNDOABLE_TYPES.include?(undoable_type)
 
     klass = undoable_type.constantize
     record = klass.with_deleted.find_by(id: record_data["id"])
@@ -160,6 +162,7 @@ class UndoHistory < ApplicationRecord
 
   def undo_bulk_deletion
     return false unless record_data["ids"].present?
+    return false unless ALLOWED_UNDOABLE_TYPES.include?(undoable_type)
 
     klass = undoable_type.constantize
     records = klass.with_deleted.where(id: record_data["ids"])
@@ -178,6 +181,7 @@ class UndoHistory < ApplicationRecord
 
   def undo_bulk_update
     return false unless record_data["ids"].present? && record_data["original_values"].present?
+    return false unless ALLOWED_UNDOABLE_TYPES.include?(undoable_type)
 
     klass = undoable_type.constantize
     records = klass.where(id: record_data["ids"])

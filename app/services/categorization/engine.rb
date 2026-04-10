@@ -6,6 +6,7 @@ require_relative "ml_confidence_integration"
 require_relative "service_registry"
 require_relative "strategies/base_strategy"
 require_relative "strategies/pattern_strategy"
+require_relative "learning/metrics_recorder"
 
 module Services::Categorization
   # Simple circuit breaker implementation for fault tolerance
@@ -533,6 +534,10 @@ module Services::Categorization
         @successful_categorizations.increment
       end
 
+      # Record categorization metrics for monitoring
+      layer = result.metadata[:layer_name] || "pattern"
+      metrics_recorder.record(expense: expense, result: result, layer_name: layer)
+
       result
     end
 
@@ -541,11 +546,16 @@ module Services::Categorization
     # can translate them into the appropriate error results.
     def run_strategy_chain(expense, opts)
       last_result = nil
+      last_layer = "unknown"
 
       strategies.each do |strategy|
         result = strategy.call(expense, opts)
-        return result if result.successful?
+        if result.successful?
+          result.metadata[:layer_name] = strategy.layer_name
+          return result
+        end
         last_result = result
+        last_layer = strategy.layer_name
       rescue ActiveRecord::ConnectionNotEstablished, ActiveRecord::StatementInvalid, PG::Error
         raise
       rescue => e
@@ -555,7 +565,9 @@ module Services::Categorization
       end
 
       # Return last strategy's result (preserves processing_time_ms) or fallback
-      last_result || CategorizationResult.no_match(processing_time_ms: 0.0)
+      fallback = last_result || CategorizationResult.no_match(processing_time_ms: 0.0)
+      fallback.metadata[:layer_name] = last_layer
+      fallback
     end
 
     # Ordered list of categorization strategies.
@@ -569,6 +581,10 @@ module Services::Categorization
           logger: @logger
         )
       ]
+    end
+
+    def metrics_recorder
+      @metrics_recorder ||= Learning::MetricsRecorder.new(logger: @logger)
     end
 
     def update_expense_sync(expense, result, correlation_id)

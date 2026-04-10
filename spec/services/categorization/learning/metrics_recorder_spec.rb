@@ -1,0 +1,127 @@
+# frozen_string_literal: true
+
+require "rails_helper"
+
+RSpec.describe Services::Categorization::Learning::MetricsRecorder, type: :service, unit: true do
+  let(:category) { create(:category) }
+  let(:expense) { create(:expense, category: category) }
+  let(:recorder) { described_class.new }
+
+  describe "#record" do
+    let(:result) do
+      Services::Categorization::CategorizationResult.new(
+        category: category,
+        confidence: 0.85,
+        patterns_used: [ "merchant:walmart" ],
+        processing_time_ms: 5.2,
+        method: "fuzzy_match"
+      )
+    end
+
+    it "creates a categorization_metric row" do
+      expect {
+        recorder.record(expense: expense, result: result, layer_name: "pattern")
+      }.to change(CategorizationMetric, :count).by(1)
+    end
+
+    it "stores the correct attributes" do
+      recorder.record(expense: expense, result: result, layer_name: "pattern")
+
+      metric = CategorizationMetric.last
+      expect(metric.expense).to eq(expense)
+      expect(metric.layer_used).to eq("pattern")
+      expect(metric.confidence).to eq(0.85)
+      expect(metric.category).to eq(category)
+      expect(metric.processing_time_ms).to eq(5.2)
+      expect(metric.was_corrected).to be false
+      expect(metric.api_cost).to eq(0)
+    end
+
+    it "stores api_cost when provided" do
+      recorder.record(expense: expense, result: result, layer_name: "haiku", api_cost: 0.001)
+
+      metric = CategorizationMetric.last
+      expect(metric.api_cost).to eq(0.001)
+    end
+
+    it "handles no_match results gracefully" do
+      no_match = Services::Categorization::CategorizationResult.no_match(processing_time_ms: 1.0)
+
+      expect {
+        recorder.record(expense: expense, result: no_match, layer_name: "pattern")
+      }.to change(CategorizationMetric, :count).by(1)
+
+      metric = CategorizationMetric.last
+      expect(metric.category).to be_nil
+      expect(metric.confidence).to be_nil
+    end
+
+    it "does not raise on database errors" do
+      allow(CategorizationMetric).to receive(:create!).and_raise(ActiveRecord::RecordInvalid)
+
+      expect {
+        recorder.record(expense: expense, result: result, layer_name: "pattern")
+      }.not_to raise_error
+    end
+  end
+
+  describe "#record_correction" do
+    let!(:metric) do
+      CategorizationMetric.create!(
+        expense: expense,
+        layer_used: "pattern",
+        confidence: 0.85,
+        category: category,
+        was_corrected: false,
+        processing_time_ms: 5.0
+      )
+    end
+    let(:new_category) { create(:category, name: "Corrected", i18n_key: "corrected_test") }
+
+    it "updates the metric row" do
+      recorder.record_correction(expense: expense, corrected_to_category: new_category)
+
+      metric.reload
+      expect(metric.was_corrected).to be true
+      expect(metric.corrected_to_category).to eq(new_category)
+      expect(metric.time_to_correction_hours).to be_present
+    end
+
+    it "calculates time_to_correction_hours correctly" do
+      metric.update_columns(created_at: 48.hours.ago)
+
+      recorder.record_correction(expense: expense, corrected_to_category: new_category)
+
+      metric.reload
+      expect(metric.time_to_correction_hours).to be_between(47, 49)
+    end
+
+    it "handles missing metric row gracefully" do
+      other_expense = create(:expense)
+
+      expect {
+        recorder.record_correction(expense: other_expense, corrected_to_category: new_category)
+      }.not_to raise_error
+    end
+
+    it "updates the most recent metric for the expense" do
+      older_metric = CategorizationMetric.create!(
+        expense: expense,
+        layer_used: "pg_trgm",
+        confidence: 0.7,
+        category: category,
+        was_corrected: false,
+        processing_time_ms: 40.0,
+        created_at: 2.days.ago
+      )
+
+      recorder.record_correction(expense: expense, corrected_to_category: new_category)
+
+      # Should update the newer metric, not the older one
+      metric.reload
+      older_metric.reload
+      expect(metric.was_corrected).to be true
+      expect(older_metric.was_corrected).to be false
+    end
+  end
+end

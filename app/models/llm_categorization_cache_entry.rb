@@ -5,8 +5,8 @@ class LlmCategorizationCacheEntry < ApplicationRecord
 
   validates :merchant_normalized, presence: true, uniqueness: true
 
-  scope :active, -> { where(expires_at: Time.current..) }
-  scope :expired, -> { where(expires_at: ...Time.current) }
+  scope :active, -> { where(expires_at: nil).or(where(expires_at: Time.current..)) }
+  scope :expired, -> { where.not(expires_at: nil).where(expires_at: ...Time.current) }
 
   def expired?
     expires_at.present? && expires_at < Time.current

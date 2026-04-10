@@ -65,16 +65,24 @@ RSpec.describe LlmCategorizationCacheEntry, type: :model, unit: true do
     before do
       LlmCategorizationCacheEntry.create!(merchant_normalized: "active", category: category, expires_at: 30.days.from_now)
       LlmCategorizationCacheEntry.create!(merchant_normalized: "expired", category: category, expires_at: 1.day.ago)
+      LlmCategorizationCacheEntry.create!(merchant_normalized: "no_ttl", category: category, expires_at: nil)
     end
 
-    it ".active returns non-expired entries" do
-      expect(LlmCategorizationCacheEntry.active.count).to eq(1)
-      expect(LlmCategorizationCacheEntry.active.first.merchant_normalized).to eq("active")
+    it ".active returns non-expired entries and nil-TTL entries" do
+      active = LlmCategorizationCacheEntry.active.pluck(:merchant_normalized)
+      expect(active).to contain_exactly("active", "no_ttl")
     end
 
-    it ".expired returns expired entries" do
-      expect(LlmCategorizationCacheEntry.expired.count).to eq(1)
-      expect(LlmCategorizationCacheEntry.expired.first.merchant_normalized).to eq("expired")
+    it ".expired returns only expired entries (excludes nil TTL)" do
+      expired = LlmCategorizationCacheEntry.expired.pluck(:merchant_normalized)
+      expect(expired).to contain_exactly("expired")
+    end
+
+    it "partitions all entries into active or expired" do
+      total = LlmCategorizationCacheEntry.count
+      active_count = LlmCategorizationCacheEntry.active.count
+      expired_count = LlmCategorizationCacheEntry.expired.count
+      expect(active_count + expired_count).to eq(total)
     end
   end
 end

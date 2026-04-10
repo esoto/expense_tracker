@@ -47,7 +47,7 @@ module Services::Categorization
         vector.save!
         vector
       rescue => e
-        @logger.error "[VectorUpdater] upsert failed: #{e.class}: #{e.message}"
+        @logger.error "[VectorUpdater] upsert failed for merchant=#{merchant.inspect} category=#{category&.id}: #{e.class}: #{e.message}"
         nil
       end
 
@@ -73,7 +73,7 @@ module Services::Categorization
 
         { old_vector: old_vector, new_vector: new_vector }
       rescue => e
-        @logger.error "[VectorUpdater] record_correction failed: #{e.class}: #{e.message}"
+        @logger.error "[VectorUpdater] record_correction failed for merchant=#{merchant.inspect}: #{e.class}: #{e.message}"
         nil
       end
 

@@ -264,4 +264,36 @@ RSpec.describe Services::Categorization::Learning::VectorUpdater, type: :service
       end
     end
   end
+
+  describe "error handling" do
+    it "logs and returns nil when upsert fails" do
+      logger = instance_double(ActiveSupport::Logger)
+      allow(logger).to receive(:error)
+      error_updater = described_class.new(logger: logger)
+
+      allow(CategorizationVector).to receive(:find_or_initialize_by).and_raise(ActiveRecord::RecordInvalid)
+
+      result = error_updater.upsert(merchant: "Walmart", category: category)
+
+      expect(result).to be_nil
+      expect(logger).to have_received(:error).with(/upsert failed.*merchant=.*Walmart/)
+    end
+
+    it "logs and returns nil when record_correction fails" do
+      logger = instance_double(ActiveSupport::Logger)
+      allow(logger).to receive(:error)
+      error_updater = described_class.new(logger: logger)
+
+      allow(CategorizationVector).to receive(:find_by).and_raise(ActiveRecord::StatementInvalid)
+
+      result = error_updater.record_correction(
+        merchant: "Walmart",
+        old_category: category,
+        new_category: other_category
+      )
+
+      expect(result).to be_nil
+      expect(logger).to have_received(:error).with(/record_correction failed.*merchant=.*Walmart/)
+    end
+  end
 end

@@ -10,19 +10,42 @@ namespace :categorization do
     total = scope.count
     logger.info "[BackfillVectors] Found #{total} categorizable expenses"
 
+    # Pre-load all categories to avoid N+1 queries
+    category_ids = scope.distinct.pluck(:category_id)
+    categories_by_id = Category.where(id: category_ids).index_by(&:id)
+
     processed = 0
 
+    # Extract keywords from descriptions (local lambda, not global method)
+    extract_keywords = ->(descriptions) {
+      word_counts = Hash.new(0)
+
+      descriptions.each do |desc|
+        next if desc.blank?
+
+        desc.downcase
+            .gsub(/[^a-z0-9\s]/, "")
+            .split
+            .reject { |w| w.length < 3 }
+            .each { |word| word_counts[word] += 1 }
+      end
+
+      word_counts.sort_by { |_word, count| -count }
+                 .first(5)
+                 .map(&:first)
+    }
+
     # Group by normalized merchant + category to batch-create vectors
-    scope.select(:merchant_name, :category_id, :description)
-         .group_by { |e| [ e.merchant_name, e.category_id ] }
+    scope.select(:id, :merchant_name, :category_id, :description)
+         .find_each.group_by { |e| [ e.merchant_name, e.category_id ] }
          .each do |(merchant_name, category_id), expenses|
       normalized = Services::Categorization::MerchantNormalizer.normalize(merchant_name)
       next if normalized.blank?
 
-      category = Category.find_by(id: category_id)
+      category = categories_by_id[category_id]
       next unless category
 
-      keywords = extract_keywords(expenses.map(&:description))
+      keywords = extract_keywords.call(expenses.map(&:description))
 
       vector = CategorizationVector.find_or_initialize_by(
         merchant_normalized: normalized,
@@ -56,26 +79,4 @@ namespace :categorization do
     vector_count = CategorizationVector.count
     logger.info "[BackfillVectors] Done. #{vector_count} vectors in database. #{processed} expenses processed."
   end
-end
-
-# Extract top 5 most common meaningful keywords from descriptions.
-#
-# @param descriptions [Array<String>] expense descriptions
-# @return [Array<String>] top 5 keywords
-def extract_keywords(descriptions)
-  word_counts = Hash.new(0)
-
-  descriptions.each do |desc|
-    next if desc.blank?
-
-    desc.downcase
-        .gsub(/[^a-z0-9\s]/, "")
-        .split
-        .reject { |w| w.length < 3 }
-        .each { |word| word_counts[word] += 1 }
-  end
-
-  word_counts.sort_by { |_word, count| -count }
-             .first(5)
-             .map(&:first)
 end

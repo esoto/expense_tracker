@@ -6,6 +6,7 @@ require_relative "ml_confidence_integration"
 require_relative "service_registry"
 require_relative "strategies/base_strategy"
 require_relative "strategies/pattern_strategy"
+require_relative "learning/metrics_recorder"
 
 module Services::Categorization
   # Simple circuit breaker implementation for fault tolerance
@@ -299,10 +300,11 @@ module Services::Categorization
             options.merge(correlation_id: correlation_id)
           )
 
-          # Invalidate affected cache entries only on success
+          # Invalidate affected cache entries and record correction metrics on success
           if result.success?
             invalidate_relevant_cache(correct_category)
             @pattern_cache_service.invalidate_all if @pattern_cache_service.respond_to?(:invalidate_all)
+            metrics_recorder.record_correction(expense: expense, corrected_to_category: correct_category)
           end
 
           result
@@ -509,8 +511,8 @@ module Services::Categorization
       # Increment counter atomically
       @total_categorizations.increment
 
-      # Delegate to strategy chain
-      result = run_strategy_chain(expense, opts)
+      # Delegate to strategy chain — returns [result, layer_name] tuple
+      result, layer = run_strategy_chain(expense, opts)
 
       # Post-strategy processing (stays in Engine)
       if result.successful?
@@ -533,19 +535,26 @@ module Services::Categorization
         @successful_categorizations.increment
       end
 
+      # Record categorization metrics for monitoring
+      metrics_recorder.record(expense: expense, result: result, layer_name: layer)
+
       result
     end
 
     # Iterate through strategies until one returns a confident result.
     # Database and connection errors are re-raised so Engine#categorize
     # can translate them into the appropriate error results.
+    # Returns [result, layer_name] tuple. Layer name is returned separately
+    # to avoid mutating the result's metadata hash.
     def run_strategy_chain(expense, opts)
       last_result = nil
+      last_layer = "pattern"
 
       strategies.each do |strategy|
         result = strategy.call(expense, opts)
-        return result if result.successful?
+        return [ result, strategy.layer_name ] if result.successful?
         last_result = result
+        last_layer = strategy.layer_name
       rescue ActiveRecord::ConnectionNotEstablished, ActiveRecord::StatementInvalid, PG::Error
         raise
       rescue => e
@@ -555,7 +564,8 @@ module Services::Categorization
       end
 
       # Return last strategy's result (preserves processing_time_ms) or fallback
-      last_result || CategorizationResult.no_match(processing_time_ms: 0.0)
+      fallback = last_result || CategorizationResult.no_match(processing_time_ms: 0.0)
+      [ fallback, last_layer ]
     end
 
     # Ordered list of categorization strategies.
@@ -569,6 +579,10 @@ module Services::Categorization
           logger: @logger
         )
       ]
+    end
+
+    def metrics_recorder
+      @metrics_recorder ||= Learning::MetricsRecorder.new(logger: @logger)
     end
 
     def update_expense_sync(expense, result, correlation_id)

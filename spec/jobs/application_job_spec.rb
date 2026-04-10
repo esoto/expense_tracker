@@ -62,15 +62,19 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
       expect(ApplicationJob.rescue_handlers).not_to be_empty
 
       handler_classes = ApplicationJob.rescue_handlers.map(&:first)
-      expect(handler_classes).to include('StandardError')
       expect(handler_classes).to include('ActiveRecord::Deadlocked')
+      expect(handler_classes).to include('ActiveRecord::ConnectionNotEstablished')
       expect(handler_classes).to include('ActiveJob::DeserializationError')
     end
 
-    it 'configures retry for StandardError with correct parameters' do
-      handler = ApplicationJob.rescue_handlers.find { |h| h.first == 'StandardError' }
+    it 'does not retry on generic StandardError' do
+      handler_classes = ApplicationJob.rescue_handlers.map(&:first)
+      expect(handler_classes).not_to include('StandardError')
+    end
+
+    it 'configures retry for ActiveRecord::ConnectionNotEstablished' do
+      handler = ApplicationJob.rescue_handlers.find { |h| h.first == 'ActiveRecord::ConnectionNotEstablished' }
       expect(handler).not_to be_nil
-      # Handler exists and will be used for StandardError and its subclasses
     end
 
     it 'configures retry for ActiveRecord::Deadlocked with correct parameters' do
@@ -91,18 +95,9 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
       expect(unique_handlers.size).to be >= 3
     end
 
-    it 'configures StandardError with 3 retry attempts' do
-      # The retry_on configuration for StandardError specifies 3 attempts
-      handler = ApplicationJob.rescue_handlers.find { |h| h.first == 'StandardError' }
+    it 'configures ActiveRecord::ConnectionNotEstablished with 3 retry attempts' do
+      handler = ApplicationJob.rescue_handlers.find { |h| h.first == 'ActiveRecord::ConnectionNotEstablished' }
       expect(handler).not_to be_nil
-      # Configuration includes attempts: 3 in the class definition
-    end
-
-    it 'configures StandardError with 10 second wait time' do
-      # The retry_on configuration for StandardError specifies wait: 10.seconds
-      handler = ApplicationJob.rescue_handlers.find { |h| h.first == 'StandardError' }
-      expect(handler).not_to be_nil
-      # Configuration includes wait: 10.seconds in the class definition
     end
 
     it 'configures ActiveRecord::Deadlocked with 5 second wait time' do
@@ -123,62 +118,27 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
       # More specific handlers should come before more general ones
       handler_classes = ApplicationJob.rescue_handlers.map(&:first)
 
-      # In Rails, handlers are processed in reverse order (last defined is checked first)
-      # So StandardError (defined first) will be at a higher index than Deadlocked (defined second)
+      # Verify all three specific handlers exist
+      expect(handler_classes).to include('ActiveRecord::Deadlocked')
+      expect(handler_classes).to include('ActiveRecord::ConnectionNotEstablished')
+      expect(handler_classes).to include('ActiveJob::DeserializationError')
+
+      # Deadlocked should appear before ConnectionNotEstablished (defined first)
       deadlock_index = handler_classes.index('ActiveRecord::Deadlocked')
-      standard_index = handler_classes.index('StandardError')
-
-      # Both handlers should exist
+      connection_index = handler_classes.index('ActiveRecord::ConnectionNotEstablished')
       expect(deadlock_index).not_to be_nil
-      expect(standard_index).not_to be_nil
-
-      # The order in the array represents the order they'll be checked
-      # ActiveJob checks handlers from last to first, so more specific should be defined after general
-      expect(handler_classes).to include('StandardError', 'ActiveRecord::Deadlocked', 'ActiveJob::DeserializationError')
+      expect(connection_index).not_to be_nil
     end
   end
 
   describe 'retry behavior verification' do
-    context 'when StandardError is raised' do
-      let(:job_with_standard_error) do
-        Class.new(ApplicationJob) do
-          def self.name
-            'TestStandardErrorJob'
-          end
-
-          attr_accessor :attempt_count
-
-          def initialize
-            super
-            @attempt_count = 0
-          end
-
-          def perform
-            @attempt_count += 1
-            raise StandardError, "Attempt #{@attempt_count}"
-          end
-        end
+    context 'when ActiveRecord::ConnectionNotEstablished is raised' do
+      it 'is configured to retry on ConnectionNotEstablished' do
+        expect(ApplicationJob.rescue_handlers.map(&:first)).to include('ActiveRecord::ConnectionNotEstablished')
       end
 
-      it 'is configured to retry on StandardError' do
-        job = job_with_standard_error.new
-
-        # The job should have retry_on configuration from ApplicationJob
-        expect(ApplicationJob.rescue_handlers.map(&:first)).to include('StandardError')
-      end
-
-      it 'handles StandardError subclasses' do
-        job_with_argument_error = Class.new(ApplicationJob) do
-          def perform
-            raise ArgumentError, "Invalid argument"
-          end
-        end
-
-        # ArgumentError is a StandardError subclass, so it should be handled
-        expect(ApplicationJob.rescue_handlers.map(&:first)).to include('StandardError')
-
-        # Verify ArgumentError is indeed a StandardError
-        expect(ArgumentError.ancestors).to include(StandardError)
+      it 'does not retry on generic StandardError' do
+        expect(ApplicationJob.rescue_handlers.map(&:first)).not_to include('StandardError')
       end
     end
 
@@ -250,12 +210,17 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
       handlers = ApplicationJob.rescue_handlers
       handler_classes = handlers.map(&:first)
 
-      expect(handler_classes).to include('StandardError')
       expect(handler_classes).to include('ActiveRecord::Deadlocked')
+      expect(handler_classes).to include('ActiveRecord::ConnectionNotEstablished')
       expect(handler_classes).to include('ActiveJob::DeserializationError')
 
       # Verify we have exactly these three handlers
       expect(handlers.size).to be >= 3
+    end
+
+    it 'does not have a blanket StandardError handler' do
+      handler_classes = ApplicationJob.rescue_handlers.map(&:first)
+      expect(handler_classes).not_to include('StandardError')
     end
 
     it 'maintains handler configuration across job inheritance' do
@@ -286,8 +251,8 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
       handlers = child_with_custom_handler.rescue_handlers.map(&:first)
 
       # Should have parent handlers plus the custom one
-      expect(handlers).to include('StandardError')
       expect(handlers).to include('ActiveRecord::Deadlocked')
+      expect(handlers).to include('ActiveRecord::ConnectionNotEstablished')
       expect(handlers).to include('ActiveJob::DeserializationError')
       expect(handlers.join).to include('CustomError')
     end
@@ -511,8 +476,8 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
       # All should have the same base handlers
       [ parent, child, grandchild ].each do |klass|
         handlers = klass.rescue_handlers.map(&:first)
-        expect(handlers).to include('StandardError')
         expect(handlers).to include('ActiveRecord::Deadlocked')
+        expect(handlers).to include('ActiveRecord::ConnectionNotEstablished')
         expect(handlers).to include('ActiveJob::DeserializationError')
       end
     end
@@ -535,13 +500,13 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
 
   describe 'comprehensive coverage validation' do
     it 'covers all retry_on configurations' do
-      # Verify StandardError retry configuration
-      standard_handler = ApplicationJob.rescue_handlers.find { |h| h.first == 'StandardError' }
-      expect(standard_handler).not_to be_nil
-
       # Verify Deadlocked retry configuration
       deadlock_handler = ApplicationJob.rescue_handlers.find { |h| h.first == 'ActiveRecord::Deadlocked' }
       expect(deadlock_handler).not_to be_nil
+
+      # Verify ConnectionNotEstablished retry configuration
+      connection_handler = ApplicationJob.rescue_handlers.find { |h| h.first == 'ActiveRecord::ConnectionNotEstablished' }
+      expect(connection_handler).not_to be_nil
     end
 
     it 'covers discard_on configuration' do
@@ -600,11 +565,10 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
       expect(job).to respond_to(:deserialize)
     end
 
-    it 'ensures retry_on StandardError configuration line is covered' do
-      # Line 3: retry_on StandardError, wait: 10.seconds, attempts: 3
+    it 'ensures retry_on ActiveRecord::ConnectionNotEstablished configuration line is covered' do
       handlers = ApplicationJob.rescue_handlers
-      standard_handler = handlers.find { |h| h.first == 'StandardError' }
-      expect(standard_handler).not_to be_nil
+      connection_handler = handlers.find { |h| h.first == 'ActiveRecord::ConnectionNotEstablished' }
+      expect(connection_handler).not_to be_nil
     end
 
     it 'ensures retry_on ActiveRecord::Deadlocked configuration line is covered' do
@@ -660,8 +624,8 @@ RSpec.describe ApplicationJob, type: :job, unit: true do
     it 'follows ActiveJob retry patterns' do
       # Verify the retry configuration aligns with ActiveJob patterns
       handlers = ApplicationJob.rescue_handlers.map(&:first)
-      expect(handlers).to include('StandardError')
       expect(handlers).to include('ActiveRecord::Deadlocked')
+      expect(handlers).to include('ActiveRecord::ConnectionNotEstablished')
     end
   end
 

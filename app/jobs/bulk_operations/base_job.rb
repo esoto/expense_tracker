@@ -6,12 +6,13 @@ module BulkOperations
   class BaseJob < ApplicationJob
     queue_as :bulk_operations
 
-    # Retry failed jobs with exponential backoff
-    retry_on StandardError, wait: :exponentially_longer, attempts: 3
+    # Retry failed jobs on transient database errors
+    retry_on ActiveRecord::Deadlocked, wait: :exponentially_longer, attempts: 3
+    retry_on ActiveRecord::ConnectionNotEstablished, wait: :exponentially_longer, attempts: 3
 
     def perform(expense_ids:, user_id: nil, options: {})
       @expense_ids = expense_ids
-      @user = user_id ? User.find_by(id: user_id) : nil
+      @user = user_id ? AdminUser.find_by(id: user_id) : nil
       @options = options
       @job_id = job_id
 

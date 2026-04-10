@@ -27,9 +27,6 @@ class BulkDeletionJob < BulkOperations::BaseJob
 
       percentage = (processed.to_f / total * 100).round
       track_progress(percentage, "Deleted #{processed} of #{total} expenses...")
-
-      # Short sleep to prevent overwhelming the system
-      sleep 0.1 if total > 100
     end
 
     last_result

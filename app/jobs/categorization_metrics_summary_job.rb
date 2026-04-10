@@ -98,32 +98,22 @@ class CategorizationMetricsSummaryJob < ApplicationJob
   end
 
   def evaluate_onnx_triggers(summary)
-    evaluate_fallback_trigger(summary[:fallback_rate])
-    evaluate_correction_trigger(summary[:correction_rate])
+    evaluate_trigger(rate: summary[:fallback_rate], threshold: FALLBACK_RATE_THRESHOLD,
+                     counter_key: FALLBACK_COUNTER_KEY, label: "fallback")
+    evaluate_trigger(rate: summary[:correction_rate], threshold: CORRECTION_RATE_THRESHOLD,
+                     counter_key: CORRECTION_COUNTER_KEY, label: "correction")
     check_strong_recommendation
   end
 
-  def evaluate_fallback_trigger(fallback_rate)
-    if fallback_rate > FALLBACK_RATE_THRESHOLD
-      counter = increment_counter(FALLBACK_COUNTER_KEY)
+  def evaluate_trigger(rate:, threshold:, counter_key:, label:)
+    if rate > threshold
+      counter = increment_counter(counter_key)
       if counter >= WARNING_WEEKS
-        Rails.logger.warn "[MetricsSummary] ONNX WARNING: High fallback rate sustained for " \
+        Rails.logger.warn "[MetricsSummary] ONNX WARNING: High #{label} rate sustained for " \
                           "#{counter} consecutive weeks. Consider evaluating ONNX model deployment."
       end
     else
-      reset_counter(FALLBACK_COUNTER_KEY)
-    end
-  end
-
-  def evaluate_correction_trigger(correction_rate)
-    if correction_rate > CORRECTION_RATE_THRESHOLD
-      counter = increment_counter(CORRECTION_COUNTER_KEY)
-      if counter >= WARNING_WEEKS
-        Rails.logger.warn "[MetricsSummary] ONNX WARNING: High correction rate sustained for " \
-                          "#{counter} consecutive weeks. Consider evaluating ONNX model deployment."
-      end
-    else
-      reset_counter(CORRECTION_COUNTER_KEY)
+      reset_counter(counter_key)
     end
   end
 
@@ -139,10 +129,13 @@ class CategorizationMetricsSummaryJob < ApplicationJob
   end
 
   def increment_counter(key)
-    current = Rails.cache.read(key) || 0
-    new_value = current + 1
-    Rails.cache.write(key, new_value, expires_in: COUNTER_TTL)
-    new_value
+    # Use atomic increment when available (Solid Cache supports it)
+    result = Rails.cache.increment(key, 1, expires_in: COUNTER_TTL)
+    return result if result
+
+    # Fallback: initialize counter if it doesn't exist yet
+    Rails.cache.write(key, 1, expires_in: COUNTER_TTL)
+    1
   end
 
   def reset_counter(key)

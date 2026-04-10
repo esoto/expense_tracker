@@ -27,7 +27,7 @@
       </div>
       <div class="flex gap-3 text-center">
         <div class="bg-teal-50 rounded-lg px-4 py-2 min-w-[100px]">
-          <div class="text-xl font-bold text-teal-700 tabular-nums">₡<%= number_with_delimiter(@total_amount.to_i) %></div>
+          <div class="text-xl font-bold text-teal-700 tabular-nums"><%= default_currency_symbol %><%= number_with_delimiter(@total_amount.to_i) %></div>
           <div class="text-xs text-slate-500">Total</div>
         </div>
         <div class="bg-emerald-50 rounded-lg px-4 py-2 min-w-[80px]">

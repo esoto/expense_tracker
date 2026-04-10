@@ -30,7 +30,7 @@
         </div>
         <div data-chart-skeleton-target="chart">
           <%= line_chart chart_data,
-                prefix: "₡",
+                prefix: default_currency_symbol,
                 thousands: ",",
                 height: "300px",
                 colors: ["#0F766E", "#D97706"],
@@ -67,7 +67,7 @@
         </div>
         <div data-chart-skeleton-target="chart">
           <%= bar_chart @category_breakdown,
-                prefix: "₡",
+                prefix: default_currency_symbol,
                 thousands: ",",
                 height: "300px",
                 colors: ["#0F766E"],

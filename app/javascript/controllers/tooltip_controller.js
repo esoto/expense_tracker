@@ -5,6 +5,10 @@ import { Controller } from "@hotwired/stimulus"
 // Integrates with sparkline controller for chart rendering
 export default class extends Controller {
   static targets = ["trigger", "content", "sparkline"]
+  get currencySymbol() {
+    return document.querySelector('meta[name="currency-symbol"]')?.content || "₡"
+  }
+
   static values = {
     delay: { type: Number, default: 200 }, // Hover delay in ms
     position: { type: String, default: "top" }, // top, bottom, left, right
@@ -128,15 +132,15 @@ export default class extends Controller {
         <div class="grid grid-cols-3 gap-2 text-xs">
           <div class="text-center">
             <div class="text-slate-600">Mínimo</div>
-            <div class="font-semibold text-emerald-600">₡${this.formatNumber(trendData.min || 0)}</div>
+            <div class="font-semibold text-emerald-600">${this.currencySymbol}${this.formatNumber(trendData.min || 0)}</div>
           </div>
           <div class="text-center">
             <div class="text-slate-600">Promedio</div>
-            <div class="font-semibold text-amber-600">₡${this.formatNumber(trendData.average || 0)}</div>
+            <div class="font-semibold text-amber-600">${this.currencySymbol}${this.formatNumber(trendData.average || 0)}</div>
           </div>
           <div class="text-center">
             <div class="text-slate-600">Máximo</div>
-            <div class="font-semibold text-rose-600">₡${this.formatNumber(trendData.max || 0)}</div>
+            <div class="font-semibold text-rose-600">${this.currencySymbol}${this.formatNumber(trendData.max || 0)}</div>
           </div>
         </div>
       `

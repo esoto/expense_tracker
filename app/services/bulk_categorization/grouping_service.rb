@@ -122,11 +122,12 @@ module Services::BulkCategorization
     end
 
     def group_by_amount_range
+      sym = ApplicationHelper::CURRENCY_SYMBOLS[Expense.where(deleted_at: nil).group(:currency).count.max_by { |_, v| v }&.first.to_s] || "₡"
       ranges = [
-        { min: 0, max: 10_000, label: "Small (< ₡10,000)" },
-        { min: 10_000, max: 50_000, label: "Medium (₡10,000 - ₡50,000)" },
-        { min: 50_000, max: 200_000, label: "Large (₡50,000 - ₡200,000)" },
-        { min: 200_000, max: Float::INFINITY, label: "Very Large (> ₡200,000)" }
+        { min: 0, max: 10_000, label: "Small (< #{sym}10,000)" },
+        { min: 10_000, max: 50_000, label: "Medium (#{sym}10,000 - #{sym}50,000)" },
+        { min: 50_000, max: 200_000, label: "Large (#{sym}50,000 - #{sym}200,000)" },
+        { min: 200_000, max: Float::INFINITY, label: "Very Large (> #{sym}200,000)" }
       ]
 
       groups = []

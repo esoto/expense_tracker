@@ -157,14 +157,61 @@ RSpec.describe Services::Categorization::Learning::CorrectionHandler, type: :ser
         )
       end
 
-      it "does not raise when deleting non-existent cache" do
-        expect {
-          handler.handle_correction(
-            expense: expense,
-            old_category: old_category,
-            new_category: new_category
-          )
-        }.not_to raise_error
+      it "triggers three-strike and penalizes confidence even without LLM cache" do
+        result = handler.handle_correction(
+          expense: expense,
+          old_category: old_category,
+          new_category: new_category
+        )
+
+        expect(result[:three_strike_triggered]).to be true
+        expect(result[:old_vector].reload.confidence).to eq(0.1)
+      end
+    end
+
+    context "when old vector has nil last_seen_at" do
+      let(:normalized_merchant) { Services::Categorization::MerchantNormalizer.normalize("Walmart Escazú") }
+
+      before do
+        create(
+          :categorization_vector,
+          merchant_normalized: normalized_merchant,
+          category: old_category,
+          correction_count: 5,
+          confidence: 0.7,
+          last_seen_at: nil
+        )
+      end
+
+      it "does not trigger three-strike" do
+        result = handler.handle_correction(
+          expense: expense,
+          old_category: old_category,
+          new_category: new_category
+        )
+
+        expect(result[:three_strike_triggered]).to be false
+      end
+    end
+
+    context "when handle_correction raises an error" do
+      it "logs the error and returns safe default" do
+        logger = instance_double(ActiveSupport::Logger)
+        allow(logger).to receive(:error)
+        allow(logger).to receive(:info)
+        error_handler = described_class.new(logger: logger)
+
+        allow_any_instance_of(Services::Categorization::Learning::VectorUpdater).to receive(:record_correction).and_raise(ActiveRecord::RecordInvalid)
+
+        result = error_handler.handle_correction(
+          expense: expense,
+          old_category: old_category,
+          new_category: new_category
+        )
+
+        expect(result[:three_strike_triggered]).to be false
+        expect(result[:old_vector]).to be_nil
+        expect(logger).to have_received(:error).with(/handle_correction failed/)
       end
     end
 

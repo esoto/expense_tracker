@@ -47,6 +47,9 @@ module Services::Categorization
           old_vector: old_vector,
           new_vector: new_vector
         }
+      rescue => e
+        @logger.error "[CorrectionHandler] handle_correction failed: #{e.class}: #{e.message}"
+        { three_strike_triggered: false, old_vector: nil, new_vector: nil }
       end
 
       private

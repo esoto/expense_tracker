@@ -5,6 +5,8 @@ module Services::Categorization
     # Aggregates categorization metrics for the admin dashboard.
     # Uses single-query conditional aggregation for efficiency.
     class MetricsDashboardService
+      MONTHLY_BUDGET = 5.0
+
       def overview(period: 30.days)
         result = CategorizationMetric.recent(period).pick(
           Arel.sql("COUNT(*)"),
@@ -66,7 +68,7 @@ module Services::Categorization
       end
 
       def api_budget_status
-        budget = 5.0
+        budget = MONTHLY_BUDGET
         current_spend = fetch_current_spend
         percentage = budget.zero? ? 0.0 : (current_spend / budget * 100).round(2)
 

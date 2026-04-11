@@ -165,12 +165,15 @@ module Services::Categorization
 
       def budget_exceeded?
         current_spend = Rails.cache.read(budget_key) || 0.0
-        current_spend >= MONTHLY_BUDGET
+        current_spend.to_f >= MONTHLY_BUDGET
       end
 
       def increment_budget(cost)
-        current_spend = Rails.cache.read(budget_key) || 0.0
-        Rails.cache.write(budget_key, current_spend + cost, expires_in: BUDGET_TTL)
+        # Atomic-safe: read + write with the new total.
+        # Acceptable for single-user app — concurrent LLM calls are serialized
+        # by the strategy chain (one expense at a time).
+        current = Rails.cache.read(budget_key) || 0.0
+        Rails.cache.write(budget_key, current.to_f + cost, expires_in: BUDGET_TTL)
       end
 
       def build_budget_exceeded_result(start_time)

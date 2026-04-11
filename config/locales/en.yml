@@ -56,6 +56,15 @@ en:
       clothing: "Clothing"
       electronics: "Electronics"
       household: "Household"
+      subscriptions: "Subscriptions"
+      pets: "Pets"
+      gym: "Gym"
+      personal_care: "Personal Care"
+      taxes: "Taxes"
+      parking: "Parking"
+      fast_food: "Fast Food"
+      bakery: "Bakery"
+      hardware_store: "Hardware Store"
 
   # Navigation
   nav:

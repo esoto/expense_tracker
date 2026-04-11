@@ -57,6 +57,14 @@ default: &default
     schedule: every Sunday at 6am
     description: "Compute weekly categorization performance summary and evaluate ONNX trigger warnings"
 
+  # Clean up expired LLM categorization cache entries monthly
+  llm_cache_cleanup:
+    class: LlmCacheCleanupJob
+    queue: low
+    priority: 10
+    schedule: every month
+    description: "Remove expired LLM categorization cache entries"
+
   # Run data quality audit daily to check pattern coverage and detect issues
   data_quality_audit:
     class: DataQualityAuditJob

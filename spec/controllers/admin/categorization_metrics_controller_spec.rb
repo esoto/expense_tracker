@@ -22,6 +22,10 @@ RSpec.describe Admin::CategorizationMetricsController, type: :controller, unit: 
       ]
     end
 
+    let(:budget_status_data) do
+      { current_spend: 1.25, budget: 5.0, percentage: 25.0, status: "healthy" }
+    end
+
     let(:problem_merchants_data) do
       [
         { merchant: "walmart", category_name: "Groceries", correction_count: 5,
@@ -33,6 +37,7 @@ RSpec.describe Admin::CategorizationMetricsController, type: :controller, unit: 
       service = instance_double(Services::Categorization::Monitoring::MetricsDashboardService)
       allow(Services::Categorization::Monitoring::MetricsDashboardService).to receive(:new).and_return(service)
       allow(service).to receive(:overview).and_return(overview_data)
+      allow(service).to receive(:api_budget_status).and_return(budget_status_data)
       allow(service).to receive(:layer_performance).and_return(layer_data)
       allow(service).to receive(:problem_merchants).and_return(problem_merchants_data)
     end
@@ -45,6 +50,11 @@ RSpec.describe Admin::CategorizationMetricsController, type: :controller, unit: 
     it "assigns overview data" do
       get :index
       expect(assigns(:overview)).to eq(overview_data)
+    end
+
+    it "assigns budget status data" do
+      get :index
+      expect(assigns(:budget_status)).to eq(budget_status_data)
     end
 
     it "assigns layer performance data" do

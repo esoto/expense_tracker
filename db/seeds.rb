@@ -16,7 +16,16 @@ root_categories = [
   { i18n_key: "shopping", description: "Ropa, electrónicos, artículos personales", color: "#DDA0DD" },
   { i18n_key: "education", description: "Cursos, libros, capacitación", color: "#98D8C8" },
   { i18n_key: "home", description: "Artículos para el hogar, mantenimiento", color: "#F7DC6F" },
-  { i18n_key: "uncategorized", description: "Gastos sin categorizar", color: "#BDC3C7" }
+  { i18n_key: "uncategorized", description: "Gastos sin categorizar", color: "#BDC3C7" },
+  { i18n_key: "subscriptions", description: "Streaming, software, servicios mensuales", color: "#8B5CF6" },
+  { i18n_key: "pets", description: "Veterinario, comida, accesorios para mascotas", color: "#F97316" },
+  { i18n_key: "gym", description: "Membresías de gimnasio, fitness", color: "#06B6D4" },
+  { i18n_key: "personal_care", description: "Peluquería, óptica, lavandería", color: "#EC4899" },
+  { i18n_key: "taxes", description: "Gobierno, municipalidad, impuestos", color: "#78716C" },
+  { i18n_key: "parking", description: "Parqueos", color: "#A3A3A3" },
+  { i18n_key: "fast_food", description: "McDonald's, KFC, comida rápida", color: "#EF4444" },
+  { i18n_key: "bakery", description: "Panaderías, reposterías", color: "#D97706" },
+  { i18n_key: "hardware_store", description: "EPA, ferreterías", color: "#737373" }
 ]
 
 root_categories.each do |category_data|

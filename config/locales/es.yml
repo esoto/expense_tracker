@@ -29,6 +29,15 @@ es:
       clothing: "Ropa"
       electronics: "Electrónicos"
       household: "Artículos del Hogar"
+      subscriptions: "Suscripciones"
+      pets: "Mascotas"
+      gym: "Gimnasio"
+      personal_care: "Cuidado Personal"
+      taxes: "Impuestos"
+      parking: "Estacionamiento"
+      fast_food: "Comida Rápida"
+      bakery: "Panadería"
+      hardware_store: "Ferretería"
 
   # Navigation
   nav:

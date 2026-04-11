@@ -31,8 +31,10 @@ module Services::Categorization
       end
 
       def format_categories
-        category_keys = Category.where.not(i18n_key: [ nil, "" ]).pluck(:i18n_key)
-        category_keys.map { |key| "- #{key}" }.join("\n")
+        @formatted_categories ||= begin
+          category_keys = Category.where.not(i18n_key: [ nil, "" ]).pluck(:i18n_key)
+          category_keys.map { |key| "- #{key}" }.join("\n")
+        end
       end
 
       def build_correction_note(correction_history)

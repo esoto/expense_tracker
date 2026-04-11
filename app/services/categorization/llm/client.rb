@@ -18,11 +18,16 @@ module Services::Categorization
       class TimeoutError < Error; end
       class ApiError < Error; end
 
-      def initialize
-        api_key = Rails.application.credentials.dig(:anthropic, :api_key)
-        raise ConfigurationError, "Anthropic API key not configured" unless api_key
+      # @param client [Anthropic::Client, nil] injectable for testing
+      def initialize(client: nil)
+        if client
+          @client = client
+        else
+          api_key = Rails.application.credentials.dig(:anthropic, :api_key)
+          raise ConfigurationError, "Anthropic API key not configured" unless api_key
 
-        @client = Anthropic::Client.new(api_key: api_key)
+          @client = Anthropic::Client.new(api_key: api_key)
+        end
       end
 
       def categorize(prompt_text:)
@@ -33,7 +38,10 @@ module Services::Categorization
           messages: [ { role: :user, content: prompt_text } ]
         )
 
-        response_text = response.content.first.text
+        content_block = response.content&.first
+        raise ApiError, "Empty response from API" unless content_block
+
+        response_text = content_block.text
         input_tokens = response.usage.input_tokens
         output_tokens = response.usage.output_tokens
 
@@ -43,12 +51,16 @@ module Services::Categorization
           cost: (input_tokens * INPUT_COST_PER_TOKEN) + (output_tokens * OUTPUT_COST_PER_TOKEN)
         }
       rescue Anthropic::Errors::AuthenticationError => e
+        Rails.logger.error("[LLM::Client] Authentication failed: #{e.message}")
         raise AuthenticationError, "Authentication failed: #{e.message}"
       rescue Anthropic::Errors::RateLimitError => e
+        Rails.logger.warn("[LLM::Client] Rate limit exceeded: #{e.message}")
         raise RateLimitError, "Rate limit exceeded: #{e.message}"
       rescue Anthropic::Errors::APITimeoutError => e
+        Rails.logger.warn("[LLM::Client] Request timed out: #{e.message}")
         raise TimeoutError, "Request timed out: #{e.message}"
       rescue Anthropic::Errors::APIError => e
+        Rails.logger.error("[LLM::Client] API error: #{e.message}")
         raise ApiError, "API error: #{e.message}"
       end
     end

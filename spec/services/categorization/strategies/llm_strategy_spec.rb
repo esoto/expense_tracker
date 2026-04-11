@@ -31,7 +31,120 @@ RSpec.describe Services::Categorization::Strategies::LlmStrategy, :unit do
     end
   end
 
+  describe "constants" do
+    it "defines MONTHLY_BUDGET as 5.0" do
+      expect(described_class::MONTHLY_BUDGET).to eq(5.0)
+    end
+
+    it "defines BUDGET_KEY_PREFIX" do
+      expect(described_class::BUDGET_KEY_PREFIX).to eq("llm_budget")
+    end
+  end
+
   describe "#call" do
+    context "when budget is exceeded" do
+      before do
+        budget_key = "llm_budget:#{Date.current.strftime('%Y-%m')}"
+        Rails.cache.write(budget_key, 5.50, expires_in: 35.days)
+      end
+
+      it "returns no_match with budget_exceeded reason" do
+        result = strategy.call(expense)
+
+        expect(result).not_to be_successful
+        expect(result.method).to eq("no_match")
+        expect(result.metadata[:reason]).to eq("budget_exceeded")
+        expect(result.processing_time_ms).to be > 0
+      end
+
+      it "does not call the LLM API" do
+        allow(mock_client).to receive(:categorize)
+
+        strategy.call(expense)
+
+        expect(mock_client).not_to have_received(:categorize)
+      end
+    end
+
+    context "when budget is exactly at the limit" do
+      before do
+        budget_key = "llm_budget:#{Date.current.strftime('%Y-%m')}"
+        Rails.cache.write(budget_key, 5.0, expires_in: 35.days)
+      end
+
+      it "returns no_match with budget_exceeded reason" do
+        result = strategy.call(expense)
+
+        expect(result).not_to be_successful
+        expect(result.metadata[:reason]).to eq("budget_exceeded")
+      end
+    end
+
+    context "when budget is under the limit" do
+      let(:prompt_text) { "categorize this merchant" }
+      let(:api_response) do
+        {
+          response_text: category.i18n_key,
+          token_count: { input: 80, output: 5 },
+          cost: 0.0003
+        }
+      end
+
+      before do
+        budget_key = "llm_budget:#{Date.current.strftime('%Y-%m')}"
+        Rails.cache.write(budget_key, 4.99, expires_in: 35.days)
+
+        allow(Services::Categorization::Llm::PromptBuilder).to receive(:new)
+          .and_return(instance_double(Services::Categorization::Llm::PromptBuilder, build: prompt_text))
+        allow(mock_client).to receive(:categorize).with(prompt_text: prompt_text).and_return(api_response)
+        allow(Services::Categorization::Llm::ResponseParser).to receive(:new)
+          .and_return(instance_double(Services::Categorization::Llm::ResponseParser,
+            parse: { category: category, confidence: 0.85, raw_response: category.i18n_key }))
+      end
+
+      it "proceeds with the LLM call" do
+        result = strategy.call(expense)
+
+        expect(result).to be_successful
+        expect(mock_client).to have_received(:categorize)
+      end
+
+      it "increments the budget counter by the call cost" do
+        strategy.call(expense)
+
+        budget_key = "llm_budget:#{Date.current.strftime('%Y-%m')}"
+        expect(Rails.cache.read(budget_key)).to be_within(0.0001).of(4.9903)
+      end
+    end
+
+    context "budget counter initialization" do
+      let(:prompt_text) { "categorize this merchant" }
+      let(:api_response) do
+        {
+          response_text: category.i18n_key,
+          token_count: { input: 80, output: 5 },
+          cost: 0.0005
+        }
+      end
+
+      before do
+        allow(Services::Categorization::Llm::PromptBuilder).to receive(:new)
+          .and_return(instance_double(Services::Categorization::Llm::PromptBuilder, build: prompt_text))
+        allow(mock_client).to receive(:categorize).with(prompt_text: prompt_text).and_return(api_response)
+        allow(Services::Categorization::Llm::ResponseParser).to receive(:new)
+          .and_return(instance_double(Services::Categorization::Llm::ResponseParser,
+            parse: { category: category, confidence: 0.85, raw_response: category.i18n_key }))
+      end
+
+      it "initializes the counter from zero when no prior spend exists" do
+        budget_key = "llm_budget:#{Date.current.strftime('%Y-%m')}"
+        Rails.cache.delete(budget_key)
+
+        strategy.call(expense)
+
+        expect(Rails.cache.read(budget_key)).to be_within(0.0001).of(0.0005)
+      end
+    end
     context "when expense has no merchant_name" do
       let(:expense) { create(:expense, merchant_name: nil, description: "some payment") }
 
@@ -90,6 +203,47 @@ RSpec.describe Services::Categorization::Strategies::LlmStrategy, :unit do
         result = strategy.call(expense)
 
         expect(result.metadata).to include(cache_hit: true)
+      end
+    end
+
+    context "when cache miss with correction context in Rails.cache" do
+      let(:prompt_text) { "categorize this merchant" }
+      let(:correction_history) { { old: "groceries", new: "restaurants" } }
+      let(:api_response) do
+        {
+          response_text: category.i18n_key,
+          token_count: { input: 80, output: 5 },
+          cost: 0.0003
+        }
+      end
+      let(:prompt_builder) { instance_double(Services::Categorization::Llm::PromptBuilder) }
+
+      before do
+        # Store correction context in Rails.cache
+        Rails.cache.write("llm_correction:#{normalized_merchant}", correction_history, expires_in: 90.days)
+
+        allow(Services::Categorization::Llm::PromptBuilder).to receive(:new).and_return(prompt_builder)
+        allow(prompt_builder).to receive(:build)
+          .with(expense: expense, correction_history: correction_history)
+          .and_return(prompt_text)
+        allow(mock_client).to receive(:categorize).with(prompt_text: prompt_text).and_return(api_response)
+        allow(Services::Categorization::Llm::ResponseParser).to receive(:new)
+          .and_return(instance_double(Services::Categorization::Llm::ResponseParser,
+            parse: { category: category, confidence: 0.85, raw_response: category.i18n_key }))
+      end
+
+      it "passes correction_history to PromptBuilder" do
+        strategy.call(expense)
+
+        expect(prompt_builder).to have_received(:build)
+          .with(expense: expense, correction_history: correction_history)
+      end
+
+      it "returns a successful result" do
+        result = strategy.call(expense)
+
+        expect(result).to be_successful
+        expect(result.category).to eq(category)
       end
     end
 

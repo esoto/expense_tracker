@@ -12,6 +12,7 @@ module Services::Categorization
       THREE_STRIKE_THRESHOLD = 3
       THREE_STRIKE_WINDOW = 30.days
       PENALIZED_CONFIDENCE = 0.1
+      CORRECTION_CACHE_TTL = 90.days
 
       def initialize(logger: Rails.logger)
         @logger = logger
@@ -40,7 +41,7 @@ module Services::Categorization
         old_vector = vector_result&.fetch(:old_vector, nil)
         new_vector = vector_result&.fetch(:new_vector, nil)
 
-        three_strike = check_three_strike(old_vector, expense.merchant_name)
+        three_strike = check_three_strike(old_vector, expense.merchant_name, old_category, new_category)
 
         {
           three_strike_triggered: three_strike,
@@ -54,18 +55,18 @@ module Services::Categorization
 
       private
 
-      def check_three_strike(old_vector, merchant_name)
+      def check_three_strike(old_vector, merchant_name, old_category, new_category)
         return false if old_vector.nil?
 
         # Must have enough corrections AND recent activity
         return false unless old_vector.correction_count >= THREE_STRIKE_THRESHOLD
         return false unless old_vector.last_seen_at.present? && old_vector.last_seen_at > THREE_STRIKE_WINDOW.ago
 
-        apply_three_strike(old_vector, merchant_name)
+        apply_three_strike(old_vector, merchant_name, old_category, new_category)
         true
       end
 
-      def apply_three_strike(old_vector, merchant_name)
+      def apply_three_strike(old_vector, merchant_name, old_category, new_category)
         normalized = MerchantNormalizer.normalize(merchant_name)
 
         old_vector.update!(confidence: PENALIZED_CONFIDENCE)
@@ -73,6 +74,13 @@ module Services::Categorization
         LlmCategorizationCacheEntry
           .where(merchant_normalized: normalized)
           .delete_all
+
+        # Store correction context so LlmStrategy can pass it to PromptBuilder
+        Rails.cache.write(
+          "llm_correction:#{normalized}",
+          { old: old_category.i18n_key, new: new_category.i18n_key },
+          expires_in: CORRECTION_CACHE_TTL
+        )
 
         @logger.info "[CorrectionHandler] Three-strike triggered for merchant=#{normalized}"
       end

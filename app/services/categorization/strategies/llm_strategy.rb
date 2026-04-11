@@ -11,6 +11,10 @@ module Services::Categorization
     # and fed into VectorUpdater so Layer 2 can learn from them.
     class LlmStrategy < BaseStrategy
       CACHE_TTL = 90.days
+      MONTHLY_BUDGET = 5.0
+      BUDGET_KEY_PREFIX = "llm_budget"
+      BUDGET_TTL = 35.days
+      CORRECTION_KEY_PREFIX = "llm_correction"
 
       # @param client [Llm::Client, nil] injectable LLM client for testing
       # @param logger [Logger]
@@ -35,6 +39,11 @@ module Services::Categorization
         normalized = normalize_merchant(expense)
         if normalized.blank?
           return CategorizationResult.no_match(processing_time_ms: duration_ms(start_time))
+        end
+
+        # Check budget before any work
+        if budget_exceeded?
+          return build_budget_exceeded_result(start_time)
         end
 
         # Check cache first
@@ -68,8 +77,11 @@ module Services::Categorization
       end
 
       def call_llm_and_cache(expense, normalized, existing_entry, start_time)
-        prompt = Llm::PromptBuilder.new.build(expense: expense)
+        correction_history = Rails.cache.read("#{CORRECTION_KEY_PREFIX}:#{normalized}")
+        prompt = Llm::PromptBuilder.new.build(expense: expense, correction_history: correction_history)
         api_result = client.categorize(prompt_text: prompt)
+
+        increment_budget(api_result[:cost])
 
         parsed = Llm::ResponseParser.new.parse(response_text: api_result[:response_text])
 
@@ -144,6 +156,31 @@ module Services::Categorization
             cache_hit: false,
             model_used: Llm::Client::MODEL
           }
+        )
+      end
+
+      def budget_key
+        "#{BUDGET_KEY_PREFIX}:#{Date.current.strftime('%Y-%m')}"
+      end
+
+      def budget_exceeded?
+        current_spend = Rails.cache.read(budget_key) || 0.0
+        current_spend.to_f >= MONTHLY_BUDGET
+      end
+
+      def increment_budget(cost)
+        # Atomic-safe: read + write with the new total.
+        # Acceptable for single-user app — concurrent LLM calls are serialized
+        # by the strategy chain (one expense at a time).
+        current = Rails.cache.read(budget_key) || 0.0
+        Rails.cache.write(budget_key, current.to_f + cost, expires_in: BUDGET_TTL)
+      end
+
+      def build_budget_exceeded_result(start_time)
+        CategorizationResult.new(
+          method: "no_match",
+          processing_time_ms: duration_ms(start_time),
+          metadata: { reason: "budget_exceeded" }
         )
       end
 

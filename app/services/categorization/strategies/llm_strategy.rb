@@ -89,7 +89,7 @@ module Services::Categorization
         build_llm_result(parsed, duration_ms(start_time))
       end
 
-      def store_cache(normalized, parsed, api_result, total_tokens, existing_entry)
+      def store_cache(normalized, parsed, api_result, total_tokens, _existing_entry)
         attrs = {
           category: parsed[:category],
           confidence: parsed[:confidence],
@@ -99,11 +99,14 @@ module Services::Categorization
           expires_at: CACHE_TTL.from_now
         }
 
-        if existing_entry
-          existing_entry.update!(attrs)
-        else
-          LlmCategorizationCacheEntry.create!(attrs.merge(merchant_normalized: normalized))
+        # Use find_or_create + update to handle concurrent requests safely.
+        # Rescues RecordNotUnique from the unique index on merchant_normalized.
+        entry = LlmCategorizationCacheEntry.find_or_create_by!(merchant_normalized: normalized) do |e|
+          e.assign_attributes(attrs)
         end
+        entry.update!(attrs) unless entry.previously_new_record?
+      rescue ActiveRecord::RecordNotUnique
+        LlmCategorizationCacheEntry.find_by!(merchant_normalized: normalized).update!(attrs)
       end
 
       def feed_vector_updater(expense, category)

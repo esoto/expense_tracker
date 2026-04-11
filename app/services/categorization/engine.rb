@@ -6,6 +6,8 @@ require_relative "ml_confidence_integration"
 require_relative "service_registry"
 require_relative "strategies/base_strategy"
 require_relative "strategies/pattern_strategy"
+require_relative "strategies/similarity_strategy"
+require_relative "strategies/llm_strategy"
 require_relative "learning/metrics_recorder"
 require_relative "learning/correction_handler"
 
@@ -582,7 +584,9 @@ module Services::Categorization
           fuzzy_matcher: @fuzzy_matcher,
           confidence_calculator: @confidence_calculator,
           logger: @logger
-        )
+        ),
+        Strategies::SimilarityStrategy.new(logger: @logger),
+        Strategies::LlmStrategy.new(logger: @logger)
       ]
     end
 

@@ -241,6 +241,7 @@ const translations = {
       },
       confidence: {
         display: "Confianza: %{percentage}%",
+        very_high: "Confianza muy alta - categorización altamente precisa",
         high: "Alta probabilidad de categorización correcta",
         medium: "Categorización probable pero puede requerir revisión",
         low: "Baja confianza - se recomienda revisar",
@@ -663,6 +664,7 @@ const translations = {
       },
       confidence: {
         display: "Confidence: %{percentage}%",
+        very_high: "Very high confidence - highly accurate categorization",
         high: "High probability of correct categorization",
         medium: "Probable categorization but may require review",
         low: "Low confidence - recommended to review",

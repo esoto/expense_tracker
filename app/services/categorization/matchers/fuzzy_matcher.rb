@@ -556,7 +556,7 @@ module Services::Categorization
         return [] if search_text.blank? || patterns.empty?
 
         matches = []
-        min_confidence = options[:min_confidence] || 0.70
+        min_confidence = options[:min_confidence] || @options[:min_confidence]
         max_patterns_to_check = 20 # Limit for performance
 
         # Pre-process search text once

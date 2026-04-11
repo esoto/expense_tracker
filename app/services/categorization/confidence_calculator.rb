@@ -92,16 +92,22 @@ module Services::Categorization
         # Gate: if text_match is below threshold, other factors cannot
         # inflate the score. Time/amount/usage are boosters for real
         # matches, not standalone confidence generators.
+        # Gate: if text_match is below threshold, other factors cannot
+        # inflate the score. The score is still sigmoid-normalized so
+        # downstream callers (Engine#high_confidence?, auto-update) see
+        # values on the same scale as non-gated results.
+        # Note: TEXT_MATCH_GATE_THRESHOLD is aligned with
+        # FuzzyMatcher::DEFAULT_OPTIONS[:min_confidence] (both 0.75).
         text_match_value = factors[:text_match] || 0.0
         if text_match_value < TEXT_MATCH_GATE_THRESHOLD
-          # Use text_match directly as the score — no inflation from other factors
+          normalized_gated_score = apply_sigmoid_normalization(text_match_value)
           return ConfidenceScore.new(
-            score: text_match_value,
+            score: normalized_gated_score,
             raw_score: text_match_value,
             factors: factors,
             pattern: pattern,
             expense: expense,
-            metadata: build_metadata(factors, text_match_value, text_match_value, false).merge(
+            metadata: build_metadata(factors, text_match_value, normalized_gated_score, true).merge(
               gated: true,
               gate_reason: "text_match #{text_match_value.round(3)} < #{TEXT_MATCH_GATE_THRESHOLD}"
             )

@@ -216,6 +216,7 @@ RSpec.describe Services::Categorization::Strategies::PatternStrategy, :unit, typ
         result = strategy.call(expense)
 
         expect(result).not_to be_successful
+        expect(result.category).to be_nil
       end
     end
 

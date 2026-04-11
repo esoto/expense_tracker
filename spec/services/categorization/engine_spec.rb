@@ -791,6 +791,7 @@ RSpec.describe Services::Categorization::Engine, type: :service do
         # a text-based match (merchant/keyword) to exist first.
         result = engine.categorize(expense)
         expect(result).not_to be_successful
+        expect(result.category).to be_nil
       end
     end
   end

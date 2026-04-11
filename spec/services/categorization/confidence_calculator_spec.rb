@@ -745,4 +745,81 @@ RSpec.describe Services::Categorization::ConfidenceCalculator do
       expect(calculator).to have_received(:calculate_weighted_score).once
     end
   end
+
+  describe "TEXT_MATCH_GATE_THRESHOLD", :unit do
+    let(:high_usage_pattern) do
+      create(:categorization_pattern,
+             category: category,
+             pattern_type: "merchant",
+             pattern_value: "test merchant",
+             usage_count: 500,
+             success_count: 475,
+             success_rate: 0.95,
+             metadata: {
+               "amount_stats" => { "count" => 100, "mean" => 100.0, "std_dev" => 20.0, "min" => 10, "max" => 500 }
+             })
+    end
+
+    context "when text_match is below threshold (< 0.75)" do
+      let(:low_match) do
+        Services::Categorization::Matchers::MatchResult.new(
+          success: true,
+          matches: [ { score: 0.60, text: "unrelated" } ]
+        )
+      end
+
+      it "gates the score — other factors cannot inflate it" do
+        result = calculator.calculate(expense, high_usage_pattern, low_match)
+
+        expect(result).to be_valid
+        # Score should be sigmoid of text_match only, not boosted by usage/success
+        expect(result.score).to be < 0.75
+        expect(result.metadata[:gated]).to eq(true)
+        expect(result.metadata[:gate_reason]).to include("text_match")
+      end
+
+      it "still applies sigmoid normalization for downstream consistency" do
+        result = calculator.calculate(expense, high_usage_pattern, low_match)
+
+        # raw_score is the text_match value, score is sigmoid-normalized
+        expect(result.raw_score).to be < result.score  # sigmoid pushes toward extremes
+        expect(result.score).to be > 0  # not zero
+      end
+    end
+
+    context "when text_match is at boundary (exactly 0.75)" do
+      let(:boundary_match) do
+        Services::Categorization::Matchers::MatchResult.new(
+          success: true,
+          matches: [ { score: 0.75, text: "boundary" } ]
+        )
+      end
+
+      it "does NOT gate — uses full weighted scoring with all factors" do
+        result = calculator.calculate(expense, high_usage_pattern, boundary_match)
+
+        expect(result).to be_valid
+        expect(result.metadata[:gated]).to be_nil
+        # Full weighted scoring with usage/success boost should push score higher
+        expect(result.score).to be > 0.75
+      end
+    end
+
+    context "when text_match is above threshold" do
+      let(:strong_match) do
+        Services::Categorization::Matchers::MatchResult.new(
+          success: true,
+          matches: [ { score: 0.90, text: "amazon" } ]
+        )
+      end
+
+      it "uses full multi-factor scoring with sigmoid normalization" do
+        result = calculator.calculate(expense, high_usage_pattern, strong_match)
+
+        expect(result).to be_valid
+        expect(result.metadata[:gated]).to be_nil
+        expect(result.score).to be > 0.85
+      end
+    end
+  end
 end

@@ -229,13 +229,24 @@ const translations = {
     },
     categories: {
       actions: {
-        correct: "Corregir categoría"
+        correct: "Corregir categoría",
+        apply: "Aplicar",
+        cancel: "Cancelar"
       },
       labels: {
         select: "Seleccionar categoría..."
       },
       errors: {
         auto_failed: "La categorización automática falló"
+      },
+      confidence: {
+        display: "Confianza: %{percentage}%",
+        very_high: "Confianza muy alta - categorización altamente precisa",
+        high: "Alta probabilidad de categorización correcta",
+        medium: "Categorización probable pero puede requerir revisión",
+        low: "Baja confianza - se recomienda revisar",
+        very_low: "Muy baja confianza - requiere revisión manual",
+        shortcut_hint: "Presiona 'C' para corregir"
       }
     },
     filters: {
@@ -641,13 +652,24 @@ const translations = {
     },
     categories: {
       actions: {
-        correct: "Correct category"
+        correct: "Correct category",
+        apply: "Apply",
+        cancel: "Cancel"
       },
       labels: {
         select: "Select category..."
       },
       errors: {
         auto_failed: "Auto-categorization failed"
+      },
+      confidence: {
+        display: "Confidence: %{percentage}%",
+        very_high: "Very high confidence - highly accurate categorization",
+        high: "High probability of correct categorization",
+        medium: "Probable categorization but may require review",
+        low: "Low confidence - recommended to review",
+        very_low: "Very low confidence - requires manual review",
+        shortcut_hint: "Press 'C' to correct"
       }
     },
     filters: {

@@ -268,4 +268,128 @@ RSpec.describe Services::Categorization::Monitoring::MetricsDashboardService, ty
       end
     end
   end
+
+  describe "#api_budget_status" do
+    let(:cache_key) { "llm_budget:#{Date.current.strftime('%Y-%m')}" }
+
+    context "when cache has current month spend" do
+      before do
+        allow(Rails.cache).to receive(:read).with(cache_key).and_return(2.50)
+      end
+
+      it "returns spend from cache" do
+        result = service.api_budget_status
+        expect(result[:current_spend]).to eq(2.50)
+      end
+
+      it "returns the budget amount" do
+        result = service.api_budget_status
+        expect(result[:budget]).to eq(5.0)
+      end
+
+      it "calculates percentage correctly" do
+        result = service.api_budget_status
+        expect(result[:percentage]).to eq(50.0)
+      end
+    end
+
+    context "when cache is empty and falls back to database" do
+      before do
+        allow(Rails.cache).to receive(:read).with(cache_key).and_return(nil)
+        allow(CategorizationMetric).to receive_message_chain(:recent, :sum).and_return(1.25)
+      end
+
+      it "returns spend from database" do
+        result = service.api_budget_status
+        expect(result[:current_spend]).to eq(1.25)
+      end
+
+      it "calculates percentage from database spend" do
+        result = service.api_budget_status
+        expect(result[:percentage]).to eq(25.0)
+      end
+    end
+
+    context "with healthy status (under 50%)" do
+      before do
+        allow(Rails.cache).to receive(:read).with(cache_key).and_return(2.0)
+      end
+
+      it "returns healthy status" do
+        expect(service.api_budget_status[:status]).to eq("healthy")
+      end
+    end
+
+    context "with warning status (exactly 50%)" do
+      before do
+        allow(Rails.cache).to receive(:read).with(cache_key).and_return(2.5)
+      end
+
+      it "returns warning status" do
+        expect(service.api_budget_status[:status]).to eq("warning")
+      end
+    end
+
+    context "with warning status (between 50% and 80%)" do
+      before do
+        allow(Rails.cache).to receive(:read).with(cache_key).and_return(3.5)
+      end
+
+      it "returns warning status" do
+        expect(service.api_budget_status[:status]).to eq("warning")
+      end
+    end
+
+    context "with critical status (exactly 80%)" do
+      before do
+        allow(Rails.cache).to receive(:read).with(cache_key).and_return(4.0)
+      end
+
+      it "returns critical status" do
+        expect(service.api_budget_status[:status]).to eq("critical")
+      end
+    end
+
+    context "with critical status (exceeds budget)" do
+      before do
+        allow(Rails.cache).to receive(:read).with(cache_key).and_return(6.0)
+      end
+
+      it "returns critical status" do
+        expect(service.api_budget_status[:status]).to eq("critical")
+      end
+    end
+
+    context "when spend is zero" do
+      before do
+        allow(Rails.cache).to receive(:read).with(cache_key).and_return(0.0)
+      end
+
+      it "returns healthy status" do
+        expect(service.api_budget_status[:status]).to eq("healthy")
+      end
+
+      it "returns zero percentage" do
+        expect(service.api_budget_status[:percentage]).to eq(0.0)
+      end
+    end
+
+    context "return value structure" do
+      before do
+        allow(Rails.cache).to receive(:read).with(cache_key).and_return(1.0)
+      end
+
+      it "returns all required keys" do
+        result = service.api_budget_status
+        expect(result).to include(:current_spend, :budget, :percentage, :status)
+      end
+
+      it "returns numeric values for spend, budget, and percentage" do
+        result = service.api_budget_status
+        expect(result[:current_spend]).to be_a(Numeric)
+        expect(result[:budget]).to be_a(Numeric)
+        expect(result[:percentage]).to be_a(Numeric)
+      end
+    end
+  end
 end

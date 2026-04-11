@@ -6,6 +6,7 @@ module Admin
     def index
       service = Services::Categorization::Monitoring::MetricsDashboardService.new
       @overview = service.overview
+      @budget_status = service.api_budget_status
       @layer_performance = service.layer_performance
       @problem_merchants = service.problem_merchants
     end

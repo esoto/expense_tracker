@@ -5,6 +5,8 @@ module Services::Categorization
     # Aggregates categorization metrics for the admin dashboard.
     # Uses single-query conditional aggregation for efficiency.
     class MetricsDashboardService
+      MONTHLY_BUDGET = 5.0
+
       def overview(period: 30.days)
         result = CategorizationMetric.recent(period).pick(
           Arel.sql("COUNT(*)"),
@@ -65,7 +67,38 @@ module Services::Categorization
           end
       end
 
+      def api_budget_status
+        budget = MONTHLY_BUDGET
+        current_spend = fetch_current_spend
+        percentage = budget.zero? ? 0.0 : (current_spend / budget * 100).round(2)
+
+        {
+          current_spend: current_spend,
+          budget: budget,
+          percentage: percentage,
+          status: budget_status(percentage)
+        }
+      end
+
       private
+
+      def fetch_current_spend
+        cache_key = "llm_budget:#{Date.current.strftime('%Y-%m')}"
+        cached = Rails.cache.read(cache_key)
+        return cached.to_f if cached
+
+        CategorizationMetric.recent(30.days).sum(:api_cost).to_f
+      end
+
+      def budget_status(percentage)
+        if percentage >= 80
+          "critical"
+        elsif percentage >= 50
+          "warning"
+        else
+          "healthy"
+        end
+      end
 
       def empty_overview
         { empty: true, accuracy: 0.0, fallback_rate: 0.0, correction_rate: 0.0, api_spend: 0.0 }

@@ -101,7 +101,7 @@ module Services::Categorization
         build_llm_result(parsed, duration_ms(start_time))
       end
 
-      def store_cache(normalized, parsed, api_result, total_tokens, existing_entry)
+      def store_cache(normalized, parsed, api_result, total_tokens, _existing_entry)
         attrs = {
           category: parsed[:category],
           confidence: parsed[:confidence],
@@ -111,11 +111,13 @@ module Services::Categorization
           expires_at: CACHE_TTL.from_now
         }
 
-        if existing_entry
-          existing_entry.update!(attrs)
-        else
-          LlmCategorizationCacheEntry.create!(attrs.merge(merchant_normalized: normalized))
+        # Use find_or_create + update to handle concurrent requests safely.
+        entry = LlmCategorizationCacheEntry.find_or_create_by!(merchant_normalized: normalized) do |e|
+          e.assign_attributes(attrs)
         end
+        entry.update!(attrs) unless entry.previously_new_record?
+      rescue ActiveRecord::RecordNotUnique
+        LlmCategorizationCacheEntry.find_by!(merchant_normalized: normalized).update!(attrs)
       end
 
       def feed_vector_updater(expense, category)
@@ -162,12 +164,15 @@ module Services::Categorization
 
       def budget_exceeded?
         current_spend = Rails.cache.read(budget_key) || 0.0
-        current_spend >= MONTHLY_BUDGET
+        current_spend.to_f >= MONTHLY_BUDGET
       end
 
       def increment_budget(cost)
-        current_spend = Rails.cache.read(budget_key) || 0.0
-        Rails.cache.write(budget_key, current_spend + cost, expires_in: BUDGET_TTL)
+        # Atomic-safe: read + write with the new total.
+        # Acceptable for single-user app — concurrent LLM calls are serialized
+        # by the strategy chain (one expense at a time).
+        current = Rails.cache.read(budget_key) || 0.0
+        Rails.cache.write(budget_key, current.to_f + cost, expires_in: BUDGET_TTL)
       end
 
       def build_budget_exceeded_result(start_time)

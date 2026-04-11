@@ -95,7 +95,14 @@ module Services::Categorization
         load_patterns_in_batches(options).each do |patterns|
           matches.concat(match_merchant_patterns(expense, patterns, options))
           matches.concat(match_description_patterns(expense, patterns, options))
-          matches.concat(match_other_patterns(expense, patterns))
+
+          # Time/amount patterns are boosters only — they add signal to
+          # existing merchant/keyword matches but don't create standalone
+          # matches. Without a text-based match, these broad patterns
+          # would match almost any expense and prevent L2/L3 from running.
+          if matches.any?
+            matches.concat(match_other_patterns(expense, patterns))
+          end
 
           break if matches.size >= options.fetch(:max_results, 10) * 2
         end

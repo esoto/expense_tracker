@@ -786,11 +786,11 @@ RSpec.describe Services::Categorization::Engine, type: :service do
                category: amount_category)
       end
 
-      it "new amount_range pattern can produce a match" do
+      it "amount_range pattern alone does not produce a standalone match" do
+        # amount_range/time patterns are boosters only — they require
+        # a text-based match (merchant/keyword) to exist first.
         result = engine.categorize(expense)
-        expect(result).to be_successful
-        expect(result.category).to eq(amount_category)
-        expect(result.confidence).to be >= 0.5
+        expect(result).not_to be_successful
       end
     end
   end

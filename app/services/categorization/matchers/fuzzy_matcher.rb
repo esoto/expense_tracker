@@ -22,7 +22,7 @@ module Services::Categorization
       # Default configuration
       DEFAULT_OPTIONS = {
         algorithms: [ :jaro_winkler, :trigram ],
-        min_confidence: 0.6,
+        min_confidence: 0.75,
         max_results: 5,
         timeout_ms: 10,
         enable_caching: true,

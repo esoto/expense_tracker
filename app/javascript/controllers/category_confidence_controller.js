@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { shouldSuppressShortcut } from "utilities/keyboard_shortcut_helpers"
+import { t } from "services/i18n"
 
 export default class extends Controller {
   static targets = ["badge", "tooltip", "correctionPanel", "correctionTrigger", "categorySelect"]
@@ -79,32 +80,28 @@ export default class extends Controller {
   }
 
   getTooltipContent() {
-    let content = `<div class="font-semibold mb-1">Confianza: ${this.percentageValue}%</div>`
-    
+    let content = `<div class="font-semibold mb-1">${t("categories.confidence.display", { percentage: this.percentageValue })}</div>`
+
     if (this.explanationValue) {
       content += `<div class="text-slate-300">${this.explanationValue}</div>`
     }
-    
-    const levelDescriptions = {
-      high: "Alta probabilidad de categorización correcta",
-      medium: "Categorización probable pero puede requerir revisión",
-      low: "Baja confianza - se recomienda revisar",
-      very_low: "Muy baja confianza - requiere revisión manual"
-    }
-    
-    if (levelDescriptions[this.levelValue]) {
+
+    const levelKey = this.levelValue // high, medium, low, very_low
+    const levelText = t(`categories.confidence.${levelKey}`)
+
+    if (levelText !== `categories.confidence.${levelKey}`) {
       content += `<div class="mt-1 pt-1 border-t border-slate-600 text-slate-400">
-                    ${levelDescriptions[this.levelValue]}
+                    ${levelText}
                   </div>`
     }
-    
+
     // Add keyboard shortcut hint
     if (this.levelValue === "low" || this.levelValue === "very_low") {
       content += `<div class="mt-1 text-slate-500">
-                    Presiona 'C' para corregir
+                    ${t("categories.confidence.shortcut_hint")}
                   </div>`
     }
-    
+
     return content
   }
 
@@ -142,20 +139,20 @@ export default class extends Controller {
     panel.setAttribute("data-category-confidence-target", "correctionPanel")
     
     panel.innerHTML = `
-      <div class="text-sm font-medium text-slate-700 mb-2">Corregir categoría</div>
+      <div class="text-sm font-medium text-slate-700 mb-2">${t("categories.actions.correct")}</div>
       <div class="space-y-2">
         <select data-category-confidence-target="categorySelect"
                 class="w-full rounded-md border-slate-300 text-sm focus:border-teal-500 focus:ring-teal-500">
-          <option value="">Seleccionar categoría...</option>
+          <option value="">${t("categories.labels.select")}</option>
         </select>
         <div class="flex gap-2">
           <button data-action="click->category-confidence#applyCorrection"
                   class="flex-1 px-3 py-1.5 bg-teal-700 text-white text-sm rounded-lg hover:bg-teal-800">
-            Aplicar
+            ${t("categories.actions.apply")}
           </button>
           <button data-action="click->category-confidence#hideCorrection"
                   class="flex-1 px-3 py-1.5 bg-slate-200 text-slate-700 text-sm rounded-lg hover:bg-slate-300">
-            Cancelar
+            ${t("categories.actions.cancel")}
           </button>
         </div>
       </div>
@@ -180,7 +177,7 @@ export default class extends Controller {
       
       if (this.hasCategorySelectTarget) {
         const select = this.categorySelectTarget
-        select.innerHTML = '<option value="">Seleccionar categoría...</option>'
+        select.innerHTML = `<option value="">${t("categories.labels.select")}</option>`
         
         categories.forEach(category => {
           const option = document.createElement("option")
@@ -200,7 +197,7 @@ export default class extends Controller {
     
     const categoryId = this.categorySelectTarget.value
     if (!categoryId) {
-      this.showError("Por favor selecciona una categoría")
+      this.showError(t("expenses.errors.category_required"))
       return
     }
     
@@ -216,7 +213,7 @@ export default class extends Controller {
       
       if (response.ok) {
         // Show success feedback
-        this.showSuccess("Categoría actualizada correctamente")
+        this.showSuccess(t("expenses.notifications.category_updated"))
         this.hideCorrection()
 
         // Reload the page to reflect the change
@@ -227,11 +224,11 @@ export default class extends Controller {
           window.location.reload()
         }
       } else {
-        this.showError("Error al actualizar la categoría")
+        this.showError(t("expenses.errors.category_update_failed"))
       }
     } catch (error) {
       console.error("Error applying correction:", error)
-      this.showError("Error de conexión")
+      this.showError(t("common.errors.connection"))
     }
   }
 

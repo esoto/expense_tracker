@@ -67,6 +67,9 @@ export default class extends Controller {
     // Only handle shortcuts when row is focused/hovered
     if (!this.element.matches(':hover, :focus-within')) return
 
+    // Skip single-key shortcuts when modifier keys are held (Cmd+R, Ctrl+R, etc.)
+    if (event.metaKey || event.ctrlKey || event.altKey) return
+
     switch(event.key.toLowerCase()) {
       case 'c':
         event.preventDefault()

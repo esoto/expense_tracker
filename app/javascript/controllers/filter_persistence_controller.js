@@ -25,10 +25,11 @@ export default class extends Controller {
     // Set up storage
     this.storage = this.storageTypeValue === 'local' ? localStorage : sessionStorage
     
-    // Auto-restore filters if enabled
-    if (this.autoRestoreValue) {
-      this.restoreFilters()
-    }
+    // Auto-restore is disabled by default — clean URL loads should use server
+    // defaults (this month). Filters are only restored when the user explicitly
+    // clicks the restore button. Saved filters still persist for that purpose.
+    // To re-enable auto-restore, set data-filter-persistence-auto-restore-value="true"
+    // on the controller element.
     
     // Set up auto-save listeners
     if (this.autoSaveValue) {
@@ -212,12 +213,16 @@ export default class extends Controller {
         return false
       }
       
-      // Apply filters if not already in URL
-      if (!this.hasFiltersInUrl()) {
-        this.applyFilters(data.filters)
-        this.showNotification('Filtros restaurados', 'info')
-        return true
+      // Only restore if URL already has filter params (user navigated with filters).
+      // If URL is clean (no params), respect the clean state — don't override with storage.
+      // This lets users reset to defaults by clearing URL params.
+      if (this.hasFiltersInUrl()) {
+        return false  // URL has filters, no need to restore from storage
       }
+
+      // URL is clean — check if this is a fresh navigation (no referrer filter context)
+      // Don't auto-restore on clean URL loads; let the server defaults apply
+      return false
       
       return false
     } catch (error) {

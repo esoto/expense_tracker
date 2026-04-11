@@ -9,16 +9,20 @@
        data-category-confidence-percentage-value="<%= expense.confidence_percentage %>"
        data-category-confidence-explanation-value="<%= expense.ml_confidence_explanation || '' %>">
 
-    <%# Category Badge %>
+    <%# Category Badge — clickable to correct %>
     <% if expense.category %>
-      <span class="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full transition-all"
-            style="background-color: <%= expense.category.color %>20; color: <%= expense.category.color %>;">
+      <button class="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full transition-all cursor-pointer hover:ring-2 hover:ring-teal-300"
+              style="background-color: <%= expense.category.color %>20; color: <%= expense.category.color %>;"
+              data-action="click->category-confidence#showCorrection"
+              title="<%= t('expenses.actions.change_category', default: 'Click to change category') %>">
         <%= expense.category.display_name %>
-      </span>
+      </button>
     <% else %>
-      <span class="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-600">
+      <button class="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-600 cursor-pointer hover:ring-2 hover:ring-teal-300"
+              data-action="click->category-confidence#showCorrection"
+              title="<%= t('expenses.actions.set_category', default: 'Click to set category') %>">
         Sin categoría
-      </span>
+      </button>
     <% end %>
 
     <%# Confidence Indicator %>

@@ -241,6 +241,8 @@ en:
       delete_title: "Delete expense (Delete)"
       delete_aria: "Delete expense"
       menu_label: "Actions"
+      change_category: "Click to change category"
+      set_category: "Click to set category"
       mark_processed: "Mark Processed"
       mark_pending: "Mark Pending"
       duplicate: "Duplicate"

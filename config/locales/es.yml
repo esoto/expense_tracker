@@ -238,6 +238,8 @@ es:
       delete_title: "Eliminar gasto (Delete)"
       delete_aria: "Eliminar gasto"
       menu_label: "Acciones"
+      change_category: "Click para cambiar categoría"
+      set_category: "Click para asignar categoría"
       mark_processed: "Marcar Procesado"
       mark_pending: "Marcar Pendiente"
       duplicate: "Duplicar"

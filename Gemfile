@@ -145,4 +145,5 @@ gem "rails_best_practices", "~> 1.23", group: :development
 # Categorization improvement dependencies
 group :categorization do
   gem "fuzzy-string-match", "~> 1.0"
+  gem "anthropic"
 end

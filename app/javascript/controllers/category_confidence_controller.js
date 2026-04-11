@@ -168,13 +168,14 @@ export default class extends Controller {
       this.element.appendChild(panel)
     }
     
-    this.correctionPanelTarget = panel
+    // Panel target is auto-discovered by Stimulus via the data attribute set at line 142.
+    // Do NOT manually assign this.correctionPanelTarget — it's a read-only getter.
     this.loadCategories()
   }
 
   async loadCategories() {
     try {
-      const response = await fetch("/api/v1/categories")
+      const response = await fetch("/categories.json")
       const categories = await response.json()
       
       if (this.hasCategorySelectTarget) {
@@ -216,14 +217,15 @@ export default class extends Controller {
       if (response.ok) {
         // Show success feedback
         this.showSuccess("Categoría actualizada correctamente")
-        
-        // Trigger Turbo to refresh the expense row
-        const turboFrame = document.querySelector(`#expense_${this.expenseIdValue}_category`)
-        if (turboFrame) {
-          turboFrame.reload()
-        }
-        
         this.hideCorrection()
+
+        // Reload the page to reflect the change
+        // Turbo Frames don't have reload() — use Turbo.visit for a smooth page refresh
+        if (window.Turbo) {
+          window.Turbo.visit(window.location.href, { action: "replace" })
+        } else {
+          window.location.reload()
+        }
       } else {
         this.showError("Error al actualizar la categoría")
       }

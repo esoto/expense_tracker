@@ -101,6 +101,21 @@ RSpec.describe Services::Categorization::Learning::CorrectionHandler, type: :ser
         }.to change(LlmCategorizationCacheEntry, :count).by(-1)
       end
 
+      it "stores correction context in Rails.cache after three-strike" do
+        handler.handle_correction(
+          expense: expense,
+          old_category: old_category,
+          new_category: new_category
+        )
+
+        cache_key = "llm_correction:#{normalized_merchant}"
+        correction_context = Rails.cache.read(cache_key)
+
+        expect(correction_context).to be_present
+        expect(correction_context[:old]).to eq(old_category.i18n_key)
+        expect(correction_context[:new]).to eq(new_category.i18n_key)
+      end
+
       it "logs the three-strike event" do
         handler.handle_correction(
           expense: expense,

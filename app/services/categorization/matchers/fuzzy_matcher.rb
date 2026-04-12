@@ -22,7 +22,7 @@ module Services::Categorization
       # Default configuration
       DEFAULT_OPTIONS = {
         algorithms: [ :jaro_winkler, :trigram ],
-        min_confidence: 0.6,
+        min_confidence: 0.75,
         max_results: 5,
         timeout_ms: 10,
         enable_caching: true,
@@ -556,7 +556,7 @@ module Services::Categorization
         return [] if search_text.blank? || patterns.empty?
 
         matches = []
-        min_confidence = options[:min_confidence] || 0.70
+        min_confidence = options[:min_confidence] || @options[:min_confidence]
         max_patterns_to_check = 20 # Limit for performance
 
         # Pre-process search text once

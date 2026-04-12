@@ -38,6 +38,12 @@ module Services::Categorization
     SIGMOID_STEEPNESS = 10.0  # Controls how aggressive the push to 0/1 is
     SIGMOID_MIDPOINT = 0.5    # The inflection point
 
+    # Text match gate: if the text_match factor is below this threshold,
+    # other factors (usage, time, amount) cannot inflate the score.
+    # This prevents unrelated merchants from getting high confidence
+    # just because they match on time-of-day or amount range.
+    TEXT_MATCH_GATE_THRESHOLD = 0.75
+
     # Performance thresholds
     PERFORMANCE_THRESHOLD_MS = 1.0
     CACHE_TTL = 5.minutes
@@ -82,6 +88,31 @@ module Services::Categorization
         # Validate required factors
         validation_result = validate_factors(factors)
         return validation_result unless validation_result.nil?
+
+        # Gate: if text_match is below threshold, other factors cannot
+        # inflate the score. Time/amount/usage are boosters for real
+        # matches, not standalone confidence generators.
+        # Gate: if text_match is below threshold, other factors cannot
+        # inflate the score. The score is still sigmoid-normalized so
+        # downstream callers (Engine#high_confidence?, auto-update) see
+        # values on the same scale as non-gated results.
+        # Note: TEXT_MATCH_GATE_THRESHOLD is aligned with
+        # FuzzyMatcher::DEFAULT_OPTIONS[:min_confidence] (both 0.75).
+        text_match_value = factors[:text_match] || 0.0
+        if text_match_value < TEXT_MATCH_GATE_THRESHOLD
+          normalized_gated_score = apply_sigmoid_normalization(text_match_value)
+          return ConfidenceScore.new(
+            score: normalized_gated_score,
+            raw_score: text_match_value,
+            factors: factors,
+            pattern: pattern,
+            expense: expense,
+            metadata: build_metadata(factors, text_match_value, normalized_gated_score, true).merge(
+              gated: true,
+              gate_reason: "text_match #{text_match_value.round(3)} < #{TEXT_MATCH_GATE_THRESHOLD}"
+            )
+          )
+        end
 
         # Calculate weighted score
         weighted_score = calculate_weighted_score(factors)

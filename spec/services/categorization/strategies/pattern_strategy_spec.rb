@@ -210,12 +210,13 @@ RSpec.describe Services::Categorization::Strategies::PatternStrategy, :unit, typ
                category: amount_category)
       end
 
-      it "matches non-fuzzy pattern types" do
-        # Clear any other patterns that might match
+      it "amount_range patterns only boost existing text matches, not standalone" do
+        # amount_range/time patterns are boosters — they cannot produce
+        # matches on their own without a merchant/keyword match first.
         result = strategy.call(expense)
 
-        expect(result).to be_successful
-        expect(result.category).to eq(amount_category)
+        expect(result).not_to be_successful
+        expect(result.category).to be_nil
       end
     end
 

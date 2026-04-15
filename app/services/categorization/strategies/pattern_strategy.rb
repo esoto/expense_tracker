@@ -100,8 +100,17 @@ module Services::Categorization
           # existing merchant/keyword matches but don't create standalone
           # matches. Without a text-based match, these broad patterns
           # would match almost any expense and prevent L2/L3 from running.
+          #
+          # Bug 2 fix: only attach boosters to categories that already have
+          # a text match in THIS batch. Cross-category attachment was the
+          # mechanism that let "Entretenimiento:time:weekend" receive a
+          # confidence boost when the real text match was in "Supermercado".
           if matches.any?
-            matches.concat(match_other_patterns(expense, patterns))
+            text_matched_categories = matches.map { |m| m[:pattern].category_id }.to_set
+            boosters = match_other_patterns(expense, patterns).select do |m|
+              text_matched_categories.include?(m[:pattern].category_id)
+            end
+            matches.concat(boosters)
           end
 
           break if matches.size >= options.fetch(:max_results, 10) * 2
@@ -188,7 +197,22 @@ module Services::Categorization
         scored = pattern_matches
           .group_by { |m| m[:pattern].category_id }
           .map do |_category_id, matches|
-            best_match = matches.max_by { |m| m[:match_score] }
+            # Bug 1 fix: separate text matches from booster matches.
+            # Boosters (time/amount) carry match_score: 1.0 because they are
+            # binary (they either match or they don't). Using that 1.0 as the
+            # text_match input to confidence_calculator bypasses the
+            # TEXT_MATCH_GATE_THRESHOLD = 0.75 gate.
+            #
+            # We pass the best TEXT match score to the calculator so the gate
+            # can fire properly. Boosters still contribute via the calculator's
+            # temporal_pattern / amount_similarity factor weights — they just
+            # don't impersonate the text_match score.
+            text_matches = matches.select { |m| m[:match_type] == "fuzzy_match" }
+            best_text_match = text_matches.max_by { |m| m[:match_score] }
+
+            # Fall back to the overall best match if there are no text matches
+            # (shouldn't happen after Bug 2 fix, but defensive guard).
+            best_match = best_text_match || matches.max_by { |m| m[:match_score] }
             pattern = best_match[:pattern]
             category = matches.first[:pattern].category
 

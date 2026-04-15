@@ -772,7 +772,7 @@ module Services::Categorization
       {
         check_user_preferences: true,
         include_alternatives: false,
-        min_confidence: 0.5,
+        min_confidence: 0.75,
         max_results: 10,
         max_categories: 5,
         auto_update: true

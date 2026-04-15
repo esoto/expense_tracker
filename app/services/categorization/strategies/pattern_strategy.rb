@@ -204,9 +204,11 @@ module Services::Categorization
             # TEXT_MATCH_GATE_THRESHOLD = 0.75 gate.
             #
             # We pass the best TEXT match score to the calculator so the gate
-            # can fire properly. Boosters still contribute via the calculator's
-            # temporal_pattern / amount_similarity factor weights — they just
-            # don't impersonate the text_match score.
+            # can fire properly. Boosters are guards — they prevent the strategy
+            # from producing results without a real text match (Bug 2 fix), but
+            # they do not add score through confidence_calculator's factor weights
+            # because calculate_temporal_pattern_factor only fires for time-type
+            # patterns, and the representative pattern here is always a text type.
             text_matches = matches.select { |m| m[:match_type] == "fuzzy_match" }
             best_text_match = text_matches.max_by { |m| m[:match_score] }
 

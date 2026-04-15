@@ -37,9 +37,10 @@ rescue => e
 end
 
 # Food & Dining Patterns (Alimentación)
-# Note: Fast food chains (KFC, McDonald's, Arcos Dorados, Burger King, Pizza Hut) have been moved
-# to the Comida Rápida (fast_food) category added in PER-410, since those are distinct quick-service
-# restaurants rather than sit-down dining. Alimentación now covers sit-down restaurants and cafes.
+# Note: Fast food chains that were previously seeded here (KFC, McDonald's, Burger King, Pizza Hut)
+# have been moved to Comida Rápida (fast_food) added in PER-410 — they are quick-service chains,
+# not sit-down dining. Arcos Dorados was never seeded here; it is new in Comida Rápida.
+# Alimentación now covers sit-down restaurants and cafes.
 food_patterns = [
   # Merchant patterns - sit-down restaurants and cafes
   { type: "merchant", value: "starbucks", confidence: 4.0, usage_count: 234, success_count: 220 },
@@ -126,6 +127,7 @@ utilities_patterns = [
   { type: "merchant", value: "movistar", confidence: 4.5, usage_count: 123, success_count: 117 },
   { type: "merchant", value: "tigo", confidence: 4.5, usage_count: 189, success_count: 180 },
   { type: "merchant", value: "telecable", confidence: 4.5, usage_count: 89, success_count: 85 },
+  { type: "merchant", value: "liberty telecomunicaci", confidence: 4.0, usage_count: 10, success_count: 9 },
 
   # Keywords
   { type: "keyword", value: "electricidad", confidence: 3.5, usage_count: 234, success_count: 211 },
@@ -143,10 +145,11 @@ utilities_patterns = [
 ]
 
 # Entertainment Patterns (Entretenimiento)
-# Note: Recurring digital subscriptions (Netflix, Spotify, Disney, HBO, Audible, Nintendo, Apple,
-# OpenAI, Claude) have been moved to Suscripciones (subscriptions), added in PER-410.
-# Rationale: those are recurring monthly bills, not one-off entertainment expenses.
-# Entretenimiento now covers movie theaters, events, live shows — things you buy per visit.
+# Note: Previously-seeded streaming services (Netflix, Spotify, Disney, HBO) have been moved
+# to Suscripciones (subscriptions), added in PER-410. Rationale: they are recurring monthly
+# bills, not per-visit entertainment. New subscription-only merchants (Audible, Nintendo, Apple,
+# OpenAI, Claude) are seeded directly in Suscripciones, never here.
+# Entretenimiento now covers cinemas, events, live shows — one-off purchases per visit.
 entertainment_patterns = [
   # Merchant patterns - cinemas, events, venues
   { type: "merchant", value: "cinepolis", confidence: 4.5, usage_count: 234, success_count: 222 },
@@ -335,11 +338,15 @@ taxes_patterns = [
 ]
 
 # Suscripciones Patterns (subscriptions)
-# Decision: streaming/software subscriptions (Netflix, Spotify, Apple, Disney, HBO, Audible,
-# Nintendo, OpenAI, Claude) are moved here from Entretenimiento. Rationale: they are recurring
-# monthly bills, not per-visit entertainment purchases. This mirrors how personal finance apps
-# like YNAB and Copilot categorize them. SUSCRIPCIONES GN from Jan 2026 sync was mis-categorized
-# as Salud; now has a dedicated home.
+# Reassigned from Entretenimiento: Netflix, Spotify, Disney, HBO (previously seeded there).
+# New additions (not previously seeded anywhere): Apple, Audible, Nintendo, OpenAI, ChatGPT,
+# Claude, Amazon Prime, SUSCRIPCIONES GN.
+# Decision: all recurring digital billing belongs here, not in Entretenimiento.
+# Rationale: they are monthly bills (same budget bucket as utilities), not per-visit entertainment.
+# This mirrors how YNAB and Copilot categorize them.
+# SUSCRIPCIONES GN from Jan 2026 sync was mis-categorized as Salud; now has a proper home.
+# Excluded: "amazon mktplace" (too broad — matches all Amazon purchases, not just subscriptions).
+# Excluded: "liberty telecomunicaci" — that is a telecom/utility bill; kept in Servicios.
 subscriptions_patterns = [
   { type: "merchant", value: "netflix", confidence: 4.8, usage_count: 345, success_count: 338 },
   { type: "merchant", value: "spotify", confidence: 4.8, usage_count: 289, success_count: 283 },
@@ -352,9 +359,7 @@ subscriptions_patterns = [
   { type: "merchant", value: "chatgpt", confidence: 4.8, usage_count: 25, success_count: 24 },
   { type: "merchant", value: "claude", confidence: 4.5, usage_count: 15, success_count: 14 },
   { type: "merchant", value: "amazon prime", confidence: 4.5, usage_count: 50, success_count: 48 },
-  { type: "merchant", value: "amazon mktplace", confidence: 4.0, usage_count: 30, success_count: 27 },
   { type: "merchant", value: "suscripciones gn", confidence: 4.8, usage_count: 10, success_count: 10 },
-  { type: "merchant", value: "liberty telecomunicaci", confidence: 4.0, usage_count: 10, success_count: 9 },
   { type: "keyword", value: "suscripcion", confidence: 3.5, usage_count: 40, success_count: 34 },
   { type: "keyword", value: "subscription", confidence: 3.5, usage_count: 30, success_count: 26 }
 ]

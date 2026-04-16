@@ -16,6 +16,26 @@ module Services::Categorization
       BUDGET_TTL = 35.days
       CORRECTION_KEY_PREFIX = "llm_correction"
 
+      # Rate limit handling.
+      # Anthropic's default input tokens-per-minute limit is 50,000 for Haiku.
+      # Each LLM call with web_search uses ~10,000 input tokens (tool results
+      # inflate the prompt), so we can do ~5 calls per minute.
+      # MIN_CALL_INTERVAL_S enforces at least N seconds between calls to
+      # naturally stay under the limit.
+      MIN_CALL_INTERVAL_S = 15
+      MAX_RETRIES = 3
+      RETRY_BACKOFF_S = [ 10, 30, 60 ].freeze
+
+      # Class-level mutex for inter-thread throttling within a process.
+      # Each Solid Queue worker thread shares this mutex.
+      @rate_limit_mutex = Mutex.new
+      @last_llm_call_at = nil
+
+      class << self
+        attr_accessor :last_llm_call_at
+        attr_reader :rate_limit_mutex
+      end
+
       # @param client [Llm::Client, nil] injectable LLM client for testing
       # @param logger [Logger]
       def initialize(client: nil, logger: Rails.logger)
@@ -79,7 +99,8 @@ module Services::Categorization
       def call_llm_and_cache(expense, normalized, existing_entry, start_time)
         correction_history = Rails.cache.read("#{CORRECTION_KEY_PREFIX}:#{normalized}")
         prompt = Llm::PromptBuilder.new.build(expense: expense, correction_history: correction_history)
-        api_result = client.categorize(prompt_text: prompt)
+        api_result = call_with_rate_limit_handling(prompt)
+        return CategorizationResult.no_match(processing_time_ms: duration_ms(start_time)) unless api_result
 
         increment_budget(api_result[:cost])
 
@@ -99,6 +120,56 @@ module Services::Categorization
         feed_vector_updater(expense, parsed[:category])
 
         build_llm_result(parsed, duration_ms(start_time))
+      end
+
+      # Throttles and retries LLM calls to handle Anthropic's token-per-minute
+      # rate limit. Returns the API result on success, or nil on persistent failure.
+      def call_with_rate_limit_handling(prompt)
+        attempts = 0
+
+        begin
+          throttle!
+          attempts += 1
+          client.categorize(prompt_text: prompt)
+        rescue Llm::Client::RateLimitError
+          if attempts <= MAX_RETRIES
+            sleep_s = RETRY_BACKOFF_S[attempts - 1]
+            @logger.warn("[LlmStrategy] Rate limited (attempt #{attempts}/#{MAX_RETRIES}), sleeping #{sleep_s}s")
+            sleep(sleep_s)
+            retry
+          else
+            @logger.error("[LlmStrategy] Rate limited after #{MAX_RETRIES} retries — giving up")
+            nil
+          end
+        end
+      end
+
+      # Enforce MIN_CALL_INTERVAL_S between LLM calls across all threads in
+      # this process. When multiple workers hit the LLM simultaneously, they
+      # queue up on this mutex and wait their turn.
+      #
+      # NOTE: This only coordinates within a single Ruby process. If multiple
+      # Solid Queue worker processes exist (see config/queue.yml), aggregate
+      # throughput can still exceed the global rate limit. Multi-process
+      # coordination would require a distributed rate limiter (Redis / DB).
+      # For the current single-worker deploy, per-process is sufficient.
+      #
+      # Disabled in test env to keep unit tests fast.
+      def throttle!
+        return if Rails.env.test?
+
+        self.class.rate_limit_mutex.synchronize do
+          last = self.class.last_llm_call_at
+          if last
+            elapsed = Time.now - last
+            if elapsed < MIN_CALL_INTERVAL_S
+              wait_s = MIN_CALL_INTERVAL_S - elapsed
+              @logger.debug("[LlmStrategy] Throttling: waiting #{wait_s.round(1)}s before next LLM call")
+              sleep(wait_s)
+            end
+          end
+          self.class.last_llm_call_at = Time.now
+        end
       end
 
       def store_cache(normalized, parsed, api_result, total_tokens, _existing_entry)

@@ -515,15 +515,17 @@ RSpec.describe Services::Categorization::Strategies::LlmStrategy, :unit do
         expect(logger).to have_received(:error).with(/giving up/)
       end
 
-      it "parses retry-after from Anthropic error message" do
-        error_msg = 'status: 429, body: {"retry-after"=>"5"}'
-        result = strategy.send(:extract_retry_after, error_msg)
-        expect(result).to eq(5)
-      end
+      it "throttles before every retry (not just the first call)" do
+        allow(mock_client).to receive(:categorize)
+          .and_raise(Services::Categorization::Llm::Client::RateLimitError, "Rate limit exceeded")
 
-      it "returns nil when no retry-after hint present" do
-        result = strategy.send(:extract_retry_after, "some generic error")
-        expect(result).to be_nil
+        throttle_count = 0
+        allow_any_instance_of(described_class).to receive(:throttle!) { throttle_count += 1 }
+
+        strategy.call(expense)
+
+        # Throttle must be called before EVERY attempt, including retries
+        expect(throttle_count).to eq(described_class::MAX_RETRIES + 1)
       end
     end
 

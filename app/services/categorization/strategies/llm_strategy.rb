@@ -125,15 +125,15 @@ module Services::Categorization
       # Throttles and retries LLM calls to handle Anthropic's token-per-minute
       # rate limit. Returns the API result on success, or nil on persistent failure.
       def call_with_rate_limit_handling(prompt)
-        throttle!
         attempts = 0
 
         begin
+          throttle!
           attempts += 1
           client.categorize(prompt_text: prompt)
-        rescue Llm::Client::RateLimitError => e
+        rescue Llm::Client::RateLimitError
           if attempts <= MAX_RETRIES
-            sleep_s = extract_retry_after(e.message) || RETRY_BACKOFF_S[attempts - 1]
+            sleep_s = RETRY_BACKOFF_S[attempts - 1]
             @logger.warn("[LlmStrategy] Rate limited (attempt #{attempts}/#{MAX_RETRIES}), sleeping #{sleep_s}s")
             sleep(sleep_s)
             retry
@@ -144,16 +144,16 @@ module Services::Categorization
         end
       end
 
-      # Parse "retry-after" hint from Anthropic error body if present.
-      # Falls back to nil so caller uses exponential backoff.
-      def extract_retry_after(message)
-        match = message.match(/"retry-after"\s*=>\s*"(\d+)"/) || message.match(/retry.after[^\d]+(\d+)/i)
-        match && match[1].to_i
-      end
-
       # Enforce MIN_CALL_INTERVAL_S between LLM calls across all threads in
       # this process. When multiple workers hit the LLM simultaneously, they
       # queue up on this mutex and wait their turn.
+      #
+      # NOTE: This only coordinates within a single Ruby process. If multiple
+      # Solid Queue worker processes exist (see config/queue.yml), aggregate
+      # throughput can still exceed the global rate limit. Multi-process
+      # coordination would require a distributed rate limiter (Redis / DB).
+      # For the current single-worker deploy, per-process is sufficient.
+      #
       # Disabled in test env to keep unit tests fast.
       def throttle!
         return if Rails.env.test?

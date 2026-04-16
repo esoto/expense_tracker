@@ -32,8 +32,8 @@ RSpec.describe Services::Categorization::Llm::PromptBuilder, :unit do
     it "includes the system instruction" do
       result = builder.build(expense: expense)
 
-      expect(result).to include("You are an expense categorizer")
-      expect(result).to include("Return ONLY the category key")
+      expect(result).to include("local business expert")
+      expect(result).to include("ONLY the category key")
     end
 
     it "includes categories with Spanish display names" do

@@ -6,9 +6,10 @@ module Services::Categorization
   module Llm
     class Client
       MODEL = "claude-haiku-4-5"
-      MAX_TOKENS = 50
-      INPUT_COST_PER_TOKEN = 0.25 / 1_000_000.0
-      OUTPUT_COST_PER_TOKEN = 1.25 / 1_000_000.0
+      MAX_TOKENS = 100
+      INPUT_COST_PER_TOKEN = 0.80 / 1_000_000.0
+      OUTPUT_COST_PER_TOKEN = 4.00 / 1_000_000.0
+      SEARCH_COST_PER_QUERY = 10.0 / 1_000.0 # $10 per 1000 searches
 
       # Custom error hierarchy
       class Error < StandardError; end
@@ -35,20 +36,27 @@ module Services::Categorization
           model: MODEL,
           max_tokens: MAX_TOKENS,
           temperature: 0.0,
+          system: PromptBuilder::SYSTEM_INSTRUCTION,
+          tools: [ { type: "web_search_20250305", name: "web_search" } ],
           messages: [ { role: :user, content: prompt_text } ]
         )
 
-        content_block = response.content&.first
-        raise ApiError, "Empty response from API" unless content_block
+        # Response may contain multiple content blocks: tool_use, tool_result, text.
+        # Extract the final text block which contains the category key.
+        text_blocks = response.content.select { |block| block.respond_to?(:text) }
+        raise ApiError, "Empty response from API" if text_blocks.empty?
 
-        response_text = content_block.text
+        response_text = text_blocks.last.text.strip
         input_tokens = response.usage.input_tokens
         output_tokens = response.usage.output_tokens
+
+        # Extract just the category key if the model returned extra text
+        response_text = extract_category_key(response_text)
 
         {
           response_text: response_text,
           token_count: { input: input_tokens, output: output_tokens },
-          cost: (input_tokens * INPUT_COST_PER_TOKEN) + (output_tokens * OUTPUT_COST_PER_TOKEN)
+          cost: calculate_cost(input_tokens, output_tokens, response.content)
         }
       rescue Anthropic::Errors::AuthenticationError => e
         Rails.logger.error("[LLM::Client] Authentication failed: #{e.message}")
@@ -62,6 +70,40 @@ module Services::Categorization
       rescue Anthropic::Errors::APIError => e
         Rails.logger.error("[LLM::Client] API error: #{e.message}")
         raise ApiError, "API error: #{e.message}"
+      end
+
+      private
+
+      # Extract just the category key from a potentially verbose response.
+      # The model sometimes returns explanations despite the "ONLY the key" instruction.
+      def extract_category_key(text)
+        # Load valid keys once
+        @valid_keys ||= Category.where.not(i18n_key: [ nil, "" ]).pluck(:i18n_key).to_set
+
+        # First try: the whole response is a valid key
+        return text if @valid_keys.include?(text)
+
+        # Second try: first word/line is the key
+        first_word = text.split(/[\s\n]/).first&.downcase
+        return first_word if first_word && @valid_keys.include?(first_word)
+
+        # Third try: scan for any valid key in the response
+        @valid_keys.each do |key|
+          return key if text.downcase.include?(key)
+        end
+
+        # Give up — return the raw text and let the caller handle it
+        text
+      end
+
+      def calculate_cost(input_tokens, output_tokens, content_blocks)
+        token_cost = (input_tokens * INPUT_COST_PER_TOKEN) + (output_tokens * OUTPUT_COST_PER_TOKEN)
+
+        # Count web searches (tool_use blocks with web_search)
+        search_count = content_blocks.count { |b| b.respond_to?(:type) && b.type == "server_tool_use" }
+        search_cost = search_count * SEARCH_COST_PER_QUERY
+
+        token_cost + search_cost
       end
     end
   end

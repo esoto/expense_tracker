@@ -6,11 +6,15 @@ RSpec.describe Services::Categorization::Llm::Client, :unit do
   subject(:client) { described_class.new }
 
   let(:api_key) { "test-api-key-123" }
-  let(:prompt_text) { "You are an expense categorizer..." }
+  let(:prompt_text) { "Categories:\n- food\n\nTransaction:\nMerchant: Test" }
 
   before do
     allow(Rails.application.credentials).to receive(:dig)
       .with(:anthropic, :api_key).and_return(api_key)
+    # Stub valid keys for extract_category_key
+    not_relation = double("NotRelation", pluck: %w[food restaurants supermarket uncategorized])
+    where_relation = double("WhereRelation", not: not_relation)
+    allow(Category).to receive(:where).and_return(where_relation)
   end
 
   describe "#initialize" do
@@ -38,7 +42,7 @@ RSpec.describe Services::Categorization::Llm::Client, :unit do
     let(:anthropic_client) { instance_double(Anthropic::Client) }
     let(:messages_api) { instance_double(Anthropic::Resources::Messages) }
     let(:usage) { double("Usage", input_tokens: 150, output_tokens: 10) }
-    let(:text_block) { double("TextBlock", text: "food") }
+    let(:text_block) { double("TextBlock", text: "food", type: "text") }
     let(:response) do
       double("Message", content: [ text_block ], usage: usage)
     end
@@ -47,16 +51,22 @@ RSpec.describe Services::Categorization::Llm::Client, :unit do
       allow(Anthropic::Client).to receive(:new).and_return(anthropic_client)
       allow(anthropic_client).to receive(:messages).and_return(messages_api)
       allow(messages_api).to receive(:create).and_return(response)
+      allow(text_block).to receive(:respond_to?).with(:text).and_return(true)
+      allow(text_block).to receive(:respond_to?).with(:type).and_return(true)
     end
 
-    it "sends the prompt to Claude Haiku and returns the response" do
+    it "sends the prompt with web search tool and system prompt" do
       result = client.categorize(prompt_text: prompt_text)
 
       expect(messages_api).to have_received(:create).with(
-        model: "claude-haiku-4-5",
-        max_tokens: 50,
-        temperature: 0.0,
-        messages: [ { role: :user, content: prompt_text } ]
+        hash_including(
+          model: "claude-haiku-4-5",
+          max_tokens: 100,
+          temperature: 0.0,
+          system: Services::Categorization::Llm::PromptBuilder::SYSTEM_INSTRUCTION,
+          tools: [ { type: "web_search_20250305", name: "web_search" } ],
+          messages: [ { role: :user, content: prompt_text } ]
+        )
       )
       expect(result[:response_text]).to eq("food")
     end
@@ -70,10 +80,24 @@ RSpec.describe Services::Categorization::Llm::Client, :unit do
     it "calculates cost based on token usage" do
       result = client.categorize(prompt_text: prompt_text)
 
-      # input: 150 * $0.25/1M = 0.0000375
-      # output: 10 * $1.25/1M = 0.0000125
-      expected_cost = (150 * 0.25 / 1_000_000.0) + (10 * 1.25 / 1_000_000.0)
+      # input: 150 * $0.80/1M = 0.00012
+      # output: 10 * $4.00/1M = 0.00004
+      expected_cost = (150 * 0.80 / 1_000_000.0) + (10 * 4.00 / 1_000_000.0)
       expect(result[:cost]).to be_within(0.0000001).of(expected_cost)
+    end
+
+    it "extracts category key from verbose response" do
+      verbose_block = double("TextBlock",
+        text: "Based on my search, this is a supermarket in Costa Rica.",
+        type: "text")
+      allow(verbose_block).to receive(:respond_to?).with(:text).and_return(true)
+      allow(verbose_block).to receive(:respond_to?).with(:type).and_return(true)
+      verbose_response = double("Message", content: [ verbose_block ], usage: usage)
+      allow(messages_api).to receive(:create).and_return(verbose_response)
+
+      result = client.categorize(prompt_text: prompt_text)
+
+      expect(result[:response_text]).to eq("supermarket")
     end
 
     context "when the API returns an authentication error" do

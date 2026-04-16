@@ -33,7 +33,6 @@ module Services::Categorization
 
       def build_base_prompt(expense)
         <<~PROMPT
-          #{SYSTEM_INSTRUCTION}
           Categories:
           #{format_categories}
 

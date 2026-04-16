@@ -143,6 +143,75 @@ RSpec.describe Services::Categorization::Llm::Client, :unit do
       end
     end
 
+    context "when search continuations are exhausted" do
+      let(:pause_usage) do
+        double("Usage", input_tokens: 100, output_tokens: 5, server_tool_use: nil).tap do |u|
+          allow(u).to receive(:respond_to?).with(:server_tool_use).and_return(false)
+        end
+      end
+      let(:always_pause) do
+        double("Message",
+          content: [ double("Block").tap { |b|
+            allow(b).to receive(:respond_to?).with(:text).and_return(false)
+            allow(b).to receive(:respond_to?).with(:type).and_return(true)
+            allow(b).to receive(:type).and_return("server_tool_use")
+          } ],
+          usage: pause_usage,
+          stop_reason: "pause_turn")
+      end
+
+      before do
+        allow(messages_api).to receive(:create).and_return(always_pause)
+      end
+
+      it "returns uncategorized after MAX_SEARCH_CONTINUATIONS" do
+        result = client.categorize(prompt_text: prompt_text)
+
+        expect(result[:response_text]).to eq("uncategorized")
+        expect(messages_api).to have_received(:create).exactly(4).times # 1 initial + 3 continuations
+      end
+    end
+
+    context "when response contains no recognizable category key" do
+      let(:gibberish_block) do
+        double("TextBlock", text: "I cannot determine what this merchant sells", type: "text").tap do |b|
+          allow(b).to receive(:respond_to?).with(:text).and_return(true)
+          allow(b).to receive(:respond_to?).with(:type).and_return(true)
+        end
+      end
+      let(:gibberish_response) do
+        double("Message", content: [ gibberish_block ], usage: usage, stop_reason: "end_turn")
+      end
+
+      before { allow(messages_api).to receive(:create).and_return(gibberish_response) }
+
+      it "returns the raw text when no valid key is found" do
+        result = client.categorize(prompt_text: prompt_text)
+
+        expect(result[:response_text]).to eq("I cannot determine what this merchant sells")
+      end
+    end
+
+    context "when response starts with a valid key followed by explanation" do
+      let(:first_word_block) do
+        double("TextBlock", text: "food - this is a local restaurant in Cartago", type: "text").tap do |b|
+          allow(b).to receive(:respond_to?).with(:text).and_return(true)
+          allow(b).to receive(:respond_to?).with(:type).and_return(true)
+        end
+      end
+      let(:first_word_response) do
+        double("Message", content: [ first_word_block ], usage: usage, stop_reason: "end_turn")
+      end
+
+      before { allow(messages_api).to receive(:create).and_return(first_word_response) }
+
+      it "extracts the first word as the category key" do
+        result = client.categorize(prompt_text: prompt_text)
+
+        expect(result[:response_text]).to eq("food")
+      end
+    end
+
     context "when the API returns an authentication error" do
       before do
         allow(messages_api).to receive(:create)

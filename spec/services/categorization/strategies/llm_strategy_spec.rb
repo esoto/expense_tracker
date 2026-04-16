@@ -457,5 +457,82 @@ RSpec.describe Services::Categorization::Strategies::LlmStrategy, :unit do
         expect(logger).to have_received(:warn).with(/VectorUpdater/)
       end
     end
+
+    context "rate limit handling" do
+      let(:prompt_text) do
+        instance_double(Services::Categorization::Llm::PromptBuilder).tap do |pb|
+          allow(Services::Categorization::Llm::PromptBuilder).to receive(:new).and_return(pb)
+          allow(pb).to receive(:build).and_return("prompt")
+        end
+        "prompt"
+      end
+
+      before do
+        # Stub sleep to keep tests fast — retry backoffs would otherwise sleep 10s+
+        allow_any_instance_of(described_class).to receive(:sleep)
+      end
+
+      it "retries when the LLM client raises RateLimitError and succeeds on retry" do
+        success_response = {
+          response_text: category.i18n_key,
+          token_count: { input: 100, output: 10 },
+          cost: 0.001
+        }
+
+        call_count = 0
+        allow(mock_client).to receive(:categorize) do
+          call_count += 1
+          if call_count == 1
+            raise Services::Categorization::Llm::Client::RateLimitError, "Rate limit exceeded"
+          else
+            success_response
+          end
+        end
+
+        allow(Services::Categorization::Llm::ResponseParser).to receive(:new).and_return(
+          instance_double(Services::Categorization::Llm::ResponseParser,
+            parse: { category: category, confidence: 0.85, raw_response: category.i18n_key })
+        )
+        allow(Services::Categorization::Learning::VectorUpdater).to receive(:new).and_return(
+          instance_double(Services::Categorization::Learning::VectorUpdater, upsert: nil)
+        )
+
+        result = strategy.call(expense)
+
+        expect(call_count).to eq(2)
+        expect(result).to be_successful
+        expect(result.category).to eq(category)
+      end
+
+      it "gives up after MAX_RETRIES rate limit errors and returns no_match" do
+        allow(mock_client).to receive(:categorize)
+          .and_raise(Services::Categorization::Llm::Client::RateLimitError, "Rate limit exceeded")
+
+        result = strategy.call(expense)
+
+        expect(mock_client).to have_received(:categorize).exactly(described_class::MAX_RETRIES + 1).times
+        expect(result).not_to be_successful
+        expect(logger).to have_received(:error).with(/giving up/)
+      end
+
+      it "parses retry-after from Anthropic error message" do
+        error_msg = 'status: 429, body: {"retry-after"=>"5"}'
+        result = strategy.send(:extract_retry_after, error_msg)
+        expect(result).to eq(5)
+      end
+
+      it "returns nil when no retry-after hint present" do
+        result = strategy.send(:extract_retry_after, "some generic error")
+        expect(result).to be_nil
+      end
+    end
+
+    context "throttling" do
+      it "skips throttling in test environment to keep tests fast" do
+        expect(Rails.env).to receive(:test?).and_return(true)
+        expect(strategy).not_to receive(:sleep)
+        strategy.send(:throttle!)
+      end
+    end
   end
 end

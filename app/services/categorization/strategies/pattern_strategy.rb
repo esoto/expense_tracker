@@ -59,7 +59,7 @@ module Services::Categorization
         scored_matches = score_and_rank_matches(expense, pattern_matches, options)
         best_match = scored_matches.first
 
-        if best_match[:confidence] < options.fetch(:min_confidence, 0.5)
+        if best_match[:confidence] < options.fetch(:min_confidence, 0.75)
           return CategorizationResult.no_match(
             processing_time_ms: duration_ms(start_time)
           )

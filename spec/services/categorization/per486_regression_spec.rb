@@ -124,17 +124,13 @@ RSpec.describe "PER-486 confidence gate regression", :unit do
       #   confidence_breakdown does NOT include metadata[:gated], all factors inflate score.
       # Bug fixed: text match 0.65 passed as text_match → gate fires (0.65 < 0.75) →
       #   confidence_score.metadata[:gated] == true, only sigmoid(0.65) used.
-      if result.successful?
-        breakdown_metadata = result.confidence_breakdown
-        # The gate having fired means the confidence_score's metadata should have gated: true.
-        # We verify this via the confidence_score stored in the result metadata.
-        # Confidence should also be significantly lower than the bug's ~0.985 level.
-        expect(result.confidence).to be < 0.99,
-          "Expected confidence < 0.99 (bug would give ~0.985 even with gate), " \
-          "got #{result.confidence.round(4)}"
-      else
-        expect(result).to be_no_match
-      end
+      # The fix sends text_match=0.65 (not booster's 1.0) to the calculator.
+      # Gate fires (0.65 < 0.75), returns sigmoid(0.65) ≈ 0.818 — well below
+      # the bug's ~0.985. Result is successful but correctly gated.
+      expect(result).to be_successful
+      expect(result.confidence).to be < 0.90,
+        "Expected gated confidence < 0.90, got #{result.confidence.round(4)}. " \
+        "Bug would produce ~0.985 from booster impersonating text_match."
     end
 
     it "does NOT produce higher confidence from booster than from text_match alone" do
@@ -150,17 +146,12 @@ RSpec.describe "PER-486 confidence gate regression", :unit do
       bug_score = calc.calculate(weekend_expense, weak_merchant_pattern, 1.0).score
       fix_score = calc.calculate(weekend_expense, weak_merchant_pattern, 0.65).score
 
-      if result.successful?
-        # Result confidence must be close to the fix path (text_match=0.65),
-        # not the bug path (text_match=1.0)
-        expect(result.confidence).to be_within(0.05).of(fix_score),
-          "Expected confidence #{result.confidence.round(4)} to be near fix_score " \
-          "#{fix_score.round(4)} (text_match=0.65 path), not bug_score #{bug_score.round(4)} " \
-          "(text_match=1.0 path — booster impersonating text_match)"
-      else
-        # no_match is also acceptable (confidence below min_confidence threshold)
-        expect(result).to be_no_match
-      end
+      # With text_match=0.65 (below gate), the gated confidence ≈ 0.818.
+      # This must be close to the fix_score path, NOT the bug_score path.
+      expect(result).to be_successful
+      expect(result.confidence).to be_within(0.05).of(fix_score),
+        "Expected confidence #{result.confidence.round(4)} near fix_score " \
+        "#{fix_score.round(4)}, not bug_score #{bug_score.round(4)}"
     end
   end
 
@@ -216,12 +207,12 @@ RSpec.describe "PER-486 confidence gate regression", :unit do
     it "does not assign entertainment_category when it only has a time booster with no text match" do
       result = strategy.call(weekend_grocery_expense)
 
-      # entertainment_category should NOT win — it has no text match for this expense
-      if result.successful?
-        expect(result.category).not_to eq(entertainment_category),
-          "Expected entertainment_category NOT to win (it has no text match), " \
-          "but result.category = #{result.category&.name} (conf=#{result.confidence.round(4)})"
-      end
+      # Supermercado has a real text match, so the result should be successful
+      # and categorized there — NOT entertainment (which only has a time booster).
+      expect(result).to be_successful
+      expect(result.category).to eq(supermercado_category),
+        "Expected supermercado_category (has text match), " \
+        "but got #{result.category&.name} (conf=#{result.confidence.round(4)})"
     end
 
     it "still returns a result for the category with a real text match" do
@@ -277,12 +268,8 @@ RSpec.describe "PER-486 confidence gate regression", :unit do
       result = engine.categorize(unrelated_expense)
 
       # With min_confidence >= 0.75, a weak match that would only score ~0.5
-      # should NOT produce a successful categorization
-      if result.successful?
-        expect(result.confidence).to be >= 0.75,
-          "Engine returned a result with confidence #{result.confidence.round(4)} < 0.75, " \
-          "suggesting the 0.5 override is still in place"
-      end
+      # should NOT produce a successful categorization. Pin to no_match.
+      expect(result).to be_no_match
     ensure
       engine&.shutdown!
     end

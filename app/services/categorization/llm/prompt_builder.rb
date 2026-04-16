@@ -4,10 +4,20 @@ module Services::Categorization
   module Llm
     class PromptBuilder
       SYSTEM_INSTRUCTION = <<~INSTRUCTION.freeze
-        You are an expense categorizer. Given an expense, return the single best
-        matching category from the list below. Return ONLY the category key,
-        nothing else.
+        You are an expense categorizer for a personal finance tracker.
+        Given a bank transaction, return the single best matching category key
+        from the list below. Return ONLY the category key, nothing else.
+
+        If the merchant is a payment processor (e.g., PayPal, Tilo Pay, Sinpe Móvil)
+        and the underlying purchase is unknown, return "uncategorized".
+
+        If you are not confident about the category, return "uncategorized"
+        rather than guessing.
       INSTRUCTION
+
+      # Extract city and country from BAC email body.
+      # Format: "Ciudad y país: <city>, <country> Fecha: ..."
+      COUNTRY_REGEX = /Ciudad y pa[ií]s:\s*(.+?)\s+Fecha:/i
 
       def build(expense:, correction_history: nil)
         prompt = build_base_prompt(expense)
@@ -23,17 +33,52 @@ module Services::Categorization
           Categories:
           #{format_categories}
 
-          Expense:
-          Merchant: #{expense.merchant_name}
-          Description: #{expense.description}
-          Amount: #{expense.amount} #{expense.currency}
+          Transaction:
+          #{format_transaction(expense)}
         PROMPT
+      end
+
+      def format_transaction(expense)
+        lines = []
+        lines << "Bank: #{expense.bank_name}" if expense.bank_name?
+        lines << "Merchant: #{expense.merchant_name}" if expense.merchant_name?
+        lines << "Amount: #{format_amount(expense)}"
+
+        city, country = extract_location(expense)
+        lines << "Location: #{[ city, country ].compact.join(', ')}" if city || country
+
+        lines.join("\n")
+      end
+
+      def format_amount(expense)
+        currency = expense.currency&.upcase || "CRC"
+        formatted = number_with_delimiter(expense.amount)
+        "#{formatted} #{currency}"
+      end
+
+      def extract_location(expense)
+        body = expense.email_body.presence || expense.raw_email_content.presence || expense.parsed_data&.to_s
+        return [ nil, nil ] unless body
+
+        match = body.match(COUNTRY_REGEX)
+        return [ nil, nil ] unless match
+
+        raw = match[1].strip
+        if raw.include?(",")
+          city, country = raw.split(",", 2).map(&:strip)
+          country = nil if country == "Pais no Definido"
+          [ city, country ]
+        else
+          country = raw == "Pais no Definido" ? nil : raw
+          [ nil, country ]
+        end
       end
 
       def format_categories
         @formatted_categories ||= begin
-          category_keys = Category.where.not(i18n_key: [ nil, "" ]).pluck(:i18n_key)
-          category_keys.map { |key| "- #{key}" }.join("\n")
+          categories = Category.where.not(i18n_key: [ nil, "" ])
+                               .pluck(:i18n_key, :name)
+          categories.map { |key, name| "- #{key} (#{name})" }.join("\n")
         end
       end
 
@@ -41,6 +86,14 @@ module Services::Categorization
         old_key = correction_history[:old]
         new_key = correction_history[:new]
         "\nNote: This merchant was previously categorized as #{old_key} but corrected to #{new_key} by the user.\n"
+      end
+
+      def number_with_delimiter(number)
+        return "0" unless number
+
+        whole, decimal = number.to_s.split(".")
+        whole_with_delimiters = whole.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse
+        decimal ? "#{whole_with_delimiters}.#{decimal}" : whole_with_delimiters
       end
     end
   end

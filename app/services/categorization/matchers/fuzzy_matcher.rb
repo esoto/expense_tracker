@@ -99,7 +99,7 @@ module Services::Categorization
 
           # Check cache first
           if opts[:enable_caching] && @cache
-            cache_key = cache_key_for(processed_text, candidates)
+            cache_key = cache_key_for(processed_text, candidates, opts)
             cached_result = @cache.read(cache_key)
 
             if cached_result
@@ -620,12 +620,20 @@ module Services::Categorization
         matches
       end
 
-      def cache_key_for(text, candidates)
+      def cache_key_for(text, candidates, options = {})
         candidate_ids = candidates.map do |c|
           c.is_a?(Hash) ? c[:id] : c.try(:id)
         end.compact.sort.join("-")
 
-        "fuzzy_match:#{Digest::MD5.hexdigest(text)}:#{Digest::MD5.hexdigest(candidate_ids)}"
+        # Include result-affecting options in the key so callers with different
+        # thresholds or result limits don't get each other's cached results.
+        option_fingerprint = [
+          options[:min_confidence] || @options[:min_confidence],
+          options[:max_results] || @options[:max_results],
+          (options[:algorithms] || @options[:algorithms])&.sort&.join(",")
+        ].join(":")
+
+        "fuzzy_match:#{Digest::MD5.hexdigest(text)}:#{Digest::MD5.hexdigest(candidate_ids)}:#{option_fingerprint}"
       end
 
       def build_cache

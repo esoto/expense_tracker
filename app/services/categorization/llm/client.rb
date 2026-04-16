@@ -7,8 +7,9 @@ module Services::Categorization
     class Client
       MODEL = "claude-haiku-4-5"
       MAX_TOKENS = 100
-      INPUT_COST_PER_TOKEN = 0.80 / 1_000_000.0
-      OUTPUT_COST_PER_TOKEN = 4.00 / 1_000_000.0
+      MAX_SEARCH_CONTINUATIONS = 3
+      INPUT_COST_PER_TOKEN = 1.00 / 1_000_000.0
+      OUTPUT_COST_PER_TOKEN = 5.00 / 1_000_000.0
       SEARCH_COST_PER_QUERY = 10.0 / 1_000.0 # $10 per 1000 searches
 
       # Custom error hierarchy
@@ -32,31 +33,49 @@ module Services::Categorization
       end
 
       def categorize(prompt_text:)
-        response = @client.messages.create(
-          model: MODEL,
-          max_tokens: MAX_TOKENS,
-          temperature: 0.0,
-          system: PromptBuilder::SYSTEM_INSTRUCTION,
-          tools: [ { type: "web_search_20250305", name: "web_search" } ],
-          messages: [ { role: :user, content: prompt_text } ]
-        )
+        messages = [ { role: :user, content: prompt_text } ]
+        total_input = 0
+        total_output = 0
+        total_searches = 0
 
-        # Response may contain multiple content blocks: tool_use, tool_result, text.
-        # Extract the final text block which contains the category key.
-        text_blocks = response.content.select { |block| block.respond_to?(:text) }
-        raise ApiError, "Empty response from API" if text_blocks.empty?
+        # Server tools may require continuation when stop_reason is "pause_turn".
+        # Loop until we get an "end_turn" or hit the continuation limit.
+        (MAX_SEARCH_CONTINUATIONS + 1).times do
+          response = @client.messages.create(
+            model: MODEL,
+            max_tokens: MAX_TOKENS,
+            temperature: 0.0,
+            system: PromptBuilder::SYSTEM_INSTRUCTION,
+            tools: [ { type: "web_search_20250305", name: "web_search" } ],
+            messages: messages
+          )
 
-        response_text = text_blocks.last.text.strip
-        input_tokens = response.usage.input_tokens
-        output_tokens = response.usage.output_tokens
+          total_input += response.usage.input_tokens
+          total_output += response.usage.output_tokens
+          total_searches += extract_search_count(response)
 
-        # Extract just the category key if the model returned extra text
-        response_text = extract_category_key(response_text)
+          # If the model is done, extract the final answer
+          if response.stop_reason != "pause_turn"
+            response_text = extract_final_text(response)
+            response_text = extract_category_key(response_text)
 
+            return {
+              response_text: response_text,
+              token_count: { input: total_input, output: total_output },
+              cost: calculate_cost(total_input, total_output, total_searches)
+            }
+          end
+
+          # Continue the turn: append assistant response and re-submit
+          messages << { role: :assistant, content: response.content }
+        end
+
+        # Exhausted continuations — return uncategorized
+        Rails.logger.warn("[LLM::Client] Exhausted #{MAX_SEARCH_CONTINUATIONS} search continuations")
         {
-          response_text: response_text,
-          token_count: { input: input_tokens, output: output_tokens },
-          cost: calculate_cost(input_tokens, output_tokens, response.content)
+          response_text: "uncategorized",
+          token_count: { input: total_input, output: total_output },
+          cost: calculate_cost(total_input, total_output, total_searches)
         }
       rescue Anthropic::Errors::AuthenticationError => e
         Rails.logger.error("[LLM::Client] Authentication failed: #{e.message}")
@@ -74,36 +93,52 @@ module Services::Categorization
 
       private
 
+      def extract_final_text(response)
+        text_blocks = response.content.select { |block| block.respond_to?(:text) }
+        raise ApiError, "Empty response from API" if text_blocks.empty?
+
+        text = text_blocks.last.text
+        raise ApiError, "Nil text in response" unless text
+
+        text.strip
+      end
+
       # Extract just the category key from a potentially verbose response.
-      # The model sometimes returns explanations despite the "ONLY the key" instruction.
       def extract_category_key(text)
-        # Load valid keys once
         @valid_keys ||= Category.where.not(i18n_key: [ nil, "" ]).pluck(:i18n_key).to_set
 
-        # First try: the whole response is a valid key
+        # First try: the whole response (stripped) is a valid key
         return text if @valid_keys.include?(text)
 
-        # Second try: first word/line is the key
+        # Second try: first word is the key
         first_word = text.split(/[\s\n]/).first&.downcase
         return first_word if first_word && @valid_keys.include?(first_word)
 
-        # Third try: scan for any valid key in the response
-        @valid_keys.each do |key|
-          return key if text.downcase.include?(key)
-        end
+        # Third try: find the longest matching key as a whole word in the response.
+        # Sort by length descending to prefer "hardware_store" over "home".
+        found = @valid_keys
+          .select { |key| text.downcase.match?(/\b#{Regexp.escape(key)}\b/) }
+          .max_by(&:length)
+        return found if found
 
         # Give up — return the raw text and let the caller handle it
         text
       end
 
-      def calculate_cost(input_tokens, output_tokens, content_blocks)
+      def extract_search_count(response)
+        # Prefer the usage field if available (accurate billing count)
+        if response.usage.respond_to?(:server_tool_use)
+          server_usage = response.usage.server_tool_use
+          return server_usage.web_search_requests if server_usage.respond_to?(:web_search_requests)
+        end
+
+        # Fallback: count server_tool_use blocks in content
+        response.content.count { |b| b.respond_to?(:type) && b.type == "server_tool_use" }
+      end
+
+      def calculate_cost(input_tokens, output_tokens, search_count)
         token_cost = (input_tokens * INPUT_COST_PER_TOKEN) + (output_tokens * OUTPUT_COST_PER_TOKEN)
-
-        # Count web searches (tool_use blocks with web_search)
-        search_count = content_blocks.count { |b| b.respond_to?(:type) && b.type == "server_tool_use" }
-        search_cost = search_count * SEARCH_COST_PER_QUERY
-
-        token_cost + search_cost
+        token_cost + (search_count * SEARCH_COST_PER_QUERY)
       end
     end
   end

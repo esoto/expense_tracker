@@ -6,9 +6,11 @@ module Services::Categorization
   module Llm
     class Client
       MODEL = "claude-haiku-4-5"
-      MAX_TOKENS = 50
-      INPUT_COST_PER_TOKEN = 0.25 / 1_000_000.0
-      OUTPUT_COST_PER_TOKEN = 1.25 / 1_000_000.0
+      MAX_TOKENS = 100
+      MAX_SEARCH_CONTINUATIONS = 3
+      INPUT_COST_PER_TOKEN = 1.00 / 1_000_000.0
+      OUTPUT_COST_PER_TOKEN = 5.00 / 1_000_000.0
+      SEARCH_COST_PER_QUERY = 10.0 / 1_000.0 # $10 per 1000 searches
 
       # Custom error hierarchy
       class Error < StandardError; end
@@ -31,24 +33,49 @@ module Services::Categorization
       end
 
       def categorize(prompt_text:)
-        response = @client.messages.create(
-          model: MODEL,
-          max_tokens: MAX_TOKENS,
-          temperature: 0.0,
-          messages: [ { role: :user, content: prompt_text } ]
-        )
+        messages = [ { role: :user, content: prompt_text } ]
+        total_input = 0
+        total_output = 0
+        total_searches = 0
 
-        content_block = response.content&.first
-        raise ApiError, "Empty response from API" unless content_block
+        # Server tools may require continuation when stop_reason is "pause_turn".
+        # Loop until we get an "end_turn" or hit the continuation limit.
+        (MAX_SEARCH_CONTINUATIONS + 1).times do
+          response = @client.messages.create(
+            model: MODEL,
+            max_tokens: MAX_TOKENS,
+            temperature: 0.0,
+            system: PromptBuilder::SYSTEM_INSTRUCTION,
+            tools: [ { type: "web_search_20250305", name: "web_search" } ],
+            messages: messages
+          )
 
-        response_text = content_block.text
-        input_tokens = response.usage.input_tokens
-        output_tokens = response.usage.output_tokens
+          total_input += response.usage.input_tokens
+          total_output += response.usage.output_tokens
+          total_searches += extract_search_count(response)
 
+          # If the model is done, extract the final answer
+          if response.stop_reason != "pause_turn"
+            response_text = extract_final_text(response)
+            response_text = extract_category_key(response_text)
+
+            return {
+              response_text: response_text,
+              token_count: { input: total_input, output: total_output },
+              cost: calculate_cost(total_input, total_output, total_searches)
+            }
+          end
+
+          # Continue the turn: append assistant response and re-submit
+          messages << { role: :assistant, content: response.content }
+        end
+
+        # Exhausted continuations — return uncategorized
+        Rails.logger.warn("[LLM::Client] Exhausted #{MAX_SEARCH_CONTINUATIONS} search continuations")
         {
-          response_text: response_text,
-          token_count: { input: input_tokens, output: output_tokens },
-          cost: (input_tokens * INPUT_COST_PER_TOKEN) + (output_tokens * OUTPUT_COST_PER_TOKEN)
+          response_text: "uncategorized",
+          token_count: { input: total_input, output: total_output },
+          cost: calculate_cost(total_input, total_output, total_searches)
         }
       rescue Anthropic::Errors::AuthenticationError => e
         Rails.logger.error("[LLM::Client] Authentication failed: #{e.message}")
@@ -62,6 +89,56 @@ module Services::Categorization
       rescue Anthropic::Errors::APIError => e
         Rails.logger.error("[LLM::Client] API error: #{e.message}")
         raise ApiError, "API error: #{e.message}"
+      end
+
+      private
+
+      def extract_final_text(response)
+        text_blocks = response.content.select { |block| block.respond_to?(:text) }
+        raise ApiError, "Empty response from API" if text_blocks.empty?
+
+        text = text_blocks.last.text
+        raise ApiError, "Nil text in response" unless text
+
+        text.strip
+      end
+
+      # Extract just the category key from a potentially verbose response.
+      def extract_category_key(text)
+        @valid_keys ||= Category.where.not(i18n_key: [ nil, "" ]).pluck(:i18n_key).to_set
+
+        # First try: the whole response (stripped) is a valid key
+        return text if @valid_keys.include?(text)
+
+        # Second try: first word is the key
+        first_word = text.split(/[\s\n]/).first&.downcase
+        return first_word if first_word && @valid_keys.include?(first_word)
+
+        # Third try: find the longest matching key as a whole word in the response.
+        # Sort by length descending to prefer "hardware_store" over "home".
+        found = @valid_keys
+          .select { |key| text.downcase.match?(/\b#{Regexp.escape(key)}\b/) }
+          .max_by(&:length)
+        return found if found
+
+        # Give up — return the raw text and let the caller handle it
+        text
+      end
+
+      def extract_search_count(response)
+        # Prefer the usage field if available (accurate billing count)
+        if response.usage.respond_to?(:server_tool_use)
+          server_usage = response.usage.server_tool_use
+          return server_usage.web_search_requests if server_usage.respond_to?(:web_search_requests)
+        end
+
+        # Fallback: count server_tool_use blocks in content
+        response.content.count { |b| b.respond_to?(:type) && b.type == "server_tool_use" }
+      end
+
+      def calculate_cost(input_tokens, output_tokens, search_count)
+        token_cost = (input_tokens * INPUT_COST_PER_TOKEN) + (output_tokens * OUTPUT_COST_PER_TOKEN)
+        token_cost + (search_count * SEARCH_COST_PER_QUERY)
       end
     end
   end

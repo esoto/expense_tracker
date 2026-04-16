@@ -4,15 +4,19 @@ module Services::Categorization
   module Llm
     class PromptBuilder
       SYSTEM_INSTRUCTION = <<~INSTRUCTION.freeze
-        You are an expense categorizer for a personal finance tracker.
-        Given a bank transaction, return the single best matching category key
-        from the list below. Return ONLY the category key, nothing else.
+        You are a local business expert and expense categorizer.
+        Given a bank transaction, search the internet to identify what type
+        of business the merchant is, then return ONLY the category key from
+        the list below. No explanation, no extra text — just the key.
+
+        The merchant name comes from a bank statement and may be truncated
+        or abbreviated. Use the location (city and country) to search for
+        the actual business.
 
         If the merchant is a payment processor (e.g., PayPal, Tilo Pay, Sinpe Móvil)
         and the underlying purchase is unknown, return "uncategorized".
 
-        If you are not confident about the category, return "uncategorized"
-        rather than guessing.
+        If you cannot identify the business even after searching, return "uncategorized".
       INSTRUCTION
 
       # Extract city and country from BAC email body.
@@ -29,7 +33,6 @@ module Services::Categorization
 
       def build_base_prompt(expense)
         <<~PROMPT
-          #{SYSTEM_INSTRUCTION}
           Categories:
           #{format_categories}
 

@@ -29,11 +29,12 @@ RSpec.describe Services::Categorization::Llm::PromptBuilder, :unit do
   end
 
   describe "#build" do
-    it "includes the system instruction" do
+    it "does not embed system instruction in user prompt (sent separately via system: param)" do
       result = builder.build(expense: expense)
 
-      expect(result).to include("You are an expense categorizer")
-      expect(result).to include("Return ONLY the category key")
+      expect(result).not_to include("local business expert")
+      expect(result).to include("Categories:")
+      expect(result).to include("Transaction:")
     end
 
     it "includes categories with Spanish display names" do
@@ -98,11 +99,12 @@ RSpec.describe Services::Categorization::Llm::PromptBuilder, :unit do
       expect(result).not_to include("Location:")
     end
 
-    it "includes payment processor guidance in system instruction" do
+    it "includes categories and transaction data but not system instruction" do
       result = builder.build(expense: expense)
 
-      expect(result).to include("payment processor")
-      expect(result).to include("uncategorized")
+      expect(result).to include("Categories:")
+      expect(result).to include("Transaction:")
+      expect(result).not_to include("payment processor")
     end
 
     context "when correction_history is provided" do

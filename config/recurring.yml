@@ -83,6 +83,17 @@ default: &default
     schedule: every day at 4am
     description: "Purge email parsing failures older than 30 days (PER-496 retention)"
 
+  # Purge SolidQueue::FailedExecution rows older than 30 days. The existing
+  # clear_solid_queue_finished_jobs entry handles completed jobs, but failed
+  # executions grow unbounded without this. Offset to 4:15am to avoid
+  # colliding with the PER-496 cleanup above.
+  cleanup_solid_queue_failed_executions:
+    class: SolidQueueFailedExecutionCleanupJob
+    queue: low
+    priority: 10
+    schedule: every day at 4:15am
+    description: "Purge failed job executions older than 30 days (PER-503 retention)"
+
 development:
   <<: *default
   # In development, run metrics calculation more frequently for testing

@@ -197,13 +197,18 @@ export default class extends Controller {
     
     const color = colors[type] || colors.info
     
+    // PER-501: build the notification via DOM APIs so `message` can't
+    // introduce XSS — the caller may pass server-supplied text containing
+    // merchant names, descriptions, or backend error strings.
     const notification = document.createElement('div')
     notification.className = `fixed top-4 right-4 z-50 p-4 bg-${color}-50 border border-${color}-200 rounded-lg shadow-lg`
-    notification.innerHTML = `
-      <div class="flex items-center">
-        <span class="text-${color}-700">${message}</span>
-      </div>
-    `
+    const row = document.createElement('div')
+    row.className = 'flex items-center'
+    const msgSpan = document.createElement('span')
+    msgSpan.className = `text-${color}-700`
+    msgSpan.textContent = message
+    row.appendChild(msgSpan)
+    notification.appendChild(row)
     
     document.body.appendChild(notification)
     

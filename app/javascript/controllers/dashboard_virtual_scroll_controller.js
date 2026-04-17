@@ -451,9 +451,13 @@ export default class extends Controller {
       const expandedDetails = node.querySelector('.expense-expanded-details')
       expandedDetails.classList.remove('hidden')
       if (expense.description) {
-        expandedDetails.innerHTML = `
-          <p class="text-xs text-slate-600 line-clamp-2">${expense.description}</p>
-        `
+        // PER-501: expense.description originates from bank emails / user
+        // input — never interpolate into innerHTML. Build the <p> via DOM
+        // APIs so a description containing HTML renders as plain text.
+        const p = document.createElement('p')
+        p.className = 'text-xs text-slate-600 line-clamp-2'
+        p.textContent = expense.description
+        expandedDetails.replaceChildren(p)
       }
     }
     

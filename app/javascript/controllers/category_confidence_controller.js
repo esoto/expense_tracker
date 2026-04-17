@@ -72,37 +72,51 @@ export default class extends Controller {
     // Add content
     const content = document.createElement("div")
     content.classList.add("relative")
-    content.innerHTML = this.getTooltipContent()
+    // PER-501: build tooltip via DOM APIs. The `explanationValue` is read
+    // from a data attribute populated by the server — never interpolate it
+    // into innerHTML.
+    content.appendChild(this.buildTooltipFragment())
     tooltip.appendChild(content)
-    
+
     document.body.appendChild(tooltip)
     this.tooltipTarget = tooltip
   }
 
-  getTooltipContent() {
-    let content = `<div class="font-semibold mb-1">${t("categories.confidence.display", { percentage: this.percentageValue })}</div>`
+  // PER-501: returns a DocumentFragment so the caller can appendChild
+  // without ever seeing raw HTML strings.
+  buildTooltipFragment() {
+    const frag = document.createDocumentFragment()
+
+    const header = document.createElement("div")
+    header.className = "font-semibold mb-1"
+    header.textContent = t("categories.confidence.display", { percentage: this.percentageValue })
+    frag.appendChild(header)
 
     if (this.explanationValue) {
-      content += `<div class="text-slate-300">${this.explanationValue}</div>`
+      const explanation = document.createElement("div")
+      explanation.className = "text-slate-300"
+      explanation.textContent = this.explanationValue
+      frag.appendChild(explanation)
     }
 
     const levelKey = this.levelValue // high, medium, low, very_low
     const levelText = t(`categories.confidence.${levelKey}`)
 
     if (levelText !== `categories.confidence.${levelKey}`) {
-      content += `<div class="mt-1 pt-1 border-t border-slate-600 text-slate-400">
-                    ${levelText}
-                  </div>`
+      const levelDiv = document.createElement("div")
+      levelDiv.className = "mt-1 pt-1 border-t border-slate-600 text-slate-400"
+      levelDiv.textContent = levelText
+      frag.appendChild(levelDiv)
     }
 
-    // Add keyboard shortcut hint
     if (this.levelValue === "low" || this.levelValue === "very_low") {
-      content += `<div class="mt-1 text-slate-500">
-                    ${t("categories.confidence.shortcut_hint")}
-                  </div>`
+      const hint = document.createElement("div")
+      hint.className = "mt-1 text-slate-500"
+      hint.textContent = t("categories.confidence.shortcut_hint")
+      frag.appendChild(hint)
     }
 
-    return content
+    return frag
   }
 
   // Show correction interface

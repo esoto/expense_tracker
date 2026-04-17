@@ -37,6 +37,10 @@ RSpec.describe Services::Categorization::Strategies::LlmStrategy, :unit do
           parse: { category: category, confidence: 0.85, raw_response: category.i18n_key }))
     end
 
+    # Guard against leaking the flag into neighboring specs in the same
+    # process — Rails.cache is shared state.
+    after { Rails.cache.delete(described_class::AUTH_FAILURE_CACHE_KEY) }
+
     it "defines AUTH_FAILURE_CACHE_KEY and AUTH_FAILURE_TTL" do
       expect(described_class::AUTH_FAILURE_CACHE_KEY).to be_a(String)
       expect(described_class::AUTH_FAILURE_TTL).to be_a(ActiveSupport::Duration)
@@ -102,6 +106,63 @@ RSpec.describe Services::Categorization::Strategies::LlmStrategy, :unit do
       it "trips the circuit breaker" do
         strategy.call(expense)
         expect(Rails.cache.read(described_class::AUTH_FAILURE_CACHE_KEY)).to be true
+      end
+
+      it "reports via Services::ErrorTrackingService (parity with AuthenticationError)" do
+        tracker = instance_double(Services::ErrorTrackingService, track_exception: nil)
+        allow(Services::ErrorTrackingService).to receive(:instance).and_return(tracker)
+
+        strategy.call(expense)
+
+        expect(tracker).to have_received(:track_exception).with(
+          instance_of(Services::Categorization::Llm::Client::ConfigurationError),
+          hash_including(strategy: "LlmStrategy")
+        )
+      end
+
+      it "returns no_match so the engine falls through to the next layer" do
+        result = strategy.call(expense)
+        expect(result).not_to be_successful
+        expect(result.method).to eq("no_match")
+      end
+    end
+
+    # Lock in the design decision: when the circuit is open, we DO NOT serve
+    # a stale cached classification — we return no_match so the outage
+    # signal propagates. A future refactor that moved the circuit check
+    # below `lookup_cache` (for "performance") would silently hide outages.
+    context "when the circuit is open AND a valid cache entry exists" do
+      before do
+        Rails.cache.write(described_class::AUTH_FAILURE_CACHE_KEY, true,
+                          expires_in: described_class::AUTH_FAILURE_TTL)
+        create(:llm_categorization_cache_entry,
+          merchant_normalized: normalized_merchant,
+          category: category,
+          expires_at: 30.days.from_now)
+      end
+
+      it "returns no_match (circuit wins over cache)" do
+        result = strategy.call(expense)
+        expect(result).not_to be_successful
+        expect(result.method).to eq("no_match")
+      end
+    end
+
+    # Lock in the auto-recovery contract: when AUTH_FAILURE_TTL expires the
+    # circuit closes on its own. Prevents a future typo that pinned the
+    # circuit open forever.
+    context "when the circuit has expired (auto-recovery)" do
+      before do
+        Rails.cache.write(described_class::AUTH_FAILURE_CACHE_KEY, true,
+                          expires_in: described_class::AUTH_FAILURE_TTL)
+        allow(mock_client).to receive(:categorize).and_return(api_response)
+      end
+
+      it "recovers and calls the LLM after the TTL elapses" do
+        travel_to(described_class::AUTH_FAILURE_TTL.from_now + 1.second) do
+          strategy.call(expense)
+          expect(mock_client).to have_received(:categorize)
+        end
       end
     end
 

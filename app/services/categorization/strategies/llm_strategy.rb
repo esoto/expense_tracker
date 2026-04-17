@@ -137,7 +137,10 @@ module Services::Categorization
       # flag that tells every LlmStrategy instance across every Solid Queue
       # worker that auth is currently broken.
       def auth_circuit_open?
-        Rails.cache.read(AUTH_FAILURE_CACHE_KEY).present?
+        # `Rails.cache.exist?` is one round trip and doesn't materialize the
+        # payload — tighter than `read(...).present?` and signals intent (we
+        # only care that the flag is set, not its value).
+        Rails.cache.exist?(AUTH_FAILURE_CACHE_KEY)
       end
 
       def trip_auth_circuit!(exception)
@@ -152,8 +155,10 @@ module Services::Categorization
           reason: "auth_failure_circuit_breaker_tripped"
         )
       rescue StandardError => track_err
-        # Don't let a broken tracker mask the underlying auth failure.
-        @logger.warn "[LlmStrategy] ErrorTrackingService.track_exception failed: #{track_err.message}"
+        # Don't let a broken tracker mask the underlying auth failure. Log at
+        # :error (not :warn) — losing the alert signal IS the outage this PR
+        # exists to detect, so it must be visible in default log filters.
+        @logger.error "[LlmStrategy] ErrorTrackingService.track_exception failed: #{track_err.class.name}: #{track_err.message}"
       end
 
       def normalize_merchant(expense)

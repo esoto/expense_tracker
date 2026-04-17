@@ -48,6 +48,11 @@ env:
     POSTGRES_USER: expense_tracker
     POSTGRES_HOST: personal-blog-db
     POSTGRES_PORT: "5432"
+    # Primary DB connection pool per process. Math and rationale are
+    # documented in config/database.yml's production.primary block.
+    # personal-blog-db is shared with another app, so stay conservative
+    # until `SHOW max_connections;` is verified on the host (PER-494).
+    DB_POOL: "10"
     # Run Solid Queue inside Puma (single server setup)
     SOLID_QUEUE_IN_PUMA: true
     # Host for DNS rebinding protection

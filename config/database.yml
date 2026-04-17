@@ -70,8 +70,18 @@ production:
     database: expense_tracker_production
     username: <%= ENV.fetch("POSTGRES_USER") { "expense_tracker" } %>
     password: <%= ENV["POSTGRES_PASSWORD"] %>
-    # Production performance settings
-    pool: <%= ENV.fetch("DB_POOL", 35) %>
+    # Production performance settings.
+    #
+    # Connection math (PER-494):
+    # - Puma: 1 process × RAILS_MAX_THREADS (3) = 3 threads per process.
+    # - Solid Queue (runs in-Puma via SOLID_QUEUE_IN_PUMA=true) per queue.yml
+    #   production: 2 critical workers × 5 threads + 1 standard × 3 threads.
+    # - Each thread can hold one pool slot on the primary DB.
+    # Peak threads needing DB access ≈ 3 + 10 + 3 = 16 → DB_POOL=10 per
+    # process × conservative headroom keeps us well below a shared-host's
+    # Postgres default max_connections=100. Raise DB_POOL only after
+    # verifying `SHOW max_connections;` on the Hetzner host.
+    pool: <%= ENV.fetch("DB_POOL", 10) %>
     statement_timeout: 30000  # 30 seconds
     lock_timeout: 10000       # 10 seconds
     variables:

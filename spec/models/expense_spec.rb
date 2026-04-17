@@ -315,16 +315,19 @@ RSpec.describe Expense, type: :model, integration: true do
     end
   end
 
-  # PER-497: Manual ML-suggestion handling MUST flip auto_categorized to false
-  # so the downstream confidence gate (MlConfidenceIntegration) can protect the
-  # user's choice from being silently overwritten by a later re-categorization.
-  describe 'ML suggestion methods marking auto_categorized', :unit do
+  # PER-497: reject_ml_suggestion! flips auto_categorized to false so the
+  # downstream confidence gate protects the user's explicit override from
+  # being silently overwritten by a later re-categorization.
+  # accept_ml_suggestion! intentionally leaves auto_categorized alone — the
+  # user is affirming the ML's choice, not overriding automation, so the
+  # provenance metric in MonitoringService stays accurate.
+  describe 'ML suggestion provenance (PER-497)', :unit do
     let(:email_account) { create(:email_account) }
     let(:original_category) { create(:category, i18n_key: 'groceries') }
     let(:new_category) { create(:category, i18n_key: 'dining_out') }
 
     describe '#accept_ml_suggestion!' do
-      it 'marks auto_categorized = false (user affirmed the choice)' do
+      it 'leaves auto_categorized true (user ratified the ML choice)' do
         expense = create(:expense,
           email_account: email_account,
           category: original_category,
@@ -333,12 +336,12 @@ RSpec.describe Expense, type: :model, integration: true do
 
         expense.accept_ml_suggestion!
 
-        expect(expense.reload.auto_categorized).to be false
+        expect(expense.reload.auto_categorized).to be true
       end
     end
 
     describe '#reject_ml_suggestion!' do
-      it 'marks auto_categorized = false (user corrected the choice)' do
+      it 'flips auto_categorized to false (user overrode the ML choice)' do
         expense = create(:expense,
           email_account: email_account,
           category: original_category,

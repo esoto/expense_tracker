@@ -138,6 +138,88 @@ RSpec.describe Services::Categorization::MlConfidenceIntegration do
         expect(expense.category).to eq(category)
       end
     end
+
+    # Nil auto_categorized comes from rows that pre-date the column addition.
+    # Those rows were not user-touched — they should remain eligible for
+    # re-categorization (treated like auto_categorized=true).
+    context 'when the expense has auto_categorized = nil (legacy row)' do
+      let(:confidence) { 0.90 }
+
+      before do
+        expense.update!(category: create(:category))
+        # update_columns bypasses validations / callbacks / defaults — simulates
+        # a row written before auto_categorized existed.
+        expense.update_columns(auto_categorized: nil)
+      end
+
+      it 'does not block re-categorization for legacy rows' do
+        expect(integration.update_expense_with_ml_confidence(expense, result)).to be true
+      end
+    end
+
+    # Boundary: exact threshold values are where off-by-one gate bugs hide.
+    # The strict gate should fire regardless of confidence, so 0.85 (high
+    # threshold) must be blocked too.
+    context 'at the exact high-confidence threshold against a user-set expense' do
+      let(:confidence) { 0.85 }
+      let(:user_chosen_category) { create(:category, i18n_key: 'home') }
+
+      before do
+        expense.update!(category: user_chosen_category, auto_categorized: false)
+      end
+
+      it 'blocks the overwrite (strict gate is confidence-independent)' do
+        expect(integration.update_expense_with_ml_confidence(expense, result)).to be false
+
+        expense.reload
+        expect(expense.category).to eq(user_chosen_category)
+      end
+    end
+
+    # Logger assertion — ops/audit visibility for when the gate fires.
+    context 'logging when the gate fires' do
+      let(:confidence) { 0.95 }
+
+      before do
+        expense.update!(category: create(:category), auto_categorized: false)
+      end
+
+      it 'emits a debug log line explaining the skip' do
+        expect(Rails.logger).to receive(:debug) do |&block|
+          expect(block.call).to match(/Skipping user-set category overwrite/)
+        end
+
+        integration.update_expense_with_ml_confidence(expense, result)
+      end
+    end
+  end
+
+  # PER-497 end-to-end: the Expense model flip AND the gate must interlock
+  # to fix the deploy-blocker. A unit test for either alone can't catch the
+  # composed contract breaking.
+  describe 'PER-497 integration: user-corrects → re-run is blocked', :unit do
+    let(:email_account) { create(:email_account) }
+    let(:auto_category) { create(:category, i18n_key: 'groceries') }
+    let(:user_category) { create(:category, i18n_key: 'dining_out') }
+    let(:other_category) { create(:category, i18n_key: 'transportation') }
+
+    it 'preserves the user-corrected category across a later high-confidence re-categorization' do
+      expense = create(:expense,
+        email_account: email_account,
+        category: auto_category,
+        auto_categorized: true)
+
+      expense.reject_ml_suggestion!(user_category.id)
+
+      result = Services::Categorization::CategorizationResult.new(
+        category: other_category,
+        confidence: 0.95,
+        method: 'pattern_match'
+      )
+
+      expect(integration.update_expense_with_ml_confidence(expense, result)).to be false
+      expect(expense.reload.category).to eq(user_category)
+    end
   end
 
   describe '#build_confidence_explanation' do

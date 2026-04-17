@@ -72,37 +72,51 @@ export default class extends Controller {
     // Add content
     const content = document.createElement("div")
     content.classList.add("relative")
-    content.innerHTML = this.getTooltipContent()
+    // PER-501: build tooltip via DOM APIs. The `explanationValue` is read
+    // from a data attribute populated by the server — never interpolate it
+    // into innerHTML.
+    content.appendChild(this.buildTooltipFragment())
     tooltip.appendChild(content)
-    
+
     document.body.appendChild(tooltip)
     this.tooltipTarget = tooltip
   }
 
-  getTooltipContent() {
-    let content = `<div class="font-semibold mb-1">${t("categories.confidence.display", { percentage: this.percentageValue })}</div>`
+  // PER-501: returns a DocumentFragment so the caller can appendChild
+  // without ever seeing raw HTML strings.
+  buildTooltipFragment() {
+    const frag = document.createDocumentFragment()
+
+    const header = document.createElement("div")
+    header.className = "font-semibold mb-1"
+    header.textContent = t("categories.confidence.display", { percentage: this.percentageValue })
+    frag.appendChild(header)
 
     if (this.explanationValue) {
-      content += `<div class="text-slate-300">${this.explanationValue}</div>`
+      const explanation = document.createElement("div")
+      explanation.className = "text-slate-300"
+      explanation.textContent = this.explanationValue
+      frag.appendChild(explanation)
     }
 
     const levelKey = this.levelValue // high, medium, low, very_low
     const levelText = t(`categories.confidence.${levelKey}`)
 
     if (levelText !== `categories.confidence.${levelKey}`) {
-      content += `<div class="mt-1 pt-1 border-t border-slate-600 text-slate-400">
-                    ${levelText}
-                  </div>`
+      const levelDiv = document.createElement("div")
+      levelDiv.className = "mt-1 pt-1 border-t border-slate-600 text-slate-400"
+      levelDiv.textContent = levelText
+      frag.appendChild(levelDiv)
     }
 
-    // Add keyboard shortcut hint
     if (this.levelValue === "low" || this.levelValue === "very_low") {
-      content += `<div class="mt-1 text-slate-500">
-                    ${t("categories.confidence.shortcut_hint")}
-                  </div>`
+      const hint = document.createElement("div")
+      hint.className = "mt-1 text-slate-500"
+      hint.textContent = t("categories.confidence.shortcut_hint")
+      frag.appendChild(hint)
     }
 
-    return content
+    return frag
   }
 
   // Show correction interface
@@ -365,28 +379,44 @@ export default class extends Controller {
       "fixed", "bottom-4", "right-4", "p-3", "rounded-lg",
       "shadow-lg", "z-50", "transition-all", "duration-300"
     )
-    
+
+    // PER-501: build the notification via DOM APIs. Today all callers pass
+    // static t() keys, but the signature accepts any string — a future caller
+    // passing a server error would open XSS. Same pattern as
+    // bulk_actions_controller.js#showNotification.
+    const iconPath = (type === "success")
+      ? "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+      : "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+
     if (type === "success") {
       notification.classList.add("bg-emerald-50", "text-emerald-800", "border", "border-emerald-200")
-      notification.innerHTML = `
-        <div class="flex items-center gap-2">
-          <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          <span>${message}</span>
-        </div>
-      `
     } else {
       notification.classList.add("bg-rose-50", "text-rose-800", "border", "border-rose-200")
-      notification.innerHTML = `
-        <div class="flex items-center gap-2">
-          <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          <span>${message}</span>
-        </div>
-      `
     }
+
+    const row = document.createElement("div")
+    row.className = "flex items-center gap-2"
+
+    const svgNS = "http://www.w3.org/2000/svg"
+    const svg = document.createElementNS(svgNS, "svg")
+    svg.setAttribute("aria-hidden", "true")
+    svg.setAttribute("class", "w-5 h-5")
+    svg.setAttribute("fill", "none")
+    svg.setAttribute("stroke", "currentColor")
+    svg.setAttribute("viewBox", "0 0 24 24")
+    const path = document.createElementNS(svgNS, "path")
+    path.setAttribute("stroke-linecap", "round")
+    path.setAttribute("stroke-linejoin", "round")
+    path.setAttribute("stroke-width", "2")
+    path.setAttribute("d", iconPath)
+    svg.appendChild(path)
+
+    const span = document.createElement("span")
+    span.textContent = message
+
+    row.appendChild(svg)
+    row.appendChild(span)
+    notification.appendChild(row)
     
     document.body.appendChild(notification)
     

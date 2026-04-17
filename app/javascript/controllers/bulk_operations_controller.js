@@ -470,9 +470,11 @@ export default class extends Controller {
   showError(message) {
     if (this.hasErrorContainerTarget) {
       this.errorContainerTarget.classList.remove('hidden')
-      
+
       if (this.hasErrorListTarget) {
-        this.errorListTarget.innerHTML = `<li>${message}</li>`
+        // PER-501: server error text may contain merchant names or other
+        // untrusted content — use textContent to neutralize HTML.
+        this.errorListTarget.replaceChildren(this.#errorListItem(message))
       }
     }
   }
@@ -482,9 +484,11 @@ export default class extends Controller {
    */
   showDetailedErrors(errors) {
     if (this.hasErrorListTarget) {
-      this.errorListTarget.innerHTML = errors
-        .map(error => `<li>${error}</li>`)
-        .join('')
+      // PER-501: errors come from the bulk-op backend response and may
+      // include user-input fragments. Build <li>s with textContent so a
+      // rogue string like "<script>..." renders as text, not markup.
+      const items = errors.map(error => this.#errorListItem(error))
+      this.errorListTarget.replaceChildren(...items)
     }
   }
 
@@ -497,13 +501,34 @@ export default class extends Controller {
       this.errorContainerTarget.classList.remove('hidden')
 
       if (this.hasErrorListTarget) {
-        this.errorListTarget.innerHTML = `
-          <li class="font-semibold">${message}</li>
-          ${failures.slice(0, 5).map(f => `<li class="ml-4">• ${t('bulk_operations.partial_errors.expense_item', { id: f.id, error: f.error })}</li>`).join('')}
-          ${failures.length > 5 ? `<li class="ml-4 text-slate-500">${t('bulk_operations.partial_errors.more_items', { count: failures.length - 5 })}</li>` : ''}
-        `
+        // PER-501: f.id is numeric and f.error is a backend string. i18n
+        // output itself is safe, but we build each <li> with textContent
+        // so the interpolated content can't escape.
+        const header = this.#errorListItem(message, 'font-semibold')
+        const detail = failures.slice(0, 5).map(f => (
+          this.#errorListItem(
+            `• ${t('bulk_operations.partial_errors.expense_item', { id: f.id, error: f.error })}`,
+            'ml-4'
+          )
+        ))
+        const nodes = [header, ...detail]
+        if (failures.length > 5) {
+          nodes.push(this.#errorListItem(
+            t('bulk_operations.partial_errors.more_items', { count: failures.length - 5 }),
+            'ml-4 text-slate-500'
+          ))
+        }
+        this.errorListTarget.replaceChildren(...nodes)
       }
     }
+  }
+
+  // PER-501 helper: single <li> node with textContent-safe content + optional classes.
+  #errorListItem(text, className = '') {
+    const li = document.createElement('li')
+    if (className) li.className = className
+    li.textContent = text
+    return li
   }
 
   /**

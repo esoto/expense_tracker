@@ -451,9 +451,17 @@ export default class extends Controller {
       const expandedDetails = node.querySelector('.expense-expanded-details')
       expandedDetails.classList.remove('hidden')
       if (expense.description) {
-        expandedDetails.innerHTML = `
-          <p class="text-xs text-slate-600 line-clamp-2">${expense.description}</p>
-        `
+        // PER-501: expense.description originates from bank emails / user
+        // input AND is NOT sanitized server-side — the frontend textContent
+        // assignment is the primary XSS guard, not defense-in-depth.
+        const p = document.createElement('p')
+        p.className = 'text-xs text-slate-600 line-clamp-2'
+        p.textContent = expense.description
+        expandedDetails.replaceChildren(p)
+      } else {
+        // PER-501: if this node was previously recycled from an expense that
+        // had a description, the old <p> would persist. Clear explicitly.
+        expandedDetails.replaceChildren()
       }
     }
     
@@ -485,11 +493,13 @@ export default class extends Controller {
     node.querySelector('.expense-amount').textContent = ''
     node.querySelector('.expense-date').textContent = ''
     
-    // Hide expanded details
-    node.querySelector('.expense-expanded-details').classList.add('hidden')
-    
+    // Hide expanded details + clear any leftover children (PER-501).
+    const expandedDetails = node.querySelector('.expense-expanded-details')
+    expandedDetails.classList.add('hidden')
+    expandedDetails.replaceChildren()
+
     // Clear inline actions
-    node.querySelector('.inline-quick-actions').innerHTML = ''
+    node.querySelector('.inline-quick-actions').replaceChildren()
   }
   
   // Clean up items outside the render range

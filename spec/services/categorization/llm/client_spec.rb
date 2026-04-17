@@ -19,13 +19,33 @@ RSpec.describe Services::Categorization::Llm::Client, :unit do
   end
 
   describe "#initialize" do
-    it "creates an Anthropic client with the configured API key" do
-      allow(Anthropic::Client).to receive(:new)
-        .with(api_key: api_key).and_call_original
+    it "creates an Anthropic client with the configured API key, no SDK retries, and a 30s timeout" do
+      allow(Anthropic::Client).to receive(:new).and_call_original
 
       client
 
-      expect(Anthropic::Client).to have_received(:new).with(api_key: api_key)
+      expect(Anthropic::Client).to have_received(:new).with(
+        api_key: api_key,
+        max_retries: 0,
+        timeout: 30
+      )
+    end
+
+    it "honors ANTHROPIC_TIMEOUT_SECONDS when set" do
+      allow(Anthropic::Client).to receive(:new).and_call_original
+      original = ENV["ANTHROPIC_TIMEOUT_SECONDS"]
+      ENV["ANTHROPIC_TIMEOUT_SECONDS"] = "45"
+      begin
+        described_class.new
+      ensure
+        ENV["ANTHROPIC_TIMEOUT_SECONDS"] = original
+      end
+
+      expect(Anthropic::Client).to have_received(:new).with(
+        api_key: api_key,
+        max_retries: 0,
+        timeout: 45
+      )
     end
 
     it "raises an error when API key is not configured" do

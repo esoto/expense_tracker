@@ -28,7 +28,11 @@ module Services::Categorization
           api_key = Rails.application.credentials.dig(:anthropic, :api_key)
           raise ConfigurationError, "Anthropic API key not configured" unless api_key
 
-          @client = Anthropic::Client.new(api_key: api_key)
+          @client = Anthropic::Client.new(
+            api_key: api_key,
+            max_retries: 0,
+            timeout: (ENV["ANTHROPIC_TIMEOUT_SECONDS"] || 30).to_i
+          )
         end
       end
 

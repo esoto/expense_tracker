@@ -16,7 +16,9 @@ output="$(kamal app exec --reuse "bin/rails db:migrate:status" 2>&1 || true)"
 
 if echo "$output" | grep -q "^[[:space:]]*down[[:space:]]"; then
   echo "ERROR: Pending migrations detected. Refusing to deploy." >&2
-  echo "$output" | grep "^[[:space:]]*down[[:space:]]" >&2
+  # Print status + version only, not migration filenames, to avoid leaking
+  # schema evolution detail into deploy logs (CWE-532).
+  echo "$output" | awk '/^[[:space:]]*down[[:space:]]/ { print $1, $2 }' >&2
   echo "Run \`kamal app exec \"bin/rails db:migrate\"\` from a safe window first." >&2
   exit 1
 fi

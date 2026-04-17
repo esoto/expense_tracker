@@ -379,28 +379,44 @@ export default class extends Controller {
       "fixed", "bottom-4", "right-4", "p-3", "rounded-lg",
       "shadow-lg", "z-50", "transition-all", "duration-300"
     )
-    
+
+    // PER-501: build the notification via DOM APIs. Today all callers pass
+    // static t() keys, but the signature accepts any string — a future caller
+    // passing a server error would open XSS. Same pattern as
+    // bulk_actions_controller.js#showNotification.
+    const iconPath = (type === "success")
+      ? "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+      : "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+
     if (type === "success") {
       notification.classList.add("bg-emerald-50", "text-emerald-800", "border", "border-emerald-200")
-      notification.innerHTML = `
-        <div class="flex items-center gap-2">
-          <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          <span>${message}</span>
-        </div>
-      `
     } else {
       notification.classList.add("bg-rose-50", "text-rose-800", "border", "border-rose-200")
-      notification.innerHTML = `
-        <div class="flex items-center gap-2">
-          <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          <span>${message}</span>
-        </div>
-      `
     }
+
+    const row = document.createElement("div")
+    row.className = "flex items-center gap-2"
+
+    const svgNS = "http://www.w3.org/2000/svg"
+    const svg = document.createElementNS(svgNS, "svg")
+    svg.setAttribute("aria-hidden", "true")
+    svg.setAttribute("class", "w-5 h-5")
+    svg.setAttribute("fill", "none")
+    svg.setAttribute("stroke", "currentColor")
+    svg.setAttribute("viewBox", "0 0 24 24")
+    const path = document.createElementNS(svgNS, "path")
+    path.setAttribute("stroke-linecap", "round")
+    path.setAttribute("stroke-linejoin", "round")
+    path.setAttribute("stroke-width", "2")
+    path.setAttribute("d", iconPath)
+    svg.appendChild(path)
+
+    const span = document.createElement("span")
+    span.textContent = message
+
+    row.appendChild(svg)
+    row.appendChild(span)
+    notification.appendChild(row)
     
     document.body.appendChild(notification)
     

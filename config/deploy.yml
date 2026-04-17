@@ -13,6 +13,20 @@ servers:
 proxy:
   ssl: true
   host: expense-tracker.estebansoto.dev
+  app_port: 3000
+  # kamal-proxy polls the Rails /up endpoint (see config/routes.rb) before
+  # cutting traffic to a new container. Without this, a broken boot would
+  # silently serve errors to users (deploy-blocker B3, PER-493).
+  healthcheck:
+    path: /up
+    interval: 10
+    timeout: 5
+
+# Grace period after health check passes before the old container is retired.
+# Orchestrator#warm_caches (app/services/categorization/orchestrator.rb:106)
+# runs on boot and can take several seconds — this avoids serving first
+# requests against an unwarmed app.
+readiness_delay: 15
 
 # GitHub Container Registry
 registry:

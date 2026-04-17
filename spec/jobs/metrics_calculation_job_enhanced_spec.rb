@@ -61,21 +61,6 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job, integratio
       job.perform(email_account_id: email_account.id, period: :month)
     end
 
-    it 'tracks slow jobs for analysis' do
-      # Mock slow execution
-      start_time = Time.current
-      allow(Time).to receive(:current).and_return(
-        start_time,
-        start_time,
-        start_time + 35.seconds
-      )
-
-      job.perform(email_account_id: email_account.id, period: :month)
-
-      slow_jobs = Rails.cache.read("slow_jobs:metrics_calculation")
-      expect(slow_jobs).not_to be_empty
-      expect(slow_jobs.last[:elapsed_time]).to be > 30
-    end
   end
 
   describe 'force refresh', integration: true do

@@ -36,7 +36,9 @@
 /app/assets/builds/*
 !/app/assets/builds/.keep
 
-/config/credentials/development.key
+# Never commit per-environment credential keys (PER-495 — test.key was
+# previously leaked into git history).
+/config/credentials/*.key
 
 # Ignore test coverage reports
 /coverage/
@@ -47,3 +49,4 @@
 # Ignore git worktrees
 /.worktrees
 /.claude/worktrees
+

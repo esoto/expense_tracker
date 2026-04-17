@@ -73,14 +73,23 @@ production:
     # Production performance settings.
     #
     # Connection math (PER-494):
-    # - Puma: 1 process × RAILS_MAX_THREADS (3) = 3 threads per process.
-    # - Solid Queue (runs in-Puma via SOLID_QUEUE_IN_PUMA=true) per queue.yml
-    #   production: 2 critical workers × 5 threads + 1 standard × 3 threads.
-    # - Each thread can hold one pool slot on the primary DB.
-    # Peak threads needing DB access ≈ 3 + 10 + 3 = 16 → DB_POOL=10 per
-    # process × conservative headroom keeps us well below a shared-host's
-    # Postgres default max_connections=100. Raise DB_POOL only after
-    # verifying `SHOW max_connections;` on the Hetzner host.
+    # SOLID_QUEUE_IN_PUMA=true makes Puma boot the Solid Queue supervisor as
+    # a plugin, but queue.yml's `processes:` directive still forks SEPARATE
+    # OS processes — they do NOT share Puma's pool. Each forked process
+    # re-reads this file and opens its own pool up to DB_POOL.
+    #
+    # Per-process pool requirement (each process needs pool ≥ its threads):
+    #   - Puma web                 3 threads  (RAILS_MAX_THREADS)
+    #   - Solid Queue supervisor   ~1
+    #   - Solid Queue dispatcher   ~1
+    #   - SQ critical workers × 2  5 threads each (HIGH_PRIORITY_THREADS)
+    #   - SQ standard worker × 1   3 threads (STANDARD_THREADS)
+    # DB_POOL=10 leaves headroom for the largest process (5-thread critical).
+    #
+    # Total primary-DB connections peak ≈ 6 processes × 10 ≈ 60, safely
+    # under Postgres default max_connections=100 on the shared host
+    # (personal-blog-db). Verify with `SHOW max_connections;` before
+    # raising HIGH_PRIORITY_PROCESSES or DB_POOL.
     pool: <%= ENV.fetch("DB_POOL", 10) %>
     statement_timeout: 30000  # 30 seconds
     lock_timeout: 10000       # 10 seconds

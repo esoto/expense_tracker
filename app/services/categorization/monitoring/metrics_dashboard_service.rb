@@ -5,8 +5,6 @@ module Services::Categorization
     # Aggregates categorization metrics for the admin dashboard.
     # Uses single-query conditional aggregation for efficiency.
     class MetricsDashboardService
-      MONTHLY_BUDGET = 5.0
-
       def overview(period: 30.days)
         result = CategorizationMetric.recent(period).pick(
           Arel.sql("COUNT(*)"),
@@ -68,7 +66,7 @@ module Services::Categorization
       end
 
       def api_budget_status
-        budget = MONTHLY_BUDGET
+        budget = Strategies::LlmStrategy.monthly_budget
         current_spend = fetch_current_spend
         percentage = budget.zero? ? 0.0 : (current_spend / budget * 100).round(2)
 
@@ -82,10 +80,15 @@ module Services::Categorization
 
       private
 
+      # The LlmStrategy budget counter stores spend in integer units scaled by
+      # BUDGET_CENTS_SCALE (PER-492). Rescale to USD on read. If the cache is
+      # empty (first call of the month, or cache flush), fall back to the DB.
       def fetch_current_spend
         cache_key = "llm_budget:#{Date.current.strftime('%Y-%m')}"
         cached = Rails.cache.read(cache_key)
-        return cached.to_f if cached
+        if cached
+          return cached.to_f / Strategies::LlmStrategy::BUDGET_CENTS_SCALE
+        end
 
         CategorizationMetric.recent(30.days).sum(:api_cost).to_f
       end

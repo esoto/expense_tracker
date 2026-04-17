@@ -274,17 +274,18 @@ RSpec.describe Services::Categorization::Monitoring::MetricsDashboardService, ty
 
     context "when cache has current month spend" do
       before do
-        allow(Rails.cache).to receive(:read).with(cache_key).and_return(2.50)
+        # Spend is stored as scaled integer units (PER-492): 2.50 USD = 25_000.
+        allow(Rails.cache).to receive(:read).with(cache_key).and_return(25_000)
       end
 
-      it "returns spend from cache" do
+      it "returns spend from cache rescaled back to USD" do
         result = service.api_budget_status
         expect(result[:current_spend]).to eq(2.50)
       end
 
-      it "returns the budget amount" do
+      it "returns the budget amount from LlmStrategy.monthly_budget" do
         result = service.api_budget_status
-        expect(result[:budget]).to eq(5.0)
+        expect(result[:budget]).to eq(Services::Categorization::Strategies::LlmStrategy.monthly_budget)
       end
 
       it "calculates percentage correctly" do
@@ -322,7 +323,8 @@ RSpec.describe Services::Categorization::Monitoring::MetricsDashboardService, ty
 
     context "with warning status (exactly 50%)" do
       before do
-        allow(Rails.cache).to receive(:read).with(cache_key).and_return(2.5)
+        # 2.5 USD in scaled units = 25_000
+        allow(Rails.cache).to receive(:read).with(cache_key).and_return(25_000)
       end
 
       it "returns warning status" do
@@ -332,7 +334,8 @@ RSpec.describe Services::Categorization::Monitoring::MetricsDashboardService, ty
 
     context "with warning status (between 50% and 80%)" do
       before do
-        allow(Rails.cache).to receive(:read).with(cache_key).and_return(3.5)
+        # 3.5 USD in scaled units = 35_000
+        allow(Rails.cache).to receive(:read).with(cache_key).and_return(35_000)
       end
 
       it "returns warning status" do
@@ -342,7 +345,8 @@ RSpec.describe Services::Categorization::Monitoring::MetricsDashboardService, ty
 
     context "with critical status (exactly 80%)" do
       before do
-        allow(Rails.cache).to receive(:read).with(cache_key).and_return(4.0)
+        # 4.0 USD in scaled units = 40_000
+        allow(Rails.cache).to receive(:read).with(cache_key).and_return(40_000)
       end
 
       it "returns critical status" do
@@ -352,7 +356,8 @@ RSpec.describe Services::Categorization::Monitoring::MetricsDashboardService, ty
 
     context "with critical status (exceeds budget)" do
       before do
-        allow(Rails.cache).to receive(:read).with(cache_key).and_return(6.0)
+        # 6.0 USD in scaled units = 60_000
+        allow(Rails.cache).to receive(:read).with(cache_key).and_return(60_000)
       end
 
       it "returns critical status" do
@@ -362,7 +367,7 @@ RSpec.describe Services::Categorization::Monitoring::MetricsDashboardService, ty
 
     context "when spend is zero" do
       before do
-        allow(Rails.cache).to receive(:read).with(cache_key).and_return(0.0)
+        allow(Rails.cache).to receive(:read).with(cache_key).and_return(0)
       end
 
       it "returns healthy status" do

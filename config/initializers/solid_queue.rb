@@ -10,6 +10,27 @@ Rails.application.configure do
     # Configure shutdown timeout (grace period for jobs to finish)
     config.solid_queue.shutdown_timeout = ENV.fetch("SOLID_QUEUE_SHUTDOWN_TIMEOUT", 30).to_i.seconds
 
+    # PER-506: defensive lease / heartbeat config.
+    #
+    # process_alive_threshold — how long the supervisor waits after a worker's
+    # last heartbeat before considering it dead and releasing its claimed
+    # executions back to the queue. Gem default is 5.minutes, which is too
+    # aggressive for Ruby apps with multi-GB heap: a single major GC pause
+    # (3-4 min on a large heap) would falsely prune a healthy worker, causing
+    # another worker to claim the same job (duplicate execution, duplicate
+    # LLM cost). Bumping to 10 minutes adds headroom without meaningfully
+    # delaying recovery from an actually-dead process.
+    #
+    # process_heartbeat_interval — halve to 30s (gem default 60s) so the
+    # supervisor sees 20 heartbeats per alive-threshold window instead of 5,
+    # reducing single-missed-beat false positives further.
+    #
+    # Note: the PER-506 ticket described a "claim_timeout" setting in
+    # config/queue.yml, but that key does not exist in Solid Queue 1.4.0.
+    # The effective lever IS process_alive_threshold on the module.
+    config.solid_queue.process_alive_threshold = ENV.fetch("SOLID_QUEUE_ALIVE_THRESHOLD", 600).to_i.seconds
+    config.solid_queue.process_heartbeat_interval = ENV.fetch("SOLID_QUEUE_HEARTBEAT_INTERVAL", 30).to_i.seconds
+
     # Enable performance logging in production
     if Rails.env.production?
       config.solid_queue.logger = Rails.logger

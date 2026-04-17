@@ -11,9 +11,18 @@ module Services::Categorization
     # and fed into VectorUpdater so Layer 2 can learn from them.
     class LlmStrategy < BaseStrategy
       CACHE_TTL = 90.days
-      MONTHLY_BUDGET = 5.0
-      BUDGET_KEY_PREFIX = "llm_budget"
+      DEFAULT_MONTHLY_BUDGET_USD = 5.0
+      # Bumped from "llm_budget" when PER-492 changed the cached value encoding
+      # from USD floats to integer units. The _v2 suffix orphans pre-deploy
+      # float values so the guard doesn't misread 4.99 (USD) as 4 (units =
+      # $0.0004) during the 35-day BUDGET_TTL window after rollout.
+      BUDGET_KEY_PREFIX = "llm_budget_v2"
       BUDGET_TTL = 35.days
+      # Budget is stored in the cache as an integer in "budget units" so
+      # Rails.cache.increment (integer-only) can be used atomically. LLM calls
+      # can cost fractions of a cent (e.g. $0.0003), so cents (×100) would
+      # truncate to 0. BUDGET_UNITS_PER_USD = 10_000 preserves tenths-of-a-cent.
+      BUDGET_UNITS_PER_USD = 10_000
       CORRECTION_KEY_PREFIX = "llm_correction"
 
       # Rate limit handling.
@@ -34,6 +43,19 @@ module Services::Categorization
       class << self
         attr_accessor :last_llm_call_at
         attr_reader :rate_limit_mutex
+      end
+
+      # Resolves the monthly LLM budget cap in USD. Reads LLM_MONTHLY_BUDGET_USD
+      # from the environment and falls back defensively: a non-numeric, empty,
+      # zero, negative, or infinite value collapses to the default so a
+      # misconfigured env var cannot silently disable the budget guard. (Note
+      # that Float("1e400") == Float::INFINITY, and Infinity.positive? is true,
+      # so the .finite? check is load-bearing, not cosmetic.)
+      def self.monthly_budget
+        value = Float(ENV.fetch("LLM_MONTHLY_BUDGET_USD", nil))
+        value.positive? && value.finite? ? value : DEFAULT_MONTHLY_BUDGET_USD
+      rescue TypeError, ArgumentError
+        DEFAULT_MONTHLY_BUDGET_USD
       end
 
       # @param client [Llm::Client, nil] injectable LLM client for testing
@@ -235,16 +257,25 @@ module Services::Categorization
       end
 
       def budget_exceeded?
-        current_spend = Rails.cache.read(budget_key) || 0.0
-        current_spend.to_f >= MONTHLY_BUDGET
+        current_spend_units = Rails.cache.read(budget_key).to_i
+        (current_spend_units.to_f / BUDGET_UNITS_PER_USD) >= self.class.monthly_budget
       end
 
       def increment_budget(cost)
-        # Atomic-safe: read + write with the new total.
-        # Acceptable for single-user app — concurrent LLM calls are serialized
-        # by the strategy chain (one expense at a time).
-        current = Rails.cache.read(budget_key) || 0.0
-        Rails.cache.write(budget_key, current.to_f + cost, expires_in: BUDGET_TTL)
+        # Atomic increment at the cache layer so concurrent workers cannot lose
+        # updates to a read-modify-write race (PER-492). Rails.cache.increment
+        # is integer-only, so we store cost in units of 1 / BUDGET_UNITS_PER_USD
+        # of a USD (tenths of a cent) and rescale on read in #budget_exceeded?.
+        units = (cost * BUDGET_UNITS_PER_USD).ceil
+        return if units <= 0
+
+        # `write(unless_exist: true)` atomically seeds the counter at 0 on the
+        # first call of the month without overwriting an existing value. The
+        # subsequent `increment` is then always against an existing integer
+        # key — no `|| write` fallback race where two concurrent first-callers
+        # both see `nil` and each `write(units)`, clobbering one update.
+        Rails.cache.write(budget_key, 0, expires_in: BUDGET_TTL, unless_exist: true)
+        Rails.cache.increment(budget_key, units, expires_in: BUDGET_TTL)
       end
 
       def build_budget_exceeded_result(start_time)

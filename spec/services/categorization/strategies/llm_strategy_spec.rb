@@ -32,20 +32,119 @@ RSpec.describe Services::Categorization::Strategies::LlmStrategy, :unit do
   end
 
   describe "constants" do
-    it "defines MONTHLY_BUDGET as 5.0" do
-      expect(described_class::MONTHLY_BUDGET).to eq(5.0)
+    it "defines BUDGET_KEY_PREFIX with the v2 suffix (PER-492 encoding change)" do
+      expect(described_class::BUDGET_KEY_PREFIX).to eq("llm_budget_v2")
     end
 
-    it "defines BUDGET_KEY_PREFIX" do
-      expect(described_class::BUDGET_KEY_PREFIX).to eq("llm_budget")
+    it "defines BUDGET_UNITS_PER_USD as 10_000" do
+      expect(described_class::BUDGET_UNITS_PER_USD).to eq(10_000)
+    end
+  end
+
+  describe ".monthly_budget" do
+    around do |example|
+      original = ENV["LLM_MONTHLY_BUDGET_USD"]
+      ENV.delete("LLM_MONTHLY_BUDGET_USD")
+      example.run
+    ensure
+      ENV["LLM_MONTHLY_BUDGET_USD"] = original
+    end
+
+    it "defaults to 5.0 when LLM_MONTHLY_BUDGET_USD is not set" do
+      expect(described_class.monthly_budget).to eq(5.0)
+    end
+
+    it "reads LLM_MONTHLY_BUDGET_USD from env when set" do
+      ENV["LLM_MONTHLY_BUDGET_USD"] = "12.50"
+      expect(described_class.monthly_budget).to eq(12.50)
+    end
+
+    it "falls back to the default for a non-numeric value" do
+      ENV["LLM_MONTHLY_BUDGET_USD"] = "disabled"
+      expect(described_class.monthly_budget).to eq(5.0)
+    end
+
+    it "falls back to the default for an empty value" do
+      ENV["LLM_MONTHLY_BUDGET_USD"] = ""
+      expect(described_class.monthly_budget).to eq(5.0)
+    end
+
+    it "falls back to the default for zero" do
+      ENV["LLM_MONTHLY_BUDGET_USD"] = "0"
+      expect(described_class.monthly_budget).to eq(5.0)
+    end
+
+    it "falls back to the default for a negative value" do
+      ENV["LLM_MONTHLY_BUDGET_USD"] = "-1"
+      expect(described_class.monthly_budget).to eq(5.0)
+    end
+
+    # Float("1e400") == Float::INFINITY, and Infinity.positive? is true, so
+    # without the .finite? guard a misconfigured env would silently disable
+    # the cap.
+    it "falls back to the default for a value that parses to Infinity" do
+      ENV["LLM_MONTHLY_BUDGET_USD"] = "1e400"
+      expect(described_class.monthly_budget).to eq(5.0)
+    end
+  end
+
+  describe "#budget_exceeded? boundary" do
+    let(:budget_key) { "llm_budget_v2:#{Date.current.strftime('%Y-%m')}" }
+
+    it "returns false at 49_999 units (1 unit under the $5 cap)" do
+      Rails.cache.write(budget_key, 49_999, expires_in: 35.days)
+      expect(strategy.send(:budget_exceeded?)).to be false
+    end
+
+    it "returns true at 50_000 units (exactly at the $5 cap)" do
+      Rails.cache.write(budget_key, 50_000, expires_in: 35.days)
+      expect(strategy.send(:budget_exceeded?)).to be true
+    end
+
+    it "returns true at 50_001 units (1 unit over the $5 cap)" do
+      Rails.cache.write(budget_key, 50_001, expires_in: 35.days)
+      expect(strategy.send(:budget_exceeded?)).to be true
+    end
+  end
+
+  describe "#increment_budget edge cases" do
+    let(:budget_key) { "llm_budget_v2:#{Date.current.strftime('%Y-%m')}" }
+
+    before { Rails.cache.delete(budget_key) }
+
+    it "no-ops when cost is exactly zero" do
+      strategy.send(:increment_budget, 0.0)
+      expect(Rails.cache.read(budget_key)).to be_nil
+    end
+
+    it "no-ops when cost rounds down to zero units (e.g. tiny negative)" do
+      strategy.send(:increment_budget, -0.00001)
+      expect(Rails.cache.read(budget_key)).to be_nil
+    end
+
+    # Guards against provider refund / upstream bug producing a negative cost,
+    # which would otherwise decrement the counter via Rails.cache.increment.
+    it "no-ops for a larger negative cost instead of decrementing" do
+      strategy.send(:increment_budget, -0.50)
+      expect(Rails.cache.read(budget_key)).to be_nil
+    end
+
+    # Exercises the write(unless_exist:) + increment pair on a fresh key —
+    # the production path on the first LLM call of each month.
+    it "seeds and increments on the first call when the key is absent" do
+      strategy.send(:increment_budget, 0.25)
+      # ceil(0.25 * 10_000) = 2_500 units
+      expect(Rails.cache.read(budget_key)).to eq(2_500)
     end
   end
 
   describe "#call" do
     context "when budget is exceeded" do
       before do
-        budget_key = "llm_budget:#{Date.current.strftime('%Y-%m')}"
-        Rails.cache.write(budget_key, 5.50, expires_in: 35.days)
+        # Cache stores spend in integer units scaled by BUDGET_UNITS_PER_USD (10_000).
+        # 5.50 USD = 55_000 units (over the 5.00 cap).
+        budget_key = "llm_budget_v2:#{Date.current.strftime('%Y-%m')}"
+        Rails.cache.write(budget_key, 55_000, expires_in: 35.days)
       end
 
       it "returns no_match with budget_exceeded reason" do
@@ -68,8 +167,9 @@ RSpec.describe Services::Categorization::Strategies::LlmStrategy, :unit do
 
     context "when budget is exactly at the limit" do
       before do
-        budget_key = "llm_budget:#{Date.current.strftime('%Y-%m')}"
-        Rails.cache.write(budget_key, 5.0, expires_in: 35.days)
+        # 5.00 USD = 50_000 units (exactly at the cap).
+        budget_key = "llm_budget_v2:#{Date.current.strftime('%Y-%m')}"
+        Rails.cache.write(budget_key, 50_000, expires_in: 35.days)
       end
 
       it "returns no_match with budget_exceeded reason" do
@@ -91,8 +191,9 @@ RSpec.describe Services::Categorization::Strategies::LlmStrategy, :unit do
       end
 
       before do
-        budget_key = "llm_budget:#{Date.current.strftime('%Y-%m')}"
-        Rails.cache.write(budget_key, 4.99, expires_in: 35.days)
+        # 4.99 USD = 49_900 units.
+        budget_key = "llm_budget_v2:#{Date.current.strftime('%Y-%m')}"
+        Rails.cache.write(budget_key, 49_900, expires_in: 35.days)
 
         allow(Services::Categorization::Llm::PromptBuilder).to receive(:new)
           .and_return(instance_double(Services::Categorization::Llm::PromptBuilder, build: prompt_text))
@@ -109,11 +210,12 @@ RSpec.describe Services::Categorization::Strategies::LlmStrategy, :unit do
         expect(mock_client).to have_received(:categorize)
       end
 
-      it "increments the budget counter by the call cost" do
+      it "increments the budget counter atomically by (cost * BUDGET_UNITS_PER_USD).ceil" do
         strategy.call(expense)
 
-        budget_key = "llm_budget:#{Date.current.strftime('%Y-%m')}"
-        expect(Rails.cache.read(budget_key)).to be_within(0.0001).of(4.9903)
+        budget_key = "llm_budget_v2:#{Date.current.strftime('%Y-%m')}"
+        # 49_900 seed + ceil(0.0003 * 10_000) = 49_900 + 3 = 49_903
+        expect(Rails.cache.read(budget_key)).to eq(49_903)
       end
     end
 
@@ -137,12 +239,34 @@ RSpec.describe Services::Categorization::Strategies::LlmStrategy, :unit do
       end
 
       it "initializes the counter from zero when no prior spend exists" do
-        budget_key = "llm_budget:#{Date.current.strftime('%Y-%m')}"
+        budget_key = "llm_budget_v2:#{Date.current.strftime('%Y-%m')}"
         Rails.cache.delete(budget_key)
 
         strategy.call(expense)
 
-        expect(Rails.cache.read(budget_key)).to be_within(0.0001).of(0.0005)
+        # ceil(0.0005 * 10_000) = 5
+        expect(Rails.cache.read(budget_key)).to eq(5)
+      end
+    end
+
+    # PER-492: Replaces the read-modify-write pattern with atomic cache increment.
+    # Under burst load, RMW silently undercounts by 10-20% and the $5/mo cap
+    # stops triggering. This test spins up 10 threads hitting the same key.
+    context "atomic budget increment under concurrency", :integration do
+      let(:budget_key) { "llm_budget_v2:#{Date.current.strftime('%Y-%m')}" }
+
+      it "produces the correct total when 10 threads each increment $0.50" do
+        Rails.cache.delete(budget_key)
+
+        # Build 10 strategy instances so each thread has its own (throttle mutex
+        # is class-level; we want to exercise the cache increment, not the throttle).
+        threads = 10.times.map do
+          Thread.new { described_class.new.send(:increment_budget, 0.50) }
+        end
+        threads.each(&:join)
+
+        # 10 threads * ceil(0.50 * 10_000) = 10 * 5_000 = 50_000
+        expect(Rails.cache.read(budget_key)).to eq(50_000)
       end
     end
     context "when expense has no merchant_name" do

@@ -331,17 +331,10 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
           expect(job).to have_received(:track_job_metrics)
             .with(email_account.id, fast_execution_time, :success)
         end
-
-        it "does not track as slow job" do
-          expect(job).not_to receive(:track_slow_job)
-
-          job.perform(email_account_id: email_account, period: :month)
-        end
       end
 
       context "when execution exceeds threshold" do
         before do
-          allow(job).to receive(:track_slow_job)
           allow(calculator_double).to receive(:calculate) do
             travel slow_execution_time
             { metrics: { transaction_count: 10, total_amount: 100.0 } }
@@ -353,13 +346,6 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
 
           expect(Rails.logger).to have_received(:warn)
             .with("MetricsCalculationJob exceeded 30s target: 35.0s for account #{email_account.id}")
-        end
-
-        it "tracks slow job for analysis" do
-          job.perform(email_account_id: email_account, period: :month)
-
-          expect(job).to have_received(:track_slow_job)
-            .with(email_account, slow_execution_time)
         end
 
         it "still tracks success metrics" do
@@ -724,72 +710,6 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
     end
   end
 
-  describe "#track_slow_job" do
-    let(:slow_jobs_key) { "slow_jobs:metrics_calculation" }
-    let(:existing_slow_jobs) do
-      Array.new(60) { |i| { email_account_id: i, timestamp: i.hours.ago, elapsed_time: 40 + i } }
-    end
-
-    before do
-      allow(Rails.cache).to receive(:fetch).and_return(existing_slow_jobs)
-      allow(Rails.cache).to receive(:write)
-      allow(email_account.expenses).to receive(:count).and_return(1500)
-    end
-
-    it "adds slow job record with all required fields" do
-      job.send(:track_slow_job, email_account, 45.seconds)
-
-      expect(Rails.cache).to have_received(:write).with(
-        slow_jobs_key,
-        array_including(
-          hash_including(
-            email_account_id: email_account.id,
-            elapsed_time: 45.seconds,
-            expense_count: 1500
-          )
-        ),
-        expires_in: 7.days
-      )
-    end
-
-    it "keeps only last 50 slow job records" do
-      job.send(:track_slow_job, email_account, 45.seconds)
-
-      expect(Rails.cache).to have_received(:write).with(
-        slow_jobs_key,
-        an_instance_of(Array) { |arr| arr.size == 50 },
-        expires_in: 7.days
-      )
-    end
-
-    it "adds timestamp to slow job record" do
-      job.send(:track_slow_job, email_account, 45.seconds)
-
-      expect(Rails.cache).to have_received(:write).with(
-        slow_jobs_key,
-        array_including(
-          hash_including { |record|
-            record[:timestamp].is_a?(Time) &&
-            (Time.current - record[:timestamp]).abs < 1.second
-          }
-        ),
-        expires_in: 7.days
-      )
-    end
-
-    it "handles empty slow jobs cache" do
-      allow(Rails.cache).to receive(:fetch).and_yield
-
-      job.send(:track_slow_job, email_account, 45.seconds)
-
-      expect(Rails.cache).to have_received(:write).with(
-        slow_jobs_key,
-        [ hash_including(email_account_id: email_account.id) ],
-        expires_in: 7.days
-      )
-    end
-  end
-
   describe ".enqueue_for_all_accounts" do
     let!(:active_accounts) { create_list(:email_account, 4, active: true) }
     let!(:inactive_accounts) { create_list(:email_account, 2, active: false) }
@@ -976,22 +896,6 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
         job.send(:track_job_metrics, email_account.id, 10.0, :success)
       end
     end
-
-    context "slow job cache operations" do
-      it "caches slow jobs with 7-day expiration" do
-        slow_jobs_key = "slow_jobs:metrics_calculation"
-
-        allow(Rails.cache).to receive(:fetch).and_return([])
-
-        expect(Rails.cache).to receive(:write).with(
-          slow_jobs_key,
-          anything,
-          expires_in: 7.days
-        )
-
-        job.send(:track_slow_job, email_account, 35.seconds)
-      end
-    end
   end
 
   describe "edge cases and boundary conditions" do
@@ -1039,16 +943,6 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
     end
 
     context "parameter validation edge cases" do
-      it "handles email_account with no expenses gracefully" do
-        allow(email_account.expenses).to receive(:count).and_return(0)
-        allow(Rails.cache).to receive(:write).and_return(true)
-        allow(Rails.cache).to receive(:delete)
-        allow(Rails.cache).to receive(:fetch).and_return([])
-
-        expect { job.send(:track_slow_job, email_account, 35.seconds) }
-          .not_to raise_error
-      end
-
       it "handles string period parameter" do
         calculator = instance_double(Services::ExtendedCacheMetricsCalculator)
         allow(Services::ExtendedCacheMetricsCalculator).to receive(:new).and_return(calculator)

@@ -75,7 +75,6 @@ class MetricsCalculationJob < ApplicationJob
     # Log performance warning if exceeds target
     if elapsed_time > MAX_EXECUTION_TIME
       Rails.logger.warn "MetricsCalculationJob exceeded #{MAX_EXECUTION_TIME}s target: #{elapsed_time.round(2)}s for account #{email_account.id}"
-      track_slow_job(email_account, elapsed_time)
     else
       Rails.logger.info "MetricsCalculationJob completed in #{elapsed_time.round(2)}s for account #{email_account.id}"
     end
@@ -204,24 +203,5 @@ class MetricsCalculationJob < ApplicationJob
     end
 
     Rails.cache.write(metrics_key, metrics, expires_in: 24.hours)
-  end
-
-  def track_slow_job(email_account, elapsed_time)
-    # Track slow jobs for analysis
-    slow_jobs_key = "slow_jobs:metrics_calculation"
-
-    slow_jobs = Rails.cache.fetch(slow_jobs_key, expires_in: 7.days) { [] }
-
-    slow_jobs << {
-      email_account_id: email_account.id,
-      timestamp: Time.current,
-      elapsed_time: elapsed_time,
-      expense_count: email_account.expenses.count
-    }
-
-    # Keep only last 50 slow job records
-    slow_jobs = slow_jobs.last(50)
-
-    Rails.cache.write(slow_jobs_key, slow_jobs, expires_in: 7.days)
   end
 end

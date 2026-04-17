@@ -94,22 +94,9 @@ RSpec.describe "Metrics Background Job Integration", type: :integration do
       expect(metrics[:executions].first[:status]).to eq(:success)
     end
 
-    it "monitors job health through Services::MetricsJobMonitor" do
-      # Simulate some job executions
-      metrics_key = "job_metrics:metrics_calculation:#{email_account.id}"
-      Rails.cache.write(metrics_key, {
-        success_count: 95,
-        failure_count: 5,
-        total_time: 1500.0,
-        executions: []
-      })
-
-      # Check health status
-      status = Services::MetricsJobMonitor.status
-
-      expect(status).to include(:health)
-      expect(status[:health]).to include(:status, :message, :checks)
-    end
+    # Removed "monitors job health through Services::MetricsJobMonitor" — the service
+    # had no production callers and was deleted in PER-541. Job-health observability
+    # would be rebuilt in PER-523 (recurring-job heartbeat) if/when needed.
   end
 
   describe "Error recovery" do

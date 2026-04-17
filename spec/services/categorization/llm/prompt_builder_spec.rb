@@ -5,6 +5,20 @@ require "rails_helper"
 RSpec.describe Services::Categorization::Llm::PromptBuilder, :unit do
   subject(:builder) { described_class.new }
 
+  # PER-499 canary: if this assertion fails, the SYSTEM_INSTRUCTION text was
+  # changed. Bump PromptBuilder::PROMPT_VERSION to invalidate stale cache
+  # rows and update the hash below. The whole point is that you must NOT
+  # silently modify the prompt without bumping the version — a stale cache
+  # serving outdated classifications is the bug this test catches in CI.
+  describe "prompt-version discipline canary" do
+    it "refuses to let SYSTEM_INSTRUCTION drift without a PROMPT_VERSION bump" do
+      current_hash = Digest::SHA1.hexdigest(described_class::SYSTEM_INSTRUCTION)
+      expected_hash = "d4f4fbc9d8fbf8e66282b2de2939469378e25b24"
+      expect(current_hash).to eq(expected_hash),
+        "SYSTEM_INSTRUCTION changed! Bump PROMPT_VERSION and update the hash in this spec."
+    end
+  end
+
   let(:expense) do
     build(:expense, merchant_name: "McDonald's", description: "Compra en restaurante",
                     amount: 5500.0, currency: "crc", bank_name: "BAC",

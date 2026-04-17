@@ -95,8 +95,12 @@ module Services::Categorization
           return build_cached_result(cached, duration_ms(start_time))
         end
 
-        # Cache miss or expired — call LLM
-        call_llm_and_cache(expense, normalized, cached, start_time)
+        # Cache miss or expired — call LLM. The `cached` value (possibly an
+        # expired entry for the CURRENT prompt_version/model_used tuple) is
+        # not passed to call_llm_and_cache anymore; store_cache now uses
+        # find_or_create_by on the composite key so concurrent writes, stale
+        # expired entries, and fresh inserts all converge safely.
+        call_llm_and_cache(expense, normalized, start_time)
       rescue Llm::Client::Error => e
         @logger.error "[LlmStrategy] LLM client error: #{e.message}"
         CategorizationResult.no_match(processing_time_ms: duration_ms(start_time))
@@ -115,10 +119,13 @@ module Services::Categorization
       end
 
       def lookup_cache(normalized)
-        LlmCategorizationCacheEntry.find_by(merchant_normalized: normalized)
+        # PER-499: the model owns the composite cache key (merchant_normalized,
+        # prompt_version, model_used). A prompt or model bump produces a miss
+        # instead of silently returning a stale classification.
+        LlmCategorizationCacheEntry.lookup_for(merchant_normalized: normalized)
       end
 
-      def call_llm_and_cache(expense, normalized, existing_entry, start_time)
+      def call_llm_and_cache(expense, normalized, start_time)
         correction_history = Rails.cache.read("#{CORRECTION_KEY_PREFIX}:#{normalized}")
         prompt = Llm::PromptBuilder.new.build(expense: expense, correction_history: correction_history)
         api_result = call_with_rate_limit_handling(prompt)
@@ -136,7 +143,7 @@ module Services::Categorization
         total_tokens = api_result[:token_count][:input] + api_result[:token_count][:output]
 
         # Store or update cache
-        store_cache(normalized, parsed, api_result, total_tokens, existing_entry)
+        store_cache(normalized, parsed, api_result, total_tokens)
 
         # Feed Layer 2 so similarity strategy learns from LLM results
         feed_vector_updater(expense, parsed[:category])
@@ -194,24 +201,29 @@ module Services::Categorization
         end
       end
 
-      def store_cache(normalized, parsed, api_result, total_tokens, _existing_entry)
+      def store_cache(normalized, parsed, api_result, total_tokens)
+        # PER-499: the model owns the composite key. find_or_create_by! handles
+        # the happy path; a concurrent writer that lost the race between find
+        # and create raises RecordNotUnique, which we rescue and update the
+        # winner's row. If the row was deleted between insert attempt and
+        # rescue lookup (e.g. LlmCacheCleanupJob swept an expired entry),
+        # find_by + safe-navigation silently drops the cache write — the
+        # caller still has `parsed` and returns the categorization.
+        key = LlmCategorizationCacheEntry.cache_key_for(merchant_normalized: normalized)
         attrs = {
           category: parsed[:category],
           confidence: parsed[:confidence],
-          model_used: Llm::Client::MODEL,
           token_count: total_tokens,
           cost: api_result[:cost],
           expires_at: CACHE_TTL.from_now
         }
 
-        # Use find_or_create + update to handle concurrent requests safely.
-        # Rescues RecordNotUnique from the unique index on merchant_normalized.
-        entry = LlmCategorizationCacheEntry.find_or_create_by!(merchant_normalized: normalized) do |e|
+        entry = LlmCategorizationCacheEntry.find_or_create_by!(**key) do |e|
           e.assign_attributes(attrs)
         end
         entry.update!(attrs) unless entry.previously_new_record?
       rescue ActiveRecord::RecordNotUnique
-        LlmCategorizationCacheEntry.find_by!(merchant_normalized: normalized).update!(attrs)
+        LlmCategorizationCacheEntry.find_by(**key)&.update!(attrs)
       end
 
       def feed_vector_updater(expense, category)

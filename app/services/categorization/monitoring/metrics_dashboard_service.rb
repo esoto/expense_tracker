@@ -81,13 +81,13 @@ module Services::Categorization
       private
 
       # The LlmStrategy budget counter stores spend in integer units scaled by
-      # BUDGET_CENTS_SCALE (PER-492). Rescale to USD on read. If the cache is
+      # BUDGET_UNITS_PER_USD (PER-492). Rescale to USD on read. If the cache is
       # empty (first call of the month, or cache flush), fall back to the DB.
       def fetch_current_spend
-        cache_key = "llm_budget:#{Date.current.strftime('%Y-%m')}"
+        cache_key = "#{Strategies::LlmStrategy::BUDGET_KEY_PREFIX}:#{Date.current.strftime('%Y-%m')}"
         cached = Rails.cache.read(cache_key)
         if cached
-          return cached.to_f / Strategies::LlmStrategy::BUDGET_CENTS_SCALE
+          return cached.to_f / Strategies::LlmStrategy::BUDGET_UNITS_PER_USD
         end
 
         CategorizationMetric.recent(30.days).sum(:api_cost).to_f

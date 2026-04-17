@@ -270,7 +270,10 @@ RSpec.describe Services::Categorization::Monitoring::MetricsDashboardService, ty
   end
 
   describe "#api_budget_status" do
-    let(:cache_key) { "llm_budget:#{Date.current.strftime('%Y-%m')}" }
+    let(:cache_key) do
+      "#{Services::Categorization::Strategies::LlmStrategy::BUDGET_KEY_PREFIX}:" \
+      "#{Date.current.strftime('%Y-%m')}"
+    end
 
     context "when cache has current month spend" do
       before do
@@ -313,7 +316,8 @@ RSpec.describe Services::Categorization::Monitoring::MetricsDashboardService, ty
 
     context "with healthy status (under 50%)" do
       before do
-        allow(Rails.cache).to receive(:read).with(cache_key).and_return(2.0)
+        # 2.0 USD in scaled units = 20_000
+        allow(Rails.cache).to receive(:read).with(cache_key).and_return(20_000)
       end
 
       it "returns healthy status" do
@@ -381,7 +385,8 @@ RSpec.describe Services::Categorization::Monitoring::MetricsDashboardService, ty
 
     context "return value structure" do
       before do
-        allow(Rails.cache).to receive(:read).with(cache_key).and_return(1.0)
+        # 1.0 USD in scaled units = 10_000
+        allow(Rails.cache).to receive(:read).with(cache_key).and_return(10_000)
       end
 
       it "returns all required keys" do

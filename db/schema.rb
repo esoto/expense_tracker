@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_10_193205) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_17_030000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -338,6 +338,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_10_193205) do
     t.datetime "updated_at", null: false
     t.index "EXTRACT(hour FROM transaction_date), EXTRACT(dow FROM transaction_date)", name: "idx_expenses_hour_dow"
     t.index "EXTRACT(year FROM transaction_date), EXTRACT(month FROM transaction_date)", name: "idx_expenses_year_month", where: "(deleted_at IS NULL)", comment: "For monthly/yearly aggregations"
+    t.index ["amount", "transaction_date", "merchant_name"], name: "idx_expenses_manual_duplicate_check", unique: true, where: "((deleted_at IS NULL) AND (merchant_name IS NOT NULL) AND (email_account_id IS NULL))", comment: "Unique constraint for detecting duplicate manual expenses (email_account_id IS NULL)"
     t.index ["amount"], name: "idx_expenses_amount_range", using: :brin, comment: "BRIN index for amount range queries"
     t.index ["auto_categorized", "categorization_confidence"], name: "idx_expenses_auto_categorization", where: "((auto_categorized = true) AND (deleted_at IS NULL))", comment: "Index for tracking auto-categorization"
     t.index ["bank_name", "transaction_date"], name: "idx_expenses_bank_date", where: "(deleted_at IS NULL)"

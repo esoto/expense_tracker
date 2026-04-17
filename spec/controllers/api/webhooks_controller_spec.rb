@@ -192,6 +192,26 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
       end
     end
 
+    # PER-498: iPhone Shortcuts may retry the webhook on a flaky network. The
+    # DB's idx_expenses_manual_duplicate_check partial unique index raises
+    # RecordNotUnique on the second submission. The handler converts that to
+    # an idempotent 200 response returning the existing row.
+    context "when the same expense is submitted twice (idempotent retry)" do
+      it "returns the existing row with a 200 instead of creating a duplicate" do
+        post :add_expense, params: { expense: expense_params }
+        expect(response).to have_http_status(:created)
+
+        expect {
+          post :add_expense, params: { expense: expense_params }
+        }.not_to change(Expense, :count)
+
+        expect(response).to have_http_status(:ok)
+        json_response = JSON.parse(response.body)
+        expect(json_response["status"]).to eq("success")
+        expect(json_response["message"]).to match(/idempotent/i)
+      end
+    end
+
     context "with invalid parameters" do
       it "returns error for missing amount" do
         invalid_params = expense_params.except(:amount)

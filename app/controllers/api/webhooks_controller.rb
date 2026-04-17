@@ -52,6 +52,20 @@ class Api::WebhooksController < ApplicationController
         errors: expense.errors.full_messages
       }, status: :unprocessable_content
     end
+  rescue ActiveRecord::RecordNotUnique
+    # PER-498: return the existing row (idempotent) instead of a 500 when the
+    # iPhone Shortcuts retries a webhook or a user double-taps the action.
+    existing = Expense.where(
+      amount: expense.amount,
+      transaction_date: expense.transaction_date,
+      merchant_name: expense.merchant_name,
+      deleted_at: nil
+    ).first
+    render json: {
+      status: "success",
+      message: "Expense already exists (idempotent retry)",
+      expense: existing ? format_expense(existing) : nil
+    }, status: :ok
   end
 
   def recent_expenses

@@ -12,6 +12,22 @@ class LlmCategorizationCacheEntry < ApplicationRecord
   scope :active, -> { where(expires_at: nil).or(where(expires_at: Time.current..)) }
   scope :expired, -> { where.not(expires_at: nil).where(expires_at: ...Time.current) }
 
+  # PER-499: single source of truth for the cache composite key. Any future
+  # key-field addition (region, locale, ...) happens here — callers in
+  # LlmStrategy don't need to change. Prevents the silent cache-poisoning
+  # bug where lookup and store drift out of sync.
+  def self.cache_key_for(merchant_normalized:)
+    {
+      merchant_normalized: merchant_normalized,
+      prompt_version: Services::Categorization::Llm::PromptBuilder::PROMPT_VERSION,
+      model_used: Services::Categorization::Llm::Client::MODEL
+    }
+  end
+
+  def self.lookup_for(merchant_normalized:)
+    find_by(cache_key_for(merchant_normalized: merchant_normalized))
+  end
+
   def expired?
     expires_at.present? && expires_at < Time.current
   end

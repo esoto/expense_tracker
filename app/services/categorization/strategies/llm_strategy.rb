@@ -25,6 +25,17 @@ module Services::Categorization
       BUDGET_UNITS_PER_USD = 10_000
       CORRECTION_KEY_PREFIX = "llm_correction"
 
+      # PER-500: auth-failure circuit breaker. A dropped API key, rotated
+      # credentials, or a config regression should NOT silently fail every
+      # categorization for hours — we saw exactly that on 2026-04-16. When
+      # the LLM client reports an auth or configuration error, we trip a
+      # short-lived cache flag so subsequent calls return no_match
+      # immediately (no 15s throttle, no wasted retry loop) and the error
+      # surfaces via the ErrorTrackingService. The flag auto-clears after
+      # AUTH_FAILURE_TTL so the system recovers as soon as creds are fixed.
+      AUTH_FAILURE_CACHE_KEY = "llm_auth_broken"
+      AUTH_FAILURE_TTL = 5.minutes
+
       # Rate limit handling.
       # Anthropic's default input tokens-per-minute limit is 50,000 for Haiku.
       # Each LLM call with web_search uses ~10,000 input tokens (tool results
@@ -78,6 +89,13 @@ module Services::Categorization
       def call(expense, _options = {})
         start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
+        # PER-500: short-circuit when auth has recently broken. Saves the
+        # 15s throttle + retry cycle for every expense in the queue.
+        if auth_circuit_open?
+          @logger.warn "[LlmStrategy] circuit open (auth failure within last #{AUTH_FAILURE_TTL.inspect}) — skipping LLM"
+          return CategorizationResult.no_match(processing_time_ms: duration_ms(start_time))
+        end
+
         normalized = normalize_merchant(expense)
         if normalized.blank?
           return CategorizationResult.no_match(processing_time_ms: duration_ms(start_time))
@@ -101,6 +119,9 @@ module Services::Categorization
         # find_or_create_by on the composite key so concurrent writes, stale
         # expired entries, and fresh inserts all converge safely.
         call_llm_and_cache(expense, normalized, start_time)
+      rescue Llm::Client::AuthenticationError, Llm::Client::ConfigurationError => e
+        trip_auth_circuit!(e)
+        CategorizationResult.no_match(processing_time_ms: duration_ms(start_time))
       rescue Llm::Client::Error => e
         @logger.error "[LlmStrategy] LLM client error: #{e.message}"
         CategorizationResult.no_match(processing_time_ms: duration_ms(start_time))
@@ -110,6 +131,29 @@ module Services::Categorization
 
       def client
         @client ||= Llm::Client.new
+      end
+
+      # PER-500: circuit-breaker helpers. Read and write the shared cache
+      # flag that tells every LlmStrategy instance across every Solid Queue
+      # worker that auth is currently broken.
+      def auth_circuit_open?
+        Rails.cache.read(AUTH_FAILURE_CACHE_KEY).present?
+      end
+
+      def trip_auth_circuit!(exception)
+        Rails.cache.write(AUTH_FAILURE_CACHE_KEY, true, expires_in: AUTH_FAILURE_TTL)
+        @logger.error(
+          "[LlmStrategy] LLM auth failed — circuit open for #{AUTH_FAILURE_TTL.inspect}: " \
+          "#{exception.class.name}: #{exception.message}"
+        )
+        Services::ErrorTrackingService.instance.track_exception(
+          exception,
+          strategy: "LlmStrategy",
+          reason: "auth_failure_circuit_breaker_tripped"
+        )
+      rescue StandardError => track_err
+        # Don't let a broken tracker mask the underlying auth failure.
+        @logger.warn "[LlmStrategy] ErrorTrackingService.track_exception failed: #{track_err.message}"
       end
 
       def normalize_merchant(expense)

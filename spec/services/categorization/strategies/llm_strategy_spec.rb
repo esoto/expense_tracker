@@ -17,6 +17,116 @@ RSpec.describe Services::Categorization::Strategies::LlmStrategy, :unit do
     end
   end
 
+  # PER-500: auth / configuration failures trip a short-lived circuit breaker
+  # so the strategy stops burning 15s throttle cycles against a known-broken
+  # credential. The break auto-recovers after AUTH_FAILURE_TTL.
+  describe "#call auth-failure circuit breaker", :unit do
+    let(:prompt_text) { "categorize" }
+    let(:api_response) do
+      { response_text: category.i18n_key,
+        token_count: { input: 80, output: 5 },
+        cost: 0.0003 }
+    end
+
+    before do
+      Rails.cache.delete(described_class::AUTH_FAILURE_CACHE_KEY)
+      allow(Services::Categorization::Llm::PromptBuilder).to receive(:new)
+        .and_return(instance_double(Services::Categorization::Llm::PromptBuilder, build: prompt_text))
+      allow(Services::Categorization::Llm::ResponseParser).to receive(:new)
+        .and_return(instance_double(Services::Categorization::Llm::ResponseParser,
+          parse: { category: category, confidence: 0.85, raw_response: category.i18n_key }))
+    end
+
+    it "defines AUTH_FAILURE_CACHE_KEY and AUTH_FAILURE_TTL" do
+      expect(described_class::AUTH_FAILURE_CACHE_KEY).to be_a(String)
+      expect(described_class::AUTH_FAILURE_TTL).to be_a(ActiveSupport::Duration)
+    end
+
+    context "when the circuit is already open (auth flag set in cache)" do
+      before do
+        Rails.cache.write(described_class::AUTH_FAILURE_CACHE_KEY, true,
+                          expires_in: described_class::AUTH_FAILURE_TTL)
+      end
+
+      it "returns no_match without touching the LLM client" do
+        allow(mock_client).to receive(:categorize)
+        result = strategy.call(expense)
+
+        expect(result).not_to be_successful
+        expect(result.method).to eq("no_match")
+        expect(mock_client).not_to have_received(:categorize)
+      end
+
+      it "logs that the circuit is open with a short explanation" do
+        strategy.call(expense)
+        expect(logger).to have_received(:warn).with(/circuit open|auth failure/i)
+      end
+    end
+
+    context "when the LLM client raises AuthenticationError" do
+      before do
+        allow(mock_client).to receive(:categorize)
+          .and_raise(Services::Categorization::Llm::Client::AuthenticationError.new("bad api key"))
+      end
+
+      it "trips the circuit breaker by writing the cache flag" do
+        strategy.call(expense)
+        expect(Rails.cache.read(described_class::AUTH_FAILURE_CACHE_KEY)).to be true
+      end
+
+      it "reports the exception via Services::ErrorTrackingService" do
+        tracker = instance_double(Services::ErrorTrackingService, track_exception: nil)
+        allow(Services::ErrorTrackingService).to receive(:instance).and_return(tracker)
+
+        strategy.call(expense)
+
+        expect(tracker).to have_received(:track_exception).with(
+          instance_of(Services::Categorization::Llm::Client::AuthenticationError),
+          hash_including(strategy: "LlmStrategy")
+        )
+      end
+
+      it "returns no_match so the engine falls through to the next layer" do
+        result = strategy.call(expense)
+        expect(result).not_to be_successful
+        expect(result.method).to eq("no_match")
+      end
+    end
+
+    context "when the LLM client raises ConfigurationError" do
+      before do
+        allow(mock_client).to receive(:categorize)
+          .and_raise(Services::Categorization::Llm::Client::ConfigurationError.new("missing api key"))
+      end
+
+      it "trips the circuit breaker" do
+        strategy.call(expense)
+        expect(Rails.cache.read(described_class::AUTH_FAILURE_CACHE_KEY)).to be true
+      end
+    end
+
+    # Non-auth errors (rate limits, timeouts, server 500s) must NOT trip the
+    # circuit — those are transient and have their own retry layer. Tripping
+    # the circuit on a flaky network would lock out categorization for 5min
+    # every time Anthropic has a bad minute.
+    context "when the LLM client raises a non-auth Llm::Client::Error" do
+      before do
+        allow(mock_client).to receive(:categorize)
+          .and_raise(Services::Categorization::Llm::Client::ApiError.new("500 upstream"))
+      end
+
+      it "does NOT trip the circuit breaker" do
+        strategy.call(expense)
+        expect(Rails.cache.read(described_class::AUTH_FAILURE_CACHE_KEY)).to be_nil
+      end
+
+      it "returns no_match" do
+        result = strategy.call(expense)
+        expect(result).not_to be_successful
+      end
+    end
+  end
+
   describe "BaseStrategy interface" do
     it "inherits from BaseStrategy" do
       expect(described_class.superclass).to eq(Services::Categorization::Strategies::BaseStrategy)

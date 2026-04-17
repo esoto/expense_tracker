@@ -57,17 +57,12 @@ RSpec.describe "Metrics Background Job Integration", type: :integration do
       expect(cached_data[:metrics][:total_amount]).to eq(150.0)
     end
 
-    it "prevents concurrent job execution" do
-      # First job acquires lock
-      lock_key = "metrics_calculation:#{email_account.id}"
-      Rails.cache.write(lock_key, Time.current.to_s, expires_in: 5.minutes)
-
-      # Second job should skip
-      expect(Rails.logger).to receive(:info).with(/skipped - another job is already processing/)
-
-      job = MetricsCalculationJob.new
-      job.perform(email_account_id: email_account.id)
-    end
+    # Removed "prevents concurrent job execution" — it asserted a cache-based lock
+    # ("metrics_calculation:<id>" + "skipped - another job is already processing") that
+    # no longer exists. MetricsCalculationJob now relies on Active Job / Solid Queue's
+    # `limits_concurrency`, which is enforced at dispatch — not observable via direct
+    # `job.perform`. Configuration-level assertions live in the unit spec
+    # (spec/jobs/metrics_calculation_job_spec.rb:133–156). Closes PER-532.
 
     it "uses longer cache expiration for background-calculated metrics" do
       # Calculate metrics via background job
@@ -118,18 +113,9 @@ RSpec.describe "Metrics Background Job Integration", type: :integration do
   end
 
   describe "Error recovery" do
-    it "releases lock on error" do
-      lock_key = "metrics_calculation:#{email_account.id}"
-
-      # Force an error
-      allow_any_instance_of(Services::ExtendedCacheMetricsCalculator).to receive(:calculate).and_raise(StandardError, "Test error")
-
-      job = MetricsCalculationJob.new
-      expect { job.perform(email_account_id: email_account.id, period: :month) }.to raise_error(StandardError)
-
-      # Lock should be released
-      expect(Rails.cache.read(lock_key)).to be_nil
-    end
+    # Removed "releases lock on error" — asserted `Rails.cache.read("metrics_calculation:<id>")`
+    # was nil after a raise. The key is never written by the job (cache-lock was removed in
+    # the Solid Queue refactor), so the assertion passed vacuously. Closes PER-532.
 
     it "tracks failure metrics" do
       # Force an error

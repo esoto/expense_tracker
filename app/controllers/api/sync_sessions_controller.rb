@@ -3,8 +3,9 @@ module Api
     # SyncSessions uses a per-session X-Sync-Token scheme (see can_access_sync_session?),
     # not the Bearer ApiToken that Api::BaseController enforces. Browser polling
     # (app/javascript/mixins/sync_connection_mixin.js) does not send Authorization: Bearer,
-    # so the inherited `authenticate_api_token` before_action must be skipped.
-    skip_before_action :authenticate_api_token
+    # so the inherited `authenticate_api_token` before_action must be skipped — scoped
+    # to :status explicitly so future actions inherit Bearer auth by default (PER-502).
+    skip_before_action :authenticate_api_token, only: [ :status ]
     before_action :set_sync_session, only: [ :status ]
 
     # GET /api/sync_sessions/:id/status
@@ -42,19 +43,23 @@ module Api
                         request.headers["HTTP_X_SYNC_TOKEN"] ||
                         params[:token]
 
-        # If token is present in session, require token auth.
         # PER-502: use ActiveSupport::SecurityUtils.secure_compare to defeat
-        # timing attacks. Guard on bytesize first because Rails 8.1's
-        # secure_compare requires equal-length inputs — length itself is public
-        # (visible in every HTTP response) so the early return leaks no secrets.
-        if provided_token.present?
-          stored_token = @sync_session.session_token
-          return false unless stored_token.bytesize == provided_token.bytesize
-          return ActiveSupport::SecurityUtils.secure_compare(stored_token, provided_token)
-        else
-          # Token required but not provided
-          return false
-        end
+        # timing attacks. Guards needed before invoking it:
+        #   - is_a?(String) — a malicious client can send `?token[]=foo`, which
+        #     makes params[:token] an Array with no #bytesize. Without this
+        #     guard, NoMethodError would be rescued as StandardError → 500 +
+        #     backtrace logged (DoS + log pollution).
+        #   - bytesize equality — Rails 8.1's secure_compare requires equal-length
+        #     inputs. Length itself is public (visible in every HTTP response) so
+        #     the early return leaks no secrets. Matches the Api::QueueController:285
+        #     pattern (provided first, stored second).
+        return false unless provided_token.is_a?(String) && provided_token.present?
+
+        stored_token = @sync_session.session_token
+        return false unless stored_token.is_a?(String) &&
+                            stored_token.bytesize == provided_token.bytesize
+
+        return ActiveSupport::SecurityUtils.secure_compare(provided_token, stored_token)
       end
 
       # Check if sync session is in current user session (legacy)

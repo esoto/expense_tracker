@@ -221,6 +221,7 @@ es:
       deleted: "Gasto eliminado. Puedes deshacer esta acción."
       delete_error: "Error al eliminar el gasto. Por favor, inténtalo de nuevo."
       duplicated: "Gasto duplicado exitosamente"
+      duplicate: "Ya existe un gasto con el mismo monto, fecha y comercio."
       sync_error: "Error al iniciar la sincronización. Por favor, inténtalo de nuevo."
       not_found: "Gasto no encontrado o no tienes permiso para verlo."
       not_authorized: "No tienes permiso para modificar este gasto."

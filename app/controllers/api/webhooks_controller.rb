@@ -52,6 +52,38 @@ class Api::WebhooksController < ApplicationController
         errors: expense.errors.full_messages
       }, status: :unprocessable_content
     end
+  rescue ActiveRecord::RecordNotUnique
+    # PER-498: return the existing row (idempotent) instead of a 500 when the
+    # iPhone Shortcuts retries or a user double-taps. Scope the lookup by
+    # email_account_id so we always return the row that the unique index
+    # actually collided on — both the pre-existing idx_expenses_duplicate_check
+    # (email_account_id IS NOT NULL) and the new idx_expenses_manual_duplicate_check
+    # (email_account_id IS NULL) reduce to "a row with the same email_account_id
+    # tuple." Matches either.
+    existing = Expense.where(
+      email_account_id: expense.email_account_id,
+      amount: expense.amount,
+      transaction_date: expense.transaction_date,
+      merchant_name: expense.merchant_name,
+      deleted_at: nil
+    ).first
+
+    if existing
+      render json: {
+        status: "success",
+        message: "Expense already exists (idempotent retry)",
+        expense: format_expense(existing)
+      }, status: :ok
+    else
+      # Belt-and-braces: the unique-index predicate says the row must exist,
+      # but if lookup doesn't find it (e.g. soft-deleted between the INSERT
+      # attempt and this SELECT) return a 409 rather than a silent success.
+      Rails.logger.warn "[WebhooksController] RecordNotUnique but existing row not found for expense params (#{expense.amount}, #{expense.transaction_date}, #{expense.merchant_name})"
+      render json: {
+        status: "error",
+        message: "Duplicate detected but existing expense could not be located"
+      }, status: :conflict
+    end
   end
 
   def recent_expenses

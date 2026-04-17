@@ -224,6 +224,7 @@ en:
       deleted: "Expense deleted. You can undo this action."
       delete_error: "Error deleting expense. Please try again."
       duplicated: "Expense duplicated successfully"
+      duplicate: "A matching expense already exists for this amount, date, and merchant."
       sync_error: "Error starting synchronization. Please try again."
       not_found: "Expense not found or you don't have permission to view it."
       not_authorized: "You don't have permission to modify this expense."

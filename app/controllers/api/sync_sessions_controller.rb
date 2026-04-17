@@ -1,8 +1,11 @@
 module Api
-  class SyncSessionsController < ApplicationController
-    skip_before_action :authenticate_user!
+  class SyncSessionsController < Api::BaseController
+    # SyncSessions uses a per-session X-Sync-Token scheme (see can_access_sync_session?),
+    # not the Bearer ApiToken that Api::BaseController enforces. Browser polling
+    # (app/javascript/mixins/sync_connection_mixin.js) does not send Authorization: Bearer,
+    # so the inherited `authenticate_api_token` before_action must be skipped.
+    skip_before_action :authenticate_api_token
     before_action :set_sync_session, only: [ :status ]
-    skip_before_action :verify_authenticity_token, if: :json_request?
 
     # GET /api/sync_sessions/:id/status
     # Returns the current status of a sync session for polling
@@ -39,9 +42,15 @@ module Api
                         request.headers["HTTP_X_SYNC_TOKEN"] ||
                         params[:token]
 
-        # If token is present in session, require token auth
+        # If token is present in session, require token auth.
+        # PER-502: use ActiveSupport::SecurityUtils.secure_compare to defeat
+        # timing attacks. Guard on bytesize first because Rails 8.1's
+        # secure_compare requires equal-length inputs — length itself is public
+        # (visible in every HTTP response) so the early return leaks no secrets.
         if provided_token.present?
-          return @sync_session.session_token == provided_token
+          stored_token = @sync_session.session_token
+          return false unless stored_token.bytesize == provided_token.bytesize
+          return ActiveSupport::SecurityUtils.secure_compare(stored_token, provided_token)
         else
           # Token required but not provided
           return false
@@ -115,10 +124,6 @@ module Api
         minutes = ((seconds % 3600) / 60).to_i
         "#{hours}h #{minutes}m"
       end
-    end
-
-    def json_request?
-      request.format.json?
     end
   end
 end

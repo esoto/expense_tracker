@@ -192,6 +192,41 @@ RSpec.describe Api::SyncSessionsController, type: :controller, unit: true do
             expect(result).to be false
           end
         end
+
+        context "timing-safe token comparison (PER-502)" do
+          # Guards against timing attacks: token comparison must use
+          # ActiveSupport::SecurityUtils.secure_compare rather than ==, so attackers
+          # cannot distinguish a 1-byte-wrong guess from a 40-byte-wrong guess by
+          # measuring response latency. Same pattern as Api::QueueController:285.
+          it "delegates matching tokens to SecurityUtils.secure_compare" do
+            allow(request).to receive(:headers).and_return({ "X-Sync-Token" => "secret_token" })
+            expect(ActiveSupport::SecurityUtils).to receive(:secure_compare)
+              .with("secret_token", "secret_token").and_call_original
+
+            expect(controller.send(:can_access_sync_session?)).to be true
+          end
+
+          it "delegates mismatched tokens to SecurityUtils.secure_compare" do
+            allow(request).to receive(:headers).and_return({ "X-Sync-Token" => "wrong_token_" })
+            # Same bytesize as "secret_token" (12 bytes) so length guard doesn't short-circuit;
+            # secure_compare itself must be invoked and must return false.
+            expect(ActiveSupport::SecurityUtils).to receive(:secure_compare)
+              .with("secret_token", "wrong_token_").and_call_original
+
+            expect(controller.send(:can_access_sync_session?)).to be false
+          end
+
+          it "short-circuits to false for tokens of different length without invoking secure_compare" do
+            # Rails 8.1's secure_compare requires equal-length strings; length-guard
+            # returns false before the constant-time compare. This is still
+            # timing-safe because length alone is public (visible in every HTTP
+            # response) — no secret bits leak.
+            allow(request).to receive(:headers).and_return({ "X-Sync-Token" => "too_short" })
+            expect(ActiveSupport::SecurityUtils).not_to receive(:secure_compare)
+
+            expect(controller.send(:can_access_sync_session?)).to be false
+          end
+        end
       end
 
       context "when sync session has no session token" do
@@ -373,35 +408,11 @@ RSpec.describe Api::SyncSessionsController, type: :controller, unit: true do
         expect(result).to eq("1h 0m")
       end
     end
-
-    describe "#json_request?" do
-      context "when request format is JSON" do
-        before do
-          allow(request).to receive(:format).and_return(double(json?: true))
-        end
-
-        it "returns true" do
-          result = controller.send(:json_request?)
-          expect(result).to be true
-        end
-      end
-
-      context "when request format is not JSON" do
-        before do
-          allow(request).to receive(:format).and_return(double(json?: false))
-        end
-
-        it "returns false" do
-          result = controller.send(:json_request?)
-          expect(result).to be false
-        end
-      end
-    end
   end
 
   describe "controller configuration", unit: true do
-    it "inherits from ApplicationController" do
-      expect(described_class.superclass).to eq(ApplicationController)
+    it "inherits from Api::BaseController" do
+      expect(described_class.superclass).to eq(Api::BaseController)
     end
 
     it "is in the Api module namespace" do
@@ -413,6 +424,14 @@ RSpec.describe Api::SyncSessionsController, type: :controller, unit: true do
       callback_filters = before_callbacks.map(&:filter)
 
       expect(callback_filters).to include(:set_sync_session)
+    end
+
+    it "skips authenticate_api_token (browser clients use X-Sync-Token, not Bearer)" do
+      # Api::BaseController requires Bearer auth by default, but SyncSessions uses
+      # its own per-session X-Sync-Token scheme — the Bearer callback must be skipped.
+      skipped = controller.class._process_action_callbacks
+                          .select { |c| c.kind == :before && c.filter == :authenticate_api_token }
+      expect(skipped).to be_empty
     end
   end
 

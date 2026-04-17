@@ -72,13 +72,13 @@ RSpec.describe EmailParsingFailure, type: :model, unit: true do
 
     # support_unencrypted_data allows the 30-day retention window to age out
     # any rows that were written as plaintext before this PR.
+    # update_all bypasses the encrypt writer (same effect as pre-PR legacy
+    # rows) without raw SQL string interpolation.
     it 'still reads existing plaintext rows during the retention window' do
       failure = create(:email_parsing_failure)
-      ActiveRecord::Base.connection.execute(
-        "UPDATE email_parsing_failures SET raw_email_content = 'legacy plaintext' WHERE id = #{failure.id}"
-      )
+      described_class.where(id: failure.id).update_all(raw_email_content: 'legacy plaintext')
 
-      expect(failure.reload.raw_email_content).to eq("legacy plaintext")
+      expect(failure.reload.raw_email_content).to eq('legacy plaintext')
     end
   end
 end

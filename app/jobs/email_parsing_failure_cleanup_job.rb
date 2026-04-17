@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
-# Background job that purges EmailParsingFailure rows older than RETENTION_DAYS.
+# Background job that purges EmailParsingFailure rows older than
+# EmailParsingFailure::RETENTION_DAYS.
 #
 # EmailParsingFailure.raw_email_content holds bank PII (amounts, merchants,
 # account refs, recipient addresses, transaction times). PER-496 encrypts new
@@ -9,16 +10,16 @@
 #
 # Scheduled daily at 4am via config/recurring.yml.
 class EmailParsingFailureCleanupJob < ApplicationJob
-  RETENTION_DAYS = 30
-
   queue_as :low
   retry_on StandardError, wait: :polynomially_longer, attempts: 3
 
   def perform
-    cutoff = RETENTION_DAYS.days.ago
-    Rails.logger.info "[EmailParsingFailureCleanup] Starting cleanup (cutoff=#{cutoff.iso8601})..."
+    Rails.logger.info "[EmailParsingFailureCleanup] Starting cleanup (retention=#{EmailParsingFailure::RETENTION_DAYS}d)..."
 
-    count = EmailParsingFailure.where(created_at: ..cutoff).delete_all
+    # delete_all (not destroy_all): no before/after_destroy callbacks on
+    # EmailParsingFailure, so bulk SQL DELETE is correct and fast. If a
+    # callback is ever added, switch to destroy_all.
+    count = EmailParsingFailure.expired.delete_all
 
     Rails.logger.info "[EmailParsingFailureCleanup] Cleanup complete: cleaned_up=#{count}"
   rescue StandardError => e

@@ -38,19 +38,11 @@ RSpec.describe "config/initializers/solid_queue.rb", :unit do
       expect(SolidQueue.process_heartbeat_interval).to eq(30.seconds)
     end
 
-    it "reads the threshold from ENV[SOLID_QUEUE_ALIVE_THRESHOLD] when set" do
-      # Behavioral contract: env-tunable, matching the existing pattern
-      # used by preserve_finished_jobs and shutdown_timeout in the same
-      # initializer. We don't actually mutate ENV in the test (the
-      # initializer has already evaluated at boot), but we assert the
-      # default is the documented one — this guards against someone
-      # silently changing the env-fetched default.
-      expect(ENV.fetch("SOLID_QUEUE_ALIVE_THRESHOLD", 600).to_i).to eq(600)
-    end
-
-    it "reads the heartbeat interval from ENV[SOLID_QUEUE_HEARTBEAT_INTERVAL] when set" do
-      expect(ENV.fetch("SOLID_QUEUE_HEARTBEAT_INTERVAL", 30).to_i).to eq(30)
-    end
+    # Env-override behavior is NOT unit-testable without reloading the
+    # initializer under a stubbed ENV (initializers evaluate once at boot).
+    # The two `SolidQueue.X` assertions above prove the initializer wrote
+    # the expected default values through; the env contract is documented
+    # in the initializer comments + commit message.
   end
 
   describe "existing settings remain configured (regression guards)" do
@@ -60,6 +52,31 @@ RSpec.describe "config/initializers/solid_queue.rb", :unit do
 
     it "has a shutdown_timeout configured (default 30 seconds)" do
       expect(SolidQueue.shutdown_timeout).to eq(30.seconds)
+    end
+  end
+
+  describe "prune / claim-release observability (PER-506)" do
+    # Without these subscriptions, the only signal that a worker was
+    # falsely pruned (or genuinely died) is via the eventual `discard` when
+    # the re-claimed job later fails — too late for ops to correlate.
+    it "logs a warning when the supervisor prunes dead processes" do
+      expect(Rails.logger).to receive(:warn).with(/Pruned 3 dead process/)
+      ActiveSupport::Notifications.instrument("prune_processes.solid_queue", size: 3)
+    end
+
+    it "silently no-ops a prune_processes event with size=0" do
+      expect(Rails.logger).not_to receive(:warn)
+      ActiveSupport::Notifications.instrument("prune_processes.solid_queue", size: 0)
+    end
+
+    it "logs a warning when claimed executions get released from dead workers" do
+      expect(Rails.logger).to receive(:warn).with(/Released 2 claimed job\(s\) from pruned/)
+      ActiveSupport::Notifications.instrument("release_many_claimed.solid_queue", size: 2)
+    end
+
+    it "silently no-ops a release_many_claimed event with size=0" do
+      expect(Rails.logger).not_to receive(:warn)
+      ActiveSupport::Notifications.instrument("release_many_claimed.solid_queue", size: 0)
     end
   end
 end

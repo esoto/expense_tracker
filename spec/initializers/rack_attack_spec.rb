@@ -132,14 +132,20 @@ RSpec.describe "Rack::Attack throttle path matching", :unit do
       expect(throttle_block).to include("period: 1.minute")
     end
 
-    it "scopes to /admin paths only (not /api, not public)" do
-      expect(throttle_block).to include('req.path.start_with?("/admin")')
+    it "scopes to /admin paths with a path anchor (not /admins or /admin_foo)" do
+      # Check both forms: exact /admin OR /admin/ prefix.
+      expect(throttle_block).to include('req.path == "/admin"')
+      expect(throttle_block).to include('req.path.start_with?("/admin/")')
     end
 
-    it "matches state-changing HTTP methods (POST, PATCH, PUT, DELETE) but not GET/HEAD" do
-      # Uses a negative method check so any future state-changing verb is
-      # covered automatically; GET/HEAD stays under the broader req/ip rule.
-      expect(throttle_block).to match(/req\.post\?|req\.patch\?|req\.put\?|req\.delete\?/)
+    it "matches every state-changing HTTP method (POST, PATCH, PUT, DELETE)" do
+      # Assert each verb individually — a single regex alternation would
+      # silently pass if someone refactored to just `req.post?`, losing
+      # coverage for the other three verbs.
+      expect(throttle_block).to include("req.post?")
+      expect(throttle_block).to include("req.patch?")
+      expect(throttle_block).to include("req.put?")
+      expect(throttle_block).to include("req.delete?")
     end
 
     it "documents PER-507 context in the initializer comments" do

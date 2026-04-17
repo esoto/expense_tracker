@@ -146,8 +146,11 @@ class Rack::Attack
   # test/import, CSV exports) still apply — Rack::Attack evaluates every
   # matching throttle, so the tightest one wins.
   throttle("admin/state-changing/ip", limit: 60, period: 1.minute) do |req|
-    if req.path.start_with?("/admin") &&
-       (req.post? || req.patch? || req.put? || req.delete?)
+    # Anchor the path check so this rule catches only the /admin namespace,
+    # not future routes like /admins or /admin_something that don't exist
+    # today but could be added later and silently fall under this rule.
+    admin_path = req.path == "/admin" || req.path.start_with?("/admin/")
+    if admin_path && (req.post? || req.patch? || req.put? || req.delete?)
       req.ip
     end
   end

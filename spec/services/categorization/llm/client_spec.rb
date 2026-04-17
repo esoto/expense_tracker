@@ -19,13 +19,64 @@ RSpec.describe Services::Categorization::Llm::Client, :unit do
   end
 
   describe "#initialize" do
-    it "creates an Anthropic client with the configured API key" do
-      allow(Anthropic::Client).to receive(:new)
-        .with(api_key: api_key).and_call_original
+    # Every #initialize spec isolates ANTHROPIC_TIMEOUT_SECONDS so the suite
+    # is not sensitive to the developer's or CI's ambient shell env.
+    around do |example|
+      original = ENV["ANTHROPIC_TIMEOUT_SECONDS"]
+      ENV.delete("ANTHROPIC_TIMEOUT_SECONDS")
+      begin
+        example.run
+      ensure
+        ENV["ANTHROPIC_TIMEOUT_SECONDS"] = original
+      end
+    end
+
+    it "creates an Anthropic client with the configured API key, no SDK retries, and a 30s default timeout" do
+      allow(Anthropic::Client).to receive(:new).and_call_original
 
       client
 
-      expect(Anthropic::Client).to have_received(:new).with(api_key: api_key)
+      expect(Anthropic::Client).to have_received(:new).with(
+        api_key: api_key,
+        max_retries: 0,
+        timeout: 30
+      ).once
+    end
+
+    it "honors ANTHROPIC_TIMEOUT_SECONDS when set to a positive integer" do
+      allow(Anthropic::Client).to receive(:new).and_call_original
+      ENV["ANTHROPIC_TIMEOUT_SECONDS"] = "45"
+
+      described_class.new
+
+      expect(Anthropic::Client).to have_received(:new).with(
+        api_key: api_key,
+        max_retries: 0,
+        timeout: 45
+      )
+    end
+
+    # The whole point of PER-491 is to cap the timeout so a worker thread
+    # cannot hang. A misconfigured env var that silently becomes 0, negative,
+    # or garbage must NOT defeat that cap — it must fall back to the default.
+    [
+      [ "non-numeric string", "disabled" ],
+      [ "empty string", "" ],
+      [ "zero", "0" ],
+      [ "negative integer", "-5" ]
+    ].each do |label, value|
+      it "falls back to the default timeout when ANTHROPIC_TIMEOUT_SECONDS is a #{label}" do
+        allow(Anthropic::Client).to receive(:new).and_call_original
+        ENV["ANTHROPIC_TIMEOUT_SECONDS"] = value
+
+        described_class.new
+
+        expect(Anthropic::Client).to have_received(:new).with(
+          api_key: api_key,
+          max_retries: 0,
+          timeout: 30
+        )
+      end
     end
 
     it "raises an error when API key is not configured" do

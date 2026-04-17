@@ -112,6 +112,49 @@ RSpec.describe "Rack::Attack throttle path matching", :unit do
     end
   end
 
+  describe "admin state-changing throttle (PER-507)" do
+    # PER-507: centralize admin rate-limiting in Rack::Attack, replacing the
+    # no-op `check_rate_limit` placeholder on Admin::BaseController. Read
+    # the initializer source + verify the throttle rule is present with the
+    # expected shape: limit 60/min/IP, POST/PATCH/PUT/DELETE to /admin/*.
+    let(:initializer_content) { File.read(Rails.root.join("config/initializers/rack_attack.rb")) }
+    let(:throttle_block) do
+      initializer_content[/throttle\("admin\/state-changing\/ip".*?end\s*end/m]
+    end
+
+    it "registers a throttle named 'admin/state-changing/ip'" do
+      expect(throttle_block).to be_present,
+        "expected a Rack::Attack throttle for admin state-changing requests"
+    end
+
+    it "limits to 60 requests per minute per IP" do
+      expect(throttle_block).to include("limit: 60")
+      expect(throttle_block).to include("period: 1.minute")
+    end
+
+    it "scopes to /admin paths with a path anchor (not /admins or /admin_foo)" do
+      # Check both forms: exact /admin OR /admin/ prefix.
+      expect(throttle_block).to include('req.path == "/admin"')
+      expect(throttle_block).to include('req.path.start_with?("/admin/")')
+    end
+
+    it "matches every state-changing HTTP method (POST, PATCH, PUT, DELETE)" do
+      # Assert each verb individually — a single regex alternation would
+      # silently pass if someone refactored to just `req.post?`, losing
+      # coverage for the other three verbs.
+      expect(throttle_block).to include("req.post?")
+      expect(throttle_block).to include("req.patch?")
+      expect(throttle_block).to include("req.put?")
+      expect(throttle_block).to include("req.delete?")
+    end
+
+    it "documents PER-507 context in the initializer comments" do
+      # Comment lives just above the throttle block (not captured by the
+      # `throttle(...) do...end` regex) — assert anywhere in the file.
+      expect(initializer_content).to match(/PER-507/)
+    end
+  end
+
   describe "cache store configuration" do
     it "uses Rails.cache unconditionally without Redis branching" do
       initializer_path = Rails.root.join("config/initializers/rack_attack.rb")

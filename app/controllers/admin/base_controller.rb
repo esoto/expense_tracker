@@ -8,19 +8,16 @@ module Admin
     skip_before_action :authenticate_user!
     include AdminAuthentication
 
-    # Rate limiting for admin actions
-    before_action :check_rate_limit
+    # Rate limiting is centralized in Rack::Attack (see config/initializers/
+    # rack_attack.rb for the admin/state-changing/ip throttle and the per-
+    # action rules for login, password reset, pattern test/import, CSV
+    # exports, and statistics). PER-507 removed a no-op request-level
+    # placeholder that added no protection.
 
     # Audit logging
     after_action :log_admin_activity
 
     private
-
-    def check_rate_limit
-      # Rate limiting is handled by Rack::Attack middleware
-      # This is a placeholder for request-specific rate limiting
-      true
-    end
 
     def log_admin_activity
       # Log all admin actions for audit trail

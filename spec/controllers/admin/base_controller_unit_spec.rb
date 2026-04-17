@@ -35,9 +35,12 @@ RSpec.describe Admin::BaseController, type: :controller, unit: true do
       expect(described_class.included_modules.map(&:name)).to include("AdminAuthentication")
     end
 
-    it "has check_rate_limit as before_action" do
-      # Test that the method exists in the class (including private methods)
-      expect(described_class.private_instance_methods).to include(:check_rate_limit)
+    it "does NOT register a check_rate_limit method (PER-507 removed the no-op placeholder)" do
+      # Rate limiting is handled centrally by Rack::Attack (see
+      # config/initializers/rack_attack.rb — `admin/state-changing/ip`
+      # throttle). A controller-level placeholder that just `return true`
+      # provided no protection and was misleading.
+      expect(described_class.private_instance_methods).not_to include(:check_rate_limit)
     end
 
     it "has log_admin_activity as after_action" do
@@ -57,13 +60,6 @@ RSpec.describe Admin::BaseController, type: :controller, unit: true do
   end
 
   describe "private methods", unit: true do
-    describe "#check_rate_limit" do
-      it "returns true by default" do
-        result = controller.send(:check_rate_limit)
-        expect(result).to be_truthy
-      end
-    end
-
     describe "#log_admin_activity" do
       before do
         allow(controller).to receive(:controller_name).and_return("test")
@@ -116,8 +112,12 @@ RSpec.describe Admin::BaseController, type: :controller, unit: true do
   end
 
   describe "security features", unit: true do
-    it "includes rate limiting functionality" do
-      expect(controller.respond_to?(:check_rate_limit, true)).to be_truthy
+    it "delegates rate limiting to Rack::Attack middleware (PER-507)" do
+      # Rate limiting is NOT a controller-level concern anymore. The
+      # admin/state-changing/ip throttle in config/initializers/rack_attack.rb
+      # is the single source of truth for per-IP limits on POST/PATCH/PUT/
+      # DELETE to /admin/*.
+      expect(controller.respond_to?(:check_rate_limit, true)).to be false
     end
 
     it "includes audit logging functionality" do

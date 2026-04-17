@@ -136,6 +136,25 @@ class Rack::Attack
     end
   end
 
+  # PER-507: throttle state-changing admin requests. Previously, the generic
+  # req/ip rule (300/5min) was the only gate on /admin/* POST/PATCH/PUT/DELETE,
+  # which is too loose for write-side admin flows (categories, expenses edit,
+  # category fingerprint mutations). A no-op `check_rate_limit` placeholder on
+  # Admin::BaseController gave the false impression of an additional layer.
+  # This rule centralizes the limit in Rack::Attack. The specific subpaths
+  # already covered by tighter rules above (login, password reset, pattern
+  # test/import, CSV exports) still apply — Rack::Attack evaluates every
+  # matching throttle, so the tightest one wins.
+  throttle("admin/state-changing/ip", limit: 60, period: 1.minute) do |req|
+    # Anchor the path check so this rule catches only the /admin namespace,
+    # not future routes like /admins or /admin_something that don't exist
+    # today but could be added later and silently fall under this rule.
+    admin_path = req.path == "/admin" || req.path.start_with?("/admin/")
+    if admin_path && (req.post? || req.patch? || req.put? || req.delete?)
+      req.ip
+    end
+  end
+
   # === Track suspicious activity ===
 
   # Track 404s to identify scanners

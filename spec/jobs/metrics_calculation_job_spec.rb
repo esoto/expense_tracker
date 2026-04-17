@@ -896,7 +896,6 @@ RSpec.describe MetricsCalculationJob, type: :job, unit: true do
         job.send(:track_job_metrics, email_account.id, 10.0, :success)
       end
     end
-
   end
 
   describe "edge cases and boundary conditions" do

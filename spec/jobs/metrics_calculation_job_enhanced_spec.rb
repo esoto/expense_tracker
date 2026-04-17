@@ -60,7 +60,6 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job, integratio
 
       job.perform(email_account_id: email_account.id, period: :month)
     end
-
   end
 
   describe 'force refresh', integration: true do

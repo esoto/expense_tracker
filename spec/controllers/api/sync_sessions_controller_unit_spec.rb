@@ -192,6 +192,67 @@ RSpec.describe Api::SyncSessionsController, type: :controller, unit: true do
             expect(result).to be false
           end
         end
+
+        context "timing-safe token comparison (PER-502)" do
+          # Guards against timing attacks: token comparison must use
+          # ActiveSupport::SecurityUtils.secure_compare rather than ==, so attackers
+          # cannot distinguish a 1-byte-wrong guess from a 40-byte-wrong guess by
+          # measuring response latency. Argument order matches Api::QueueController:285:
+          # (provided, stored) — user input first, secret second.
+          it "delegates matching tokens to SecurityUtils.secure_compare" do
+            allow(request).to receive(:headers).and_return({ "X-Sync-Token" => "secret_token" })
+            expect(ActiveSupport::SecurityUtils).to receive(:secure_compare)
+              .with("secret_token", "secret_token").and_call_original
+
+            expect(controller.send(:can_access_sync_session?)).to be true
+          end
+
+          it "delegates mismatched tokens to SecurityUtils.secure_compare" do
+            allow(request).to receive(:headers).and_return({ "X-Sync-Token" => "wrong_token_" })
+            # Same bytesize as "secret_token" (12 bytes) so length guard doesn't short-circuit;
+            # secure_compare itself must be invoked and must return false.
+            # Expected args: (provided, stored).
+            expect(ActiveSupport::SecurityUtils).to receive(:secure_compare)
+              .with("wrong_token_", "secret_token").and_call_original
+
+            expect(controller.send(:can_access_sync_session?)).to be false
+          end
+
+          it "short-circuits to false for tokens of different length without invoking secure_compare" do
+            # Rails 8.1's secure_compare requires equal-length strings; length-guard
+            # returns false before the constant-time compare. This is still
+            # timing-safe because length alone is public (visible in every HTTP
+            # response) — no secret bits leak.
+            allow(request).to receive(:headers).and_return({ "X-Sync-Token" => "too_short" })
+            expect(ActiveSupport::SecurityUtils).not_to receive(:secure_compare)
+
+            expect(controller.send(:can_access_sync_session?)).to be false
+          end
+
+          it "rejects non-string provided_token from array params without raising (PER-502 crit #1)" do
+            # An attacker sending `?token[]=foo` makes params[:token] an Array with no
+            # #bytesize — without the is_a?(String) guard, NoMethodError escapes to
+            # BaseController#internal_server_error → 500 + backtrace logged.
+            controller.params = ActionController::Parameters.new(token: [ "secret_token" ])
+            allow(request).to receive(:headers).and_return({})
+            expect(ActiveSupport::SecurityUtils).not_to receive(:secure_compare)
+
+            expect { controller.send(:can_access_sync_session?) }.not_to raise_error
+            expect(controller.send(:can_access_sync_session?)).to be false
+          end
+
+          it "rejects non-string stored_token without raising (PER-502 crit #2)" do
+            # Defense-in-depth: if session_token? is true but session_token is nil (not
+            # reachable today given the before_create ||=, but guards future regressions),
+            # nil.bytesize would raise. The is_a?(String) guard prevents this.
+            allow(sync_session).to receive(:session_token).and_return(nil)
+            allow(request).to receive(:headers).and_return({ "X-Sync-Token" => "anything" })
+            expect(ActiveSupport::SecurityUtils).not_to receive(:secure_compare)
+
+            expect { controller.send(:can_access_sync_session?) }.not_to raise_error
+            expect(controller.send(:can_access_sync_session?)).to be false
+          end
+        end
       end
 
       context "when sync session has no session token" do
@@ -373,35 +434,11 @@ RSpec.describe Api::SyncSessionsController, type: :controller, unit: true do
         expect(result).to eq("1h 0m")
       end
     end
-
-    describe "#json_request?" do
-      context "when request format is JSON" do
-        before do
-          allow(request).to receive(:format).and_return(double(json?: true))
-        end
-
-        it "returns true" do
-          result = controller.send(:json_request?)
-          expect(result).to be true
-        end
-      end
-
-      context "when request format is not JSON" do
-        before do
-          allow(request).to receive(:format).and_return(double(json?: false))
-        end
-
-        it "returns false" do
-          result = controller.send(:json_request?)
-          expect(result).to be false
-        end
-      end
-    end
   end
 
   describe "controller configuration", unit: true do
-    it "inherits from ApplicationController" do
-      expect(described_class.superclass).to eq(ApplicationController)
+    it "inherits from Api::BaseController" do
+      expect(described_class.superclass).to eq(Api::BaseController)
     end
 
     it "is in the Api module namespace" do
@@ -413,6 +450,26 @@ RSpec.describe Api::SyncSessionsController, type: :controller, unit: true do
       callback_filters = before_callbacks.map(&:filter)
 
       expect(callback_filters).to include(:set_sync_session)
+    end
+
+    it "does not run authenticate_api_token when :status action is invoked" do
+      # Api::BaseController requires Bearer auth via authenticate_api_token, but
+      # browser clients polling /api/sync_sessions/:id/status use X-Sync-Token
+      # (not Bearer). The `skip_before_action :authenticate_api_token, only: [:status]`
+      # declaration must keep that callback from firing for :status specifically.
+      # Positive parent-side check: the callback IS registered on the parent,
+      # otherwise an `not_to receive` check on the child would pass trivially.
+      parent_callbacks = Api::BaseController._process_action_callbacks
+                                            .select { |c| c.kind == :before && c.filter == :authenticate_api_token }
+      expect(parent_callbacks).not_to be_empty,
+        "Api::BaseController must register authenticate_api_token so the skip has meaning"
+
+      # Behavioral check: when :status fires, authenticate_api_token MUST NOT be
+      # invoked on the controller instance. A regression that removes the
+      # skip_before_action line would trigger this expectation.
+      allow(SyncSession).to receive(:find_by).and_return(nil)
+      expect(controller).not_to receive(:authenticate_api_token)
+      get :status, params: { id: 999 }, format: :json
     end
   end
 

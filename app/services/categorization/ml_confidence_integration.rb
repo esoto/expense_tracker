@@ -13,6 +13,20 @@ module Services::Categorization
     def update_expense_with_ml_confidence(expense, result)
       return false unless result.successful?
 
+      # PER-497 confidence gate: once a user has set the category manually
+      # (auto_categorized is false), no re-categorization may overwrite it,
+      # regardless of LLM self-reported confidence. LLM confidence is not
+      # calibrated to override an explicit human choice; pattern matches are.
+      # The user can still trigger a new categorization explicitly through the
+      # UI — this gate only blocks background / bulk re-runs.
+      if expense.category_id.present? && !expense.auto_categorized?
+        Rails.logger.info(
+          "[MlConfidenceIntegration] Skipping user-set category overwrite " \
+          "(expense_id=#{expense.id}, confidence=#{result.confidence})"
+        )
+        return false
+      end
+
       ml_attributes = build_ml_attributes(result)
 
       # If confidence is low, suggest the category instead of directly applying it

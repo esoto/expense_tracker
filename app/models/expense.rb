@@ -112,6 +112,11 @@ class Expense < ApplicationRecord
       self.ml_confidence = 1.0
       self.ml_confidence_explanation = "Manually confirmed by user"
 
+      # PER-497: user has touched this expense — mark as manually categorized
+      # so the MlConfidenceIntegration guard protects the decision from later
+      # re-categorizations.
+      self.auto_categorized = false
+
       save!
     end
   end
@@ -129,6 +134,11 @@ class Expense < ApplicationRecord
       # Update confidence
       self.ml_confidence = 1.0
       self.ml_confidence_explanation = "Manually corrected by user"
+
+      # PER-497: user has touched this expense — mark as manually categorized
+      # so the MlConfidenceIntegration guard protects the decision from later
+      # re-categorizations.
+      self.auto_categorized = false
 
       # Create learning event for pattern improvement
       pattern_learning_events.create!(

@@ -315,6 +315,43 @@ RSpec.describe Expense, type: :model, integration: true do
     end
   end
 
+  # PER-497: Manual ML-suggestion handling MUST flip auto_categorized to false
+  # so the downstream confidence gate (MlConfidenceIntegration) can protect the
+  # user's choice from being silently overwritten by a later re-categorization.
+  describe 'ML suggestion methods marking auto_categorized', :unit do
+    let(:email_account) { create(:email_account) }
+    let(:original_category) { create(:category, i18n_key: 'groceries') }
+    let(:new_category) { create(:category, i18n_key: 'dining_out') }
+
+    describe '#accept_ml_suggestion!' do
+      it 'marks auto_categorized = false (user affirmed the choice)' do
+        expense = create(:expense,
+          email_account: email_account,
+          category: original_category,
+          ml_suggested_category_id: new_category.id,
+          auto_categorized: true)
+
+        expense.accept_ml_suggestion!
+
+        expect(expense.reload.auto_categorized).to be false
+      end
+    end
+
+    describe '#reject_ml_suggestion!' do
+      it 'marks auto_categorized = false (user corrected the choice)' do
+        expense = create(:expense,
+          email_account: email_account,
+          category: original_category,
+          ml_suggested_category_id: new_category.id,
+          auto_categorized: true)
+
+        expense.reject_ml_suggestion!(new_category.id)
+
+        expect(expense.reload.auto_categorized).to be false
+      end
+    end
+  end
+
   describe 'callbacks', integration: true do
     describe 'after_commit :clear_dashboard_cache', integration: true do
       it 'clears dashboard cache after creating an expense' do

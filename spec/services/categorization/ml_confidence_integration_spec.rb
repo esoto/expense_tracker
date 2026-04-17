@@ -69,6 +69,75 @@ RSpec.describe Services::Categorization::MlConfidenceIntegration do
         expect(expense.ml_confidence).to be_nil
       end
     end
+
+    # PER-497: once a user manually sets a category (auto_categorized = false),
+    # later re-categorizations must NOT silently overwrite that choice — the
+    # pre-existing `!expense.category_id_changed?` guard only tracked same-
+    # transaction changes and failed to protect decisions from previous
+    # requests. LLM self-reported confidence isn't calibrated enough to
+    # override an explicit human choice; pattern-match confidence is.
+    context 'when the expense has a user-set category (auto_categorized = false)' do
+      let(:user_chosen_category) { create(:category, i18n_key: 'dining_out') }
+
+      before do
+        expense.update!(
+          category: user_chosen_category,
+          auto_categorized: false
+        )
+      end
+
+      context 'with low-confidence re-categorization' do
+        let(:confidence) { 0.45 }
+
+        it 'returns false and leaves the user-set category intact' do
+          expect(integration.update_expense_with_ml_confidence(expense, result)).to be false
+
+          expense.reload
+          expect(expense.category).to eq(user_chosen_category)
+          expect(expense.auto_categorized).to be false
+        end
+      end
+
+      context 'with medium-confidence re-categorization' do
+        let(:confidence) { 0.75 }
+
+        it 'returns false and leaves the user-set category intact' do
+          expect(integration.update_expense_with_ml_confidence(expense, result)).to be false
+
+          expense.reload
+          expect(expense.category).to eq(user_chosen_category)
+        end
+      end
+
+      context 'with high-confidence re-categorization' do
+        let(:confidence) { 0.95 }
+
+        it 'returns false and leaves the user-set category intact (strict gate)' do
+          expect(integration.update_expense_with_ml_confidence(expense, result)).to be false
+
+          expense.reload
+          expect(expense.category).to eq(user_chosen_category)
+          expect(expense.auto_categorized).to be false
+        end
+      end
+    end
+
+    # Auto-categorized expenses (never touched by the user) remain eligible
+    # for re-categorization at any confidence level.
+    context 'when the expense was auto-categorized' do
+      let(:confidence) { 0.90 }
+
+      before do
+        expense.update!(category: create(:category), auto_categorized: true)
+      end
+
+      it 'updates the category' do
+        expect(integration.update_expense_with_ml_confidence(expense, result)).to be true
+
+        expense.reload
+        expect(expense.category).to eq(category)
+      end
+    end
   end
 
   describe '#build_confidence_explanation' do

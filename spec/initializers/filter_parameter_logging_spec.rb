@@ -8,7 +8,7 @@ require "rails_helper"
 # and merges AR per-model `filter_attributes`. We test BEHAVIOR (does a
 # given key get masked?) rather than internal array representation, because
 # the latter changes shape after compilation.
-RSpec.describe "config/initializers/filter_parameter_logging.rb", unit: true do
+RSpec.describe "config/initializers/filter_parameter_logging.rb", :unit do
   # Use the LIVE ActionDispatch parameter filter — this is what Rails applies
   # to logged request parameters end-to-end.
   let(:param_filter) do
@@ -68,17 +68,30 @@ RSpec.describe "config/initializers/filter_parameter_logging.rb", unit: true do
     # inspected (dev/test logs, exception backtraces, console output).
     # Production additionally caps exposure via `attributes_for_inspect = [:id]`,
     # but dev/test logs and error-reporter captures still need this.
-    let(:filter_attributes) { ActiveRecord::Base.filter_attributes }
-
     it "is configured (non-empty)" do
-      expect(filter_attributes).not_to be_empty
+      expect(ActiveRecord::Base.filter_attributes).not_to be_empty
     end
 
-    it "masks encrypted + secret attributes" do
-      # filter_attributes is NOT yet compiled at this level — it remains a
-      # symbol array until ActiveRecord::AttributeMethods::Serialization
-      # builds the per-model inspector. Direct symbol inclusion is safe here.
-      expect(filter_attributes).to include(:passw, :encrypted_password, :encrypted_settings, :token, :secret)
+    it "masks encrypted_password in Model#inspect (behavioral end-to-end check)" do
+      # Behavioral test matching the `filter_parameters` philosophy: assert
+      # what Rails actually DOES to inspected model instances, not what the
+      # config array nominally contains. Uses an in-memory unsaved record so
+      # no DB round-trip is required.
+      account = EmailAccount.new(encrypted_password: "s3cret_value")
+      expect(account.inspect).to include("[FILTERED]")
+      expect(account.inspect).not_to include("s3cret_value")
+    end
+
+    it "masks raw_email_content on EmailParsingFailure (PER-504/PER-496 defense-in-depth)" do
+      # PER-496 encrypted email_parsing_failures.raw_email_content at rest.
+      # But Rails `encrypts` transparently decrypts on attribute read, so
+      # unfiltered Model#inspect would leak the decrypted bank-email body
+      # into dev logs, console, and exception-tracker payloads. This test
+      # guards the filter_attributes list from accidentally dropping the
+      # :raw_email_content entry.
+      failure = EmailParsingFailure.new(raw_email_content: "BAC transaction body with PII")
+      expect(failure.inspect).to include("[FILTERED]")
+      expect(failure.inspect).not_to include("BAC transaction body")
     end
   end
 end

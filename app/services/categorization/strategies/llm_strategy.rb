@@ -115,7 +115,14 @@ module Services::Categorization
       end
 
       def lookup_cache(normalized)
-        LlmCategorizationCacheEntry.find_by(merchant_normalized: normalized)
+        # PER-499: scope lookup by prompt_version + model_used so a prompt
+        # change or model bump produces a miss instead of silently returning
+        # the stale classification.
+        LlmCategorizationCacheEntry.find_by(
+          merchant_normalized: normalized,
+          prompt_version: Llm::PromptBuilder::PROMPT_VERSION,
+          model_used: Llm::Client::MODEL
+        )
       end
 
       def call_llm_and_cache(expense, normalized, existing_entry, start_time)
@@ -195,23 +202,29 @@ module Services::Categorization
       end
 
       def store_cache(normalized, parsed, api_result, total_tokens, _existing_entry)
+        # PER-499: the cache key is (merchant_normalized, prompt_version,
+        # model_used). Two concurrent writes for the same tuple race on the
+        # unique index — find_or_create_by! + update handles it, with a
+        # RecordNotUnique rescue for the narrow window between find and create.
+        key = {
+          merchant_normalized: normalized,
+          prompt_version: Llm::PromptBuilder::PROMPT_VERSION,
+          model_used: Llm::Client::MODEL
+        }
         attrs = {
           category: parsed[:category],
           confidence: parsed[:confidence],
-          model_used: Llm::Client::MODEL,
           token_count: total_tokens,
           cost: api_result[:cost],
           expires_at: CACHE_TTL.from_now
         }
 
-        # Use find_or_create + update to handle concurrent requests safely.
-        # Rescues RecordNotUnique from the unique index on merchant_normalized.
-        entry = LlmCategorizationCacheEntry.find_or_create_by!(merchant_normalized: normalized) do |e|
+        entry = LlmCategorizationCacheEntry.find_or_create_by!(**key) do |e|
           e.assign_attributes(attrs)
         end
         entry.update!(attrs) unless entry.previously_new_record?
       rescue ActiveRecord::RecordNotUnique
-        LlmCategorizationCacheEntry.find_by!(merchant_normalized: normalized).update!(attrs)
+        LlmCategorizationCacheEntry.find_by!(**key).update!(attrs)
       end
 
       def feed_vector_updater(expense, category)

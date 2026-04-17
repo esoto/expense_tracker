@@ -3,6 +3,17 @@
 module Services::Categorization
   module Llm
     class PromptBuilder
+      # PER-499: Prompt version — any change to the prompt text, system
+      # instruction, category list format, correction-note format, or web-
+      # search behaviour MUST bump this constant so that existing LLM cache
+      # rows are invalidated instead of silently serving stale classifications.
+      #
+      # Version log:
+      #   v1 — initial implementation
+      #   v2 — PR #417 added merchant enrichment + PR #419 added web search
+      #   v3 — placeholder for the next prompt change
+      PROMPT_VERSION = "v2"
+
       SYSTEM_INSTRUCTION = <<~INSTRUCTION.freeze
         You are a local business expert and expense categorizer.
         Given a bank transaction, search the internet to identify what type

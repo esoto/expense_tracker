@@ -454,11 +454,15 @@ RSpec.describe "PER-126 Index Audit", :unit do
       expect(composite.unique).to be true
     end
 
-    it "llm_categorization_cache has a unique index on merchant_normalized" do
+    # PER-499: the unique index was widened to
+    # (merchant_normalized, prompt_version, model_used) so prompt / model
+    # bumps invalidate old rows instead of silently serving stale results.
+    it "llm_categorization_cache has a composite unique index including prompt_version + model_used" do
       indexes = connection.indexes(:llm_categorization_cache)
-      merchant_idx = indexes.find { |i| i.name == "index_llm_cache_on_merchant_normalized" }
-      expect(merchant_idx).to be_present
-      expect(merchant_idx.unique).to be true
+      composite_idx = indexes.find { |i| i.name == "index_llm_cache_on_merchant_version_model" }
+      expect(composite_idx).to be_present
+      expect(composite_idx.unique).to be true
+      expect(composite_idx.columns).to eq(%w[merchant_normalized prompt_version model_used])
     end
   end
 

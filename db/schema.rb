@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_17_030000) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_17_135500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -398,11 +398,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_17_030000) do
     t.datetime "expires_at"
     t.string "merchant_normalized", null: false
     t.string "model_used", default: "claude-haiku-4-5"
+    t.string "prompt_version", default: "v1", null: false
     t.integer "token_count"
     t.datetime "updated_at", null: false
     t.index ["category_id"], name: "index_llm_categorization_cache_on_category_id"
     t.index ["expires_at"], name: "index_llm_cache_on_expires_at"
-    t.index ["merchant_normalized"], name: "index_llm_cache_on_merchant_normalized", unique: true
+    t.index ["merchant_normalized", "prompt_version", "model_used"], name: "index_llm_cache_on_merchant_version_model", unique: true
   end
 
   create_table "merchant_aliases", force: :cascade do |t|

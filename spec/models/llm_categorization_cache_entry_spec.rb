@@ -16,10 +16,48 @@ RSpec.describe LlmCategorizationCacheEntry, type: :model, unit: true do
       expect(entry.errors[:category]).to be_present
     end
 
-    it "enforces uniqueness of merchant_normalized" do
-      LlmCategorizationCacheEntry.create!(merchant_normalized: "uber eats", category: category, expires_at: 90.days.from_now)
-      duplicate = LlmCategorizationCacheEntry.new(merchant_normalized: "uber eats", category: category)
+    it "enforces uniqueness of (merchant_normalized, prompt_version, model_used)" do
+      LlmCategorizationCacheEntry.create!(
+        merchant_normalized: "uber eats",
+        prompt_version: "v2",
+        model_used: "claude-haiku-4-5",
+        category: category,
+        expires_at: 90.days.from_now
+      )
+      duplicate = LlmCategorizationCacheEntry.new(
+        merchant_normalized: "uber eats",
+        prompt_version: "v2",
+        model_used: "claude-haiku-4-5",
+        category: category
+      )
       expect(duplicate).not_to be_valid
+    end
+
+    # PER-499: bumping either prompt_version or model_used must allow a new
+    # row for the same merchant, so a prompt/model change produces fresh
+    # classifications instead of overwriting the old one.
+    it "allows the same merchant with a different prompt_version" do
+      LlmCategorizationCacheEntry.create!(
+        merchant_normalized: "uber eats", prompt_version: "v1",
+        model_used: "claude-haiku-4-5", category: category, expires_at: 90.days.from_now
+      )
+      newer = LlmCategorizationCacheEntry.new(
+        merchant_normalized: "uber eats", prompt_version: "v2",
+        model_used: "claude-haiku-4-5", category: category
+      )
+      expect(newer).to be_valid
+    end
+
+    it "allows the same merchant with a different model_used" do
+      LlmCategorizationCacheEntry.create!(
+        merchant_normalized: "uber eats", prompt_version: "v2",
+        model_used: "claude-haiku-4-5", category: category, expires_at: 90.days.from_now
+      )
+      newer = LlmCategorizationCacheEntry.new(
+        merchant_normalized: "uber eats", prompt_version: "v2",
+        model_used: "claude-sonnet-4-5", category: category
+      )
+      expect(newer).to be_valid
     end
   end
 

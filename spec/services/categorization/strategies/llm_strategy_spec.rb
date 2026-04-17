@@ -330,6 +330,56 @@ RSpec.describe Services::Categorization::Strategies::LlmStrategy, :unit do
       end
     end
 
+    # PER-499: prompt_version and model_used are part of the cache key.
+    # A row written under an older prompt/model must NOT be served after a
+    # bump — the strategy should treat it as a miss and call the LLM.
+    context "when cache entry exists but has a stale prompt_version" do
+      let!(:stale_entry) do
+        create(:llm_categorization_cache_entry,
+          merchant_normalized: normalized_merchant,
+          category: category,
+          prompt_version: "v0-historical",
+          model_used: "claude-haiku-4-5",
+          expires_at: 30.days.from_now)
+      end
+      let(:prompt_text) { "categorize" }
+      let(:api_response) do
+        { response_text: category.i18n_key,
+          token_count: { input: 80, output: 5 },
+          cost: 0.0003 }
+      end
+
+      before do
+        allow(Services::Categorization::Llm::PromptBuilder).to receive(:new)
+          .and_return(instance_double(Services::Categorization::Llm::PromptBuilder, build: prompt_text))
+        allow(mock_client).to receive(:categorize).with(prompt_text: prompt_text).and_return(api_response)
+        allow(Services::Categorization::Llm::ResponseParser).to receive(:new)
+          .and_return(instance_double(Services::Categorization::Llm::ResponseParser,
+            parse: { category: category, confidence: 0.85, raw_response: category.i18n_key }))
+      end
+
+      it "treats the stale-version entry as a cache miss and calls the LLM" do
+        strategy.call(expense)
+        expect(mock_client).to have_received(:categorize)
+      end
+
+      it "creates a new cache row at the current PROMPT_VERSION" do
+        expect { strategy.call(expense) }.to change(LlmCategorizationCacheEntry, :count).by(1)
+
+        fresh_entry = LlmCategorizationCacheEntry.find_by(
+          merchant_normalized: normalized_merchant,
+          prompt_version: Services::Categorization::Llm::PromptBuilder::PROMPT_VERSION,
+          model_used: "claude-haiku-4-5"
+        )
+        expect(fresh_entry).to be_present
+      end
+
+      it "leaves the stale entry in place so it can age out naturally" do
+        strategy.call(expense)
+        expect(LlmCategorizationCacheEntry.exists?(stale_entry.id)).to be true
+      end
+    end
+
     context "when cache miss with correction context in Rails.cache" do
       let(:prompt_text) { "categorize this merchant" }
       let(:correction_history) { { old: "groceries", new: "restaurants" } }

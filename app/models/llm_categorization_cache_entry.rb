@@ -3,7 +3,11 @@ class LlmCategorizationCacheEntry < ApplicationRecord
 
   belongs_to :category
 
-  validates :merchant_normalized, presence: true, uniqueness: true
+  # PER-499: uniqueness now scoped by prompt_version + model_used so a prompt
+  # tweak or model bump doesn't silently serve stale cache. The DB-level
+  # index on (merchant_normalized, prompt_version, model_used) is the
+  # authoritative guard — this validation is best-effort.
+  validates :merchant_normalized, presence: true, uniqueness: { scope: %i[prompt_version model_used] }
 
   scope :active, -> { where(expires_at: nil).or(where(expires_at: Time.current..)) }
   scope :expired, -> { where.not(expires_at: nil).where(expires_at: ...Time.current) }

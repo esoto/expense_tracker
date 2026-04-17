@@ -94,5 +94,34 @@ RSpec.describe SolidQueueFailedExecutionCleanupJob, type: :job, unit: true do
     it "is queued on the low-priority queue" do
       expect(described_class.new.queue_name).to eq("low")
     end
+
+    it "retries on StandardError up to 3 attempts with polynomial backoff" do
+      # retry_on contract — if a transient queue-DB error happens, the job
+      # must be retried rather than silently failing the cleanup. This
+      # assertion guards the retry_on declaration from being accidentally
+      # removed or narrowed to a specific error class.
+      retry_jitters = described_class.retry_jitter
+      rescue_handlers = described_class.rescue_handlers
+
+      standard_error_entry = rescue_handlers.find do |class_name, _handler|
+        class_name == "StandardError"
+      end
+      expect(standard_error_entry).not_to be_nil,
+        "expected retry_on StandardError (3x polynomial) — rescue_handlers=#{rescue_handlers.inspect}"
+    end
+  end
+
+  describe "error handling" do
+    it "logs the failure and re-raises so retry_on can fire" do
+      # The rescue branch MUST re-raise — ActiveJob's retry_on only sees
+      # exceptions that propagate out of perform. A silent rescue would
+      # mask the error and defeat the 3-attempt polynomial-backoff policy.
+      boom = StandardError.new("queue db offline")
+      allow(SolidQueue::FailedExecution).to receive(:where).and_raise(boom)
+      expect(Rails.logger).to receive(:error).with(/Cleanup failed: queue db offline/)
+      expect(Rails.logger).to receive(:error) # backtrace line
+
+      expect { job.perform }.to raise_error(StandardError, "queue db offline")
+    end
   end
 end

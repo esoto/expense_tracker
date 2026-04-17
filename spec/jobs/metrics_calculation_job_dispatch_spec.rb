@@ -22,9 +22,6 @@ require "rails_helper"
 # See PER-542.
 RSpec.describe MetricsCalculationJob, "Solid Queue dispatch concurrency", type: :job, integration: true do
   let!(:account) { create(:email_account) }
-  let!(:other_account) do
-    create(:email_account, email: "other_#{SecureRandom.hex(4)}@example.com")
-  end
 
   before do
     # Clean slate — other specs using Active Job's :test adapter don't touch
@@ -76,6 +73,10 @@ RSpec.describe MetricsCalculationJob, "Solid Queue dispatch concurrency", type: 
   end
 
   describe "two jobs with different email_account_ids" do
+    let!(:other_account) do
+      create(:email_account, email: "other_#{SecureRandom.hex(4)}@example.com")
+    end
+
     before do
       enqueue(email_account_id: account.id)
       enqueue(email_account_id: other_account.id)
@@ -99,6 +100,22 @@ RSpec.describe MetricsCalculationJob, "Solid Queue dispatch concurrency", type: 
         "#{described_class.name}/#{account.id}",
         "#{described_class.name}/#{other_account.id}"
       )
+    end
+  end
+
+  describe "three jobs with the same email_account_id" do
+    # Guards against a broken BlockedExecution.create_or_find_by! that could
+    # let a later job silently overwrite an earlier blocked row.
+    before { 3.times { enqueue(email_account_id: account.id) } }
+
+    let(:jobs) { SolidQueue::Job.where(class_name: described_class.name) }
+
+    it "puts exactly one job in ready" do
+      expect(SolidQueue::ReadyExecution.where(job_id: jobs.pluck(:id)).count).to eq(1)
+    end
+
+    it "puts the other two jobs in blocked" do
+      expect(SolidQueue::BlockedExecution.where(job_id: jobs.pluck(:id)).count).to eq(2)
     end
   end
 

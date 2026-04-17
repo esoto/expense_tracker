@@ -73,6 +73,16 @@ default: &default
     schedule: every day at 3am
     description: "Run data quality audit to check pattern coverage, detect duplicates, and identify issues"
 
+  # Purge email parsing failures older than 30 days. raw_email_content holds
+  # bank PII — encrypted at rest (PER-496), this job enforces the retention
+  # window so historical failure data doesn't accumulate indefinitely.
+  cleanup_email_parsing_failures:
+    class: EmailParsingFailureCleanupJob
+    queue: low
+    priority: 10
+    schedule: every day at 4am
+    description: "Purge email parsing failures older than 30 days (PER-496 retention)"
+
 development:
   <<: *default
   # In development, run metrics calculation more frequently for testing

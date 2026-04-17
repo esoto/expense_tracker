@@ -112,6 +112,12 @@ class Expense < ApplicationRecord
       self.ml_confidence = 1.0
       self.ml_confidence_explanation = "Manually confirmed by user"
 
+      # PER-497: intentionally DO NOT flip auto_categorized here. The user
+      # affirmed the ML's suggestion — the categorization is still auto,
+      # just user-ratified. Flipping it would corrupt MonitoringService's
+      # auto-vs-manual provenance metric. Only reject_ml_suggestion! flips
+      # it, because that's where the user actually overrode the ML.
+
       save!
     end
   end
@@ -129,6 +135,11 @@ class Expense < ApplicationRecord
       # Update confidence
       self.ml_confidence = 1.0
       self.ml_confidence_explanation = "Manually corrected by user"
+
+      # PER-497: user has touched this expense — mark as manually categorized
+      # so the MlConfidenceIntegration guard protects the decision from later
+      # re-categorizations.
+      self.auto_categorized = false
 
       # Create learning event for pattern improvement
       pattern_learning_events.create!(

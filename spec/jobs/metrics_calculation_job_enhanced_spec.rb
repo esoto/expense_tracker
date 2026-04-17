@@ -15,43 +15,13 @@ RSpec.describe "MetricsCalculationJob Enhanced Features", type: :job, integratio
     Rails.cache.clear
   end
 
-  describe 'concurrency control', integration: true do
-    # QUARANTINED: Flaky test — the job proceeds to normal execution instead
-    # of logging "skipped - another job is already processing", even though
-    # the lock key is pre-seeded. Reproduces on main at commit 692b505.
-    # Ticket: PER-532 (lock-check diverged from test expectation)
-    # Quarantined on: 2026-04-16
-    # Prior failures: observed Apr 11 (session 66d0eb9b) and Apr 16.
-    xit 'prevents concurrent execution for same account' do
-      lock_key = "metrics_calculation:#{email_account.id}"
-      Rails.cache.write(lock_key, Time.current.to_s, expires_in: 5.minutes)
-
-      expect(Rails.logger).to receive(:info).with(/skipped - another job is already processing/)
-      expect_any_instance_of(Services::ExtendedCacheMetricsCalculator).not_to receive(:calculate)
-
-      job.perform(email_account_id: email_account.id, period: :month)
-    end
-
-    it 'acquires and releases lock properly' do
-      lock_key = "metrics_calculation:#{email_account.id}"
-
-      job.perform(email_account_id: email_account.id, period: :month, reference_date: current_date)
-
-      # Lock should be released after execution
-      expect(Rails.cache.read(lock_key)).to be_nil
-    end
-
-    it 'releases lock even on error' do
-      lock_key = "metrics_calculation:#{email_account.id}"
-
-      allow_any_instance_of(Services::ExtendedCacheMetricsCalculator).to receive(:calculate).and_raise(StandardError, "Test error")
-
-      expect { job.perform(email_account_id: email_account.id, period: :month) }.to raise_error(StandardError)
-
-      # Lock should be released
-      expect(Rails.cache.read(lock_key)).to be_nil
-    end
-  end
+  # Concurrency control is enforced by Active Job / Solid Queue's `limits_concurrency`
+  # directive (see app/jobs/metrics_calculation_job.rb:17–19), NOT by a cache-based lock.
+  # The cache-lock tests that previously lived here tested behavior that was deliberately
+  # removed during the Solid Queue refactor. The correct tests — asserting
+  # `concurrency_limit`, `concurrency_key`, and that no cache-lock write happens —
+  # are in spec/jobs/metrics_calculation_job_spec.rb (lines 133–156 and 936–955).
+  # Closes PER-532.
 
   describe 'performance monitoring', integration: true do
     it 'tracks job metrics on success' do

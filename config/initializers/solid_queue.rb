@@ -10,6 +10,32 @@ Rails.application.configure do
     # Configure shutdown timeout (grace period for jobs to finish)
     config.solid_queue.shutdown_timeout = ENV.fetch("SOLID_QUEUE_SHUTDOWN_TIMEOUT", 30).to_i.seconds
 
+    # PER-506: defensive lease / heartbeat config.
+    #
+    # process_alive_threshold — how long the supervisor waits after a worker's
+    # last heartbeat before considering it dead and releasing its claimed
+    # executions back to the queue. Gem default is 5.minutes, which is too
+    # aggressive for realistic stall modes:
+    #   - DB connection-pool exhaustion blocking the heartbeat INSERT
+    #   - Swap thrashing on a memory-constrained host
+    #   - Deploy-time SIGSTOP windows (Kamal grace period)
+    #   - Major GC or kernel-level process freeze
+    # Any of these can burn 3-5 minutes without the process being dead.
+    # Bumping to 10 minutes adds headroom; recovery from actually-dead
+    # processes still completes within one maintenance cycle.
+    #
+    # process_heartbeat_interval — halve to 30s (gem default 60s) so the
+    # supervisor sees 20 heartbeats per alive-threshold window instead of 5,
+    # reducing single-missed-beat false positives further. At this app's
+    # ~4 worker processes, this adds ~10 lightweight UPDATE writes/min to
+    # solid_queue_processes — negligible.
+    #
+    # Note: the PER-506 ticket described a "claim_timeout" setting in
+    # config/queue.yml, but that key does not exist in Solid Queue 1.4.0.
+    # The effective lever IS process_alive_threshold on the module.
+    config.solid_queue.process_alive_threshold = ENV.fetch("SOLID_QUEUE_ALIVE_THRESHOLD", 600).to_i.seconds
+    config.solid_queue.process_heartbeat_interval = ENV.fetch("SOLID_QUEUE_HEARTBEAT_INTERVAL", 30).to_i.seconds
+
     # Enable performance logging in production
     if Rails.env.production?
       config.solid_queue.logger = Rails.logger
@@ -60,6 +86,26 @@ Rails.application.configure do
       if defined?(StatsD)
         StatsD.increment("solid_queue.jobs.discarded", tags: [ "job:#{job_class}" ])
       end
+    end
+
+    # PER-506: surface supervisor prune / claim-release events. Without these
+    # subscriptions, the only signal that a worker was falsely pruned (or
+    # genuinely died) is via the eventual `discard` when the re-claimed job
+    # later fails — which is too late for ops to correlate with the cause.
+    ActiveSupport::Notifications.subscribe("prune_processes.solid_queue") do |_, _, _, _, payload|
+      size = payload[:size].to_i
+      next if size.zero?
+
+      Rails.logger.warn "[SolidQueue] Pruned #{size} dead process(es) — last heartbeat older than process_alive_threshold"
+      StatsD.increment("solid_queue.processes.pruned", by: size) if defined?(StatsD)
+    end
+
+    ActiveSupport::Notifications.subscribe("release_many_claimed.solid_queue") do |_, _, _, _, payload|
+      size = payload[:size].to_i
+      next if size.zero?
+
+      Rails.logger.warn "[SolidQueue] Released #{size} claimed job(s) from pruned/dead worker(s) back to ready queue"
+      StatsD.increment("solid_queue.claimed_executions.released", by: size) if defined?(StatsD)
     end
 
     # Monitor queue depth periodically in production

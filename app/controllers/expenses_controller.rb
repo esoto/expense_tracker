@@ -88,10 +88,11 @@ class ExpensesController < ApplicationController
       render :new, status: :unprocessable_content
     end
   rescue ActiveRecord::RecordNotUnique
-    # PER-498: idx_expenses_manual_duplicate_check raises RecordNotUnique for
-    # double-submits of the same manual expense. Show the user a friendly
-    # error instead of a 500.
-    @expense.errors.add(:base, t("expenses.flash.duplicate"))
+    # PER-498: idx_expenses_manual_duplicate_check (email_account_id IS NULL)
+    # or idx_expenses_duplicate_check (email_account_id IS NOT NULL) raise
+    # RecordNotUnique on double-submit. Show a friendly error instead of 500.
+    @expense.errors.add(:base, t("expenses.flash.duplicate",
+      default: "A matching expense already exists."))
     @categories = Category.all.order(:name)
     @email_accounts = EmailAccount.all.order(:email)
     render :new, status: :unprocessable_content

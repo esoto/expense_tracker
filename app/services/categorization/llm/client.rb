@@ -11,6 +11,7 @@ module Services::Categorization
       INPUT_COST_PER_TOKEN = 1.00 / 1_000_000.0
       OUTPUT_COST_PER_TOKEN = 5.00 / 1_000_000.0
       SEARCH_COST_PER_QUERY = 10.0 / 1_000.0 # $10 per 1000 searches
+      DEFAULT_TIMEOUT_S = 30
 
       # Custom error hierarchy
       class Error < StandardError; end
@@ -31,9 +32,19 @@ module Services::Categorization
           @client = Anthropic::Client.new(
             api_key: api_key,
             max_retries: 0,
-            timeout: (ENV["ANTHROPIC_TIMEOUT_SECONDS"] || 30).to_i
+            timeout: self.class.anthropic_timeout
           )
         end
+      end
+
+      # Resolves the Anthropic SDK timeout with defensive parsing so that an
+      # invalid ANTHROPIC_TIMEOUT_SECONDS cannot produce a 0s timeout (which
+      # would hard-fail every request and defeat the B1 mitigation).
+      def self.anthropic_timeout
+        value = Integer(ENV.fetch("ANTHROPIC_TIMEOUT_SECONDS", nil), 10)
+        value.positive? ? value : DEFAULT_TIMEOUT_S
+      rescue TypeError, ArgumentError
+        DEFAULT_TIMEOUT_S
       end
 
       def categorize(prompt_text:)

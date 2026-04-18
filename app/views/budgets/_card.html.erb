@@ -16,8 +16,9 @@
     <div class="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4">
       <p class="text-sm text-amber-800"><%= t("budgets.unmapped_banner") %></p>
       <%= form_with(model: budget, local: true, class: "flex items-center gap-2 mt-2") do |f| %>
+        <%= f.label :category_id, t("budgets.pick_category"), class: "sr-only" %>
         <%= f.select :category_id,
-              options_from_collection_for_select(budget.email_account.categories.distinct, :id, :display_name),
+              options_from_collection_for_select(categories, :id, :display_name),
               { include_blank: t("budgets.pick_category") },
               class: "rounded border-slate-300 text-sm" %>
         <%= f.submit t("budgets.save_category"),

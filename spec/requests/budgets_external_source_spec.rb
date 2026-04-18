@@ -129,4 +129,33 @@ RSpec.describe "Budgets external source UI", type: :request, unit: true do
       expect(response.body).to include(I18n.t("budgets.external_badge"))
     end
   end
+
+  describe "Query efficiency for multiple unmapped external budgets" do
+    it "renders multiple unmapped external cards without raising" do
+      # email_account.categories is `through: :expenses`, so expenses anchor the categories.
+      categories = create_list(:category, 2)
+      categories.each do |cat|
+        create(:expense, email_account: email_account, category: cat)
+      end
+
+      3.times do |i|
+        create(:budget,
+          email_account: email_account,
+          category: nil,
+          external_source: "salary_calculator",
+          external_id: 200 + i,
+          name: "Unmapped Budget #{i}")
+      end
+
+      get budgets_path
+
+      expect(response).to have_http_status(:ok)
+      expect(assigns(:category_options)).to be_an(Array)
+      expect(response.body).to include("Unmapped Budget 0", "Unmapped Budget 1", "Unmapped Budget 2")
+      categories.each do |cat|
+        # Each category renders once per unmapped card's dropdown.
+        expect(response.body.scan(cat.display_name).size).to be >= 3
+      end
+    end
+  end
 end

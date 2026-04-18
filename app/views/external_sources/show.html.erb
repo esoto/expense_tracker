@@ -18,9 +18,10 @@
       <p class="text-sm text-slate-600 mb-4">
         <%= t("external_sources.not_connected_body") %>
       </p>
-      <%= link_to t("external_sources.connect"),
-                  connect_external_source_path,
-                  class: "inline-flex items-center gap-2 bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm" %>
+      <%= button_to t("external_sources.connect"),
+                    connect_external_source_path,
+                    method: :post,
+                    class: "inline-flex items-center gap-2 bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm" %>
     </section>
 
   <% elsif @source.active? %>
@@ -62,9 +63,10 @@
         <%= t("external_sources.reconnect_required_body") %>
       </p>
       <div class="flex flex-wrap gap-3">
-        <%= link_to t("external_sources.reconnect"),
-                    connect_external_source_path,
-                    class: "inline-flex items-center gap-2 bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm" %>
+        <%= button_to t("external_sources.reconnect"),
+                      connect_external_source_path,
+                      method: :post,
+                      class: "inline-flex items-center gap-2 bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm" %>
         <%= button_to t("external_sources.disconnect"),
                       external_source_path,
                       method: :delete,

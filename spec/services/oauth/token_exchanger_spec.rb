@@ -56,6 +56,17 @@ RSpec.describe Services::Oauth::TokenExchanger, :unit do
       end
     end
 
+    context "when the TLS handshake fails" do
+      before do
+        stub_request(:post, "#{base_url}/oauth/token")
+          .to_raise(OpenSSL::SSL::SSLError.new("bad certificate"))
+      end
+
+      it "raises Error with 'network:' prefix" do
+        expect { exchanger.call }.to raise_error(described_class::Error, /network:/)
+      end
+    end
+
     context "when the server returns invalid JSON" do
       before do
         stub_request(:post, "#{base_url}/oauth/token")

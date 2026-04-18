@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "net/http"
+require "openssl"
 require "uri"
 require "json"
 
@@ -46,7 +47,7 @@ module Services
         end
 
         JSON.parse(resp.body).symbolize_keys
-      rescue Net::OpenTimeout, Net::ReadTimeout, SocketError, Errno::ECONNREFUSED => e
+      rescue Net::OpenTimeout, Net::ReadTimeout, Net::HTTPError, SocketError, SystemCallError, OpenSSL::SSL::SSLError, EOFError => e
         raise Error, "network: #{e.class}: #{e.message}"
       rescue JSON::ParserError => e
         raise Error, "invalid JSON: #{e.message}"

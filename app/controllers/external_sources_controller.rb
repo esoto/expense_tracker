@@ -32,7 +32,8 @@ class ExternalSourcesController < ApplicationController
   def callback
     stored = session.delete(SESSION_KEY) || {}
 
-    return fail_callback(:state_mismatch) if stored["state"].blank? || stored["state"] != params[:state]
+    provided = params[:state].to_s
+    return fail_callback(:state_mismatch) if stored["state"].blank? || provided.blank? || !ActiveSupport::SecurityUtils.secure_compare(stored["state"], provided)
     return fail_callback(:state_expired)  if expired?(stored)
 
     account = EmailAccount.find_by(id: stored["email_account_id"])
@@ -77,11 +78,16 @@ class ExternalSourcesController < ApplicationController
   private
 
   def set_email_account
-    @email_account = EmailAccount.active.first
+    @email_account = EmailAccount.active.order(:id).first
   end
 
   def base_url
-    ENV.fetch("SALARY_CALC_BASE_URL", "https://salary-calc.estebansoto.dev")
+    url = ENV.fetch("SALARY_CALC_BASE_URL", "https://salary-calc.estebansoto.dev")
+    uri = URI.parse(url)
+    allowed = Rails.env.production? ? %w[https] : %w[http https]
+    raise "SALARY_CALC_BASE_URL must be http(s); got #{uri.scheme.inspect}" unless allowed.include?(uri.scheme)
+
+    url
   end
 
   def callback_url

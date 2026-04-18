@@ -14,13 +14,13 @@ RSpec.describe "ExternalSources flow", type: :system do
   it "shows the not-connected state and exposes a Connect CTA" do
     visit external_source_path
     expect(page).to have_content(I18n.t("external_sources.not_connected"))
-    expect(page).to have_link(I18n.t("external_sources.connect"), href: connect_external_source_path)
+    expect(page).to have_button(I18n.t("external_sources.connect"))
   end
 
   it "redirects to salary_calc/oauth/authorize on Connect" do
     # Drive the request directly via rack-test so we can inspect the 302 without
     # following it off-site (Capybara#visit would silently chase the redirect).
-    page.driver.browser.process(:get, connect_external_source_path)
+    page.driver.browser.process(:post, connect_external_source_path)
 
     expect(page.status_code).to eq(302)
     expect(page.response_headers["Location"]).to match(

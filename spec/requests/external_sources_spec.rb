@@ -57,10 +57,10 @@ RSpec.describe "ExternalSources", type: :request do
     end
   end
 
-  describe "GET /external_source/connect" do
+  describe "POST /external_source/connect" do
     context "when no email account exists" do
       it "redirects to email_accounts_path with an alert" do
-        get connect_external_source_path
+        post connect_external_source_path
         expect(response).to redirect_to(email_accounts_path)
         expect(flash[:alert]).to eq(I18n.t("external_sources.no_account"))
       end
@@ -70,7 +70,7 @@ RSpec.describe "ExternalSources", type: :request do
       let!(:account) { create(:email_account, active: true) }
 
       it "stores state in the session and redirects to the authorize URL" do
-        get connect_external_source_path
+        post connect_external_source_path
         expect(response).to have_http_status(:redirect)
         expect(response.location).to match(%r{\Ahttps://salary-calc\.estebansoto\.dev/oauth/authorize\?})
 
@@ -90,25 +90,6 @@ RSpec.describe "ExternalSources", type: :request do
   describe "GET /external_source/callback" do
     let!(:account) { create(:email_account, active: true) }
 
-    def set_session_state(state:, email_account_id: account.id, expires_at: 10.minutes.from_now)
-      # Stash the state through the :connect action so it's written to session.
-      # Then override it by doing a direct state write via a round-trip request
-      # helper. Since we can't set session[] directly in request specs in Rails 8,
-      # we use a before-hook controller by issuing a connect request and then
-      # mutating the returned cookies. To keep things simple here, we first do
-      # a connect to populate the session cookie, then call callback with that
-      # session's state — for mismatched/expired cases we directly issue a
-      # callback with a custom state param and rely on the connect-set session.
-      get connect_external_source_path
-      # Pull the state the controller generated for this session, then overwrite
-      # it in session by re-calling the controller with a fresh request carrying
-      # the right state/email_account_id/expires_at via an isolated test-only
-      # approach: drive the flow through the session established by :connect,
-      # then compare to the state we pass.
-      stored = session[:external_oauth_state]
-      stored
-    end
-
     context "with missing state in session" do
       it "redirects with an alert" do
         get callback_external_source_path, params: { state: "anything", code: "xyz" }
@@ -119,7 +100,7 @@ RSpec.describe "ExternalSources", type: :request do
 
     context "with mismatched state" do
       it "redirects with an alert" do
-        get connect_external_source_path # sets session state
+        post connect_external_source_path # sets session state
         get callback_external_source_path, params: { state: "wrong-state", code: "xyz" }
         expect(response).to redirect_to(external_source_path)
         expect(flash[:alert]).to eq(I18n.t("external_sources.state_mismatch"))
@@ -128,7 +109,7 @@ RSpec.describe "ExternalSources", type: :request do
 
     context "with expired state" do
       it "redirects with an alert" do
-        get connect_external_source_path
+        post connect_external_source_path
         stored = session[:external_oauth_state]
         # Force expiry by traveling past the stored window.
         travel_to(Time.zone.parse(stored["expires_at"]) + 1.minute) do
@@ -148,7 +129,7 @@ RSpec.describe "ExternalSources", type: :request do
       end
 
       it "creates the external source, enqueues PullJob, and redirects with notice" do
-        get connect_external_source_path
+        post connect_external_source_path
         stored = session[:external_oauth_state]
 
         expect {
@@ -174,7 +155,7 @@ RSpec.describe "ExternalSources", type: :request do
       end
 
       it "does not create a source and redirects with an alert" do
-        get connect_external_source_path
+        post connect_external_source_path
         stored = session[:external_oauth_state]
 
         expect {

@@ -191,7 +191,7 @@ Rails.application.routes.draw do
 
   # External budget source (OAuth link to salary_calc)
   resource :external_source, only: [ :show, :destroy ], controller: "external_sources" do
-    get  :connect
+    post :connect
     get  :callback
     post :sync_now
   end

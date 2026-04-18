@@ -472,7 +472,9 @@ RSpec.describe "PER-126 Index Audit", :unit do
       # Pre-audit: 250 indexes; 42 removed => current total is 208
       # +1 for categories.i18n_key unique index added in i18n migration
       # +11 for Phase 2 categorization tables (categorization_metrics: 6, categorization_vectors: 3, llm_categorization_cache: 2)
-      expect(total).to be <= 224  # small buffer for schema drift
+      # +3 for external sources integration (external_budget_sources: 1 unique; budgets external columns: 2;
+      #     we dropped the redundant composite idx_ebs_on_account_active)
+      expect(total).to be <= 227  # small buffer for schema drift
     end
   end
 end

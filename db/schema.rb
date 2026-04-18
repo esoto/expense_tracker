@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_17_135500) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_18_182103) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -62,6 +62,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_17_135500) do
     t.text "description"
     t.bigint "email_account_id", null: false
     t.date "end_date"
+    t.bigint "external_id"
+    t.string "external_source"
+    t.datetime "external_synced_at"
     t.datetime "last_exceeded_at"
     t.jsonb "metadata", default: {}
     t.string "name", null: false
@@ -82,6 +85,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_17_135500) do
     t.index ["email_account_id", "category_id", "period", "active"], name: "index_budgets_unique_active", unique: true, where: "(active = true)"
     t.index ["email_account_id", "period", "active"], name: "index_budgets_on_email_account_id_and_period_and_active"
     t.index ["email_account_id"], name: "index_budgets_on_email_account_id"
+    t.index ["external_source", "external_id"], name: "idx_budgets_external_unique", unique: true, where: "(external_source IS NOT NULL)"
+    t.index ["external_source"], name: "index_budgets_on_external_source", where: "(external_source IS NOT NULL)"
     t.index ["metadata"], name: "index_budgets_on_metadata", using: :gin
     t.index ["start_date", "end_date"], name: "index_budgets_on_start_date_and_end_date"
   end
@@ -366,6 +371,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_17_135500) do
     t.index ["transaction_date", "category_id", "amount"], name: "idx_expenses_analytics", where: "(deleted_at IS NULL)", comment: "Covering index for date-based analytics"
     t.index ["updated_at", "category_id"], name: "idx_expenses_dashboard_metrics"
     t.index ["updated_at"], name: "idx_expenses_updated_at"
+  end
+
+  create_table "external_budget_sources", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.text "api_token"
+    t.string "base_url", null: false
+    t.datetime "created_at", null: false
+    t.bigint "email_account_id", null: false
+    t.text "last_sync_error"
+    t.string "last_sync_status"
+    t.datetime "last_synced_at"
+    t.string "source_type", default: "salary_calculator", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email_account_id"], name: "index_external_budget_sources_on_email_account_id", unique: true
   end
 
   create_table "failed_broadcast_stores", force: :cascade do |t|
@@ -773,6 +792,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_17_135500) do
   add_foreign_key "email_parsing_failures", "email_accounts"
   add_foreign_key "expenses", "categories"
   add_foreign_key "expenses", "email_accounts"
+  add_foreign_key "external_budget_sources", "email_accounts"
   add_foreign_key "llm_categorization_cache", "categories"
   add_foreign_key "merchant_aliases", "canonical_merchants"
   add_foreign_key "pattern_feedbacks", "categories"

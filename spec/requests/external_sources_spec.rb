@@ -148,6 +148,35 @@ RSpec.describe "ExternalSources", type: :request do
       end
     end
 
+    context "with an existing inactive source (reconnect flow)" do
+      before do
+        allow_any_instance_of(Services::Oauth::TokenExchanger)
+          .to receive(:call).and_return(access_token: "tok-new", token_type: "Bearer", scope: "budget:read")
+      end
+
+      it "updates the existing source in place and reactivates it" do
+        existing = create(:external_budget_source,
+                          email_account: account,
+                          api_token: "tok-old",
+                          active: false,
+                          last_sync_error: "previous failure")
+
+        post connect_external_source_path
+        stored = session[:external_oauth_state]
+
+        expect {
+          get callback_external_source_path, params: { state: stored["state"], code: "auth-code-reconnect" }
+        }.not_to change { ExternalBudgetSource.count }
+
+        existing.reload
+        expect(existing.api_token).to eq("tok-new")
+        expect(existing.active).to be(true)
+        expect(existing.last_sync_error).to be_nil
+        expect(response).to redirect_to(external_source_path)
+        expect(flash[:notice]).to eq(I18n.t("external_sources.connected"))
+      end
+    end
+
     context "when token exchange fails" do
       before do
         allow_any_instance_of(Services::Oauth::TokenExchanger)

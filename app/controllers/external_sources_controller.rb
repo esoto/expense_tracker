@@ -45,11 +45,13 @@ class ExternalSourcesController < ApplicationController
       redirect_uri: callback_url
     ).call
 
-    source = account.build_external_budget_source(
+    source = account.external_budget_source || account.build_external_budget_source
+    source.assign_attributes(
       source_type: "salary_calculator",
       base_url: base_url,
       api_token: tokens[:access_token],
-      active: true
+      active: true,
+      last_sync_error: nil
     )
     source.save!
     ExternalBudgets::PullJob.perform_later(source.id)

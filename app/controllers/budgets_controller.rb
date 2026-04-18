@@ -234,7 +234,7 @@ class BudgetsController < ApplicationController
 
     start_date = Date.current - lookback_days.days
     average_spend = @email_account.expenses
-      .where(transaction_date: start_date..Date.current)
+      .where(transaction_date: start_date.beginning_of_day..Date.current.end_of_day)
       .average(:amount) || 0
 
     # Suggest 10% more than average to provide some buffer

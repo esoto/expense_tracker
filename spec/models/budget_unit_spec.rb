@@ -255,9 +255,9 @@ RSpec.describe Budget, type: :model, unit: true do
       it "returns correct ranges for different periods" do
         expected_ranges = {
           daily: [ Date.new(2025, 1, 15).beginning_of_day, Date.new(2025, 1, 15).end_of_day ],
-          weekly: [ Date.new(2025, 1, 13), Date.new(2025, 1, 19) ], # Monday to Sunday
-          monthly: [ Date.new(2025, 1, 1), Date.new(2025, 1, 31) ],
-          yearly: [ Date.new(2025, 1, 1), Date.new(2025, 12, 31) ]
+          weekly: [ Date.new(2025, 1, 13).beginning_of_day, Date.new(2025, 1, 19).end_of_day ], # Monday to Sunday
+          monthly: [ Date.new(2025, 1, 1).beginning_of_day, Date.new(2025, 1, 31).end_of_day ],
+          yearly: [ Date.new(2025, 1, 1).beginning_of_day, Date.new(2025, 12, 31).end_of_day ]
         }
 
         expected_ranges.each do |period, (expected_start, expected_end)|

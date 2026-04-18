@@ -108,8 +108,8 @@ RSpec.describe Budget, type: :model, integration: true do
 
       it 'returns current week\'s date range' do
         range = budget.current_period_range
-        expect(range.begin).to eq(Date.current.beginning_of_week)
-        expect(range.end).to eq(Date.current.end_of_week)
+        expect(range.begin).to eq(Date.current.beginning_of_week.beginning_of_day)
+        expect(range.end).to eq(Date.current.end_of_week.end_of_day)
       end
     end
 
@@ -118,8 +118,8 @@ RSpec.describe Budget, type: :model, integration: true do
 
       it 'returns current month\'s date range' do
         range = budget.current_period_range
-        expect(range.begin).to eq(Date.current.beginning_of_month)
-        expect(range.end).to eq(Date.current.end_of_month)
+        expect(range.begin).to eq(Date.current.beginning_of_month.beginning_of_day)
+        expect(range.end).to eq(Date.current.end_of_month.end_of_day)
       end
     end
 
@@ -128,8 +128,8 @@ RSpec.describe Budget, type: :model, integration: true do
 
       it 'returns current year\'s date range' do
         range = budget.current_period_range
-        expect(range.begin).to eq(Date.current.beginning_of_year)
-        expect(range.end).to eq(Date.current.end_of_year)
+        expect(range.begin).to eq(Date.current.beginning_of_year.beginning_of_day)
+        expect(range.end).to eq(Date.current.end_of_year.end_of_day)
       end
     end
   end

@@ -710,10 +710,10 @@ class ExpensesController < ApplicationController
       scope = scope.where(transaction_date: date_range) if date_range
     elsif params[:date_from].present? && params[:date_to].present?
       # Handle explicit date range from dashboard
-      scope = scope.where(transaction_date: params[:date_from]..params[:date_to])
+      scope = scope.where(transaction_date: parse_date_param(params[:date_from]).beginning_of_day..parse_date_param(params[:date_to]).end_of_day)
     elsif date_range_present?
       # Handle traditional date range filters
-      scope = scope.where(transaction_date: params[:start_date]..params[:end_date])
+      scope = scope.where(transaction_date: parse_date_param(params[:start_date]).beginning_of_day..parse_date_param(params[:end_date]).end_of_day)
     end
 
     # Use left_joins instead of joins to maintain includes
@@ -724,6 +724,12 @@ class ExpensesController < ApplicationController
 
   def date_range_present?
     params[:start_date].present? && params[:end_date].present?
+  end
+
+  def parse_date_param(value)
+    value.is_a?(Date) ? value : Date.parse(value.to_s)
+  rescue ArgumentError, TypeError
+    Date.current
   end
 
   def calculate_period_range(period)

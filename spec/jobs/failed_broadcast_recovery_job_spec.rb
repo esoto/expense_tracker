@@ -360,7 +360,7 @@ RSpec.describe FailedBroadcastRecoveryJob, type: :job, unit: true do
 
   describe '#record_recovery_metrics' do
     let(:stats) { { attempted: 5, successful: 3, failed: 1, skipped: 1 } }
-    let(:current_time) { Time.zone.parse('2025-08-30 15:30:00') }
+    let(:current_time) { Time.utc(2025, 8, 30, 15, 30, 0).in_time_zone }
 
     before do
       allow(Time).to receive(:current).and_return(current_time)

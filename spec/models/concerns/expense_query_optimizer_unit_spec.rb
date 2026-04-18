@@ -424,7 +424,8 @@ RSpec.describe ExpenseQueryOptimizer, type: :model, unit: true do
 
       it "includes date and id in cursor" do
         expense.id = 456
-        expense.transaction_date = Date.new(2024, 6, 15)
+        # Pin the transaction instant in UTC so the assertion is zone-stable.
+        expense.transaction_date = Time.utc(2024, 6, 15, 0, 0, 0)
 
         cursor = Expense.encode_cursor(expense)
         decoded = JSON.parse(Base64.strict_decode64(cursor))

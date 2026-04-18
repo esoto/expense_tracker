@@ -76,11 +76,11 @@ class Budget < ApplicationRecord
     when :daily
       reference_date.beginning_of_day..reference_date.end_of_day
     when :weekly
-      reference_date.beginning_of_week..reference_date.end_of_week
+      reference_date.beginning_of_week.beginning_of_day..reference_date.end_of_week.end_of_day
     when :monthly
-      reference_date.beginning_of_month..reference_date.end_of_month
+      reference_date.beginning_of_month.beginning_of_day..reference_date.end_of_month.end_of_day
     when :yearly
-      reference_date.beginning_of_year..reference_date.end_of_year
+      reference_date.beginning_of_year.beginning_of_day..reference_date.end_of_year.end_of_day
     else
       raise "Invalid period: #{period}"
     end

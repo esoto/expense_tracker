@@ -99,7 +99,7 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
       post :duplicate, params: { id: expense.id }
       duplicated = Expense.order(created_at: :desc).first
 
-      expect(duplicated.transaction_date).to eq(Date.current)
+      expect(duplicated.transaction_date.to_date).to eq(Date.current)
       expect(duplicated.status).to eq("pending")
       expect(duplicated.ml_confidence).to be_nil
       expect(duplicated.ml_suggested_category_id).to be_nil

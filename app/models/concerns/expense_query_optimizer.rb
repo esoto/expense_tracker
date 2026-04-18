@@ -161,8 +161,10 @@ module ExpenseQueryOptimizer
 
     # Generate cursor for pagination
     def encode_cursor(expense)
+      # Serialize the cursor in UTC so tokens stay stable across app zones
+      # (and are directly comparable to stored timestamp values).
       Base64.strict_encode64({
-        date: expense.transaction_date.iso8601,
+        date: expense.transaction_date.utc.iso8601,
         id: expense.id
       }.to_json)
     end

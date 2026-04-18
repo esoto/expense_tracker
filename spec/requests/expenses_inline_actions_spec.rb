@@ -122,7 +122,7 @@ RSpec.describe "Expenses Inline Actions API", type: :request do
       # New expense should have pending status
       new_expense = Expense.find(json["expense"]["id"])
       expect(new_expense.status).to eq("pending")
-      expect(new_expense.transaction_date).to eq(Date.current)
+      expect(new_expense.transaction_date.to_date).to eq(Date.current)
     end
 
     it "resets ML fields on duplicate" do

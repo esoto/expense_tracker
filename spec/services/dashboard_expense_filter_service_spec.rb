@@ -60,8 +60,10 @@ RSpec.describe Services::DashboardExpenseFilterService, type: :service do
     it "handles period-based filtering" do
       service = described_class.new(base_params.merge(period: "week"))
 
-      expect(service.start_date).to eq(Date.current.beginning_of_week)
-      expect(service.end_date).to eq(Date.current.end_of_week)
+      # Period bounds are Times so range queries on the timestamp
+      # transaction_date column bracket the full day in the app zone.
+      expect(service.start_date).to eq(Date.current.beginning_of_week.beginning_of_day)
+      expect(service.end_date).to eq(Date.current.end_of_week.end_of_day)
     end
   end
 
@@ -306,7 +308,7 @@ RSpec.describe Services::DashboardExpenseFilterService, type: :service do
         let(:params) { base_params.merge(period: "today") }
 
         it "returns only today's expenses" do
-          expect(result.expenses.map(&:transaction_date).uniq).to eq([ Date.current ])
+          expect(result.expenses.map { |e| e.transaction_date.to_date }.uniq).to eq([ Date.current ])
         end
       end
 

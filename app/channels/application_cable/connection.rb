@@ -23,7 +23,8 @@ module ApplicationCable
       # Get the main session data
       session_data = cookies.encrypted[:_expense_tracker_session]
       ip_address = request.remote_ip || request.ip
-      timestamp = Time.current.iso8601
+      # Security audit logs are emitted in UTC regardless of app time zone.
+      timestamp = Time.current.utc.iso8601
 
       # Extract session ID from cookies
       rails_session_id = extract_session_id(session_data)

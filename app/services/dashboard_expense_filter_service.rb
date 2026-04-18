@@ -333,20 +333,22 @@ class DashboardExpenseFilterService < ExpenseFilterService
   end
 
   def calculate_period_dates(period)
+    # transaction_date is a timestamp column, so boundaries must be Times
+    # (not Dates) to bracket the full day in the app's configured zone.
     today = Date.current
     case period.to_s
     when "today", "day"
-      { start: today, end: today }
+      { start: today.beginning_of_day, end: today.end_of_day }
     when "week"
-      { start: today.beginning_of_week, end: today.end_of_week }
+      { start: today.beginning_of_week.beginning_of_day, end: today.end_of_week.end_of_day }
     when "month"
-      { start: today.beginning_of_month, end: today.end_of_month }
+      { start: today.beginning_of_month.beginning_of_day, end: today.end_of_month.end_of_day }
     when "year"
-      { start: today.beginning_of_year, end: today.end_of_year }
+      { start: today.beginning_of_year.beginning_of_day, end: today.end_of_year.end_of_day }
     when "last_7_days"
-      { start: 7.days.ago.to_date, end: today }
+      { start: 7.days.ago.beginning_of_day, end: today.end_of_day }
     when "last_30_days"
-      { start: 30.days.ago.to_date, end: today }
+      { start: 30.days.ago.beginning_of_day, end: today.end_of_day }
     else
       {}
     end

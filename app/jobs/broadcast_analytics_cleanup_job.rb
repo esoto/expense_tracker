@@ -92,7 +92,8 @@ class BroadcastAnalyticsCleanupJob < ApplicationJob
     Rails.cache.write(
       "broadcast_analytics:cleanup:last_run",
       {
-        timestamp: Time.current.iso8601,
+        # Emit UTC so cache entries stay zone-stable regardless of app zone.
+        timestamp: Time.current.utc.iso8601,
         stats: stats
       },
       expires_in: 24.hours

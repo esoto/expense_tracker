@@ -429,7 +429,8 @@ module Services::Categorization
       end
 
       def group_by_date
-        expense_adapter.group_by { |e| e.transaction_date.beginning_of_month }
+        # Group by month as a Date so keys are zone-stable across app zones.
+        expense_adapter.group_by { |e| e.transaction_date.to_date.beginning_of_month }
                 .transform_values { |group| {
                   expenses: group,
                   count: group.count,

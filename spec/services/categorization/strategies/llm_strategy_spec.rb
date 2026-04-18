@@ -933,12 +933,45 @@ RSpec.describe Services::Categorization::Strategies::LlmStrategy, :unit do
           expect(b).to have_received(:sleep).with(a_value_within(0.5).of(described_class::MIN_CALL_INTERVAL_S))
         end
 
-        it "proceeds without waiting when Rails.cache.increment returns nil (graceful degradation)" do
+        it "falls back to local MIN_CALL_INTERVAL_S sleep when Rails.cache.increment returns nil" do
           allow(Rails.cache).to receive(:increment).and_return(nil)
-          expect(strategy).not_to receive(:sleep)
-          expect(logger).to receive(:warn).with(/slot reservation failed/)
+          expect(strategy).to receive(:sleep).with(described_class::MIN_CALL_INTERVAL_S)
+          expect(logger).to receive(:warn).with(/slot reservation failed.*fallback/)
 
           strategy.send(:throttle!)
+        end
+
+        it "resets and retries once when computed wait exceeds MAX_REASONABLE_WAIT_S (TTL desync)" do
+          # Simulate desync: slot counter pre-populated at 50 (as if from an
+          # earlier burst) while epoch is missing. Fetch will write a fresh
+          # epoch = now, making slot 50 compute wait_s = 49 * 15s = 735s —
+          # well above MAX_REASONABLE_WAIT_S. The throttle should detect
+          # this, reset both keys, and retry as slot 1.
+          Rails.cache.write(described_class::THROTTLE_SLOT_KEY, 49)
+          # (epoch key is absent — cleared by the outer before block)
+
+          expect(logger).to receive(:warn).with(/desynced/)
+          allow(strategy).to receive(:sleep) # should be ≈0 after reset
+
+          strategy.send(:throttle!)
+
+          # Post-reset: counter is 1 (we were the first caller after reset)
+          # and a fresh epoch exists.
+          expect(Rails.cache.read(described_class::THROTTLE_SLOT_KEY)).to eq(1)
+          expect(Rails.cache.read(described_class::THROTTLE_EPOCH_KEY)).to be_a(Float)
+        end
+
+        it "slot counter is monotonic and race-free under concurrent threads" do
+          # Proves the in-process mutex wrapping Rails.cache.increment keeps
+          # the counter correct when many threads contend for slots — the
+          # bug this PR remediates is exactly an atomicity failure.
+          allow_any_instance_of(described_class).to receive(:sleep)
+          instances = 10.times.map { described_class.new(client: mock_client, logger: logger) }
+
+          threads = instances.map { |s| Thread.new { s.send(:throttle!) } }
+          threads.each(&:join)
+
+          expect(Rails.cache.read(described_class::THROTTLE_SLOT_KEY)).to eq(10)
         end
       end
 

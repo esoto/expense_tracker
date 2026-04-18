@@ -58,6 +58,14 @@ module Services::Categorization
       # backpressure from last week's sync).
       THROTTLE_STATE_TTL = 1.hour
 
+      # Upper bound on a reasonable computed wait. If the algorithm asks us
+      # to sleep longer than this, the shared state is desynced (e.g. epoch
+      # evicted by cache memory pressure while the slot counter persisted)
+      # and we reset both keys before retrying. 10× MIN_CALL_INTERVAL_S
+      # tolerates a ~10-deep queue of concurrent callers; beyond that it's
+      # a bug, not legitimate backpressure.
+      MAX_REASONABLE_WAIT_S = MIN_CALL_INTERVAL_S * 10
+
       @rate_limit_mutex = Mutex.new
 
       class << self
@@ -254,25 +262,46 @@ module Services::Categorization
         return if Rails.env.test?
 
         self.class.rate_limit_mutex.synchronize do
-          my_slot = Rails.cache.increment(THROTTLE_SLOT_KEY, 1, expires_in: THROTTLE_STATE_TTL)
+          desynced_reset = false
 
-          # Some cache backends return nil when incrementing a missing key
-          # (they auto-create starting at 1 but may not return the new
-          # value). Guard so the strategy still throttles correctly even
-          # on cache hiccups — worst case, we fall back to no-wait for
-          # this single call instead of crashing.
-          if my_slot.nil? || my_slot < 1
-            @logger.warn("[LlmStrategy] Throttle slot reservation failed (cache returned #{my_slot.inspect}); proceeding without wait")
+          loop do
+            my_slot = Rails.cache.increment(THROTTLE_SLOT_KEY, 1, expires_in: THROTTLE_STATE_TTL)
+
+            # Cache outage: preserve per-process backpressure locally so we
+            # don't hammer Anthropic while Solid Cache is down. The retry
+            # loop in call_with_rate_limit_handling is the ultimate
+            # backstop, but that's reactive (wait until 429); this keeps
+            # it proactive.
+            if my_slot.nil? || my_slot < 1
+              @logger.warn("[LlmStrategy] Throttle slot reservation failed (cache returned #{my_slot.inspect}); applying local #{MIN_CALL_INTERVAL_S}s fallback")
+              sleep(MIN_CALL_INTERVAL_S)
+              return
+            end
+
+            epoch_start = Rails.cache.fetch(THROTTLE_EPOCH_KEY, expires_in: THROTTLE_STATE_TTL) { Time.now.to_f }
+            my_slot_time = epoch_start + (my_slot - 1) * MIN_CALL_INTERVAL_S
+            wait_s = my_slot_time - Time.now.to_f
+
+            # TTL-desync self-heal. If the epoch key was evicted (Solid
+            # Cache memory pressure, LRU, etc.) while the slot counter
+            # persisted, `fetch` writes a fresh epoch = now, and slot N
+            # (e.g. 50) computes wait_s = 49 * 15s = 12 min. Reset both
+            # keys and retry once — idempotent because the per-process
+            # mutex prevents other threads in this process from racing.
+            if wait_s > MAX_REASONABLE_WAIT_S && !desynced_reset
+              @logger.warn("[LlmStrategy] Throttle state desynced (slot=#{my_slot}, wait=#{wait_s.round(1)}s); resetting")
+              Rails.cache.delete(THROTTLE_SLOT_KEY)
+              Rails.cache.delete(THROTTLE_EPOCH_KEY)
+              desynced_reset = true
+              next
+            end
+
+            if wait_s.positive?
+              @logger.debug("[LlmStrategy] Throttle slot=#{my_slot} waits #{wait_s.round(1)}s")
+              sleep(wait_s)
+            end
+
             return
-          end
-
-          epoch_start = Rails.cache.fetch(THROTTLE_EPOCH_KEY, expires_in: THROTTLE_STATE_TTL) { Time.now.to_f }
-          my_slot_time = epoch_start + (my_slot - 1) * MIN_CALL_INTERVAL_S
-          wait_s = my_slot_time - Time.now.to_f
-
-          if wait_s.positive?
-            @logger.debug("[LlmStrategy] Throttle slot=#{my_slot} waits #{wait_s.round(1)}s")
-            sleep(wait_s)
           end
         end
       end

@@ -9,20 +9,16 @@ end
 
 # Initialize monitoring if in production or explicitly enabled.
 #
-# Must defer to `after_initialize` for two reasons:
-# 1. The `Services::` prefix is required (set up by
-#    `config/initializers/autoloading.rb`, which registers the namespace
-#    with Zeitwerk). That registration is only effective for on-demand
-#    autoloading AFTER the autoloader finishes booting — referencing the
-#    constant during another initializer raises `uninitialized constant
-#    Services::Categorization`.
-# 2. `assets:precompile` loads the environment with
-#    `Rails.env.production?` true but without a live database; touching
-#    the MetricsCollector singleton at initializer time would fail the
-#    Docker build. `after_initialize` runs after eager-load completes
-#    but before the first request — and it is skipped entirely during
-#    rake tasks that don't boot the full application (like
-#    `assets:precompile`'s internal calls).
+# The `.instance` call is deferred to `after_initialize` because
+# `config/initializers/autoloading.rb` registers the `Services::`
+# namespace with Zeitwerk during its own initializer run — that
+# registration only takes effect for on-demand autoloading once the
+# autoloader has finished booting. Referencing
+# `Services::Categorization::…` from another initializer (same phase)
+# raises `uninitialized constant Services::Categorization`. Waiting for
+# `after_initialize` lets the autoloader settle first. The underlying
+# `MetricsCollector#initialize` is DB-free, so this hook runs safely
+# under `assets:precompile` with no database connection.
 if Rails.env.production? || ENV["ENABLE_CATEGORIZATION_MONITORING"] == "true"
   Rails.application.config.after_initialize do
     Services::Categorization::Monitoring::MetricsCollector.instance

@@ -91,16 +91,18 @@ module StatementTimeout
 end
 
 # NOTE: a prior `RefreshDashboardMetricsJob` block lived here and invoked
-# the SolidQueue RecurringJob AR API to schedule a 5-minute cron. That API
-# does NOT exist — the RecurringJob constant is an ActiveJob::Base subclass,
-# not an AR model, and has no AR persistence methods. The block was dead
-# code: it raised NoMethodError at boot AND there is no `dashboard_metrics`
-# materialized view in the schema for it to refresh. Removed 2026-04-17
-# so that `assets:precompile` (which boots production env + runs
-# after_initialize callbacks) stops failing. If a periodic refresh of a
-# materialized view is needed in the future, add the job class under
-# `app/jobs/` and wire it up via `config/recurring.yml` — the standard
-# Solid Queue 1.x way.
+# the SolidQueue RecurringJob AR API to schedule a 5-minute cron. That
+# constant is an `ActiveJob::Base` subclass (not an AR model) and has no
+# `.create` method — the block raised NoMethodError at boot. Removed
+# 2026-04-17 to unblock `assets:precompile`.
+#
+# The `dashboard_metrics` materialized view IS created (see
+# `db/migrate/20250830124847_add_dashboard_performance_indexes.rb`) but
+# was never wired up to a refresh mechanism — the only in-repo reference
+# was the broken block removed here, so the view goes stale. TODO: if a
+# periodic refresh becomes needed, add a job class under `app/jobs/` and
+# register it in `config/recurring.yml` (Solid Queue 1.x convention,
+# used elsewhere in the app).
 
 # Memory optimization settings
 if defined?(GetProcessMem)
@@ -122,16 +124,15 @@ end
 
 # Preload frequently accessed data.
 #
-# Guarded with `ActiveRecord::Base.connected?` so the block is a no-op
-# during `assets:precompile` (Docker build-time, no DB) and during rake
-# tasks that intentionally boot without a DB. The `rescue` captures
-# transient DB errors (unreachable DB during rolling deploys) so a cold
-# cache never blocks boot.
+# The warm-up is optional — the app works correctly without it (first
+# request just pays the DB round-trip). If the DB is unreachable at boot
+# (e.g. `assets:precompile` has no DB, or a rolling deploy boots the web
+# container before PG is ready), we log and move on rather than crash
+# boot. Letting the DB exception propagate to the outer rescue keeps the
+# skip observable — no silent swallowing.
 Rails.application.config.after_initialize do
   next unless Rails.env.production?
   next unless defined?(Category) && defined?(CategorizationPattern)
-  next unless ActiveRecord::Base.connection_pool.active_connection? ||
-              (ActiveRecord::Base.connection_db_config.present? && ActiveRecord::Base.connection rescue nil)
 
   Rails.cache.fetch("categories:all", expires_in: 1.hour) { Category.all.to_a }
   Rails.cache.fetch("patterns:active", expires_in: 10.minutes) { CategorizationPattern.active.to_a }

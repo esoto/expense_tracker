@@ -58,6 +58,22 @@ RSpec.describe Services::EmailProcessing::Fetcher, type: :service, integration: 
         fetcher.fetch_new_emails
       end
 
+      it 'adds BEFORE to search criteria when before: is passed' do
+        since_date = Date.new(2026, 1, 1)
+        before_date = Date.new(2026, 2, 1)
+        expected = [ 'SINCE', '01-Jan-2026', 'BEFORE', '01-Feb-2026' ]
+        expect(mock_imap_service).to receive(:search_emails).with(expected)
+
+        fetcher.fetch_new_emails(since: since_date, before: before_date)
+      end
+
+      it 'omits BEFORE when before: is nil (default)' do
+        since_date = Date.new(2026, 1, 1)
+        expect(mock_imap_service).to receive(:search_emails).with([ 'SINCE', '01-Jan-2026' ])
+
+        fetcher.fetch_new_emails(since: since_date)
+      end
+
       it 'handles empty message list' do
         allow(mock_imap_service).to receive(:search_emails).and_return([])
         allow(mock_email_processor).to receive(:process_emails).and_return({ processed_count: 0, total_count: 0 })

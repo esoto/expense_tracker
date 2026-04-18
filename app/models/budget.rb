@@ -103,7 +103,13 @@ class Budget < ApplicationRecord
   # Calculate actual spending for the current period
   def calculate_current_spend!
     return 0.0 unless active?
-    return 0.0 if unmapped?
+
+    if unmapped?
+      # Stamp the cache so callers of current_spend_amount don't re-enter this
+      # method on every read. Unmapped external rows always have zero spend.
+      update_columns(current_spend: 0.0, current_spend_updated_at: Time.current) if persisted?
+      return 0.0
+    end
 
     date_range = current_period_range
 

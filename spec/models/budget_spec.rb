@@ -428,17 +428,37 @@ RSpec.describe Budget, type: :model, integration: true do
 
   describe '#calculate_current_spend!', unit: true do
     context 'for an unmapped external budget' do
-      it 'returns 0.0 without querying expenses' do
-        budget = create(:budget,
-                        email_account: email_account,
-                        category: nil,
-                        period: 'monthly',
-                        active: true,
-                        external_source: 'salary_calculator',
-                        external_id: 201)
+      let(:budget) do
+        create(:budget,
+               email_account: email_account,
+               category: nil,
+               period: 'monthly',
+               active: true,
+               external_source: 'salary_calculator',
+               external_id: 201)
+      end
 
+      it 'returns 0.0 without querying expenses' do
         expect(email_account.expenses).not_to receive(:includes)
         expect(budget.calculate_current_spend!).to eq(0.0)
+      end
+
+      it 'stamps current_spend to 0.0 and sets current_spend_updated_at' do
+        freeze_at = Time.current
+        travel_to(freeze_at) do
+          budget.calculate_current_spend!
+        end
+
+        budget.reload
+        expect(budget.current_spend).to eq(0.0)
+        expect(budget.current_spend_updated_at).to be_within(1.second).of(freeze_at)
+      end
+
+      it 'avoids recomputing on subsequent current_spend_amount calls within the cache TTL' do
+        budget.calculate_current_spend!
+
+        expect(budget).not_to receive(:calculate_current_spend!)
+        expect(budget.current_spend_amount).to eq(0.0)
       end
     end
   end

@@ -58,6 +58,23 @@ RSpec.describe ProcessEmailsJob, type: :job, unit: true do
 
         expect { job.perform(email_account.id, sync_session_id: sync_session.id) }.not_to raise_error
       end
+
+      it "threads before: kwarg through to the fetcher", :unit do
+        before_date = Date.new(2026, 2, 1)
+        expect(mock_fetcher).to receive(:fetch_new_emails)
+          .with(since: anything, before: before_date)
+          .and_return(success_response)
+
+        described_class.new.perform(email_account.id, since: Date.new(2026, 1, 1), before: before_date)
+      end
+
+      it "defaults before: to nil when not provided", :unit do
+        expect(mock_fetcher).to receive(:fetch_new_emails)
+          .with(since: anything, before: nil)
+          .and_return(success_response)
+
+        described_class.new.perform(email_account.id)
+      end
     end
 
     context "without email account id" do
@@ -163,6 +180,21 @@ RSpec.describe ProcessEmailsJob, type: :job, unit: true do
       expect(described_class).to receive(:perform_later).once
 
       job.send(:process_all_accounts, 1.week.ago)
+    end
+
+    it "forwards before: kwarg to per-account perform_later calls", :unit do
+      before_date = Date.new(2026, 2, 1)
+      since_date = Date.new(2026, 1, 1)
+      active_relation = double("ActiveRecord::Relation")
+      allow(active_relation).to receive(:count).and_return(1)
+      allow(active_relation).to receive(:find_each).and_yield(email_account)
+      allow(EmailAccount).to receive(:active).and_return(active_relation)
+
+      expect(described_class).to receive(:perform_later)
+        .with(email_account.id, since: since_date, before: before_date, sync_session_id: nil)
+        .and_return(double(respond_to?: false, provider_job_id: nil))
+
+      job.send(:process_all_accounts, since_date, before_date)
     end
 
     context "batch job ID tracking (PER-369)", :unit do

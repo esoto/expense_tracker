@@ -15,6 +15,14 @@ module Services::EmailProcessing
       @errors = []
     end
 
+    # Fetches emails from the IMAP server within a date window.
+    #
+    # @param since [Date, Time] lower bound, INCLUSIVE (IMAP SINCE semantics).
+    # @param before [Date, Time, nil] upper bound, EXCLUSIVE (IMAP BEFORE semantics,
+    #   RFC 3501). For a full month, pass the first day of the NEXT month —
+    #   e.g. `since: Date.new(2026, 1, 1), before: Date.new(2026, 2, 1)` selects
+    #   exactly January 2026. `before: Date.new(2026, 1, 31)` would silently
+    #   drop Jan 31. Default `nil` disables the upper bound (sweep forward).
     def fetch_new_emails(since: 1.week.ago, before: nil)
       unless valid_account?
         return FetcherResponse.failure(errors: @errors)

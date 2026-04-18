@@ -14,7 +14,7 @@
     'aria-current': (request.path.start_with?('/budgets') ? 'page' : nil) %>
 <%# Bulk categorization removed from nav — single-expense categorization via edit page %>
 <%# ── Settings dropdown (desktop) / Settings section (mobile) ── %>
-<% settings_active = request.path == email_accounts_path || request.path.start_with?('/sync_sessions') || request.path.start_with?('/sync_conflicts') %>
+<% settings_active = request.path == email_accounts_path || request.path.start_with?('/sync_sessions') || request.path.start_with?('/sync_conflicts') || request.path == external_source_path %>
 
 <% if mobile %>
   <div class="pt-2 mt-2 border-t border-slate-200">
@@ -28,6 +28,9 @@
     <%= link_to t("nav.conflicts"), sync_conflicts_path,
         class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path.start_with?('/sync_conflicts')}",
         'aria-current': (request.path.start_with?('/sync_conflicts') ? 'page' : nil) %>
+    <%= link_to t("nav.external_sources"), external_source_path,
+        class: "#{base_class} #{'bg-teal-50 text-teal-700' if request.path == external_source_path}",
+        'aria-current': (request.path == external_source_path ? 'page' : nil) %>
   </div>
 
   <div class="pt-2 mt-2 border-t border-slate-200">
@@ -94,6 +97,16 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
           </svg>
           <%= t("nav.conflicts") %>
+        </span>
+      <% end %>
+      <%= link_to external_source_path,
+          class: "block px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors #{'bg-teal-50 text-teal-700' if request.path == external_source_path}",
+          role: "menuitem" do %>
+        <span class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+          </svg>
+          <%= t("nav.external_sources") %>
         </span>
       <% end %>
     </div>

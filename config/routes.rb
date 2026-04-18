@@ -189,6 +189,13 @@ Rails.application.routes.draw do
 
   resources :email_accounts
 
+  # External budget source (OAuth link to salary_calc)
+  resource :external_source, only: [ :show, :destroy ], controller: "external_sources" do
+    post :connect
+    get  :callback
+    post :sync_now
+  end
+
   # Bulk categorization routes — action routes must come before resources to avoid
   # :id wildcard capturing static segments like "export" (PER-212)
   post "bulk_categorizations/categorize", to: "bulk_categorization_actions#categorize"

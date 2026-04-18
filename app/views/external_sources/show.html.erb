@@ -1,0 +1,78 @@
+<%# Settings → External Sources page. Renders one of three states:
+    1. Not connected  — slate card with Connect CTA.
+    2. Connected      — emerald accent with Sync now + Disconnect.
+    3. Reconnect req. — amber banner with Reconnect + Disconnect.
+%>
+<div class="container mx-auto px-4 py-8 max-w-3xl">
+  <header class="mb-6">
+    <h1 class="text-2xl font-semibold text-slate-900"><%= t("external_sources.title") %></h1>
+  </header>
+
+  <% if @source.nil? %>
+    <section class="bg-white border border-slate-200 rounded-lg shadow-sm p-6"
+             aria-labelledby="external-source-not-connected">
+      <h2 id="external-source-not-connected"
+          class="text-lg font-medium text-slate-900 mb-2">
+        <%= t("external_sources.not_connected") %>
+      </h2>
+      <p class="text-sm text-slate-600 mb-4">
+        <%= t("external_sources.not_connected_body") %>
+      </p>
+      <%= button_to t("external_sources.connect"),
+                    connect_external_source_path,
+                    method: :post,
+                    class: "inline-flex items-center gap-2 bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm" %>
+    </section>
+
+  <% elsif @source.active? %>
+    <section class="bg-white border-l-4 border-emerald-500 border border-slate-200 rounded-lg shadow-sm p-6"
+             aria-labelledby="external-source-connected">
+      <h2 id="external-source-connected"
+          class="text-lg font-medium text-slate-900 mb-1">
+        <%= t("external_sources.connected") %>
+      </h2>
+      <p class="text-sm text-slate-600 mb-4">
+        <% if @source.last_synced_at.present? %>
+          <%= t("external_sources.last_synced", time: time_ago_in_words(@source.last_synced_at)) %>
+        <% else %>
+          <%= t("external_sources.never_synced") %>
+        <% end %>
+      </p>
+      <div class="flex flex-wrap gap-3">
+        <%= button_to t("external_sources.sync_now"),
+                      sync_now_external_source_path,
+                      method: :post,
+                      class: "inline-flex items-center gap-2 bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm" %>
+        <%= button_to t("external_sources.disconnect"),
+                      external_source_path,
+                      method: :delete,
+                      data: { turbo_confirm: t("external_sources.confirm_disconnect") },
+                      class: "inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-4 py-2 rounded-lg text-sm font-medium" %>
+      </div>
+    </section>
+
+  <% else %>
+    <section class="bg-amber-50 border-l-4 border-amber-500 border border-amber-200 rounded-lg shadow-sm p-6"
+             role="alert"
+             aria-labelledby="external-source-reconnect">
+      <h2 id="external-source-reconnect"
+          class="text-lg font-medium text-amber-900 mb-1">
+        <%= t("external_sources.reconnect_required") %>
+      </h2>
+      <p class="text-sm text-amber-800 mb-4">
+        <%= t("external_sources.reconnect_required_body") %>
+      </p>
+      <div class="flex flex-wrap gap-3">
+        <%= button_to t("external_sources.reconnect"),
+                      connect_external_source_path,
+                      method: :post,
+                      class: "inline-flex items-center gap-2 bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm" %>
+        <%= button_to t("external_sources.disconnect"),
+                      external_source_path,
+                      method: :delete,
+                      data: { turbo_confirm: t("external_sources.confirm_disconnect") },
+                      class: "inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-4 py-2 rounded-lg text-sm font-medium" %>
+      </div>
+    </section>
+  <% end %>
+</div>

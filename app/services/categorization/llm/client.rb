@@ -17,7 +17,17 @@ module Services::Categorization
       class Error < StandardError; end
       class ConfigurationError < Error; end
       class AuthenticationError < Error; end
-      class RateLimitError < Error; end
+      class RateLimitError < Error
+        # Seconds to wait before retrying, parsed from the Retry-After response
+        # header when the Anthropic SDK surfaces it. nil when absent or invalid
+        # (caller should fall back to a fixed backoff schedule).
+        attr_reader :retry_after
+
+        def initialize(message, retry_after: nil)
+          super(message)
+          @retry_after = retry_after
+        end
+      end
       class TimeoutError < Error; end
       class ApiError < Error; end
 
@@ -96,8 +106,9 @@ module Services::Categorization
         Rails.logger.error("[LLM::Client] Authentication failed: #{e.message}")
         raise AuthenticationError, "Authentication failed: #{e.message}"
       rescue Anthropic::Errors::RateLimitError => e
-        Rails.logger.warn("[LLM::Client] Rate limit exceeded: #{e.message}")
-        raise RateLimitError, "Rate limit exceeded: #{e.message}"
+        retry_after = parse_retry_after(e)
+        Rails.logger.warn("[LLM::Client] Rate limit exceeded: #{e.message} (retry_after=#{retry_after.inspect}s)")
+        raise RateLimitError.new("Rate limit exceeded: #{e.message}", retry_after: retry_after)
       rescue Anthropic::Errors::APITimeoutError => e
         Rails.logger.warn("[LLM::Client] Request timed out: #{e.message}")
         raise TimeoutError, "Request timed out: #{e.message}"
@@ -107,6 +118,35 @@ module Services::Categorization
       end
 
       private
+
+      # Parse the Retry-After header from an Anthropic SDK error. Accepts
+      # an integer number of seconds (the common form from Anthropic), or
+      # an HTTP-date per RFC 7231. Returns nil if the header is missing,
+      # malformed, non-positive, or unreasonably large (> 10 min — we'd
+      # rather fall back to our own backoff than sleep a Solid Queue worker
+      # for hours on a malformed response).
+      MAX_RETRY_AFTER_SECONDS = 600
+
+      def parse_retry_after(anthropic_error)
+        headers = anthropic_error.headers rescue nil
+        return nil unless headers.respond_to?(:[])
+
+        raw = headers["retry-after"] || headers["Retry-After"]
+        return nil if raw.nil? || raw.to_s.empty?
+
+        seconds = Integer(raw.to_s, 10)
+        return nil if seconds <= 0 || seconds > MAX_RETRY_AFTER_SECONDS
+
+        seconds
+      rescue ArgumentError, TypeError
+        # HTTP-date fallback — rare for Anthropic, but RFC 7231 allows it.
+        begin
+          delta = Time.httpdate(raw.to_s) - Time.now
+          delta.positive? && delta <= MAX_RETRY_AFTER_SECONDS ? delta.ceil : nil
+        rescue ArgumentError
+          nil
+        end
+      end
 
       def extract_final_text(response)
         text_blocks = response.content.select { |block| block.respond_to?(:text) }

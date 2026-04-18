@@ -281,19 +281,65 @@ RSpec.describe Services::Categorization::Llm::Client, :unit do
     end
 
     context "when the API returns a rate limit error" do
-      before do
+      def raise_rate_limit_with_headers(headers)
         allow(messages_api).to receive(:create)
           .and_raise(Anthropic::Errors::RateLimitError.new(
             url: "https://api.anthropic.com/v1/messages",
             status: 429, body: "rate limited",
-            headers: {}, request: nil, response: {}
+            headers: headers, request: nil, response: {}
           ))
       end
 
       it "raises a RateLimitError" do
+        raise_rate_limit_with_headers({})
         expect { client.categorize(prompt_text: prompt_text) }.to raise_error(
           Services::Categorization::Llm::Client::RateLimitError, /Rate limit exceeded/
         )
+      end
+
+      it "extracts integer retry-after header into the raised error" do
+        raise_rate_limit_with_headers({ "retry-after" => "42" })
+
+        expect { client.categorize(prompt_text: prompt_text) }
+          .to raise_error(Services::Categorization::Llm::Client::RateLimitError) { |e|
+            expect(e.retry_after).to eq(42)
+          }
+      end
+
+      it "falls back to nil retry_after when header is absent" do
+        raise_rate_limit_with_headers({})
+
+        expect { client.categorize(prompt_text: prompt_text) }
+          .to raise_error(Services::Categorization::Llm::Client::RateLimitError) { |e|
+            expect(e.retry_after).to be_nil
+          }
+      end
+
+      it "ignores non-numeric or malformed retry-after" do
+        raise_rate_limit_with_headers({ "retry-after" => "soon" })
+
+        expect { client.categorize(prompt_text: prompt_text) }
+          .to raise_error(Services::Categorization::Llm::Client::RateLimitError) { |e|
+            expect(e.retry_after).to be_nil
+          }
+      end
+
+      it "ignores unreasonably large retry-after (> 10 min) to protect worker processes" do
+        raise_rate_limit_with_headers({ "retry-after" => "3600" })
+
+        expect { client.categorize(prompt_text: prompt_text) }
+          .to raise_error(Services::Categorization::Llm::Client::RateLimitError) { |e|
+            expect(e.retry_after).to be_nil
+          }
+      end
+
+      it "accepts Retry-After with uppercase header name" do
+        raise_rate_limit_with_headers({ "Retry-After" => "5" })
+
+        expect { client.categorize(prompt_text: prompt_text) }
+          .to raise_error(Services::Categorization::Llm::Client::RateLimitError) { |e|
+            expect(e.retry_after).to eq(5)
+          }
       end
     end
 

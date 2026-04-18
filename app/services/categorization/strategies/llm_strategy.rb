@@ -46,13 +46,29 @@ module Services::Categorization
       MAX_RETRIES = 3
       RETRY_BACKOFF_S = [ 10, 30, 60 ].freeze
 
-      # Class-level mutex for inter-thread throttling within a process.
-      # Each Solid Queue worker thread shares this mutex.
+      # Distributed throttle state (shared across all Solid Queue worker
+      # processes via Rails.cache / Solid Cache). The per-process mutex is
+      # retained to keep contention between threads in the same process
+      # cheap (local lock instead of round-tripping to Solid Cache).
+      THROTTLE_SLOT_KEY = "categorization:llm:slot_counter"
+      THROTTLE_EPOCH_KEY = "categorization:llm:epoch_start_at"
+      # TTL covers the expected worst-case queue burst + idle period. If the
+      # system is idle long enough for this to expire, the slot counter
+      # resets and a fresh epoch starts — correct behavior (no stale
+      # backpressure from last week's sync).
+      THROTTLE_STATE_TTL = 1.hour
+
+      # Upper bound on a reasonable computed wait. If the algorithm asks us
+      # to sleep longer than this, the shared state is desynced (e.g. epoch
+      # evicted by cache memory pressure while the slot counter persisted)
+      # and we reset both keys before retrying. 10× MIN_CALL_INTERVAL_S
+      # tolerates a ~10-deep queue of concurrent callers; beyond that it's
+      # a bug, not legitimate backpressure.
+      MAX_REASONABLE_WAIT_S = MIN_CALL_INTERVAL_S * 10
+
       @rate_limit_mutex = Mutex.new
-      @last_llm_call_at = nil
 
       class << self
-        attr_accessor :last_llm_call_at
         attr_reader :rate_limit_mutex
       end
 
@@ -209,10 +225,14 @@ module Services::Categorization
           throttle!
           attempts += 1
           client.categorize(prompt_text: prompt)
-        rescue Llm::Client::RateLimitError
+        rescue Llm::Client::RateLimitError => e
           if attempts <= MAX_RETRIES
-            sleep_s = RETRY_BACKOFF_S[attempts - 1]
-            @logger.warn("[LlmStrategy] Rate limited (attempt #{attempts}/#{MAX_RETRIES}), sleeping #{sleep_s}s")
+            # Prefer server-provided Retry-After when present — it's
+            # authoritative about when the limit window resets. Fall back
+            # to our fixed backoff schedule only when absent/invalid.
+            sleep_s = e.retry_after || RETRY_BACKOFF_S[attempts - 1]
+            source = e.retry_after ? "retry-after header" : "fixed backoff"
+            @logger.warn("[LlmStrategy] Rate limited (attempt #{attempts}/#{MAX_RETRIES}), sleeping #{sleep_s}s (#{source})")
             sleep(sleep_s)
             retry
           else
@@ -222,31 +242,67 @@ module Services::Categorization
         end
       end
 
-      # Enforce MIN_CALL_INTERVAL_S between LLM calls across all threads in
-      # this process. When multiple workers hit the LLM simultaneously, they
-      # queue up on this mutex and wait their turn.
+      # Enforce MIN_CALL_INTERVAL_S between LLM calls across ALL threads in
+      # ALL processes (distributed throttle via Rails.cache / Solid Cache).
       #
-      # NOTE: This only coordinates within a single Ruby process. If multiple
-      # Solid Queue worker processes exist (see config/queue.yml), aggregate
-      # throughput can still exceed the global rate limit. Multi-process
-      # coordination would require a distributed rate limiter (Redis / DB).
-      # For the current single-worker deploy, per-process is sufficient.
+      # Algorithm: each caller atomically reserves a monotonic "slot" via
+      # Rails.cache.increment. Slot N fires at `epoch + (N - 1) *
+      # MIN_CALL_INTERVAL_S`. The first caller in an epoch establishes
+      # epoch_start. Because increment is atomic and the epoch is read via
+      # fetch-or-write, every process + thread converges on the same slot
+      # schedule without requiring a distributed mutex.
       #
-      # Disabled in test env to keep unit tests fast.
+      # The per-process mutex is kept as a cheap short-circuit — threads
+      # in the same process serialize on it first to avoid hammering Solid
+      # Cache when the local queue is hot.
+      #
+      # Disabled in test env to keep unit tests fast (tests that exercise
+      # this directly unstub `Rails.env.test?`).
       def throttle!
         return if Rails.env.test?
 
         self.class.rate_limit_mutex.synchronize do
-          last = self.class.last_llm_call_at
-          if last
-            elapsed = Time.now - last
-            if elapsed < MIN_CALL_INTERVAL_S
-              wait_s = MIN_CALL_INTERVAL_S - elapsed
-              @logger.debug("[LlmStrategy] Throttling: waiting #{wait_s.round(1)}s before next LLM call")
+          desynced_reset = false
+
+          loop do
+            my_slot = Rails.cache.increment(THROTTLE_SLOT_KEY, 1, expires_in: THROTTLE_STATE_TTL)
+
+            # Cache outage: preserve per-process backpressure locally so we
+            # don't hammer Anthropic while Solid Cache is down. The retry
+            # loop in call_with_rate_limit_handling is the ultimate
+            # backstop, but that's reactive (wait until 429); this keeps
+            # it proactive.
+            if my_slot.nil? || my_slot < 1
+              @logger.warn("[LlmStrategy] Throttle slot reservation failed (cache returned #{my_slot.inspect}); applying local #{MIN_CALL_INTERVAL_S}s fallback")
+              sleep(MIN_CALL_INTERVAL_S)
+              return
+            end
+
+            epoch_start = Rails.cache.fetch(THROTTLE_EPOCH_KEY, expires_in: THROTTLE_STATE_TTL) { Time.now.to_f }
+            my_slot_time = epoch_start + (my_slot - 1) * MIN_CALL_INTERVAL_S
+            wait_s = my_slot_time - Time.now.to_f
+
+            # TTL-desync self-heal. If the epoch key was evicted (Solid
+            # Cache memory pressure, LRU, etc.) while the slot counter
+            # persisted, `fetch` writes a fresh epoch = now, and slot N
+            # (e.g. 50) computes wait_s = 49 * 15s = 12 min. Reset both
+            # keys and retry once — idempotent because the per-process
+            # mutex prevents other threads in this process from racing.
+            if wait_s > MAX_REASONABLE_WAIT_S && !desynced_reset
+              @logger.warn("[LlmStrategy] Throttle state desynced (slot=#{my_slot}, wait=#{wait_s.round(1)}s); resetting")
+              Rails.cache.delete(THROTTLE_SLOT_KEY)
+              Rails.cache.delete(THROTTLE_EPOCH_KEY)
+              desynced_reset = true
+              next
+            end
+
+            if wait_s.positive?
+              @logger.debug("[LlmStrategy] Throttle slot=#{my_slot} waits #{wait_s.round(1)}s")
               sleep(wait_s)
             end
+
+            return
           end
-          self.class.last_llm_call_at = Time.now
         end
       end
 

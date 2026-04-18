@@ -17,6 +17,10 @@ class BudgetsController < ApplicationController
 
     # Calculate overall budget health
     @overall_health = calculate_overall_budget_health
+
+    # Whether an active external budget source (e.g., salary_calculator) is linked.
+    # Drives the empty-state CTA and sync-in-progress messaging.
+    @has_external_source = @email_account.external_budget_source&.active? || false
   end
 
   # GET /budgets/1

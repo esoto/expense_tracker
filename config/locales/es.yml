@@ -688,6 +688,15 @@ es:
 
   # Budgets
   budgets:
+    external_badge: "desde salary_calc"
+    unmapped_banner: "Selecciona una categoría para empezar a rastrear tus gastos"
+    pick_category: "Elige una categoría..."
+    save_category: "Guardar"
+    empty_state:
+      heading: "Conectar salary_calc"
+      body: "Importa tu presupuesto mensual para ver lo planeado vs. lo gastado."
+      cta: "Conectar salary_calc"
+      sync_in_progress: "Aún no hay presupuestos — sincronización en progreso"
     index:
       title: "Presupuestos"
       new_budget: "Nuevo Presupuesto"

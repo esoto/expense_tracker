@@ -323,6 +323,7 @@ RSpec.describe "SyncSessions", type: :request do
         expect(ProcessEmailsJob).to have_received(:perform_later).with(
           nil,
           since: be_within(1.second).of(1.week.ago),
+          before: nil,
           sync_session_id: new_session.id
         )
       end

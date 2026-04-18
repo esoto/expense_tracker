@@ -32,6 +32,7 @@ RSpec.describe Services::SyncSessionRetryService, integration: true do
         expect(ProcessEmailsJob).to have_received(:perform_later).with(
           nil,
           since: be_within(1.second).of(1.week.ago),
+          before: nil,
           sync_session_id: result.sync_session.id
         )
       end
@@ -51,6 +52,23 @@ RSpec.describe Services::SyncSessionRetryService, integration: true do
           expect(ProcessEmailsJob).to have_received(:perform_later).with(
             nil,
             since: since_date,
+            before: nil,
+            sync_session_id: result.sync_session.id
+          )
+        end
+      end
+
+      context 'with before date (month-bounded retry)' do
+        let(:since_date) { Date.new(2026, 1, 1) }
+        let(:before_date) { Date.new(2026, 2, 1) }
+        let(:params) { { since: since_date, before: before_date } }
+
+        it 'forwards before: so a retry keeps the original month boundary' do
+          result = service.call
+          expect(ProcessEmailsJob).to have_received(:perform_later).with(
+            nil,
+            since: since_date,
+            before: before_date,
             sync_session_id: result.sync_session.id
           )
         end

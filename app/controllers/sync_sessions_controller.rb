@@ -115,7 +115,7 @@ class SyncSessionsController < ApplicationController
   end
 
   def retry_params
-    params.permit(:since)
+    params.permit(:since, :before)
   end
 
   def handle_creation_error(result)

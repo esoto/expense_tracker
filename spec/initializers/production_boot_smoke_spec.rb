@@ -42,11 +42,11 @@ RSpec.describe "production-boot safety of config/initializers", :unit do
       expect(source).not_to match(/SolidQueue::RecurringJob\.create/)
     end
 
-    it "guards cache warm-up with a DB-connectivity check for build-time safety" do
-      # The cache-warmup after_initialize must no-op during
-      # assets:precompile (no DB). Any of: connection_pool check,
-      # rescue on ConnectionNotEstablished, or equivalent is acceptable.
-      expect(source).to match(/connection_pool\.active_connection\?|ConnectionNotEstablished|connected\?/)
+    it "does not call Rails.cache at boot" do
+      # solid_cache_entries does not exist until db:prepare runs, and
+      # db:prepare boots the env first — so a boot-time cache call
+      # crashes db:prepare itself.
+      expect(source).not_to match(/^\s*Rails\.cache\.(fetch|read|write|exist\?)/)
     end
   end
 end

@@ -122,22 +122,9 @@ if defined?(GetProcessMem)
   end
 end
 
-# Preload frequently accessed data.
-#
-# The warm-up is optional — the app works correctly without it (first
-# request just pays the DB round-trip). If the DB is unreachable at boot
-# (e.g. `assets:precompile` has no DB, or a rolling deploy boots the web
-# container before PG is ready), we log and move on rather than crash
-# boot. Letting the DB exception propagate to the outer rescue keeps the
-# skip observable — no silent swallowing.
-Rails.application.config.after_initialize do
-  next unless Rails.env.production?
-  next unless defined?(Category) && defined?(CategorizationPattern)
-
-  Rails.cache.fetch("categories:all", expires_in: 1.hour) { Category.all.to_a }
-  Rails.cache.fetch("patterns:active", expires_in: 10.minutes) { CategorizationPattern.active.to_a }
-rescue ActiveRecord::ConnectionNotEstablished, ActiveRecord::NoDatabaseError, PG::ConnectionBad => e
-  Rails.logger.warn "Cache warm-up skipped (DB not reachable): #{e.class}: #{e.message}"
-end
+# Removed: Rails.cache.fetch warm-up for Category.all + CategorizationPattern.active.
+# Solid Cache's `solid_cache_entries` table doesn't exist until db:prepare
+# runs, and db:prepare boots the Rails env first — so a boot-time cache
+# fetch crashed db:prepare itself. First request naturally warms the cache.
 
 Rails.logger.info "Performance optimizations loaded successfully"

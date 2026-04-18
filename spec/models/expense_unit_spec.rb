@@ -621,7 +621,7 @@ RSpec.describe Expense, type: :model, unit: true do
 
         expect(MetricsRefreshJob).to receive(:enqueue_debounced).with(
           expense.email_account_id,
-          hash_including(affected_date: expense.transaction_date)
+          hash_including(affected_date: expense.transaction_date.to_date)
         )
 
         expense.send(:trigger_metrics_refresh)

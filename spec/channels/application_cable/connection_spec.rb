@@ -330,7 +330,8 @@ RSpec.describe ApplicationCable::Connection, type: :channel, unit: true do
             def self.test_find_verified_session_logic(session_data, remote_ip, fallback_ip = nil)
               # This mimics the exact non-test environment logic from find_verified_session
               ip_address = remote_ip || fallback_ip
-              timestamp = Time.current.iso8601
+              # Mirrors production: security audit logs emit UTC regardless of app zone.
+              timestamp = Time.current.utc.iso8601
 
               rails_session_id = extract_session_id(session_data)
 

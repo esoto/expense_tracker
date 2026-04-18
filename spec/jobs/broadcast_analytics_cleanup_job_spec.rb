@@ -137,7 +137,7 @@ RSpec.describe BroadcastAnalyticsCleanupJob, type: :job, unit: true do
 
     before do
       allow(cache_mock).to receive(:write)
-      allow(Time).to receive(:current).and_return(Time.zone.parse('2025-08-30 12:00:00'))
+      allow(Time).to receive(:current).and_return(Time.utc(2025, 8, 30, 12, 0, 0).in_time_zone)
     end
 
     it 'writes cleanup metrics to cache' do

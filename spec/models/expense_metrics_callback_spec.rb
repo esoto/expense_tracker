@@ -30,7 +30,7 @@ RSpec.describe "Expense metrics callbacks", type: :model, integration: true do
 
           expect(MetricsRefreshJob).to receive(:enqueue_debounced).with(
             email_account.id,
-            affected_date: expense.transaction_date,
+            affected_date: expense.transaction_date.to_date,
             delay: 3.seconds
           )
 
@@ -45,13 +45,13 @@ RSpec.describe "Expense metrics callbacks", type: :model, integration: true do
           # Should trigger for both old and new dates
           expect(MetricsRefreshJob).to receive(:enqueue_debounced).with(
             email_account.id,
-            affected_date: old_date,
+            affected_date: old_date.to_date,
             delay: 3.seconds
           ).ordered
 
           expect(MetricsRefreshJob).to receive(:enqueue_debounced).with(
             email_account.id,
-            affected_date: new_date,
+            affected_date: new_date.to_date,
             delay: 3.seconds
           ).ordered
 
@@ -64,7 +64,7 @@ RSpec.describe "Expense metrics callbacks", type: :model, integration: true do
 
           expect(MetricsRefreshJob).to receive(:enqueue_debounced).with(
             email_account.id,
-            affected_date: expense.transaction_date,
+            affected_date: expense.transaction_date.to_date,
             delay: 3.seconds
           )
 
@@ -76,7 +76,7 @@ RSpec.describe "Expense metrics callbacks", type: :model, integration: true do
 
           expect(MetricsRefreshJob).to receive(:enqueue_debounced).with(
             email_account.id,
-            affected_date: expense.transaction_date,
+            affected_date: expense.transaction_date.to_date,
             delay: 3.seconds
           )
 
@@ -112,7 +112,7 @@ RSpec.describe "Expense metrics callbacks", type: :model, integration: true do
 
         expect(MetricsRefreshJob).to receive(:enqueue_debounced).with(
           email_account.id,
-          affected_date: expense.transaction_date,
+          affected_date: expense.transaction_date.to_date,
           delay: 3.seconds
         )
 

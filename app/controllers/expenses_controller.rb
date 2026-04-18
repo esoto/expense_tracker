@@ -727,16 +727,18 @@ class ExpensesController < ApplicationController
   end
 
   def calculate_period_range(period)
+    # transaction_date is a timestamp column, so boundaries must be Times
+    # (not Dates) to bracket the full day in the app's configured zone.
     today = Date.current
     case period
-    when "day"
-      today..today
+    when "day", "today"
+      today.beginning_of_day..today.end_of_day
     when "week"
-      today.beginning_of_week..today.end_of_week
+      today.beginning_of_week.beginning_of_day..today.end_of_week.end_of_day
     when "month"
-      today.beginning_of_month..today.end_of_month
+      today.beginning_of_month.beginning_of_day..today.end_of_month.end_of_day
     when "year"
-      today.beginning_of_year..today.end_of_year
+      today.beginning_of_year.beginning_of_day..today.end_of_year.end_of_day
     else
       nil
     end

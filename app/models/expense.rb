@@ -221,24 +221,25 @@ class Expense < ApplicationRecord
     if saved_change_to_amount? || saved_change_to_transaction_date? ||
        saved_change_to_category_id? || saved_change_to_status?
 
-      # Schedule metrics refresh with debouncing
+      # Schedule metrics refresh with debouncing. Metrics roll up by day, so
+      # pass a Date — comparisons stay zone-agnostic downstream.
       if saved_change_to_transaction_date? && transaction_date_before_last_save.present?
         # Transaction date actually changed (not creation) - refresh both old and new dates
         MetricsRefreshJob.enqueue_debounced(
           email_account_id,
-          affected_date: transaction_date_before_last_save,
+          affected_date: transaction_date_before_last_save.to_date,
           delay: 3.seconds
         )
         MetricsRefreshJob.enqueue_debounced(
           email_account_id,
-          affected_date: transaction_date,
+          affected_date: transaction_date.to_date,
           delay: 3.seconds
         )
       else
         # Creation or other field changes - refresh current transaction date
         MetricsRefreshJob.enqueue_debounced(
           email_account_id,
-          affected_date: transaction_date,
+          affected_date: transaction_date.to_date,
           delay: 3.seconds
         )
       end
@@ -255,7 +256,7 @@ class Expense < ApplicationRecord
     # Trigger metrics refresh for the deleted expense's date
     MetricsRefreshJob.enqueue_debounced(
       email_account_id,
-      affected_date: transaction_date,
+      affected_date: transaction_date.to_date,
       delay: 3.seconds
     )
   rescue StandardError => e

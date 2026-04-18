@@ -113,7 +113,7 @@ RSpec.describe UserCategoryPreference, type: :model, unit: true do
       let!(:category) { create(:category) }
       let(:expense) { build(:expense,
         merchant_name: "Test Store",
-        transaction_date: Time.utc(2024, 1, 15, 14, 30), # Monday afternoon UTC
+        transaction_date: Time.zone.local(2024, 1, 15, 14, 30), # Monday afternoon UTC
         amount: 75.00
       ) }
 
@@ -228,7 +228,7 @@ RSpec.describe UserCategoryPreference, type: :model, unit: true do
         before { allow(described_class).to receive(:learn_preference) }
 
         it "classifies morning (6-11)" do
-          expense.transaction_date = Time.utc(2024, 1, 1, 8, 0)
+          expense.transaction_date = Time.zone.local(2024, 1, 1, 8, 0)
 
           expect(UserCategoryPreference).to receive(:learn_preference).with(
             email_account: email_account,
@@ -245,7 +245,7 @@ RSpec.describe UserCategoryPreference, type: :model, unit: true do
         end
 
         it "classifies afternoon (12-16)" do
-          expense.transaction_date = Time.utc(2024, 1, 1, 14, 0)
+          expense.transaction_date = Time.zone.local(2024, 1, 1, 14, 0)
 
           expect(UserCategoryPreference).to receive(:learn_preference).with(
             email_account: email_account,
@@ -262,7 +262,7 @@ RSpec.describe UserCategoryPreference, type: :model, unit: true do
         end
 
         it "classifies evening (17-20)" do
-          expense.transaction_date = Time.utc(2024, 1, 1, 19, 0)
+          expense.transaction_date = Time.zone.local(2024, 1, 1, 19, 0)
 
           expect(UserCategoryPreference).to receive(:learn_preference).with(
             email_account: email_account,
@@ -279,7 +279,7 @@ RSpec.describe UserCategoryPreference, type: :model, unit: true do
         end
 
         it "classifies night (21-5)" do
-          expense.transaction_date = Time.utc(2024, 1, 1, 23, 0)
+          expense.transaction_date = Time.zone.local(2024, 1, 1, 23, 0)
 
           expect(UserCategoryPreference).to receive(:learn_preference).with(
             email_account: email_account,
@@ -359,7 +359,7 @@ RSpec.describe UserCategoryPreference, type: :model, unit: true do
       it "creates all context preferences in database" do
         expense = build(:expense,
           merchant_name: "Integration Store",
-          transaction_date: Time.utc(2024, 1, 15, 14, 30), # Monday afternoon UTC
+          transaction_date: Time.zone.local(2024, 1, 15, 14, 30), # Monday afternoon UTC
           amount: 150.00
         )
 
@@ -414,7 +414,7 @@ RSpec.describe UserCategoryPreference, type: :model, unit: true do
       let(:expense) do
         build(:expense,
           merchant_name: "Test Store",
-          transaction_date: Time.utc(2024, 1, 15, 14, 30), # Monday afternoon UTC
+          transaction_date: Time.zone.local(2024, 1, 15, 14, 30), # Monday afternoon UTC
           amount: 75.00
         )
       end
@@ -763,13 +763,13 @@ RSpec.describe UserCategoryPreference, type: :model, unit: true do
         it "classifies all days of the week correctly" do
           # Using dates from January 1-7, 2024 (Monday-Sunday)
           days_mapping = {
-            "monday" => Time.utc(2024, 1, 1),    # Monday
-            "tuesday" => Time.utc(2024, 1, 2),   # Tuesday
-            "wednesday" => Time.utc(2024, 1, 3), # Wednesday
-            "thursday" => Time.utc(2024, 1, 4),  # Thursday
-            "friday" => Time.utc(2024, 1, 5),    # Friday
-            "saturday" => Time.utc(2024, 1, 6),  # Saturday
-            "sunday" => Time.utc(2024, 1, 7)     # Sunday
+            "monday" => Time.zone.local(2024, 1, 1),    # Monday
+            "tuesday" => Time.zone.local(2024, 1, 2),   # Tuesday
+            "wednesday" => Time.zone.local(2024, 1, 3), # Wednesday
+            "thursday" => Time.zone.local(2024, 1, 4),  # Thursday
+            "friday" => Time.zone.local(2024, 1, 5),    # Friday
+            "saturday" => Time.zone.local(2024, 1, 6),  # Saturday
+            "sunday" => Time.zone.local(2024, 1, 7)     # Sunday
           }
 
           days_mapping.each do |expected_day, date|
@@ -781,7 +781,7 @@ RSpec.describe UserCategoryPreference, type: :model, unit: true do
 
       context "with different date types" do
         it "works with Time objects" do
-          time = Time.utc(2024, 1, 1, 14, 30)  # Monday afternoon
+          time = Time.zone.local(2024, 1, 1, 14, 30)  # Monday afternoon
           expect(UserCategoryPreference.send(:classify_day_of_week, time)).to eq("monday")
         end
 
@@ -798,7 +798,7 @@ RSpec.describe UserCategoryPreference, type: :model, unit: true do
 
       context "with timezone considerations" do
         it "handles different timezone objects consistently" do
-          utc_time = Time.utc(2024, 1, 1, 23, 0)        # Monday 23:00 UTC
+          utc_time = Time.zone.local(2024, 1, 1, 23, 0)        # Monday 23:00 UTC
           local_time = Time.local(2024, 1, 1, 23, 0)     # Monday 23:00 local
 
           expect(UserCategoryPreference.send(:classify_day_of_week, utc_time)).to eq("monday")
@@ -808,13 +808,13 @@ RSpec.describe UserCategoryPreference, type: :model, unit: true do
 
       context "with edge cases" do
         it "handles leap year dates" do
-          leap_day = Time.utc(2024, 2, 29)  # 2024 is a leap year, Feb 29 is Thursday
+          leap_day = Time.zone.local(2024, 2, 29)  # 2024 is a leap year, Feb 29 is Thursday
           expect(UserCategoryPreference.send(:classify_day_of_week, leap_day)).to eq("thursday")
         end
 
         it "handles year boundaries" do
-          new_years_eve = Time.utc(2023, 12, 31)  # Sunday
-          new_years_day = Time.utc(2024, 1, 1)    # Monday
+          new_years_eve = Time.zone.local(2023, 12, 31)  # Sunday
+          new_years_day = Time.zone.local(2024, 1, 1)    # Monday
 
           expect(UserCategoryPreference.send(:classify_day_of_week, new_years_eve)).to eq("sunday")
           expect(UserCategoryPreference.send(:classify_day_of_week, new_years_day)).to eq("monday")
@@ -884,7 +884,7 @@ RSpec.describe UserCategoryPreference, type: :model, unit: true do
         it "executes complete learn_from_categorization flow with real database" do
           expense = build(:expense,
             merchant_name: "Coverage Store",
-            transaction_date: Time.utc(2024, 1, 15, 19, 30), # Monday evening
+            transaction_date: Time.zone.local(2024, 1, 15, 19, 30), # Monday evening
             amount: 350.00 # large amount
           )
 
@@ -925,7 +925,7 @@ RSpec.describe UserCategoryPreference, type: :model, unit: true do
 
           expense = build(:expense,
             merchant_name: "Match Store",
-            transaction_date: Time.utc(2024, 1, 15, 22, 0), # Monday night
+            transaction_date: Time.zone.local(2024, 1, 15, 22, 0), # Monday night
             amount: 600.00 # very_large
           )
 

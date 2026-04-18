@@ -32,7 +32,8 @@ module ExpenseTracker
     # These settings can be overridden in specific environments using the files
     # in config/environments, which are processed later.
     #
-    # config.time_zone = "Central Time (US & Canada)"
+    # Costa Rica (UTC-6, no DST). DB continues storing UTC; views/forms render in CR local time.
+    config.time_zone = "Central America"
     # config.eager_load_paths << Rails.root.join("extras")
 
     # Localization settings

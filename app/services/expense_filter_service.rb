@@ -199,16 +199,17 @@ module Services
       return scope.where(transaction_date: date_range) if date_range
     end
 
-    # Handle dashboard date_from and date_to parameters
+    # Handle dashboard date_from and date_to parameters. transaction_date
+    # is a timestamp column, so bracket by beginning/end of day in app zone.
     if date_from.present? && date_to.present?
-      return scope.where(transaction_date: date_from.to_date..date_to.to_date)
+      return scope.where(transaction_date: date_from.to_date.beginning_of_day..date_to.to_date.end_of_day)
     end
 
     # Handle traditional start_date and end_date parameters
     return scope unless start_date.present? || end_date.present?
 
-    scope = scope.where("transaction_date >= ?", start_date.to_date) if start_date
-    scope = scope.where("transaction_date <= ?", end_date.to_date) if end_date
+    scope = scope.where("transaction_date >= ?", start_date.to_date.beginning_of_day) if start_date
+    scope = scope.where("transaction_date <= ?", end_date.to_date.end_of_day) if end_date
     scope
   end
 
@@ -248,16 +249,18 @@ module Services
   end
 
   def calculate_period_range(period)
+    # transaction_date is a timestamp column, so boundaries must be Times
+    # (not Dates) to bracket the full day in the app's configured zone.
     today = Date.current
     case period
-    when "day"
-      today..today
+    when "day", "today"
+      today.beginning_of_day..today.end_of_day
     when "week"
-      today.beginning_of_week..today.end_of_week
+      today.beginning_of_week.beginning_of_day..today.end_of_week.end_of_day
     when "month"
-      today.beginning_of_month..today.end_of_month
+      today.beginning_of_month.beginning_of_day..today.end_of_month.end_of_day
     when "year"
-      today.beginning_of_year..today.end_of_year
+      today.beginning_of_year.beginning_of_day..today.end_of_year.end_of_day
     else
       nil
     end
@@ -320,19 +323,20 @@ module Services
   end
 
   def parse_date_range(range)
+    today = Date.current
     case range.to_s
     when "today"
-      { start: Date.current, end: Date.current }
+      { start: today.beginning_of_day, end: today.end_of_day }
     when "week"
-      { start: Date.current.beginning_of_week, end: Date.current.end_of_week }
+      { start: today.beginning_of_week.beginning_of_day, end: today.end_of_week.end_of_day }
     when "month"
-      { start: Date.current.beginning_of_month, end: Date.current.end_of_month }
+      { start: today.beginning_of_month.beginning_of_day, end: today.end_of_month.end_of_day }
     when "year"
-      { start: Date.current.beginning_of_year, end: Date.current.end_of_year }
+      { start: today.beginning_of_year.beginning_of_day, end: today.end_of_year.end_of_day }
     when "last_30_days"
-      { start: 30.days.ago.to_date, end: Date.current }
+      { start: 30.days.ago.beginning_of_day, end: today.end_of_day }
     when "last_90_days"
-      { start: 90.days.ago.to_date, end: Date.current }
+      { start: 90.days.ago.beginning_of_day, end: today.end_of_day }
     else
       {}
     end

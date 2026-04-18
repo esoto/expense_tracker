@@ -212,4 +212,13 @@ RSpec.describe EmailAccount, type: :model, integration: true do
       expect(EmailAccount::COSTA_RICAN_BANKS).to be_frozen
     end
   end
+
+  describe 'external_budget_source association', unit: true do
+    it 'destroys the associated external_budget_source when the email_account is destroyed' do
+      email_account = create(:email_account)
+      create(:external_budget_source, email_account: email_account)
+
+      expect { email_account.destroy }.to change { ExternalBudgetSource.count }.from(1).to(0)
+    end
+  end
 end

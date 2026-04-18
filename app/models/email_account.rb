@@ -13,6 +13,7 @@ class EmailAccount < ApplicationRecord
   has_many :categories, through: :expenses
   has_many :sync_metrics, dependent: :destroy
   has_many :email_parsing_failures, dependent: :destroy
+  has_one :external_budget_source, dependent: :destroy
 
   # Validations
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }

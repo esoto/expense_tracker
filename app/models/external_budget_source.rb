@@ -26,7 +26,9 @@ class ExternalBudgetSource < ApplicationRecord
 
   def base_url_must_be_http
     uri = URI.parse(base_url.to_s)
-    errors.add(:base_url, "must be http(s)") unless uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)
+    unless (uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)) && uri.host.present?
+      errors.add(:base_url, "must be an absolute http(s) URL")
+    end
   rescue URI::InvalidURIError
     errors.add(:base_url, "is not a valid URL")
   end

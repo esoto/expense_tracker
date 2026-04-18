@@ -56,6 +56,24 @@ RSpec.describe ExternalBudgetSource, type: :model, unit: true do
       expect(source.errors[:base_url]).to be_present
     end
 
+    it "rejects https:// with no host" do
+      source = build(:external_budget_source, email_account: email_account, base_url: "https://")
+      expect(source).not_to be_valid
+      expect(source.errors[:base_url]).to be_present
+    end
+
+    it "rejects http:// with no host" do
+      source = build(:external_budget_source, email_account: email_account, base_url: "http://")
+      expect(source).not_to be_valid
+      expect(source.errors[:base_url]).to be_present
+    end
+
+    it "rejects https:/// (blank host with trailing path)" do
+      source = build(:external_budget_source, email_account: email_account, base_url: "https:///path")
+      expect(source).not_to be_valid
+      expect(source.errors[:base_url]).to be_present
+    end
+
     it "accepts http://" do
       source = build(:external_budget_source, email_account: email_account, base_url: "http://example.com")
       expect(source).to be_valid

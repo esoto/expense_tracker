@@ -16,54 +16,16 @@
 
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <% budgets.each do |budget| %>
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h3 class="font-semibold text-slate-900 mb-2"><%= budget.name %></h3>
-              <p class="text-sm text-slate-600 mb-4">
-                <%= budget.category&.display_name || "General" %>
-              </p>
-
-              <div class="space-y-2">
-                <div class="flex justify-between text-sm">
-                  <span class="text-slate-500">Monto:</span>
-                  <span class="font-medium"><%= budget.formatted_amount %></span>
-                </div>
-
-                <div class="flex justify-between text-sm">
-                  <span class="text-slate-500">Usado:</span>
-                  <span class="font-medium <%= budget.status_color %>">
-                    <%= budget.usage_percentage %>%
-                  </span>
-                </div>
-
-                <div class="flex justify-between text-sm">
-                  <span class="text-slate-500">Estado:</span>
-                  <span class="<%= budget.active? ? 'text-emerald-600' : 'text-slate-400' %>">
-                    <%= budget.active? ? 'Activo' : 'Inactivo' %>
-                  </span>
-                </div>
-              </div>
-
-              <div class="mt-4 flex gap-2">
-                <%= link_to "Ver", budget_path(budget),
-                    class: "text-teal-700 hover:text-teal-800 text-sm font-medium" %>
-                <%= link_to "Editar", edit_budget_path(budget),
-                    class: "text-teal-700 hover:text-teal-800 text-sm font-medium" %>
-                <% if budget.active? %>
-                  <%= button_to "Desactivar", deactivate_budget_path(budget),
-                      method: :post,
-                      class: "text-amber-600 hover:text-amber-700 text-sm font-medium" %>
-                <% end %>
-              </div>
-            </div>
+            <%= render "budgets/card", budget: budget %>
           <% end %>
         </div>
       </div>
     <% end %>
-  <% else %>
+  <% elsif @has_external_source %>
     <div class="bg-slate-50 rounded-lg p-8 text-center">
-      <p class="text-slate-600 mb-4">No tienes presupuestos configurados.</p>
-      <%= link_to t("budgets.index.create_first"), new_budget_path,
-          class: "text-teal-700 hover:text-teal-800 font-medium" %>
+      <p class="text-slate-600"><%= t("budgets.empty_state.sync_in_progress") %></p>
     </div>
+  <% else %>
+    <%= render "budgets/external_source_empty_state" %>
   <% end %>
 </div>

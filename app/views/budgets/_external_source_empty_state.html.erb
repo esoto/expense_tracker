@@ -1,0 +1,15 @@
+<%# Empty-state CTA shown on the budgets index when the user has no budgets
+    AND has not linked an active external budget source. Offers a one-click
+    action to start the salary_calc OAuth flow. %>
+<div class="bg-slate-50 border border-slate-200 rounded-xl p-10 text-center">
+  <h2 class="text-xl font-semibold text-slate-900 mb-2">
+    <%= t("budgets.empty_state.heading") %>
+  </h2>
+  <p class="text-slate-600 mb-6 max-w-md mx-auto">
+    <%= t("budgets.empty_state.body") %>
+  </p>
+  <%= button_to t("budgets.empty_state.cta"),
+        connect_external_source_path,
+        method: :post,
+        class: "bg-teal-700 hover:bg-teal-800 text-white font-medium px-5 py-2.5 rounded-lg shadow-sm transition-colors" %>
+</div>

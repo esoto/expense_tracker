@@ -686,6 +686,15 @@ en:
 
   # Budgets
   budgets:
+    external_badge: "from salary_calc"
+    unmapped_banner: "Pick a category to start tracking spend"
+    pick_category: "Choose a category..."
+    save_category: "Save"
+    empty_state:
+      heading: "Connect salary_calc"
+      body: "Pull in your monthly budget to see planned vs actual spend."
+      cta: "Connect salary_calc"
+      sync_in_progress: "No budgets yet — sync in progress"
     index:
       title: "Budgets"
       new_budget: "New Budget"

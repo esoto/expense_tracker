@@ -364,8 +364,12 @@ end
 puts ""
 puts "👤 Creating admin user..."
 
-admin_email = "admin@expense-tracker.com"
-admin_password = "AdminPassword123!"
+admin_email = ENV.fetch("ADMIN_EMAIL", "admin@expense-tracker.com")
+admin_password = ENV.fetch("ADMIN_PASSWORD", "AdminPassword123!")
+
+if Rails.env.production? && (admin_email == "admin@expense-tracker.com" || admin_password == "AdminPassword123!")
+  abort "[seeds] Refusing to seed admin with default credentials in production. Set ADMIN_EMAIL and ADMIN_PASSWORD env vars."
+end
 
 admin_user = AdminUser.find_or_create_by!(email: admin_email) do |user|
   user.name = "System Administrator"
@@ -374,9 +378,5 @@ admin_user = AdminUser.find_or_create_by!(email: admin_email) do |user|
 end
 
 if admin_user.persisted?
-  puts "  ✓ Admin user created: #{admin_email}"
-  puts "  🔑 Password: #{admin_password}"
-  puts "  ⚠️  Change this password in production!"
-else
-  puts "  ✓ Admin user already exists: #{admin_email}"
+  puts "  ✓ Admin user: #{admin_email}"
 end

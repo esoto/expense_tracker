@@ -25,7 +25,7 @@ class ProcessEmailsJob < ApplicationJob
     end
   end
 
-  def perform(email_account_id = nil, since: 1.week.ago, sync_session_id: nil)
+  def perform(email_account_id = nil, since: 1.week.ago, before: nil, sync_session_id: nil)
     @sync_session = sync_session_id ? SyncSession.find_by(id: sync_session_id) : nil
     @metrics_collector = Services::SyncMetricsCollector.new(@sync_session) if @sync_session
 
@@ -43,16 +43,16 @@ class ProcessEmailsJob < ApplicationJob
     if @metrics_collector
       @metrics_collector.track_operation(:sync_account, nil, { job_type: "batch" }) do
         if email_account_id
-          process_single_account(email_account_id, since)
+          process_single_account(email_account_id, since, before)
         else
-          process_all_accounts(since)
+          process_all_accounts(since, before)
         end
       end
     else
       if email_account_id
-        process_single_account(email_account_id, since)
+        process_single_account(email_account_id, since, before)
       else
-        process_all_accounts(since)
+        process_all_accounts(since, before)
       end
     end
 
@@ -78,7 +78,7 @@ class ProcessEmailsJob < ApplicationJob
 
   private
 
-  def process_single_account(email_account_id, since)
+  def process_single_account(email_account_id, since, before = nil)
     email_account = EmailAccount.find_by(id: email_account_id)
     session_account = find_or_create_session_account(email_account) if @sync_session
 
@@ -109,7 +109,7 @@ class ProcessEmailsJob < ApplicationJob
         sync_session_account: session_account,
         metrics_collector: @metrics_collector
       )
-      result = fetcher.fetch_new_emails(since: since)
+      result = fetcher.fetch_new_emails(since: since, before: before)
 
       if result.success?
         Rails.logger.info "Successfully processed emails for: #{email_account.email} - " \
@@ -135,7 +135,7 @@ class ProcessEmailsJob < ApplicationJob
     @sync_session.sync_session_accounts.find_or_create_by(email_account: email_account)
   end
 
-  def process_all_accounts(since)
+  def process_all_accounts(since, before = nil)
     email_accounts = EmailAccount.active
 
     Rails.logger.info "Processing emails for #{email_accounts.count} active accounts"
@@ -144,7 +144,7 @@ class ProcessEmailsJob < ApplicationJob
 
     email_accounts.find_each do |email_account|
       # Process each account in a separate job to isolate failures
-      job = ProcessEmailsJob.perform_later(email_account.id, since: since, sync_session_id: @sync_session&.id)
+      job = ProcessEmailsJob.perform_later(email_account.id, since: since, before: before, sync_session_id: @sync_session&.id)
 
       # Collect job IDs to batch-write after the loop (avoids per-row write-lock contention)
       if @sync_session && job.respond_to?(:provider_job_id) && job.provider_job_id.present?

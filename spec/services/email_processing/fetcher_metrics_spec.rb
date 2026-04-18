@@ -44,7 +44,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'metrics integration', type: 
         expect(metrics_collector).to receive(:track_operation).with(
           :fetch_emails,
           email_account,
-          { since: since_date }
+          { since: since_date, before: nil }
         ).and_yield
 
         allow(mock_imap_service).to receive(:search_emails).and_return(message_ids)
@@ -171,7 +171,7 @@ RSpec.describe Services::EmailProcessing::Fetcher, 'metrics integration', type: 
         expect(metrics_collector).to receive(:track_operation).with(
           :fetch_emails,
           email_account,
-          { since: since_date }
+          { since: since_date, before: nil }
         ).and_yield
 
         allow(mock_imap_service).to receive(:search_emails).and_return([ 1, 2 ])

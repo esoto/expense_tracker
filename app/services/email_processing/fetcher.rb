@@ -15,13 +15,13 @@ module Services::EmailProcessing
       @errors = []
     end
 
-    def fetch_new_emails(since: 1.week.ago)
+    def fetch_new_emails(since: 1.week.ago, before: nil)
       unless valid_account?
         return FetcherResponse.failure(errors: @errors)
       end
 
       begin
-        result = search_and_process_emails(since)
+        result = search_and_process_emails(since, before)
         FetcherResponse.success(
           processed_emails_count: result[:processed_emails_count],
           total_emails_found: result[:total_emails_found],
@@ -57,14 +57,12 @@ module Services::EmailProcessing
       true
     end
 
-    def search_and_process_emails(since)
+    def search_and_process_emails(since, before = nil)
       imap_service.with_session do
-        # Build search criteria for emails since the specified date
-        search_criteria = build_search_criteria(since)
+        search_criteria = build_search_criteria(since, before)
 
-        # Track email fetch operation
         message_ids = if @metrics_collector
-          @metrics_collector.track_operation(:fetch_emails, @email_account, { since: since }) do
+          @metrics_collector.track_operation(:fetch_emails, @email_account, { since: since, before: before }) do
             imap_service.search_emails(search_criteria)
           end
         else
@@ -115,9 +113,10 @@ module Services::EmailProcessing
       end
     end
 
-    def build_search_criteria(since_date)
-      formatted_date = since_date.strftime("%d-%b-%Y")
-      [ "SINCE", formatted_date ]
+    def build_search_criteria(since_date, before_date = nil)
+      criteria = [ "SINCE", since_date.strftime("%d-%b-%Y") ]
+      criteria.concat([ "BEFORE", before_date.strftime("%d-%b-%Y") ]) if before_date
+      criteria
     end
 
     def add_error(message)

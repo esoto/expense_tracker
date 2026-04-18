@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_18_173022) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_18_182103) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -384,7 +384,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_18_173022) do
     t.datetime "last_synced_at"
     t.string "source_type", default: "salary_calculator", null: false
     t.datetime "updated_at", null: false
-    t.index ["email_account_id", "active"], name: "idx_ebs_on_account_active"
     t.index ["email_account_id"], name: "index_external_budget_sources_on_email_account_id", unique: true
   end
 

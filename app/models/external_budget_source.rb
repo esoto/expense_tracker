@@ -2,6 +2,10 @@
 
 class ExternalBudgetSource < ApplicationRecord
   SOURCE_TYPES = %w[salary_calculator].freeze
+  STATUSES = {
+    ok: "ok",
+    failed: "failed"
+  }.freeze
 
   encrypts :api_token
 
@@ -15,19 +19,19 @@ class ExternalBudgetSource < ApplicationRecord
   scope :active, -> { where(active: true) }
 
   def mark_succeeded!
-    update!(last_synced_at: Time.current, last_sync_status: "ok", last_sync_error: nil)
+    update!(last_synced_at: Time.current, last_sync_status: STATUSES[:ok], last_sync_error: nil)
   end
 
   # Record a transient sync failure — metadata only, source stays active so
   # the next scheduled sync will retry.
   def record_failure!(error:)
-    update!(last_sync_status: "failed", last_sync_error: error.to_s.truncate(1000))
+    update!(last_sync_status: STATUSES[:failed], last_sync_error: error.to_s.truncate(1000))
   end
 
   # Deactivate the source permanently — callers must choose this explicitly
   # (e.g., revoked credentials, unrecoverable errors). No auto-retry.
   def deactivate!(reason:)
-    update!(active: false, last_sync_status: "failed", last_sync_error: reason.to_s.truncate(1000))
+    update!(active: false, last_sync_status: STATUSES[:failed], last_sync_error: reason.to_s.truncate(1000))
   end
 
   private

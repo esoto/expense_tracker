@@ -94,6 +94,14 @@ default: &default
     schedule: every day at 4:15am
     description: "Purge failed job executions older than 30 days (PER-503 retention)"
 
+  # Pull the latest monthly budget from each active external budget source
+  # (e.g. salary_calculator). Deactivated sources are skipped automatically.
+  external_budgets_daily_sync:
+    command: "ExternalBudgetSource.active.find_each { |s| ExternalBudgets::PullJob.perform_later(s.id) }"
+    queue: default
+    schedule: every day at 6am
+    description: "Pull latest monthly budget from each active external source"
+
 development:
   <<: *default
   # In development, run metrics calculation more frequently for testing

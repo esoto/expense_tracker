@@ -53,13 +53,13 @@ env:
     # personal-blog-db is shared with another app, so stay conservative
     # until `SHOW max_connections;` is verified on the host (PER-494).
     DB_POOL: "10"
-    # Controls:
-    # - Puma web threads per worker (config/puma.rb:27-28)
-    # - cache / queue / cable DB pool sizes (inherit `pool:
-    #   ENV.fetch("RAILS_MAX_THREADS") { 5 }` from database.yml's default)
-    # Set to 6 so the 5-thread SQ critical workers have 1 slot of headroom
-    # for the supervisor/dispatcher that share the same process.
-    RAILS_MAX_THREADS: "6"
+    # Controls Puma web threads AND the queue/cache/cable DB pool sizes
+    # (inherited from database.yml's default). Solid Queue's critical
+    # worker needs HIGH_PRIORITY_THREADS(5) + dispatcher + supervisor = 7
+    # connections from the queue pool — first deploy crashed with
+    # "Solid Queue is configured to use 7 threads but the database
+    # connection pool is 6".
+    RAILS_MAX_THREADS: "8"
     # Run Solid Queue inside Puma (single server setup)
     SOLID_QUEUE_IN_PUMA: true
     # Host for DNS rebinding protection

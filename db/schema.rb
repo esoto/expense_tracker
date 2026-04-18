@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_18_182103) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_18_191023) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -83,9 +83,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_18_182103) do
     t.index ["email_account_id", "active"], name: "index_budgets_on_email_account_id_and_active"
     t.index ["email_account_id", "category_id", "active"], name: "index_budgets_on_email_account_id_and_category_id_and_active"
     t.index ["email_account_id", "category_id", "period", "active"], name: "index_budgets_unique_active", unique: true, where: "(active = true)"
+    t.index ["email_account_id", "external_source", "external_id", "start_date"], name: "idx_budgets_external_unique", unique: true, where: "(external_source IS NOT NULL)"
     t.index ["email_account_id", "period", "active"], name: "index_budgets_on_email_account_id_and_period_and_active"
     t.index ["email_account_id"], name: "index_budgets_on_email_account_id"
-    t.index ["external_source", "external_id"], name: "idx_budgets_external_unique", unique: true, where: "(external_source IS NOT NULL)"
     t.index ["external_source"], name: "index_budgets_on_external_source", where: "(external_source IS NOT NULL)"
     t.index ["metadata"], name: "index_budgets_on_metadata", using: :gin
     t.index ["start_date", "end_date"], name: "index_budgets_on_start_date_and_end_date"

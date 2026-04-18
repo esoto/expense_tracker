@@ -190,6 +190,14 @@ RSpec.describe Services::ExternalBudgets::SyncService, :unit do
       it "re-raises ServerError for job-layer retry" do
         expect { service.call }.to raise_error(Services::ExternalBudgets::ApiClient::ServerError)
       end
+
+      it "records the failure on the source before re-raising" do
+        expect { service.call }.to raise_error(Services::ExternalBudgets::ApiClient::ServerError)
+        source.reload
+        expect(source.active).to be true
+        expect(source.last_sync_status).to eq("failed")
+        expect(source.last_sync_error).to include("ServerError")
+      end
     end
 
     context "on a network failure" do
@@ -199,6 +207,133 @@ RSpec.describe Services::ExternalBudgets::SyncService, :unit do
 
       it "re-raises NetworkError for job-layer retry" do
         expect { service.call }.to raise_error(Services::ExternalBudgets::ApiClient::NetworkError)
+      end
+
+      it "records the failure on the source before re-raising" do
+        expect { service.call }.to raise_error(Services::ExternalBudgets::ApiClient::NetworkError)
+        source.reload
+        expect(source.active).to be true
+        expect(source.last_sync_status).to eq("failed")
+        expect(source.last_sync_error).to include("NetworkError")
+      end
+    end
+
+    context "when an item has an unsupported currency" do
+      let(:bad_item) { rent_item.merge(currency: "MXN") }
+
+      before do
+        stub_request(:get, path)
+          .to_return(status: 200, body: payload([ bad_item ]),
+                     headers: { "Content-Type" => "application/json" })
+      end
+
+      it "records the failure, creates no Budget, returns false, does not raise" do
+        expect { expect(service.call).to be false }.not_to raise_error
+        expect(account.budgets.where(external_source: "salary_calculator").count).to eq(0)
+        source.reload
+        expect(source.active).to be true
+        expect(source.last_sync_status).to eq("failed")
+        expect(source.last_sync_error).to include("unsupported currency")
+      end
+    end
+
+    context "when an item has a blank currency" do
+      let(:bad_item) { rent_item.merge(currency: "") }
+
+      before do
+        stub_request(:get, path)
+          .to_return(status: 200, body: payload([ bad_item ]),
+                     headers: { "Content-Type" => "application/json" })
+      end
+
+      it "records the failure, creates no Budget, returns false" do
+        expect { expect(service.call).to be false }.not_to raise_error
+        expect(account.budgets.where(external_source: "salary_calculator").count).to eq(0)
+        source.reload
+        expect(source.last_sync_status).to eq("failed")
+      end
+    end
+
+    context "when the same external_id appears in a later month (rollover)" do
+      let(:april_start) { Date.new(2026, 4, 1) }
+      let(:may_start)   { Date.new(2026, 5, 1) }
+
+      def monthly_payload(year, month, items)
+        {
+          monthly_budget: {
+            id: 42, year: year, month: month,
+            exchange_rate: "503.0",
+            shared_with_household: false,
+            updated_at: "2026-04-17T15:00:00Z"
+          },
+          budget_items: items
+        }.to_json
+      end
+
+      it "creates a separate Budget per month and deactivates prior-month rows" do
+        # April sync
+        stub_request(:get, path)
+          .to_return(status: 200, body: monthly_payload(2026, 4, [ rent_item ]),
+                     headers: { "Content-Type" => "application/json" })
+        service.call
+
+        april_row = account.budgets.find_by!(
+          external_source: "salary_calculator", external_id: 101, start_date: april_start
+        )
+        expect(april_row.active).to be true
+
+        # Advance source state so next request uses fresh If-Modified-Since
+        source.reload
+
+        # May sync — same external_id 101, different month
+        WebMock.reset!
+        stub_request(:get, path)
+          .to_return(status: 200, body: monthly_payload(2026, 5, [ rent_item ]),
+                     headers: { "Content-Type" => "application/json" })
+        described_class.new(source: source).call
+
+        may_row = account.budgets.find_by(
+          external_source: "salary_calculator", external_id: 101, start_date: may_start
+        )
+        expect(may_row).to be_present
+        expect(may_row.active).to be true
+        expect(may_row.id).not_to eq(april_row.id)
+
+        # April row now deactivated
+        april_row.reload
+        expect(april_row.active).to be false
+
+        # Exactly two rows exist for this external_id
+        expect(
+          account.budgets.where(external_source: "salary_calculator", external_id: 101).count
+        ).to eq(2)
+      end
+
+      it "reactivates a prior row when the same month is re-synced" do
+        # April sync
+        stub_request(:get, path)
+          .to_return(status: 200, body: monthly_payload(2026, 4, [ rent_item ]),
+                     headers: { "Content-Type" => "application/json" })
+        service.call
+        april_row = account.budgets.find_by!(
+          external_source: "salary_calculator", external_id: 101, start_date: april_start
+        )
+
+        # May sync deactivates April
+        WebMock.reset!
+        stub_request(:get, path)
+          .to_return(status: 200, body: monthly_payload(2026, 5, [ rent_item ]),
+                     headers: { "Content-Type" => "application/json" })
+        described_class.new(source: source).call
+        expect(april_row.reload.active).to be false
+
+        # Re-sync April — row comes back active
+        WebMock.reset!
+        stub_request(:get, path)
+          .to_return(status: 200, body: monthly_payload(2026, 4, [ rent_item ]),
+                     headers: { "Content-Type" => "application/json" })
+        described_class.new(source: source).call
+        expect(april_row.reload.active).to be true
       end
     end
 

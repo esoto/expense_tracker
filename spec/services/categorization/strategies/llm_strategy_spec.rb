@@ -880,6 +880,115 @@ RSpec.describe Services::Categorization::Strategies::LlmStrategy, :unit do
         expect(strategy).not_to receive(:sleep)
         strategy.send(:throttle!)
       end
+
+      context "distributed throttle (multi-process coordination)" do
+        before do
+          # Unstub Rails.env.test? so throttle! executes its real body.
+          # Stub sleep to avoid real waits.
+          allow(Rails.env).to receive(:test?).and_return(false)
+          allow(strategy).to receive(:sleep)
+          # Clear any state from other tests in this describe block.
+          Rails.cache.delete(described_class::THROTTLE_SLOT_KEY)
+          Rails.cache.delete(described_class::THROTTLE_EPOCH_KEY)
+        end
+
+        it "first caller fires immediately (slot=1, wait=0)" do
+          expect(strategy).not_to receive(:sleep)
+          strategy.send(:throttle!)
+
+          expect(Rails.cache.read(described_class::THROTTLE_SLOT_KEY)).to eq(1)
+          expect(Rails.cache.read(described_class::THROTTLE_EPOCH_KEY)).to be_a(Float)
+        end
+
+        it "second caller waits MIN_CALL_INTERVAL_S seconds (minus elapsed)" do
+          # First call establishes epoch
+          strategy.send(:throttle!)
+
+          # Freeze-ish: we can't freeze time trivially, so instead assert
+          # sleep is called with a value close to MIN_CALL_INTERVAL_S.
+          allow(strategy).to receive(:sleep) do |seconds|
+            expect(seconds).to be_within(0.5).of(described_class::MIN_CALL_INTERVAL_S)
+          end
+
+          strategy.send(:throttle!)
+          expect(Rails.cache.read(described_class::THROTTLE_SLOT_KEY)).to eq(2)
+        end
+
+        it "coordinates across multiple strategy instances (simulating multiple processes)" do
+          # Two separate instances share Rails.cache state — exactly the
+          # multi-process scenario we're fixing (each SQ process has its
+          # own LlmStrategy objects but reaches the same Solid Cache).
+          a = described_class.new(client: mock_client, logger: logger)
+          b = described_class.new(client: mock_client, logger: logger)
+
+          allow(a).to receive(:sleep)
+          allow(b).to receive(:sleep)
+
+          a.send(:throttle!)
+          b.send(:throttle!)
+
+          # Both reserved a slot; counter must be monotonic.
+          expect(Rails.cache.read(described_class::THROTTLE_SLOT_KEY)).to eq(2)
+          # b (second caller) must have been asked to sleep ~MIN_CALL_INTERVAL_S.
+          expect(b).to have_received(:sleep).with(a_value_within(0.5).of(described_class::MIN_CALL_INTERVAL_S))
+        end
+
+        it "proceeds without waiting when Rails.cache.increment returns nil (graceful degradation)" do
+          allow(Rails.cache).to receive(:increment).and_return(nil)
+          expect(strategy).not_to receive(:sleep)
+          expect(logger).to receive(:warn).with(/slot reservation failed/)
+
+          strategy.send(:throttle!)
+        end
+      end
+
+      context "retry backoff honors Retry-After header" do
+        before do
+          allow(strategy).to receive(:throttle!)  # skip throttle during retry test
+          allow(strategy).to receive(:sleep)
+          allow(Services::Categorization::Llm::ResponseParser).to receive(:new).and_return(
+            instance_double(Services::Categorization::Llm::ResponseParser,
+              parse: { category: category, confidence: 0.85, raw_response: category.i18n_key })
+          )
+          allow(Services::Categorization::Learning::VectorUpdater).to receive(:new).and_return(
+            instance_double(Services::Categorization::Learning::VectorUpdater, upsert: nil)
+          )
+        end
+
+        it "sleeps for retry_after seconds when the error carries it" do
+          call_count = 0
+          allow(mock_client).to receive(:categorize) do
+            call_count += 1
+            if call_count == 1
+              raise Services::Categorization::Llm::Client::RateLimitError.new("Rate limit", retry_after: 7)
+            else
+              { response_text: category.i18n_key, token_count: { input: 100, output: 10 }, cost: 0.001 }
+            end
+          end
+
+          strategy.call(expense)
+
+          expect(strategy).to have_received(:sleep).with(7).once
+          expect(logger).to have_received(:warn).with(/retry-after header/)
+        end
+
+        it "falls back to fixed backoff schedule when retry_after is nil" do
+          call_count = 0
+          allow(mock_client).to receive(:categorize) do
+            call_count += 1
+            if call_count == 1
+              raise Services::Categorization::Llm::Client::RateLimitError.new("Rate limit", retry_after: nil)
+            else
+              { response_text: category.i18n_key, token_count: { input: 100, output: 10 }, cost: 0.001 }
+            end
+          end
+
+          strategy.call(expense)
+
+          expect(strategy).to have_received(:sleep).with(described_class::RETRY_BACKOFF_S.first).once
+          expect(logger).to have_received(:warn).with(/fixed backoff/)
+        end
+      end
     end
   end
 end

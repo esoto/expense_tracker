@@ -90,30 +90,17 @@ module StatementTimeout
   end
 end
 
-# Background job for refreshing materialized views
-Rails.application.config.after_initialize do
-  if defined?(SolidQueue) && defined?(ApplicationJob) && ActiveRecord::Base.connection.adapter_name == "PostgreSQL"
-    class RefreshDashboardMetricsJob < ApplicationJob
-      queue_as :low_priority
-
-      def perform
-        ActiveRecord::Base.connection.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY dashboard_metrics")
-        Rails.logger.info "Dashboard metrics materialized view refreshed"
-      rescue => e
-        Rails.logger.error "Failed to refresh dashboard metrics: #{e.message}"
-      end
-    end
-
-    # Schedule the job to run every 5 minutes in production
-    if Rails.env.production? && defined?(SolidQueue::RecurringJob)
-      SolidQueue::RecurringJob.create(
-        name: "refresh_dashboard_metrics",
-        class_name: "RefreshDashboardMetricsJob",
-        cron: "*/5 * * * *"
-      )
-    end
-  end
-end
+# NOTE: a prior `RefreshDashboardMetricsJob` block lived here and invoked
+# the SolidQueue RecurringJob AR API to schedule a 5-minute cron. That API
+# does NOT exist — the RecurringJob constant is an ActiveJob::Base subclass,
+# not an AR model, and has no AR persistence methods. The block was dead
+# code: it raised NoMethodError at boot AND there is no `dashboard_metrics`
+# materialized view in the schema for it to refresh. Removed 2026-04-17
+# so that `assets:precompile` (which boots production env + runs
+# after_initialize callbacks) stops failing. If a periodic refresh of a
+# materialized view is needed in the future, add the job class under
+# `app/jobs/` and wire it up via `config/recurring.yml` — the standard
+# Solid Queue 1.x way.
 
 # Memory optimization settings
 if defined?(GetProcessMem)
@@ -133,13 +120,23 @@ if defined?(GetProcessMem)
   end
 end
 
-# Preload frequently accessed data
+# Preload frequently accessed data.
+#
+# Guarded with `ActiveRecord::Base.connected?` so the block is a no-op
+# during `assets:precompile` (Docker build-time, no DB) and during rake
+# tasks that intentionally boot without a DB. The `rescue` captures
+# transient DB errors (unreachable DB during rolling deploys) so a cold
+# cache never blocks boot.
 Rails.application.config.after_initialize do
-  if Rails.env.production? && defined?(Category) && defined?(CategorizationPattern)
-    # Warm up the cache with common queries
-    Rails.cache.fetch("categories:all", expires_in: 1.hour) { Category.all.to_a }
-    Rails.cache.fetch("patterns:active", expires_in: 10.minutes) { CategorizationPattern.active.to_a }
-  end
+  next unless Rails.env.production?
+  next unless defined?(Category) && defined?(CategorizationPattern)
+  next unless ActiveRecord::Base.connection_pool.active_connection? ||
+              (ActiveRecord::Base.connection_db_config.present? && ActiveRecord::Base.connection rescue nil)
+
+  Rails.cache.fetch("categories:all", expires_in: 1.hour) { Category.all.to_a }
+  Rails.cache.fetch("patterns:active", expires_in: 10.minutes) { CategorizationPattern.active.to_a }
+rescue ActiveRecord::ConnectionNotEstablished, ActiveRecord::NoDatabaseError, PG::ConnectionBad => e
+  Rails.logger.warn "Cache warm-up skipped (DB not reachable): #{e.class}: #{e.message}"
 end
 
 Rails.logger.info "Performance optimizations loaded successfully"

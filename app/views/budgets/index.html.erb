@@ -16,7 +16,7 @@
 
         <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <% budgets.each do |budget| %>
-            <%= render "budgets/card", budget: budget %>
+            <%= render "budgets/card", budget: budget, categories: @category_options %>
           <% end %>
         </div>
       </div>

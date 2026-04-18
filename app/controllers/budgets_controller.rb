@@ -18,6 +18,9 @@ class BudgetsController < ApplicationController
     # Calculate overall budget health
     @overall_health = calculate_overall_budget_health
 
+    # Precompute category options for unmapped external budgets to avoid N+1 queries
+    @category_options = @email_account.categories.distinct.to_a
+
     # Whether an active external budget source (e.g., salary_calculator) is linked.
     # Drives the empty-state CTA and sync-in-progress messaging.
     @has_external_source = @email_account.external_budget_source&.active? || false

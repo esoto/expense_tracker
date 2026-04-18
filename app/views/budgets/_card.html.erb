@@ -15,10 +15,13 @@
   <% if budget.unmapped? %>
     <div class="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4">
       <p class="text-sm text-amber-800"><%= t("budgets.unmapped_banner") %></p>
+      <% picker_id = "budget_#{budget.id}_category_id" %>
       <%= form_with(model: budget, local: true, class: "flex items-center gap-2 mt-2") do |f| %>
+        <%= f.label :category_id, t("budgets.pick_category"), class: "sr-only", for: picker_id %>
         <%= f.select :category_id,
-              options_from_collection_for_select(budget.email_account.categories.distinct, :id, :display_name),
+              options_from_collection_for_select(categories, :id, :display_name),
               { include_blank: t("budgets.pick_category") },
+              id: picker_id,
               class: "rounded border-slate-300 text-sm" %>
         <%= f.submit t("budgets.save_category"),
               class: "bg-teal-700 hover:bg-teal-800 text-white px-3 py-1.5 rounded text-sm" %>

@@ -129,4 +129,41 @@ RSpec.describe "Budgets external source UI", type: :request, unit: true do
       expect(response.body).to include(I18n.t("budgets.external_badge"))
     end
   end
+
+  describe "Query efficiency for multiple unmapped external budgets" do
+    it "loads categories once regardless of unmapped-card count (N+1 guard)" do
+      categories = create_list(:category, 2)
+      categories.each { |cat| create(:expense, email_account: email_account, category: cat) }
+
+      3.times do |i|
+        create(:budget,
+          email_account: email_account,
+          category: nil,
+          external_source: "salary_calculator",
+          external_id: 200 + i,
+          name: "Unmapped Budget #{i}")
+      end
+
+      categories_query_count = 0
+      counter = lambda do |_, _, _, _, payload|
+        next if payload[:cached] || payload[:name] =~ /SCHEMA|TRANSACTION/
+        categories_query_count += 1 if payload[:sql] =~ /FROM "categories"/i
+      end
+
+      ActiveSupport::Notifications.subscribed(counter, "sql.active_record") do
+        get budgets_path
+      end
+
+      expect(response).to have_http_status(:ok)
+      expect(assigns(:category_options)).to be_an(Array)
+      expect(response.body).to include("Unmapped Budget 0", "Unmapped Budget 1", "Unmapped Budget 2")
+      # With N unmapped cards (3 here), a regressed N+1 would fire >= N categories queries.
+      # Ceiling of 2 permits the controller's single load + at most one other legitimate categories
+      # lookup (e.g., Budget#category eager-load). Anything more signals the N+1 returned.
+      expect(categories_query_count).to be <= 2
+      categories.each do |cat|
+        expect(response.body.scan(cat.display_name).size).to be >= 3
+      end
+    end
+  end
 end

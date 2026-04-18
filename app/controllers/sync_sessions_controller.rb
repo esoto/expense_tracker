@@ -102,7 +102,7 @@ class SyncSessionsController < ApplicationController
   end
 
   def sync_params
-    params.permit(:email_account_id, :since)
+    params.permit(:email_account_id, :since, :before)
   end
 
   def request_info
@@ -115,7 +115,7 @@ class SyncSessionsController < ApplicationController
   end
 
   def retry_params
-    params.permit(:since)
+    params.permit(:since, :before)
   end
 
   def handle_creation_error(result)

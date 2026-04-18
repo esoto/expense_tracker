@@ -98,6 +98,7 @@ RSpec.describe "SyncSessions", type: :request do
         expect(ProcessEmailsJob).to have_received(:perform_later).with(
           email_account1.id.to_s,
           since: be_within(1.second).of(1.week.ago),
+          before: nil,
           sync_session_id: session.id
         )
       end
@@ -148,6 +149,7 @@ RSpec.describe "SyncSessions", type: :request do
         expect(ProcessEmailsJob).to have_received(:perform_later).with(
           nil,
           since: be_within(1.second).of(1.week.ago),
+          before: nil,
           sync_session_id: session.id
         )
       end
@@ -229,6 +231,19 @@ RSpec.describe "SyncSessions", type: :request do
         expect(ProcessEmailsJob).to have_received(:perform_later).with(
           nil,
           since: Date.parse('2025-01-01'),
+          before: nil,
+          sync_session_id: session.id
+        )
+      end
+
+      it 'passes before: when provided (month-bounded sync)' do
+        post sync_sessions_path, params: { since: '2026-01-01', before: '2026-02-01' }
+        session = SyncSession.last
+
+        expect(ProcessEmailsJob).to have_received(:perform_later).with(
+          nil,
+          since: Date.parse('2026-01-01'),
+          before: Date.parse('2026-02-01'),
           sync_session_id: session.id
         )
       end
@@ -308,6 +323,7 @@ RSpec.describe "SyncSessions", type: :request do
         expect(ProcessEmailsJob).to have_received(:perform_later).with(
           nil,
           since: be_within(1.second).of(1.week.ago),
+          before: nil,
           sync_session_id: new_session.id
         )
       end

@@ -53,6 +53,7 @@ module Services
     ProcessEmailsJob.perform_later(
       nil,
       since: params[:since]&.to_date || default_sync_period,
+      before: params[:before]&.to_date,
       sync_session_id: sync_session.id
     )
   end

@@ -324,4 +324,93 @@ RSpec.describe Budget, type: :model, integration: true do
       expect(budget.currency_symbol).to eq('€')
     end
   end
+
+  describe '.external', unit: true do
+    it 'returns only budgets with an external_source' do
+      native = create(:budget, email_account: email_account, category: nil, period: 'monthly')
+      external = create(:budget, email_account: email_account, category: category, period: 'weekly',
+                                 external_source: 'salary_calculator', external_id: 101)
+
+      expect(described_class.external).to include(external)
+      expect(described_class.external).not_to include(native)
+    end
+  end
+
+  describe '.native', unit: true do
+    it 'returns only budgets without an external_source' do
+      native = create(:budget, email_account: email_account, category: nil, period: 'monthly')
+      external = create(:budget, email_account: email_account, category: category, period: 'weekly',
+                                 external_source: 'salary_calculator', external_id: 102)
+
+      expect(described_class.native).to include(native)
+      expect(described_class.native).not_to include(external)
+    end
+  end
+
+  describe '.synced_unmapped', unit: true do
+    it 'returns only external budgets with no category' do
+      native = create(:budget, email_account: email_account, category: nil, period: 'monthly')
+      external_mapped = create(:budget, email_account: email_account, category: category, period: 'weekly',
+                                        external_source: 'salary_calculator', external_id: 103)
+      external_unmapped = create(:budget, email_account: email_account, category: nil, period: 'yearly', active: false,
+                                          external_source: 'salary_calculator', external_id: 104)
+      # Bypass the unique_active_budget_per_scope validation — the scope is about
+      # the data shape, and the upcoming SyncService will need to insert unmapped
+      # external rows even when a native category-less budget exists.
+      external_unmapped.update_column(:active, true)
+
+      results = described_class.synced_unmapped
+      expect(results).to include(external_unmapped)
+      expect(results).not_to include(native, external_mapped)
+    end
+  end
+
+  describe '#external?', unit: true do
+    it 'is true when external_source is present' do
+      budget = build(:budget, external_source: 'salary_calculator')
+      expect(budget.external?).to be(true)
+    end
+
+    it 'is false when external_source is nil' do
+      budget = build(:budget, external_source: nil)
+      expect(budget.external?).to be(false)
+    end
+  end
+
+  describe '#unmapped?', unit: true do
+    it 'is true when external and category is nil' do
+      budget = build(:budget, external_source: 'salary_calculator', category: nil)
+      expect(budget.unmapped?).to be(true)
+    end
+
+    it 'is false when external and a category is set' do
+      budget = build(:budget, external_source: 'salary_calculator', category: category)
+      expect(budget.unmapped?).to be(false)
+    end
+
+    it 'is false when native (no external_source) even without a category' do
+      budget = build(:budget, external_source: nil, category: nil)
+      expect(budget.unmapped?).to be(false)
+    end
+  end
+
+  describe '#calculate_current_spend!', unit: true do
+    context 'for an unmapped external budget' do
+      it 'returns 0.0 without querying expenses' do
+        # Create inactive first to bypass unique_active_budget_per_scope, then
+        # flip to active via update_column (same path the SyncService will use).
+        budget = create(:budget,
+                        email_account: email_account,
+                        category: nil,
+                        period: 'monthly',
+                        active: false,
+                        external_source: 'salary_calculator',
+                        external_id: 201)
+        budget.update_column(:active, true)
+
+        expect(email_account.expenses).not_to receive(:includes)
+        expect(budget.calculate_current_spend!).to eq(0.0)
+      end
+    end
+  end
 end

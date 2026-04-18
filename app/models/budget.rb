@@ -38,6 +38,9 @@ class Budget < ApplicationRecord
   scope :exceeded, -> { where("current_spend > amount") }
   scope :warning, -> { where("current_spend >= (amount * warning_threshold / 100.0)") }
   scope :critical, -> { where("current_spend >= (amount * critical_threshold / 100.0)") }
+  scope :external, -> { where.not(external_source: nil) }
+  scope :native, -> { where(external_source: nil) }
+  scope :synced_unmapped, -> { external.where(category_id: nil) }
 
   # Callbacks
   before_validation :set_defaults, on: :create
@@ -86,9 +89,21 @@ class Budget < ApplicationRecord
     end
   end
 
+  # True when this budget mirrors an external source (e.g., salary_calculator).
+  def external?
+    external_source.present?
+  end
+
+  # True when an external budget has not yet been mapped to a local category.
+  # Spend calculation is skipped for unmapped rows to avoid noise.
+  def unmapped?
+    external? && category_id.nil?
+  end
+
   # Calculate actual spending for the current period
   def calculate_current_spend!
     return 0.0 unless active?
+    return 0.0 if unmapped?
 
     date_range = current_period_range
 

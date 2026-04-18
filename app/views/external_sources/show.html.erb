@@ -21,6 +21,7 @@
       <%= button_to t("external_sources.connect"),
                     connect_external_source_path,
                     method: :post,
+                    data: { turbo: false },
                     class: "inline-flex items-center gap-2 bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm" %>
     </section>
 
@@ -66,6 +67,7 @@
         <%= button_to t("external_sources.reconnect"),
                       connect_external_source_path,
                       method: :post,
+                      data: { turbo: false },
                       class: "inline-flex items-center gap-2 bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm" %>
         <%= button_to t("external_sources.disconnect"),
                       external_source_path,

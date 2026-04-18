@@ -11,5 +11,6 @@
   <%= button_to t("budgets.empty_state.cta"),
         connect_external_source_path,
         method: :post,
+        data: { turbo: false },
         class: "bg-teal-700 hover:bg-teal-800 text-white font-medium px-5 py-2.5 rounded-lg shadow-sm transition-colors" %>
 </div>

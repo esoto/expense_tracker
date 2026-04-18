@@ -18,6 +18,13 @@ Rails.application.configure do
     else
       policy.connect_src :self
     end
+
+    # OAuth redirect to salary_calculator — the POST /external_source/connect
+    # responds with a 302 to salary_calc's /oauth/authorize. Without an explicit
+    # form-action allowlist the browser falls back to default-src :self and
+    # blocks the cross-origin redirect. Whitelist the configured base URL.
+    salary_calc_base_url = ENV.fetch("SALARY_CALC_BASE_URL", "https://salary-calc.estebansoto.dev")
+    policy.form_action :self, salary_calc_base_url
   end
 
   # Generate per-request nonces for permitted importmap and inline scripts.

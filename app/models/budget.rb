@@ -326,6 +326,7 @@ class Budget < ApplicationRecord
       .where(email_account_id: email_account_id)
       .where(period: period)
       .where(category_id: category_id)
+      .where(external_source: external_source, external_id: external_id)
 
     existing = existing.where.not(id: id) if persisted?
 

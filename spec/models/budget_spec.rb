@@ -352,16 +352,48 @@ RSpec.describe Budget, type: :model, integration: true do
       native = create(:budget, email_account: email_account, category: nil, period: 'monthly')
       external_mapped = create(:budget, email_account: email_account, category: category, period: 'weekly',
                                         external_source: 'salary_calculator', external_id: 103)
-      external_unmapped = create(:budget, email_account: email_account, category: nil, period: 'yearly', active: false,
+      external_unmapped = create(:budget, email_account: email_account, category: nil, period: 'yearly',
                                           external_source: 'salary_calculator', external_id: 104)
-      # Bypass the unique_active_budget_per_scope validation — the scope is about
-      # the data shape, and the upcoming SyncService will need to insert unmapped
-      # external rows even when a native category-less budget exists.
-      external_unmapped.update_column(:active, true)
 
       results = described_class.synced_unmapped
       expect(results).to include(external_unmapped)
       expect(results).not_to include(native, external_mapped)
+    end
+  end
+
+  describe 'unique_active_budget_per_scope with external sources', integration: true do
+    it 'allows an unmapped external budget to coexist with a native category-less budget in same period' do
+      create(:budget, email_account: email_account, category: nil, period: 'monthly', active: true)
+      external = build(:budget, email_account: email_account, category: nil, period: 'monthly', active: true,
+                                external_source: 'salary_calculator', external_id: 301)
+
+      expect(external).to be_valid
+    end
+
+    it 'allows two external budgets with different external_ids in same period/category' do
+      create(:budget, email_account: email_account, category: nil, period: 'monthly', active: true,
+                      external_source: 'salary_calculator', external_id: 401)
+      second = build(:budget, email_account: email_account, category: nil, period: 'monthly', active: true,
+                              external_source: 'salary_calculator', external_id: 402)
+
+      expect(second).to be_valid
+    end
+
+    it 'rejects a duplicate external budget with the same external_source + external_id' do
+      create(:budget, email_account: email_account, category: nil, period: 'monthly', active: true,
+                      external_source: 'salary_calculator', external_id: 501)
+      duplicate = build(:budget, email_account: email_account, category: nil, period: 'monthly', active: true,
+                                 external_source: 'salary_calculator', external_id: 501)
+
+      expect(duplicate).not_to be_valid
+      expect(duplicate.errors[:base]).to include('Ya existe un presupuesto activo para este período y categoría')
+    end
+
+    it 'still rejects two native budgets in the same period/category' do
+      create(:budget, email_account: email_account, category: nil, period: 'monthly', active: true)
+      duplicate = build(:budget, email_account: email_account, category: nil, period: 'monthly', active: true)
+
+      expect(duplicate).not_to be_valid
     end
   end
 
@@ -397,16 +429,13 @@ RSpec.describe Budget, type: :model, integration: true do
   describe '#calculate_current_spend!', unit: true do
     context 'for an unmapped external budget' do
       it 'returns 0.0 without querying expenses' do
-        # Create inactive first to bypass unique_active_budget_per_scope, then
-        # flip to active via update_column (same path the SyncService will use).
         budget = create(:budget,
                         email_account: email_account,
                         category: nil,
                         period: 'monthly',
-                        active: false,
+                        active: true,
                         external_source: 'salary_calculator',
                         external_id: 201)
-        budget.update_column(:active, true)
 
         expect(email_account.expenses).not_to receive(:includes)
         expect(budget.calculate_current_spend!).to eq(0.0)

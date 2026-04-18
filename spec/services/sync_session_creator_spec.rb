@@ -29,6 +29,7 @@ RSpec.describe Services::SyncSessionCreator, integration: true do
           expect(ProcessEmailsJob).to have_received(:perform_later).with(
             nil,
             since: be_within(1.second).of(1.week.ago),
+            before: nil,
             sync_session_id: result.sync_session.id
           )
         end
@@ -53,6 +54,7 @@ RSpec.describe Services::SyncSessionCreator, integration: true do
           expect(ProcessEmailsJob).to have_received(:perform_later).with(
             email_account.id,
             since: be_within(1.second).of(1.week.ago),
+            before: nil,
             sync_session_id: result.sync_session.id
           )
         end
@@ -69,6 +71,25 @@ RSpec.describe Services::SyncSessionCreator, integration: true do
           expect(ProcessEmailsJob).to have_received(:perform_later).with(
             nil,
             since: since_date,
+            before: nil,
+            sync_session_id: result.sync_session.id
+          )
+        end
+      end
+
+      context 'with before date (month-bounded sync)' do
+        let(:since_date) { Date.new(2026, 1, 1) }
+        let(:before_date) { Date.new(2026, 2, 1) }
+        let(:params) { { since: since_date, before: before_date } }
+        let!(:account) { create(:email_account, active: true) }
+
+        it 'forwards before: to ProcessEmailsJob for bounded month pulls' do
+          result = service.call
+          expect(result).to be_success
+          expect(ProcessEmailsJob).to have_received(:perform_later).with(
+            nil,
+            since: since_date,
+            before: before_date,
             sync_session_id: result.sync_session.id
           )
         end

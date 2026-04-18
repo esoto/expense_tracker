@@ -115,24 +115,49 @@ RSpec.describe ExternalBudgetSource, type: :model, unit: true do
     end
   end
 
-  describe "#mark_failed!" do
+  describe "#record_failure!" do
     let(:source) { create(:external_budget_source, email_account: email_account) }
 
-    it "flips active to false and records failure metadata" do
-      source.mark_failed!(error: "401 Unauthorized")
+    it "records failure metadata without deactivating the source" do
+      source.record_failure!(error: "401 Unauthorized")
 
       source.reload
-      expect(source.active).to be(false)
+      expect(source.active).to be(true)
       expect(source.last_sync_status).to eq("failed")
       expect(source.last_sync_error).to eq("401 Unauthorized")
     end
 
     it "truncates long error messages to 1000 characters" do
       long_error = "x" * 1500
-      source.mark_failed!(error: long_error)
+      source.record_failure!(error: long_error)
 
       expect(source.reload.last_sync_error.length).to eq(1000)
     end
+  end
+
+  describe "#deactivate!" do
+    let(:source) { create(:external_budget_source, email_account: email_account) }
+
+    it "flips active to false and records failure metadata" do
+      source.deactivate!(reason: "token revoked")
+
+      source.reload
+      expect(source.active).to be(false)
+      expect(source.last_sync_status).to eq("failed")
+      expect(source.last_sync_error).to eq("token revoked")
+    end
+
+    it "truncates long reason messages to 1000 characters" do
+      long_reason = "x" * 1500
+      source.deactivate!(reason: long_reason)
+
+      expect(source.reload.last_sync_error.length).to eq(1000)
+    end
+  end
+
+  it "does not expose the removed #mark_failed! method" do
+    source = create(:external_budget_source, email_account: email_account)
+    expect(source).not_to respond_to(:mark_failed!)
   end
 
   describe "#mark_succeeded!" do

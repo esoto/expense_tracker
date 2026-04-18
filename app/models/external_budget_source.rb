@@ -18,8 +18,16 @@ class ExternalBudgetSource < ApplicationRecord
     update!(last_synced_at: Time.current, last_sync_status: "ok", last_sync_error: nil)
   end
 
-  def mark_failed!(error:)
-    update!(active: false, last_sync_status: "failed", last_sync_error: error.to_s.truncate(1000))
+  # Record a transient sync failure — metadata only, source stays active so
+  # the next scheduled sync will retry.
+  def record_failure!(error:)
+    update!(last_sync_status: "failed", last_sync_error: error.to_s.truncate(1000))
+  end
+
+  # Deactivate the source permanently — callers must choose this explicitly
+  # (e.g., revoked credentials, unrecoverable errors). No auto-retry.
+  def deactivate!(reason:)
+    update!(active: false, last_sync_status: "failed", last_sync_error: reason.to_s.truncate(1000))
   end
 
   private

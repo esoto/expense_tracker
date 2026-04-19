@@ -174,19 +174,24 @@ RSpec.describe Services::Categorization::PatternAnalytics, type: :service, unit:
       let(:category) { create(:category) }
       let(:pattern)  { create(:categorization_pattern, category: category) }
 
+      # Pin created_at to a midday app-zone timestamp so the spec's Date
+      # calculation and the service's Postgres DATE(created_at) bucket
+      # agree regardless of when the suite runs. Using `N.days.ago` directly
+      # is flaky near UTC-midnight wall times.
+      let(:feedback_time) { 5.days.ago.beginning_of_day + 12.hours }
+
       before do
-        # PatternFeedback factory requires :expense and :category
         create(:pattern_feedback, categorization_pattern: pattern, was_correct: true,
-               created_at: 5.days.ago)
+               created_at: feedback_time)
         create(:pattern_feedback, categorization_pattern: pattern, was_correct: true,
-               created_at: 5.days.ago)
+               created_at: feedback_time)
         create(:pattern_feedback, categorization_pattern: pattern, was_correct: false,
-               created_at: 5.days.ago)
+               created_at: feedback_time)
       end
 
       it "reflects feedback counts in the daily data for that date" do
         result     = service.performance_over_time
-        five_days_ago = 5.days.ago.to_date.to_s
+        five_days_ago = feedback_time.to_date.to_s
         day_entry  = result[:daily].find { |d| d[:date] == five_days_ago }
 
         expect(day_entry).not_to be_nil

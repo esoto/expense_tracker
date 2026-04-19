@@ -201,11 +201,13 @@ class DashboardExpenseFilterService < ExpenseFilterService
     expenses = scope
 
     if @cursor.present?
-      cursor_date, cursor_id = decode_cursor(@cursor)
-      # Use compound condition for stable ordering
+      cursor_ts, cursor_id = decode_cursor(@cursor)
+      # Use compound condition for stable ordering. Comparing at full-
+      # timestamp precision avoids the UTC-midnight boundary ambiguity that
+      # arises when comparing a timestamptz column against a plain Date.
       expenses = expenses.where(
-        "(transaction_date < :date) OR (transaction_date = :date AND id < :id)",
-        date: cursor_date,
+        "(transaction_date < :ts) OR (transaction_date = :ts AND id < :id)",
+        ts: cursor_ts,
         id: cursor_id
       )
     end
@@ -243,17 +245,24 @@ class DashboardExpenseFilterService < ExpenseFilterService
     [ expenses, pagination_meta ]
   end
 
-  def encode_cursor(date, id)
-    Base64.urlsafe_encode64("#{date}:#{id}")
+  # Cursor encodes the full timestamp (UTC, microsecond-precise ISO 8601)
+  # plus the row id, delimited by `|` (not `:`) so colons inside the
+  # timestamp don't collide with the delimiter. Previous implementation used
+  # `"#{date}:#{id}"` + `split(":")`, which shredded the timestamp and made
+  # page 2 return zero rows.
+  CURSOR_DELIMITER = "|"
+
+  def encode_cursor(timestamp, id)
+    Base64.urlsafe_encode64("#{timestamp.utc.iso8601(6)}#{CURSOR_DELIMITER}#{id}")
   end
 
   def decode_cursor(cursor)
     decoded = Base64.urlsafe_decode64(cursor)
-    date_str, id_str = decoded.split(":")
-    [ Date.parse(date_str), id_str.to_i ]
+    ts_str, id_str = decoded.split(CURSOR_DELIMITER, 2)
+    [ Time.iso8601(ts_str), id_str.to_i ]
   rescue StandardError => e
     Rails.logger.error "Invalid cursor: #{cursor} - #{e.message}"
-    [ Date.current, 0 ]
+    [ Time.current, 0 ]
   end
 
   def calculate_summary_stats(scope)

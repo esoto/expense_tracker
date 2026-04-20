@@ -360,9 +360,9 @@ else
   puts "  ℹ️  Run sync operations first to generate real metrics"
 end
 
-# Create admin user for development
+# Create default User for development/transition (PR 3)
 puts ""
-puts "👤 Creating admin user..."
+puts "👤 Creating default admin user..."
 
 admin_email = ENV.fetch("ADMIN_EMAIL", "admin@expense-tracker.com")
 admin_password = ENV.fetch("ADMIN_PASSWORD", "AdminPassword123!")
@@ -370,6 +370,20 @@ admin_password = ENV.fetch("ADMIN_PASSWORD", "AdminPassword123!")
 if Rails.env.production? && (admin_email == "admin@expense-tracker.com" || admin_password == "AdminPassword123!")
   abort "[seeds] Refusing to seed admin with default credentials in production. Set ADMIN_EMAIL and ADMIN_PASSWORD env vars."
 end
+
+default_user = User.find_or_create_by!(email: admin_email) do |user|
+  user.name = "System Administrator"
+  user.password = admin_password
+  user.role = :admin
+end
+
+if default_user.persisted?
+  puts "  ✓ Default admin user: #{admin_email}"
+end
+
+# (legacy — removed in PR 14)
+puts ""
+puts "👤 Creating admin user (legacy AdminUser)..."
 
 admin_user = AdminUser.find_or_create_by!(email: admin_email) do |user|
   user.name = "System Administrator"

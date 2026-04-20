@@ -92,6 +92,21 @@ class Rack::Attack
     end
   end
 
+  # Throttle end-user login attempts by IP
+  throttle("user-logins/ip", limit: 5, period: 20.seconds) do |req|
+    if req.path == "/login" && req.post?
+      req.ip
+    end
+  end
+
+  # Throttle end-user login attempts by email (prevent account takeover)
+  throttle("user-logins/email", limit: 5, period: 20.seconds) do |req|
+    if req.path == "/login" && req.post?
+      # Normalize email to prevent bypass
+      req.params["email"].to_s.downcase.strip.presence
+    end
+  end
+
   # Throttle password reset requests
   throttle("password-reset/ip", limit: 3, period: 15.minutes) do |req|
     if req.path == "/admin/password/reset" && req.post?

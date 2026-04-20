@@ -15,13 +15,18 @@ RSpec.describe BackfillEmailAccountsUserId, unit: false, migration: true do
 
   # Minimal raw SQL helpers that bypass model validations and callbacks.
   # These must work even if the model layer changes in later PRs.
+  # Uses connection.quote on every interpolated value to defuse any SQL
+  # injection risk in the template — even though test inputs are controlled,
+  # this is the shape PRs 5-10 will copy so it must be safe by default.
   def insert_user(email:, role: 0)
     digest = BCrypt::Password.create("TestPass123!", cost: BCrypt::Engine::MIN_COST)
-    ActiveRecord::Base.connection.execute(<<~SQL.squish)
+    conn = ActiveRecord::Base.connection
+    conn.execute(<<~SQL.squish)
       INSERT INTO users
         (email, name, password_digest, role, failed_login_attempts, created_at, updated_at)
       VALUES
-        ('#{email}', 'Test User', '#{digest}', #{role}, 0, NOW(), NOW())
+        (#{conn.quote(email)}, #{conn.quote('Test User')}, #{conn.quote(digest)},
+         #{conn.quote(role)}, 0, NOW(), NOW())
     SQL
     User.find_by!(email: email)
   end
@@ -30,12 +35,13 @@ RSpec.describe BackfillEmailAccountsUserId, unit: false, migration: true do
   # Relies on the NOT NULL constraint being relaxed for the duration of the
   # test (managed by the before/after hooks below via allow_null_user_id).
   def insert_email_account(email:, user_id: nil)
-    uid_sql = user_id.nil? ? "NULL" : user_id.to_s
-    ActiveRecord::Base.connection.execute(<<~SQL.squish)
+    conn = ActiveRecord::Base.connection
+    uid_sql = user_id.nil? ? "NULL" : conn.quote(user_id)
+    conn.execute(<<~SQL.squish)
       INSERT INTO email_accounts
         (email, provider, bank_name, active, created_at, updated_at, user_id)
       VALUES
-        ('#{email}', 'gmail', 'BAC', true, NOW(), NOW(), #{uid_sql})
+        (#{conn.quote(email)}, 'gmail', 'BAC', true, NOW(), NOW(), #{uid_sql})
     SQL
     EmailAccount.find_by!(email: email)
   end

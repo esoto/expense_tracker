@@ -84,7 +84,15 @@ class EmailAccountsController < ApplicationController
     # working during the transition period.
     def scoping_user
       @scoping_user ||= begin
-        user = try(:current_app_user) || User.admin.first
+        user = try(:current_app_user)
+        if user.nil?
+          user = User.admin.first
+          Rails.logger.warn(
+            "[scoping_user] current_app_user is nil; falling back to User.admin.first " \
+            "(controller=#{self.class.name}, path=#{request.fullpath}). " \
+            "This path disappears in PR 12 when UserAuthentication gates all controllers."
+          ) if user
+        end
         user || raise("No authenticated user and no admin User found")
       end
     end

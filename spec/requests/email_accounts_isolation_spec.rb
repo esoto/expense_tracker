@@ -117,4 +117,73 @@ RSpec.describe "EmailAccounts data isolation", type: :request, unit: true do
       end
     end
   end
+
+  # Mutation isolation — PATCH/PUT/DELETE must 404 for cross-user access.
+  # The `set_email_account` before_action scopes via `for_user(scoping_user)`,
+  # so the lookup fails before the action body ever runs. This contract MUST
+  # be proven at the request level (not just trusted from the code) because
+  # PRs 5-10 copy this template and silent regressions would propagate.
+  describe "mutation isolation (PATCH/PUT/DELETE)" do
+    let!(:user_a) { create(:user, :admin) }
+    let!(:user_b) { create(:user) }
+    let!(:account_a) { create(:email_account, user: user_a) }
+
+    context "when user_b tries to mutate user_a's account" do
+      before do
+        allow_any_instance_of(EmailAccountsController)
+          .to receive(:scoping_user)
+          .and_return(user_b)
+      end
+
+      it "PATCH returns 404 and does not mutate" do
+        original_email = account_a.email
+        patch email_account_path(account_a),
+          params: { email_account: { email: "hijacked@example.com" } }
+        expect(response).to have_http_status(:not_found)
+        expect(account_a.reload.email).to eq(original_email)
+      end
+
+      it "PUT returns 404 and does not mutate" do
+        original_email = account_a.email
+        put email_account_path(account_a),
+          params: { email_account: { email: "hijacked@example.com" } }
+        expect(response).to have_http_status(:not_found)
+        expect(account_a.reload.email).to eq(original_email)
+      end
+
+      it "DELETE returns 404 and does not destroy" do
+        delete email_account_path(account_a)
+        expect(response).to have_http_status(:not_found)
+        expect(EmailAccount.exists?(account_a.id)).to be true
+      end
+    end
+  end
+
+  # Create isolation — POSTed email_accounts are always assigned to
+  # scoping_user regardless of any user_id passed in params.
+  describe "POST /email_accounts — user_id cannot be spoofed via params" do
+    let!(:user_a) { create(:user, :admin) }
+    let!(:user_b) { create(:user) }
+
+    before do
+      allow_any_instance_of(EmailAccountsController)
+        .to receive(:scoping_user)
+        .and_return(user_b)
+    end
+
+    it "assigns the new account to scoping_user (user_b), ignoring a forged user_id param" do
+      post email_accounts_path, params: {
+        email_account: {
+          email: "new@example.com",
+          provider: "gmail",
+          bank_name: "BAC",
+          user_id: user_a.id  # forged — strong params must drop this
+        }
+      }
+
+      created = EmailAccount.find_by(email: "new@example.com")
+      expect(created).not_to be_nil
+      expect(created.user_id).to eq(user_b.id)
+    end
+  end
 end

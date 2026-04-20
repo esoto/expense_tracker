@@ -352,7 +352,7 @@ RSpec.describe "Queue Visualization", type: :request, integration: true do
   private
 
   def create_email_accounts
-    EmailAccount.create!(
+    create(:email_account,
       email: "test@example.com",
       bank_name: "Test Bank",
       provider: "gmail",

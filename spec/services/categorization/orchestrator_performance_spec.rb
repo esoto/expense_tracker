@@ -49,7 +49,7 @@ RSpec.describe "Services::Categorization::Orchestrator Performance", type: :serv
       end
 
       # Create test expenses with required email_account
-      email_account = EmailAccount.create!(
+      email_account = create(:email_account,
         email: "test@example.com",
         provider: "gmail",
         encrypted_password: "encrypted_test",

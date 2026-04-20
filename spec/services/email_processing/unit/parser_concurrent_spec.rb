@@ -3,7 +3,13 @@
 require "rails_helper"
 
 RSpec.describe "Concurrent duplicate expense prevention (PER-277)", type: :model, unit: true do
-  let(:email_account) { create(:email_account) }
+  # Use let! (eager) so email_account is created before threads start.
+  # Creating it lazily inside a Thread.new closure (via with_connection) can
+  # cause the factory's user+email_account INSERTs to interleave with the
+  # thread's connection checkout, leading to PG::InFailedSqlTransaction errors
+  # on the main connection in some random orderings (PR 4 factory now creates
+  # a User in addition to the EmailAccount, adding a SAVEPOINT to the sequence).
+  let!(:email_account) { create(:email_account) }
   let(:transaction_date) { Time.zone.parse("2026-03-15 12:00:00") }
 
   it "creates exactly one expense when two threads attempt the same insert" do

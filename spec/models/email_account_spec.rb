@@ -67,6 +67,11 @@ RSpec.describe EmailAccount, type: :model, integration: true do
   describe 'associations', integration: true do
     let(:email_account) { create(:email_account) }
 
+    it 'belongs to user', unit: true do
+      expect(email_account).to respond_to(:user)
+      expect(email_account.user).to be_a(User)
+    end
+
     it 'has many expenses' do
       expect(email_account).to respond_to(:expenses)
     end
@@ -92,6 +97,33 @@ RSpec.describe EmailAccount, type: :model, integration: true do
 
       expect(EmailAccount.for_bank('BAC')).to include(bac_account)
       expect(EmailAccount.for_bank('BAC')).not_to include(bcr_account)
+    end
+
+    describe '.for_user', unit: true do
+      it 'returns only accounts belonging to the given user' do
+        user_a = create(:user)
+        user_b = create(:user)
+        account_a = create(:email_account, user: user_a)
+        account_b = create(:email_account, user: user_b)
+
+        expect(EmailAccount.for_user(user_a)).to include(account_a)
+        expect(EmailAccount.for_user(user_a)).not_to include(account_b)
+      end
+
+      it 'returns all accounts when user has multiple' do
+        user = create(:user)
+        account1 = create(:email_account, user: user)
+        account2 = create(:email_account, user: user)
+
+        result = EmailAccount.for_user(user)
+        expect(result).to include(account1, account2)
+        expect(result.count).to eq(2)
+      end
+
+      it 'returns empty relation when user has no accounts' do
+        user = create(:user)
+        expect(EmailAccount.for_user(user)).to be_empty
+      end
     end
   end
 

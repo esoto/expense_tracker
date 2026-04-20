@@ -4,7 +4,7 @@ require "rails_helper"
 
 RSpec.describe Services::ExpenseFilterService, type: :service, unit: true do
   let(:email_account) do
-    EmailAccount.create!(
+    create(:email_account,
       provider: "gmail",
       email: "caching_test@example.com",
       bank_name: "BAC",
@@ -13,7 +13,7 @@ RSpec.describe Services::ExpenseFilterService, type: :service, unit: true do
   end
 
   let(:other_account) do
-    EmailAccount.create!(
+    create(:email_account,
       provider: "gmail",
       email: "caching_other@example.com",
       bank_name: "BCR",

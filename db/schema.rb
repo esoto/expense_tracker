@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_20_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_20_213200) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -293,9 +293,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_20_130000) do
     t.text "encrypted_settings"
     t.string "provider", null: false
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.index ["active", "bank_name"], name: "index_email_accounts_on_active_and_bank_name"
     t.index ["bank_name"], name: "index_email_accounts_on_bank_name"
     t.index ["email"], name: "index_email_accounts_on_email", unique: true
+    t.index ["user_id"], name: "index_email_accounts_on_user_id"
   end
 
   create_table "email_parsing_failures", force: :cascade do |t|
@@ -808,6 +810,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_20_130000) do
   add_foreign_key "composite_patterns", "categories"
   add_foreign_key "conflict_resolutions", "conflict_resolutions", column: "undone_by_resolution_id"
   add_foreign_key "conflict_resolutions", "sync_conflicts"
+  add_foreign_key "email_accounts", "users"
   add_foreign_key "email_parsing_failures", "email_accounts"
   add_foreign_key "expenses", "categories"
   add_foreign_key "expenses", "email_accounts"

@@ -8,11 +8,18 @@ RSpec.describe "Database Optimization Performance", type: :performance do
   before(:all) do
     Rails.logger.info "Creating performance test dataset..."
 
+    default_user = User.admin.first || User.create!(
+      email: "perf_test_admin@example.com",
+      name: "Perf Test Admin",
+      password: "PerfTestPass123!",
+      role: :admin
+    )
     @email_account = EmailAccount.create!(
       provider: "gmail",
       email: "perf_test@example.com",
       bank_name: "Performance Test Bank",
-      encrypted_password: "encrypted_test"
+      encrypted_password: "encrypted_test",
+      user: default_user
     )
 
     @categories = 10.times.map do |i|

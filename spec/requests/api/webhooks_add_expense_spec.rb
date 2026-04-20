@@ -44,6 +44,9 @@ RSpec.describe "POST /api/webhooks/add_expense", type: :request do
 
     context "with valid expense params" do
       let(:category) { create(:category) }
+      # Ensure an active email account exists so default_email_account finds it
+      # instead of calling create_default_manual_account (requires admin User).
+      let!(:active_email_account) { create(:email_account) }
 
       it "returns 201 JSON with the created expense" do
         post "/api/webhooks/add_expense",

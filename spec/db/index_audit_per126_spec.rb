@@ -475,7 +475,8 @@ RSpec.describe "PER-126 Index Audit", :unit do
       # +3 for external sources integration (external_budget_sources: 1 unique; budgets external columns: 2;
       #     we dropped the redundant composite idx_ebs_on_account_active)
       # +4 for users table (email unique, session_token unique, session_expires_at, locked_at)
-      expect(total).to be <= 231  # small buffer for schema drift
+      # +1 for email_accounts.user_id FK index (PR 4: user ownership wiring)
+      expect(total).to be <= 232  # small buffer for schema drift
     end
   end
 end

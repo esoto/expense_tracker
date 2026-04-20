@@ -71,24 +71,30 @@ RSpec.describe MetricsRefreshJob, type: :job, integration: true do
       end
 
       it "logs warning when exceeding 30 second target" do
+        # Force eager evaluation of email_account before stubbing Time.current.
+        # Creating an EmailAccount now creates a User (PR 4), whose
+        # before_create callback calls Time.current.  Evaluating the let lazily
+        # inside the Time.current stub would consume the stub's pre-defined
+        # return values out of order and break the timing assertions below.
+        account_id = email_account.id
+
         # Stub calculator to avoid extra Time.current calls during calculate
         allow_any_instance_of(Services::MetricsCalculator).to receive(:calculate).and_return({})
 
-        # Time.current calls in order:
-        #   1. debounce key (line 80)
-        #   2. acquire_lock (line 105)
-        #   3. start_time = Time.current (line 31)
-        #   4. elapsed = Time.current - start_time (line 56)
-        #   5+ track_job_metrics (line 177)
+        # Time.current calls inside perform in order:
+        #   1. acquire_lock writes Time.current.to_s to cache
+        #   2. start_time = Time.current
+        #   3. elapsed = Time.current - start_time  (must return slow_time for warn to fire)
+        #   4. track_job_metrics :timestamp field
         start_time = Time.current
         slow_time = start_time + 31.seconds
         allow(Time).to receive(:current).and_return(
-          start_time, start_time, start_time, slow_time, slow_time
+          start_time, start_time, slow_time, slow_time
         )
 
         expect(Rails.logger).to receive(:warn).with(/exceeded 30s target/)
 
-        job.perform(email_account.id)
+        job.perform(account_id)
       end
     end
 

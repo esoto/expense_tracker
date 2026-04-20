@@ -1,11 +1,16 @@
 require 'rails_helper'
 
 RSpec.describe EmailAccountsController, type: :controller, unit: true do
+  # scoping_user falls back to User.admin.first when UserAuthentication is not
+  # yet gating this controller.  Stub it to return the email account's owner so
+  # controller tests don't require a real admin User in the DB.
+  let(:owner) { create(:user, :admin) }
+  let(:email_account) { create(:email_account, user: owner) }
+
   before do
     allow(controller).to receive(:authenticate_user!).and_return(true)
+    allow(controller).to receive(:scoping_user).and_return(owner)
   end
-
-  let(:email_account) { create(:email_account) }
   let(:valid_attributes) {
     {
       email: "test_#{SecureRandom.hex(4)}@example.com",

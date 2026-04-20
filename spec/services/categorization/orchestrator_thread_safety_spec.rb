@@ -23,7 +23,7 @@ RSpec.describe "Services::Categorization::Orchestrator Thread Safety", type: :se
       DatabaseCleaner.strategy = :transaction
       DatabaseCleaner.clean
 
-      @email_account = EmailAccount.create!(
+      @email_account = create(:email_account,
         email: "thread_test@example.com",
         provider: "gmail",
         bank_name: "Test Bank",

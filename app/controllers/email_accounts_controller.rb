@@ -3,7 +3,7 @@ class EmailAccountsController < ApplicationController
 
   # GET /email_accounts
   def index
-    @email_accounts = EmailAccount.all
+    @email_accounts = EmailAccount.for_user(scoping_user)
     @bank_breakdown = Expense.group(:bank_name).sum(:amount).sort_by { |_, v| -v }
   end
 
@@ -23,6 +23,7 @@ class EmailAccountsController < ApplicationController
   # POST /email_accounts
   def create
     @email_account = EmailAccount.new(email_account_params)
+    @email_account.user = scoping_user
 
     # Handle password
     if params[:email_account][:password].present?
@@ -76,12 +77,33 @@ class EmailAccountsController < ApplicationController
   end
 
   private
+    # Returns the user for scoping email account queries.
+    # UserAuthentication is not yet gating this controller (PR 12 wires that).
+    # Until then: prefer the new User session helper if present, else fall back
+    # to the first admin User so existing admin-auth-based access continues
+    # working during the transition period.
+    def scoping_user
+      @scoping_user ||= begin
+        user = try(:current_app_user)
+        if user.nil?
+          user = User.admin.first
+          Rails.logger.warn(
+            "[scoping_user] current_app_user is nil; falling back to User.admin.first " \
+            "(controller=#{self.class.name}, path=#{request.fullpath}). " \
+            "This path disappears in PR 12 when UserAuthentication gates all controllers."
+          ) if user
+        end
+        user || raise("No authenticated user and no admin User found")
+      end
+    end
+
     # Use callbacks to share common setup or constraints between actions.
     def set_email_account
-      @email_account = EmailAccount.find(params.expect(:id))
+      @email_account = EmailAccount.for_user(scoping_user).find(params.expect(:id))
     end
 
     # Only allow a list of trusted parameters through.
+    # user_id is intentionally excluded — always assigned from scoping_user.
     def email_account_params
       params.expect(email_account: [ :email, :bank_name, :provider, :active ])
     end

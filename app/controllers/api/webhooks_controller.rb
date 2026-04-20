@@ -158,11 +158,17 @@ class Api::WebhooksController < ApplicationController
   end
 
   def create_default_manual_account
+    # user_id is required since PR 4 added the NOT NULL constraint.
+    # ApiToken is not yet user-scoped (PR 11 does that), so we fall back to
+    # the first admin User.  This is the same interim pattern as
+    # EmailAccountsController#scoping_user.
+    default_user = User.admin.first || raise("No admin User found — cannot create default manual email account")
     EmailAccount.create!(
       provider: "manual",
       email: "manual@localhost",
       bank_name: "Manual Entry",
-      active: true
+      active: true,
+      user: default_user
     )
   end
 

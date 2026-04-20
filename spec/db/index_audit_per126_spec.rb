@@ -474,7 +474,8 @@ RSpec.describe "PER-126 Index Audit", :unit do
       # +11 for Phase 2 categorization tables (categorization_metrics: 6, categorization_vectors: 3, llm_categorization_cache: 2)
       # +3 for external sources integration (external_budget_sources: 1 unique; budgets external columns: 2;
       #     we dropped the redundant composite idx_ebs_on_account_active)
-      expect(total).to be <= 227  # small buffer for schema drift
+      # +4 for users table (email unique, session_token unique, session_expires_at, locked_at)
+      expect(total).to be <= 231  # small buffer for schema drift
     end
   end
 end

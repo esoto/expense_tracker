@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_18_191023) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_20_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -771,6 +771,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_18_191023) do
     t.index ["context_type", "context_value", "preference_weight"], name: "idx_user_prefs_context_weight"
     t.index ["email_account_id", "context_type", "context_value", "preference_weight"], name: "idx_user_pref_lookup"
     t.index ["preference_weight", "usage_count"], name: "idx_user_pref_priority", where: "(preference_weight >= 5)"
+  end
+
+  create_table "users", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "email", null: false
+    t.integer "failed_login_attempts", default: 0, null: false
+    t.datetime "last_login_at"
+    t.datetime "locked_at"
+    t.string "name", null: false
+    t.string "password_digest", null: false
+    t.integer "role", default: 0, null: false
+    t.datetime "session_expires_at"
+    t.string "session_token"
+    t.datetime "updated_at", null: false
+    t.index "lower((email)::text)", name: "index_users_on_lower_email", unique: true
+    t.index ["locked_at"], name: "index_users_on_locked_at"
+    t.index ["session_expires_at"], name: "index_users_on_session_expires_at"
+    t.index ["session_token"], name: "index_users_on_session_token", unique: true, where: "(session_token IS NOT NULL)"
+    t.check_constraint "role = ANY (ARRAY[0, 1])", name: "check_users_role_valid"
   end
 
   add_foreign_key "budgets", "categories"

@@ -2,13 +2,13 @@
   <div class="max-w-md w-full">
     <!-- Flash messages -->
     <% if flash[:alert] %>
-      <div id="flash-alert" class="mb-6 bg-rose-50 border border-rose-200 rounded-lg px-4 py-3 text-sm text-rose-700" aria-live="polite">
+      <div id="flash-alert" class="mb-6 bg-rose-50 border border-rose-200 rounded-lg px-4 py-3 text-sm text-rose-700" role="alert">
         <%= flash[:alert] %>
       </div>
     <% end %>
 
     <% if flash[:notice] %>
-      <div id="flash-notice" class="mb-6 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 text-sm text-emerald-700" aria-live="polite">
+      <div id="flash-notice" class="mb-6 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 text-sm text-emerald-700" role="status">
         <%= flash[:notice] %>
       </div>
     <% end %>
@@ -54,7 +54,7 @@
     <div class="mt-6 text-center">
       <p class="text-sm text-slate-500">
         Need admin access?
-        <%= link_to "/admin/login", "/admin/login", class: "text-teal-600 hover:text-teal-700 font-medium" %>
+        <%= link_to "Admin login", admin_login_path, class: "text-teal-600 hover:text-teal-700 font-medium" %>
       </p>
     </div>
   </div>

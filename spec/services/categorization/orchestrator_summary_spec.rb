@@ -15,7 +15,7 @@ RSpec.describe "Services::Categorization::Orchestrator Test Summary", type: :ser
         category: @category,
         confidence_weight: 2.0
       )
-      @email_account = EmailAccount.create!(
+      @email_account = create(:email_account,
         email: "test@example.com",
         provider: "gmail",
         bank_name: "Test Bank",

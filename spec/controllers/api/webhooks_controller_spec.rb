@@ -164,6 +164,10 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
   end
 
   describe "POST #add_expense" do
+    # Ensure an active email account exists so default_email_account returns it
+    # rather than calling create_default_manual_account (which requires an admin User).
+    before { email_account }
+
     let(:expense_params) do
       {
         amount: "25.50",
@@ -757,6 +761,10 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
     end
 
     context "concurrent request handling" do
+      # Ensure an active email account exists so add_expense finds it via
+      # EmailAccount.active.first rather than calling create_default_manual_account.
+      before { email_account }
+
       it "handles request isolation properly" do
         # Test that controller state doesn't leak between requests
         post :add_expense, params: {

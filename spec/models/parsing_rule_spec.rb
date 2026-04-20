@@ -41,7 +41,7 @@ RSpec.describe ParsingRule, type: :model, integration: true do
     let(:parsing_rule) { ParsingRule.create!(bank_name: 'BAC', amount_pattern: 'test', date_pattern: 'test', active: true) }
 
     it 'has many email_accounts through bank_name' do
-      email_account = EmailAccount.create!(email: 'test@example.com', provider: 'gmail', bank_name: 'BAC', encrypted_password: 'pass')
+      email_account = create(:email_account, email: 'test@example.com', provider: 'gmail', bank_name: 'BAC', encrypted_password: 'pass')
       expect(parsing_rule.email_accounts).to include(email_account)
     end
   end

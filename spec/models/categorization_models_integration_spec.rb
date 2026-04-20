@@ -4,7 +4,7 @@ require "rails_helper"
 
 RSpec.describe "Categorization Models Integration", type: :model, integration: true do
   let(:category) { Category.create!(name: "Food & Dining") }
-  let(:email_account) { EmailAccount.create!(email: "test@example.com", provider: "gmail", bank_name: "Test Bank") }
+  let(:email_account) { create(:email_account, email: "test@example.com", provider: "gmail", bank_name: "Test Bank") }
   let(:expense) do
     Expense.create!(
       email_account: email_account,

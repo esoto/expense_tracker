@@ -169,7 +169,7 @@ RSpec.describe CategorizationPattern, type: :model, performance: true do
 
   describe "#matches?", performance: true do
     let(:pattern) { described_class.new(category: category) }
-    let(:email_account) { EmailAccount.create!(email: "test@example.com", provider: "gmail", bank_name: "Test Bank") }
+    let(:email_account) { create(:email_account, email: "test@example.com", provider: "gmail", bank_name: "Test Bank") }
     let(:expense) do
       Expense.new(
         email_account: email_account,

@@ -6,6 +6,36 @@ RSpec.describe User, type: :model, unit: true do
   # Use build_stubbed for true unit tests
   let(:user) { build_stubbed(:user) }
 
+  describe 'associations' do
+    describe 'has_many :email_accounts' do
+      it 'responds to email_accounts' do
+        user = create(:user)
+        expect(user).to respond_to(:email_accounts)
+      end
+
+      it 'returns only the user\'s email accounts' do
+        user_a = create(:user)
+        user_b = create(:user)
+        account_a = create(:email_account, user: user_a)
+        create(:email_account, user: user_b)
+
+        expect(user_a.email_accounts).to eq([ account_a ])
+      end
+
+      it 'raises when destroying a user that has email accounts' do
+        user = create(:user)
+        create(:email_account, user: user)
+
+        expect { user.destroy! }.to raise_error(ActiveRecord::DeleteRestrictionError)
+      end
+
+      it 'allows destroying a user with no email accounts' do
+        user = create(:user)
+        expect { user.destroy! }.not_to raise_error
+      end
+    end
+  end
+
   describe 'validations' do
     context 'email validation' do
       it 'requires presence of email' do

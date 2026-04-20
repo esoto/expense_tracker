@@ -11,6 +11,12 @@ class User < ApplicationRecord
   SESSION_DURATION = 2.hours
   PASSWORD_MIN_LENGTH = 12
 
+  # Associations
+  # :restrict_with_exception mirrors the DB-level ON DELETE RESTRICT FK that
+  # PR 10+ will add.  Rails-level restriction means code paths cannot bypass it
+  # via destroy callbacks.
+  has_many :email_accounts, dependent: :restrict_with_exception
+
   # Enums
   enum :role, {
     user: 0,

@@ -4,6 +4,7 @@ class EmailAccount < ApplicationRecord
   encrypts :encrypted_settings
 
   # Associations
+  belongs_to :user
   has_many :expenses, dependent: :nullify
   has_many :budgets, dependent: :destroy
   has_many :parsing_rules, primary_key: :bank_name, foreign_key: :bank_name
@@ -24,6 +25,7 @@ class EmailAccount < ApplicationRecord
   # Scopes
   scope :active, -> { where(active: true) }
   scope :for_bank, ->(bank) { where(bank_name: bank) }
+  scope :for_user, ->(u) { where(user_id: u.id) }
 
   # Constants for Costa Rican banks
   COSTA_RICAN_BANKS = [

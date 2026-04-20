@@ -189,21 +189,21 @@ RSpec.describe User, type: :model, unit: true do
     end
 
     describe '.with_expired_sessions' do
-      it 'returns users with expired sessions' do
-        # Mock the scope to return a relation
-        expired_users_relation = double("ActiveRecord::Relation")
-        allow(User).to receive(:with_expired_sessions).and_return(expired_users_relation)
+      it 'returns users with expired sessions and excludes non-expired ones' do
+        expired_user = create(:user)
+        valid_user   = create(:user)
+        nil_user     = create(:user)
 
-        # Mock the expected behavior
-        expired_user = build_stubbed(:user, session_expires_at: 1.hour.ago)
-        valid_user = build_stubbed(:user, session_expires_at: 1.hour.from_now)
-
-        allow(expired_users_relation).to receive(:include?).with(expired_user).and_return(true)
-        allow(expired_users_relation).to receive(:include?).with(valid_user).and_return(false)
+        # before_create sets session_expires_at to 2h from now; override via
+        # update_columns to bypass the callback without rewriting the model.
+        expired_user.update_columns(session_expires_at: 1.hour.ago)
+        valid_user.update_columns(session_expires_at: 1.hour.from_now)
+        nil_user.update_columns(session_expires_at: nil)
 
         result = User.with_expired_sessions
         expect(result).to include(expired_user)
         expect(result).not_to include(valid_user)
+        expect(result).not_to include(nil_user)
       end
     end
   end

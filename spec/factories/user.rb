@@ -12,7 +12,13 @@ FactoryBot.define do
     end
 
     trait :locked do
-      locked_at { Time.current }
+      locked_at { 1.hour.ago }
+      failed_login_attempts { 5 }
+    end
+
+    trait :with_session do
+      session_token { SecureRandom.urlsafe_base64(32) }
+      session_expires_at { 2.hours.from_now }
     end
   end
 end

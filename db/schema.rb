@@ -785,10 +785,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_20_120000) do
     t.datetime "session_expires_at"
     t.string "session_token"
     t.datetime "updated_at", null: false
-    t.index ["email"], name: "index_users_on_email", unique: true
+    t.index "lower((email)::text)", name: "index_users_on_lower_email", unique: true
     t.index ["locked_at"], name: "index_users_on_locked_at"
     t.index ["session_expires_at"], name: "index_users_on_session_expires_at"
     t.index ["session_token"], name: "index_users_on_session_token", unique: true, where: "(session_token IS NOT NULL)"
+    t.check_constraint "role = ANY (ARRAY[0, 1])", name: "check_users_role_valid"
   end
 
   add_foreign_key "budgets", "categories"

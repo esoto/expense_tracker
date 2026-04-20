@@ -16,9 +16,11 @@ class CreateUsers < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :users, :email, unique: true
+    add_index :users, "lower(email)", unique: true, name: "index_users_on_lower_email"
     add_index :users, :session_token, unique: true, where: "session_token IS NOT NULL"
     add_index :users, :session_expires_at
     add_index :users, :locked_at
+
+    add_check_constraint :users, "role IN (0, 1)", name: "check_users_role_valid"
   end
 end

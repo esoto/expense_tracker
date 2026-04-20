@@ -1,0 +1,25 @@
+<h1>Sign in</h1>
+
+<% if flash[:alert] %>
+  <p id="flash-alert"><%= flash[:alert] %></p>
+<% end %>
+
+<% if flash[:notice] %>
+  <p id="flash-notice"><%= flash[:notice] %></p>
+<% end %>
+
+<%= form_with url: login_path, method: :post, local: true do |f| %>
+  <div>
+    <%= f.label :email, "Email" %>
+    <%= f.email_field :email, class: "w-full p-2 border", autocomplete: "email" %>
+  </div>
+
+  <div>
+    <%= f.label :password, "Password" %>
+    <%= f.password_field :password, class: "w-full p-2 border", autocomplete: "current-password", value: "" %>
+  </div>
+
+  <div>
+    <%= f.submit "Sign in" %>
+  </div>
+<% end %>

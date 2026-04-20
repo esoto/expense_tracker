@@ -1,6 +1,12 @@
 Rails.application.routes.draw do
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
+  # End-user authentication (parallel to /admin/login during migration)
+  get "login", to: "sessions#new", as: :login
+  post "login", to: "sessions#create"
+  delete "logout", to: "sessions#destroy", as: :logout
+  get "logout", to: "sessions#destroy"  # Allow GET for logout links (mirrors admin pattern)
+
   # Locale switching
   patch "locale", to: "locale#update", as: :locale
 

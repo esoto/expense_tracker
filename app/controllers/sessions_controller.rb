@@ -43,24 +43,19 @@ class SessionsController < ApplicationController
     session[:return_to] = return_to if return_to.present?
     log_app_user_action("login_success", { email: user.email })
 
-    redirect_to session.delete(:return_to).presence || root_path,
-      notice: "Signed in successfully."
+    # redirect_back_or runs the stored path through valid_return_to_path,
+    # which rejects /admin and off-origin paths before redirecting.
+    flash[:notice] = "Signed in successfully."
+    redirect_back_or(root_path)
   end
 
   def handle_failed_login
     log_app_user_action("login_failure", { email: session_params[:email] })
 
-    flash.now[:alert] = login_error_message
+    # Always use a generic message to avoid leaking whether the email exists
+    # or whether an account is locked (user-enumeration vector). A locked user
+    # who forgets their password waits out the 30-minute LOCK_DURATION.
+    flash.now[:alert] = "Invalid email or password."
     render :new, status: :unprocessable_content
-  end
-
-  def login_error_message
-    user = User.find_by(email: session_params[:email].to_s.downcase)
-
-    if user&.locked?
-      "Account locked. Try again in 30 minutes."
-    else
-      "Invalid email or password."
-    end
   end
 end

@@ -112,37 +112,58 @@ RSpec.describe "Sessions", type: :request do
     # Use a recent locked_at so the lock has not expired (LOCK_DURATION = 30 min)
     let(:locked_user) { create(:user, locked_at: 5.minutes.ago, failed_login_attempts: 5) }
 
-    it "returns 422 and shows the lockout message" do
+    it "returns 422 and shows a generic error message (no enumeration)" do
       post login_path, params: { email: locked_user.email, password: password }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(response.body).to include("Account locked")
+      # Generic message to avoid leaking whether the email exists / is locked.
+      expect(response.body).to include("Invalid email or password")
+      expect(response.body).not_to include("Account locked")
     end
   end
 
-  # ─── POST /login — return_to redirect ───────────────────────────────────────
+  # ─── POST /login — successful-login redirect target ─────────────────────────
 
-  describe "POST /login preserves session[:return_to]", :unit do
-    it "redirects to the stored return_to path after login" do
-      get expenses_path  # triggers store_location via authenticate_user!
-      # store_location is part of the old Authentication concern that wraps the
-      # whole app; simulate it directly
-      get login_path  # visit login page (return_to already set by above redirect)
-      # Manually seed return_to to simulate a redirect-after-auth flow
-      post login_path, params: { email: user.email, password: password,
-                                 _return_to: expenses_path }
-      # We test the pattern by seeding the session before the POST
+  describe "POST /login — redirect target", :unit do
+    it "redirects to root_path when no return_to is stored" do
+      sign_in_as(user)
+      expect(response).to redirect_to(root_path)
     end
 
-    it "redirects to return_to when session[:return_to] is set" do
-      # Set return_to in session before login
-      get dashboard_page_path  # navigate somewhere — this triggers authenticate_user!
-      # The old concern stores return_to for us; follow the redirect to login
-      follow_redirect!
+    # Return-to coverage is unit-tested at the concern level via
+    # `valid_return_to_path` (see user_authentication_spec) and end-to-end in
+    # PR 12 once UserAuthentication guards protected routes. Today the
+    # SessionsController is the only consumer of UserAuthentication, so there
+    # is no non-login route that stores a return_to through this concern.
+  end
 
-      # Now post login — the controller should read session[:return_to]
-      # which was set by the Authentication concern's store_location
-      sign_in_as(user)
-      expect(response).to redirect_to(dashboard_page_path)
+  describe "UserAuthentication#valid_return_to_path (open-redirect guard)", :unit do
+    # SessionsController hosts the concern; invoke the private method directly
+    # via bind_call so we don't need a full request to cover edge cases.
+    def guard(path)
+      UserAuthentication.instance_method(:valid_return_to_path)
+        .bind_call(SessionsController.new, path)
+    end
+
+    it "accepts same-origin user-facing paths" do
+      expect(guard("/expenses")).to eq("/expenses")
+    end
+
+    it "rejects /admin paths" do
+      expect(guard("/admin/patterns")).to be_nil
+    end
+
+    it "rejects protocol-relative URLs" do
+      expect(guard("//evil.com")).to be_nil
+      expect(guard("//evil.com/path")).to be_nil
+    end
+
+    it "rejects external URLs" do
+      expect(guard("https://evil.com")).to be_nil
+    end
+
+    it "rejects blank input" do
+      expect(guard(nil)).to be_nil
+      expect(guard("")).to be_nil
     end
   end
 

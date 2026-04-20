@@ -148,10 +148,12 @@ module UserAuthentication
 
   # Reject admin paths and external URLs to prevent open redirect and
   # routing errors caused by stale or external session[:return_to] values.
+  # The \A/[^/] guard rejects protocol-relative URLs like "//evil.com" which
+  # start with "/" but redirect off-origin.
   def valid_return_to_path(path)
     return nil if path.blank?
     return nil if path.start_with?("/admin")
-    return nil unless path.start_with?("/")
+    return nil unless path.match?(%r{\A/[^/]})
 
     path
   end

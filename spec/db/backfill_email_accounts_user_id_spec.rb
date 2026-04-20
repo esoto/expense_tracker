@@ -9,7 +9,7 @@ require migration_file
 # The spec/migrations/ directory is auto-tagged :unit by test_tiers.rb, but we
 # override that here with unit: false to keep this spec out of the transactional
 # unit suite (where DDL auto-commits the wrapping transaction and corrupts other
-# examples).  Run it explicitly: TEST_ENV_NUMBER=pr4 bundle exec rspec spec/migrations/
+# examples).  Run it explicitly: TEST_ENV_NUMBER=pr4 bundle exec rspec spec/db/
 RSpec.describe BackfillEmailAccountsUserId, unit: false, migration: true do
   let(:migration) { described_class.new }
 

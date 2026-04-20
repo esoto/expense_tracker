@@ -5,7 +5,6 @@ require "rails_helper"
 RSpec.describe "Sessions", type: :request do
   let(:password) { "TestPass123!" }
   let(:user) { create(:user) }
-  let(:admin_user) { create(:user, :admin) }
 
   # Helper: POST to login and capture session
   def sign_in_as(u, pw = password)
@@ -134,6 +133,33 @@ RSpec.describe "Sessions", type: :request do
     # PR 12 once UserAuthentication guards protected routes. Today the
     # SessionsController is the only consumer of UserAuthentication, so there
     # is no non-login route that stores a return_to through this concern.
+  end
+
+  describe "UserAuthentication#require_admin! (role gate)", :unit do
+    def invoke_require_admin(controller)
+      UserAuthentication.instance_method(:require_admin!).bind_call(controller)
+    end
+
+    it "does not raise when current_app_user is admin" do
+      ctrl = SessionsController.new
+      allow(ctrl).to receive(:current_app_user).and_return(create(:user, :admin))
+      expect(ctrl).not_to receive(:render_forbidden)
+      invoke_require_admin(ctrl)
+    end
+
+    it "renders forbidden when current_app_user is a non-admin user" do
+      ctrl = SessionsController.new
+      allow(ctrl).to receive(:current_app_user).and_return(create(:user))
+      expect(ctrl).to receive(:render_forbidden)
+      invoke_require_admin(ctrl)
+    end
+
+    it "renders forbidden when current_app_user is nil" do
+      ctrl = SessionsController.new
+      allow(ctrl).to receive(:current_app_user).and_return(nil)
+      expect(ctrl).to receive(:render_forbidden)
+      invoke_require_admin(ctrl)
+    end
   end
 
   describe "UserAuthentication#valid_return_to_path (open-redirect guard)", :unit do

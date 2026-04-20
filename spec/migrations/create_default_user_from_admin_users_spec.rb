@@ -129,5 +129,18 @@ RSpec.describe CreateDefaultUserFromAdminUsers, :unit do
 
       expect(User.where(email: "unrelated@example.com").count).to eq(1)
     end
+
+    it "removes Users even when the AdminUser email is mixed case" do
+      # `up` normalizes emails to lowercase when writing to users.
+      # `down` must apply the same normalization so mixed-case AdminUsers
+      # can still reverse the migration cleanly.
+      create_admin_user(email: "MixedCase@Example.COM", role: 2)
+      migration.up
+      expect(User.where(email: "mixedcase@example.com").count).to eq(1)
+
+      migration.down
+
+      expect(User.where(email: "mixedcase@example.com").count).to eq(0)
+    end
   end
 end

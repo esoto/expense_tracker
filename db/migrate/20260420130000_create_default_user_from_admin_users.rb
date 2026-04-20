@@ -43,8 +43,10 @@ class CreateDefaultUserFromAdminUsers < ActiveRecord::Migration[8.1]
   def down
     return unless connection.data_source_exists?("admin_users")
 
-    MigrationUser
-      .where(email: MigrationAdminUser.pluck(:email))
-      .delete_all
+    # `up` normalizes emails via `to_s.downcase` before writing to `users`.
+    # `down` must apply the same normalization so mixed-case AdminUser emails
+    # still match the corresponding User rows for deletion.
+    matching_emails = MigrationAdminUser.pluck(:email).map { |e| e.to_s.downcase }
+    MigrationUser.where(email: matching_emails).delete_all
   end
 end

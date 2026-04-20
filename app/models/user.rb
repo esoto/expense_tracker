@@ -40,7 +40,9 @@ class User < ApplicationRecord
 
   # Class methods
   def self.authenticate(email, password)
-    user = find_by(email: email.downcase)
+    return nil if email.blank?
+
+    user = find_by(email: email.to_s.downcase)
     return nil unless user
 
     if user.locked?
@@ -112,11 +114,14 @@ class User < ApplicationRecord
     regenerate_session_token
   end
 
+  # Atomically increments the failure counter and locks the account when the
+  # threshold is crossed.  `with_lock` acquires a row-level lock, preventing
+  # two concurrent failed-login requests from each reading a stale counter and
+  # skipping the `lock_account!` branch (Codex review, PR #460).
   def handle_failed_login
-    increment!(:failed_login_attempts)
-
-    if failed_login_attempts >= MAX_FAILED_LOGIN_ATTEMPTS
-      lock_account!
+    with_lock do
+      increment!(:failed_login_attempts)
+      lock_account! if failed_login_attempts >= MAX_FAILED_LOGIN_ATTEMPTS
     end
   end
 

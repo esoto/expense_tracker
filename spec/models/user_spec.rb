@@ -257,6 +257,12 @@ RSpec.describe User, type: :model, unit: true do
           expect(result).to be_nil
         end
 
+        it 'returns nil for blank email without raising' do
+          expect { User.authenticate(nil, password) }.not_to raise_error
+          expect(User.authenticate(nil, password)).to be_nil
+          expect(User.authenticate('', password)).to be_nil
+        end
+
         it 'increments failed login attempts' do
           User.authenticate(email, 'WrongPassword123@')
           expect(test_user.reload.failed_login_attempts).to eq(1)

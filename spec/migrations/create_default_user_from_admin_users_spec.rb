@@ -106,41 +106,57 @@ RSpec.describe CreateDefaultUserFromAdminUsers, :unit do
   end
 
   describe "#down" do
-    it "removes Users whose emails match AdminUsers" do
-      create_admin_user(email: "todelete@example.com", role: 2)
+    it "raises IrreversibleMigration (one-way data migration)" do
+      create_admin_user(email: "x@example.com", role: 2)
       migration.up
-      expect(User.where(email: "todelete@example.com").count).to eq(1)
 
-      migration.down
+      expect { migration.down }.to raise_error(ActiveRecord::IrreversibleMigration)
+      # Rollback must leave the user row in place, not partially remove it.
+      expect(User.where(email: "x@example.com").count).to eq(1)
+    end
+  end
 
-      expect(User.where(email: "todelete@example.com").count).to eq(0)
+  describe "#up preflight checks" do
+    it "aborts when admin_users has case-variant duplicate emails" do
+      create_admin_user(email: "dupe@example.com", role: 2)
+      create_admin_user(email: "Dupe@Example.com", role: 2)
+
+      expect { migration.up }.to raise_error(
+        ActiveRecord::MigrationError, /case-variant duplicate/i
+      )
+      # No partial write — transaction never opened.
+      expect(User.where("lower(email) = ?", "dupe@example.com").count).to eq(0)
     end
 
-    it "does not remove Users whose emails do not match any AdminUser" do
-      # Create a User that has no corresponding AdminUser
-      User.connection.execute(<<~SQL.squish)
-        INSERT INTO users
+    it "aborts when admin_users has a row with blank email" do
+      # Bypass the email presence constraint by inserting raw SQL. The real
+      # admin_users table enforces NOT NULL but NOT a length check, so an
+      # empty string is accepted at the DB level.
+      AdminUser.connection.execute(<<~SQL.squish)
+        INSERT INTO admin_users
           (email, password_digest, name, role, failed_login_attempts, created_at, updated_at)
         VALUES
-          ('unrelated@example.com', 'fakedigest', 'Unrelated', 0, 0, NOW(), NOW())
+          ('', 'digest', 'Blank Email', 2, 0, NOW(), NOW())
       SQL
 
-      migration.down
-
-      expect(User.where(email: "unrelated@example.com").count).to eq(1)
+      expect { migration.up }.to raise_error(
+        ActiveRecord::MigrationError, /blank email/i
+      )
+      expect(User.count).to eq(0)
     end
 
-    it "removes Users even when the AdminUser email is mixed case" do
-      # `up` normalizes emails to lowercase when writing to users.
-      # `down` must apply the same normalization so mixed-case AdminUsers
-      # can still reverse the migration cleanly.
-      create_admin_user(email: "MixedCase@Example.COM", role: 2)
-      migration.up
-      expect(User.where(email: "mixedcase@example.com").count).to eq(1)
+    it "aborts when admin_users has a row with blank name" do
+      AdminUser.connection.execute(<<~SQL.squish)
+        INSERT INTO admin_users
+          (email, password_digest, name, role, failed_login_attempts, created_at, updated_at)
+        VALUES
+          ('blankname@example.com', 'digest', '', 2, 0, NOW(), NOW())
+      SQL
 
-      migration.down
-
-      expect(User.where(email: "mixedcase@example.com").count).to eq(0)
+      expect { migration.up }.to raise_error(
+        ActiveRecord::MigrationError, /blank name/i
+      )
+      expect(User.count).to eq(0)
     end
   end
 end

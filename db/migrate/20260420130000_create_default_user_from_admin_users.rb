@@ -11,8 +11,12 @@ class CreateDefaultUserFromAdminUsers < ActiveRecord::Migration[8.1]
     self.table_name = "users"
   end
 
+  REQUIRED_ADMIN_COLUMNS = %w[email name password_digest].freeze
+
   def up
     return unless connection.data_source_exists?("admin_users")
+
+    preflight_admin_users!
 
     ActiveRecord::Base.transaction do
       MigrationAdminUser.find_each do |admin|
@@ -40,13 +44,47 @@ class CreateDefaultUserFromAdminUsers < ActiveRecord::Migration[8.1]
     end
   end
 
+  # Data migration: the safe semantic for rollback is "refuse," because we
+  # cannot tell which user rows were created here vs. seeded beforehand.
+  # Re-running `db:migrate` is idempotent (find_or_initialize_by), so a clean
+  # forward path is always available. Spec uses a scoped harness for coverage.
   def down
-    return unless connection.data_source_exists?("admin_users")
+    raise ActiveRecord::IrreversibleMigration,
+      "CreateDefaultUserFromAdminUsers is a one-way data migration. " \
+      "To undo, delete the affected user rows by hand or restore from a backup."
+  end
 
-    # `up` normalizes emails via `to_s.downcase` before writing to `users`.
-    # `down` must apply the same normalization so mixed-case AdminUser emails
-    # still match the corresponding User rows for deletion.
-    matching_emails = MigrationAdminUser.pluck(:email).map { |e| e.to_s.downcase }
-    MigrationUser.where(email: matching_emails).delete_all
+  private
+
+  # Abort BEFORE touching `users` if admin_users is in a state that would
+  # silently lose data during the copy.
+  def preflight_admin_users!
+    # 1. Duplicate emails after case-folding — admin_users has a raw unique
+    #    index, but users has a unique lower(email) index. Two admin rows
+    #    like "A@x.com" and "a@x.com" would collapse onto one user row and
+    #    the second admin would be silently dropped.
+    duplicate_emails = MigrationAdminUser
+      .where.not(email: [ nil, "" ])
+      .group("lower(email)")
+      .having("count(*) > 1")
+      .pluck("lower(email)")
+
+    if duplicate_emails.any?
+      raise ActiveRecord::MigrationError,
+        "admin_users contains case-variant duplicate emails " \
+        "(#{duplicate_emails.inspect}); resolve before migrating."
+    end
+
+    # 2. Blank required fields — save(validate: false) bypasses model presence
+    #    checks, and the `users` table only enforces `null: false`, so an
+    #    empty-string email/name/password_digest would persist silently.
+    REQUIRED_ADMIN_COLUMNS.each do |col|
+      blank_count = MigrationAdminUser.where("#{col} IS NULL OR #{col} = ''").count
+      next if blank_count.zero?
+
+      raise ActiveRecord::MigrationError,
+        "admin_users has #{blank_count} row(s) with blank #{col}; " \
+        "fix before migrating."
+    end
   end
 end

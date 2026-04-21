@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_21_130800) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -170,8 +170,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.float "processing_time_ms"
     t.integer "time_to_correction_hours"
     t.datetime "updated_at", null: false
-    t.boolean "was_corrected", default: false, null: false
     t.bigint "user_id", null: false
+    t.boolean "was_corrected", default: false, null: false
     t.index ["category_id"], name: "index_categorization_metrics_on_category_id"
     t.index ["corrected_to_category_id"], name: "index_categorization_metrics_on_corrected_to_category_id"
     t.index ["created_at"], name: "index_categorization_metrics_on_created_at"
@@ -476,8 +476,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.bigint "expense_id"
     t.string "feedback_type"
     t.datetime "updated_at", null: false
-    t.boolean "was_correct"
     t.bigint "user_id", null: false
+    t.boolean "was_correct"
     t.index ["categorization_pattern_id", "created_at"], name: "idx_feedbacks_pattern_time"
     t.index ["categorization_pattern_id", "was_correct", "created_at"], name: "idx_feedback_pattern_performance"
     t.index ["categorization_pattern_id", "was_correct"], name: "idx_feedbacks_pattern_correct"
@@ -503,8 +503,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.jsonb "metadata", default: {}
     t.string "pattern_used"
     t.datetime "updated_at", null: false
-    t.boolean "was_correct"
     t.bigint "user_id", null: false
+    t.boolean "was_correct"
     t.index ["category_id", "created_at"], name: "idx_learning_events_category_time"
     t.index ["category_id", "pattern_used", "created_at"], name: "idx_learning_category_pattern_created"
     t.index ["confidence_score", "was_correct"], name: "idx_learning_confidence", where: "(confidence_score IS NOT NULL)"

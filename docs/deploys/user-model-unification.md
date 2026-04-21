@@ -30,12 +30,20 @@ git log --oneline origin/main -1   # expect: d727375 feat(cleanup): PR 14/14 ...
 # Check REQUIRED workflows (CI, Unit Tests) on the current origin/main commit.
 # Non-required workflows (e.g. the chronically-red `Test Suite` :performance
 # specs) are intentionally NOT blocking — see REQUIRED_WORKFLOWS in
-# bin/pre-deploy-check for the authoritative list.
+# bin/pre-deploy-check for the authoritative list. --limit 100 avoids `gh`'s
+# default of 20 hiding a required run behind unrelated reruns.
 SHA=$(git rev-parse origin/main)
-gh run list --branch main --commit "$SHA" --json name,status,conclusion --jq '
-  map(select(.name == "CI" or .name == "Unit Tests"))
-  | map(select(.status != "completed" or .conclusion != "success"))
-  | if length == 0 then "green" else "REQUIRED CI NOT green — abort" end'
+gh run list --branch main --commit "$SHA" --limit 100 --json name,status,conclusion --jq '
+  . as $runs
+  | ["CI", "Unit Tests"] as $required
+  | ($runs | map(.name)) as $present
+  | ($required - $present) as $missing
+  | ($runs | map(select(.name as $n | $required | index($n)))
+           | map(select(.status != "completed" or .conclusion != "success"))
+           | map(.name)) as $not_green
+  | if ($missing | length) > 0 then "REQUIRED CI missing — abort: \($missing | join(\", \"))"
+    elif ($not_green | length) > 0 then "REQUIRED CI NOT green — abort: \($not_green | join(\", \"))"
+    else "green" end'
 ```
 
 `green` = proceed. Anything else means abort.

@@ -64,7 +64,16 @@ end
 
 def run(cmd, env: {})
   out, err, status = Open3.capture3(env, cmd)
-  [ out.to_s.strip, err.to_s.strip, status.success? ]
+  # kamal, gh, and other CLIs may emit UTF-8 (ANSI color codes, emoji) that
+  # the default external encoding can't handle. Force UTF-8 and scrub invalid
+  # bytes before calling strip — otherwise String#strip raises
+  # Encoding::CompatibilityError and Gate 5 (`kamal app details`) crashes the
+  # whole script before it can report anything useful.
+  safe_out = out.to_s.dup.force_encoding(Encoding::UTF_8)
+  safe_err = err.to_s.dup.force_encoding(Encoding::UTF_8)
+  safe_out = safe_out.scrub unless safe_out.valid_encoding?
+  safe_err = safe_err.scrub unless safe_err.valid_encoding?
+  [ safe_out.strip, safe_err.strip, status.success? ]
 end
 
 # --- Gate 1: git check ----------------------------------------------------

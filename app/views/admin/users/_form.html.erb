@@ -1,0 +1,33 @@
+<%= form_with(model: [:admin, @user]) do |f| %>
+  <% if @user.errors.any? %>
+    <ul id="user-errors">
+      <% @user.errors.full_messages.each do |msg| %>
+        <li><%= msg %></li>
+      <% end %>
+    </ul>
+  <% end %>
+
+  <div>
+    <%= f.label :name %>
+    <%= f.text_field :name %>
+  </div>
+
+  <div>
+    <%= f.label :email %>
+    <%= f.email_field :email %>
+  </div>
+
+  <div>
+    <%= f.label :role %>
+    <%= f.select :role, User.roles.keys.map { |r| [r.humanize, r] } %>
+  </div>
+
+  <% if @user.new_record? %>
+    <div>
+      <%= f.label :password, "Password (leave blank to auto-generate)" %>
+      <%= f.password_field :password, autocomplete: "new-password" %>
+    </div>
+  <% end %>
+
+  <%= f.submit %>
+<% end %>

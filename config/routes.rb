@@ -100,6 +100,13 @@ Rails.application.routes.draw do
 
     resources :patterns
     resources :categorization_metrics, only: [ :index ]
+    resources :users do
+      member do
+        post :lock
+        post :unlock
+        post :reset_password
+      end
+    end
     resources :composite_patterns do
       member do
         post :toggle_active

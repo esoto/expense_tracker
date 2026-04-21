@@ -86,10 +86,12 @@ RSpec.describe "Admin Authentication", type: :request do
     context "when authenticated as non-admin (regular user)" do
       before { sign_in_as(regular_user, password: password) }
 
-      it "does not allow GET /admin/patterns (forbidden or redirect)" do
+      it "does not allow GET /admin/patterns (redirects with Forbidden alert)" do
         get admin_patterns_path
-        # Non-admin users hit require_admin! which redirects back or renders 403
-        expect(response).not_to have_http_status(:ok)
+        # require_admin! calls render_forbidden which for HTML format
+        # redirects back with a "Forbidden" alert (fallback to root_path).
+        expect(response).to redirect_to(root_path)
+        expect(flash[:alert]).to eq("Forbidden")
       end
     end
   end

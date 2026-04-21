@@ -38,9 +38,9 @@ RSpec.describe "Admin login via unified /login", type: :request do
 
   describe "Admin login via POST /login", :unit do
     context "with correct credentials" do
-      it "redirects to root (or stored path) after successful login" do
+      it "redirects to root_path after successful direct login" do
         post login_path, params: { email: admin_user.email, password: password }
-        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(root_path)
       end
     end
 
@@ -108,9 +108,9 @@ RSpec.describe "Admin login via unified /login", type: :request do
     end
 
     context "when there is no stored return path (direct login)" do
-      it "redirects to root after successful login" do
+      it "redirects to root_path after successful login" do
         post login_path, params: { email: admin_user.email, password: password }
-        expect(response).to have_http_status(:redirect)
+        expect(response).to redirect_to(root_path)
       end
     end
   end

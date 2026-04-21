@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
-# Controller for end-user authentication (login/logout).
-# Parallel to Admin::SessionsController during the unified-user migration;
-# PR 12 will merge the two auth paths.
+# Controller for end-user AND admin authentication (login/logout).
+# As of PR 12 this is the only login controller — Admin::SessionsController
+# was deleted and /admin/login removed. Role-based authorization happens in
+# Admin::BaseController via `before_action :require_admin!`.
 class SessionsController < ApplicationController
   include UserAuthentication
 

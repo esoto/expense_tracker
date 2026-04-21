@@ -69,8 +69,10 @@ RSpec.describe Admin::BaseController, type: :controller, unit: true do
 
     it "redirects non-admin users (require_admin! fires)" do
       get :test_action
-      # require_admin! calls render_forbidden which redirects back or renders 403
-      expect(response).not_to have_http_status(:ok)
+      # require_admin! -> render_forbidden: HTML redirects back to root_path
+      # with a "Forbidden" alert (default render_forbidden message).
+      expect(response).to redirect_to(root_path)
+      expect(flash[:alert]).to eq("Forbidden")
     end
   end
 

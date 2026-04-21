@@ -1,4 +1,5 @@
-<main class="container mx-auto px-4 py-8">
+<%# Admin layout already provides the <main> landmark; use a plain div here. %>
+<div class="container mx-auto px-4 py-8">
   <!-- Page Header -->
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
     <h1 class="text-3xl font-bold text-slate-900">User Management</h1>
@@ -32,7 +33,7 @@
       <div class="mt-2 flex items-center gap-2">
         <code id="otp-value" class="flex-1 px-3 py-2 bg-white border border-amber-300 rounded font-mono text-amber-900 select-all break-all"><%= otp_password %></code>
         <button type="button"
-                onclick="navigator.clipboard.writeText(document.getElementById('otp-value').innerText).then(() => { this.innerText = 'Copied!'; setTimeout(() => this.innerText = 'Copy', 2000); })"
+                onclick="(function(btn){ var v=document.getElementById('otp-value').innerText; var ok=function(){ btn.innerText='Copied!'; setTimeout(function(){ btn.innerText='Copy'; },2000); }; if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(v).then(ok).catch(function(){ btn.innerText='Press ⌘/Ctrl+C'; }); } else { var r=document.createRange(); r.selectNode(document.getElementById('otp-value')); window.getSelection().removeAllRanges(); window.getSelection().addRange(r); btn.innerText='Press ⌘/Ctrl+C'; } })(this)"
                 class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded text-xs font-medium whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1">
           Copy
         </button>
@@ -81,10 +82,10 @@
                         class: "bg-amber-100 hover:bg-amber-200 text-amber-800 px-2 py-1 rounded text-xs font-medium inline-block" %>
                 <% end %>
                 <%= button_to "Reset Password", reset_password_admin_user_path(user), method: :post,
-                      data: { confirm: "Reset password for #{user.email}?" },
+                      data: { turbo_confirm: "Reset password for #{user.email}?" },
                       class: "bg-amber-200 hover:bg-amber-300 text-amber-900 px-2 py-1 rounded text-xs font-medium inline-block" %>
                 <%= button_to "Delete", admin_user_path(user), method: :delete,
-                      data: { confirm: "Delete #{user.email}? This action cannot be undone." },
+                      data: { turbo_confirm: "Delete #{user.email}? This action cannot be undone." },
                       class: "bg-rose-600 hover:bg-rose-700 text-white px-2 py-1 rounded text-xs font-medium inline-block" %>
               </td>
             </tr>
@@ -93,4 +94,4 @@
       </table>
     </div>
   </div>
-</main>
+</div>

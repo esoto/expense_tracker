@@ -36,7 +36,7 @@ RSpec.describe Services::ExpenseSummaryService, integration: true do
     end
 
     context 'with week period' do
-      let(:service) { described_class.new("week") }
+      let(:service) { described_class.new("week", user: email_account.user) }
 
       it 'returns weekly summary with correct structure' do
         result = service.summary
@@ -58,7 +58,7 @@ RSpec.describe Services::ExpenseSummaryService, integration: true do
     end
 
     context 'with month period' do
-      let(:service) { described_class.new("month") }
+      let(:service) { described_class.new("month", user: email_account.user) }
 
       it 'returns monthly summary with correct totals' do
         result = service.summary
@@ -72,7 +72,7 @@ RSpec.describe Services::ExpenseSummaryService, integration: true do
     end
 
     context 'with year period' do
-      let(:service) { described_class.new("year") }
+      let(:service) { described_class.new("year", user: email_account.user) }
 
       it 'returns yearly summary with monthly breakdown' do
         result = service.summary
@@ -88,7 +88,7 @@ RSpec.describe Services::ExpenseSummaryService, integration: true do
     end
 
     context 'with invalid period that gets normalized' do
-      let(:service) { described_class.new("something") }
+      let(:service) { described_class.new("something", user: email_account.user) }
 
       it 'falls back to monthly summary via else clause' do
         result = service.summary
@@ -104,7 +104,10 @@ RSpec.describe Services::ExpenseSummaryService, integration: true do
   end
 
   describe 'private methods', integration: true do
-    let(:service) { described_class.new("month") }
+    # PR 11: ExpenseSummaryService now requires a user (raises on nil). Supply
+    # the email_account's owner so these integration tests exercise the real
+    # scope with a real owner.
+    let(:service) { described_class.new("month", user: email_account.user) }
     let(:private_test_date) { Date.new(2023, 3, 15) } # Different test date to avoid conflicts
     let(:start_date) { 1.month.ago.beginning_of_day }
     let(:end_date) { Time.current.end_of_day }

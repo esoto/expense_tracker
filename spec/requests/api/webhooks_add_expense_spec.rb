@@ -12,33 +12,32 @@ RSpec.describe "POST /api/webhooks/add_expense", type: :request do
 
   describe "input validation", :unit do
     context "when the request body is completely missing the expense key" do
-      it "returns 422 JSON instead of 500 HTML" do
+      # PR 11: BaseController rescues ParameterMissing via bad_request → 400.
+      it "returns 400 JSON instead of 500 HTML" do
         post "/api/webhooks/add_expense",
              params: {}.to_json,
              headers: auth_headers
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:bad_request)
         expect(response.media_type).to eq("application/json")
 
         json = JSON.parse(response.body)
-        expect(json["status"]).to eq("error")
-        expect(json["message"]).to be_present
+        expect(json["error"]).to be_present
       end
     end
 
     context "when expense key is present but body is empty" do
-      it "returns 422 JSON with error message (empty hash triggers ParameterMissing)" do
+      # PR 11: empty hash still raises ParameterMissing → bad_request → 400.
+      it "returns 400 JSON with error message (empty hash triggers ParameterMissing)" do
         post "/api/webhooks/add_expense",
              params: { expense: {} }.to_json,
              headers: auth_headers
 
-        expect(response).to have_http_status(:unprocessable_content)
+        expect(response).to have_http_status(:bad_request)
         expect(response.media_type).to eq("application/json")
 
         json = JSON.parse(response.body)
-        expect(json["status"]).to eq("error")
-        expect(json["message"]).to be_present
-        expect(json).not_to have_key("errors")
+        expect(json["error"]).to be_present
       end
     end
 

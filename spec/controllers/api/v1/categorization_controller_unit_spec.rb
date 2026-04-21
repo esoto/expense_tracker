@@ -45,7 +45,13 @@ RSpec.describe Api::V1::CategorizationController, type: :controller, unit: true 
     end
 
     before do
-      allow(Expense).to receive(:find).and_return(expense)
+      # PR 11: feedback now calls Expense.for_user(current_api_user).find(...)
+      # Stub current_api_user and the user-scoped Expense relation.
+      user_double = double("User")
+      allow(controller).to receive(:current_api_user).and_return(user_double)
+      expense_scope = double("ExpenseScope")
+      allow(Expense).to receive(:for_user).with(user_double).and_return(expense_scope)
+      allow(expense_scope).to receive(:find).and_return(expense)
       allow(Category).to receive(:find).and_return(category)
       allow(PatternFeedback).to receive(:record_feedback).and_return(double(improvement_suggestion: "Test"))
       allow(categorization_service).to receive(:learn_from_feedback)

@@ -35,7 +35,7 @@ module Api
       def feedback
         validate_feedback_params!
 
-        expense = Expense.find(feedback_params[:expense_id])
+        expense = Expense.for_user(current_api_user).find(feedback_params[:expense_id])
         category = Category.find(feedback_params[:category_id])
 
         # Find the pattern that was used (if any)
@@ -83,6 +83,11 @@ module Api
 
       # GET /api/v1/categorization/statistics
       def statistics
+        # CategorizationPattern is global reference data (shared across users,
+        # same posture as Category). PatternFeedback holds per-user signals
+        # (PR 9 added user_id), so it must be scoped to the token owner.
+        user_feedback = PatternFeedback.for_user(current_api_user)
+
         stats = {
           total_patterns: CategorizationPattern.count,
           active_patterns: CategorizationPattern.active.count,
@@ -90,8 +95,8 @@ module Api
           high_confidence_patterns: CategorizationPattern.high_confidence.count,
           successful_patterns: CategorizationPattern.successful.count,
           frequently_used_patterns: CategorizationPattern.frequently_used.count,
-          recent_feedback_count: PatternFeedback.where(created_at: 7.days.ago..).count,
-          feedback_by_type: PatternFeedback.group(:feedback_type).count,
+          recent_feedback_count: user_feedback.where(created_at: 7.days.ago..).count,
+          feedback_by_type: user_feedback.group(:feedback_type).count,
           average_success_rate: CategorizationPattern.active.average(:success_rate)&.round(3) || 0,
           patterns_by_type: CategorizationPattern.group(:pattern_type).count,
           top_categories: top_categorized_categories

@@ -484,7 +484,8 @@ RSpec.describe "PER-126 Index Audit", :unit do
       #     one concurrent index each; undo_histories uses existing composite index)
       # +3 for learning signals cluster user_id FK indexes (PR 9: pattern_feedbacks,
       #     pattern_learning_events, categorization_metrics — one concurrent index each)
-      expect(total).to be <= 244  # small buffer for schema drift
+      # +1 for api_tokens.user_id FK index (PR 11: api token user ownership)
+      expect(total).to be <= 245  # small buffer for schema drift
     end
   end
 end

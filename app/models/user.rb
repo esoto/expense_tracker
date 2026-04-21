@@ -30,6 +30,7 @@ class User < ApplicationRecord
   has_many :pattern_learning_events, dependent: :restrict_with_exception
   has_many :categorization_metrics, dependent: :restrict_with_exception
   has_many :bulk_operations, dependent: :restrict_with_exception
+  has_many :api_tokens, dependent: :restrict_with_exception
 
   # Enums
   enum :role, {

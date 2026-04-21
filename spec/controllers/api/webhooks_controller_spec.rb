@@ -2,7 +2,8 @@ require "rails_helper"
 
 RSpec.describe Api::WebhooksController, type: :controller, unit: true do
   let(:api_token) { create(:api_token, :active) }
-  let(:email_account) { create(:email_account) }
+  # email_account must belong to the token's owner so user-scoped lookups work
+  let(:email_account) { create(:email_account, user: api_token.user) }
   let(:category) { create(:category) }
 
   before do
@@ -24,7 +25,8 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
         expect(response).to have_http_status(:accepted)
         json_response = JSON.parse(response.body)
         expect(json_response["status"]).to eq("success")
-        expect(json_response["email_account_id"]).to eq(email_account.id.to_s)
+        # PR 11: email_account_id is returned as an integer (from account.id, not string param)
+        expect(json_response["email_account_id"]).to eq(email_account.id)
       end
 
       it "handles string email_account_id parameter" do
@@ -38,26 +40,41 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
       end
 
       it "handles non-numeric email_account_id gracefully" do
-        expect(ProcessEmailsJob).to receive(:perform_later).with(
-          0,
-          since: be_a(Time)
-        )
-
+        # Non-numeric id resolves to 0, which won't match any user-owned account.
+        # PR 11: now returns 404 (access denied) rather than enqueueing for id 0.
         post :process_emails, params: { email_account_id: "invalid" }
-        expect(response).to have_http_status(:accepted)
+        expect(response).to have_http_status(:not_found)
       end
     end
 
     context "without email_account_id parameter" do
-      it "queues ProcessEmailsJob for all accounts" do
-        expect(ProcessEmailsJob).to receive(:perform_later).with(since: be_a(Time))
+      # PR 11: no email_account_id queues one job per owner account (not globally).
+      before { email_account } # ensure the token owner has at least one active account
+
+      it "queues ProcessEmailsJob once per owner active account" do
+        expect(ProcessEmailsJob).to receive(:perform_later).with(
+          email_account.id,
+          since: be_a(Time)
+        ).once
 
         post :process_emails
 
         expect(response).to have_http_status(:accepted)
         json_response = JSON.parse(response.body)
         expect(json_response["status"]).to eq("success")
-        expect(json_response["message"]).to include("all active accounts")
+        expect(json_response["email_account_ids"]).to eq([ email_account.id ])
+        expect(json_response["message"]).to match(/queued for \d+ account\(s\)/)
+      end
+
+      it "returns 404 when token owner has no active accounts" do
+        # email_account_owner has no accounts — just a freshly-created token
+        token_no_accounts = create(:api_token, :active)
+        allow(ApiToken).to receive(:authenticate).with(token_no_accounts.token).and_return(token_no_accounts)
+        request.headers["Authorization"] = "Bearer #{token_no_accounts.token}"
+
+        post :process_emails
+
+        expect(response).to have_http_status(:not_found)
       end
     end
 
@@ -155,10 +172,16 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
     end
 
     context "error scenarios" do
+      # PR 11: BaseController rescues StandardError → 500 internal_server_error.
+      # Ensure owner has an active account so the per-account path is reached.
+      before { email_account }
+
       it "handles job enqueueing failures gracefully" do
         allow(ProcessEmailsJob).to receive(:perform_later).and_raise(StandardError.new("Queue error"))
 
-        expect { post :process_emails }.to raise_error(StandardError, "Queue error")
+        post :process_emails
+
+        expect(response).to have_http_status(:internal_server_error)
       end
     end
   end
@@ -293,9 +316,10 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
   end
 
   describe "GET #recent_expenses" do
-    let!(:expense1) { create(:expense, transaction_date: 2.days.ago) }
-    let!(:expense2) { create(:expense, transaction_date: 1.day.ago) }
-    let!(:expense3) { create(:expense, transaction_date: Time.current) }
+    # Expenses must belong to the token's owner for user-scoped queries to return them.
+    let!(:expense1) { create(:expense, user: api_token.user, email_account: email_account, transaction_date: 2.days.ago) }
+    let!(:expense2) { create(:expense, user: api_token.user, email_account: email_account, transaction_date: 1.day.ago) }
+    let!(:expense3) { create(:expense, user: api_token.user, email_account: email_account, transaction_date: Time.current) }
 
     it "returns recent expenses in descending order" do
       # Debug: Verify our expenses exist in the database
@@ -364,7 +388,7 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
     context "edge cases" do
       it "returns empty array when no expenses exist" do
         # Mock the query to return empty results instead of destroying all expenses
-        allow(Expense).to receive_message_chain(:includes, :recent, :limit).and_return([])
+        allow(Expense).to receive_message_chain(:for_user, :includes, :recent, :limit).and_return([])
 
         get :recent_expenses
 
@@ -376,17 +400,25 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
 
     context "database query optimization" do
       it "includes necessary associations to avoid N+1 queries" do
-        expect(Expense).to receive(:includes).with(:category, :email_account).and_call_original
+        # PR 11: Expense.for_user(user).includes(:category, :email_account)...
+        # Use a simple double because and_call_original requires a partial double.
+        user_scope = double("ExpenseUserScope")
+        allow(Expense).to receive(:for_user).and_return(user_scope)
+        included_scope = double("IncludedScope", recent: double("RecentScope", limit: []))
+        expect(user_scope).to receive(:includes).with(:category, :email_account).and_return(included_scope)
 
         get :recent_expenses
       end
     end
 
     context "error handling" do
+      # PR 11: BaseController rescues StandardError (and its subclasses) → 500.
       it "handles database connection errors gracefully" do
-        allow(Expense).to receive(:includes).and_raise(ActiveRecord::ConnectionNotEstablished.new("DB error"))
+        allow(Expense).to receive(:for_user).and_raise(ActiveRecord::ConnectionNotEstablished.new("DB error"))
 
-        expect { get :recent_expenses }.to raise_error(ActiveRecord::ConnectionNotEstablished)
+        get :recent_expenses
+
+        expect(response).to have_http_status(:internal_server_error)
       end
     end
   end
@@ -417,16 +449,19 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
     end
 
     it "passes period parameter to service" do
-      expect(Services::ExpenseSummaryService).to receive(:new).with("week")
+      expect(Services::ExpenseSummaryService).to receive(:new).with("week", user: api_token.user)
 
       get :expense_summary, params: { period: "week" }
     end
 
     context "error handling" do
+      # PR 11: BaseController rescues StandardError → 500; errors no longer propagate.
       it "handles service initialization failures" do
         allow(Services::ExpenseSummaryService).to receive(:new).and_raise(StandardError.new("Service error"))
 
-        expect { get :expense_summary }.to raise_error(StandardError, "Service error")
+        get :expense_summary
+
+        expect(response).to have_http_status(:internal_server_error)
       end
 
       it "handles service method failures" do
@@ -434,25 +469,27 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
         allow(Services::ExpenseSummaryService).to receive(:new).and_return(summary_service)
         allow(summary_service).to receive(:period).and_raise(StandardError.new("Period error"))
 
-        expect { get :expense_summary }.to raise_error(StandardError, "Period error")
+        get :expense_summary
+
+        expect(response).to have_http_status(:internal_server_error)
       end
     end
 
     context "parameter validation" do
       it "handles nil period parameter" do
-        expect(Services::ExpenseSummaryService).to receive(:new).with(nil)
+        expect(Services::ExpenseSummaryService).to receive(:new).with(nil, user: api_token.user)
 
         get :expense_summary, params: { period: nil }
       end
 
       it "handles empty string period parameter" do
-        expect(Services::ExpenseSummaryService).to receive(:new).with("")
+        expect(Services::ExpenseSummaryService).to receive(:new).with("", user: api_token.user)
 
         get :expense_summary, params: { period: "" }
       end
 
       it "handles invalid period parameter" do
-        expect(Services::ExpenseSummaryService).to receive(:new).with("invalid_period")
+        expect(Services::ExpenseSummaryService).to receive(:new).with("invalid_period", user: api_token.user)
 
         get :expense_summary, params: { period: "invalid_period" }
       end
@@ -589,10 +626,20 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
     end
 
     describe "#default_email_account" do
+      before do
+        # Inject @current_api_user into the controller so the method can call
+        # @current_api_user.email_accounts.active.first (PR 11 scoping).
+        controller.instance_variable_set(:@current_api_user, api_token.user)
+        controller.instance_variable_set(:@current_api_token, api_token)
+      end
+
       context "when active account exists" do
         it "returns first active account" do
           active_account = double("EmailAccount", provider: "gmail", active: true)
-          allow(EmailAccount).to receive_message_chain(:active, :first).and_return(active_account)
+          accounts_scope = double("accounts_scope")
+          allow(api_token.user).to receive(:email_accounts).and_return(accounts_scope)
+          allow(accounts_scope).to receive(:active).and_return(accounts_scope)
+          allow(accounts_scope).to receive(:first).and_return(active_account)
 
           result = controller.send(:default_email_account)
           expect(result).to eq(active_account)
@@ -601,7 +648,10 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
 
       context "when no active account exists" do
         it "creates and returns default manual account" do
-          allow(EmailAccount).to receive_message_chain(:active, :first).and_return(nil)
+          accounts_scope = double("accounts_scope")
+          allow(api_token.user).to receive(:email_accounts).and_return(accounts_scope)
+          allow(accounts_scope).to receive(:active).and_return(accounts_scope)
+          allow(accounts_scope).to receive(:first).and_return(nil)
           allow(controller).to receive(:create_default_manual_account).and_return(
             double("EmailAccount", provider: "manual", active: true)
           )
@@ -704,7 +754,7 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
 
     context "large dataset handling" do
       it "handles large limit parameter efficiently" do
-        allow(Expense).to receive_message_chain(:includes, :recent, :limit).and_return([])
+        allow(Expense).to receive_message_chain(:for_user, :includes, :recent, :limit).and_return([])
 
         get :recent_expenses, params: { limit: 1000 }
 
@@ -718,7 +768,7 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
         allow(expenses_relation).to receive(:includes).and_return(expenses_relation)
         allow(expenses_relation).to receive(:recent).and_return(expenses_relation)
         allow(expenses_relation).to receive(:limit).with(50).and_return([])
-        allow(Expense).to receive(:includes).and_return(expenses_relation)
+        allow(Expense).to receive(:for_user).and_return(expenses_relation)
 
         get :recent_expenses, params: { limit: 999999 }
 
@@ -730,7 +780,7 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
         allow(expenses_relation).to receive(:includes).and_return(expenses_relation)
         allow(expenses_relation).to receive(:recent).and_return(expenses_relation)
         allow(expenses_relation).to receive(:limit).with(10).and_return([])
-        allow(Expense).to receive(:includes).and_return(expenses_relation)
+        allow(Expense).to receive(:for_user).and_return(expenses_relation)
 
         get :recent_expenses, params: { limit: -5 }
 
@@ -743,10 +793,12 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
     context "database optimization" do
       it "uses includes to prevent N+1 queries in recent_expenses" do
         expenses_relation = double("expenses_relation")
+        allow(expenses_relation).to receive(:includes).and_return(expenses_relation)
         allow(expenses_relation).to receive(:recent).and_return(expenses_relation)
         allow(expenses_relation).to receive(:limit).and_return([])
+        allow(Expense).to receive(:for_user).and_return(expenses_relation)
 
-        expect(Expense).to receive(:includes).with(:category, :email_account).and_return(expenses_relation)
+        expect(expenses_relation).to receive(:includes).with(:category, :email_account).and_return(expenses_relation)
 
         get :recent_expenses
       end
@@ -790,8 +842,8 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
 
     context "memory usage" do
       it "efficiently formats many expenses" do
-        many_expenses = Array.new(45) { create(:expense) }
-        allow(Expense).to receive_message_chain(:includes, :recent, :limit).and_return(many_expenses)
+        many_expenses = Array.new(45) { create(:expense, user: api_token.user, email_account: email_account) }
+        allow(Expense).to receive_message_chain(:for_user, :includes, :recent, :limit).and_return(many_expenses)
 
         get :recent_expenses, params: { limit: 50 }
 
@@ -805,7 +857,7 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
       it "handles slow database queries gracefully" do
         # Simulate slow query with stubbing instead of actual sleep
         slow_query_executed = false
-        allow(Expense).to receive_message_chain(:includes, :recent, :limit) do
+        allow(Expense).to receive_message_chain(:for_user, :includes, :recent, :limit) do
           slow_query_executed = true
           []
         end
@@ -817,14 +869,15 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
       end
 
       it "handles job enqueueing delays" do
-        # Test job enqueueing without actual delays
+        # PR 11: no email_account_id queues per owner account. Ensure one exists.
+        email_account # trigger creation of owner's active account
         job_enqueued = false
-        allow(ProcessEmailsJob).to receive(:perform_later) do |*args|
+        allow(ProcessEmailsJob).to receive(:perform_later) do |*_args|
           job_enqueued = true
           true
         end
 
-        post :process_emails, params: { email_account_id: 1 }
+        post :process_emails
 
         expect(response).to have_http_status(:accepted)
         expect(job_enqueued).to be true
@@ -832,275 +885,6 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
     end
   end
 
-  # Unit tests for the overridden authenticate_api_token method
-  describe "Authentication Unit Tests", unit: true do
-    describe "#authenticate_api_token (overridden method)" do
-      let(:test_api_token) { create(:api_token, name: "webhooks-test-token") }
-
-      # Override the global authentication setup for these unit tests
-      before do
-        # Clear the global authentication setup
-        request.headers["Authorization"] = nil
-        allow(ApiToken).to receive(:authenticate).and_call_original
-      end
-
-      context "with valid Bearer token" do
-        before do
-          request.headers["Authorization"] = "Bearer #{test_api_token.token}"
-          allow(ApiToken).to receive(:authenticate).with(test_api_token.token).and_return(test_api_token)
-        end
-
-        it "sets @current_api_token instance variable" do
-          controller.send(:authenticate_api_token)
-          expect(controller.instance_variable_get(:@current_api_token)).to eq(test_api_token)
-        end
-
-        it "calls ApiToken.authenticate with extracted token" do
-          controller.send(:authenticate_api_token)
-          expect(ApiToken).to have_received(:authenticate).with(test_api_token.token)
-        end
-
-        it "does not render unauthorized response" do
-          expect(controller).not_to receive(:render)
-          controller.send(:authenticate_api_token)
-        end
-      end
-
-      context "without Authorization header" do
-        it "renders unauthorized JSON response with missing token message" do
-          expect(controller).to receive(:render).with(
-            json: { error: "Missing API token" },
-            status: :unauthorized
-          )
-          result = controller.send(:authenticate_api_token)
-          expect(result).to be_nil
-        end
-
-        it "does not call ApiToken.authenticate due to early return" do
-          allow(controller).to receive(:render)
-          expect(ApiToken).not_to receive(:authenticate)
-          controller.send(:authenticate_api_token)
-        end
-      end
-
-      context "with empty Authorization header" do
-        before do
-          request.headers["Authorization"] = ""
-        end
-
-        it "renders unauthorized JSON response" do
-          expect(controller).to receive(:render).with(
-            json: { error: "Missing API token" },
-            status: :unauthorized
-          )
-          controller.send(:authenticate_api_token)
-        end
-      end
-
-      context "with Authorization header without Bearer prefix" do
-        before do
-          request.headers["Authorization"] = "token_without_bearer"
-          allow(ApiToken).to receive(:authenticate).with("token_without_bearer").and_return(nil)
-        end
-
-        it "extracts token correctly and attempts authentication" do
-          allow(controller).to receive(:render)
-          controller.send(:authenticate_api_token)
-          expect(ApiToken).to have_received(:authenticate).with("token_without_bearer")
-        end
-
-        it "renders unauthorized response when token is invalid" do
-          expect(controller).to receive(:render).with(
-            json: { error: "Invalid or expired API token" },
-            status: :unauthorized
-          )
-          controller.send(:authenticate_api_token)
-        end
-      end
-
-      context "with invalid Bearer token" do
-        before do
-          request.headers["Authorization"] = "Bearer invalid_token_123"
-          allow(ApiToken).to receive(:authenticate).with("invalid_token_123").and_return(nil)
-        end
-
-        it "calls ApiToken.authenticate with invalid token" do
-          allow(controller).to receive(:render)
-          controller.send(:authenticate_api_token)
-          expect(ApiToken).to have_received(:authenticate).with("invalid_token_123")
-        end
-
-        it "renders unauthorized JSON response" do
-          expect(controller).to receive(:render).with(
-            json: { error: "Invalid or expired API token" },
-            status: :unauthorized
-          )
-          controller.send(:authenticate_api_token)
-        end
-
-        it "returns nil" do
-          allow(controller).to receive(:render)
-          result = controller.send(:authenticate_api_token)
-          expect(result).to be_nil
-        end
-
-        it "does not set @current_api_token" do
-          allow(controller).to receive(:render)
-          controller.send(:authenticate_api_token)
-          expect(controller.instance_variable_get(:@current_api_token)).to be_nil
-        end
-      end
-
-      context "with expired token" do
-        let(:expired_token) { create(:api_token, expires_at: 1.day.from_now) }
-
-        before do
-          # Manually expire the token after creation
-          expired_token.update_column(:expires_at, 1.day.ago)
-          request.headers["Authorization"] = "Bearer #{expired_token.token}"
-          allow(ApiToken).to receive(:authenticate).with(expired_token.token).and_return(nil)
-        end
-
-        it "renders unauthorized response for expired token" do
-          expect(controller).to receive(:render).with(
-            json: { error: "Invalid or expired API token" },
-            status: :unauthorized
-          )
-          controller.send(:authenticate_api_token)
-        end
-      end
-
-      context "with malformed Authorization header" do
-        before do
-          request.headers["Authorization"] = "Malformed header format"
-          allow(ApiToken).to receive(:authenticate).with("Malformed header format").and_return(nil)
-        end
-
-        it "attempts to authenticate with malformed header content" do
-          allow(controller).to receive(:render)
-          controller.send(:authenticate_api_token)
-          expect(ApiToken).to have_received(:authenticate).with("Malformed header format")
-        end
-
-        it "renders unauthorized response" do
-          expect(controller).to receive(:render).with(
-            json: { error: "Invalid or expired API token" },
-            status: :unauthorized
-          )
-          controller.send(:authenticate_api_token)
-        end
-      end
-
-      context "security edge cases" do
-        it "handles extremely long tokens" do
-          long_token = "a" * 10000
-          request.headers["Authorization"] = "Bearer #{long_token}"
-          allow(ApiToken).to receive(:authenticate).with(long_token).and_return(nil)
-          allow(controller).to receive(:render)
-
-          controller.send(:authenticate_api_token)
-
-          expect(ApiToken).to have_received(:authenticate).with(long_token)
-        end
-
-        it "handles tokens with special characters" do
-          special_token = "token-with-special@#$%^&*()characters"
-          request.headers["Authorization"] = "Bearer #{special_token}"
-          allow(ApiToken).to receive(:authenticate).with(special_token).and_return(nil)
-          allow(controller).to receive(:render)
-
-          controller.send(:authenticate_api_token)
-
-          expect(ApiToken).to have_received(:authenticate).with(special_token)
-        end
-
-        it "handles SQL injection attempts in token" do
-          malicious_token = "'; DROP TABLE api_tokens; --"
-          request.headers["Authorization"] = "Bearer #{malicious_token}"
-          allow(ApiToken).to receive(:authenticate).with(malicious_token).and_return(nil)
-          allow(controller).to receive(:render)
-
-          controller.send(:authenticate_api_token)
-
-          expect(ApiToken).to have_received(:authenticate).with(malicious_token)
-        end
-
-        it "handles Unicode characters in token" do
-          unicode_token = "token_with_unicode_🔑_characters"
-          request.headers["Authorization"] = "Bearer #{unicode_token}"
-          allow(ApiToken).to receive(:authenticate).with(unicode_token).and_return(nil)
-          allow(controller).to receive(:render)
-
-          controller.send(:authenticate_api_token)
-
-          expect(ApiToken).to have_received(:authenticate).with(unicode_token)
-        end
-      end
-
-      context "method behavior differences from BaseController" do
-        it "renders JSON response directly (no render_unauthorized helper)" do
-          # The webhooks controller renders JSON directly instead of using BaseController's helper
-          expect(controller).to receive(:render).with(
-            json: { error: "Missing API token" },
-            status: :unauthorized
-          )
-
-          controller.send(:authenticate_api_token)
-        end
-
-        it "uses different JSON structure than BaseController" do
-          request.headers["Authorization"] = "Bearer invalid"
-          allow(ApiToken).to receive(:authenticate).with("invalid").and_return(nil)
-
-          expect(controller).to receive(:render).with(
-            json: { error: "Invalid or expired API token" },
-            status: :unauthorized
-          )
-
-          controller.send(:authenticate_api_token)
-        end
-
-        it "returns nil on authentication failure (different from BaseController)" do
-          request.headers["Authorization"] = "Bearer invalid"
-          allow(ApiToken).to receive(:authenticate).with("invalid").and_return(nil)
-          allow(controller).to receive(:render)
-
-          result = controller.send(:authenticate_api_token)
-
-          expect(result).to be_nil
-        end
-      end
-
-      context "integration with ApiToken model" do
-        it "properly handles ApiToken.authenticate returning truthy value" do
-          valid_token_obj = test_api_token
-          request.headers["Authorization"] = "Bearer #{valid_token_obj.token}"
-          allow(ApiToken).to receive(:authenticate).with(valid_token_obj.token).and_return(valid_token_obj)
-
-          controller.send(:authenticate_api_token)
-
-          expect(controller.instance_variable_get(:@current_api_token)).to eq(valid_token_obj)
-        end
-
-        it "properly handles ApiToken.authenticate returning falsy value" do
-          request.headers["Authorization"] = "Bearer falsy_token"
-          allow(ApiToken).to receive(:authenticate).with("falsy_token").and_return(false)
-          allow(controller).to receive(:render)
-
-          controller.send(:authenticate_api_token)
-
-          expect(controller.instance_variable_get(:@current_api_token)).to be_falsy
-        end
-
-        it "properly handles ApiToken.authenticate raising an exception" do
-          request.headers["Authorization"] = "Bearer error_token"
-          allow(ApiToken).to receive(:authenticate).with("error_token").and_raise(StandardError.new("DB error"))
-
-          expect {
-            controller.send(:authenticate_api_token)
-          }.to raise_error(StandardError, "DB error")
-        end
-      end
-    end
-  end
+  # Auth unit tests moved to spec/controllers/api/base_controller_spec.rb in PR 11.
+  # WebhooksController now inherits authenticate_api_token from Api::BaseController.
 end

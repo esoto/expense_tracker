@@ -477,7 +477,8 @@ RSpec.describe "PER-126 Index Audit", :unit do
       # +4 for users table (email unique, session_token unique, session_expires_at, locked_at)
       # +1 for email_accounts.user_id FK index (PR 4: user ownership wiring)
       # +1 for expenses.user_id FK index (PR 5: user ownership wiring)
-      expect(total).to be <= 233  # small buffer for schema drift
+      # +1 for budgets.user_id FK index (PR 6: user ownership wiring)
+      expect(total).to be <= 234  # small buffer for schema drift
     end
   end
 end

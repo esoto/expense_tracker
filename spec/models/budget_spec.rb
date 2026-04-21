@@ -7,8 +7,26 @@ RSpec.describe Budget, type: :model, integration: true do
   let(:category) { create(:category) }
 
   describe 'associations', integration: true do
+    it { should belong_to(:user) }
     it { should belong_to(:email_account) }
     it { should belong_to(:category).optional }
+  end
+
+  describe '.for_user scope', unit: true do
+    let!(:user_a) { create(:user) }
+    let!(:user_b) { create(:user) }
+    let!(:account_a) { create(:email_account, user: user_a) }
+    let!(:account_b) { create(:email_account, user: user_b) }
+    let!(:budget_a) { create(:budget, user: user_a, email_account: account_a) }
+    let!(:budget_b) { create(:budget, user: user_b, email_account: account_b) }
+
+    it 'returns only budgets belonging to the given user' do
+      expect(Budget.for_user(user_a)).to contain_exactly(budget_a)
+    end
+
+    it 'excludes budgets belonging to other users' do
+      expect(Budget.for_user(user_a)).not_to include(budget_b)
+    end
   end
 
   describe 'validations', integration: true do

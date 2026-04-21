@@ -3,6 +3,7 @@
 FactoryBot.define do
   factory :budget do
     association :email_account
+    user { email_account&.user || association(:user) }
 
     name { "Presupuesto #{period.to_s.humanize}" }
     description { "Presupuesto para controlar gastos" }

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_21_100200) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_21_100500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -77,6 +77,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_100200) do
     t.date "start_date", null: false
     t.integer "times_exceeded", default: 0
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.integer "warning_threshold", default: 70
     t.index ["active", "start_date"], name: "index_budgets_on_active_and_start_date"
     t.index ["category_id"], name: "index_budgets_on_category_id"
@@ -89,6 +90,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_100200) do
     t.index ["external_source"], name: "index_budgets_on_external_source", where: "(external_source IS NOT NULL)"
     t.index ["metadata"], name: "index_budgets_on_metadata", using: :gin
     t.index ["start_date", "end_date"], name: "index_budgets_on_start_date_and_end_date"
+    t.index ["user_id"], name: "index_budgets_on_user_id"
   end
 
   create_table "bulk_operation_items", force: :cascade do |t|
@@ -798,6 +800,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_100200) do
 
   add_foreign_key "budgets", "categories"
   add_foreign_key "budgets", "email_accounts"
+  add_foreign_key "budgets", "users"
   add_foreign_key "bulk_operation_items", "bulk_operations"
   add_foreign_key "bulk_operation_items", "categories", column: "new_category_id"
   add_foreign_key "bulk_operation_items", "categories", column: "previous_category_id"

@@ -17,6 +17,7 @@ class User < ApplicationRecord
   # via destroy callbacks.
   has_many :email_accounts, dependent: :restrict_with_exception
   has_many :expenses, dependent: :restrict_with_exception
+  has_many :budgets, dependent: :restrict_with_exception
 
   # Enums
   enum :role, {

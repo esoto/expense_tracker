@@ -14,7 +14,8 @@ RSpec.describe "Budgets", type: :request, integration: true do
         currency: 'CRC',
         start_date: Date.current,
         warning_threshold: 70,
-        critical_threshold: 90
+        critical_threshold: 90,
+        email_account_id: email_account.id
       }
     }
   end
@@ -28,6 +29,8 @@ RSpec.describe "Budgets", type: :request, integration: true do
     }
   end
 
+  let(:user) { email_account.user }
+
   let(:admin_user) do
     AdminUser.create!(
       name: "Budget Test Admin",
@@ -39,8 +42,8 @@ RSpec.describe "Budgets", type: :request, integration: true do
 
   before do
     sign_in_admin(admin_user)
-    # Ensure we have an active email account
-    allow(EmailAccount).to receive_message_chain(:active, :first).and_return(email_account)
+    # Stub scoping_user to return the User who owns the email_account.
+    allow_any_instance_of(BudgetsController).to receive(:scoping_user).and_return(user)
   end
 
   describe "POST /budgets", integration: true do

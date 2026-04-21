@@ -1,23 +1,22 @@
 require "rails_helper"
 
 RSpec.describe BudgetsController, type: :controller, unit: true do
-  let(:email_account) { build_stubbed(:email_account) }
-  let(:budget) { build_stubbed(:budget, email_account: email_account) }
+  let(:user) { build_stubbed(:user, :admin) }
+  let(:email_account) { build_stubbed(:email_account, user: user) }
+  let(:budget) { build_stubbed(:budget, user: user, email_account: email_account) }
   let(:category) { build_stubbed(:category) }
 
   before do
     allow(controller).to receive(:authenticate_user!).and_return(true)
-    allow(EmailAccount).to receive_message_chain(:active, :first).and_return(email_account)
+    # Stub scoping_user to return a consistent user across all tests.
+    allow(controller).to receive(:scoping_user).and_return(user)
   end
 
   describe "before_actions", unit: true do
-    it "sets email account for all actions" do
-      expect(controller).to receive(:set_email_account).and_call_original
-      get :index
-    end
-
     it "sets budget for specific actions" do
-      allow(email_account).to receive_message_chain(:budgets, :find).and_return(budget)
+      budgets_scope = double("budgets_scope")
+      allow(Budget).to receive(:for_user).with(user).and_return(budgets_scope)
+      allow(budgets_scope).to receive(:find).with(budget.id.to_s).and_return(budget)
       allow(budget).to receive(:current_spend_amount).and_return(0)
       allow(budget).to receive(:usage_percentage).and_return(0)
       allow(budget).to receive(:remaining_amount).and_return(0)
@@ -35,14 +34,17 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
     let(:budgets) { [ budget ] }
 
     before do
-      allow(email_account).to receive(:budgets).and_return(budgets_relation)
+      allow(Budget).to receive(:for_user).with(user).and_return(budgets_relation)
       allow(budgets_relation).to receive_message_chain(:includes, :order).and_return(budgets)
       allow(budgets).to receive(:group_by).and_return({ monthly: [ budget ] })
       allow(controller).to receive(:calculate_overall_budget_health).and_return({ status: :good })
+      allow(user).to receive_message_chain(:email_accounts, :first).and_return(email_account)
+      allow(email_account).to receive_message_chain(:external_budget_source, :active?).and_return(false)
+      allow(Category).to receive_message_chain(:all, :distinct, :to_a).and_return([])
     end
 
-    it "loads budgets for the email account" do
-      expect(email_account).to receive(:budgets).and_return(budgets_relation)
+    it "loads budgets for the scoping user" do
+      expect(Budget).to receive(:for_user).with(user).and_return(budgets_relation)
       expect(budgets_relation).to receive(:includes).with(:category).and_return(budgets_relation)
       expect(budgets_relation).to receive(:order).with(active: :desc, period: :asc, created_at: :desc).and_return(budgets)
 
@@ -71,7 +73,9 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
 
   describe "GET #show", unit: true do
     before do
-      allow(email_account).to receive_message_chain(:budgets, :find).and_return(budget)
+      budgets_scope = double("budgets_scope")
+      allow(Budget).to receive(:for_user).with(user).and_return(budgets_scope)
+      allow(budgets_scope).to receive(:find).and_return(budget)
       allow(budget).to receive(:current_spend_amount).and_return(5000)
       allow(budget).to receive(:usage_percentage).and_return(50)
       allow(budget).to receive(:remaining_amount).and_return(5000)
@@ -81,7 +85,9 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
     end
 
     it "sets budget from params" do
-      expect(email_account).to receive_message_chain(:budgets, :find).with(budget.id.to_s).and_return(budget)
+      budgets_scope = double("budgets_scope")
+      expect(Budget).to receive(:for_user).with(user).and_return(budgets_scope)
+      expect(budgets_scope).to receive(:find).with(budget.id.to_s).and_return(budget)
 
       get :show, params: { id: budget.id }
       expect(assigns(:budget)).to eq(budget)
@@ -108,27 +114,25 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
   end
 
   describe "GET #new", unit: true do
-    let(:budgets_relation) { double("budgets_relation") }
     let(:new_budget) { build_stubbed(:budget) }
     let(:categories) { [ category ] }
 
     before do
-      allow(email_account).to receive(:budgets).and_return(budgets_relation)
-      allow(budgets_relation).to receive(:build).and_return(new_budget)
+      allow(user).to receive_message_chain(:email_accounts, :first).and_return(email_account)
       allow(Category).to receive_message_chain(:all, :order).and_return(categories)
     end
 
-    it "builds new budget with default values" do
-      expect(budgets_relation).to receive(:build).with(
-        start_date: Date.current,
-        period: "monthly",
-        currency: "CRC",
-        warning_threshold: 70,
-        critical_threshold: 90
-      ).and_return(new_budget)
-
+    it "builds new budget with scoping_user, default account, and field defaults" do
       get :new
-      expect(assigns(:budget)).to eq(new_budget)
+      budget = assigns(:budget)
+      expect(budget).to be_a(Budget)
+      expect(budget.user).to eq(user)
+      expect(budget.email_account).to eq(email_account)
+      expect(budget.start_date).to eq(Date.current)
+      expect(budget.period).to eq("monthly")
+      expect(budget.currency).to eq("CRC")
+      expect(budget.warning_threshold).to eq(70)
+      expect(budget.critical_threshold).to eq(90)
     end
 
     it "loads categories for select options" do
@@ -148,12 +152,16 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
     let(:categories) { [ category ] }
 
     before do
-      allow(email_account).to receive_message_chain(:budgets, :find).and_return(budget)
+      budgets_scope = double("budgets_scope")
+      allow(Budget).to receive(:for_user).with(user).and_return(budgets_scope)
+      allow(budgets_scope).to receive(:find).and_return(budget)
       allow(Category).to receive_message_chain(:all, :order).and_return(categories)
     end
 
     it "sets budget from params" do
-      expect(email_account).to receive_message_chain(:budgets, :find).with(budget.id.to_s)
+      budgets_scope = double("budgets_scope")
+      expect(Budget).to receive(:for_user).with(user).and_return(budgets_scope)
+      expect(budgets_scope).to receive(:find).with(budget.id.to_s).and_return(budget)
 
       get :edit, params: { id: budget.id }
       expect(assigns(:budget)).to eq(budget)
@@ -173,13 +181,12 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
   end
 
   describe "POST #create", unit: true do
-    let(:budgets_relation) { double("budgets_relation") }
-    let(:new_budget) { build_stubbed(:budget) }
+    let(:new_budget) { build_stubbed(:budget, user: user, email_account: email_account) }
     let(:budget_params) { { name: "Test Budget", amount: 10000 } }
 
     before do
-      allow(email_account).to receive(:budgets).and_return(budgets_relation)
-      allow(budgets_relation).to receive(:build).and_return(new_budget)
+      allow(Budget).to receive(:new).and_return(new_budget)
+      allow(new_budget).to receive(:user=)
     end
 
     context "with valid parameters" do
@@ -188,8 +195,8 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
         allow(new_budget).to receive(:calculate_current_spend!)
       end
 
-      it "builds budget with permitted params" do
-        expect(budgets_relation).to receive(:build)
+      it "builds budget then assigns scoping_user" do
+        expect(new_budget).to receive(:user=).with(user)
 
         post :create, params: { budget: budget_params }
       end
@@ -249,7 +256,9 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
     let(:categories) { [ category ] }
 
     before do
-      allow(email_account).to receive_message_chain(:budgets, :find).and_return(budget)
+      budgets_scope = double("budgets_scope")
+      allow(Budget).to receive(:for_user).with(user).and_return(budgets_scope)
+      allow(budgets_scope).to receive(:find).and_return(budget)
     end
 
     context "with valid parameters" do
@@ -308,7 +317,9 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
 
   describe "DELETE #destroy", unit: true do
     before do
-      allow(email_account).to receive_message_chain(:budgets, :find).and_return(budget)
+      budgets_scope = double("budgets_scope")
+      allow(Budget).to receive(:for_user).with(user).and_return(budgets_scope)
+      allow(budgets_scope).to receive(:find).and_return(budget)
       allow(budget).to receive(:destroy)
     end
 
@@ -327,11 +338,13 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
   end
 
   describe "POST #duplicate", unit: true do
-    let(:original_budget) { build_stubbed(:budget) }
-    let(:duplicated_budget) { build_stubbed(:budget, id: 999) }
+    let(:original_budget) { build_stubbed(:budget, user: user) }
+    let(:duplicated_budget) { build_stubbed(:budget, id: 999, user: user) }
 
     before do
-      allow(email_account).to receive_message_chain(:budgets, :find).and_return(original_budget)
+      budgets_scope = double("budgets_scope")
+      allow(Budget).to receive(:for_user).with(user).and_return(budgets_scope)
+      allow(budgets_scope).to receive(:find).and_return(original_budget)
     end
 
     context "when duplication succeeds" do
@@ -370,10 +383,12 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
   end
 
   describe "POST #deactivate", unit: true do
-    let(:budget_to_deactivate) { build_stubbed(:budget) }
+    let(:budget_to_deactivate) { build_stubbed(:budget, user: user) }
 
     before do
-      allow(email_account).to receive_message_chain(:budgets, :find).and_return(budget_to_deactivate)
+      budgets_scope = double("budgets_scope")
+      allow(Budget).to receive(:for_user).with(user).and_return(budgets_scope)
+      allow(budgets_scope).to receive(:find).and_return(budget_to_deactivate)
       allow(budget_to_deactivate).to receive(:deactivate!)
     end
 
@@ -392,12 +407,10 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
   end
 
   describe "GET #quick_set", unit: true do
-    let(:budgets_relation) { double("budgets_relation") }
-    let(:new_budget) { build_stubbed(:budget) }
+    let(:new_budget) { build_stubbed(:budget, user: user) }
 
     before do
-      allow(email_account).to receive(:budgets).and_return(budgets_relation)
-      allow(budgets_relation).to receive(:build).and_return(new_budget)
+      allow(user).to receive_message_chain(:email_accounts, :first).and_return(email_account)
       allow(controller).to receive(:calculate_suggested_budget_amount).and_return(50000)
       allow(I18n).to receive(:t).and_return("mensual")
     end
@@ -413,23 +426,24 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
     end
 
     it "calculates suggested budget amount" do
-      expect(controller).to receive(:calculate_suggested_budget_amount).with("weekly")
+      expect(controller).to receive(:calculate_suggested_budget_amount).with("weekly", email_account).and_return(50000)
 
       get :quick_set, params: { period: "weekly" }
       expect(assigns(:suggested_amount)).to eq(50000)
     end
 
-    it "builds new budget with suggested values" do
-      expect(budgets_relation).to receive(:build).with(hash_including(
-        period: "monthly",
-        amount: 50000,
-        currency: "CRC",
-        start_date: Date.current,
-        warning_threshold: 70,
-        critical_threshold: 90
-      ))
-
+    it "builds new budget with suggested values and full field defaults" do
       get :quick_set
+      budget = assigns(:budget)
+      expect(budget).to be_a(Budget)
+      expect(budget.user).to eq(user)
+      expect(budget.email_account).to eq(email_account)
+      expect(budget.period).to eq("monthly")
+      expect(budget.amount).to eq(50000)
+      expect(budget.currency).to eq("CRC")
+      expect(budget.start_date).to eq(Date.current)
+      expect(budget.warning_threshold).to eq(70)
+      expect(budget.critical_threshold).to eq(90)
     end
 
     context "with HTML format" do
@@ -470,41 +484,55 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
         expect(permitted_params).to include("name", "amount", "period")
         expect(permitted_params).not_to include("unauthorized_param")
       end
+
+      it "does not permit user_id" do
+        controller.params = ActionController::Parameters.new(
+          budget: params_hash[:budget].merge(user_id: 999)
+        )
+        permitted_params = controller.send(:budget_params)
+        expect(permitted_params).not_to include("user_id")
+      end
     end
   end
 
   describe "error handling", unit: true do
-    context "when email account is not found" do
+    context "when no admin user exists and current_app_user is nil" do
       before do
-        allow(EmailAccount).to receive_message_chain(:active, :first).and_return(nil)
+        allow(controller).to receive(:scoping_user).and_call_original
+        allow(controller).to receive(:try).with(:current_app_user).and_return(nil)
+        allow(User).to receive_message_chain(:admin, :first).and_return(nil)
       end
 
-      it "redirects to root path" do
-        get :index
-        expect(response).to redirect_to(root_path)
+      it "raises when no user is available" do
+        expect { get :index }.to raise_error(RuntimeError, /No authenticated user/)
       end
     end
 
     context "when budget is not found" do
       before do
-        allow(email_account).to receive_message_chain(:budgets, :find).and_raise(ActiveRecord::RecordNotFound)
+        budgets_scope = double("budgets_scope")
+        allow(Budget).to receive(:for_user).with(user).and_return(budgets_scope)
+        allow(budgets_scope).to receive(:find).and_raise(ActiveRecord::RecordNotFound)
       end
 
-      it "raises RecordNotFound error" do
-        expect {
-          get :show, params: { id: 999 }
-        }.to raise_error(ActiveRecord::RecordNotFound)
+      it "redirects to budgets path with alert" do
+        get :show, params: { id: 999 }
+        expect(response).to redirect_to(budgets_path)
       end
     end
   end
 
   describe "authorization", unit: true do
-    it "scopes all budgets to email account" do
-      allow(email_account).to receive_message_chain(:budgets, :includes, :order).and_return([])
+    it "scopes all budgets to scoping_user" do
+      budgets_scope = double("budgets_scope")
+      allow(Budget).to receive(:for_user).with(user).and_return(budgets_scope)
+      allow(budgets_scope).to receive_message_chain(:includes, :order).and_return([])
       allow(controller).to receive(:calculate_overall_budget_health).and_return({})
+      allow(user).to receive_message_chain(:email_accounts, :first).and_return(nil)
+      allow(Category).to receive_message_chain(:all, :distinct, :to_a).and_return([])
 
       get :index
-      expect(email_account).to have_received(:budgets)
+      expect(Budget).to have_received(:for_user).with(user)
     end
   end
 end

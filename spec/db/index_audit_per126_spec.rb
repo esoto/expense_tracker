@@ -480,7 +480,9 @@ RSpec.describe "PER-126 Index Audit", :unit do
       # +1 for budgets.user_id FK index (PR 6: user ownership wiring)
       # +5 for sync cluster user_id FK indexes (PR 7: sync_sessions, sync_metrics, sync_conflicts,
       #     processed_emails, email_parsing_failures — one concurrent index each)
-      expect(total).to be <= 239  # small buffer for schema drift
+      # +2 for preferences cluster user_id FK indexes (PR 8: user_category_preferences, external_budget_sources —
+      #     one concurrent index each; undo_histories uses existing composite index)
+      expect(total).to be <= 241  # small buffer for schema drift
     end
   end
 end

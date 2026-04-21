@@ -116,7 +116,7 @@ class ExpensesController < ApplicationController
       undo_entry = nil
       ActiveRecord::Base.transaction do
         @expense.soft_delete!(deleted_by: current_user)
-        undo_entry = UndoHistory.create_for_deletion(@expense, user: current_user)
+        undo_entry = UndoHistory.create_for_deletion(@expense, user: scoping_user)
       end
 
       respond_to do |format|

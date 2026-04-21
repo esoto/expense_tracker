@@ -1,8 +1,11 @@
 # frozen_string_literal: true
 
 class UserCategoryPreference < ApplicationRecord
+  belongs_to :user
   belongs_to :email_account
   belongs_to :category
+
+  scope :for_user, ->(user) { where(user: user) }
 
   # Constants for classification ranges
   TIME_RANGES = {
@@ -133,6 +136,7 @@ class UserCategoryPreference < ApplicationRecord
       preference.increment!(:preference_weight) if preference.usage_count > WEIGHT_INCREMENT_THRESHOLD
     else
       preference.assign_attributes(
+        user: email_account.user,
         preference_weight: 1,
         usage_count: 1
       )

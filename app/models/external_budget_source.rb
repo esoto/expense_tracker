@@ -9,11 +9,15 @@ class ExternalBudgetSource < ApplicationRecord
 
   encrypts :api_token
 
+  belongs_to :user
   belongs_to :email_account
+
+  scope :for_user, ->(user) { where(user: user) }
 
   validates :source_type, presence: true, inclusion: { in: SOURCE_TYPES }
   validates :base_url, presence: true
   validate  :base_url_must_be_http
+  validate  :email_account_must_belong_to_user
   validates :email_account_id, uniqueness: true
 
   scope :active, -> { where(active: true) }
@@ -35,6 +39,18 @@ class ExternalBudgetSource < ApplicationRecord
   end
 
   private
+
+  # FK forgery guard (mirrors PR 6 BudgetsController pattern at the model level).
+  # Ensures the email_account_id always belongs to the record's user.
+  # Nullifies email_account_id if it is forged, and adds a validation error so
+  # the caller knows the association was rejected.
+  def email_account_must_belong_to_user
+    return unless user && email_account_id.present?
+    return if user.email_accounts.exists?(id: email_account_id)
+
+    errors.add(:email_account_id, "does not belong to the record's user")
+    self.email_account_id = nil
+  end
 
   def base_url_must_be_http
     uri = URI.parse(base_url.to_s)

@@ -6,6 +6,8 @@ RSpec.describe ExternalBudgetSource, type: :model, unit: true do
   let(:email_account) { create(:email_account) }
 
   describe "associations" do
+    it { should belong_to(:user) }
+
     it "requires email_account" do
       source = build(:external_budget_source, email_account: nil)
       expect(source).not_to be_valid
@@ -14,6 +16,49 @@ RSpec.describe ExternalBudgetSource, type: :model, unit: true do
 
     it "is valid with an email_account" do
       source = build(:external_budget_source, email_account: email_account)
+      expect(source).to be_valid
+    end
+  end
+
+  describe ".for_user scope" do
+    let!(:user_a) { create(:user) }
+    let!(:user_b) { create(:user) }
+    let!(:account_a) { create(:email_account, user: user_a) }
+    let!(:account_b) { create(:email_account, user: user_b) }
+    let!(:source_a) { create(:external_budget_source, email_account: account_a, user: user_a) }
+    let!(:source_b) { create(:external_budget_source, email_account: account_b, user: user_b) }
+
+    it "returns only records for the given user" do
+      expect(ExternalBudgetSource.for_user(user_a)).to include(source_a)
+      expect(ExternalBudgetSource.for_user(user_a)).not_to include(source_b)
+    end
+
+    it "excludes records from other users" do
+      expect(ExternalBudgetSource.for_user(user_b)).to include(source_b)
+      expect(ExternalBudgetSource.for_user(user_b)).not_to include(source_a)
+    end
+  end
+
+  describe "FK forgery guard — email_account_must_belong_to_user" do
+    let!(:user_a) { create(:user) }
+    let!(:user_b) { create(:user) }
+    let!(:account_b) { create(:email_account, user: user_b) }
+
+    it "is invalid when email_account_id belongs to a different user" do
+      source = build(:external_budget_source, user: user_a, email_account: account_b)
+      expect(source).not_to be_valid
+      expect(source.errors[:email_account_id]).to be_present
+    end
+
+    it "nullifies email_account_id when the guard fires" do
+      source = build(:external_budget_source, user: user_a, email_account: account_b)
+      source.valid?
+      expect(source.email_account_id).to be_nil
+    end
+
+    it "is valid when email_account belongs to the same user" do
+      account_a = create(:email_account, user: user_a)
+      source = build(:external_budget_source, user: user_a, email_account: account_a)
       expect(source).to be_valid
     end
   end

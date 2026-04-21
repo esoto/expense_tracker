@@ -669,4 +669,21 @@ RSpec.describe User, type: :model, unit: true do
       end
     end
   end
+
+  # PR 8 — preferences cluster associations
+  describe 'preferences cluster associations (PR 8)' do
+    let(:user) { create(:user) }
+
+    %i[user_category_preferences external_budget_sources undo_histories].each do |assoc|
+      it "responds to #{assoc}" do
+        expect(user).to respond_to(assoc)
+      end
+
+      it "has #{assoc} with restrict_with_exception dependent" do
+        reflection = User.reflect_on_association(assoc)
+        expect(reflection).to be_present
+        expect(reflection.options[:dependent]).to eq(:restrict_with_exception)
+      end
+    end
+  end
 end

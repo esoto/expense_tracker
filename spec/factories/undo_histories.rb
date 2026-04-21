@@ -2,6 +2,7 @@
 
 FactoryBot.define do
   factory :undo_history do
+    association :user
     action_type { :soft_delete }
     undoable_type { "Expense" }
     record_data { { "id" => 1, "merchant_name" => "Test Merchant", "amount" => 1000 } }

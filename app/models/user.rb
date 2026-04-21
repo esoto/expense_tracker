@@ -23,6 +23,9 @@ class User < ApplicationRecord
   has_many :sync_conflicts, dependent: :restrict_with_exception
   has_many :processed_emails, dependent: :restrict_with_exception
   has_many :email_parsing_failures, dependent: :restrict_with_exception
+  has_many :user_category_preferences, dependent: :restrict_with_exception
+  has_many :external_budget_sources, dependent: :restrict_with_exception
+  has_many :undo_histories, dependent: :restrict_with_exception
 
   # Enums
   enum :role, {

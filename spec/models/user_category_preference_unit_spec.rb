@@ -4,8 +4,26 @@ require "rails_helper"
 
 RSpec.describe UserCategoryPreference, type: :model, unit: true do
   describe "associations" do
+    it { should belong_to(:user) }
     it { should belong_to(:email_account) }
     it { should belong_to(:category) }
+  end
+
+  describe ".for_user scope" do
+    let!(:user_a) { create(:user) }
+    let!(:user_b) { create(:user) }
+    let!(:pref_a) { create(:user_category_preference, user: user_a) }
+    let!(:pref_b) { create(:user_category_preference, user: user_b) }
+
+    it "returns only records for the given user" do
+      expect(UserCategoryPreference.for_user(user_a)).to include(pref_a)
+      expect(UserCategoryPreference.for_user(user_a)).not_to include(pref_b)
+    end
+
+    it "excludes records from other users" do
+      expect(UserCategoryPreference.for_user(user_b)).to include(pref_b)
+      expect(UserCategoryPreference.for_user(user_b)).not_to include(pref_a)
+    end
   end
 
   describe "validations" do
@@ -477,6 +495,7 @@ RSpec.describe UserCategoryPreference, type: :model, unit: true do
           ).and_return(new_preference)
 
           expect(new_preference).to receive(:assign_attributes).with(
+            user: email_account.user,
             preference_weight: 1,
             usage_count: 1
           )

@@ -351,6 +351,12 @@ RAILS_ENV=test bin/rails db:schema:load
 - Security-focused code reviews
 - Production security monitoring
 
+## Deploying
+
+Production runs on a Hetzner VPS via Kamal. The user-model unification cutover (PRs #460–#475) has a dedicated runbook at [`docs/deploys/user-model-unification.md`](docs/deploys/user-model-unification.md) covering pre-flight, deploy, post-deploy smoke, and rollback.
+
+Run `bin/pre-deploy-check` before every `kamal deploy` — it validates secrets, remote state, and CI status, and will refuse to green-light a deploy that would crash on first boot.
+
 ## License
 
 [Add your license information here]

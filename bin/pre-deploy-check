@@ -1,0 +1,213 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# bin/pre-deploy-check — pre-flight gates for the User-model unification deploy.
+#
+# Runs checks that can be verified WITHOUT booting Rails, so it is safe to run
+# from a clean shell. See docs/deploys/user-model-unification.md for the full
+# runbook. Exit 0 on all-green, 1 on any failure.
+#
+# Usage:
+#   bin/pre-deploy-check                 # full run
+#   bin/pre-deploy-check --offline       # skip remote Kamal/SSH checks
+#   bin/pre-deploy-check --skip-ci       # skip the `gh run list` gate
+#
+# Never echoes secret values — only key names and pass/fail booleans.
+
+require "optparse"
+require "open3"
+require "pathname"
+
+ROOT          = Pathname.new(__dir__).join("..").expand_path
+SECRETS_FILE  = ROOT.join(".kamal/secrets")
+DEPLOY_YML    = ROOT.join("config/deploy.yml")
+
+REQUIRED_SECRETS = %w[
+  RAILS_MASTER_KEY
+  SECRET_KEY_BASE
+  POSTGRES_PASSWORD
+  KAMAL_REGISTRY_PASSWORD
+  ADMIN_EMAIL
+  ADMIN_PASSWORD
+].freeze
+
+# Must stay in sync with db/seeds.rb:370 — the production seed guard.
+SENTINEL_EMAIL    = "admin@expense-tracker.com"
+SENTINEL_PASSWORD = "AdminPassword123!"
+
+options = { offline: false, skip_ci: false }
+OptionParser.new do |opts|
+  opts.banner = "Usage: bin/pre-deploy-check [--offline] [--skip-ci]"
+  opts.on("--offline", "Skip remote Kamal checks")         { options[:offline]  = true }
+  opts.on("--skip-ci", "Skip the `gh run list` CI gate")   { options[:skip_ci]  = true }
+  opts.on("-h", "--help", "Show this help")                { puts opts; exit 0 }
+end.parse!
+
+failures = []
+info     = []
+
+def say(msg)
+  puts "[pre-deploy-check] #{msg}"
+end
+
+def run(cmd, env: {})
+  out, err, status = Open3.capture3(env, cmd)
+  [ out.to_s.strip, err.to_s.strip, status.success? ]
+end
+
+# --- Gate 1: git check ----------------------------------------------------
+say "Gate 1/8: git state vs origin/main"
+_, _, fetch_ok = run("git fetch origin main 2>/dev/null")
+if fetch_ok
+  local_tip,  = run("git rev-parse main 2>/dev/null")
+  remote_tip, = run("git rev-parse origin/main")
+  if local_tip.empty? || remote_tip.empty?
+    failures << "Could not resolve main / origin/main revisions"
+  elsif local_tip != remote_tip
+    failures << "git main behind origin/main — pull first (local=#{local_tip[0, 7]} origin=#{remote_tip[0, 7]})"
+  end
+else
+  info << "git fetch origin main failed (offline?) — skipping git tip comparison"
+end
+
+# --- Gate 2: secrets presence --------------------------------------------
+say "Gate 2/8: .kamal/secrets presence"
+secrets = {}
+if SECRETS_FILE.file?
+  SECRETS_FILE.read.force_encoding(Encoding::UTF_8).scrub.each_line do |line|
+    line = line.strip
+    next if line.empty? || line.start_with?("#")
+    key, _, raw = line.partition("=")
+    next if key.empty?
+    value = raw.strip
+    # Strip matching single/double quotes (Kamal 2 dotenv style).
+    value = value[1..-2] if value.length >= 2 && (value.start_with?("'") && value.end_with?("'") || value.start_with?('"') && value.end_with?('"'))
+    secrets[key.strip] = value
+  end
+  REQUIRED_SECRETS.each do |key|
+    if !secrets.key?(key)
+      failures << "#{key} missing from .kamal/secrets"
+    elsif secrets[key].to_s.empty?
+      failures << "#{key} present but empty in .kamal/secrets"
+    end
+  end
+else
+  failures << ".kamal/secrets not found (expected at #{SECRETS_FILE.relative_path_from(ROOT)})"
+end
+
+# --- Gate 3: sentinel values ---------------------------------------------
+say "Gate 3/8: ADMIN_EMAIL / ADMIN_PASSWORD are not sentinels"
+if secrets["ADMIN_EMAIL"] == SENTINEL_EMAIL
+  failures << "ADMIN_EMAIL is the dev sentinel — set a real admin email (db/seeds.rb aborts otherwise)"
+end
+if secrets["ADMIN_PASSWORD"] == SENTINEL_PASSWORD
+  failures << "ADMIN_PASSWORD is the dev sentinel — set a real admin password (db/seeds.rb aborts otherwise)"
+end
+# Confirm to the operator which account they will log in with after cutover —
+# echoes the email only, never the password.
+if secrets["ADMIN_EMAIL"] && !secrets["ADMIN_EMAIL"].empty? && secrets["ADMIN_EMAIL"] != SENTINEL_EMAIL
+  info << "will log in post-deploy as ADMIN_EMAIL=#{secrets['ADMIN_EMAIL']}"
+end
+
+# --- Gate 4: config/deploy.yml env.secret sanity -------------------------
+say "Gate 4/8: config/deploy.yml declares ADMIN_EMAIL / ADMIN_PASSWORD under env.secret"
+if DEPLOY_YML.file?
+  yml = DEPLOY_YML.read.force_encoding(Encoding::UTF_8)
+  yml = yml.scrub unless yml.valid_encoding?
+  in_env_secret = false
+  seen = { "ADMIN_EMAIL" => false, "ADMIN_PASSWORD" => false }
+  yml.each_line do |line|
+    stripped = line.strip
+    if stripped.start_with?("secret:")
+      in_env_secret = true
+      next
+    end
+    # Exit the env.secret block when the indent drops (next top-level key like `clear:`).
+    if in_env_secret && stripped.match?(/\A[A-Za-z_]+:/) && !stripped.start_with?("-")
+      in_env_secret = false
+    end
+    if in_env_secret && stripped.start_with?("-")
+      key = stripped.sub(/\A-\s*/, "").strip
+      seen[key] = true if seen.key?(key)
+    end
+  end
+  seen.each do |key, found|
+    failures << "config/deploy.yml env.secret is missing `#{key}` — the container will start without it" unless found
+  end
+else
+  failures << "config/deploy.yml not found at #{DEPLOY_YML.relative_path_from(ROOT)}"
+end
+
+# --- Gate 5: remote reachability -----------------------------------------
+say "Gate 5/8: remote Kamal reachability"
+if options[:offline]
+  info << "--offline: skipped remote Kamal reachability"
+else
+  _, stderr, ok = run("kamal app details 2>&1")
+  unless ok
+    failures << "kamal app details failed — server unreachable or kamal not configured (#{stderr.lines.first&.strip})"
+  end
+end
+
+# --- Gate 6: remote AdminUser presence -----------------------------------
+say "Gate 6/8: remote admin_users table + AdminUser row count"
+if options[:offline]
+  info << "--offline: skipped remote AdminUser presence check"
+else
+  table_check_cmd = %q{kamal app exec --reuse "bin/rails runner 'puts ActiveRecord::Base.connection.tables.include?(%q{admin_users})'" 2>&1}
+  out, _, ok = run(table_check_cmd)
+  if !ok
+    failures << "Could not check admin_users table on remote (kamal app exec failed)"
+  elsif out.lines.map(&:strip).include?("true")
+    count_cmd = %q(kamal app exec --reuse "bin/rails runner 'puts AdminUser.count'" 2>&1)
+    count_out, _, count_ok = run(count_cmd)
+    count = count_out.lines.map(&:strip).reverse.find { |l| l.match?(/\A\d+\z/) }
+    if count_ok && count && count.to_i >= 1
+      info << "remote admin_users exists with #{count} row(s) — PR 3 migration will copy them into users"
+    else
+      failures << "remote admin_users table exists but has 0 rows — PR 3 migration will have nothing to copy (create an AdminUser first)"
+    end
+  elsif out.lines.map(&:strip).include?("false")
+    info << "remote admin_users table already dropped (previous deploy succeeded); no-op for PR 3 migration"
+  else
+    failures << "Unexpected output from remote admin_users check (see kamal logs)"
+  end
+end
+
+# --- Gate 7: CI on main --------------------------------------------------
+say "Gate 7/8: CI on origin/main is green"
+if options[:skip_ci]
+  info << "--skip-ci: skipped CI gate"
+else
+  cmd = %q(gh run list --branch main --limit 1 --json conclusion --jq '.[0].conclusion')
+  out, err, ok = run(cmd)
+  if !ok
+    failures << "gh run list failed — #{err.lines.first&.strip || 'see gh output'} (use --skip-ci to override)"
+  elsif out.strip != "success"
+    failures << "CI on main is `#{out.strip.empty? ? 'unknown' : out.strip}` — deploy blocked (use --skip-ci to override)"
+  end
+end
+
+# --- Gate 8: backup reminder --------------------------------------------
+say "Gate 8/8: backup reminder"
+info << <<~NUDGE.strip
+  before `kamal deploy`, snapshot the DB:
+    ssh deploy@178.104.88.183 \\
+      "pg_dump -h personal-blog-db -U expense_tracker expense_tracker_production \\
+         | gzip > ~/backups/pre-user-model-$(date +%Y%m%dT%H%M%SZ).sql.gz"
+NUDGE
+
+# --- Report --------------------------------------------------------------
+puts
+info.each { |line| say "INFO: #{line}" }
+
+if failures.empty?
+  say "All gates passed. You may run:  kamal deploy"
+  exit 0
+else
+  say "FAIL: #{failures.length} gate#{'s' if failures.length != 1} failed"
+  failures.each { |f| say "  - #{f}" }
+  say ""
+  say "See docs/deploys/user-model-unification.md for the full runbook."
+  exit 1
+end

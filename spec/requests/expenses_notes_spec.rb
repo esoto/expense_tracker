@@ -11,6 +11,7 @@ RSpec.describe "Expenses notes (PER-182)", type: :request, unit: true do
       role: "admin"
     )
   end
+  let!(:app_user) { create(:user, :admin) }
   let(:category) { create(:category) }
 
   before { sign_in_admin(admin_user) }

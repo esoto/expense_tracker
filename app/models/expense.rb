@@ -4,6 +4,7 @@ class Expense < ApplicationRecord
   include SoftDelete
 
   # Associations
+  belongs_to :user
   belongs_to :email_account, optional: true
   belongs_to :category, optional: true
   belongs_to :ml_suggested_category, class_name: "Category", foreign_key: "ml_suggested_category_id", optional: true
@@ -33,6 +34,7 @@ class Expense < ApplicationRecord
   after_commit :trigger_metrics_refresh_for_deletion, on: [ :update ], if: :saved_change_to_deleted_at?
 
   # Scopes
+  scope :for_user, ->(u) { where(user_id: u.id) }
   scope :recent, -> { order(transaction_date: :desc) }
   scope :by_status, ->(status) { where(status: status) }
   scope :by_date_range, ->(start_date, end_date) {

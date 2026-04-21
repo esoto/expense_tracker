@@ -6,6 +6,10 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
   let(:email_account) { create(:email_account) }
   let(:category) { create(:category, name: "Food", color: "#10B981") }
 
+  before do
+    allow(controller).to receive(:scoping_user).and_return(email_account.user)
+  end
+
   describe "GET #index", integration: true do
     before do
       # Clean up any existing expenses and their dependencies to ensure test isolation

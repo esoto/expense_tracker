@@ -36,7 +36,9 @@ class Api::WebhooksController < ApplicationController
     )
 
     expense = Expense.new(expense_params)
-    expense.email_account = default_email_account
+    account = default_email_account
+    expense.email_account = account
+    expense.user = account&.user  # FIXME(PR-11): replace with api_token owner once api_tokens model is scoped
     expense.status = "processed"
 
     if expense.save

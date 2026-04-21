@@ -20,6 +20,7 @@ RSpec.describe "Concurrent duplicate expense prevention (PER-277)", type: :model
       Thread.new do
         ActiveRecord::Base.connection_pool.with_connection do
           expense = Expense.new(
+            user: email_account.user,
             email_account: email_account,
             amount: 25.50,
             transaction_date: transaction_date,
@@ -60,6 +61,7 @@ RSpec.describe "Concurrent duplicate expense prevention (PER-277)", type: :model
     original.update_columns(deleted_at: 1.hour.ago)
 
     replacement = Expense.create!(
+      user: email_account.user,
       email_account: email_account,
       amount: 25.50,
       transaction_date: transaction_date,

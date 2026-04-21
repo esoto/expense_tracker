@@ -25,6 +25,7 @@ RSpec.describe Services::ExpenseFilterService, type: :service, unit: true do
     Rails.cache.clear
 
     Expense.create!(
+      user: email_account.user,
       email_account: email_account,
       amount: 100.00,
       transaction_date: Date.current,
@@ -34,6 +35,7 @@ RSpec.describe Services::ExpenseFilterService, type: :service, unit: true do
     )
 
     Expense.create!(
+      user: email_account.user,
       email_account: email_account,
       amount: 250.00,
       transaction_date: 1.week.ago,
@@ -112,6 +114,7 @@ RSpec.describe Services::ExpenseFilterService, type: :service, unit: true do
     it "does NOT invalidate cache when an expense from a different account is updated" do
       # Create an expense for a different account
       Expense.create!(
+        user: other_account.user,
         email_account: other_account,
         amount: 999.00,
         transaction_date: Date.current,

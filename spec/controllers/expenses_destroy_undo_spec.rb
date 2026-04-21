@@ -19,7 +19,7 @@ RSpec.describe ExpensesController, "#destroy undo integration", type: :controlle
     allow(controller).to receive(:authenticate_user!).and_return(true)
     allow(controller).to receive(:authorize_expense!).and_return(true)
     allow(controller).to receive(:current_user).and_return(nil)
-    allow(controller).to receive(:current_user_email_accounts).and_return(EmailAccount.where(id: email_account.id))
+    allow(controller).to receive(:scoping_user).and_return(email_account.user)
     allow(controller).to receive(:can_modify_expense?).and_return(true)
   end
 

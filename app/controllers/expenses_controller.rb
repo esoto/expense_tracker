@@ -11,7 +11,7 @@ class ExpensesController < ApplicationController
     # Use the optimized Services::ExpenseFilterService for performance
     filter_service = Services::ExpenseFilterService.new(
       filter_params.merge(
-        account_ids: current_user_email_accounts.pluck(:id)
+        account_ids: scoping_user.email_accounts.pluck(:id)
       )
     )
 
@@ -76,6 +76,7 @@ class ExpensesController < ApplicationController
   # POST /expenses
   def create
     @expense = Expense.new(expense_params)
+    @expense.user = scoping_user
     @expense.bank_name = "Manual Entry"
     @expense.status = "processed"
     @expense.crc! if @expense.currency.blank? # Default to CRC if no currency specified
@@ -199,7 +200,7 @@ class ExpensesController < ApplicationController
       :sort_by, :sort_direction,
       category_ids: [], banks: []
     ).to_h.merge(
-      account_ids: current_user_email_accounts.pluck(:id),
+      account_ids: scoping_user.email_accounts.pluck(:id),
       per_page: params[:per_page] || 15,  # Always fetch 15 for view toggle support
       include_summary: true,
       include_quick_filters: true
@@ -413,7 +414,7 @@ class ExpensesController < ApplicationController
       :sort_by, :sort_direction,
       category_ids: [], banks: []
     ).to_h.merge(
-      account_ids: current_user_email_accounts.pluck(:id),
+      account_ids: scoping_user.email_accounts.pluck(:id),
       use_cursor: true,
       per_page: params[:per_page] || 30,  # Default 30 items per request
       include_summary: false,  # No summary needed for virtual scroll
@@ -586,7 +587,7 @@ class ExpensesController < ApplicationController
   end
 
   def set_expense
-    @expense = current_user_expenses.find(params[:id])
+    @expense = Expense.for_user(scoping_user).find(params[:id])
   rescue ActiveRecord::RecordNotFound
     redirect_to expenses_path, alert: t("expenses.flash.not_found")
   end
@@ -598,27 +599,30 @@ class ExpensesController < ApplicationController
   end
 
   def can_modify_expense?(expense)
-    # Check if the expense belongs to the current user's email accounts
+    # Check if the expense belongs to the scoping user
     return false unless expense.present?
 
-    # Manual expenses (no email_account) can be modified by any authenticated user
-    return true if expense.email_account.nil?
-
-    # Allow modification if expense belongs to user's email accounts
-    current_user_email_accounts.include?(expense.email_account)
+    expense.user_id == scoping_user.id
   end
 
-  def current_user_expenses
-    # Get expenses that belong to the current user's email accounts
-    # Include manual expenses (email_account_id IS NULL) alongside linked ones
-    Expense.where(email_account_id: current_user_email_accounts.select(:id))
-           .or(Expense.where(email_account_id: nil))
-  end
-
-  def current_user_email_accounts
-    # Admin users see all email accounts (no User model for per-user scoping yet).
-    # When user-level data isolation is added, scope to current_user's accounts.
-    @current_user_email_accounts ||= EmailAccount.all
+  # Returns the user for scoping expense queries.
+  # UserAuthentication is not yet gating this controller (PR 12 wires that).
+  # Until then: prefer the new User session helper if present, else fall back
+  # to the first admin User so existing admin-auth-based access continues
+  # working during the transition period.
+  def scoping_user
+    @scoping_user ||= begin
+      user = try(:current_app_user)
+      if user.nil?
+        user = User.admin.first
+        Rails.logger.warn(
+          "[scoping_user] current_app_user is nil; falling back to User.admin.first " \
+          "(controller=#{self.class.name}, path=#{request.fullpath}). " \
+          "This path disappears in PR 12 when UserAuthentication gates all controllers."
+        ) if user
+      end
+      user || raise("No authenticated user and no admin User found")
+    end
   end
 
   def expense_params
@@ -904,7 +908,7 @@ class ExpensesController < ApplicationController
 
   def execute_bulk_operation(expense_ids)
     # Find expenses that belong to the user
-    expenses = current_user_expenses.where(id: expense_ids)
+    expenses = Expense.for_user(scoping_user).where(id: expense_ids)
 
     # Check if all requested expenses were found
     if expenses.count != expense_ids.length

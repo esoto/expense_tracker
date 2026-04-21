@@ -16,6 +16,7 @@ class User < ApplicationRecord
   # PR 10+ will add.  Rails-level restriction means code paths cannot bypass it
   # via destroy callbacks.
   has_many :email_accounts, dependent: :restrict_with_exception
+  has_many :expenses, dependent: :restrict_with_exception
 
   # Enums
   enum :role, {

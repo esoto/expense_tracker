@@ -25,6 +25,7 @@ RSpec.describe "PER-277 Duplicate expense unique constraint", :unit do
 
   def insert_expense(attrs = {})
     defaults = {
+      user_id: email_account.user_id,
       email_account_id: email_account.id,
       amount: amount,
       transaction_date: transaction_date,

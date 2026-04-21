@@ -12,9 +12,15 @@ FactoryBot.define do
     bank_name { "BAC" }
 
     association :email_account
+    # Derive user from email_account so FK consistency is maintained.
+    # email_account factory defaults to an admin user so that the
+    # ExpensesController#scoping_user fallback (User.admin.first) always
+    # finds a matching User in specs that don't explicitly stub scoping_user.
+    user { email_account&.user || association(:user, :admin) }
     category { nil }  # Don't auto-assign category by default
 
     trait :manual_entry do
+      association :user, :admin
       email_account { nil }
       bank_name { "Manual" }
     end

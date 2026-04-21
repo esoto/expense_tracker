@@ -12,6 +12,7 @@ RSpec.describe Expense, type: :model, unit: true do
         currency: :crc,
         transaction_date: Date.current,
         status: :pending,
+        user: email_account.user,
         email_account: email_account,
         notes: "Some note about this expense"
       )

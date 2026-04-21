@@ -1,6 +1,7 @@
 FactoryBot.define do
   factory :sync_conflict do
     association :sync_session
+    user { sync_session&.user || association(:user) }
     association :existing_expense, factory: :expense
     conflict_type { 'duplicate' }
     status { 'pending' }

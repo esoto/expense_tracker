@@ -1,5 +1,6 @@
 FactoryBot.define do
   factory :sync_session do
+    association :user
     status { "pending" }
     total_emails { 0 }
     processed_emails { 0 }

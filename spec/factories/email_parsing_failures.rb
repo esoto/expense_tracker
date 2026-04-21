@@ -1,6 +1,7 @@
 FactoryBot.define do
   factory :email_parsing_failure do
-    email_account
+    association :email_account
+    user { email_account&.user || association(:user) }
     bank_name { "BAC" }
     error_messages { [ "Amount not found" ] }
     raw_email_content { "Unparseable email content" }

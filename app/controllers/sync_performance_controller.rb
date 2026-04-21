@@ -1,5 +1,14 @@
 require "csv"
 
+# FIXME(PR-12): SyncPerformance is currently a platform-admin diagnostic
+# dashboard that intentionally aggregates SyncMetric and SyncSession across
+# all users. Once PR 12 unifies the admin gate (role-based on User), revisit
+# whether this dashboard should:
+#   (a) stay cross-user (current behavior — appropriate for platform health),
+#   (b) scope per-admin (only show metrics for the admin's own sync sessions),
+#   (c) split into a per-user dashboard + a separate platform dashboard.
+# The choice depends on whether multi-user/multi-tenant ever ships. Until
+# then admin gating is sufficient.
 class SyncPerformanceController < Admin::BaseController
   before_action :set_date_range, only: [ :index, :export ]
 

@@ -101,6 +101,11 @@ module Admin
       @user.password = new_password
       @user.password_confirmation = new_password
       @user.save!
+      # Invalidate the target user's existing session token so any live
+      # sessions they have open are immediately refused. Without this, a
+      # compromised user whose password was just reset could keep using
+      # the app with the old cookie until session_expires_at (default 2h).
+      @user.invalidate_session!
       # Session (encrypted cookie) rather than flash[:notice] — see #create.
       session[:one_time_password] = { email: @user.email, password: new_password }
       redirect_to admin_users_path, notice: "Password reset for #{@user.email}."

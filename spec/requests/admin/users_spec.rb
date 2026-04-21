@@ -461,5 +461,21 @@ RSpec.describe "Admin::Users", type: :request do
       sign_in_as(other_user, password: new_pass)
       expect(response).to redirect_to(root_path)
     end
+
+    it "invalidates the target user's existing session (forces re-login)" do
+      # Give the user a live session token, then reset their password.
+      other_user.update_columns(
+        session_token: SecureRandom.urlsafe_base64(32),
+        session_expires_at: 2.hours.from_now
+      )
+      expect(other_user.reload.session_token).to be_present
+
+      post reset_password_admin_user_path(other_user)
+
+      # Session token and expires_at should be nil after reset —
+      # any open cookie for this user is now useless.
+      expect(other_user.reload.session_token).to be_nil
+      expect(other_user.reload.session_expires_at).to be_nil
+    end
   end
 end

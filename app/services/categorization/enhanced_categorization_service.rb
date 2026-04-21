@@ -188,6 +188,7 @@ module Services::Categorization
 
       PatternLearningEvent.create!(
         expense: expense,
+        user: expense.user,
         category: category,
         pattern_used: pattern_name,
         was_correct: was_correct,

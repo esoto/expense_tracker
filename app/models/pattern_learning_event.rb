@@ -2,8 +2,11 @@
 
 class PatternLearningEvent < ApplicationRecord
   include CacheVersioning
+  belongs_to :user
   belongs_to :expense
   belongs_to :category
+
+  scope :for_user, ->(user) { where(user: user) }
 
   validates :pattern_used, presence: true
   validates :was_correct, inclusion: { in: [ true, false ] }
@@ -28,6 +31,7 @@ class PatternLearningEvent < ApplicationRecord
 
     create!(
       expense: expense,
+      user: expense.user,
       category: category,
       pattern_used: pattern_name,
       was_correct: was_correct,

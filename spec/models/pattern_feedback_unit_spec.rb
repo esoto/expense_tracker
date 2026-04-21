@@ -4,6 +4,7 @@ require "rails_helper"
 
 RSpec.describe PatternFeedback, type: :model, unit: true do
   describe "associations" do
+    it { should belong_to(:user) }
     it { should belong_to(:categorization_pattern).optional }
     it { should belong_to(:expense) }
     it { should belong_to(:category) }
@@ -189,17 +190,34 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
   end
 
   describe "scopes" do
+    describe ".for_user" do
+      it "returns only feedbacks belonging to the given user" do
+        user_a = create(:user)
+        user_b = create(:user)
+        feedback_a = create(:pattern_feedback, user: user_a, expense: create(:expense, user: user_a))
+        _feedback_b = create(:pattern_feedback, user: user_b, expense: create(:expense, user: user_b))
+
+        expect(PatternFeedback.for_user(user_a)).to eq([ feedback_a ])
+      end
+
+      it "returns an empty collection when user has no feedbacks" do
+        user = create(:user)
+        expect(PatternFeedback.for_user(user)).to be_empty
+      end
+    end
   end
 
   describe "class methods" do
     describe ".record_feedback" do
-      let(:expense) { build_stubbed(:expense) }
+      let(:user)    { build_stubbed(:user) }
+      let(:expense) { build_stubbed(:expense, user: user) }
       let(:category) { build_stubbed(:category) }
       let(:pattern) { build_stubbed(:categorization_pattern) }
 
-      it "creates feedback with all parameters" do
+      it "creates feedback with all parameters and derives user from expense" do
         expect(PatternFeedback).to receive(:create!).with(
           expense: expense,
+          user: user,
           category: category,
           categorization_pattern: pattern,
           was_correct: true,
@@ -219,7 +237,7 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
 
       it "validates feedback type" do
         expect(PatternFeedback).to receive(:create!).with(
-          hash_including(feedback_type: "correction")
+          hash_including(feedback_type: "correction", user: user)
         )
 
         PatternFeedback.record_feedback(
@@ -233,7 +251,7 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
 
       it "defaults to accepted for invalid feedback types" do
         expect(PatternFeedback).to receive(:create!).with(
-          hash_including(feedback_type: "accepted")
+          hash_including(feedback_type: "accepted", user: user)
         )
 
         PatternFeedback.record_feedback(
@@ -247,7 +265,7 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
 
       it "handles nil pattern" do
         expect(PatternFeedback).to receive(:create!).with(
-          hash_including(categorization_pattern: nil)
+          hash_including(categorization_pattern: nil, user: user)
         )
 
         PatternFeedback.record_feedback(
@@ -260,7 +278,7 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
 
       it "handles nil confidence" do
         expect(PatternFeedback).to receive(:create!).with(
-          hash_including(confidence_score: nil)
+          hash_including(confidence_score: nil, user: user)
         )
 
         PatternFeedback.record_feedback(

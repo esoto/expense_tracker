@@ -18,6 +18,7 @@ module Services::Categorization
       def record(expense:, result:, layer_name:, api_cost: 0)
         CategorizationMetric.create!(
           expense: expense,
+          user: expense.user,
           layer_used: layer_name,
           confidence: result.successful? ? result.confidence : nil,
           category: result.successful? ? result.category : nil,

@@ -2,9 +2,12 @@
 
 class PatternFeedback < ApplicationRecord
   include CacheVersioning
+  belongs_to :user
   belongs_to :categorization_pattern, optional: true
   belongs_to :expense
   belongs_to :category # The correct category from the migration schema
+
+  scope :for_user, ->(user) { where(user: user) }
 
   validates :feedback_type, presence: true, inclusion: { in: %w[accepted rejected corrected correction] }
 
@@ -24,6 +27,7 @@ class PatternFeedback < ApplicationRecord
   def self.record_feedback(expense:, correct_category:, pattern: nil, was_correct:, confidence: nil, type: "confirmation")
     create!(
       expense: expense,
+      user: expense.user,
       category: correct_category,
       categorization_pattern: pattern,
       was_correct: was_correct,

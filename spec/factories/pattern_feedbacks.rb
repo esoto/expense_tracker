@@ -4,6 +4,7 @@ FactoryBot.define do
   factory :pattern_feedback do
     association :expense
     association :category
+    user { expense.user }
     was_correct { true }
     feedback_type { "accepted" }
 

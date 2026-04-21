@@ -4,6 +4,7 @@ FactoryBot.define do
   factory :pattern_learning_event do
     association :expense
     association :category
+    user { expense.user }
     pattern_used { "keyword:test_pattern" }
     was_correct { true }
     confidence_score { 0.85 }

@@ -1,4 +1,7 @@
+# frozen_string_literal: true
+
 class CategorizationMetric < ApplicationRecord
+  belongs_to :user
   belongs_to :expense
   belongs_to :category, optional: true
   belongs_to :corrected_to_category, class_name: "Category", optional: true
@@ -10,4 +13,5 @@ class CategorizationMetric < ApplicationRecord
   scope :uncorrected, -> { where(was_corrected: false) }
   scope :for_layer, ->(layer) { where(layer_used: layer) }
   scope :recent, ->(period = 30.days) { where(created_at: period.ago..) }
+  scope :for_user, ->(user) { where(user: user) }
 end

@@ -26,6 +26,9 @@ class User < ApplicationRecord
   has_many :user_category_preferences, dependent: :restrict_with_exception
   has_many :external_budget_sources, dependent: :restrict_with_exception
   has_many :undo_histories, dependent: :restrict_with_exception
+  has_many :pattern_feedbacks, dependent: :restrict_with_exception
+  has_many :pattern_learning_events, dependent: :restrict_with_exception
+  has_many :categorization_metrics, dependent: :restrict_with_exception
 
   # Enums
   enum :role, {

@@ -686,4 +686,75 @@ RSpec.describe User, type: :model, unit: true do
       end
     end
   end
+
+  # PR 9 — learning signals cluster associations
+  describe 'learning signals cluster associations (PR 9)' do
+    let(:user) { create(:user) }
+
+    %i[pattern_feedbacks pattern_learning_events categorization_metrics].each do |assoc|
+      it "responds to #{assoc}" do
+        expect(user).to respond_to(assoc)
+      end
+
+      it "has #{assoc} with restrict_with_exception dependent" do
+        reflection = User.reflect_on_association(assoc)
+        expect(reflection).to be_present
+        expect(reflection.options[:dependent]).to eq(:restrict_with_exception)
+      end
+    end
+
+    it "returns only the user's pattern_feedbacks" do
+      user_a = create(:user)
+      user_b = create(:user)
+      expense_a = create(:expense, user: user_a)
+      expense_b = create(:expense, user: user_b)
+      feedback_a = create(:pattern_feedback, user: user_a, expense: expense_a)
+      create(:pattern_feedback, user: user_b, expense: expense_b)
+
+      expect(user_a.pattern_feedbacks).to eq([ feedback_a ])
+    end
+
+    it "returns only the user's pattern_learning_events" do
+      user_a = create(:user)
+      user_b = create(:user)
+      expense_a = create(:expense, user: user_a)
+      expense_b = create(:expense, user: user_b)
+      event_a = create(:pattern_learning_event, user: user_a, expense: expense_a)
+      create(:pattern_learning_event, user: user_b, expense: expense_b)
+
+      expect(user_a.pattern_learning_events).to eq([ event_a ])
+    end
+
+    it "returns only the user's categorization_metrics" do
+      user_a = create(:user)
+      user_b = create(:user)
+      expense_a = create(:expense, user: user_a)
+      expense_b = create(:expense, user: user_b)
+      metric_a = create(:categorization_metric, user: user_a, expense: expense_a)
+      create(:categorization_metric, user: user_b, expense: expense_b)
+
+      expect(user_a.categorization_metrics).to eq([ metric_a ])
+    end
+
+    it "raises DeleteRestrictionError when destroying user with pattern_feedbacks" do
+      user_a = create(:user)
+      expense = create(:expense, user: user_a)
+      create(:pattern_feedback, user: user_a, expense: expense)
+      expect { user_a.destroy! }.to raise_error(ActiveRecord::DeleteRestrictionError)
+    end
+
+    it "raises DeleteRestrictionError when destroying user with pattern_learning_events" do
+      user_a = create(:user)
+      expense = create(:expense, user: user_a)
+      create(:pattern_learning_event, user: user_a, expense: expense)
+      expect { user_a.destroy! }.to raise_error(ActiveRecord::DeleteRestrictionError)
+    end
+
+    it "raises DeleteRestrictionError when destroying user with categorization_metrics" do
+      user_a = create(:user)
+      expense = create(:expense, user: user_a)
+      create(:categorization_metric, user: user_a, expense: expense)
+      expect { user_a.destroy! }.to raise_error(ActiveRecord::DeleteRestrictionError)
+    end
+  end
 end

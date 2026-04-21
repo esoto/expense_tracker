@@ -607,6 +607,7 @@ module Services::Categorization
 
       feedback = PatternFeedback.create!(
         expense: expense,
+        user: expense.user,
         category: correct_category,
         was_correct: was_correct,
         feedback_type: feedback_type
@@ -633,6 +634,7 @@ module Services::Categorization
 
       PatternLearningEvent.create!(
         expense: expense,
+        user: expense.user,
         category: category,
         pattern_used: pattern ? "#{pattern.pattern_type}:#{pattern.pattern_value}" : "manual",
         was_correct: true,

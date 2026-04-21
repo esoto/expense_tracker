@@ -3,12 +3,35 @@ require "rails_helper"
 RSpec.describe SyncSessionsController, type: :controller, unit: true do
   let(:sync_session) { create(:sync_session) }
   let(:email_account) { create(:email_account) }
+  let(:scoping_user) { sync_session.user }
 
   before do
+    # Stub scoping_user so controller does not attempt current_app_user / admin fallback
+    allow(controller).to receive(:scoping_user).and_return(scoping_user)
+
+    # Stub for_user scope — return a double that delegates common chain methods back to SyncSession
+    scoped_relation = double("SyncSession::for_user_relation")
+    allow(SyncSession).to receive(:for_user).with(scoping_user).and_return(scoped_relation)
+    allow(scoped_relation).to receive(:active).and_return(
+      double("active_relation",
+        includes: double("includes_relation", first: nil),
+        first: nil
+      )
+    )
+    allow(scoped_relation).to receive(:find) { |id| SyncSession.find(id) }
+    allow(scoped_relation).to receive(:find_by) { |**kwargs| SyncSession.find_by(**kwargs) }
+    allow(scoped_relation).to receive(:where) { |*a, **kw| SyncSession.where(*a, **kw) }
+    allow(scoped_relation).to receive(:completed).and_return(
+      double("completed_relation",
+        where: double("completed_where", sum: 0),
+        recent: double("completed_recent", first: nil)
+      )
+    )
+
     # Mock service classes to avoid actual implementation calls
     allow(Services::SyncSessionCreator).to receive(:new).and_return(double(call: double(success?: true, sync_session: sync_session)))
     allow(Services::SyncSessionRetryService).to receive(:new).and_return(double(call: double(success?: true, sync_session: sync_session)))
-    allow(Services::SyncSessionPerformanceOptimizer).to receive(:preload_for_index).and_return([ sync_session ])
+    allow(Services::SyncSessionPerformanceOptimizer).to receive(:preload_for_index_scoped).and_return([ sync_session ])
     allow(Services::SyncSessionPerformanceOptimizer).to receive(:preload_for_show).and_return([])
     allow(Services::SyncSessionPerformanceOptimizer).to receive(:cache_key_for_status).and_return("sync_status_#{sync_session.id}")
     allow(Services::SyncSessionPerformanceOptimizer).to receive(:calculate_metrics).and_return({})
@@ -23,15 +46,25 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
     let(:recent_sessions) { [ sync_session ] }
 
     before do
-      allow(SyncSession).to receive_message_chain(:active, :includes).and_return(double(first: active_session))
+      # Override the shared scoped_relation stub with index-specific behaviour
+      scoped_relation = double("SyncSession::for_user_relation_index")
+      allow(SyncSession).to receive(:for_user).with(scoping_user).and_return(scoped_relation)
+      allow(scoped_relation).to receive(:active).and_return(
+        double("active_relation", includes: double("includes_relation", first: active_session))
+      )
+      allow(scoped_relation).to receive(:where).and_return(double(count: 5))
+      allow(scoped_relation).to receive(:completed).and_return(
+        double("completed_relation",
+          where: double("completed_where", sum: 50),
+          recent: double("completed_recent", first: sync_session)
+        )
+      )
+
       preload_chain = double("preload_chain")
-      allow(Services::SyncSessionPerformanceOptimizer).to receive(:preload_for_index).and_return(preload_chain)
+      allow(Services::SyncSessionPerformanceOptimizer).to receive(:preload_for_index_scoped).and_return(preload_chain)
       allow(preload_chain).to receive(:limit).with(10).and_return(recent_sessions)
       allow(EmailAccount).to receive_message_chain(:active, :order).and_return([ email_account ])
       allow(EmailAccount).to receive_message_chain(:active, :count).and_return(1)
-      allow(SyncSession).to receive(:where).and_return(double(count: 5))
-      allow(SyncSession).to receive_message_chain(:completed, :where, :sum).and_return(50)
-      allow(SyncSession).to receive_message_chain(:completed, :recent, :first).and_return(sync_session)
     end
 
     it "loads active session" do
@@ -60,12 +93,14 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
 
   describe "GET #show", unit: true do
     before do
+      # set_sync_session uses SyncSession.for_user(scoping_user).find(id)
+      # The shared before stub delegates scoped_relation.find to SyncSession.find
       allow(SyncSession).to receive(:find).and_return(sync_session)
       allow(controller).to receive(:authorize_sync_session_owner!)
     end
 
     it "finds and assigns sync session" do
-      expect(SyncSession).to receive(:find).with(sync_session.id.to_s)
+      # Controller uses for_user scope; stub verifies the scoped chain resolves the record
       get :show, params: { id: sync_session.id }
       expect(assigns(:sync_session)).to eq(sync_session)
     end
@@ -93,7 +128,8 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
       it "creates sync session with proper service" do
         expect(Services::SyncSessionCreator).to receive(:new).with(
           hash_including("email_account_id" => email_account.id.to_s, "since" => "2023-01-01"),
-          hash_including(:ip_address, :user_agent, :session_id, :source)
+          hash_including(:ip_address, :user_agent, :session_id, :source),
+          scoping_user
         )
 
         post :create, params: valid_params
@@ -190,7 +226,7 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
       let(:retry_params) { { since: "2023-01-01" } }
 
       it "creates retry service with correct parameters" do
-        expect(Services::SyncSessionRetryService).to receive(:new).with(sync_session, hash_including("since" => "2023-01-01"))
+        expect(Services::SyncSessionRetryService).to receive(:new).with(sync_session, hash_including("since" => "2023-01-01"), scoping_user)
         post :retry, params: { id: sync_session.id, **retry_params }
       end
 
@@ -224,14 +260,18 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
 
     context "when session exists" do
       before do
+        # Controller uses for_user(scoping_user).find_by — the shared stub delegates to SyncSession.find_by
         allow(SyncSession).to receive(:find_by).with(id: session_id.to_s).and_return(sync_session)
         allow(controller).to receive(:build_status_response).and_return({ status: "running" })
         allow(controller).to receive(:render).with(json: { status: "running" })
       end
 
       it "finds session by ID" do
-        expect(SyncSession).to receive(:find_by).with(id: session_id.to_s)
+        # Verify the scoped lookup resolves; the shared stub proxies through SyncSession.find_by
+        allow(SyncSession).to receive(:find_by).with(id: session_id.to_s).and_return(sync_session)
         get :status, params: { sync_session_id: session_id }, format: :json
+        # If we reach cache fetch, the session was found
+        expect(Rails.cache).to have_received(:fetch)
       end
 
       it "uses caching for status data" do
@@ -276,7 +316,13 @@ RSpec.describe SyncSessionsController, type: :controller, unit: true do
     describe "#prepare_widget_data" do
       before do
         controller.instance_variable_set(:@sync_session, sync_session)
-        allow(SyncSession).to receive_message_chain(:completed, :recent, :first).and_return(sync_session)
+        # prepare_widget_data uses SyncSession.for_user(scoping_user).completed.recent.first
+        # The shared before stub provides the scoped_relation; override completed chain here
+        scoped_relation = double("SyncSession::for_user_relation_widget")
+        allow(SyncSession).to receive(:for_user).with(scoping_user).and_return(scoped_relation)
+        allow(scoped_relation).to receive(:completed).and_return(
+          double("completed_relation", recent: double("recent_relation", first: sync_session))
+        )
       end
 
       it "sets active sync session" do

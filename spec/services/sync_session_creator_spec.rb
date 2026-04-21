@@ -97,6 +97,10 @@ RSpec.describe Services::SyncSessionCreator, integration: true do
     end
 
     context 'with validation errors' do
+      # PR 7: SyncSession now requires user_id. Ensure an admin user exists so
+      # resolved_user fallback works when service is called without explicit user.
+      let!(:admin_for_creator) { create(:user, :admin) }
+
       context 'when sync limit is exceeded' do
         before do
           create(:sync_session, status: 'running')

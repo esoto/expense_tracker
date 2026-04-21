@@ -3,7 +3,8 @@ require 'rails_helper'
 RSpec.describe ProcessEmailJob, type: :job, unit: true do
   let(:job) { described_class.new }
   let(:email_account_id) { 123 }
-  let(:email_account) { instance_double(EmailAccount, id: email_account_id, email: 'test@example.com', bank_name: 'Test Bank') }
+  let(:email_account_user) { instance_double(User, id: 1) }
+  let(:email_account) { instance_double(EmailAccount, id: email_account_id, email: 'test@example.com', bank_name: 'Test Bank', user: email_account_user) }
   let(:email_data) do
     {
       body: 'Transaction notification: $100.00 at Store ABC',
@@ -467,7 +468,7 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
       end
 
       context 'when email_account has nil bank_name' do
-        let(:account_no_bank) { instance_double(EmailAccount, id: 1, email: 'test@example.com', bank_name: nil) }
+        let(:account_no_bank) { instance_double(EmailAccount, id: 1, email: 'test@example.com', bank_name: nil, user: email_account_user) }
 
         it 'handles nil bank_name' do
           expect(EmailParsingFailure).to receive(:create!).with(

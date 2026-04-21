@@ -411,7 +411,8 @@ RSpec.describe Services::Email::SyncService, 'Metrics and Progress Tracking', un
     end
 
     it 'tracks progress through complete sync lifecycle' do
-      email_account = instance_double(EmailAccount, id: 1, email: 'test@example.com', active?: true)
+      mock_owner = instance_double(User, id: 1)
+      email_account = instance_double(EmailAccount, id: 1, email: 'test@example.com', active?: true, user: mock_owner)
 
       # Setup
       allow(EmailAccount).to receive(:find_by).and_return(email_account)

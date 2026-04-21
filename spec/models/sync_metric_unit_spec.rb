@@ -669,4 +669,48 @@ RSpec.describe SyncMetric, type: :model, unit: true do
       end
     end
   end
+
+  # PR 7 — user_id association and scoping
+  describe "user ownership (PR 7)", unit: true do
+    describe "associations" do
+      it "belongs to a user" do
+        user = create(:user)
+        session = create(:sync_session, user: user)
+        metric = create(:sync_metric, sync_session: session, user: user)
+        expect(metric.user).to eq(user)
+      end
+
+      it "requires a user (not optional)" do
+        metric = build(:sync_metric, user: nil)
+        expect(metric).not_to be_valid
+        expect(metric.errors[:user]).to be_present
+      end
+    end
+
+    describe ".for_user scope" do
+      let!(:user_a) { create(:user, :admin) }
+      let!(:user_b) { create(:user) }
+      let!(:session_a) { create(:sync_session, user: user_a) }
+      let!(:session_b) { create(:sync_session, user: user_b) }
+      let!(:metric_a) { create(:sync_metric, sync_session: session_a, user: user_a) }
+      let!(:metric_b) { create(:sync_metric, sync_session: session_b, user: user_b) }
+
+      it "returns only metrics belonging to user_a" do
+        result = SyncMetric.for_user(user_a)
+        expect(result).to include(metric_a)
+        expect(result).not_to include(metric_b)
+      end
+
+      it "returns only metrics belonging to user_b" do
+        result = SyncMetric.for_user(user_b)
+        expect(result).to include(metric_b)
+        expect(result).not_to include(metric_a)
+      end
+
+      it "returns an empty relation when user has no metrics" do
+        user_c = create(:user)
+        expect(SyncMetric.for_user(user_c)).to be_empty
+      end
+    end
+  end
 end

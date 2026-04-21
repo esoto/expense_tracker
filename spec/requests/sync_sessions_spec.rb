@@ -3,10 +3,13 @@ require 'rails_helper'
 RSpec.describe "SyncSessions", type: :request do
   include ActiveSupport::Testing::TimeHelpers
 
+  # app_user owns all sync sessions so for_user(scoping_user) scope resolves them.
+  let(:app_user) { create(:user) }
+
   # Performance: lazy let — accounts only created when a test references them
-  let(:email_account1)    { create(:email_account, :bac, active: true) }
-  let(:email_account2)    { create(:email_account, :gmail, active: true, email: "gmail_#{SecureRandom.hex(4)}@example.com") }
-  let(:inactive_account)  { create(:email_account, active: false, email: "inactive_#{SecureRandom.hex(4)}@example.com") }
+  let(:email_account1)    { create(:email_account, :bac, active: true, user: app_user) }
+  let(:email_account2)    { create(:email_account, :gmail, active: true, email: "gmail_#{SecureRandom.hex(4)}@example.com", user: app_user) }
+  let(:inactive_account)  { create(:email_account, active: false, email: "inactive_#{SecureRandom.hex(4)}@example.com", user: app_user) }
   let(:admin_user) do
     AdminUser.create!(
       name: "Sync Test Admin",
@@ -21,6 +24,9 @@ RSpec.describe "SyncSessions", type: :request do
   # or the after(:each) aging pattern from the original spec.
   before(:each) do
     sign_in_admin(admin_user)
+    # Stub scoping_user so the controller scopes all SyncSession queries to app_user.
+    # Mirrors the pattern in budgets_spec.rb (PR 6).
+    allow_any_instance_of(SyncSessionsController).to receive(:scoping_user).and_return(app_user)
     SyncSession.destroy_all
     SyncSessionAccount.destroy_all
     allow_any_instance_of(Services::SyncSessionValidator).to receive(:validate!).and_return(true)
@@ -28,9 +34,9 @@ RSpec.describe "SyncSessions", type: :request do
 
   describe 'GET /sync_sessions' do
     # Performance: lazy let — force materialization in before block only for this context
-    let(:active_session)    { create(:sync_session, :running) }
-    let(:completed_session) { create(:sync_session, :completed) }
-    let(:old_session)       { create(:sync_session, created_at: 2.days.ago) }
+    let(:active_session)    { create(:sync_session, :running, user: app_user) }
+    let(:completed_session) { create(:sync_session, :completed, user: app_user) }
+    let(:old_session)       { create(:sync_session, created_at: 2.days.ago, user: app_user) }
 
     before do
       active_session
@@ -47,7 +53,7 @@ RSpec.describe "SyncSessions", type: :request do
   end
 
   describe 'GET /sync_sessions/:id' do
-    let(:sync_session) { create(:sync_session) }
+    let(:sync_session) { create(:sync_session, user: app_user) }
     let!(:session_account1) { create(:sync_session_account, sync_session: sync_session, email_account: email_account1) }
     let!(:session_account2) { create(:sync_session_account, sync_session: sync_session, email_account: email_account2) }
 
@@ -178,7 +184,7 @@ RSpec.describe "SyncSessions", type: :request do
         SyncSession.destroy_all
         SyncSessionAccount.destroy_all
         allow_any_instance_of(Services::SyncSessionValidator).to receive(:validate!).and_call_original
-        create(:sync_session, status: 'running', created_at: 10.minutes.ago)
+        create(:sync_session, status: 'running', created_at: 10.minutes.ago, user: app_user)
       end
 
       it 'prevents creating another sync session' do
@@ -203,7 +209,7 @@ RSpec.describe "SyncSessions", type: :request do
         SyncSessionAccount.connection.execute('DELETE FROM sync_session_accounts')
         allow_any_instance_of(Services::SyncSessionValidator).to receive(:validate!).and_call_original
         3.times do |i|
-          create(:sync_session, status: 'completed', created_at: (2 + i * 0.1).minutes.ago)
+          create(:sync_session, status: 'completed', created_at: (2 + i * 0.1).minutes.ago, user: app_user)
         end
       end
 
@@ -252,7 +258,7 @@ RSpec.describe "SyncSessions", type: :request do
 
   describe 'POST /sync_sessions/:id/cancel' do
     context 'with active session' do
-      let(:sync_session) { create(:sync_session, :running) }
+      let(:sync_session) { create(:sync_session, :running, user: app_user) }
 
       it 'cancels the session' do
         post cancel_sync_session_path(sync_session)
@@ -268,7 +274,7 @@ RSpec.describe "SyncSessions", type: :request do
     end
 
     context 'with pending session' do
-      let(:sync_session) { create(:sync_session, status: 'pending') }
+      let(:sync_session) { create(:sync_session, status: 'pending', user: app_user) }
 
       it 'cancels the session' do
         post cancel_sync_session_path(sync_session)
@@ -277,7 +283,7 @@ RSpec.describe "SyncSessions", type: :request do
     end
 
     context 'with completed session' do
-      let(:sync_session) { create(:sync_session, :completed) }
+      let(:sync_session) { create(:sync_session, :completed, user: app_user) }
 
       it 'does not cancel the session' do
         post cancel_sync_session_path(sync_session)
@@ -298,7 +304,7 @@ RSpec.describe "SyncSessions", type: :request do
     end
 
     context 'with failed session' do
-      let(:sync_session) { create(:sync_session, :failed) }
+      let(:sync_session) { create(:sync_session, :failed, user: app_user) }
 
       before do
         sync_session.email_accounts << [ email_account1, email_account2 ]
@@ -337,7 +343,7 @@ RSpec.describe "SyncSessions", type: :request do
     end
 
     context 'with cancelled session' do
-      let(:sync_session) { create(:sync_session, :cancelled) }
+      let(:sync_session) { create(:sync_session, :cancelled, user: app_user) }
 
       before do
         sync_session.email_accounts << email_account1
@@ -352,7 +358,7 @@ RSpec.describe "SyncSessions", type: :request do
 
     context 'with running session' do
       # Performance: lazy let — force materialization before counting
-      let(:sync_session) { create(:sync_session, :running) }
+      let(:sync_session) { create(:sync_session, :running, user: app_user) }
 
       it 'does not create a new session' do
         initial_count = SyncSession.count + 1 # account for the session being created by let
@@ -369,11 +375,11 @@ RSpec.describe "SyncSessions", type: :request do
     end
 
     context 'with rate limit exceeded' do
-      let(:sync_session) { create(:sync_session, :failed) }
+      let(:sync_session) { create(:sync_session, :failed, user: app_user) }
 
       before do
         sync_session.email_accounts << email_account1
-        3.times { create(:sync_session, created_at: 2.minutes.ago) }
+        3.times { create(:sync_session, created_at: 2.minutes.ago, user: app_user) }
       end
 
       it 'prevents retry due to rate limit' do
@@ -387,7 +393,7 @@ RSpec.describe "SyncSessions", type: :request do
     end
 
     context 'JSON format' do
-      let(:sync_session) { create(:sync_session, :failed) }
+      let(:sync_session) { create(:sync_session, :failed, user: app_user) }
 
       before do
         sync_session.email_accounts << email_account1
@@ -408,6 +414,7 @@ RSpec.describe "SyncSessions", type: :request do
     # Performance: lazy let — only created when referenced by the test
     let(:sync_session) do
       create(:sync_session, :running,
+             user: app_user,
              total_emails: 100,
              processed_emails: 50,
              detected_expenses: 15,

@@ -910,4 +910,51 @@ RSpec.describe SyncConflict, type: :model, unit: true do
       end
     end
   end
+
+  # PR 7 — user_id association and scoping
+  describe "user ownership (PR 7)", unit: true do
+    describe "associations" do
+      it "belongs to a user" do
+        user = create(:user)
+        session = create(:sync_session, user: user)
+        expense = create(:expense, user: user)
+        conflict = create(:sync_conflict, sync_session: session, user: user, existing_expense: expense)
+        expect(conflict.user).to eq(user)
+      end
+
+      it "requires a user (not optional)" do
+        conflict = build(:sync_conflict, user: nil)
+        expect(conflict).not_to be_valid
+        expect(conflict.errors[:user]).to be_present
+      end
+    end
+
+    describe ".for_user scope" do
+      let!(:user_a) { create(:user, :admin) }
+      let!(:user_b) { create(:user) }
+      let!(:session_a) { create(:sync_session, user: user_a) }
+      let!(:session_b) { create(:sync_session, user: user_b) }
+      let!(:expense_a) { create(:expense, user: user_a) }
+      let!(:expense_b) { create(:expense, user: user_b) }
+      let!(:conflict_a) { create(:sync_conflict, sync_session: session_a, user: user_a, existing_expense: expense_a) }
+      let!(:conflict_b) { create(:sync_conflict, sync_session: session_b, user: user_b, existing_expense: expense_b) }
+
+      it "returns only conflicts belonging to user_a" do
+        result = SyncConflict.for_user(user_a)
+        expect(result).to include(conflict_a)
+        expect(result).not_to include(conflict_b)
+      end
+
+      it "returns only conflicts belonging to user_b" do
+        result = SyncConflict.for_user(user_b)
+        expect(result).to include(conflict_b)
+        expect(result).not_to include(conflict_a)
+      end
+
+      it "returns an empty relation when user has no conflicts" do
+        user_c = create(:user)
+        expect(SyncConflict.for_user(user_c)).to be_empty
+      end
+    end
+  end
 end

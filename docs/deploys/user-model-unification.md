@@ -27,11 +27,15 @@ git log --oneline origin/main -1   # expect: d727375 feat(cleanup): PR 14/14 ...
 ### 1.2 Verify CI on main
 
 ```bash
-# Check ALL workflows on the current origin/main commit, not just the latest run.
+# Check REQUIRED workflows (CI, Unit Tests) on the current origin/main commit.
+# Non-required workflows (e.g. the chronically-red `Test Suite` :performance
+# specs) are intentionally NOT blocking — see REQUIRED_WORKFLOWS in
+# bin/pre-deploy-check for the authoritative list.
 SHA=$(git rev-parse origin/main)
-gh run list --branch main --commit "$SHA" --json name,status,conclusion \
-  --jq 'map(select(.status != "completed" or .conclusion != "success"))
-        | if length == 0 then "green" else "CI NOT green — abort" end'
+gh run list --branch main --commit "$SHA" --json name,status,conclusion --jq '
+  map(select(.name == "CI" or .name == "Unit Tests"))
+  | map(select(.status != "completed" or .conclusion != "success"))
+  | if length == 0 then "green" else "REQUIRED CI NOT green — abort" end'
 ```
 
 `green` = proceed. Anything else means abort.
@@ -50,7 +54,7 @@ Gates it enforces (see `bin/pre-deploy-check` source for details):
 - `config/deploy.yml`'s `env.secret` block lists both `ADMIN_EMAIL` and `ADMIN_PASSWORD` (guardrail against someone removing them).
 - **Remote reachability:** `kamal app details` succeeds (skippable via `--offline` if drafting the deploy offline).
 - **Remote `AdminUser` presence:** asks the running prod container whether `admin_users` exists and, if so, whether it has ≥ 1 row. Prints a clear info line for re-deploys where the table is already dropped.
-- `gh run list` says CI on `main` is green (skippable via `--skip-ci` for emergencies).
+- `gh run list` says **required** workflows on `main` are green — `REQUIRED_WORKFLOWS` constant in `bin/pre-deploy-check` (currently `CI`, `Unit Tests`). Other workflows are reported as INFO but do not block. Skippable via `--skip-ci` for emergencies.
 - Prints the backup command from §1.4 as a friendly nudge.
 
 Flags:

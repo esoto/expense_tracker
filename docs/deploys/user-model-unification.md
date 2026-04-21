@@ -4,7 +4,7 @@ One-time runbook for the 14-PR User-model unification deploy (PRs #460–#475, m
 
 Three risk surfaces you're dealing with:
 
-1. **First-boot data migration.** `db/migrate/20260421130100_create_default_user_from_admin_users.rb` reads `admin_users` rows and creates `User` rows. PR 14's `drop_admin_users_table` runs later in the same batch — the drop is safe because rows are already copied, but the first deploy MUST have at least one `admin_users` row when migrations start.
+1. **First-boot data migration.** `db/migrate/20260420130000_create_default_user_from_admin_users.rb` reads `admin_users` rows and creates `User` rows. PR 14's `drop_admin_users_table` (`db/migrate/20260421160000_drop_admin_users_table.rb`) runs later in the same batch — the drop is safe because rows are already copied, but the first deploy MUST have at least one `admin_users` row when migrations start.
 2. **Session-cookie cutover.** Every existing admin cookie becomes invalid at cutover. Log in again at `/login` — there is no more `/admin/login`.
 3. **Env-var dependency.** `db/seeds.rb` now creates a `User` (not `AdminUser`) and `abort`s in production if `ADMIN_EMAIL` or `ADMIN_PASSWORD` match the dev sentinels. `config/deploy.yml` already declares both as `env.secret`, so `.kamal/secrets` on the workstation must have real values.
 
@@ -27,11 +27,14 @@ git log --oneline origin/main -1   # expect: d727375 feat(cleanup): PR 14/14 ...
 ### 1.2 Verify CI on main
 
 ```bash
-gh run list --branch main --limit 1 --json conclusion,status \
-  --jq '.[0] | select(.conclusion != "success") | "CI NOT green — abort"'
+# Check ALL workflows on the current origin/main commit, not just the latest run.
+SHA=$(git rev-parse origin/main)
+gh run list --branch main --commit "$SHA" --json name,status,conclusion \
+  --jq 'map(select(.status != "completed" or .conclusion != "success"))
+        | if length == 0 then "green" else "CI NOT green — abort" end'
 ```
 
-No output = green. Any output means abort.
+`green` = proceed. Anything else means abort.
 
 ### 1.3 Run the pre-flight script
 
@@ -57,26 +60,33 @@ Flags:
 
 ### 1.4 Snapshot the DB (critical — rollback depends on it)
 
-Preferred: run from the Hetzner box directly.
+Preferred: run from the Hetzner box directly. Use `--format=custom` so rollback can use `pg_restore --clean --if-exists` (plain-SQL restores can fail with "relation already exists" after the schema change).
 
 ```bash
-ssh deploy@178.104.88.183 \
-  "pg_dump -h personal-blog-db -U expense_tracker expense_tracker_production \
-     | gzip > ~/backups/pre-user-model-$(date +%Y%m%dT%H%M%SZ).sql.gz"
+ssh deploy@178.104.88.183 'bash -s' <<'EOF'
+mkdir -p ~/backups
+TS=$(date +%Y%m%dT%H%M%SZ)
+PGPASSWORD="$POSTGRES_PASSWORD" pg_dump \
+  -h personal-blog-db -U expense_tracker \
+  --format=custom --no-owner --no-acl \
+  -f ~/backups/pre-user-model-${TS}.dump \
+  expense_tracker_production
+ls -lh ~/backups/pre-user-model-${TS}.dump
+EOF
 ```
 
-Alternative via Kamal (piped through the app container):
+`POSTGRES_PASSWORD` must be exported in the `deploy` user's shell on the Hetzner box, or replace the inline `PGPASSWORD="$POSTGRES_PASSWORD"` with `PGPASSWORD='...'` once.
+
+Alternative via Kamal (piped through the app container — also custom format):
 
 ```bash
 kamal app exec --reuse \
-  "bash -c 'pg_dump -h \$POSTGRES_HOST -U \$POSTGRES_USER expense_tracker_production' \
-  > /rails/storage/backups/pre-user-model.sql"
-```
-
-Verify the file exists and is non-empty:
-
-```bash
-ssh deploy@178.104.88.183 "ls -lh ~/backups/pre-user-model-*.sql.gz | tail -1"
+  "bash -c 'mkdir -p /rails/storage/backups && \
+    PGPASSWORD=\$POSTGRES_PASSWORD pg_dump \
+      -h \$POSTGRES_HOST -U \$POSTGRES_USER \
+      --format=custom --no-owner --no-acl \
+      -f /rails/storage/backups/pre-user-model.dump \
+      expense_tracker_production'"
 ```
 
 Write the timestamped path somewhere you can find it — you'll need it for rollback (§4).
@@ -138,13 +148,15 @@ kamal deploy
 # Health endpoint
 curl -fsS https://expense-tracker.estebansoto.dev/up && echo "OK: /up"
 
-# Schema sanity — runs inside the just-deployed container
+# Schema sanity — runs inside the just-deployed container.
+# Uses `User.admin` (singular) because Rails auto-generates scope names from
+# the enum value (`enum :role, { user: 0, admin: 1 }` in app/models/user.rb).
 kamal app exec --reuse "bin/rails runner '
   fail unless User.count > 0
-  fail unless User.admins.count > 0
+  fail unless User.admin.count > 0
   fail if ActiveRecord::Base.connection.tables.include?(\"admin_users\")
   fail unless ActiveRecord::Base.connection.columns(:expenses).map(&:name).include?(\"user_id\")
-  puts %Q{users=#{User.count} admins=#{User.admins.count} admin_users_dropped=true expenses.user_id=present}
+  puts %Q{users=#{User.count} admins=#{User.admin.count} admin_users_dropped=true expenses.user_id=present}
 '"
 ```
 
@@ -169,13 +181,13 @@ Three cases. Pick the one that matches the failure.
 
 ### 4.1 Code rollback, schema intact
 
-Deploy introduced a bug but the User-model schema is fine.
+Deploy introduced a bug but the User-model schema is fine AND the rollback target is a post-unification image (i.e. one of PRs #460–#475 or later).
 
 ```bash
 kamal rollback <previous-image-tag>
 ```
 
-`.kamal/hooks/pre-deploy` will BLOCK this because the old image is behind the current schema. Override with `kamal deploy --skip-hooks` ONLY if you also restore the DB (case 4.2).
+⚠️ **Do not code-only rollback to a pre-unification image after the schema cutover.** `.kamal/hooks/pre-deploy` checks `db:migrate:status` inside the *currently running* container (see `.kamal/hooks/pre-deploy:15`), so after a successful cutover the hook can pass even though the rollback image would crash against the migrated schema. Rolling back across the unification boundary requires a full DB restore — use case 4.2 instead, or roll forward with a fix.
 
 ### 4.2 Full rollback including schema
 
@@ -188,9 +200,13 @@ ssh deploy@178.104.88.183
 # Stop the app
 kamal app stop
 
-# Restore the DB (use the timestamped path from §1.4)
-gunzip -c ~/backups/pre-user-model-<timestamp>.sql.gz \
-  | psql -h personal-blog-db -U expense_tracker expense_tracker_production
+# Restore the DB (use the timestamped path from §1.4).
+# --clean --if-exists drops the unification-era tables/columns before restoring.
+PGPASSWORD="$POSTGRES_PASSWORD" pg_restore \
+  -h personal-blog-db -U expense_tracker \
+  --clean --if-exists --no-owner --no-acl \
+  -d expense_tracker_production \
+  ~/backups/pre-user-model-<timestamp>.dump
 
 # Rollback the image (back to local shell)
 exit

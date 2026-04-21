@@ -305,6 +305,10 @@ module Services
     expense_attrs[:deleted_at] = Time.current if conflict_type.in?(%w[duplicate similar])
 
     new_expense = Expense.new(expense_attrs)
+    # PR 5: expenses require user_id (NOT NULL). Inherit from the target
+    # email_account so this service works both in the webhook flow (attrs
+    # carry email_account_id) and when a caller pre-sets user_id explicitly.
+    new_expense.user ||= new_expense.email_account&.user
 
     conflict = ActiveRecord::Base.transaction(requires_new: true) do
       new_expense.save! if conflict_type == "duplicate" || conflict_type == "similar"

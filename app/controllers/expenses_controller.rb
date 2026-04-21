@@ -817,8 +817,9 @@ class ExpensesController < ApplicationController
   end
 
   def calculate_summary_statistics
-    # Build a separate query for aggregations
-    summary_scope = Expense.all
+    # Build a separate query for aggregations, scoped to the current user.
+    # Without for_user the summary totals would leak cross-user aggregates.
+    summary_scope = Expense.for_user(scoping_user)
     summary_scope = apply_filters(summary_scope)
 
     # Single query for both sum and count

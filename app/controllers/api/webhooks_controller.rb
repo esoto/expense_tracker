@@ -92,6 +92,10 @@ class Api::WebhooksController < ApplicationController
     limit = [ params[:limit].to_i, 50 ].min
     limit = 10 if limit <= 0
 
+    # FIXME(PR-11): scope to api_token.user once api_tokens become user-scoped.
+    # Today a webhook token sees every user's recent expenses; acceptable in
+    # the current single-user deploy but must be tightened before a second
+    # real user onboards.
     expenses = Expense.includes(:category, :email_account)
                      .recent
                      .limit(limit)

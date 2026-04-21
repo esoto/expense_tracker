@@ -6,16 +6,19 @@ class SyncSessionsController < ApplicationController
   before_action :authorize_sync_session_owner!, only: [ :show, :cancel, :retry ]
 
   def index
-    @active_session = SyncSession.active.includes(:sync_session_accounts, :email_accounts).first
-    @recent_sessions = Services::SyncSessionPerformanceOptimizer.preload_for_index.limit(10)
+    @active_session = SyncSession.for_user(scoping_user).active
+                                 .includes(:sync_session_accounts, :email_accounts).first
+    @recent_sessions = Services::SyncSessionPerformanceOptimizer
+                         .preload_for_index_scoped(scoping_user).limit(10)
     @email_accounts = EmailAccount.active.order(:bank_name, :email)
     # Additional data for enhanced UI
     @active_accounts_count = EmailAccount.active.count
-    @today_sync_count = SyncSession.where(created_at: Date.current.beginning_of_day..Date.current.end_of_day).count
-    @monthly_expenses_detected = SyncSession.completed
-                                          .where(completed_at: Date.current.beginning_of_month..Date.current.end_of_month)
-                                          .sum(:detected_expenses)
-    @last_completed_session = SyncSession.completed.recent.first
+    @today_sync_count = SyncSession.for_user(scoping_user)
+                                   .where(created_at: Date.current.beginning_of_day..Date.current.end_of_day).count
+    @monthly_expenses_detected = SyncSession.for_user(scoping_user).completed
+                                            .where(completed_at: Date.current.beginning_of_month..Date.current.end_of_month)
+                                            .sum(:detected_expenses)
+    @last_completed_session = SyncSession.for_user(scoping_user).completed.recent.first
   end
 
   def show
@@ -23,7 +26,7 @@ class SyncSessionsController < ApplicationController
   end
 
   def create
-    result = Services::SyncSessionCreator.new(sync_params, request_info).call
+    result = Services::SyncSessionCreator.new(sync_params, request_info, scoping_user).call
 
     if result.success?
       @sync_session = result.sync_session
@@ -58,7 +61,7 @@ class SyncSessionsController < ApplicationController
   end
 
   def retry
-    result = Services::SyncSessionRetryService.new(@sync_session, retry_params).call
+    result = Services::SyncSessionRetryService.new(@sync_session, retry_params, scoping_user).call
 
     if result.success?
       new_session = result.sync_session
@@ -72,7 +75,7 @@ class SyncSessionsController < ApplicationController
   end
 
   def status
-    session = SyncSession.find_by(id: params[:sync_session_id])
+    session = SyncSession.for_user(scoping_user).find_by(id: params[:sync_session_id])
 
     if session
       # Use caching for frequently accessed status
@@ -93,12 +96,17 @@ class SyncSessionsController < ApplicationController
   private
 
   def set_sync_session
-    @sync_session = SyncSession.find(params[:id])
+    @sync_session = SyncSession.for_user(scoping_user).find(params[:id])
+  rescue ActiveRecord::RecordNotFound
+    respond_to do |format|
+      format.html { redirect_to sync_sessions_path, alert: t("sync_sessions.flash.not_found", default: "Sync session not found") }
+      format.json { render json: { error: "Session not found" }, status: :not_found }
+    end
   end
 
   def prepare_widget_data
     @active_sync_session = @sync_session
-    @last_completed_sync = SyncSession.completed.recent.first
+    @last_completed_sync = SyncSession.for_user(scoping_user).completed.recent.first
   end
 
   def sync_params
@@ -170,5 +178,22 @@ class SyncSessionsController < ApplicationController
         }
       end
     }
+  end
+
+  # Returns the user to scope all sync session queries to.
+  # Mirrors BudgetsController#scoping_user — PR 12 will wire up real auth.
+  def scoping_user
+    @scoping_user ||= begin
+      user = try(:current_app_user)
+      if user.nil?
+        user = User.admin.first
+        Rails.logger.warn(
+          "[scoping_user] current_app_user is nil; falling back to User.admin.first " \
+          "(controller=#{self.class.name}, path=#{request.fullpath}). " \
+          "This path disappears in PR 12 when UserAuthentication gates all controllers."
+        ) if user
+      end
+      user || raise("No authenticated user and no admin User found")
+    end
   end
 end

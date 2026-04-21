@@ -29,7 +29,13 @@ module Services::Email
       def create_session(email_account = nil)
         account_count = email_account ? 1 : EmailAccount.active.count
 
+        # Resolve owner: prefer email_account.user when available, then fall
+        # back to first admin (FIXME(PR-7b): thread real user through callers).
+        owner = email_account&.user || User.where(role: 1).order(:id).first
+        raise ActiveRecord::RecordNotFound, "No admin User found" unless owner
+
         @sync_session = SyncSession.create!(
+          user: owner,
           status: "pending",
           total_emails: 0,  # Will be updated when processing starts
           processed_emails: 0,

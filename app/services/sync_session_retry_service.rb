@@ -1,10 +1,11 @@
 module Services
   class Services::SyncSessionRetryService
-  attr_reader :original_session, :params
+  attr_reader :original_session, :params, :user
 
-  def initialize(original_session, params = {})
+  def initialize(original_session, params = {}, user = nil)
     @original_session = original_session
     @params = params
+    @user = user
   end
 
   def call
@@ -32,7 +33,9 @@ module Services
 
   def create_retry_session
     SyncSession.transaction do
-      new_session = SyncSession.create!
+      # Inherit user from original session, or use explicitly provided user.
+      owner = user || original_session.user
+      new_session = SyncSession.create!(user: owner)
 
       # Copy email accounts with batch insert
       account_ids = original_session.email_account_ids

@@ -136,6 +136,7 @@ module Services
 
     metric = SyncMetric.new(
       sync_session: sync_session,
+      user: sync_session&.user,
       email_account: email_account,
       metric_type: metric_type.to_s,
       success: success,

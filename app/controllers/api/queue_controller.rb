@@ -4,7 +4,8 @@ module Api
   # API controller for queue monitoring and management
   # Provides endpoints for real-time queue status, control operations, and job management
   class QueueController < ApplicationController
-    skip_before_action :authenticate_user!
+    skip_before_action :require_authentication
+    skip_before_action :check_session_expiry
     skip_before_action :verify_authenticity_token
     before_action :authenticate_queue_access!
     before_action :set_job, only: [ :retry_job, :clear_job ]

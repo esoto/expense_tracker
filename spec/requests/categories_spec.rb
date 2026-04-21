@@ -3,7 +3,7 @@
 require "rails_helper"
 
 RSpec.describe "Categories API", type: :request do
-  let!(:admin_user) { create(:admin_user) }
+  let!(:admin_user) { create(:user, :admin) }
   let!(:category_food) { create(:category, name: "Food", color: "#FF6B6B") }
   let!(:category_transport) { create(:category, name: "Transport", color: "#4ECDC4") }
 
@@ -69,7 +69,7 @@ RSpec.describe "Categories API", type: :request do
       it "redirects to admin login for HTML requests" do
         get categories_path
 
-        expect(response).to redirect_to(admin_login_path)
+        expect(response).to redirect_to(login_path)
       end
     end
   end

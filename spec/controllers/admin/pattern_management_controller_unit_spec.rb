@@ -15,14 +15,16 @@ RSpec.describe Admin::PatternManagementController, type: :controller, unit: true
   end
 
   before do
-    # Skip admin authentication for unit tests
-    controller.class.skip_before_action :require_admin_authentication, raise: false
-    controller.class.skip_before_action :check_session_expiry, raise: false
+    # PR-12: Stub unified authentication before_actions so unit tests run without a session.
+    allow(controller).to receive(:require_authentication).and_return(true)
+    allow(controller).to receive(:check_session_expiry).and_return(true)
+    allow(controller).to receive(:require_admin!).and_return(true)
     controller.class.skip_before_action :set_security_headers, raise: false
     controller.class.skip_after_action :log_admin_activity, raise: false
     allow(controller).to receive(:log_admin_action)
 
     # Mock admin authentication to allow access
+    allow(controller).to receive(:current_app_user).and_return(admin_user)
     allow(controller).to receive(:current_admin_user).and_return(admin_user)
     allow(controller).to receive(:admin_signed_in?).and_return(true)
 
@@ -320,9 +322,9 @@ RSpec.describe Admin::PatternManagementController, type: :controller, unit: true
       end
     end
 
-    it "delegates permission check to AdminAuthentication concern" do
+    it "delegates permission check to AdminAuthentication concern (now via UserAuthentication via Admin::BaseController)" do
       # Verify the controller does NOT define its own require_pattern_management_permission
-      # It should use the one from AdminAuthentication concern
+      # It should use the one from AdminAuthentication concern inherited through UserAuthentication
       own_methods = described_class.instance_methods(false) +
                     described_class.private_instance_methods(false)
       expect(own_methods).not_to include(:require_pattern_management_permission)

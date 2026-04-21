@@ -1,5 +1,5 @@
 class ApplicationController < ActionController::Base
-  include Authentication
+  include UserAuthentication
 
   before_action :set_locale
 

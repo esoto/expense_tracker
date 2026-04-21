@@ -3,7 +3,8 @@
 require "rails_helper"
 
 RSpec.describe "Queue Visualization", type: :request, integration: true do
-  let(:admin_user) { create(:admin_user, :with_session) }
+  # PR-12: Unified user.
+  let(:admin_user) { create(:user, :admin) }
   let(:admin_key) { "test_admin_key_for_queue" }
   let(:auth_headers) { { "Accept" => "application/json", "X-Admin-Key" => admin_key } }
 

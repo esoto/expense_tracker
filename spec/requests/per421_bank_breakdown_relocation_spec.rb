@@ -3,7 +3,7 @@
 require "rails_helper"
 
 RSpec.describe "PER-421: Bank breakdown relocation", type: :request, unit: true do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:user, :admin) }
   # scoping_user falls back to User.admin.first — create an admin User so the
   # controller can scope queries.  All email accounts in this spec belong to
   # this user so the scoped index returns them correctly.

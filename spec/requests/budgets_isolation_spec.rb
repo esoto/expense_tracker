@@ -14,10 +14,10 @@ require "rails_helper"
 #
 # Pattern mirrors PR 5's expenses_isolation_spec.rb.
 RSpec.describe "Budgets data isolation", type: :request, unit: true do
-  # Bypass AdminUser-based authentication so we can control which User is
+  # Bypass session authentication so we can control which User is
   # the scoping_user via the controller's fallback logic.
   before do
-    allow_any_instance_of(BudgetsController).to receive(:authenticate_user!).and_return(true)
+    allow_any_instance_of(BudgetsController).to receive(:require_authentication).and_return(true)
     allow_any_instance_of(BudgetsController).to receive(:current_user).and_return(nil)
   end
 

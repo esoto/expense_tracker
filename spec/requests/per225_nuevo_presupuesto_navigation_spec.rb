@@ -19,12 +19,11 @@ require "rails_helper"
 RSpec.describe "PER-225: Nuevo Presupuesto navigation", type: :request, unit: true do
   let!(:email_account) { create(:email_account, active: true) }
 
+  # PR-12: password matches User factory default so sign_in_admin works without explicit password.
   let(:admin_user) do
-    AdminUser.create!(
+    create(:user, :admin,
       name: "PER-225 Test Admin",
-      email: "per225-admin@test.com",
-      password: "AdminPassword123!",
-      role: "admin"
+      email: "per225-admin@test.com"
     )
   end
 

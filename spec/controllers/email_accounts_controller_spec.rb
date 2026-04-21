@@ -8,7 +8,7 @@ RSpec.describe EmailAccountsController, type: :controller, unit: true do
   let(:email_account) { create(:email_account, user: owner) }
 
   before do
-    allow(controller).to receive(:authenticate_user!).and_return(true)
+    allow(controller).to receive(:require_authentication).and_return(true)
     allow(controller).to receive(:scoping_user).and_return(owner)
   end
   let(:valid_attributes) {

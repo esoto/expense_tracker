@@ -1,5 +1,8 @@
 require "rails_helper"
 
+# PR-12: Admin::BaseController now uses UserAuthentication (inherited from
+# ApplicationController) + before_action :require_admin!. Legacy AdminAuthentication
+# concern is deleted.
 RSpec.describe Admin::BaseController, type: :controller, unit: true do
   # Create a test controller that inherits from Admin::BaseController for testing
   controller(Admin::BaseController) do
@@ -9,13 +12,6 @@ RSpec.describe Admin::BaseController, type: :controller, unit: true do
   end
 
   before do
-    # Skip authentication concerns for unit testing
-    allow(controller.class).to receive(:before_action)
-    allow(controller.class).to receive(:after_action)
-
-    # Mock the AdminAuthentication concern methods
-    allow(controller).to receive(:log_admin_action)
-
     # Add the test route
     routes.draw do
       get "test_action" => "admin/base#test_action"
@@ -31,44 +27,69 @@ RSpec.describe Admin::BaseController, type: :controller, unit: true do
       expect(described_class.name).to eq("Admin::BaseController")
     end
 
-    it "includes AdminAuthentication concern" do
-      expect(described_class.included_modules.map(&:name)).to include("AdminAuthentication")
+    it "includes UserAuthentication concern (via ApplicationController)" do
+      expect(described_class.ancestors).to include(UserAuthentication)
+    end
+
+    it "does NOT include legacy AdminAuthentication concern" do
+      expect(described_class.ancestors.map(&:name)).not_to include("AdminAuthentication")
     end
 
     it "does NOT register a check_rate_limit method (PER-507 removed the no-op placeholder)" do
-      # Rate limiting is handled centrally by Rack::Attack (see
-      # config/initializers/rack_attack.rb — `admin/state-changing/ip`
-      # throttle). A controller-level placeholder that just `return true`
-      # provided no protection and was misleading.
       expect(described_class.private_instance_methods).not_to include(:check_rate_limit)
     end
 
     it "has log_admin_activity as after_action" do
-      # Test that the method exists in the class (including private methods)
       expect(described_class.private_instance_methods).to include(:log_admin_activity)
+    end
+
+    it "has require_admin! as a before_action" do
+      callbacks = described_class._process_action_callbacks.select { |c|
+        c.kind == :before && c.filter == :require_admin!
+      }
+      expect(callbacks).not_to be_empty
     end
   end
 
-  describe "GET test_action", unit: true do
-    it "executes with authentication redirect (expected behavior)" do
-      # The admin base controller includes authentication which causes redirect
-      # This is the expected behavior for an admin controller
+  describe "GET test_action when unauthenticated", unit: true do
+    it "redirects to unified /login (not /admin/login)" do
       get :test_action
+      expect(response).to have_http_status(:found)
+      expect(response).to redirect_to(login_path)
+    end
+  end
 
-      expect(response).to have_http_status(:found) # 302 redirect due to authentication
+  describe "GET test_action when authenticated but not admin", unit: true do
+    let(:regular_user) { create(:user) }
+
+    before do
+      allow(controller).to receive(:require_authentication)
+      allow(controller).to receive(:current_app_user).and_return(regular_user)
+    end
+
+    it "redirects non-admin users (require_admin! fires)" do
+      get :test_action
+      # require_admin! calls render_forbidden which redirects back or renders 403
+      expect(response).not_to have_http_status(:ok)
     end
   end
 
   describe "private methods", unit: true do
-    describe "#log_admin_activity" do
-      before do
-        allow(controller).to receive(:controller_name).and_return("test")
-        allow(controller).to receive(:action_name).and_return("show")
-        controller.params = ActionController::Parameters.new(id: "123", password: "secret")
-        allow(controller.request).to receive(:method).and_return("GET")
-        allow(controller.request).to receive(:path).and_return("/admin/test")
-      end
+    let(:admin_user) { create(:user, :admin) }
 
+    before do
+      allow(controller).to receive(:require_authentication)
+      allow(controller).to receive(:require_admin!)
+      allow(controller).to receive(:current_app_user).and_return(admin_user)
+      allow(controller).to receive(:log_admin_action)
+      allow(controller).to receive(:controller_name).and_return("test")
+      allow(controller).to receive(:action_name).and_return("show")
+      controller.params = ActionController::Parameters.new(id: "123", password: "secret")
+      allow(controller.request).to receive(:method).and_return("GET")
+      allow(controller.request).to receive(:path).and_return("/admin/test")
+    end
+
+    describe "#log_admin_activity" do
       it "calls log_admin_action with filtered parameters" do
         expect(controller).to receive(:log_admin_action).with(
           "test#show",
@@ -84,11 +105,7 @@ RSpec.describe Admin::BaseController, type: :controller, unit: true do
 
     describe "#filtered_params" do
       it "masks sensitive parameter values via Rails filter_parameters" do
-        # request.filtered_parameters uses Rails' filter_parameters config
-        # (passw, token, secret, etc.) — sensitive values become [FILTERED]
         result = controller.send(:filtered_params)
-
-        # Should return a hash (request.filtered_parameters returns a Hash)
         expect(result).to be_a(Hash)
       end
 
@@ -97,26 +114,13 @@ RSpec.describe Admin::BaseController, type: :controller, unit: true do
         allow(controller.request).to receive(:filtered_parameters).and_return(filtered)
 
         result = controller.send(:filtered_params)
-
         expect(result).to eq(filtered)
       end
     end
   end
 
-  describe "error handling", unit: true do
-    it "does not define custom error handling (relies on Rails defaults)" do
-      # The controller doesn't define rescue_from blocks, it relies on Rails default error handling
-      rescue_handlers = controller.class.rescue_handlers
-      expect(rescue_handlers).to be_empty
-    end
-  end
-
   describe "security features", unit: true do
     it "delegates rate limiting to Rack::Attack middleware (PER-507)" do
-      # Rate limiting is NOT a controller-level concern anymore. The
-      # admin/state-changing/ip throttle in config/initializers/rack_attack.rb
-      # is the single source of truth for per-IP limits on POST/PATCH/PUT/
-      # DELETE to /admin/*.
       expect(controller.respond_to?(:check_rate_limit, true)).to be false
     end
 
@@ -126,30 +130,6 @@ RSpec.describe Admin::BaseController, type: :controller, unit: true do
 
     it "includes parameter filtering functionality" do
       expect(controller.respond_to?(:filtered_params, true)).to be_truthy
-    end
-
-    it "uses request.filtered_parameters for safe audit logging" do
-      # filtered_params delegates to request.filtered_parameters which applies
-      # Rails filter_parameters config — sensitive values are masked, not removed.
-      expected = { "safe_param" => "safe_value", "password" => "[FILTERED]" }
-      allow(controller.request).to receive(:filtered_parameters).and_return(expected)
-
-      filtered = controller.send(:filtered_params)
-
-      expect(filtered["safe_param"]).to eq("safe_value")
-      expect(filtered["password"]).to eq("[FILTERED]")
-    end
-  end
-
-  describe "admin authentication integration", unit: true do
-    it "includes AdminAuthentication concern" do
-      # This tests that the concern is properly included
-      expect(described_class.ancestors.map(&:name)).to include("AdminAuthentication")
-    end
-
-    it "expects to have admin authentication methods when concern is properly loaded" do
-      # Test that the concern would be loaded (we can't test the actual methods without the full concern)
-      expect(described_class.ancestors.map(&:name)).to include("AdminAuthentication")
     end
   end
 end

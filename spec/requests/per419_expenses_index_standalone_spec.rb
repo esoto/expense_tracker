@@ -9,8 +9,9 @@ require "rails_helper"
 # page (/expenses) renders all required Stimulus controllers and HTML elements
 # independently, without relying on any dashboard-specific DOM elements.
 RSpec.describe "PER-419: Expenses index standalone verification", type: :request, unit: true do
-  let!(:admin_user) { create(:admin_user) }
-  let!(:email_account) { create(:email_account) }
+  let!(:admin_user) { create(:user, :admin) }
+  # PR-12: email_account must belong to admin_user so scoping_user finds the expense.
+  let!(:email_account) { create(:email_account, user: admin_user) }
   let!(:category) { create(:category, name: "Alimentación", color: "#10B981") }
   let!(:expense) do
     create(:expense,

@@ -258,7 +258,7 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
 
     context 'XHR request (conflict modal fetch)' do
       before do
-        allow(controller).to receive(:authenticate_user!).and_return(true)
+        allow(controller).to receive(:require_authentication).and_return(true)
         allow(controller).to receive(:current_user).and_return(create(:admin_user))
         request.env['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest'
         request.env['HTTP_ACCEPT'] = 'text/html'
@@ -286,7 +286,7 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
 
     context 'Turbo-Frame request (conflict modal fetch)' do
       before do
-        allow(controller).to receive(:authenticate_user!).and_return(true)
+        allow(controller).to receive(:require_authentication).and_return(true)
         allow(controller).to receive(:current_user).and_return(create(:admin_user))
         request.headers['Turbo-Frame'] = 'conflict_modal'
         request.env['HTTP_ACCEPT'] = 'text/html'

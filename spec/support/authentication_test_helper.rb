@@ -10,44 +10,75 @@ module AuthenticationTestHelper
     def setup_authentication_mocks
       before do
         # Use instance-level mocking to avoid class-level pollution
-        allow(controller).to receive(:authenticate_user!).and_return(true)
+        allow(controller).to receive(:require_authentication).and_return(true)
+        allow(controller).to receive(:check_session_expiry).and_return(true)
         allow(controller).to receive(:current_user).and_return(nil) unless controller.respond_to?(:current_user)
       end
     end
   end
 
-  def mock_user_authentication(user)
-    allow(controller).to receive(:current_user).and_return(user)
-    allow(controller).to receive(:authenticate_user!).and_return(true)
-    allow(controller).to receive(:user_signed_in?).and_return(true)
+  # PR-12: Legacy alias — previously came from AdminAuthentication concern.
+  # Stubs unified UserAuthentication before_actions so controller specs can run
+  # without a real session when passing a User (or double) as the current user.
+  def authenticate_admin_in_controller(user)
+    mock_user_authentication(user)
+    allow(controller).to receive(:require_admin!).and_return(true)
+    allow(controller).to receive(:current_admin_user).and_return(user)
+    allow(controller).to receive(:admin_signed_in?).and_return(true)
   end
 
-  def authenticate_admin_in_controller(admin_user)
-    admin_user.regenerate_session_token unless admin_user.session_token.present?
-    session[:admin_session_token] = admin_user.reload.session_token
-    session[:admin_user_id] = admin_user.id
+  def mock_user_authentication(user)
+    allow(controller).to receive(:current_user).and_return(user)
+    allow(controller).to receive(:current_app_user).and_return(user)
+    allow(controller).to receive(:require_authentication).and_return(true)
+    allow(controller).to receive(:check_session_expiry).and_return(true)
+    allow(controller).to receive(:user_signed_in?).and_return(true)
+    allow(controller).to receive(:app_user_signed_in?).and_return(true)
   end
 end
 
 # Test helper for request specs (type: :request)
 module RequestAuthenticationHelper
-  def sign_in_admin(admin_user)
-    post admin_login_path, params: {
-      admin_user: {
-        email: admin_user.email,
-        password: "AdminPassword123!"
-      }
+  # PR-12: Unified sign-in helper — uses a User (any role).
+  # Password defaults to the User factory default ("TestPass123!").
+  # Pass an explicit password if the user was created with a different one.
+  def sign_in_as(user, password: "TestPass123!")
+    post login_path, params: {
+      email: user.email,
+      password: password
     }
+  end
+
+  # Legacy alias kept for backward compatibility during spec migration.
+  # Historically called with create(:admin_user) — now expects create(:user, :admin).
+  # Falls back gracefully for legacy AdminUser objects by finding/creating a User.
+  # Password defaults to "TestPass123!" which matches the User factory default.
+  # Specs that create users with a custom password (e.g. "AdminPassword123!")
+  # MUST pass that password explicitly: sign_in_admin(user, password: "AdminPassword123!")
+  def sign_in_admin(user_or_admin_user, password: "TestPass123!")
+    if user_or_admin_user.is_a?(User)
+      sign_in_as(user_or_admin_user, password: password)
+    else
+      # Legacy AdminUser object: find or create corresponding User record.
+      user = User.find_by(email: user_or_admin_user.email) ||
+             create(:user, :admin, email: user_or_admin_user.email, password: password)
+      sign_in_as(user, password: password)
+    end
   end
 end
 
 # Test helper for system specs (type: :system)
 module SystemAuthenticationHelper
-  def sign_in_admin_user(admin_user, password: "AdminPassword123!")
-    visit admin_login_path
-    fill_in "admin_user[email]", with: admin_user.email
-    fill_in "admin_user[password]", with: password
+  def sign_in_as_user(user, password: "Password123!")
+    visit login_path
+    fill_in "email", with: user.email
+    fill_in "password", with: password
     click_button "Iniciar Sesión"
+  end
+
+  # Legacy alias for backward compatibility
+  def sign_in_admin_user(admin_user, password: "AdminPassword123!")
+    sign_in_as_user(admin_user, password: password)
   end
 end
 

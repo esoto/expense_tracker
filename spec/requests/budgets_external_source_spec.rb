@@ -10,8 +10,8 @@ require "rails_helper"
 #   - no badge on native budgets
 #   - banner disappears after patching category_id via the existing update action
 RSpec.describe "Budgets external source UI", type: :request, unit: true do
-  let!(:admin_user) { create(:admin_user) }
-  let!(:email_account) { create(:email_account) }
+  let!(:admin_user) { create(:user, :admin) }
+  let!(:email_account) { create(:email_account, user: admin_user) }
 
   before do
     sign_in_admin(admin_user)

@@ -12,15 +12,15 @@ require "rails_helper"
 # The fix: wrap all target accesses in has*Target guards.
 # These request specs confirm that authenticated admin pages load with HTTP 200 and that
 # unauthenticated requests redirect cleanly (not to unexpected routes as Turbo recovery would).
+#
+# PR-12: Updated to use unified /login instead of /admin/login.
 RSpec.describe "Admin dropdown controller regression (PER-201)", type: :request do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:user, :admin) }
 
-  # Authenticate the test session as admin
+  # Authenticate the test session as admin via unified /login
   def sign_in_as_admin
-    post admin_login_path, params: {
-      admin_user: { email: admin_user.email, password: "AdminPassword123!" }
-    }
-    # The login redirects to /admin/patterns (admin root)
+    sign_in_as(admin_user)
+    # The login redirects to root or stored path
     expect(response).to have_http_status(:found)
     follow_redirect!
   end
@@ -56,10 +56,10 @@ RSpec.describe "Admin dropdown controller regression (PER-201)", type: :request 
         reset!
       end
 
-      it "redirects admin patterns index to login (not an unexpected Turbo misroute)" do
+      it "redirects admin patterns index to unified login (not an unexpected Turbo misroute)" do
         get admin_patterns_path
         expect(response).to have_http_status(:found)
-        expect(response).to redirect_to(admin_login_path)
+        expect(response).to redirect_to(login_path)
       end
 
       # NOTE: composite_patterns auth test removed due to test-suite-level session

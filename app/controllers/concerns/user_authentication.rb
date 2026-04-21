@@ -15,6 +15,12 @@ module UserAuthentication
 
     helper_method :current_app_user, :app_user_signed_in?
 
+    # PR-12: Legacy aliases — keep callers working without a rewrite sweep.
+    # current_admin_user / admin_signed_in? were used by the old AdminAuthentication
+    # concern; current_user / user_signed_in? were used by the old Authentication
+    # concern.  All four now resolve to the same unified User object.
+    helper_method :current_user, :user_signed_in?, :current_admin_user, :admin_signed_in?
+
     # CSRF protection
     protect_from_forgery with: :exception
   end
@@ -23,6 +29,12 @@ module UserAuthentication
 
   def require_authentication
     unless app_user_signed_in?
+      # For JSON/XHR/CSV requests return 401 instead of an HTML redirect so
+      # API and non-browser callers can handle auth failures programmatically.
+      if request.format.json? || request.format.csv? || request.xhr?
+        return render json: { error: "Authentication required" }, status: :unauthorized
+      end
+
       # PER-213: Check whether this is an expired session (token present but
       # session_expires_at in the past) vs. a truly anonymous request.  We
       # distinguish these so we can:
@@ -146,13 +158,13 @@ module UserAuthentication
     redirect_to(return_to || default)
   end
 
-  # Reject admin paths and external URLs to prevent open redirect and
-  # routing errors caused by stale or external session[:return_to] values.
+  # Reject external URLs to prevent open redirect attacks.
   # The \A/[^/] guard rejects protocol-relative URLs like "//evil.com" which
   # start with "/" but redirect off-origin.
+  # PR-12: /admin paths are now allowed because admin role-gate (require_admin!)
+  # is enforced by Admin::BaseController regardless of the redirect target.
   def valid_return_to_path(path)
     return nil if path.blank?
-    return nil if path.start_with?("/admin")
     return nil unless path.match?(%r{\A/[^/]})
 
     path
@@ -206,5 +218,36 @@ module UserAuthentication
         timestamp: Time.current.iso8601
       }.to_json
     )
+  end
+
+  # PR-12: Legacy aliases for backward compatibility.
+  # Callers that reference current_user / user_signed_in? (old Authentication
+  # concern) or current_admin_user / admin_signed_in? (old AdminAuthentication
+  # concern) all resolve to the same unified User object.
+  def current_user
+    current_app_user
+  end
+
+  def user_signed_in?
+    app_user_signed_in?
+  end
+
+  def current_admin_user
+    current_app_user
+  end
+
+  def admin_signed_in?
+    app_user_signed_in?
+  end
+
+  # Legacy alias from old Authentication concern.
+  def current_user_id
+    current_app_user&.id || raise("No authenticated user")
+  end
+
+  # PR-12: Audit logging alias so admin controllers can still call
+  # log_admin_action without modification.
+  def log_admin_action(action, details = {})
+    log_app_user_action(action, details)
   end
 end

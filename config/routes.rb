@@ -86,12 +86,6 @@ Rails.application.routes.draw do
 
   # Admin routes
   namespace :admin do
-    # Authentication routes
-    get "login", to: "sessions#new"
-    post "login", to: "sessions#create"
-    delete "logout", to: "sessions#destroy"
-    get "logout", to: "sessions#destroy"  # Allow GET for logout links
-
     # Pattern testing and management operations (must come before resources :patterns)
     get "patterns/test", to: "pattern_testing#test"
     post "patterns/test_pattern", to: "pattern_testing#test_pattern"

@@ -14,17 +14,17 @@ RSpec.describe BulkCategorizationsController, type: :controller, unit: true do
   end
 
   before do
-    allow(controller).to receive(:authenticate_user!).and_return(true)
+    allow(controller).to receive(:require_authentication).and_return(true)
     allow(controller).to receive(:current_user).and_return(user)
     allow(controller).to receive(:current_user_id).and_return(user.id)
-    allow(controller).to receive(:log_user_action)
+    allow(controller).to receive(:log_app_user_action)
     # Skip rate limiting checks for unit tests
     controller.class.skip_before_action :check_rate_limit, raise: false if controller.class.respond_to?(:skip_before_action)
   end
 
   describe "includes", unit: true do
-    it "includes Authentication concern" do
-      expect(controller.class.ancestors).to include(Authentication)
+    it "includes UserAuthentication concern (PR-12: unified auth)" do
+      expect(controller.class.ancestors).to include(UserAuthentication)
     end
 
     it "does not include RateLimiting concern (read-only actions)" do
@@ -307,7 +307,7 @@ RSpec.describe BulkCategorizationsController, type: :controller, unit: true do
   describe "authentication and authorization" do
     context "without authentication" do
       before do
-        allow(controller).to receive(:authenticate_user!).and_raise(ActionController::RoutingError, "Not authenticated")
+        allow(controller).to receive(:require_authentication).and_raise(ActionController::RoutingError, "Not authenticated")
       end
 
       it "requires authentication for index" do

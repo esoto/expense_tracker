@@ -2,7 +2,6 @@
 
 # Controller for pattern import, export, and analytics operations
 class Admin::PatternManagementController < Admin::BaseController
-  before_action :require_admin_authentication
   before_action :require_pattern_management_permission
 
   def import

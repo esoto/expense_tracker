@@ -174,8 +174,8 @@ RSpec.describe "Sessions", type: :request do
       expect(guard("/expenses")).to eq("/expenses")
     end
 
-    it "rejects /admin paths" do
-      expect(guard("/admin/patterns")).to be_nil
+    it "accepts /admin paths (PR-12: admin role-gate enforced by Admin::BaseController)" do
+      expect(guard("/admin/patterns")).to eq("/admin/patterns")
     end
 
     it "rejects protocol-relative URLs" do

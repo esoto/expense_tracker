@@ -7,7 +7,7 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
   let(:category) { build_stubbed(:category) }
 
   before do
-    allow(controller).to receive(:authenticate_user!).and_return(true)
+    allow(controller).to receive(:require_authentication).and_return(true)
     # Stub scoping_user to return a consistent user across all tests.
     allow(controller).to receive(:scoping_user).and_return(user)
   end

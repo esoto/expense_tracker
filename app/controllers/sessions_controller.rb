@@ -6,14 +6,6 @@
 class SessionsController < ApplicationController
   include UserAuthentication
 
-  # Transient: the legacy Authentication concern (included by ApplicationController)
-  # installs `authenticate_user!`, which redirects unauthenticated HTML requests
-  # to `/admin/login`. We must skip it here so `/login` is reachable while
-  # signed out. PR 12 removes the legacy concern from ApplicationController
-  # entirely, at which point this skip should be deleted (it will raise
-  # AbstractController::ActionNotFound if left in place — loud, not silent).
-  skip_before_action :authenticate_user!
-
   skip_before_action :require_authentication, only: [ :new, :create ]
 
   def new

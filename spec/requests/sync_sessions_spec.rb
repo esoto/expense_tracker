@@ -10,12 +10,11 @@ RSpec.describe "SyncSessions", type: :request do
   let(:email_account1)    { create(:email_account, :bac, active: true, user: app_user) }
   let(:email_account2)    { create(:email_account, :gmail, active: true, email: "gmail_#{SecureRandom.hex(4)}@example.com", user: app_user) }
   let(:inactive_account)  { create(:email_account, active: false, email: "inactive_#{SecureRandom.hex(4)}@example.com", user: app_user) }
+  # PR-12: password matches User factory default so sign_in_admin works without explicit password.
   let(:admin_user) do
-    AdminUser.create!(
+    create(:user, :admin,
       name: "Sync Test Admin",
-      email: "sync-admin-#{SecureRandom.hex(4)}@test.com",
-      password: "AdminPassword123!",
-      role: "admin"
+      email: "sync-admin-#{SecureRandom.hex(4)}@test.com"
     )
   end
 

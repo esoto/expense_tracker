@@ -1,9 +1,11 @@
 require "rails_helper"
 
 RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: true do
-  let(:admin_user) { create(:admin_user, email: "admin_#{SecureRandom.hex(4)}@example.com") }
-  let(:restricted_admin) { create(:admin_user, :read_only, email: "restricted_#{SecureRandom.hex(4)}@example.com") }
-  let(:super_admin_user) { create(:admin_user, :super_admin, email: "super_#{SecureRandom.hex(4)}@example.com") }
+  # PR-12: Unified user — all roles are now User with role: :admin or :user.
+  let(:admin_user) { create(:user, :admin, email: "admin_#{SecureRandom.hex(4)}@example.com") }
+  # restricted_admin: a plain User (non-admin) used to verify permission-denied paths.
+  let(:restricted_admin) { create(:user, email: "restricted_#{SecureRandom.hex(4)}@example.com") }
+  let(:super_admin_user) { create(:user, :admin, email: "super_#{SecureRandom.hex(4)}@example.com") }
   let(:category) { create(:category) }
   let(:pattern) { create(:categorization_pattern) }
 
@@ -434,7 +436,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
       before do
         # Ensure clean state for each test
         allow(controller).to receive(:current_admin_user).and_return(admin_user)
-        allow(controller).to receive(:require_admin_authentication).and_return(true)
+        allow(controller).to receive(:require_authentication).and_return(true)
         allow(controller).to receive(:require_analytics_permission).and_return(true)
 
         # Mock the analyzer consistently
@@ -489,7 +491,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
       before do
         # Clean setup for permission test
         allow(controller).to receive(:current_admin_user).and_return(restricted_admin)
-        allow(controller).to receive(:require_admin_authentication).and_return(true)
+        allow(controller).to receive(:require_authentication).and_return(true)
         # Override the global default mock for this specific context
         allow(controller).to receive(:require_analytics_permission) do
           unless controller.performed?
@@ -522,7 +524,7 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
 
         # Mock the authentication behavior to redirect
         allow(controller).to receive(:process_action) do |method_name|
-          controller.redirect_to "/admin/login"
+          controller.redirect_to "/login"
         end
       end
 
@@ -536,27 +538,27 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
 
       it "redirects to login for index" do
         get :index
-        expect(response).to redirect_to("/admin/login")
+        expect(response).to redirect_to("/login")
       end
 
       it "redirects to login for trends" do
         get :trends, format: :json
-        expect(response).to redirect_to("/admin/login")
+        expect(response).to redirect_to("/login")
       end
 
       it "redirects to login for heatmap" do
         get :heatmap, format: :json
-        expect(response).to redirect_to("/admin/login")
+        expect(response).to redirect_to("/login")
       end
 
       it "redirects to login for export" do
         post :export
-        expect(response).to redirect_to("/admin/login")
+        expect(response).to redirect_to("/login")
       end
 
       it "redirects to login for refresh" do
         post :refresh, params: { component: "overall_metrics" }
-        expect(response).to redirect_to("/admin/login")
+        expect(response).to redirect_to("/login")
       end
     end
   end
@@ -741,12 +743,17 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
     end
 
     it "logs export actions for audit trail" do
+      # PR-12: log_admin_action now delegates to log_app_user_action which uses event "user_action"
       logged = false
       allow(Rails.logger).to receive(:info) do |msg|
-        if msg.include?("admin_action")
-          parsed = JSON.parse(msg)
-          if parsed["event"] == "admin_action" && parsed["action"].include?("export")
-            logged = true
+        if msg.is_a?(String) && msg.include?("user_action")
+          begin
+            parsed = JSON.parse(msg)
+            if parsed["event"] == "user_action" && parsed["action"].to_s.include?("export")
+              logged = true
+            end
+          rescue JSON::ParserError
+            # not the audit log line
           end
         end
       end
@@ -842,9 +849,11 @@ RSpec.describe Analytics::PatternDashboardController, type: :controller, unit: t
 
   private
 
+  # PR-12: Use unified UserAuthentication session keys.
   def sign_in_as(user)
     user.regenerate_session_token
-    session[:admin_session_token] = user.reload.session_token
-    session[:admin_user_id] = user.id
+    session[:user_session_token] = user.reload.session_token
+    session[:user_id] = user.id
+    session[:user_session_expires_at] = user.session_expires_at&.iso8601
   end
 end

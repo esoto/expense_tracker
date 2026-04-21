@@ -12,8 +12,9 @@ require "rails_helper"
 # page load when navigating away from admin, which disconnects all Stimulus
 # controllers.
 RSpec.describe "PER-174 Turbo Drive isolation", type: :request do
-  let(:admin_user) { create(:admin_user) }
-  let(:email_account) { create(:email_account) }
+  let(:admin_user) { create(:user, :admin) }
+  # PR-12: email_account must belong to admin_user so scoping_user works.
+  let(:email_account) { create(:email_account, user: admin_user) }
 
   before do
     allow(EmailAccount).to receive_message_chain(:active, :first).and_return(email_account)
@@ -23,7 +24,7 @@ RSpec.describe "PER-174 Turbo Drive isolation", type: :request do
     context "when authenticated as a regular user" do
       before do
         # Stub regular user authentication so the budgets controller works
-        allow_any_instance_of(BudgetsController).to receive(:authenticate_user!).and_return(true)
+        allow_any_instance_of(BudgetsController).to receive(:require_authentication).and_return(true)
         allow_any_instance_of(BudgetsController).to receive(:current_user).and_return(nil)
       end
 
@@ -52,8 +53,8 @@ RSpec.describe "PER-174 Turbo Drive isolation", type: :request do
   describe "Admin layout turbo-visit-control meta tag", :unit do
     context "when authenticated as admin" do
       before do
-        post admin_login_path, params: {
-          admin_user: { email: admin_user.email, password: "AdminPassword123!" }
+        post login_path, params: {
+          email: admin_user.email, password: "TestPass123!"
         }
       end
 

@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe LocaleController, type: :controller, unit: true do
   before do
-    allow(controller).to receive(:authenticate_user!).and_return(true)
+    allow(controller).to receive(:require_authentication).and_return(true)
   end
 
   describe "PATCH #update" do

@@ -1,8 +1,8 @@
 require "rails_helper"
 
 RSpec.describe "Expenses Inline Actions API", type: :request do
-  let!(:admin_user) { create(:admin_user) }
-  let!(:email_account) { create(:email_account) }
+  let!(:admin_user) { create(:user, :admin) }
+  let!(:email_account) { create(:email_account, user: admin_user) }
 
   before { sign_in_admin(admin_user) }
   let!(:category) { create(:category, name: "Food", color: "#FF6B6B") }

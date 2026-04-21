@@ -168,6 +168,30 @@ class User < ApplicationRecord
     )
   end
 
+  # PR-12: Unified permission helpers — the new two-role system collapses
+  # AdminUser's four-tier permissions. All admin users have full access.
+  # These methods allow controllers that previously called current_admin_user.can_*?
+  # to keep working with the aliased current_admin_user → current_app_user (User).
+  def can_manage_patterns?
+    admin?
+  end
+
+  def can_edit_patterns?
+    admin?
+  end
+
+  def can_delete_patterns?
+    admin?
+  end
+
+  def can_import_patterns?
+    admin?
+  end
+
+  def can_access_statistics?
+    admin?
+  end
+
   private
 
   def downcase_email

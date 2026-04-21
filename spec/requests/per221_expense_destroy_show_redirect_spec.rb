@@ -5,8 +5,8 @@ require "rails_helper"
 # which returned a stream response that left the user on the show page of a deleted expense.
 # Fix: form uses data-turbo="false" so the HTML redirect response is used instead.
 RSpec.describe "Expense DELETE from show page redirect", type: :request do
-  let!(:admin_user) { create(:admin_user) }
-  let!(:email_account) { create(:email_account) }
+  let!(:admin_user) { create(:user, :admin) }
+  let!(:email_account) { create(:email_account, user: admin_user) }
   let!(:expense) do
     create(:expense,
       email_account: email_account,

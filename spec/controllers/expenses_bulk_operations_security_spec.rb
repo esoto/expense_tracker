@@ -109,7 +109,7 @@ RSpec.describe ExpensesController, type: :request, unit: true do
           expense_ids: expense_ids
         }
 
-        expect(response).to redirect_to(admin_login_url)
+        expect(response).to redirect_to(login_url)
       end
 
       it "redirects unauthenticated bulk_update_status to login" do
@@ -118,13 +118,13 @@ RSpec.describe ExpensesController, type: :request, unit: true do
           status: "processed"
         }
 
-        expect(response).to redirect_to(admin_login_url)
+        expect(response).to redirect_to(login_url)
       end
 
       it "redirects unauthenticated dashboard access to login" do
         get dashboard_expenses_path
 
-        expect(response).to redirect_to(admin_login_url)
+        expect(response).to redirect_to(login_url)
       end
     end
   end

@@ -16,12 +16,12 @@ require "rails_helper"
 # page reload when navigating away from any admin page, which disconnects all
 # admin-scoped Stimulus controllers before the next page renders.
 RSpec.describe "PER-190 Email accounts Turbo Drive isolation", type: :request do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:user, :admin) }
 
   describe "GET /email_accounts/new", :unit do
     context "when authenticated as a regular user" do
       before do
-        allow_any_instance_of(EmailAccountsController).to receive(:authenticate_user!).and_return(true)
+        allow_any_instance_of(EmailAccountsController).to receive(:require_authentication).and_return(true)
         allow_any_instance_of(EmailAccountsController).to receive(:current_user).and_return(nil)
       end
 
@@ -55,8 +55,8 @@ RSpec.describe "PER-190 Email accounts Turbo Drive isolation", type: :request do
   describe "Admin layout turbo-visit-control meta tag prevents pollution", :unit do
     context "when authenticated as admin and visiting admin/patterns" do
       before do
-        post admin_login_path, params: {
-          admin_user: { email: admin_user.email, password: "AdminPassword123!" }
+        post login_path, params: {
+          email: admin_user.email, password: "TestPass123!"
         }
       end
 
@@ -69,7 +69,7 @@ RSpec.describe "PER-190 Email accounts Turbo Drive isolation", type: :request do
 
       it "does NOT include turbo-visit-control on email accounts new page (separate session)" do
         # Simulate a non-admin request to confirm the non-admin layout is used
-        allow_any_instance_of(EmailAccountsController).to receive(:authenticate_user!).and_return(true)
+        allow_any_instance_of(EmailAccountsController).to receive(:require_authentication).and_return(true)
         allow_any_instance_of(EmailAccountsController).to receive(:current_user).and_return(nil)
 
         get new_email_account_path

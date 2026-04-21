@@ -2,7 +2,6 @@
 
 # Controller for bulk categorization actions and operations
 class BulkCategorizationActionsController < ApplicationController
-  include Authentication
   include BulkOperationMonitoring
   include RateLimiting
   before_action :set_expenses, only: [ :categorize, :suggest, :preview, :export ]

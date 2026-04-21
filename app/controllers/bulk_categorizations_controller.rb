@@ -3,8 +3,6 @@
 # Controller for bulk categorization operations
 # Provides interface for users to categorize multiple uncategorized expenses at once
 class BulkCategorizationsController < ApplicationController
-  include Authentication
-
   before_action :load_uncategorized_expenses, only: [ :index ]
   before_action :load_bulk_operation, only: [ :show ]
 

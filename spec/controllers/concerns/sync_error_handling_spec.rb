@@ -31,7 +31,7 @@ RSpec.describe SyncErrorHandling, type: :controller, unit: true do
   end
 
   before do
-    allow(controller).to receive(:authenticate_user!).and_return(true)
+    allow(controller).to receive(:require_authentication).and_return(true)
 
     routes.draw do
       get 'not_found' => 'anonymous#not_found'

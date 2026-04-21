@@ -26,7 +26,7 @@ RSpec.shared_examples "authentication concern" do
   describe "authentication methods" do
     it { should respond_to(:current_user) }
     it { should respond_to(:user_signed_in?) }
-    it { should respond_to(:authenticate_user!) }
+    it { should respond_to(:require_authentication) }
 
     it "includes authentication helper methods" do
       expect(controller.class._helper_methods).to include(:current_user, :user_signed_in?)
@@ -35,7 +35,7 @@ RSpec.shared_examples "authentication concern" do
 
   describe "#user_signed_in?" do
     context "when user is signed in" do
-      let(:user) { build_stubbed(:admin_user) }
+      let(:user) { build_stubbed(:user, :admin) }
 
       before { allow(controller).to receive(:current_user).and_return(user) }
 
@@ -97,7 +97,7 @@ RSpec.shared_examples "rate limiting concern" do |action_name|
       end
 
       it "generates correct key for user-based limiting" do
-        user = build_stubbed(:admin_user, id: 123)
+        user = build_stubbed(:user, :admin, id: 123)
         allow(controller).to receive(:current_user).and_return(user)
         key = controller.send(:rate_limit_key, action_name, :user)
         expect(key).to eq("rate_limit:test:#{action_name}:123")
@@ -288,23 +288,25 @@ RSpec.shared_examples "security headers concern" do
 end
 
 # Tests audit logging behavior
+# PR-12: log_admin_action is now an alias for log_app_user_action (UserAuthentication).
+# Both methods log with `user_id`, `user_email`, `user_agent`, `ip_address`, `timestamp`.
 RSpec.shared_examples "audit logging concern" do
   describe "audit logging" do
-    describe "#log_admin_action" do
-      let(:user) { build_stubbed(:admin_user, id: 123, email: "admin@example.com") }
+    describe "#log_admin_action (unified — delegates to log_app_user_action)" do
+      let(:user) { build_stubbed(:user, :admin, id: 123, email: "admin@example.com") }
       let(:request) { double("request", remote_ip: "127.0.0.1", user_agent: "Test Agent") }
 
       before do
-        allow(controller).to receive(:current_admin_user).and_return(user)
+        allow(controller).to receive(:current_app_user).and_return(user)
         allow(controller).to receive(:request).and_return(request)
       end
 
-      it "logs admin action with proper structure" do
+      it "logs admin action via the unified log_app_user_action structure" do
         freeze_time do
           expected_log = {
-            event: "admin_action",
-            admin_user_id: 123,
-            admin_email: "admin@example.com",
+            event: "user_action",
+            user_id: 123,
+            user_email: "admin@example.com",
             action: "test_action",
             details: { key: "value" },
             ip_address: "127.0.0.1",
@@ -318,15 +320,13 @@ RSpec.shared_examples "audit logging concern" do
       end
     end
 
-    describe "#log_user_action" do
-      let(:user) { build_stubbed(:admin_user, id: 456) }
-      let(:request) { double("request", remote_ip: "192.168.1.1") }
+    describe "#log_app_user_action" do
+      let(:user) { build_stubbed(:user, id: 456, email: "user@example.com") }
+      let(:request) { double("request", remote_ip: "192.168.1.1", user_agent: "Test Agent") }
 
       before do
-        allow(controller).to receive(:current_user).and_return(user)
+        allow(controller).to receive(:current_app_user).and_return(user)
         allow(controller).to receive(:request).and_return(request)
-        allow(controller).to receive(:controller_name).and_return("expenses")
-        allow(controller).to receive(:action_name).and_return("create")
       end
 
       it "logs user action with proper structure" do
@@ -334,16 +334,16 @@ RSpec.shared_examples "audit logging concern" do
           expected_log = {
             event: "user_action",
             user_id: 456,
+            user_email: "user@example.com",
             action: "test_action",
             details: {},
-            controller: "expenses",
-            action_name: "create",
             ip_address: "192.168.1.1",
+            user_agent: "Test Agent",
             timestamp: Time.current.iso8601
           }.to_json
 
           expect(Rails.logger).to receive(:info).with(expected_log)
-          controller.send(:log_user_action, "test_action")
+          controller.send(:log_app_user_action, "test_action")
         end
       end
     end

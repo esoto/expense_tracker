@@ -3,9 +3,13 @@
 require "rails_helper"
 
 RSpec.describe Admin::CategorizationMetricsController, type: :controller, unit: true do
-  let(:admin_user) { create(:admin_user, email: "admin_#{SecureRandom.hex(4)}@example.com") }
+  # PR-12: Unified user.
+  let(:admin_user) { create(:user, :admin, email: "admin_#{SecureRandom.hex(4)}@example.com") }
 
   before do
+    allow(controller).to receive(:require_authentication).and_return(true)
+    allow(controller).to receive(:check_session_expiry).and_return(true)
+    allow(controller).to receive(:current_app_user).and_return(admin_user)
     allow(controller).to receive(:current_admin_user).and_return(admin_user)
   end
 
@@ -75,12 +79,16 @@ RSpec.describe Admin::CategorizationMetricsController, type: :controller, unit: 
 
   describe "authentication" do
     before do
+      # PR-12: Undo the outer require_authentication stub so the real before_action fires.
+      allow(controller).to receive(:require_authentication).and_call_original
+      allow(controller).to receive(:current_app_user).and_return(nil)
       allow(controller).to receive(:current_admin_user).and_return(nil)
+      allow(controller).to receive(:app_user_signed_in?).and_return(false)
     end
 
     it "redirects unauthenticated users to login" do
       get :index
-      expect(response).to redirect_to(admin_login_path)
+      expect(response).to redirect_to(login_path)
     end
   end
 end

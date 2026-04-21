@@ -1,6 +1,10 @@
 module Api
   class ClientErrorsController < ApplicationController
     skip_before_action :verify_authenticity_token
+    # PR-12: Override the unified require_authentication before_action to return
+    # JSON 401 instead of redirecting to /login for this API endpoint.
+    skip_before_action :require_authentication
+    before_action :require_json_authentication
 
     # POST /api/client_errors
     # Receives error reports from client-side JavaScript
@@ -49,10 +53,10 @@ module Api
 
     private
 
-    # Override to return JSON 401 instead of redirecting to login page.
+    # Return JSON 401 instead of redirecting to /login for this API endpoint.
     # Calling render in a before_action sets performed? to true,
     # which prevents the controller action from executing.
-    def authenticate_user!
+    def require_json_authentication
       return if user_signed_in?
 
       render json: { error: "Authentication required" }, status: :unauthorized

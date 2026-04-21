@@ -209,9 +209,11 @@ end
 puts ""
 puts "📊 Creating sync performance metrics..."
 
-if SyncSession.any? && EmailAccount.any?
-  # Use existing sessions and accounts for metrics
-  email_accounts = EmailAccount.active.to_a
+if SyncSession.any? && default_user.email_accounts.any?
+  # Scope to the default admin's accounts — avoid attaching metrics to accounts
+  # owned by another user, which would produce a User/EmailAccount ownership
+  # mismatch on SyncMetric since both belong_to :user.
+  email_accounts = default_user.email_accounts.active.to_a
 
   # Create metrics for the last 30 days
   30.times do |days_ago|

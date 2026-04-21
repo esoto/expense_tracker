@@ -91,6 +91,10 @@ module Services
           external_id: item.fetch("id"),
           start_date: period_start
         )
+        # FIXME(PR-6b): user is derived from email_account.user here because
+        # ExternalBudgets::SyncService has no direct authenticated user context.
+        # This is the same pattern used by WebhooksController in PR 5.
+        budget.user ||= account.user
         budget.assign_attributes(
           name: item.fetch("name"),
           amount: item.fetch("amount"),

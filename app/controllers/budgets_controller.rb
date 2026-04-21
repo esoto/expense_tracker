@@ -1,14 +1,13 @@
 # frozen_string_literal: true
 
 # Controller for managing budgets and spending goals
-# SECURITY: All budgets are scoped to email_accounts for data isolation
+# SECURITY: All budgets are scoped to scoping_user for data isolation (PR 6).
 class BudgetsController < ApplicationController
-  before_action :set_email_account
   before_action :set_budget, only: [ :show, :edit, :update, :destroy ]
 
   # GET /budgets
   def index
-    @budgets = @email_account.budgets
+    @budgets = Budget.for_user(scoping_user)
       .includes(:category)
       .order(active: :desc, period: :asc, created_at: :desc)
 
@@ -19,11 +18,12 @@ class BudgetsController < ApplicationController
     @overall_health = calculate_overall_budget_health
 
     # Precompute category options for unmapped external budgets to avoid N+1 queries
-    @category_options = @email_account.categories.distinct.to_a
+    @category_options = Category.all.distinct.to_a
 
     # Whether an active external budget source (e.g., salary_calculator) is linked.
     # Drives the empty-state CTA and sync-in-progress messaging.
-    @has_external_source = @email_account.external_budget_source&.active? || false
+    email_account = scoping_user.email_accounts.first
+    @has_external_source = email_account&.external_budget_source&.active? || false
   end
 
   # GET /budgets/1
@@ -41,7 +41,10 @@ class BudgetsController < ApplicationController
 
   # GET /budgets/new
   def new
-    @budget = @email_account.budgets.build(
+    email_account = scoping_user.email_accounts.first
+    @budget = Budget.new(
+      user: scoping_user,
+      email_account: email_account,
       start_date: Date.current,
       period: "monthly",
       currency: "CRC",
@@ -58,7 +61,8 @@ class BudgetsController < ApplicationController
 
   # POST /budgets
   def create
-    @budget = @email_account.budgets.build(budget_params)
+    @budget = Budget.new(budget_params)
+    @budget.user = scoping_user
 
     if @budget.save
       # Calculate initial spend
@@ -95,7 +99,7 @@ class BudgetsController < ApplicationController
 
   # POST /budgets/1/duplicate
   def duplicate
-    original = @email_account.budgets.find(params[:id])
+    original = Budget.for_user(scoping_user).find(params[:id])
     new_budget = original.duplicate_for_next_period
 
     if new_budget.persisted?
@@ -109,7 +113,7 @@ class BudgetsController < ApplicationController
 
   # POST /budgets/1/deactivate
   def deactivate
-    budget = @email_account.budgets.find(params[:id])
+    budget = Budget.for_user(scoping_user).find(params[:id])
     budget.deactivate!
 
     redirect_to budgets_path,
@@ -120,9 +124,12 @@ class BudgetsController < ApplicationController
   # Quick budget setting from dashboard
   def quick_set
     @period = params[:period] || "monthly"
-    @suggested_amount = calculate_suggested_budget_amount(@period)
+    email_account = scoping_user.email_accounts.first
+    @suggested_amount = calculate_suggested_budget_amount(@period, email_account)
 
-    @budget = @email_account.budgets.build(
+    @budget = Budget.new(
+      user: scoping_user,
+      email_account: email_account,
       period: @period,
       amount: @suggested_amount,
       currency: "CRC",
@@ -140,32 +147,31 @@ class BudgetsController < ApplicationController
 
   private
 
-  def set_email_account
-    # Use the first active email account for now
-    # In a multi-user system, this would be scoped to current_user
-    @email_account = EmailAccount.active.first
-
-    unless @email_account
-      redirect_to root_path,
-        alert: "Debes configurar una cuenta de correo primero."
-    end
-  end
-
   def set_budget
-    @budget = @email_account.budgets.find(params[:id])
+    @budget = Budget.for_user(scoping_user).find(params[:id])
+  rescue ActiveRecord::RecordNotFound
+    redirect_to budgets_path, alert: "Presupuesto no encontrado."
   end
 
   def budget_params
-    params.require(:budget).permit(
+    permitted = params.require(:budget).permit(
       :name, :description, :category_id, :period, :amount, :currency,
       :start_date, :end_date, :warning_threshold, :critical_threshold,
       :notify_on_warning, :notify_on_critical, :notify_on_exceeded,
-      :rollover_enabled, :active
+      :rollover_enabled, :active, :email_account_id
     )
+    # Drop user_id if someone tries to forge it via params.
+    permitted.delete(:user_id) if permitted.key?(:user_id)
+    # Validate email_account_id belongs to scoping_user; nullify if forged.
+    if permitted[:email_account_id].present? &&
+       !scoping_user.email_accounts.exists?(id: permitted[:email_account_id])
+      permitted[:email_account_id] = nil
+    end
+    permitted
   end
 
   def calculate_overall_budget_health
-    active_budgets = @email_account.budgets.active.current
+    active_budgets = Budget.for_user(scoping_user).active.current
     return { status: :no_budgets, message: "Sin presupuestos activos" } if active_budgets.empty?
 
     total_budget = active_budgets.sum(:amount)
@@ -222,10 +228,10 @@ class BudgetsController < ApplicationController
     (remaining / days_left).round(2)
   end
 
-  def calculate_suggested_budget_amount(period)
-    # Calculate average spending for the last 3 periods
-    # This provides a data-driven suggestion for the budget amount
+  def calculate_suggested_budget_amount(period, email_account)
+    return 0 unless email_account
 
+    # Calculate average spending for the last 3 periods
     case period.to_sym
     when :daily
       lookback_days = 7
@@ -240,11 +246,26 @@ class BudgetsController < ApplicationController
     end
 
     start_date = Date.current - lookback_days.days
-    average_spend = @email_account.expenses
+    average_spend = email_account.expenses
       .where(transaction_date: start_date.beginning_of_day..Date.current.end_of_day)
       .average(:amount) || 0
 
     # Suggest 10% more than average to provide some buffer
     (average_spend * 1.1).round(-3) # Round to nearest thousand
+  end
+
+  def scoping_user
+    @scoping_user ||= begin
+      user = try(:current_app_user)
+      if user.nil?
+        user = User.admin.first
+        Rails.logger.warn(
+          "[scoping_user] current_app_user is nil; falling back to User.admin.first " \
+          "(controller=#{self.class.name}, path=#{request.fullpath}). " \
+          "This path disappears in PR 12 when UserAuthentication gates all controllers."
+        ) if user
+      end
+      user || raise("No authenticated user and no admin User found")
+    end
   end
 end

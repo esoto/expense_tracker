@@ -78,6 +78,7 @@ RSpec.describe Services::ExternalBudgets::SyncService, :unit do
       let!(:category) { create(:category) }
       let!(:existing) do
         account.budgets.create!(
+          user: account.user,
           name: "Rent",
           amount: 800.0,
           currency: "USD",
@@ -117,6 +118,7 @@ RSpec.describe Services::ExternalBudgets::SyncService, :unit do
     context "when a previously synced item is dropped from the response" do
       let!(:dropped) do
         account.budgets.create!(
+          user: account.user,
           name: "Gym", amount: 50.0, currency: "USD",
           period: :monthly, start_date: period_start, end_date: period_end,
           external_source: "salary_calculator", external_id: 999,

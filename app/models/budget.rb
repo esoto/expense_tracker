@@ -2,7 +2,9 @@
 
 # Budget model for tracking spending limits and goals
 # Supports multiple periods and category-specific budgets
-# SECURITY: All budgets are scoped to email_accounts for data isolation
+# SECURITY: All budgets are scoped to user for data isolation (PR 6).
+#           email_account_id is a secondary FK kept for spend calculation —
+#           it must belong to the same user (enforced in BudgetsController).
 class Budget < ApplicationRecord
   # Enums
   enum :period, {
@@ -13,6 +15,7 @@ class Budget < ApplicationRecord
   }, prefix: true
 
   # Associations
+  belongs_to :user
   belongs_to :email_account
   belongs_to :category, optional: true
 
@@ -29,6 +32,7 @@ class Budget < ApplicationRecord
   validate :unique_active_budget_per_scope
 
   # Scopes
+  scope :for_user, ->(u) { where(user_id: u.id) }
   scope :active, -> { where(active: true) }
   scope :inactive, -> { where(active: false) }
   scope :current, -> { active.where("start_date <= ? AND (end_date IS NULL OR end_date >= ?)", Date.current, Date.current) }
@@ -280,6 +284,7 @@ class Budget < ApplicationRecord
     next_start = calculate_next_period_start
 
     self.class.create!(
+      user: user,
       email_account: email_account,
       category: category,
       name: name,

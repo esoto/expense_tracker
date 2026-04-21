@@ -90,6 +90,30 @@ RSpec.describe ApiToken, type: :model, unit: true do
     end
   end
 
+  # PR 11 — user association and for_user scope
+  describe 'associations (PR 11)', unit: true do
+    it 'belongs_to :user' do
+      reflection = ApiToken.reflect_on_association(:user)
+      expect(reflection).to be_present
+      expect(reflection.macro).to eq(:belongs_to)
+    end
+
+    it 'requires a user (not optional)' do
+      reflection = ApiToken.reflect_on_association(:user)
+      expect(reflection.options[:optional]).not_to be true
+    end
+  end
+
+  describe 'scopes (PR 11)', unit: true do
+    describe '.for_user' do
+      it 'filters tokens by user_id' do
+        user = build_stubbed(:user, id: 42)
+        sql = ApiToken.for_user(user).to_sql
+        expect(sql).to include('"user_id" = 42')
+      end
+    end
+  end
+
   describe 'constants' do
     it 'defines expected constants' do
       expect(ApiToken::TOKEN_LENGTH).to eq(32)
@@ -123,7 +147,11 @@ RSpec.describe ApiToken, type: :model, unit: true do
   describe 'callbacks' do
     describe '#generate_token_if_blank' do
       it 'generates token on create when token_digest is blank' do
-        api_token = build(:api_token)
+        # Pre-create the user so User#generate_session_token does not also call
+        # SecureRandom during the save below, which would break the exact-count
+        # expectation on SecureRandom.
+        user = create(:user, :admin)
+        api_token = build(:api_token, user: user)
         api_token.token_digest = nil
 
         expect(SecureRandom).to receive(:urlsafe_base64).with(ApiToken::TOKEN_LENGTH).and_return('generated_token')
@@ -137,7 +165,10 @@ RSpec.describe ApiToken, type: :model, unit: true do
       end
 
       it 'does not generate token when token_digest is present' do
-        api_token = build(:api_token)
+        # Pre-create the user so User#generate_session_token does not also call
+        # SecureRandom during the save below.
+        user = create(:user, :admin)
+        api_token = build(:api_token, user: user)
         api_token.token_digest = 'existing_digest'
 
         expect(SecureRandom).not_to receive(:urlsafe_base64)

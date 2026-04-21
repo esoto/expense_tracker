@@ -35,7 +35,7 @@ module Api
       def feedback
         validate_feedback_params!
 
-        expense = Expense.find(feedback_params[:expense_id])
+        expense = Expense.for_user(current_api_user).find(feedback_params[:expense_id])
         category = Category.find(feedback_params[:category_id])
 
         # Find the pattern that was used (if any)

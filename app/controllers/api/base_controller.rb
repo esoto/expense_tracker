@@ -30,7 +30,18 @@ module Api
 
       unless @current_api_token
         render_unauthorized("Invalid or expired API token")
+        return
       end
+
+      @current_api_user = @current_api_token.user
+
+      if @current_api_user.nil? || @current_api_user.locked?
+        render_unauthorized("Token owner account is unavailable")
+      end
+    end
+
+    def current_api_user
+      @current_api_user
     end
 
     def extract_bearer_token

@@ -12,7 +12,9 @@ RSpec.describe "Api::V1::Categorization", type: :request, integration: true do
   end
 
   let(:category) { create(:category, name: "Groceries") }
-  let(:expense) { create(:expense, merchant_name: "Walmart", description: "Grocery shopping", amount: 125.50) }
+  # PR 11: expense must belong to the token's user for for_user scoping in the feedback action.
+  let(:user_email_account) { create(:email_account, user: api_token.user) }
+  let(:expense) { create(:expense, user: api_token.user, email_account: user_email_account, merchant_name: "Walmart", description: "Grocery shopping", amount: 125.50) }
   let!(:default_pattern) do
     create(:categorization_pattern,
            pattern_type: "merchant",

@@ -13,10 +13,14 @@ class ApiToken < ApplicationRecord
   validates :active, inclusion: { in: [ true, false ] }
   validate :expires_at_in_future, if: :expires_at?
 
+  # Associations
+  belongs_to :user
+
   # Scopes
   scope :active, -> { where(active: true) }
   scope :expired, -> { where("expires_at < ?", Time.current) }
   scope :valid, -> { active.where("expires_at IS NULL OR expires_at > ?", Time.current) }
+  scope :for_user, ->(user) { where(user_id: user.id) }
 
   # Callbacks
   before_validation :generate_token_if_blank, on: :create

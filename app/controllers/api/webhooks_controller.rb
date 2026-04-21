@@ -2,6 +2,7 @@ class Api::WebhooksController < ApplicationController
   skip_before_action :authenticate_user!
   skip_before_action :verify_authenticity_token
   before_action :authenticate_api_token
+  before_action :set_current_api_user
 
   rescue_from ActionController::ParameterMissing do |exception|
     render json: {
@@ -15,11 +16,18 @@ class Api::WebhooksController < ApplicationController
     since = parse_since_parameter
 
     if email_account_id.present?
-      ProcessEmailsJob.perform_later(email_account_id.to_i, since: since)
+      # Validate that the requested email account belongs to the token's owner.
+      account = @current_api_user.email_accounts.find_by(id: email_account_id.to_i)
+      unless account
+        render json: { error: "Email account not found or access denied", status: 404 }, status: :not_found
+        return
+      end
+
+      ProcessEmailsJob.perform_later(account.id, since: since)
       render json: {
         status: "success",
-        message: "Email processing queued for account #{email_account_id}",
-        email_account_id: email_account_id
+        message: "Email processing queued for account #{account.id}",
+        email_account_id: account.id
       }, status: :accepted
     else
       ProcessEmailsJob.perform_later(since: since)
@@ -38,7 +46,7 @@ class Api::WebhooksController < ApplicationController
     expense = Expense.new(expense_params)
     account = default_email_account
     expense.email_account = account
-    expense.user = account&.user  # FIXME(PR-11): replace with api_token owner once api_tokens model is scoped
+    expense.user = @current_api_user
     expense.status = "processed"
 
     if expense.save
@@ -92,11 +100,8 @@ class Api::WebhooksController < ApplicationController
     limit = [ params[:limit].to_i, 50 ].min
     limit = 10 if limit <= 0
 
-    # FIXME(PR-11): scope to api_token.user once api_tokens become user-scoped.
-    # Today a webhook token sees every user's recent expenses; acceptable in
-    # the current single-user deploy but must be tightened before a second
-    # real user onboards.
-    expenses = Expense.includes(:category, :email_account)
+    expenses = Expense.for_user(@current_api_user)
+                     .includes(:category, :email_account)
                      .recent
                      .limit(limit)
 
@@ -107,7 +112,7 @@ class Api::WebhooksController < ApplicationController
   end
 
   def expense_summary
-    service = Services::ExpenseSummaryService.new(params[:period])
+    service = Services::ExpenseSummaryService.new(params[:period], user: @current_api_user)
 
     render json: {
       status: "success",
@@ -130,7 +135,16 @@ class Api::WebhooksController < ApplicationController
 
     unless @current_api_token
       render json: { error: "Invalid or expired API token" }, status: :unauthorized
-      nil
+    end
+  end
+
+  def set_current_api_user
+    return if performed? # halt if already rendered (e.g. auth failed)
+
+    @current_api_user = @current_api_token&.user
+
+    if @current_api_user.nil? || @current_api_user.locked?
+      render json: { error: "Token owner account is unavailable" }, status: :unauthorized
     end
   end
 
@@ -159,22 +173,17 @@ class Api::WebhooksController < ApplicationController
   end
 
   def default_email_account
-    # For manual entries, use the first active account or create a default one
-    EmailAccount.active.first || create_default_manual_account
+    # For manual entries, use the current user's first active account or create a default one
+    @current_api_user.email_accounts.active.first || create_default_manual_account
   end
 
   def create_default_manual_account
-    # user_id is required since PR 4 added the NOT NULL constraint.
-    # ApiToken is not yet user-scoped (PR 11 does that), so we fall back to
-    # the first admin User.  This is the same interim pattern as
-    # EmailAccountsController#scoping_user.
-    default_user = User.admin.first || raise("No admin User found — cannot create default manual email account")
     EmailAccount.create!(
       provider: "manual",
-      email: "manual@localhost",
+      email: "manual+#{@current_api_user.id}@localhost",
       bank_name: "Manual Entry",
       active: true,
-      user: default_user
+      user: @current_api_user
     )
   end
 

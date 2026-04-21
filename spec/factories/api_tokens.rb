@@ -4,6 +4,7 @@ FactoryBot.define do
     expires_at { 1.year.from_now }
     active { true }
     last_used_at { nil }
+    association :user, factory: [ :user, :admin ]
 
     trait :inactive do
       active { false }

@@ -687,6 +687,41 @@ RSpec.describe User, type: :model, unit: true do
     end
   end
 
+  # PR 11 — api_tokens association
+  describe 'api_tokens association (PR 11)' do
+    it 'responds to api_tokens' do
+      user = create(:user)
+      expect(user).to respond_to(:api_tokens)
+    end
+
+    it 'has api_tokens with restrict_with_exception dependent' do
+      reflection = User.reflect_on_association(:api_tokens)
+      expect(reflection).to be_present
+      expect(reflection.options[:dependent]).to eq(:restrict_with_exception)
+    end
+
+    it 'returns only the user\'s api_tokens' do
+      user_a = create(:user, :admin)
+      user_b = create(:user, :admin)
+      token_a = create(:api_token, user: user_a)
+      create(:api_token, user: user_b)
+
+      expect(user_a.api_tokens).to eq([ token_a ])
+    end
+
+    it 'raises DeleteRestrictionError when destroying a user that has api_tokens' do
+      user = create(:user, :admin)
+      create(:api_token, user: user)
+
+      expect { user.destroy! }.to raise_error(ActiveRecord::DeleteRestrictionError)
+    end
+
+    it 'allows destroying a user with no api_tokens' do
+      user = create(:user)
+      expect { user.destroy! }.not_to raise_error
+    end
+  end
+
   # PR 9 — learning signals cluster associations
   describe 'learning signals cluster associations (PR 9)' do
     let(:user) { create(:user) }

@@ -3,8 +3,9 @@ module Services
   VALID_PERIODS = %w[week month year].freeze
   DEFAULT_PERIOD = "month".freeze
 
-  def initialize(period = DEFAULT_PERIOD)
+  def initialize(period = DEFAULT_PERIOD, user: nil)
     @period = normalize_period(period)
+    @user = user
   end
 
   def summary
@@ -61,16 +62,20 @@ module Services
     }
   end
 
+  def scoped_expenses
+    @user ? Expense.for_user(@user) : Expense.all
+  end
+
   def total_amount_for_period(start_date, end_date)
-    Expense.total_amount_for_period(start_date, end_date).to_f
+    scoped_expenses.total_amount_for_period(start_date, end_date).to_f
   end
 
   def expense_count_for_period(start_date, end_date)
-    Expense.by_date_range(start_date, end_date).count
+    scoped_expenses.by_date_range(start_date, end_date).count
   end
 
   def category_breakdown_for_period(start_date, end_date)
-    Expense.joins(:category)
+    scoped_expenses.joins(:category)
       .by_date_range(start_date, end_date)
       .group("categories.name")
       .sum(:amount)
@@ -78,7 +83,7 @@ module Services
   end
 
   def monthly_breakdown_for_year(start_date, end_date)
-    Expense.by_date_range(start_date, end_date)
+    scoped_expenses.by_date_range(start_date, end_date)
       .group_by_month(:transaction_date)
       .sum(:amount)
       .transform_values(&:to_f)

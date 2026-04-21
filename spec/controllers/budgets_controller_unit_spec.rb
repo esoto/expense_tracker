@@ -122,9 +122,17 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
       allow(Category).to receive_message_chain(:all, :order).and_return(categories)
     end
 
-    it "builds new budget associated with scoping_user" do
+    it "builds new budget with scoping_user, default account, and field defaults" do
       get :new
-      expect(assigns(:budget)).to be_a(Budget)
+      budget = assigns(:budget)
+      expect(budget).to be_a(Budget)
+      expect(budget.user).to eq(user)
+      expect(budget.email_account).to eq(email_account)
+      expect(budget.start_date).to eq(Date.current)
+      expect(budget.period).to eq("monthly")
+      expect(budget.currency).to eq("CRC")
+      expect(budget.warning_threshold).to eq(70)
+      expect(budget.critical_threshold).to eq(90)
     end
 
     it "loads categories for select options" do
@@ -424,10 +432,18 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
       expect(assigns(:suggested_amount)).to eq(50000)
     end
 
-    it "builds new budget with suggested values" do
+    it "builds new budget with suggested values and full field defaults" do
       get :quick_set
-      expect(assigns(:budget)).to be_a(Budget)
-      expect(assigns(:budget).amount).to eq(50000)
+      budget = assigns(:budget)
+      expect(budget).to be_a(Budget)
+      expect(budget.user).to eq(user)
+      expect(budget.email_account).to eq(email_account)
+      expect(budget.period).to eq("monthly")
+      expect(budget.amount).to eq(50000)
+      expect(budget.currency).to eq("CRC")
+      expect(budget.start_date).to eq(Date.current)
+      expect(budget.warning_threshold).to eq(70)
+      expect(budget.critical_threshold).to eq(90)
     end
 
     context "with HTML format" do

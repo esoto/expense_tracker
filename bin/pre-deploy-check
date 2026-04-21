@@ -64,11 +64,13 @@ end
 
 def run(cmd, env: {})
   out, err, status = Open3.capture3(env, cmd)
-  # kamal, gh, and other CLIs may emit UTF-8 (ANSI color codes, emoji) that
-  # the default external encoding can't handle. Force UTF-8 and scrub invalid
-  # bytes before calling strip — otherwise String#strip raises
-  # Encoding::CompatibilityError and Gate 5 (`kamal app details`) crashes the
-  # whole script before it can report anything useful.
+  # kamal, gh, and other CLIs may emit multibyte UTF-8 (emoji, non-ASCII
+  # punctuation, non-English text) alongside ASCII-only ANSI color escapes.
+  # Open3 tags the return bytes with the default external encoding
+  # (ASCII-8BIT on macOS), so calling String#strip on any multibyte output
+  # raises Encoding::CompatibilityError and crashes the whole script before
+  # it can report anything useful — notably Gate 5 (`kamal app details`).
+  # Force UTF-8 and scrub invalid sequences to avoid that.
   safe_out = out.to_s.dup.force_encoding(Encoding::UTF_8)
   safe_err = err.to_s.dup.force_encoding(Encoding::UTF_8)
   safe_out = safe_out.scrub unless safe_out.valid_encoding?
@@ -176,9 +178,12 @@ say "Gate 5/8: remote Kamal reachability"
 if options[:offline]
   info << "--offline: skipped remote Kamal reachability"
 else
-  _, stderr, ok = run("kamal app details 2>&1")
+  # `2>&1` folds stderr into stdout, so the stderr return here is usually
+  # empty — pick whichever stream has content to produce a useful message.
+  stdout, stderr, ok = run("kamal app details 2>&1")
   unless ok
-    failures << "kamal app details failed — server unreachable or kamal not configured (#{stderr.lines.first&.strip})"
+    diag = [ stderr, stdout ].map { |s| s.to_s.lines.first&.strip }.find { |l| l && !l.empty? }
+    failures << "kamal app details failed — server unreachable or kamal not configured (#{diag || 'no diagnostic output'})"
   end
 end
 

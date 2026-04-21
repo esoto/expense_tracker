@@ -1,11 +1,13 @@
 # frozen_string_literal: true
 
 class ProcessedEmail < ApplicationRecord
+  belongs_to :user
   belongs_to :email_account
 
   validates :message_id, presence: true, uniqueness: { scope: :email_account_id }
   validates :email_account, presence: true
 
+  scope :for_user, ->(u) { where(user_id: u.id) }
   scope :for_account, ->(account) { where(email_account: account) }
   scope :recent, -> { order(processed_at: :desc) }
   scope :by_date_range, ->(start_date, end_date) { where(processed_at: start_date..end_date) }

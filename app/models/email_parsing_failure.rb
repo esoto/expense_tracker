@@ -1,7 +1,10 @@
 class EmailParsingFailure < ApplicationRecord
   RETENTION_DAYS = 30
 
+  belongs_to :user
   belongs_to :email_account
+
+  scope :for_user, ->(u) { where(user_id: u.id) }
 
   # PER-496: raw_email_content holds bank PII (amounts, merchants, account
   # refs, recipient addresses, transaction times). Encrypt at rest.

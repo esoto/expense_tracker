@@ -860,4 +860,56 @@ RSpec.describe SyncSession, type: :model, unit: true, broadcast: true do
       end
     end
   end
+
+  # PR 7 — user_id association and scoping
+  describe "user ownership (PR 7)", unit: true do
+    describe "associations" do
+      it "belongs to a user" do
+        user = create(:user)
+        session = create(:sync_session, user: user)
+        expect(session.user).to eq(user)
+      end
+
+      it "requires a user (not optional)" do
+        session = build(:sync_session, user: nil)
+        expect(session).not_to be_valid
+        expect(session.errors[:user]).to be_present
+      end
+    end
+
+    describe ".for_user scope" do
+      let!(:user_a) { create(:user, :admin) }
+      let!(:user_b) { create(:user) }
+      let!(:session_a) { create(:sync_session, user: user_a) }
+      let!(:session_b) { create(:sync_session, user: user_b) }
+
+      it "returns only sessions belonging to user_a" do
+        result = SyncSession.for_user(user_a)
+        expect(result).to include(session_a)
+        expect(result).not_to include(session_b)
+      end
+
+      it "returns only sessions belonging to user_b" do
+        result = SyncSession.for_user(user_b)
+        expect(result).to include(session_b)
+        expect(result).not_to include(session_a)
+      end
+
+      it "returns an empty relation when user has no sessions" do
+        user_c = create(:user)
+        expect(SyncSession.for_user(user_c)).to be_empty
+      end
+    end
+
+    describe "User has_many :sync_sessions" do
+      it "is declared on the User model" do
+        expect(User.reflect_on_association(:sync_sessions)).to be_present
+      end
+
+      it "is restricted with exception on dependent" do
+        reflection = User.reflect_on_association(:sync_sessions)
+        expect(reflection.options[:dependent]).to eq(:restrict_with_exception)
+      end
+    end
+  end
 end

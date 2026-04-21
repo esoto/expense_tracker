@@ -314,6 +314,7 @@ module Services
       new_expense.save! if conflict_type == "duplicate" || conflict_type == "similar"
 
       sync_session.sync_conflicts.create!(
+        user: sync_session.user,
         existing_expense: existing_expense,
         new_expense: new_expense,
         conflict_type: conflict_type,

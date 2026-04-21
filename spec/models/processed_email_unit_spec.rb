@@ -15,6 +15,7 @@ RSpec.describe ProcessedEmail, type: :model, unit: true do
   # end
 
   describe "associations" do
+    it { should belong_to(:user) }
     it { should belong_to(:email_account) }
   end
 
@@ -71,6 +72,35 @@ RSpec.describe ProcessedEmail, type: :model, unit: true do
     context "when email not processed" do
       it "returns false" do
         expect(ProcessedEmail.already_processed?(message_id, account)).to be false
+      end
+    end
+  end
+
+  # PR 7 — user_id association and scoping
+  describe "user ownership (PR 7)" do
+    describe ".for_user scope" do
+      let!(:user_a) { create(:user, :admin) }
+      let!(:user_b) { create(:user) }
+      let!(:account_a) { create(:email_account, user: user_a) }
+      let!(:account_b) { create(:email_account, user: user_b) }
+      let!(:pe_a) { create(:processed_email, email_account: account_a, user: user_a) }
+      let!(:pe_b) { create(:processed_email, email_account: account_b, user: user_b) }
+
+      it "returns only processed_emails belonging to user_a" do
+        result = ProcessedEmail.for_user(user_a)
+        expect(result).to include(pe_a)
+        expect(result).not_to include(pe_b)
+      end
+
+      it "returns only processed_emails belonging to user_b" do
+        result = ProcessedEmail.for_user(user_b)
+        expect(result).to include(pe_b)
+        expect(result).not_to include(pe_a)
+      end
+
+      it "returns an empty relation when user has no processed emails" do
+        user_c = create(:user)
+        expect(ProcessedEmail.for_user(user_c)).to be_empty
       end
     end
   end

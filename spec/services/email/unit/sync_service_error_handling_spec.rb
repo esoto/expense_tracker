@@ -59,7 +59,8 @@ RSpec.describe Services::Email::SyncService, 'Error Handling and Edge Cases', un
   end
 
   describe 'Database error handling' do
-    let(:email_account) { instance_double(EmailAccount, id: 1, email: 'test@example.com', active?: true) }
+    let(:mock_user) { instance_double(User, id: 1) }
+    let(:email_account) { instance_double(EmailAccount, id: 1, email: 'test@example.com', active?: true, user: mock_user) }
 
     before do
       allow(EmailAccount).to receive(:find_by).with(id: 1).and_return(email_account)
@@ -170,7 +171,8 @@ RSpec.describe Services::Email::SyncService, 'Error Handling and Edge Cases', un
 
   describe 'Job enqueueing error handling' do
     context 'when ProcessEmailsJob fails to enqueue' do
-      let(:email_account) { instance_double(EmailAccount, id: 1, email: 'test@example.com', active?: true) }
+      let(:job_mock_user) { instance_double(User, id: 1) }
+      let(:email_account) { instance_double(EmailAccount, id: 1, email: 'test@example.com', active?: true, user: job_mock_user) }
 
       before do
         allow(EmailAccount).to receive(:find_by).and_return(email_account)
@@ -469,7 +471,8 @@ RSpec.describe Services::Email::SyncService, 'Error Handling and Edge Cases', un
         # Conflict detection would fail
         allow(service).to receive(:detect_conflicts).and_raise(StandardError, 'Detection error')
 
-        email_account = instance_double(EmailAccount, id: 1, active?: true)
+        local_user = instance_double(User, id: 1)
+        email_account = instance_double(EmailAccount, id: 1, active?: true, user: local_user)
         allow(EmailAccount).to receive(:find_by).and_return(email_account)
 
         # First failure stops the chain

@@ -1,11 +1,12 @@
 module Services
   class SyncSessionCreator
-  attr_reader :params, :validator, :request_info
+  attr_reader :params, :validator, :request_info, :user
 
-  def initialize(params = {}, request_info = {})
+  def initialize(params = {}, request_info = {}, user = nil)
     @params = params
     @validator = SyncSessionValidator.new
     @request_info = request_info
+    @user = user
   end
 
   def call
@@ -37,6 +38,7 @@ module Services
   def create_sync_session
     SyncSession.transaction do
       session = SyncSession.create!(
+        user: resolved_user,
         metadata: build_metadata
       )
 
@@ -48,6 +50,28 @@ module Services
 
       session
     end
+  end
+
+  # Resolves the owner for the new SyncSession.
+  # Caller (SyncSessionsController) passes scoping_user explicitly.
+  # Background/legacy callers that have no auth context pass nil — we derive
+  # the user from the requested email_account when available, then fall back
+  # to the first admin user (FIXME(PR-7b): thread user through all callers).
+  def resolved_user
+    return user if user.present?
+
+    # Derive from the requested email_account when an id is provided
+    if params[:email_account_id].present?
+      account = EmailAccount.find_by(id: params[:email_account_id])
+      return account.user if account&.user.present?
+    end
+
+    fallback = User.where(role: 1).order(:id).first
+    Rails.logger.warn(
+      "[SyncSessionCreator] No user provided; falling back to User.admin.first " \
+      "(id=#{fallback&.id}). Fix in PR-7b by threading user through background jobs."
+    ) if fallback
+    fallback or raise(ActiveRecord::RecordInvalid, "No admin User found and no user provided")
   end
 
   def build_metadata

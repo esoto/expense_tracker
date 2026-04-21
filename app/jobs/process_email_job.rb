@@ -70,6 +70,7 @@ class ProcessEmailJob < ApplicationJob
 
     EmailParsingFailure.create!(
       email_account: email_account,
+      user: email_account.user,
       bank_name: email_account.bank_name,
       error_messages: errors,
       raw_email_content: email_body,

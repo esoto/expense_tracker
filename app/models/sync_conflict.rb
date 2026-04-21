@@ -1,9 +1,12 @@
 class SyncConflict < ApplicationRecord
   # Associations
+  belongs_to :user
   belongs_to :existing_expense, class_name: "Expense"
   belongs_to :new_expense, class_name: "Expense", optional: true
   belongs_to :sync_session
   has_many :conflict_resolutions, dependent: :destroy
+
+  scope :for_user, ->(u) { where(user_id: u.id) }
 
   # Enums
   enum :conflict_type, {

@@ -28,8 +28,9 @@ RSpec.describe Services::Email::SyncService, unit: true do
   end
 
   describe '#sync_emails' do
-    let(:active_account) { instance_double(EmailAccount, id: 1, email: 'test@example.com', active?: true) }
-    let(:inactive_account) { instance_double(EmailAccount, id: 2, email: 'inactive@example.com', active?: false) }
+    let(:mock_user) { instance_double(User, id: 1) }
+    let(:active_account) { instance_double(EmailAccount, id: 1, email: 'test@example.com', active?: true, user: mock_user) }
+    let(:inactive_account) { instance_double(EmailAccount, id: 2, email: 'inactive@example.com', active?: false, user: nil) }
 
     context 'with specific email account' do
       before do
@@ -112,9 +113,11 @@ RSpec.describe Services::Email::SyncService, unit: true do
       it 'forwards sync_session_id to ProcessEmailsJob for sync_all_accounts path' do
         service = described_class.new(track_session: true)
         mock_session = instance_double(SyncSession, id: 77)
+        admin_user = instance_double(User, id: 1)
 
         allow(EmailAccount).to receive(:active).and_return(active_accounts)
         allow(active_accounts).to receive(:count).and_return(2)
+        allow(User).to receive_message_chain(:where, :order, :first).and_return(admin_user)
         allow(SyncSession).to receive(:create!).and_return(mock_session)
 
         expect(ProcessEmailsJob).to receive(:perform_later).with(sync_session_id: 77)
@@ -183,15 +186,20 @@ RSpec.describe Services::Email::SyncService, unit: true do
 
   describe '#create_session' do
     let(:mock_session) { instance_double(SyncSession, id: 10) }
-    let(:email_account) { instance_double(EmailAccount, id: 5) }
+    let(:admin_user) { instance_double(User, id: 99) }
+    let(:account_user) { instance_double(User, id: 5) }
+    let(:email_account) { instance_double(EmailAccount, id: 5, user: account_user) }
 
     context 'without email account' do
       before do
         allow(EmailAccount).to receive_message_chain(:active, :count).and_return(3)
+        # Fallback path: no email_account, so service looks up first admin user
+        allow(User).to receive_message_chain(:where, :order, :first).and_return(admin_user)
       end
 
       it 'creates session for all accounts' do
         expect(SyncSession).to receive(:create!).with(
+          user: admin_user,
           status: 'pending',
           total_emails: 0,
           processed_emails: 0,
@@ -207,10 +215,11 @@ RSpec.describe Services::Email::SyncService, unit: true do
     end
 
     context 'with specific email account' do
-      it 'creates session with account association' do
+      it 'creates session with account association and inherits user from email_account' do
         mock_accounts = double('sync_session_accounts')
 
         expect(SyncSession).to receive(:create!).with(
+          user: account_user,
           status: 'pending',
           total_emails: 0,
           processed_emails: 0,
@@ -232,6 +241,7 @@ RSpec.describe Services::Email::SyncService, unit: true do
 
     it 'handles database errors gracefully' do
       allow(EmailAccount).to receive_message_chain(:active, :count).and_return(2)
+      allow(User).to receive_message_chain(:where, :order, :first).and_return(admin_user)
       allow(SyncSession).to receive(:create!).and_raise(ActiveRecord::RecordInvalid)
 
       expect {

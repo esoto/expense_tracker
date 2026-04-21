@@ -10,6 +10,17 @@ module Services
       .recent
   end
 
+  # User-scoped variant used by SyncSessionsController (PR 7).
+  def self.preload_for_index_scoped(user)
+    SyncSession
+      .for_user(user)
+      .includes(
+        :email_accounts,
+        sync_session_accounts: :email_account
+      )
+      .recent
+  end
+
   def self.preload_for_show(sync_session)
     sync_session.sync_session_accounts
       .includes(:email_account)

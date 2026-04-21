@@ -652,4 +652,21 @@ RSpec.describe User, type: :model, unit: true do
       end
     end
   end
+
+  # PR 7 — sync cluster associations
+  describe 'sync cluster associations (PR 7)' do
+    let(:user) { create(:user) }
+
+    %i[sync_sessions sync_metrics sync_conflicts processed_emails email_parsing_failures].each do |assoc|
+      it "responds to #{assoc}" do
+        expect(user).to respond_to(assoc)
+      end
+
+      it "raises DeleteRestrictionError when destroying user with #{assoc}" do
+        reflection = User.reflect_on_association(assoc)
+        expect(reflection).to be_present
+        expect(reflection.options[:dependent]).to eq(:restrict_with_exception)
+      end
+    end
+  end
 end

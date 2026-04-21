@@ -255,7 +255,7 @@ class ExpensesController < ApplicationController
     @categories = Category.all.order(:name)
 
     # Precompute conflict count for dashboard alert (moved from view)
-    @pending_conflicts_count = SyncConflict.unresolved.count
+    @pending_conflicts_count = SyncConflict.for_user(scoping_user).unresolved.count
 
     # Handle AJAX requests for partial updates (Task 3.6)
     if request.xhr? && params[:partial] == "expenses_list"

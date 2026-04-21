@@ -1,6 +1,7 @@
 FactoryBot.define do
   factory :sync_metric do
     association :sync_session
+    user { sync_session&.user || association(:user) }
     email_account { nil } # Optional by default
     metric_type { SyncMetric::METRIC_TYPES[:email_fetch] }
     duration { rand(100..5000) }

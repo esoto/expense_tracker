@@ -2,6 +2,7 @@ require 'rails_helper'
 
 RSpec.describe EmailParsingFailure, type: :model, unit: true do
   describe 'associations' do
+    it { is_expected.to belong_to(:user) }
     it { is_expected.to belong_to(:email_account) }
   end
 
@@ -79,6 +80,35 @@ RSpec.describe EmailParsingFailure, type: :model, unit: true do
       described_class.where(id: failure.id).update_all(raw_email_content: 'legacy plaintext')
 
       expect(failure.reload.raw_email_content).to eq('legacy plaintext')
+    end
+  end
+
+  # PR 7 — user_id association and scoping
+  describe 'user ownership (PR 7)' do
+    describe '.for_user scope' do
+      let!(:user_a) { create(:user, :admin) }
+      let!(:user_b) { create(:user) }
+      let!(:account_a) { create(:email_account, user: user_a) }
+      let!(:account_b) { create(:email_account, user: user_b) }
+      let!(:failure_a) { create(:email_parsing_failure, email_account: account_a, user: user_a) }
+      let!(:failure_b) { create(:email_parsing_failure, email_account: account_b, user: user_b) }
+
+      it 'returns only failures belonging to user_a' do
+        result = EmailParsingFailure.for_user(user_a)
+        expect(result).to include(failure_a)
+        expect(result).not_to include(failure_b)
+      end
+
+      it 'returns only failures belonging to user_b' do
+        result = EmailParsingFailure.for_user(user_b)
+        expect(result).to include(failure_b)
+        expect(result).not_to include(failure_a)
+      end
+
+      it 'returns an empty relation when user has no failures' do
+        user_c = create(:user)
+        expect(EmailParsingFailure.for_user(user_c)).to be_empty
+      end
     end
   end
 end

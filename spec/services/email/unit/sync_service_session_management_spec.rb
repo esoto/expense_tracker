@@ -24,13 +24,15 @@ RSpec.describe Services::Email::SyncService, 'Session Management', unit: true do
 
     describe 'session creation' do
       context 'for single account sync' do
-        let(:email_account) { instance_double(EmailAccount, id: 10, email: 'test@bank.com') }
+        let(:account_owner) { instance_double(User, id: 10) }
+        let(:email_account) { instance_double(EmailAccount, id: 10, email: 'test@bank.com', user: account_owner) }
         let(:options) { { track_session: true } }
 
         it 'creates session before job enqueueing' do
           mock_accounts_relation = double('sync_session_accounts')
 
           expect(SyncSession).to receive(:create!).ordered.with(
+            user: account_owner,
             status: 'pending',
             total_emails: 0,
             processed_emails: 0,
@@ -75,15 +77,19 @@ RSpec.describe Services::Email::SyncService, 'Session Management', unit: true do
       context 'for all accounts sync' do
         let(:options) { { track_session: true } }
         let(:active_accounts) { double('ActiveRecord::Relation') }
+        let(:fallback_admin) { instance_double(User, id: 1) }
 
         before do
           allow(EmailAccount).to receive(:active).and_return(active_accounts)
           allow(active_accounts).to receive(:count).and_return(5)
           allow(ProcessEmailsJob).to receive(:perform_later)
+          # No email_account passed, so service falls back to first admin user
+          allow(User).to receive_message_chain(:where, :order, :first).and_return(fallback_admin)
         end
 
         it 'creates session with total account count' do
           expect(SyncSession).to receive(:create!).with(
+            user: fallback_admin,
             status: 'pending',
             total_emails: 0,
             processed_emails: 0,
@@ -106,7 +112,8 @@ RSpec.describe Services::Email::SyncService, 'Session Management', unit: true do
 
       context 'error handling during session creation' do
         let(:options) { { track_session: true } }
-        let(:email_account) { instance_double(EmailAccount, id: 15, active?: true) }
+        let(:error_account_user) { instance_double(User, id: 15) }
+        let(:email_account) { instance_double(EmailAccount, id: 15, active?: true, user: error_account_user) }
 
         before do
           allow(EmailAccount).to receive(:find_by).and_return(email_account)

@@ -6,7 +6,7 @@ class SyncConflictsController < ApplicationController
     @conflicts = if @sync_session
       @sync_session.sync_conflicts.includes(:existing_expense, :new_expense)
     else
-      SyncConflict.includes(:existing_expense, :new_expense)
+      SyncConflict.for_user(scoping_user).includes(:existing_expense, :new_expense)
     end
 
     # Exclude 100% duplicate matches — they are auto-handled and just noise
@@ -23,7 +23,7 @@ class SyncConflictsController < ApplicationController
     base_scope = if @sync_session
       @sync_session.sync_conflicts
     else
-      SyncConflict.all
+      SyncConflict.for_user(scoping_user)
     end
 
     # Exclude 100% duplicates from stats too
@@ -153,11 +153,14 @@ class SyncConflictsController < ApplicationController
       return
     end
 
-    # Use first conflict to initialize service (for bulk operations)
-    first_conflict = SyncConflict.find(conflict_ids.first)
+    # Use first conflict to initialize service (for bulk operations).
+    # Scope via for_user so a caller cannot drive a resolution against
+    # another user's conflict by submitting its id.
+    first_conflict = SyncConflict.for_user(scoping_user).find(conflict_ids.first)
+    scoped_ids = SyncConflict.for_user(scoping_user).where(id: conflict_ids).pluck(:id)
     service = Services::ConflictResolutionService.new(first_conflict)
 
-    result = service.bulk_resolve(conflict_ids, action, resolve_params)
+    result = service.bulk_resolve(scoped_ids, action, resolve_params)
 
     respond_to do |format|
       format.json {
@@ -169,9 +172,9 @@ class SyncConflictsController < ApplicationController
         }
       }
       format.turbo_stream {
-        # Update each conflict row
-        streams = conflict_ids.map do |id|
-          conflict = SyncConflict.find_by(id: id)
+        # Update each conflict row (scoped so we never render cross-user rows)
+        streams = scoped_ids.map do |id|
+          conflict = SyncConflict.for_user(scoping_user).find_by(id: id)
           next unless conflict
 
           turbo_stream.replace(
@@ -265,11 +268,29 @@ class SyncConflictsController < ApplicationController
   private
 
   def set_sync_conflict
-    @sync_conflict = SyncConflict.find(params[:id])
+    @sync_conflict = SyncConflict.for_user(scoping_user).find(params[:id])
   end
 
   def set_sync_session
-    @sync_session = SyncSession.find(params[:sync_session_id]) if params[:sync_session_id]
+    @sync_session = SyncSession.for_user(scoping_user).find(params[:sync_session_id]) if params[:sync_session_id]
+  end
+
+  # Returns the User used for scoping queries. Mirrors the pattern from
+  # SyncSessionsController / ExpensesController. Falls back to the first
+  # admin until PR 12 wires UserAuthentication to this controller.
+  def scoping_user
+    @scoping_user ||= begin
+      user = try(:current_app_user)
+      if user.nil?
+        user = User.admin.first
+        Rails.logger.warn(
+          "[scoping_user] current_app_user is nil; falling back to User.admin.first " \
+          "(controller=#{self.class.name}, path=#{request.fullpath}). " \
+          "Remove in PR 12 when UserAuthentication gates all controllers."
+        ) if user
+      end
+      user || raise("No authenticated user and no admin User found")
+    end
   end
 
   def resolve_params

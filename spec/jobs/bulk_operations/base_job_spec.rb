@@ -48,7 +48,7 @@ end
 RSpec.describe BulkOperations::BaseJob, type: :job, unit: true do
   let(:expense_ids) { [ 1, 2, 3, 4, 5 ] }
   let(:user_id) { 42 }
-  let(:user) { instance_double(AdminUser, id: user_id) }
+  let(:user) { instance_double(User, id: user_id) }
   let(:options) { { batch_size: 10, force: true } }
   let(:job_id) { 'test-job-123' }
 
@@ -64,9 +64,10 @@ RSpec.describe BulkOperations::BaseJob, type: :job, unit: true do
     allow(Rails).to receive(:logger).and_return(rails_logger)
     allow(Time).to receive(:current).and_return(Time.zone.parse('2025-08-31 10:00:00'))
 
-    # Stub AdminUser lookup so job receives a user with an id
-    allow(AdminUser).to receive(:find_by).with(id: user_id).and_return(user)
-    allow(AdminUser).to receive(:find_by).with(id: nil).and_return(nil)
+    # Stub User lookup so job receives a user with an id. PR 8: BaseJob
+    # reloads via User (was AdminUser) to align with the foreground path.
+    allow(User).to receive(:find_by).with(id: user_id).and_return(user)
+    allow(User).to receive(:find_by).with(id: nil).and_return(nil)
   end
 
   describe 'abstract method contract' do

@@ -27,9 +27,24 @@ class MakeUndoHistoriesUserIdNotNull < ActiveRecord::Migration[8.1]
     end
 
     change_column_null :undo_histories, :user_id, false
+
+    # Step 1 added the FK with `validate: false` because the column pre-existed
+    # as a plain bigint and could have held orphan ids. Now that every row is
+    # non-NULL and points at a real User (verified by the re-backfill above),
+    # validate the constraint so Postgres can trust it and the schema can stop
+    # showing it as unvalidated. This is safe and cheap — Postgres scans the
+    # table once under SHARE UPDATE EXCLUSIVE (allows concurrent reads/writes).
+    validate_foreign_key :undo_histories, :users
   end
 
   def down
     change_column_null :undo_histories, :user_id, true
+    # Leave the FK in place but revert validation state to match step 1's
+    # original posture. Postgres does not provide a direct "invalidate"
+    # operation; we drop and re-add unvalidated as the closest equivalent.
+    if foreign_key_exists?(:undo_histories, :users)
+      remove_foreign_key :undo_histories, :users
+      add_foreign_key :undo_histories, :users, validate: false
+    end
   end
 end

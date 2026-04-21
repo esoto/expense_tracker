@@ -15,14 +15,17 @@ RSpec.describe BulkDeletionJob, type: :job, unit: true do
 
   before do
     # Stub constants for unit test environment
-    admin_user_class = double('AdminUserClass')
-    stub_const('AdminUser', admin_user_class)
+    # PR 8: BaseJob now reloads the user via User.find_by (was AdminUser) so
+    # the background bulk-delete flow matches the foreground path and lets
+    # the `user.is_a?(User)` guard in DeletionService allow undo creation.
+    user_class = double('UserClass')
+    stub_const('User', user_class)
 
     deletion_service_class = double('DeletionServiceClass')
     stub_const('Services::BulkOperations::DeletionService', deletion_service_class)
 
     # Mock inherited behavior from BaseJob
-    allow(AdminUser).to receive(:find_by).with(id: user.id).and_return(user)
+    allow(User).to receive(:find_by).with(id: user.id).and_return(user)
     allow(job).to receive(:track_progress)
     allow(job).to receive(:broadcast_completion)
     allow(job).to receive(:broadcast_failure)
@@ -114,7 +117,7 @@ RSpec.describe BulkDeletionJob, type: :job, unit: true do
 
     context 'when user is not found' do
       before do
-        allow(AdminUser).to receive(:find_by).with(id: user.id).and_return(nil)
+        allow(User).to receive(:find_by).with(id: user.id).and_return(nil)
       end
 
       it 'proceeds with nil user' do

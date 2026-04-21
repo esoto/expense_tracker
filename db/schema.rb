@@ -30,8 +30,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.boolean "two_factor_enabled"
     t.string "two_factor_secret"
     t.datetime "updated_at", null: false
-    t.index [ "email" ], name: "index_admin_users_on_email", unique: true
-    t.index [ "session_token" ], name: "index_admin_users_on_session_token", unique: true
+    t.index ["email"], name: "index_admin_users_on_email", unique: true
+    t.index ["session_token"], name: "index_admin_users_on_session_token", unique: true
   end
 
   create_table "api_tokens", force: :cascade do |t|
@@ -43,11 +43,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.string "token_digest", null: false
     t.string "token_hash"
     t.datetime "updated_at", null: false
-    t.index [ "active", "expires_at" ], name: "index_api_tokens_on_active_and_expires_at"
-    t.index [ "active" ], name: "index_api_tokens_on_active"
-    t.index [ "expires_at" ], name: "index_api_tokens_on_expires_at"
-    t.index [ "token_digest" ], name: "index_api_tokens_on_token_digest", unique: true
-    t.index [ "token_hash" ], name: "index_api_tokens_on_token_hash", unique: true
+    t.index ["active", "expires_at"], name: "index_api_tokens_on_active_and_expires_at"
+    t.index ["active"], name: "index_api_tokens_on_active"
+    t.index ["expires_at"], name: "index_api_tokens_on_expires_at"
+    t.index ["token_digest"], name: "index_api_tokens_on_token_digest", unique: true
+    t.index ["token_hash"], name: "index_api_tokens_on_token_hash", unique: true
   end
 
   create_table "budgets", force: :cascade do |t|
@@ -79,18 +79,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.integer "warning_threshold", default: 70
-    t.index [ "active", "start_date" ], name: "index_budgets_on_active_and_start_date"
-    t.index [ "category_id" ], name: "index_budgets_on_category_id"
-    t.index [ "email_account_id", "active" ], name: "index_budgets_on_email_account_id_and_active"
-    t.index [ "email_account_id", "category_id", "active" ], name: "index_budgets_on_email_account_id_and_category_id_and_active"
-    t.index [ "email_account_id", "category_id", "period", "active" ], name: "index_budgets_unique_active", unique: true, where: "(active = true)"
-    t.index [ "email_account_id", "external_source", "external_id", "start_date" ], name: "idx_budgets_external_unique", unique: true, where: "(external_source IS NOT NULL)"
-    t.index [ "email_account_id", "period", "active" ], name: "index_budgets_on_email_account_id_and_period_and_active"
-    t.index [ "email_account_id" ], name: "index_budgets_on_email_account_id"
-    t.index [ "external_source" ], name: "index_budgets_on_external_source", where: "(external_source IS NOT NULL)"
-    t.index [ "metadata" ], name: "index_budgets_on_metadata", using: :gin
-    t.index [ "start_date", "end_date" ], name: "index_budgets_on_start_date_and_end_date"
-    t.index [ "user_id" ], name: "index_budgets_on_user_id"
+    t.index ["active", "start_date"], name: "index_budgets_on_active_and_start_date"
+    t.index ["category_id"], name: "index_budgets_on_category_id"
+    t.index ["email_account_id", "active"], name: "index_budgets_on_email_account_id_and_active"
+    t.index ["email_account_id", "category_id", "active"], name: "index_budgets_on_email_account_id_and_category_id_and_active"
+    t.index ["email_account_id", "category_id", "period", "active"], name: "index_budgets_unique_active", unique: true, where: "(active = true)"
+    t.index ["email_account_id", "external_source", "external_id", "start_date"], name: "idx_budgets_external_unique", unique: true, where: "(external_source IS NOT NULL)"
+    t.index ["email_account_id", "period", "active"], name: "index_budgets_on_email_account_id_and_period_and_active"
+    t.index ["email_account_id"], name: "index_budgets_on_email_account_id"
+    t.index ["external_source"], name: "index_budgets_on_external_source", where: "(external_source IS NOT NULL)"
+    t.index ["metadata"], name: "index_budgets_on_metadata", using: :gin
+    t.index ["start_date", "end_date"], name: "index_budgets_on_start_date_and_end_date"
+    t.index ["user_id"], name: "index_budgets_on_user_id"
   end
 
   create_table "bulk_operation_items", force: :cascade do |t|
@@ -104,12 +104,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.datetime "processed_at"
     t.integer "status", default: 0, null: false
     t.datetime "updated_at", null: false
-    t.index [ "bulk_operation_id", "expense_id" ], name: "index_bulk_operation_items_on_bulk_operation_id_and_expense_id", unique: true
-    t.index [ "bulk_operation_id", "status" ], name: "index_bulk_operation_items_on_bulk_operation_id_and_status"
-    t.index [ "expense_id" ], name: "index_bulk_operation_items_on_expense_id"
-    t.index [ "new_category_id" ], name: "index_bulk_operation_items_on_new_category_id"
-    t.index [ "previous_category_id" ], name: "index_bulk_operation_items_on_previous_category_id"
-    t.index [ "status" ], name: "index_bulk_operation_items_on_status"
+    t.index ["bulk_operation_id", "expense_id"], name: "index_bulk_operation_items_on_bulk_operation_id_and_expense_id", unique: true
+    t.index ["bulk_operation_id", "status"], name: "index_bulk_operation_items_on_bulk_operation_id_and_status"
+    t.index ["expense_id"], name: "index_bulk_operation_items_on_expense_id"
+    t.index ["new_category_id"], name: "index_bulk_operation_items_on_new_category_id"
+    t.index ["previous_category_id"], name: "index_bulk_operation_items_on_previous_category_id"
+    t.index ["status"], name: "index_bulk_operation_items_on_status"
   end
 
   create_table "bulk_operations", force: :cascade do |t|
@@ -125,12 +125,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.datetime "undone_at"
     t.datetime "updated_at", null: false
     t.string "user_id"
-    t.index [ "created_at" ], name: "index_bulk_operations_on_created_at"
-    t.index [ "metadata" ], name: "index_bulk_operations_on_metadata", using: :gin
-    t.index [ "operation_type" ], name: "index_bulk_operations_on_operation_type"
-    t.index [ "status", "created_at" ], name: "index_bulk_operations_on_status_and_created_at"
-    t.index [ "target_category_id" ], name: "index_bulk_operations_on_target_category_id"
-    t.index [ "user_id", "created_at" ], name: "index_bulk_operations_on_user_id_and_created_at"
+    t.index ["created_at"], name: "index_bulk_operations_on_created_at"
+    t.index ["metadata"], name: "index_bulk_operations_on_metadata", using: :gin
+    t.index ["operation_type"], name: "index_bulk_operations_on_operation_type"
+    t.index ["status", "created_at"], name: "index_bulk_operations_on_status_and_created_at"
+    t.index ["target_category_id"], name: "index_bulk_operations_on_target_category_id"
+    t.index ["user_id", "created_at"], name: "index_bulk_operations_on_user_id_and_created_at"
   end
 
   create_table "canonical_merchants", force: :cascade do |t|
@@ -141,9 +141,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.string "name", null: false
     t.datetime "updated_at", null: false
     t.integer "usage_count", default: 0
-    t.index [ "name", "usage_count" ], name: "idx_canonical_merchant_lookup"
-    t.index [ "name" ], name: "index_canonical_merchants_on_name", unique: true
-    t.index [ "usage_count" ], name: "index_canonical_merchants_on_usage_count"
+    t.index ["name", "usage_count"], name: "idx_canonical_merchant_lookup"
+    t.index ["name"], name: "index_canonical_merchants_on_name", unique: true
+    t.index ["usage_count"], name: "index_canonical_merchants_on_usage_count"
   end
 
   create_table "categories", force: :cascade do |t|
@@ -154,9 +154,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.string "name", null: false
     t.integer "parent_id"
     t.datetime "updated_at", null: false
-    t.index [ "i18n_key" ], name: "index_categories_on_i18n_key", unique: true
-    t.index [ "name" ], name: "index_categories_on_name"
-    t.index [ "parent_id" ], name: "index_categories_on_parent_id"
+    t.index ["i18n_key"], name: "index_categories_on_i18n_key", unique: true
+    t.index ["name"], name: "index_categories_on_name"
+    t.index ["parent_id"], name: "index_categories_on_parent_id"
   end
 
   create_table "categorization_metrics", force: :cascade do |t|
@@ -171,12 +171,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.integer "time_to_correction_hours"
     t.datetime "updated_at", null: false
     t.boolean "was_corrected", default: false, null: false
-    t.index [ "category_id" ], name: "index_categorization_metrics_on_category_id"
-    t.index [ "corrected_to_category_id" ], name: "index_categorization_metrics_on_corrected_to_category_id"
-    t.index [ "created_at" ], name: "index_categorization_metrics_on_created_at"
-    t.index [ "expense_id" ], name: "index_categorization_metrics_on_expense_id"
-    t.index [ "layer_used" ], name: "index_categorization_metrics_on_layer_used"
-    t.index [ "was_corrected" ], name: "index_categorization_metrics_on_was_corrected"
+    t.index ["category_id"], name: "index_categorization_metrics_on_category_id"
+    t.index ["corrected_to_category_id"], name: "index_categorization_metrics_on_corrected_to_category_id"
+    t.index ["created_at"], name: "index_categorization_metrics_on_created_at"
+    t.index ["expense_id"], name: "index_categorization_metrics_on_expense_id"
+    t.index ["layer_used"], name: "index_categorization_metrics_on_layer_used"
+    t.index ["was_corrected"], name: "index_categorization_metrics_on_was_corrected"
   end
 
   create_table "categorization_patterns", force: :cascade do |t|
@@ -193,27 +193,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.integer "usage_count", default: 0
     t.boolean "user_created", default: false
     t.index "lower((pattern_value)::text)", name: "idx_patterns_value_lower"
-    t.index [ "active", "confidence_weight" ], name: "idx_patterns_high_confidence", where: "((active = true) AND (confidence_weight >= (2.0)::double precision))"
-    t.index [ "active", "pattern_type", "usage_count" ], name: "idx_patterns_active_type_usage"
-    t.index [ "active", "success_rate", "usage_count" ], name: "idx_patterns_active_success_usage"
-    t.index [ "active", "updated_at" ], name: "idx_patterns_recently_used", where: "(active = true)"
-    t.index [ "active", "usage_count", "success_rate", "updated_at" ], name: "idx_patterns_performance_tracking", where: "((active = true) AND (usage_count > 0))", comment: "Index for tracking pattern performance and effectiveness"
-    t.index [ "active", "usage_count", "success_rate" ], name: "idx_patterns_performance", where: "(active = true)"
-    t.index [ "category_id", "active", "pattern_type" ], name: "idx_patterns_category_active_type"
-    t.index [ "category_id", "active", "success_rate", "usage_count" ], name: "idx_patterns_category_performance"
-    t.index [ "category_id", "pattern_type", "pattern_value" ], name: "idx_patterns_unique_lookup", unique: true
-    t.index [ "category_id", "success_rate" ], name: "index_categorization_patterns_on_category_id_and_success_rate"
-    t.index [ "created_at", "updated_at" ], name: "idx_patterns_activity"
-    t.index [ "pattern_type", "active", "confidence_weight" ], name: "idx_patterns_type_active_confidence"
-    t.index [ "pattern_type", "active", "success_rate" ], name: "idx_patterns_type_active_success"
-    t.index [ "pattern_type", "pattern_value", "active", "success_rate" ], name: "idx_patterns_optimized_lookup", where: "(active = true)", comment: "Optimized index for pattern matching queries"
-    t.index [ "pattern_type", "pattern_value" ], name: "idx_on_pattern_type_pattern_value_fad6f38255"
-    t.index [ "pattern_value" ], name: "idx_patterns_value"
-    t.index [ "pattern_value" ], name: "idx_patterns_value_trgm", opclass: :gin_trgm_ops, using: :gin
-    t.index [ "updated_at" ], name: "idx_patterns_updated_at"
-    t.index [ "usage_count", "success_rate" ], name: "idx_patterns_usage_success", where: "(active = true)"
-    t.index [ "user_created", "active", "created_at" ], name: "idx_patterns_user_active_created"
-    t.index [ "user_created", "active" ], name: "idx_patterns_user_created_active"
+    t.index ["active", "confidence_weight"], name: "idx_patterns_high_confidence", where: "((active = true) AND (confidence_weight >= (2.0)::double precision))"
+    t.index ["active", "pattern_type", "usage_count"], name: "idx_patterns_active_type_usage"
+    t.index ["active", "success_rate", "usage_count"], name: "idx_patterns_active_success_usage"
+    t.index ["active", "updated_at"], name: "idx_patterns_recently_used", where: "(active = true)"
+    t.index ["active", "usage_count", "success_rate", "updated_at"], name: "idx_patterns_performance_tracking", where: "((active = true) AND (usage_count > 0))", comment: "Index for tracking pattern performance and effectiveness"
+    t.index ["active", "usage_count", "success_rate"], name: "idx_patterns_performance", where: "(active = true)"
+    t.index ["category_id", "active", "pattern_type"], name: "idx_patterns_category_active_type"
+    t.index ["category_id", "active", "success_rate", "usage_count"], name: "idx_patterns_category_performance"
+    t.index ["category_id", "pattern_type", "pattern_value"], name: "idx_patterns_unique_lookup", unique: true
+    t.index ["category_id", "success_rate"], name: "index_categorization_patterns_on_category_id_and_success_rate"
+    t.index ["created_at", "updated_at"], name: "idx_patterns_activity"
+    t.index ["pattern_type", "active", "confidence_weight"], name: "idx_patterns_type_active_confidence"
+    t.index ["pattern_type", "active", "success_rate"], name: "idx_patterns_type_active_success"
+    t.index ["pattern_type", "pattern_value", "active", "success_rate"], name: "idx_patterns_optimized_lookup", where: "(active = true)", comment: "Optimized index for pattern matching queries"
+    t.index ["pattern_type", "pattern_value"], name: "idx_on_pattern_type_pattern_value_fad6f38255"
+    t.index ["pattern_value"], name: "idx_patterns_value"
+    t.index ["pattern_value"], name: "idx_patterns_value_trgm", opclass: :gin_trgm_ops, using: :gin
+    t.index ["updated_at"], name: "idx_patterns_updated_at"
+    t.index ["usage_count", "success_rate"], name: "idx_patterns_usage_success", where: "(active = true)"
+    t.index ["user_created", "active", "created_at"], name: "idx_patterns_user_active_created"
+    t.index ["user_created", "active"], name: "idx_patterns_user_created_active"
     t.check_constraint "confidence_weight >= 0.1::double precision AND confidence_weight <= 5.0::double precision", name: "check_confidence_weight_range"
     t.check_constraint "success_count <= usage_count", name: "check_success_count_validity"
     t.check_constraint "success_count >= 0", name: "check_success_count_non_negative"
@@ -231,9 +231,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.string "merchant_normalized", null: false
     t.integer "occurrence_count", default: 1, null: false
     t.datetime "updated_at", null: false
-    t.index [ "category_id" ], name: "index_categorization_vectors_on_category_id"
-    t.index [ "merchant_normalized", "category_id" ], name: "index_categorization_vectors_on_merchant_and_category", unique: true
-    t.index [ "merchant_normalized" ], name: "index_categorization_vectors_on_merchant_trgm", opclass: :gist_trgm_ops, using: :gist
+    t.index ["category_id"], name: "index_categorization_vectors_on_category_id"
+    t.index ["merchant_normalized", "category_id"], name: "index_categorization_vectors_on_merchant_and_category", unique: true
+    t.index ["merchant_normalized"], name: "index_categorization_vectors_on_merchant_trgm", opclass: :gist_trgm_ops, using: :gist
   end
 
   create_table "composite_patterns", force: :cascade do |t|
@@ -250,15 +250,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.datetime "updated_at", null: false
     t.integer "usage_count", default: 0
     t.boolean "user_created", default: false
-    t.index [ "active", "category_id", "success_rate" ], name: "idx_composite_active_category", where: "(active = true)"
-    t.index [ "active", "operator", "success_rate" ], name: "idx_composite_patterns_lookup", where: "(active = true)", comment: "Optimized index for composite pattern lookups"
-    t.index [ "active", "success_rate" ], name: "idx_composite_active_success", where: "(active = true)"
-    t.index [ "active", "usage_count" ], name: "idx_composite_active_usage"
-    t.index [ "category_id", "active" ], name: "index_composite_patterns_on_category_id_and_active"
-    t.index [ "name" ], name: "index_composite_patterns_on_name"
-    t.index [ "operator", "active" ], name: "idx_composite_operator_active"
-    t.index [ "pattern_ids" ], name: "idx_composite_pattern_ids_gin", using: :gin
-    t.index [ "success_rate", "usage_count" ], name: "idx_composite_performance", where: "(active = true)"
+    t.index ["active", "category_id", "success_rate"], name: "idx_composite_active_category", where: "(active = true)"
+    t.index ["active", "operator", "success_rate"], name: "idx_composite_patterns_lookup", where: "(active = true)", comment: "Optimized index for composite pattern lookups"
+    t.index ["active", "success_rate"], name: "idx_composite_active_success", where: "(active = true)"
+    t.index ["active", "usage_count"], name: "idx_composite_active_usage"
+    t.index ["category_id", "active"], name: "index_composite_patterns_on_category_id_and_active"
+    t.index ["name"], name: "index_composite_patterns_on_name"
+    t.index ["operator", "active"], name: "idx_composite_operator_active"
+    t.index ["pattern_ids"], name: "idx_composite_pattern_ids_gin", using: :gin
+    t.index ["success_rate", "usage_count"], name: "idx_composite_performance", where: "(active = true)"
   end
 
   create_table "conflict_resolutions", force: :cascade do |t|
@@ -276,14 +276,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.datetime "undone_at"
     t.bigint "undone_by_resolution_id"
     t.datetime "updated_at", null: false
-    t.index [ "action" ], name: "index_conflict_resolutions_on_action"
-    t.index [ "after_state" ], name: "index_conflict_resolutions_on_after_state", using: :gin
-    t.index [ "before_state" ], name: "index_conflict_resolutions_on_before_state", using: :gin
-    t.index [ "created_at" ], name: "index_conflict_resolutions_on_created_at"
-    t.index [ "sync_conflict_id", "undone" ], name: "index_conflict_resolutions_on_sync_conflict_id_and_undone"
-    t.index [ "sync_conflict_id" ], name: "index_conflict_resolutions_on_sync_conflict_id"
-    t.index [ "undone" ], name: "index_conflict_resolutions_on_undone"
-    t.index [ "undone_by_resolution_id" ], name: "index_conflict_resolutions_on_undone_by_resolution_id"
+    t.index ["action"], name: "index_conflict_resolutions_on_action"
+    t.index ["after_state"], name: "index_conflict_resolutions_on_after_state", using: :gin
+    t.index ["before_state"], name: "index_conflict_resolutions_on_before_state", using: :gin
+    t.index ["created_at"], name: "index_conflict_resolutions_on_created_at"
+    t.index ["sync_conflict_id", "undone"], name: "index_conflict_resolutions_on_sync_conflict_id_and_undone"
+    t.index ["sync_conflict_id"], name: "index_conflict_resolutions_on_sync_conflict_id"
+    t.index ["undone"], name: "index_conflict_resolutions_on_undone"
+    t.index ["undone_by_resolution_id"], name: "index_conflict_resolutions_on_undone_by_resolution_id"
   end
 
   create_table "email_accounts", force: :cascade do |t|
@@ -296,10 +296,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.string "provider", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
-    t.index [ "active", "bank_name" ], name: "index_email_accounts_on_active_and_bank_name"
-    t.index [ "bank_name" ], name: "index_email_accounts_on_bank_name"
-    t.index [ "email" ], name: "index_email_accounts_on_email", unique: true
-    t.index [ "user_id" ], name: "index_email_accounts_on_user_id"
+    t.index ["active", "bank_name"], name: "index_email_accounts_on_active_and_bank_name"
+    t.index ["bank_name"], name: "index_email_accounts_on_bank_name"
+    t.index ["email"], name: "index_email_accounts_on_email", unique: true
+    t.index ["user_id"], name: "index_email_accounts_on_user_id"
   end
 
   create_table "email_parsing_failures", force: :cascade do |t|
@@ -312,8 +312,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.boolean "truncated", default: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
-    t.index [ "email_account_id" ], name: "index_email_parsing_failures_on_email_account_id"
-    t.index [ "user_id" ], name: "index_email_parsing_failures_on_user_id"
+    t.index ["email_account_id"], name: "index_email_parsing_failures_on_email_account_id"
+    t.index ["user_id"], name: "index_email_parsing_failures_on_user_id"
   end
 
   create_table "expenses", force: :cascade do |t|
@@ -350,35 +350,35 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.bigint "user_id", null: false
     t.index "EXTRACT(hour FROM transaction_date), EXTRACT(dow FROM transaction_date)", name: "idx_expenses_hour_dow"
     t.index "EXTRACT(year FROM transaction_date), EXTRACT(month FROM transaction_date)", name: "idx_expenses_year_month", where: "(deleted_at IS NULL)", comment: "For monthly/yearly aggregations"
-    t.index [ "amount", "transaction_date", "merchant_name" ], name: "idx_expenses_manual_duplicate_check", unique: true, where: "((deleted_at IS NULL) AND (merchant_name IS NOT NULL) AND (email_account_id IS NULL))", comment: "Unique constraint for detecting duplicate manual expenses (email_account_id IS NULL)"
-    t.index [ "amount" ], name: "idx_expenses_amount_range", using: :brin, comment: "BRIN index for amount range queries"
-    t.index [ "auto_categorized", "categorization_confidence" ], name: "idx_expenses_auto_categorization", where: "((auto_categorized = true) AND (deleted_at IS NULL))", comment: "Index for tracking auto-categorization"
-    t.index [ "bank_name", "transaction_date" ], name: "idx_expenses_bank_date", where: "(deleted_at IS NULL)"
-    t.index [ "bank_name", "transaction_date" ], name: "index_expenses_on_bank_name_and_transaction_date"
-    t.index [ "categorization_method" ], name: "index_expenses_on_categorization_method"
-    t.index [ "categorized_at" ], name: "index_expenses_on_categorized_at"
-    t.index [ "categorized_by" ], name: "index_expenses_on_categorized_by"
-    t.index [ "category_id", "created_at" ], name: "idx_uncategorized_expenses", where: "(category_id IS NULL)"
-    t.index [ "category_id", "merchant_normalized" ], name: "index_expenses_on_category_id_and_merchant_normalized"
-    t.index [ "category_id", "transaction_date", "amount" ], name: "index_expenses_uncategorized", where: "(category_id IS NULL)"
-    t.index [ "category_id", "transaction_date" ], name: "idx_expenses_category_date", where: "((category_id IS NOT NULL) AND (deleted_at IS NULL))"
-    t.index [ "category_id", "transaction_date" ], name: "idx_expenses_uncategorized", where: "((category_id IS NULL) AND (deleted_at IS NULL))", comment: "Index for finding uncategorized expenses"
-    t.index [ "category_id", "transaction_date" ], name: "index_expenses_on_category_id_and_transaction_date"
-    t.index [ "created_at", "transaction_date" ], name: "index_expenses_on_created_and_transaction_date"
-    t.index [ "currency" ], name: "index_expenses_on_currency"
-    t.index [ "email_account_id", "amount", "transaction_date", "merchant_name" ], name: "idx_expenses_duplicate_check", unique: true, where: "((deleted_at IS NULL) AND (merchant_name IS NOT NULL) AND (email_account_id IS NOT NULL))", comment: "Unique constraint for detecting duplicate active transactions"
-    t.index [ "email_account_id", "deleted_at", "transaction_date", "category_id", "status" ], name: "idx_expenses_primary_composite", where: "(deleted_at IS NULL)", comment: "Primary composite index for filtering operations"
-    t.index [ "email_account_id", "transaction_date", "deleted_at" ], name: "idx_expenses_primary_filter", where: "(deleted_at IS NULL)", comment: "Primary index for common filtering operations"
-    t.index [ "merchant_normalized", "category_id" ], name: "idx_expenses_merchant_category", where: "(merchant_normalized IS NOT NULL)"
-    t.index [ "merchant_normalized", "category_id" ], name: "index_expenses_uncategorized_with_merchant", where: "((category_id IS NULL) AND (merchant_normalized IS NOT NULL))"
-    t.index [ "merchant_normalized", "transaction_date", "amount" ], name: "index_expenses_on_merchant_date_amount"
-    t.index [ "merchant_normalized" ], name: "idx_expenses_merchant_search", opclass: :gin_trgm_ops, where: "((merchant_normalized IS NOT NULL) AND (deleted_at IS NULL))", using: :gin, comment: "Trigram index for merchant name fuzzy search"
-    t.index [ "merchant_normalized" ], name: "index_expenses_merchant_similarity", opclass: :gist_trgm_ops, where: "(merchant_normalized IS NOT NULL)", using: :gist
-    t.index [ "status" ], name: "index_expenses_on_status"
-    t.index [ "transaction_date", "category_id", "amount" ], name: "idx_expenses_analytics", where: "(deleted_at IS NULL)", comment: "Covering index for date-based analytics"
-    t.index [ "updated_at", "category_id" ], name: "idx_expenses_dashboard_metrics"
-    t.index [ "updated_at" ], name: "idx_expenses_updated_at"
-    t.index [ "user_id" ], name: "index_expenses_on_user_id"
+    t.index ["amount", "transaction_date", "merchant_name"], name: "idx_expenses_manual_duplicate_check", unique: true, where: "((deleted_at IS NULL) AND (merchant_name IS NOT NULL) AND (email_account_id IS NULL))", comment: "Unique constraint for detecting duplicate manual expenses (email_account_id IS NULL)"
+    t.index ["amount"], name: "idx_expenses_amount_range", using: :brin, comment: "BRIN index for amount range queries"
+    t.index ["auto_categorized", "categorization_confidence"], name: "idx_expenses_auto_categorization", where: "((auto_categorized = true) AND (deleted_at IS NULL))", comment: "Index for tracking auto-categorization"
+    t.index ["bank_name", "transaction_date"], name: "idx_expenses_bank_date", where: "(deleted_at IS NULL)"
+    t.index ["bank_name", "transaction_date"], name: "index_expenses_on_bank_name_and_transaction_date"
+    t.index ["categorization_method"], name: "index_expenses_on_categorization_method"
+    t.index ["categorized_at"], name: "index_expenses_on_categorized_at"
+    t.index ["categorized_by"], name: "index_expenses_on_categorized_by"
+    t.index ["category_id", "created_at"], name: "idx_uncategorized_expenses", where: "(category_id IS NULL)"
+    t.index ["category_id", "merchant_normalized"], name: "index_expenses_on_category_id_and_merchant_normalized"
+    t.index ["category_id", "transaction_date", "amount"], name: "index_expenses_uncategorized", where: "(category_id IS NULL)"
+    t.index ["category_id", "transaction_date"], name: "idx_expenses_category_date", where: "((category_id IS NOT NULL) AND (deleted_at IS NULL))"
+    t.index ["category_id", "transaction_date"], name: "idx_expenses_uncategorized", where: "((category_id IS NULL) AND (deleted_at IS NULL))", comment: "Index for finding uncategorized expenses"
+    t.index ["category_id", "transaction_date"], name: "index_expenses_on_category_id_and_transaction_date"
+    t.index ["created_at", "transaction_date"], name: "index_expenses_on_created_and_transaction_date"
+    t.index ["currency"], name: "index_expenses_on_currency"
+    t.index ["email_account_id", "amount", "transaction_date", "merchant_name"], name: "idx_expenses_duplicate_check", unique: true, where: "((deleted_at IS NULL) AND (merchant_name IS NOT NULL) AND (email_account_id IS NOT NULL))", comment: "Unique constraint for detecting duplicate active transactions"
+    t.index ["email_account_id", "deleted_at", "transaction_date", "category_id", "status"], name: "idx_expenses_primary_composite", where: "(deleted_at IS NULL)", comment: "Primary composite index for filtering operations"
+    t.index ["email_account_id", "transaction_date", "deleted_at"], name: "idx_expenses_primary_filter", where: "(deleted_at IS NULL)", comment: "Primary index for common filtering operations"
+    t.index ["merchant_normalized", "category_id"], name: "idx_expenses_merchant_category", where: "(merchant_normalized IS NOT NULL)"
+    t.index ["merchant_normalized", "category_id"], name: "index_expenses_uncategorized_with_merchant", where: "((category_id IS NULL) AND (merchant_normalized IS NOT NULL))"
+    t.index ["merchant_normalized", "transaction_date", "amount"], name: "index_expenses_on_merchant_date_amount"
+    t.index ["merchant_normalized"], name: "idx_expenses_merchant_search", opclass: :gin_trgm_ops, where: "((merchant_normalized IS NOT NULL) AND (deleted_at IS NULL))", using: :gin, comment: "Trigram index for merchant name fuzzy search"
+    t.index ["merchant_normalized"], name: "index_expenses_merchant_similarity", opclass: :gist_trgm_ops, where: "(merchant_normalized IS NOT NULL)", using: :gist
+    t.index ["status"], name: "index_expenses_on_status"
+    t.index ["transaction_date", "category_id", "amount"], name: "idx_expenses_analytics", where: "(deleted_at IS NULL)", comment: "Covering index for date-based analytics"
+    t.index ["updated_at", "category_id"], name: "idx_expenses_dashboard_metrics"
+    t.index ["updated_at"], name: "idx_expenses_updated_at"
+    t.index ["user_id"], name: "index_expenses_on_user_id"
   end
 
   create_table "external_budget_sources", force: :cascade do |t|
@@ -393,8 +393,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.string "source_type", default: "salary_calculator", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
-    t.index [ "email_account_id" ], name: "index_external_budget_sources_on_email_account_id", unique: true
-    t.index [ "user_id" ], name: "index_external_budget_sources_on_user_id"
+    t.index ["email_account_id"], name: "index_external_budget_sources_on_email_account_id", unique: true
+    t.index ["user_id"], name: "index_external_budget_sources_on_user_id"
   end
 
   create_table "failed_broadcast_stores", force: :cascade do |t|
@@ -412,11 +412,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.bigint "target_id", null: false
     t.string "target_type", null: false
     t.datetime "updated_at", null: false
-    t.index [ "channel_name", "priority" ], name: "idx_failed_broadcasts_channel_priority"
-    t.index [ "error_type" ], name: "idx_failed_broadcasts_error_type"
-    t.index [ "failed_at", "recovered_at" ], name: "idx_failed_broadcasts_status"
-    t.index [ "job_id" ], name: "idx_failed_broadcasts_job_id", unique: true
-    t.index [ "target_type", "target_id" ], name: "idx_failed_broadcasts_target"
+    t.index ["channel_name", "priority"], name: "idx_failed_broadcasts_channel_priority"
+    t.index ["error_type"], name: "idx_failed_broadcasts_error_type"
+    t.index ["failed_at", "recovered_at"], name: "idx_failed_broadcasts_status"
+    t.index ["job_id"], name: "idx_failed_broadcasts_job_id", unique: true
+    t.index ["target_type", "target_id"], name: "idx_failed_broadcasts_target"
   end
 
   create_table "llm_categorization_cache", force: :cascade do |t|
@@ -430,9 +430,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.string "prompt_version", default: "v1", null: false
     t.integer "token_count"
     t.datetime "updated_at", null: false
-    t.index [ "category_id" ], name: "index_llm_categorization_cache_on_category_id"
-    t.index [ "expires_at" ], name: "index_llm_cache_on_expires_at"
-    t.index [ "merchant_normalized", "prompt_version", "model_used" ], name: "index_llm_cache_on_merchant_version_model", unique: true
+    t.index ["category_id"], name: "index_llm_categorization_cache_on_category_id"
+    t.index ["expires_at"], name: "index_llm_cache_on_expires_at"
+    t.index ["merchant_normalized", "prompt_version", "model_used"], name: "index_llm_cache_on_merchant_version_model", unique: true
   end
 
   create_table "merchant_aliases", force: :cascade do |t|
@@ -445,10 +445,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.string "raw_name", null: false
     t.datetime "updated_at", null: false
     t.index "lower((normalized_name)::text)", name: "idx_merchant_aliases_normalized_lower"
-    t.index [ "canonical_merchant_id", "confidence", "match_count" ], name: "idx_merchant_alias_confidence", where: "(confidence >= (0.8)::double precision)"
-    t.index [ "canonical_merchant_id", "confidence" ], name: "index_merchant_aliases_on_canonical_merchant_id_and_confidence"
-    t.index [ "normalized_name" ], name: "idx_merchant_alias_trgm", opclass: :gin_trgm_ops, using: :gin
-    t.index [ "raw_name" ], name: "index_merchant_aliases_on_raw_name"
+    t.index ["canonical_merchant_id", "confidence", "match_count"], name: "idx_merchant_alias_confidence", where: "(confidence >= (0.8)::double precision)"
+    t.index ["canonical_merchant_id", "confidence"], name: "index_merchant_aliases_on_canonical_merchant_id_and_confidence"
+    t.index ["normalized_name"], name: "idx_merchant_alias_trgm", opclass: :gin_trgm_ops, using: :gin
+    t.index ["raw_name"], name: "index_merchant_aliases_on_raw_name"
   end
 
   create_table "parsing_rules", force: :cascade do |t|
@@ -461,8 +461,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.text "email_pattern"
     t.string "merchant_pattern"
     t.datetime "updated_at", null: false
-    t.index [ "active" ], name: "index_parsing_rules_on_active"
-    t.index [ "bank_name", "active" ], name: "index_parsing_rules_on_bank_name_and_active"
+    t.index ["active"], name: "index_parsing_rules_on_active"
+    t.index ["bank_name", "active"], name: "index_parsing_rules_on_bank_name_and_active"
   end
 
   create_table "pattern_feedbacks", force: :cascade do |t|
@@ -475,18 +475,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.string "feedback_type"
     t.datetime "updated_at", null: false
     t.boolean "was_correct"
-    t.index [ "categorization_pattern_id", "created_at" ], name: "idx_feedbacks_pattern_time"
-    t.index [ "categorization_pattern_id", "was_correct", "created_at" ], name: "idx_feedback_pattern_performance"
-    t.index [ "categorization_pattern_id", "was_correct" ], name: "idx_feedbacks_pattern_correct"
-    t.index [ "category_id", "created_at", "feedback_type" ], name: "idx_feedbacks_category_created_type"
-    t.index [ "category_id", "was_correct", "created_at" ], name: "idx_feedback_category_stats"
-    t.index [ "created_at", "feedback_type" ], name: "idx_feedbacks_created_type"
-    t.index [ "created_at", "was_correct", "feedback_type" ], name: "idx_feedback_analytics_optimized", order: { created_at: :desc }, comment: "Optimized index for feedback analytics and performance tracking"
-    t.index [ "created_at", "was_correct" ], name: "idx_feedback_analytics"
-    t.index [ "expense_id", "categorization_pattern_id" ], name: "idx_feedbacks_expense_pattern", unique: true
-    t.index [ "expense_id", "created_at" ], name: "idx_feedbacks_expense_created"
-    t.index [ "expense_id", "feedback_type", "created_at" ], name: "idx_feedbacks_expense_type_created"
-    t.index [ "feedback_type", "created_at" ], name: "idx_feedback_type_recent", where: "((feedback_type)::text = ANY (ARRAY[('correction'::character varying)::text, ('corrected'::character varying)::text]))"
+    t.index ["categorization_pattern_id", "created_at"], name: "idx_feedbacks_pattern_time"
+    t.index ["categorization_pattern_id", "was_correct", "created_at"], name: "idx_feedback_pattern_performance"
+    t.index ["categorization_pattern_id", "was_correct"], name: "idx_feedbacks_pattern_correct"
+    t.index ["category_id", "created_at", "feedback_type"], name: "idx_feedbacks_category_created_type"
+    t.index ["category_id", "was_correct", "created_at"], name: "idx_feedback_category_stats"
+    t.index ["created_at", "feedback_type"], name: "idx_feedbacks_created_type"
+    t.index ["created_at", "was_correct", "feedback_type"], name: "idx_feedback_analytics_optimized", order: { created_at: :desc }, comment: "Optimized index for feedback analytics and performance tracking"
+    t.index ["created_at", "was_correct"], name: "idx_feedback_analytics"
+    t.index ["expense_id", "categorization_pattern_id"], name: "idx_feedbacks_expense_pattern", unique: true
+    t.index ["expense_id", "created_at"], name: "idx_feedbacks_expense_created"
+    t.index ["expense_id", "feedback_type", "created_at"], name: "idx_feedbacks_expense_type_created"
+    t.index ["feedback_type", "created_at"], name: "idx_feedback_type_recent", where: "((feedback_type)::text = ANY (ARRAY[('correction'::character varying)::text, ('corrected'::character varying)::text]))"
   end
 
   create_table "pattern_learning_events", force: :cascade do |t|
@@ -500,15 +500,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.string "pattern_used"
     t.datetime "updated_at", null: false
     t.boolean "was_correct"
-    t.index [ "category_id", "created_at" ], name: "idx_learning_events_category_time"
-    t.index [ "category_id", "pattern_used", "created_at" ], name: "idx_learning_category_pattern_created"
-    t.index [ "confidence_score", "was_correct" ], name: "idx_learning_confidence", where: "(confidence_score IS NOT NULL)"
-    t.index [ "created_at", "category_id", "event_type" ], name: "idx_learning_created_category_type"
-    t.index [ "created_at", "was_correct", "category_id" ], name: "idx_learning_created_correct_category"
-    t.index [ "event_type", "created_at" ], name: "index_pattern_learning_events_on_event_type_and_created_at"
-    t.index [ "expense_id" ], name: "index_pattern_learning_events_on_expense_id"
-    t.index [ "pattern_used", "was_correct", "created_at" ], name: "idx_learning_events_analysis"
-    t.index [ "was_correct", "created_at" ], name: "idx_learning_correct_created"
+    t.index ["category_id", "created_at"], name: "idx_learning_events_category_time"
+    t.index ["category_id", "pattern_used", "created_at"], name: "idx_learning_category_pattern_created"
+    t.index ["confidence_score", "was_correct"], name: "idx_learning_confidence", where: "(confidence_score IS NOT NULL)"
+    t.index ["created_at", "category_id", "event_type"], name: "idx_learning_created_category_type"
+    t.index ["created_at", "was_correct", "category_id"], name: "idx_learning_created_correct_category"
+    t.index ["event_type", "created_at"], name: "index_pattern_learning_events_on_event_type_and_created_at"
+    t.index ["expense_id"], name: "index_pattern_learning_events_on_expense_id"
+    t.index ["pattern_used", "was_correct", "created_at"], name: "idx_learning_events_analysis"
+    t.index ["was_correct", "created_at"], name: "idx_learning_correct_created"
   end
 
   create_table "processed_emails", force: :cascade do |t|
@@ -521,10 +521,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.string "uid"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
-    t.index [ "email_account_id" ], name: "index_processed_emails_on_email_account_id"
-    t.index [ "message_id", "email_account_id" ], name: "idx_processed_emails_unique", unique: true
-    t.index [ "processed_at" ], name: "index_processed_emails_on_processed_at"
-    t.index [ "user_id" ], name: "index_processed_emails_on_user_id"
+    t.index ["email_account_id"], name: "index_processed_emails_on_email_account_id"
+    t.index ["message_id", "email_account_id"], name: "idx_processed_emails_unique", unique: true
+    t.index ["processed_at"], name: "index_processed_emails_on_processed_at"
+    t.index ["user_id"], name: "index_processed_emails_on_user_id"
   end
 
   create_table "solid_queue_blocked_executions", force: :cascade do |t|
@@ -534,24 +534,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.bigint "job_id", null: false
     t.integer "priority", default: 0, null: false
     t.string "queue_name", null: false
-    t.index [ "concurrency_key", "priority", "job_id" ], name: "index_solid_queue_blocked_executions_for_release"
-    t.index [ "expires_at", "concurrency_key" ], name: "index_solid_queue_blocked_executions_for_maintenance"
-    t.index [ "job_id" ], name: "index_solid_queue_blocked_executions_on_job_id", unique: true
+    t.index ["concurrency_key", "priority", "job_id"], name: "index_solid_queue_blocked_executions_for_release"
+    t.index ["expires_at", "concurrency_key"], name: "index_solid_queue_blocked_executions_for_maintenance"
+    t.index ["job_id"], name: "index_solid_queue_blocked_executions_on_job_id", unique: true
   end
 
   create_table "solid_queue_claimed_executions", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "job_id", null: false
     t.bigint "process_id"
-    t.index [ "job_id" ], name: "index_solid_queue_claimed_executions_on_job_id", unique: true
-    t.index [ "process_id", "job_id" ], name: "index_solid_queue_claimed_executions_on_process_id_and_job_id"
+    t.index ["job_id"], name: "index_solid_queue_claimed_executions_on_job_id", unique: true
+    t.index ["process_id", "job_id"], name: "index_solid_queue_claimed_executions_on_process_id_and_job_id"
   end
 
   create_table "solid_queue_failed_executions", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "error"
     t.bigint "job_id", null: false
-    t.index [ "job_id" ], name: "index_solid_queue_failed_executions_on_job_id", unique: true
+    t.index ["job_id"], name: "index_solid_queue_failed_executions_on_job_id", unique: true
   end
 
   create_table "solid_queue_jobs", force: :cascade do |t|
@@ -565,18 +565,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.string "queue_name", null: false
     t.datetime "scheduled_at"
     t.datetime "updated_at", null: false
-    t.index [ "active_job_id" ], name: "index_solid_queue_jobs_on_active_job_id"
-    t.index [ "class_name" ], name: "index_solid_queue_jobs_on_class_name"
-    t.index [ "finished_at" ], name: "idx_solid_queue_jobs_unfinished", where: "(finished_at IS NULL)"
-    t.index [ "finished_at" ], name: "index_solid_queue_jobs_on_finished_at"
-    t.index [ "queue_name", "finished_at" ], name: "index_solid_queue_jobs_for_filtering"
-    t.index [ "scheduled_at", "finished_at" ], name: "index_solid_queue_jobs_for_alerting"
+    t.index ["active_job_id"], name: "index_solid_queue_jobs_on_active_job_id"
+    t.index ["class_name"], name: "index_solid_queue_jobs_on_class_name"
+    t.index ["finished_at"], name: "idx_solid_queue_jobs_unfinished", where: "(finished_at IS NULL)"
+    t.index ["finished_at"], name: "index_solid_queue_jobs_on_finished_at"
+    t.index ["queue_name", "finished_at"], name: "index_solid_queue_jobs_for_filtering"
+    t.index ["scheduled_at", "finished_at"], name: "index_solid_queue_jobs_for_alerting"
   end
 
   create_table "solid_queue_pauses", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "queue_name", null: false
-    t.index [ "queue_name" ], name: "index_solid_queue_pauses_on_queue_name", unique: true
+    t.index ["queue_name"], name: "index_solid_queue_pauses_on_queue_name", unique: true
   end
 
   create_table "solid_queue_processes", force: :cascade do |t|
@@ -588,9 +588,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.string "name", null: false
     t.integer "pid", null: false
     t.bigint "supervisor_id"
-    t.index [ "last_heartbeat_at" ], name: "index_solid_queue_processes_on_last_heartbeat_at"
-    t.index [ "name", "supervisor_id" ], name: "index_solid_queue_processes_on_name_and_supervisor_id", unique: true
-    t.index [ "supervisor_id" ], name: "index_solid_queue_processes_on_supervisor_id"
+    t.index ["last_heartbeat_at"], name: "index_solid_queue_processes_on_last_heartbeat_at"
+    t.index ["name", "supervisor_id"], name: "index_solid_queue_processes_on_name_and_supervisor_id", unique: true
+    t.index ["supervisor_id"], name: "index_solid_queue_processes_on_supervisor_id"
   end
 
   create_table "solid_queue_ready_executions", force: :cascade do |t|
@@ -598,9 +598,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.bigint "job_id", null: false
     t.integer "priority", default: 0, null: false
     t.string "queue_name", null: false
-    t.index [ "job_id" ], name: "index_solid_queue_ready_executions_on_job_id", unique: true
-    t.index [ "priority", "job_id" ], name: "index_solid_queue_poll_all"
-    t.index [ "queue_name", "priority", "job_id" ], name: "index_solid_queue_poll_by_queue"
+    t.index ["job_id"], name: "index_solid_queue_ready_executions_on_job_id", unique: true
+    t.index ["priority", "job_id"], name: "index_solid_queue_poll_all"
+    t.index ["queue_name", "priority", "job_id"], name: "index_solid_queue_poll_by_queue"
   end
 
   create_table "solid_queue_recurring_executions", force: :cascade do |t|
@@ -608,8 +608,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.bigint "job_id", null: false
     t.datetime "run_at", null: false
     t.string "task_key", null: false
-    t.index [ "job_id" ], name: "index_solid_queue_recurring_executions_on_job_id", unique: true
-    t.index [ "task_key", "run_at" ], name: "index_solid_queue_recurring_executions_on_task_key_and_run_at", unique: true
+    t.index ["job_id"], name: "index_solid_queue_recurring_executions_on_job_id", unique: true
+    t.index ["task_key", "run_at"], name: "index_solid_queue_recurring_executions_on_task_key_and_run_at", unique: true
   end
 
   create_table "solid_queue_recurring_tasks", force: :cascade do |t|
@@ -624,8 +624,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.string "schedule", null: false
     t.boolean "static", default: true, null: false
     t.datetime "updated_at", null: false
-    t.index [ "key" ], name: "index_solid_queue_recurring_tasks_on_key", unique: true
-    t.index [ "static" ], name: "index_solid_queue_recurring_tasks_on_static"
+    t.index ["key"], name: "index_solid_queue_recurring_tasks_on_key", unique: true
+    t.index ["static"], name: "index_solid_queue_recurring_tasks_on_static"
   end
 
   create_table "solid_queue_scheduled_executions", force: :cascade do |t|
@@ -634,8 +634,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.integer "priority", default: 0, null: false
     t.string "queue_name", null: false
     t.datetime "scheduled_at", null: false
-    t.index [ "job_id" ], name: "index_solid_queue_scheduled_executions_on_job_id", unique: true
-    t.index [ "scheduled_at", "priority", "job_id" ], name: "index_solid_queue_dispatch_all"
+    t.index ["job_id"], name: "index_solid_queue_scheduled_executions_on_job_id", unique: true
+    t.index ["scheduled_at", "priority", "job_id"], name: "index_solid_queue_dispatch_all"
   end
 
   create_table "solid_queue_semaphores", force: :cascade do |t|
@@ -644,9 +644,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.string "key", null: false
     t.datetime "updated_at", null: false
     t.integer "value", default: 1, null: false
-    t.index [ "expires_at" ], name: "index_solid_queue_semaphores_on_expires_at"
-    t.index [ "key", "value" ], name: "index_solid_queue_semaphores_on_key_and_value"
-    t.index [ "key" ], name: "index_solid_queue_semaphores_on_key", unique: true
+    t.index ["expires_at"], name: "index_solid_queue_semaphores_on_expires_at"
+    t.index ["key", "value"], name: "index_solid_queue_semaphores_on_key_and_value"
+    t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
   end
 
   create_table "sync_conflicts", force: :cascade do |t|
@@ -668,17 +668,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.bigint "sync_session_id", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
-    t.index [ "conflict_data" ], name: "index_sync_conflicts_on_conflict_data", using: :gin
-    t.index [ "conflict_type" ], name: "index_sync_conflicts_on_conflict_type"
-    t.index [ "differences" ], name: "index_sync_conflicts_on_differences", using: :gin
-    t.index [ "existing_expense_id" ], name: "index_sync_conflicts_on_existing_expense_id"
-    t.index [ "new_expense_id" ], name: "index_sync_conflicts_on_new_expense_id"
-    t.index [ "priority" ], name: "index_sync_conflicts_on_priority"
-    t.index [ "resolved_at" ], name: "index_sync_conflicts_on_resolved_at"
-    t.index [ "similarity_score" ], name: "index_sync_conflicts_on_similarity_score"
-    t.index [ "status", "conflict_type" ], name: "index_sync_conflicts_on_status_and_conflict_type"
-    t.index [ "sync_session_id", "status" ], name: "index_sync_conflicts_on_sync_session_id_and_status"
-    t.index [ "user_id" ], name: "index_sync_conflicts_on_user_id"
+    t.index ["conflict_data"], name: "index_sync_conflicts_on_conflict_data", using: :gin
+    t.index ["conflict_type"], name: "index_sync_conflicts_on_conflict_type"
+    t.index ["differences"], name: "index_sync_conflicts_on_differences", using: :gin
+    t.index ["existing_expense_id"], name: "index_sync_conflicts_on_existing_expense_id"
+    t.index ["new_expense_id"], name: "index_sync_conflicts_on_new_expense_id"
+    t.index ["priority"], name: "index_sync_conflicts_on_priority"
+    t.index ["resolved_at"], name: "index_sync_conflicts_on_resolved_at"
+    t.index ["similarity_score"], name: "index_sync_conflicts_on_similarity_score"
+    t.index ["status", "conflict_type"], name: "index_sync_conflicts_on_status_and_conflict_type"
+    t.index ["sync_session_id", "status"], name: "index_sync_conflicts_on_sync_session_id_and_status"
+    t.index ["user_id"], name: "index_sync_conflicts_on_user_id"
   end
 
   create_table "sync_metrics", force: :cascade do |t|
@@ -696,16 +696,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.bigint "sync_session_id", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
-    t.index [ "completed_at" ], name: "index_sync_metrics_on_completed_at"
-    t.index [ "email_account_id", "metric_type" ], name: "index_sync_metrics_on_email_account_id_and_metric_type"
-    t.index [ "error_type" ], name: "index_sync_metrics_on_error_type"
-    t.index [ "metadata" ], name: "index_sync_metrics_on_metadata", using: :gin
-    t.index [ "metric_type", "started_at" ], name: "index_sync_metrics_on_metric_type_and_started_at"
-    t.index [ "metric_type", "success", "started_at" ], name: "index_sync_metrics_dashboard"
-    t.index [ "started_at", "completed_at" ], name: "index_sync_metrics_on_started_at_and_completed_at"
-    t.index [ "success", "metric_type" ], name: "index_sync_metrics_on_success_and_metric_type"
-    t.index [ "sync_session_id", "metric_type" ], name: "index_sync_metrics_on_sync_session_id_and_metric_type"
-    t.index [ "user_id" ], name: "index_sync_metrics_on_user_id"
+    t.index ["completed_at"], name: "index_sync_metrics_on_completed_at"
+    t.index ["email_account_id", "metric_type"], name: "index_sync_metrics_on_email_account_id_and_metric_type"
+    t.index ["error_type"], name: "index_sync_metrics_on_error_type"
+    t.index ["metadata"], name: "index_sync_metrics_on_metadata", using: :gin
+    t.index ["metric_type", "started_at"], name: "index_sync_metrics_on_metric_type_and_started_at"
+    t.index ["metric_type", "success", "started_at"], name: "index_sync_metrics_dashboard"
+    t.index ["started_at", "completed_at"], name: "index_sync_metrics_on_started_at_and_completed_at"
+    t.index ["success", "metric_type"], name: "index_sync_metrics_on_success_and_metric_type"
+    t.index ["sync_session_id", "metric_type"], name: "index_sync_metrics_on_sync_session_id_and_metric_type"
+    t.index ["user_id"], name: "index_sync_metrics_on_user_id"
   end
 
   create_table "sync_session_accounts", force: :cascade do |t|
@@ -720,10 +720,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.bigint "sync_session_id", null: false
     t.integer "total_emails", default: 0
     t.datetime "updated_at", null: false
-    t.index [ "email_account_id" ], name: "index_sync_session_accounts_on_email_account_id"
-    t.index [ "job_id" ], name: "index_sync_session_accounts_on_job_id"
-    t.index [ "status" ], name: "index_sync_session_accounts_on_status"
-    t.index [ "sync_session_id" ], name: "index_sync_session_accounts_on_sync_session_id"
+    t.index ["email_account_id"], name: "index_sync_session_accounts_on_email_account_id"
+    t.index ["job_id"], name: "index_sync_session_accounts_on_job_id"
+    t.index ["status"], name: "index_sync_session_accounts_on_status"
+    t.index ["sync_session_id"], name: "index_sync_session_accounts_on_sync_session_id"
   end
 
   create_table "sync_sessions", force: :cascade do |t|
@@ -743,12 +743,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.integer "total_emails", default: 0
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
-    t.index [ "admin_user_id" ], name: "index_sync_sessions_on_admin_user_id"
-    t.index [ "created_at" ], name: "index_sync_sessions_on_created_at"
-    t.index [ "metadata" ], name: "index_sync_sessions_on_metadata", using: :gin
-    t.index [ "session_token" ], name: "index_sync_sessions_on_session_token", unique: true
-    t.index [ "status" ], name: "index_sync_sessions_on_status"
-    t.index [ "user_id" ], name: "index_sync_sessions_on_user_id"
+    t.index ["admin_user_id"], name: "index_sync_sessions_on_admin_user_id"
+    t.index ["created_at"], name: "index_sync_sessions_on_created_at"
+    t.index ["metadata"], name: "index_sync_sessions_on_metadata", using: :gin
+    t.index ["session_token"], name: "index_sync_sessions_on_session_token", unique: true
+    t.index ["status"], name: "index_sync_sessions_on_status"
+    t.index ["user_id"], name: "index_sync_sessions_on_user_id"
   end
 
   create_table "undo_histories", force: :cascade do |t|
@@ -765,14 +765,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.datetime "undone_at"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
-    t.index [ "action_type", "undone_at" ], name: "index_undo_histories_on_action_type_and_undone_at"
-    t.index [ "created_at" ], name: "index_undo_histories_on_created_at"
-    t.index [ "expires_at", "undone_at" ], name: "index_undo_histories_on_expires_at_and_undone_at", where: "(undone_at IS NULL)"
-    t.index [ "expires_at" ], name: "index_undo_histories_on_expires_at"
-    t.index [ "is_bulk" ], name: "index_undo_histories_on_is_bulk"
-    t.index [ "undoable_type", "undoable_id" ], name: "index_undo_histories_on_undoable"
-    t.index [ "undone_at" ], name: "index_undo_histories_on_undone_at"
-    t.index [ "user_id", "created_at" ], name: "index_undo_histories_on_user_id_and_created_at"
+    t.index ["action_type", "undone_at"], name: "index_undo_histories_on_action_type_and_undone_at"
+    t.index ["created_at"], name: "index_undo_histories_on_created_at"
+    t.index ["expires_at", "undone_at"], name: "index_undo_histories_on_expires_at_and_undone_at", where: "(undone_at IS NULL)"
+    t.index ["expires_at"], name: "index_undo_histories_on_expires_at"
+    t.index ["is_bulk"], name: "index_undo_histories_on_is_bulk"
+    t.index ["undoable_type", "undoable_id"], name: "index_undo_histories_on_undoable"
+    t.index ["undone_at"], name: "index_undo_histories_on_undone_at"
+    t.index ["user_id", "created_at"], name: "index_undo_histories_on_user_id_and_created_at"
   end
 
   create_table "user_category_preferences", force: :cascade do |t|
@@ -785,12 +785,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.datetime "updated_at", null: false
     t.integer "usage_count", default: 0
     t.bigint "user_id", null: false
-    t.index [ "category_id" ], name: "index_user_category_preferences_on_category_id"
-    t.index [ "context_type", "context_value", "category_id" ], name: "idx_user_prefs_merchant_lookup", where: "((context_type)::text = 'merchant'::text)", comment: "Optimized index for merchant preference lookups"
-    t.index [ "context_type", "context_value", "preference_weight" ], name: "idx_user_prefs_context_weight"
-    t.index [ "email_account_id", "context_type", "context_value", "preference_weight" ], name: "idx_user_pref_lookup"
-    t.index [ "preference_weight", "usage_count" ], name: "idx_user_pref_priority", where: "(preference_weight >= 5)"
-    t.index [ "user_id" ], name: "index_user_category_preferences_on_user_id"
+    t.index ["category_id"], name: "index_user_category_preferences_on_category_id"
+    t.index ["context_type", "context_value", "category_id"], name: "idx_user_prefs_merchant_lookup", where: "((context_type)::text = 'merchant'::text)", comment: "Optimized index for merchant preference lookups"
+    t.index ["context_type", "context_value", "preference_weight"], name: "idx_user_prefs_context_weight"
+    t.index ["email_account_id", "context_type", "context_value", "preference_weight"], name: "idx_user_pref_lookup"
+    t.index ["preference_weight", "usage_count"], name: "idx_user_pref_priority", where: "(preference_weight >= 5)"
+    t.index ["user_id"], name: "index_user_category_preferences_on_user_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -806,9 +806,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.string "session_token"
     t.datetime "updated_at", null: false
     t.index "lower((email)::text)", name: "index_users_on_lower_email", unique: true
-    t.index [ "locked_at" ], name: "index_users_on_locked_at"
-    t.index [ "session_expires_at" ], name: "index_users_on_session_expires_at"
-    t.index [ "session_token" ], name: "index_users_on_session_token", unique: true, where: "(session_token IS NOT NULL)"
+    t.index ["locked_at"], name: "index_users_on_locked_at"
+    t.index ["session_expires_at"], name: "index_users_on_session_expires_at"
+    t.index ["session_token"], name: "index_users_on_session_token", unique: true, where: "(session_token IS NOT NULL)"
     t.check_constraint "role = ANY (ARRAY[0, 1])", name: "check_users_role_valid"
   end
 

@@ -4,6 +4,7 @@ require "rails_helper"
 
 RSpec.describe PatternLearningEvent, type: :model, unit: true do
   describe "associations" do
+    it { should belong_to(:user) }
     it { should belong_to(:expense) }
     it { should belong_to(:category) }
   end
@@ -80,6 +81,22 @@ RSpec.describe PatternLearningEvent, type: :model, unit: true do
   end
 
   describe "scopes" do
+    describe ".for_user" do
+      it "returns only events belonging to the given user" do
+        user_a = create(:user)
+        user_b = create(:user)
+        event_a = create(:pattern_learning_event, user: user_a, expense: create(:expense, user: user_a))
+        _event_b = create(:pattern_learning_event, user: user_b, expense: create(:expense, user: user_b))
+
+        expect(PatternLearningEvent.for_user(user_a)).to eq([ event_a ])
+      end
+
+      it "returns an empty collection when user has no events" do
+        user = create(:user)
+        expect(PatternLearningEvent.for_user(user)).to be_empty
+      end
+    end
+
     describe ".successful" do
     end
 
@@ -124,11 +141,12 @@ RSpec.describe PatternLearningEvent, type: :model, unit: true do
 
   describe "class methods" do
     describe ".record_event" do
-      let(:expense) { build_stubbed(:expense, id: 1) }
+      let(:user)    { build_stubbed(:user) }
+      let(:expense) { build_stubbed(:expense, id: 1, user: user) }
       let(:category) { build_stubbed(:category, id: 2) }
 
       context "with CategorizationPattern" do
-        it "creates event with pattern details" do
+        it "creates event with pattern details and derives user from expense" do
           pattern = build_stubbed(:categorization_pattern,
             id: 10,
             pattern_type: "merchant",
@@ -137,6 +155,7 @@ RSpec.describe PatternLearningEvent, type: :model, unit: true do
 
           expect(PatternLearningEvent).to receive(:create!).with(
             expense: expense,
+            user: user,
             category: category,
             pattern_used: "merchant:Store Name",
             was_correct: true,
@@ -170,6 +189,7 @@ RSpec.describe PatternLearningEvent, type: :model, unit: true do
 
           expect(PatternLearningEvent).to receive(:create!).with(
             expense: expense,
+            user: user,
             category: category,
             pattern_used: "CustomPattern#30",
             was_correct: true,
@@ -194,7 +214,7 @@ RSpec.describe PatternLearningEvent, type: :model, unit: true do
         pattern = build_stubbed(:categorization_pattern, pattern_type: "merchant", pattern_value: "Store")
 
         expect(PatternLearningEvent).to receive(:create!).with(
-          hash_including(confidence_score: nil)
+          hash_including(confidence_score: nil, user: user)
         )
 
         PatternLearningEvent.record_event(

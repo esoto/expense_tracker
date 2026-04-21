@@ -4,6 +4,11 @@ module Services::Categorization
   module Monitoring
     # Aggregates categorization metrics for the admin dashboard.
     # Uses single-query conditional aggregation for efficiency.
+    #
+    # FIXME(PR-12): all CategorizationMetric queries here are intentionally
+    # cross-user — this is a platform-admin dashboard. PR 12 will decide
+    # whether this stays global or splits into per-admin + platform surfaces.
+    # Access is already admin-gated via Admin::BaseController callers.
     class MetricsDashboardService
       def overview(period: 30.days)
         result = CategorizationMetric.recent(period).pick(

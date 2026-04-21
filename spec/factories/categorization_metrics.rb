@@ -3,6 +3,7 @@
 FactoryBot.define do
   factory :categorization_metric do
     expense
+    user { expense.user }
     category
     layer_used { "pattern" }
     confidence { 0.85 }

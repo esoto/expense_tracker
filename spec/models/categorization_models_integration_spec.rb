@@ -129,6 +129,7 @@ RSpec.describe "Categorization Models Integration", type: :model, integration: t
       # User corrects to right category
       feedback = PatternFeedback.create!(
         expense: expense,
+        user: expense.user,
         category: category, # Correct category
         was_correct: false,
         feedback_type: "correction"
@@ -179,6 +180,7 @@ RSpec.describe "Categorization Models Integration", type: :model, integration: t
       feedback = PatternFeedback.create!(
         categorization_pattern: pattern,
         expense: expense,
+        user: expense.user,
         category: category,
         was_correct: true
       )

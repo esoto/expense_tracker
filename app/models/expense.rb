@@ -161,6 +161,7 @@ class Expense < ApplicationRecord
 
       # Create learning event for pattern improvement
       pattern_learning_events.create!(
+        user: user,
         category_id: new_category_id,
         pattern_used: "manual_correction",
         was_correct: true,
@@ -187,6 +188,7 @@ class Expense < ApplicationRecord
       self.ml_suggested_category_id = nil
 
       pattern_learning_events.create!(
+        user: user,
         category_id: category_id || dismissed_category_id,
         pattern_used: "dismissed_suggestion",
         was_correct: false,

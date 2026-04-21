@@ -482,7 +482,9 @@ RSpec.describe "PER-126 Index Audit", :unit do
       #     processed_emails, email_parsing_failures — one concurrent index each)
       # +2 for preferences cluster user_id FK indexes (PR 8: user_category_preferences, external_budget_sources —
       #     one concurrent index each; undo_histories uses existing composite index)
-      expect(total).to be <= 241  # small buffer for schema drift
+      # +3 for learning signals cluster user_id FK indexes (PR 9: pattern_feedbacks,
+      #     pattern_learning_events, categorization_metrics — one concurrent index each)
+      expect(total).to be <= 244  # small buffer for schema drift
     end
   end
 end

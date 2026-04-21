@@ -4,7 +4,8 @@ require "rails_helper"
 
 RSpec.describe Services::Categorization::Learning::MetricsRecorder, type: :service, unit: true do
   let(:category) { create(:category) }
-  let(:expense) { create(:expense, category: category) }
+  let(:user)     { create(:user) }
+  let(:expense)  { create(:expense, category: category, user: user) }
   let(:recorder) { described_class.new }
 
   describe "#record" do
@@ -24,11 +25,12 @@ RSpec.describe Services::Categorization::Learning::MetricsRecorder, type: :servi
       }.to change(CategorizationMetric, :count).by(1)
     end
 
-    it "stores the correct attributes" do
+    it "stores the correct attributes and derives user from expense" do
       recorder.record(expense: expense, result: result, layer_name: "pattern")
 
       metric = CategorizationMetric.last
       expect(metric.expense).to eq(expense)
+      expect(metric.user).to eq(user)
       expect(metric.layer_used).to eq("pattern")
       expect(metric.confidence).to eq(0.85)
       expect(metric.category).to eq(category)
@@ -75,6 +77,7 @@ RSpec.describe Services::Categorization::Learning::MetricsRecorder, type: :servi
     let!(:metric) do
       CategorizationMetric.create!(
         expense: expense,
+        user: user,
         layer_used: "pattern",
         confidence: 0.85,
         category: category,
@@ -103,7 +106,8 @@ RSpec.describe Services::Categorization::Learning::MetricsRecorder, type: :servi
     end
 
     it "handles missing metric row gracefully without modifying anything" do
-      other_expense = create(:expense)
+      other_user    = create(:user)
+      other_expense = create(:expense, user: other_user)
 
       recorder.record_correction(expense: other_expense, corrected_to_category: new_category)
 
@@ -127,6 +131,7 @@ RSpec.describe Services::Categorization::Learning::MetricsRecorder, type: :servi
     it "updates the most recent metric for the expense" do
       older_metric = CategorizationMetric.create!(
         expense: expense,
+        user: user,
         layer_used: "pg_trgm",
         confidence: 0.7,
         category: category,

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_21_130800) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -170,12 +170,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.float "processing_time_ms"
     t.integer "time_to_correction_hours"
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.boolean "was_corrected", default: false, null: false
     t.index ["category_id"], name: "index_categorization_metrics_on_category_id"
     t.index ["corrected_to_category_id"], name: "index_categorization_metrics_on_corrected_to_category_id"
     t.index ["created_at"], name: "index_categorization_metrics_on_created_at"
     t.index ["expense_id"], name: "index_categorization_metrics_on_expense_id"
     t.index ["layer_used"], name: "index_categorization_metrics_on_layer_used"
+    t.index ["user_id"], name: "index_categorization_metrics_on_user_id"
     t.index ["was_corrected"], name: "index_categorization_metrics_on_was_corrected"
   end
 
@@ -474,6 +476,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.bigint "expense_id"
     t.string "feedback_type"
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.boolean "was_correct"
     t.index ["categorization_pattern_id", "created_at"], name: "idx_feedbacks_pattern_time"
     t.index ["categorization_pattern_id", "was_correct", "created_at"], name: "idx_feedback_pattern_performance"
@@ -487,6 +490,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.index ["expense_id", "created_at"], name: "idx_feedbacks_expense_created"
     t.index ["expense_id", "feedback_type", "created_at"], name: "idx_feedbacks_expense_type_created"
     t.index ["feedback_type", "created_at"], name: "idx_feedback_type_recent", where: "((feedback_type)::text = ANY (ARRAY[('correction'::character varying)::text, ('corrected'::character varying)::text]))"
+    t.index ["user_id"], name: "index_pattern_feedbacks_on_user_id"
   end
 
   create_table "pattern_learning_events", force: :cascade do |t|
@@ -499,6 +503,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.jsonb "metadata", default: {}
     t.string "pattern_used"
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.boolean "was_correct"
     t.index ["category_id", "created_at"], name: "idx_learning_events_category_time"
     t.index ["category_id", "pattern_used", "created_at"], name: "idx_learning_category_pattern_created"
@@ -508,6 +513,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
     t.index ["event_type", "created_at"], name: "index_pattern_learning_events_on_event_type_and_created_at"
     t.index ["expense_id"], name: "index_pattern_learning_events_on_expense_id"
     t.index ["pattern_used", "was_correct", "created_at"], name: "idx_learning_events_analysis"
+    t.index ["user_id"], name: "index_pattern_learning_events_on_user_id"
     t.index ["was_correct", "created_at"], name: "idx_learning_correct_created"
   end
 
@@ -824,6 +830,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
   add_foreign_key "categorization_metrics", "categories"
   add_foreign_key "categorization_metrics", "categories", column: "corrected_to_category_id"
   add_foreign_key "categorization_metrics", "expenses"
+  add_foreign_key "categorization_metrics", "users"
   add_foreign_key "categorization_patterns", "categories"
   add_foreign_key "categorization_vectors", "categories"
   add_foreign_key "composite_patterns", "categories"
@@ -842,8 +849,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
   add_foreign_key "pattern_feedbacks", "categories"
   add_foreign_key "pattern_feedbacks", "categorization_patterns"
   add_foreign_key "pattern_feedbacks", "expenses"
+  add_foreign_key "pattern_feedbacks", "users"
   add_foreign_key "pattern_learning_events", "categories"
   add_foreign_key "pattern_learning_events", "expenses"
+  add_foreign_key "pattern_learning_events", "users"
   add_foreign_key "processed_emails", "email_accounts"
   add_foreign_key "processed_emails", "users"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade

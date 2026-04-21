@@ -527,6 +527,8 @@ module Admin
       end_date = Date.current
       start_date = end_date - days.days
 
+      # FIXME(PR-12): platform-admin aggregation, intentionally cross-user.
+      # PR 12 decides whether this dashboard stays global or splits per-admin.
       daily_stats = PatternFeedback
         .where(created_at: start_date..end_date)
         .group("DATE(created_at)", :was_correct)

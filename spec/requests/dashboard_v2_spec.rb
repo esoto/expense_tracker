@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe "Dashboard", type: :request, unit: true do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:user, :admin) }
 
   before do
     sign_in_admin(admin_user)
@@ -19,7 +19,7 @@ RSpec.describe "Dashboard", type: :request, unit: true do
 
       it "redirects to login" do
         get "/dashboard"
-        expect(response).to redirect_to(admin_login_path)
+        expect(response).to redirect_to(login_path)
       end
     end
 

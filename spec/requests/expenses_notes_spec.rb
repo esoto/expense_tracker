@@ -3,15 +3,14 @@
 require "rails_helper"
 
 RSpec.describe "Expenses notes (PER-182)", type: :request, unit: true do
+  # PR-12: password matches User factory default so sign_in_admin works without explicit password.
   let(:admin_user) do
-    AdminUser.create!(
+    create(:user, :admin,
       name: "Notes Test Admin",
-      email: "notes-admin-#{SecureRandom.hex(4)}@test.com",
-      password: "AdminPassword123!",
-      role: "admin"
+      email: "notes-admin-#{SecureRandom.hex(4)}@test.com"
     )
   end
-  let!(:app_user) { create(:user, :admin) }
+  let!(:app_user) { admin_user }
   let(:category) { create(:category) }
 
   before { sign_in_admin(admin_user) }

@@ -5,7 +5,7 @@ require "webmock/rspec"
 
 RSpec.describe "ExternalSources", type: :request do
   let(:base_url) { "https://salary-calc.estebansoto.dev" }
-  let!(:admin_user) { create(:admin_user) }
+  let!(:admin_user) { create(:user, :admin) }
 
   # Use the :test queue adapter so `have_enqueued_job` works. The global
   # unit-test helper stubs `perform_later` on ActiveJob::Base *instances*

@@ -1,12 +1,11 @@
 require 'rails_helper'
 
 RSpec.describe Api::ClientErrorsController, type: :controller, unit: true do
+  # PR-12: Unified user — use create(:user, :admin) instead of AdminUser.create!
   let(:admin_user) do
-    AdminUser.create!(
+    create(:user, :admin,
       name: "Test User",
-      email: "client-errors-test@example.com",
-      password: "SecurePassword123!",
-      role: "admin"
+      email: "client-errors-test@example.com"
     )
   end
 
@@ -48,11 +47,10 @@ RSpec.describe Api::ClientErrorsController, type: :controller, unit: true do
 
     context 'when authenticated via session' do
       before do
-        admin_user.regenerate_session_token unless admin_user.session_token.present?
-        session[:admin_session_token] = admin_user.reload.session_token
-        allow(AdminUser).to receive(:find_by_valid_session)
-          .with(admin_user.session_token, extend: false)
-          .and_return(admin_user)
+        # PR-12: Stub unified auth helpers — require_authentication is already skipped
+        # by the controller, but require_json_authentication checks user_signed_in?.
+        allow(controller).to receive(:user_signed_in?).and_return(true)
+        allow(controller).to receive(:current_app_user).and_return(admin_user)
       end
 
       it 'accepts the request' do
@@ -72,11 +70,9 @@ RSpec.describe Api::ClientErrorsController, type: :controller, unit: true do
 
   describe 'POST #create', unit: true do
     before do
-      admin_user.regenerate_session_token unless admin_user.session_token.present?
-      session[:admin_session_token] = admin_user.reload.session_token
-      allow(AdminUser).to receive(:find_by_valid_session)
-        .with(admin_user.session_token, extend: false)
-        .and_return(admin_user)
+      # PR-12: Stub unified auth helpers so require_json_authentication passes.
+      allow(controller).to receive(:user_signed_in?).and_return(true)
+      allow(controller).to receive(:current_app_user).and_return(admin_user)
     end
 
     it 'accepts error reports and returns success' do

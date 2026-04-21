@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Expenses Dashboard", type: :request, integration: true do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:user, :admin) }
 
   before { sign_in_admin(admin_user) }
 

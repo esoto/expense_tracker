@@ -12,12 +12,11 @@ require "rails_helper"
 # Fix: the controller attribute is now on an outer wrapper <div> that contains
 # both the toolbar and the conflicts table.
 RSpec.describe "SyncConflicts select-all page structure", type: :request, unit: true do
+  # PR-12: password matches User factory default so sign_in_admin works without explicit password.
   let(:admin_user) do
-    AdminUser.create!(
+    create(:user, :admin,
       name: "PER-207 Test Admin",
-      email: "per207-admin-#{SecureRandom.hex(4)}@test.com",
-      password: "AdminPassword123!",
-      role: "admin"
+      email: "per207-admin-#{SecureRandom.hex(4)}@test.com"
     )
   end
 

@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe "Dashboard V2 Metric Cards", type: :request, unit: true do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:user, :admin) }
 
   before do
     sign_in_admin(admin_user)

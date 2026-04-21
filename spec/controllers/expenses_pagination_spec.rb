@@ -8,7 +8,7 @@ RSpec.describe ExpensesController, "pagination", type: :controller, unit: true d
 
   before do
     # Authenticate the user
-    allow(controller).to receive(:authenticate_user!).and_return(true)
+    allow(controller).to receive(:require_authentication).and_return(true)
     allow(controller).to receive(:scoping_user).and_return(email_account.user)
     allow(controller).to receive(:setup_navigation_context)
     allow(controller).to receive(:build_filter_description).and_return(nil)

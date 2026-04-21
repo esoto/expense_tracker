@@ -46,8 +46,6 @@ class Admin::PatternTestingController < Admin::BaseController
 
   private
 
-  # Remove this method - it's already defined in AdminAuthentication concern
-
   def test_pattern_params
     params.permit(:description, :merchant_name, :amount, :transaction_date)
   end

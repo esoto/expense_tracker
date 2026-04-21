@@ -8,7 +8,7 @@ RSpec.describe ApplicationController, type: :controller, unit: true do
   end
 
   before do
-    allow(controller).to receive(:authenticate_user!).and_return(true)
+    allow(controller).to receive(:require_authentication).and_return(true)
   end
 
   around do |example|

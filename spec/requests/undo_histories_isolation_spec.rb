@@ -17,7 +17,7 @@ RSpec.describe "UndoHistories data isolation", type: :request, unit: true do
   # Bypass authentication so we can control which User is the scoping_user.
   before do
     allow_any_instance_of(UndoHistoriesController)
-      .to receive(:authenticate_user!)
+      .to receive(:require_authentication)
       .and_return(true)
     allow_any_instance_of(UndoHistoriesController)
       .to receive(:current_user)

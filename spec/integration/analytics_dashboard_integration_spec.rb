@@ -34,7 +34,7 @@ RSpec.describe "Analytics Dashboard Integration", type: :request, integration: t
     # Use the correct module path for stubbing
     allow_any_instance_of(Admin::BaseController).to receive(:current_admin_user).and_return(admin_user)
     allow_any_instance_of(Admin::BaseController).to receive(:admin_signed_in?).and_return(true)
-    allow_any_instance_of(Admin::BaseController).to receive(:require_admin_authentication).and_return(true)
+    allow_any_instance_of(Admin::BaseController).to receive(:require_authentication).and_return(true)
     allow_any_instance_of(Admin::BaseController).to receive(:check_session_expiry).and_return(true)
     allow_any_instance_of(Analytics::PatternDashboardController).to receive(:require_analytics_permission).and_return(true)
   end

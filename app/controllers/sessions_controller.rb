@@ -1,18 +1,11 @@
 # frozen_string_literal: true
 
-# Controller for end-user authentication (login/logout).
-# Parallel to Admin::SessionsController during the unified-user migration;
-# PR 12 will merge the two auth paths.
+# Controller for end-user AND admin authentication (login/logout).
+# As of PR 12 this is the only login controller — Admin::SessionsController
+# was deleted and /admin/login removed. Role-based authorization happens in
+# Admin::BaseController via `before_action :require_admin!`.
 class SessionsController < ApplicationController
   include UserAuthentication
-
-  # Transient: the legacy Authentication concern (included by ApplicationController)
-  # installs `authenticate_user!`, which redirects unauthenticated HTML requests
-  # to `/admin/login`. We must skip it here so `/login` is reachable while
-  # signed out. PR 12 removes the legacy concern from ApplicationController
-  # entirely, at which point this skip should be deleted (it will raise
-  # AbstractController::ActionNotFound if left in place — loud, not silent).
-  skip_before_action :authenticate_user!
 
   skip_before_action :require_authentication, only: [ :new, :create ]
 

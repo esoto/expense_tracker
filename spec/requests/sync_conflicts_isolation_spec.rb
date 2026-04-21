@@ -11,7 +11,7 @@ require "rails_helper"
 # Mirrors the spec/requests/sync_sessions_isolation_spec pattern.
 RSpec.describe "SyncConflicts data isolation", type: :request, unit: true do
   before do
-    allow_any_instance_of(SyncConflictsController).to receive(:authenticate_user!).and_return(true)
+    allow_any_instance_of(SyncConflictsController).to receive(:require_authentication).and_return(true)
     allow_any_instance_of(SyncConflictsController).to receive(:current_user).and_return(nil)
   end
 

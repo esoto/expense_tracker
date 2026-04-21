@@ -1,7 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe SyncPerformanceController, type: :controller do
-  let(:admin_user) { create(:admin_user, :with_session) }
+  # PR-12: Unified user.
+  let(:admin_user) { create(:user, :admin) }
 
   before do
     authenticate_admin_in_controller(admin_user)

@@ -31,12 +31,11 @@ RSpec.describe "Budgets", type: :request, integration: true do
 
   let(:user) { email_account.user }
 
+  # PR-12: password matches User factory default so sign_in_admin works without explicit password.
   let(:admin_user) do
-    AdminUser.create!(
+    create(:user, :admin,
       name: "Budget Test Admin",
-      email: "budget-admin@test.com",
-      password: "AdminPassword123!",
-      role: "admin"
+      email: "budget-admin@test.com"
     )
   end
 

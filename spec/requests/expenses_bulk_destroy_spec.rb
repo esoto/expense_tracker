@@ -3,8 +3,8 @@
 require "rails_helper"
 
 RSpec.describe "Expenses Bulk Destroy", :unit, type: :request do
-  let!(:admin_user) { create(:admin_user) }
-  let!(:email_account) { create(:email_account) }
+  let!(:admin_user) { create(:user, :admin) }
+  let!(:email_account) { create(:email_account, user: admin_user) }
   let!(:expense1) do
     create(:expense, email_account: email_account, merchant_name: "Merchant A", amount: 1000)
   end

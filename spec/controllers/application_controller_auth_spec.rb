@@ -2,6 +2,8 @@
 
 require "rails_helper"
 
+# PR-12: ApplicationController now includes UserAuthentication (unified concern).
+# Legacy Authentication concern deleted.
 RSpec.describe ApplicationController, type: :controller, unit: true do
   controller do
     def index
@@ -10,21 +12,21 @@ RSpec.describe ApplicationController, type: :controller, unit: true do
   end
 
   describe "Authentication inclusion", unit: true do
-    it "includes the Authentication concern" do
-      expect(ApplicationController.ancestors).to include(Authentication)
+    it "includes the UserAuthentication concern" do
+      expect(ApplicationController.ancestors).to include(UserAuthentication)
     end
 
-    it "has authenticate_user! as a before_action" do
+    it "has require_authentication as a before_action" do
       callbacks = ApplicationController._process_action_callbacks.select { |c| c.kind == :before }
       filter_names = callbacks.map(&:filter)
-      expect(filter_names).to include(:authenticate_user!)
+      expect(filter_names).to include(:require_authentication)
     end
   end
 
   describe "unauthenticated access", unit: true do
-    it "redirects to login page when not authenticated" do
+    it "redirects to unified login page when not authenticated" do
       get :index
-      expect(response).to redirect_to(admin_login_path)
+      expect(response).to redirect_to(login_path)
     end
 
     it "sets an alert flash message" do
@@ -39,21 +41,21 @@ RSpec.describe ApplicationController, type: :controller, unit: true do
   end
 
   describe "authenticated access", unit: true do
-    let!(:admin_user) do
-      AdminUser.create!(
+    let!(:user) do
+      create(:user, :admin,
         name: "Auth Test User",
-        email: "auth-test@example.com",
-        password: "SecurePassword123!",
-        role: "admin"
+        email: "auth-test-#{SecureRandom.hex(4)}@example.com",
+        password: "SecurePassword123!"
       )
     end
 
     before do
-      admin_user.regenerate_session_token unless admin_user.session_token.present?
-      session[:admin_session_token] = admin_user.reload.session_token
-      allow(AdminUser).to receive(:find_by_valid_session)
-        .with(admin_user.session_token, extend: false)
-        .and_return(admin_user)
+      user.regenerate_session_token unless user.session_token.present?
+      session[:user_session_token] = user.reload.session_token
+      session[:user_session_expires_at] = 2.hours.from_now.iso8601
+      allow(User).to receive(:find_by_valid_session)
+        .with(user.session_token, extend: false)
+        .and_return(user)
     end
 
     it "allows access with a valid session" do
@@ -62,9 +64,14 @@ RSpec.describe ApplicationController, type: :controller, unit: true do
       expect(response.body).to eq("OK")
     end
 
-    it "exposes current_user helper" do
+    it "exposes current_user helper (alias for current_app_user)" do
       get :index
-      expect(controller.send(:current_user)).to eq(admin_user)
+      expect(controller.send(:current_user)).to eq(user)
+    end
+
+    it "exposes current_admin_user helper (legacy alias — same object)" do
+      get :index
+      expect(controller.send(:current_admin_user)).to eq(user)
     end
 
     it "reports user as signed in" do
@@ -76,8 +83,7 @@ RSpec.describe ApplicationController, type: :controller, unit: true do
   describe "controllers that skip authentication", unit: true do
     let(:controllers_with_skip) do
       [
-        Admin::SessionsController,
-        Admin::BaseController,
+        # PR-12: Admin::SessionsController deleted — no longer in this list.
         Api::BaseController,
         Api::WebhooksController,
         Api::HealthController,
@@ -88,25 +94,15 @@ RSpec.describe ApplicationController, type: :controller, unit: true do
       ]
     end
 
-    it "each has skip_before_action for authenticate_user!" do
+    it "each has skip_before_action for require_authentication" do
       controllers_with_skip.each do |controller_class|
-        callbacks = controller_class._process_action_callbacks.select do |c|
-          c.kind == :before && c.filter == :authenticate_user!
-        end
-
-        # If the callback exists, it should be skipped (no callback found means it was removed by skip)
-        # OR the callback is present but the controller has its own auth
-        # The most reliable check: the :authenticate_user! before_action should NOT be active
-        has_active_auth = callbacks.any? { |c| !c.instance_variable_get(:@if)&.any? && !c.instance_variable_get(:@unless)&.any? }
-
-        # Better approach: check that the filter chain does NOT include an active authenticate_user!
+        # skip_before_action removes the callback from the chain entirely
         active_filters = controller_class._process_action_callbacks.select { |c|
-          c.kind == :before && c.filter == :authenticate_user!
+          c.kind == :before && c.filter == :require_authentication
         }
 
-        # skip_before_action removes the callback from the chain entirely
         expect(active_filters).to be_empty,
-          "Expected #{controller_class.name} to skip :authenticate_user! but it was found in the callback chain"
+          "Expected #{controller_class.name} to skip :require_authentication but it was found in the callback chain"
       end
     end
   end
@@ -121,19 +117,18 @@ RSpec.describe ApplicationController, type: :controller, unit: true do
         SyncConflictsController,
         SyncSessionsController,
         BulkCategorizationsController,
-        BulkCategorizationActionsController,
-        Api::ClientErrorsController
+        BulkCategorizationActionsController
       ]
     end
 
-    it "each inherits authenticate_user! from ApplicationController" do
+    it "each inherits require_authentication from ApplicationController" do
       controllers_requiring_auth.each do |controller_class|
         callbacks = controller_class._process_action_callbacks.select { |c|
-          c.kind == :before && c.filter == :authenticate_user!
+          c.kind == :before && c.filter == :require_authentication
         }
 
         expect(callbacks).not_to be_empty,
-          "Expected #{controller_class.name} to have :authenticate_user! before_action but it was not found"
+          "Expected #{controller_class.name} to have :require_authentication before_action but it was not found"
       end
     end
   end
@@ -147,26 +142,35 @@ RSpec.describe ApplicationController, type: :controller, unit: true do
       ]
     end
 
-    it "each skips authenticate_user! (inherited from Api::BaseController)" do
+    it "each skips require_authentication (inherited from Api::BaseController)" do
       api_v1_controllers.each do |controller_class|
         active_filters = controller_class._process_action_callbacks.select { |c|
-          c.kind == :before && c.filter == :authenticate_user!
+          c.kind == :before && c.filter == :require_authentication
         }
 
         expect(active_filters).to be_empty,
-          "Expected #{controller_class.name} to skip :authenticate_user! but it was found in the callback chain"
+          "Expected #{controller_class.name} to skip :require_authentication but it was found in the callback chain"
       end
     end
   end
 
-  describe "controllers inheriting through Admin::BaseController", unit: true do
-    it "Analytics::PatternDashboardController skips authenticate_user!" do
-      active_filters = Analytics::PatternDashboardController._process_action_callbacks.select { |c|
-        c.kind == :before && c.filter == :authenticate_user!
+  describe "Admin::BaseController enforces admin role", unit: true do
+    it "has require_authentication active (inherits from ApplicationController via UserAuthentication)" do
+      # Admin::BaseController inherits require_authentication from ApplicationController.
+      # Anonymous users get redirected to /login, then require_admin! redirects non-admin.
+      active_auth = Admin::BaseController._process_action_callbacks.select { |c|
+        c.kind == :before && c.filter == :require_authentication
       }
+      expect(active_auth).not_to be_empty,
+        "Admin::BaseController must have :require_authentication to gate anonymous access"
+    end
 
-      expect(active_filters).to be_empty,
-        "Expected Analytics::PatternDashboardController to skip :authenticate_user!"
+    it "has require_admin! before_action" do
+      active_admin = Admin::BaseController._process_action_callbacks.select { |c|
+        c.kind == :before && c.filter == :require_admin!
+      }
+      expect(active_admin).not_to be_empty,
+        "Admin::BaseController must have :require_admin! to gate non-admin access"
     end
   end
 end

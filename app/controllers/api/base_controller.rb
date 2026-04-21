@@ -5,7 +5,8 @@ module Api
   class BaseController < ApplicationController
     include ApiConfiguration
 
-    skip_before_action :authenticate_user!
+    skip_before_action :require_authentication
+    skip_before_action :check_session_expiry
     skip_before_action :verify_authenticity_token
     before_action :authenticate_api_token
     before_action :set_default_headers

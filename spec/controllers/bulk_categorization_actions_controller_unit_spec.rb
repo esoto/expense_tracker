@@ -13,7 +13,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
 
   before do
     # Use instance-level mocking (not class-level skip_before_action which pollutes other specs)
-    allow(controller).to receive(:authenticate_user!).and_return(true)
+    allow(controller).to receive(:require_authentication).and_return(true)
     mock_user_authentication(current_user)
 
     # Mock Expense queries (since we no longer use user scoping)
@@ -454,10 +454,10 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
   end
 
   describe "security", unit: true do
-    it "requires authentication" do
-      # Verify the Authentication concern is included in the controller
-      controller_source = File.read(Rails.root.join('app/controllers/bulk_categorization_actions_controller.rb'))
-      expect(controller_source).to include('include Authentication')
+    it "requires authentication via ApplicationController (UserAuthentication)" do
+      # PR-12: BulkCategorizationActionsController no longer includes Authentication
+      # directly — authentication is inherited from ApplicationController via UserAuthentication.
+      expect(described_class.ancestors).to include(UserAuthentication)
     end
 
     it "finds expenses by ID" do

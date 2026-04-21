@@ -21,7 +21,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
   end
 
   before do
-    allow(controller).to receive(:authenticate_user!).and_return(true)
+    allow(controller).to receive(:require_authentication).and_return(true)
     allow(controller).to receive(:authorize_expense!).and_return(true)
     scoping_user = bac_account.user
     allow(controller).to receive(:scoping_user).and_return(scoping_user)

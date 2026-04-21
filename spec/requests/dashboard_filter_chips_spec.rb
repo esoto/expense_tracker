@@ -3,8 +3,8 @@
 require "rails_helper"
 
 RSpec.describe "Dashboard Filter Chips AJAX", type: :request do
-  let!(:admin_user) { create(:admin_user) }
-  let!(:email_account) { create(:email_account, active: true) }
+  let!(:admin_user) { create(:user, :admin) }
+  let!(:email_account) { create(:email_account, active: true, user: admin_user) }
 
   # Freeze to a Wednesday so 1.day.ago is still within the same week
   around do |example|

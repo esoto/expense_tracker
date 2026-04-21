@@ -5,7 +5,7 @@ require 'rails_helper'
 RSpec.describe RateLimiting, type: :controller, unit: true do
   controller(ApplicationController) do
     include RateLimiting
-    include Authentication
+    # PR-12: Authentication now comes from UserAuthentication via ApplicationController inheritance
 
     # Override the actions that the concern will apply rate limiting to
     def categorize
@@ -39,10 +39,15 @@ RSpec.describe RateLimiting, type: :controller, unit: true do
     end
   end
 
-  let!(:user) { create(:admin_user, email: "admin_#{SecureRandom.hex(4)}@example.com") }
+  let!(:user) { create(:user, :admin, email: "admin_#{SecureRandom.hex(4)}@example.com") }
 
   before do
+    # PR-12: stub the unified authentication before_actions so rate-limiting tests
+    # can run without a real session setup.
+    allow(controller).to receive(:require_authentication).and_return(true)
+    allow(controller).to receive(:check_session_expiry).and_return(true)
     allow(controller).to receive(:current_user).and_return(user)
+    allow(controller).to receive(:current_app_user).and_return(user)
   end
 
   describe "rate limit enforcement for categorize", unit: true do

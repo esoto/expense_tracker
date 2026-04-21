@@ -1,12 +1,17 @@
 require "rails_helper"
 
 RSpec.describe Admin::PatternsController, type: :controller, unit: true do
-  let(:admin_user) { create(:admin_user, email: "admin_#{SecureRandom.hex(4)}@example.com") }
+  # PR-12: Unified user — admin_user is now create(:user, :admin).
+  let(:admin_user) { create(:user, :admin, email: "admin_#{SecureRandom.hex(4)}@example.com") }
   let(:pattern) { create(:categorization_pattern) }
   let(:category) { create(:category) }
 
   before do
+    # PR-12: Stub unified authentication before_actions so tests run without a session.
+    allow(controller).to receive(:require_authentication).and_return(true)
+    allow(controller).to receive(:check_session_expiry).and_return(true)
     # Mock admin authentication
+    allow(controller).to receive(:current_app_user).and_return(admin_user)
     allow(controller).to receive(:current_admin_user).and_return(admin_user)
 
     # Mock permission checks to allow access

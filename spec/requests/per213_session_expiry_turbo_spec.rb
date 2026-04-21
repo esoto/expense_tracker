@@ -25,23 +25,22 @@ require "rails_helper"
 # - Skip session extension for prefetch requests.
 # - Skip store_location for prefetch requests.
 RSpec.describe "PER-213 Session expiry during Turbo Drive navigation", type: :request do
-  let(:password) { "AdminPassword123!" }
-  let(:admin_user) { create(:admin_user) }
+  # PR-12: Use User factory default password so sign_in_admin works without a separate password.
+  let(:password) { "TestPass123!" }
+  let(:admin_user) { create(:user, :admin) }
 
-  # Helper: POST to login and return the session token stored in the cookie jar
+  # Helper: POST to unified /login endpoint and follow the redirect.
   def sign_in_admin
-    post admin_login_path, params: {
-      admin_user: { email: admin_user.email, password: password }
-    }
+    post login_path, params: { email: admin_user.email, password: password }
     follow_redirect!
   end
 
   # Helper: Simulate session expiry by traveling past the session_expires_at
   # time stored in both the DB record and the session cookie.
-  # The session cookie's admin_session_expires_at was set to SESSION_DURATION
+  # The session cookie's user_session_expires_at was set to SESSION_DURATION
   # from the login time, so traveling 3 hours forward guarantees both are past.
   def with_expired_session(&block)
-    travel_to(AdminUser::SESSION_DURATION.from_now + 1.hour, &block)
+    travel_to(User::SESSION_DURATION.from_now + 1.hour, &block)
   end
 
   # ─── CSRF token preservation ────────────────────────────────────────────────
@@ -56,10 +55,10 @@ RSpec.describe "PER-213 Session expiry during Turbo Drive navigation", type: :re
         # A normal GET (no prefetch)
         get admin_patterns_path
 
-        # The controller should have cleared individual session keys, not
+        # The controller should have cleared individual user session keys, not
         # wiped the whole session (which would rotate CSRF token).
         # Verify we redirected gracefully without a full session reset.
-        expect(response).to redirect_to(admin_login_path)
+        expect(response).to redirect_to(login_path)
         expect(flash[:alert]).to eq("Your session has expired. Please sign in again.")
       end
     end
@@ -89,7 +88,7 @@ RSpec.describe "PER-213 Session expiry during Turbo Drive navigation", type: :re
         get admin_patterns_path, headers: { "X-Turbo-Request-Id" => "test-id-123" }
 
         expect(response).to have_http_status(:see_other)
-        expect(response).to redirect_to(admin_login_path)
+        expect(response).to redirect_to(login_path)
       end
     end
 
@@ -100,7 +99,7 @@ RSpec.describe "PER-213 Session expiry during Turbo Drive navigation", type: :re
         get admin_patterns_path  # no Turbo headers
 
         expect(response).to have_http_status(:found)
-        expect(response).to redirect_to(admin_login_path)
+        expect(response).to redirect_to(login_path)
       end
     end
   end
@@ -193,7 +192,7 @@ RSpec.describe "PER-213 Session expiry during Turbo Drive navigation", type: :re
     it "redirects to login when not signed in via Turbo Drive navigation" do
       get admin_patterns_path, headers: { "X-Turbo-Request-Id" => "unauth-001" }
 
-      expect(response).to redirect_to(admin_login_path)
+      expect(response).to redirect_to(login_path)
     end
 
     it "sets alert message for session-less Turbo Drive requests" do

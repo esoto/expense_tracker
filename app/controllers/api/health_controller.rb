@@ -3,7 +3,8 @@
 module Api
   # Health check controller for monitoring and Kubernetes probes
   class HealthController < ApplicationController
-    skip_before_action :authenticate_user!
+    skip_before_action :require_authentication
+    skip_before_action :check_session_expiry
     skip_before_action :verify_authenticity_token
     before_action :authenticate_metrics_token!, only: :metrics
 

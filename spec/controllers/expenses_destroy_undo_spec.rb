@@ -16,7 +16,7 @@ RSpec.describe ExpensesController, "#destroy undo integration", type: :controlle
 
   before do
     # Stub authentication and authorization
-    allow(controller).to receive(:authenticate_user!).and_return(true)
+    allow(controller).to receive(:require_authentication).and_return(true)
     allow(controller).to receive(:authorize_expense!).and_return(true)
     allow(controller).to receive(:current_user).and_return(nil)
     allow(controller).to receive(:scoping_user).and_return(email_account.user)

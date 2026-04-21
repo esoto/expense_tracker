@@ -77,22 +77,7 @@ class Rack::Attack
     req.ip unless req.path.start_with?("/assets", "/packs")
   end
 
-  # Throttle login attempts by IP
-  throttle("logins/ip", limit: 5, period: 20.seconds) do |req|
-    if req.path == "/admin/login" && req.post?
-      req.ip
-    end
-  end
-
-  # Throttle login attempts by email (prevent account takeover)
-  throttle("logins/email", limit: 5, period: 20.seconds) do |req|
-    if req.path == "/admin/login" && req.post?
-      # Normalize email to prevent bypass
-      req.params["email"].to_s.downcase.strip.presence
-    end
-  end
-
-  # Throttle end-user login attempts by IP
+  # Throttle login attempts by IP (unified /login — PR-12 removed /admin/login)
   throttle("user-logins/ip", limit: 5, period: 20.seconds) do |req|
     if req.path == "/login" && req.post?
       req.ip
@@ -107,12 +92,9 @@ class Rack::Attack
     end
   end
 
-  # Throttle password reset requests
-  throttle("password-reset/ip", limit: 3, period: 15.minutes) do |req|
-    if req.path == "/admin/password/reset" && req.post?
-      req.ip
-    end
-  end
+  # PR 12: the /admin/password/reset throttle was a no-op — the route never
+  # existed in config/routes.rb. Removed. Add a new throttle here if/when a
+  # password-reset flow is introduced.
 
   # Throttle API endpoints more strictly
   throttle("api/ip", limit: 100, period: 1.minute) do |req|
@@ -186,9 +168,9 @@ class Rack::Attack
   #   end
   # end
 
-  # Track failed login attempts
+  # Track failed login attempts (unified /login — PR-12 removed /admin/login)
   track("login/failures") do |req|
-    if req.path == "/admin/login" && req.post? && req.env["rack.attack.matched"] == "login-failed"
+    if req.path == "/login" && req.post? && req.env["rack.attack.matched"] == "login-failed"
       req.ip
     end
   end

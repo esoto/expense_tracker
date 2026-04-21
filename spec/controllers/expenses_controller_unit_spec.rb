@@ -8,7 +8,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
 
   before do
     # Use instance-level mocking (not class-level skip_before_action which pollutes other specs)
-    allow(controller).to receive(:authenticate_user!).and_return(true)
+    allow(controller).to receive(:require_authentication).and_return(true)
     allow(controller).to receive(:authorize_expense!).and_return(true)
     allow(controller).to receive(:authorize_bulk_operation!).and_return(true)
 

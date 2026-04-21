@@ -17,7 +17,7 @@ RSpec.describe "SyncSessions data isolation", type: :request, unit: true do
   # Bypass the SyncAuthorization concern and current_user so we can control
   # which User is the scoping_user via the controller's fallback logic.
   before do
-    allow_any_instance_of(SyncSessionsController).to receive(:authenticate_user!).and_return(true)
+    allow_any_instance_of(SyncSessionsController).to receive(:require_authentication).and_return(true)
     allow_any_instance_of(SyncSessionsController).to receive(:current_user).and_return(nil)
     allow_any_instance_of(SyncSessionsController).to receive(:authorize_sync_access!).and_return(true)
     allow_any_instance_of(SyncSessionsController).to receive(:authorize_sync_session_owner!).and_return(true)

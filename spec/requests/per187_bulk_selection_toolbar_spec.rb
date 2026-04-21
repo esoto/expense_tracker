@@ -17,8 +17,8 @@ require "rails_helper"
 # 3. Guard the rAF callback — only add `animate-slide-up` when count is still > 0.
 # 4. cancelAnimationFrame() called in disconnect() to prevent memory leaks.
 RSpec.describe "PER-187 Bulk selection toolbar HTML initial state", type: :request do
-  let!(:admin_user) { create(:admin_user) }
-  let!(:email_account) { create(:email_account) }
+  let!(:admin_user) { create(:user, :admin) }
+  let!(:email_account) { create(:email_account, user: admin_user) }
 
   before { sign_in_admin(admin_user) }
 

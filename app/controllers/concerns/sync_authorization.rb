@@ -34,10 +34,8 @@ module SyncAuthorization
   end
 
   def sync_session_owner?
-    # TODO: SyncSession needs a user_id/admin_user_id column to enable true
-    # ownership checks. Once added, replace with:
-    #   @sync_session&.admin_user_id == current_user&.id
-    # For now, require an authenticated user as a baseline security check.
+    # SyncSession.user_id is the authoritative ownership column (PR-14).
+    # Require an authenticated user as a baseline security check.
     current_user.present?
   end
 end

@@ -64,8 +64,7 @@ RSpec.describe BulkOperations::BaseJob, type: :job, unit: true do
     allow(Rails).to receive(:logger).and_return(rails_logger)
     allow(Time).to receive(:current).and_return(Time.zone.parse('2025-08-31 10:00:00'))
 
-    # Stub User lookup so job receives a user with an id. PR 8: BaseJob
-    # reloads via User (was AdminUser) to align with the foreground path.
+    # Stub User lookup so job receives a user with an id.
     allow(User).to receive(:find_by).with(id: user_id).and_return(user)
     allow(User).to receive(:find_by).with(id: nil).and_return(nil)
   end
@@ -492,7 +491,7 @@ RSpec.describe BulkOperations::BaseJob, type: :job, unit: true do
 
     context 'with invalid user_id' do
       it 'continues without user context' do
-        # AdminUser.find_by returns nil for nil id in our stub implementation
+        # User.find_by returns nil for nil id in our stub implementation
         result = successful_job.perform(expense_ids: expense_ids, user_id: nil)
 
         expect(result[:success]).to be true

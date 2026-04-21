@@ -464,7 +464,7 @@ RSpec.describe Services::BulkOperations::BaseService, type: :service, unit: true
     end
 
     context "with a user that does not respond to email_accounts" do
-      let(:user) { instance_double(AdminUser, id: 1) }
+      let(:user) { double("LegacyUser", id: 1) }
 
       it "does not scope expenses to email_accounts" do
         service = TestBulkServiceBase.new(expense_ids: expense_ids, user: user, options: { force_synchronous: true })

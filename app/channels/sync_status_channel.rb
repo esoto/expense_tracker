@@ -323,17 +323,10 @@ class SyncStatusChannel < ApplicationCable::Channel
       stored_ip = session.metadata&.dig("ip_address")
       current_ip = connection.current_session_info[:ip_address]
 
-      # PER-383: Legacy sessions with no stored IP — check admin_user_id ownership via
-      # the session token stored at connection time rather than granting access blindly.
-      # If we cannot verify ownership, deny access (fail-closed).
+      # PER-383 / PR-14: Legacy sessions with no stored IP — deny access fail-closed.
+      # The admin_user_id ownership path was removed when admin_users table was dropped.
       if stored_ip.nil?
-        Rails.logger.warn "[SECURITY] Legacy session #{session.id} — no IP metadata, checking user ownership"
-        stored_admin_user_id = connection.current_session_info[:admin_user_id]
-        if stored_admin_user_id.present?
-          return session.admin_user_id == stored_admin_user_id
-        end
-        # No ownership info available — deny to avoid cross-session data leak
-        Rails.logger.warn "[SECURITY] Legacy session #{session.id} — cannot verify ownership, denying access"
+        Rails.logger.warn "[SECURITY] Legacy session #{session.id} — no IP metadata, cannot verify ownership, denying access"
         return false
       end
 

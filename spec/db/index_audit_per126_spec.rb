@@ -416,12 +416,6 @@ RSpec.describe "PER-126 Index Audit", :unit do
   # ── UNIQUE AND PARTIAL INDEXES UNTOUCHED ─────────────────────────────────────
 
   describe "unique indexes are not removed" do
-    it "retains admin_users unique email index" do
-      idx = connection.indexes(:admin_users).find { |i| i.name == "index_admin_users_on_email" }
-      expect(idx).not_to be_nil
-      expect(idx.unique).to be true
-    end
-
     it "retains categorization_patterns unique lookup index" do
       idx = connection.indexes(:categorization_patterns).find { |i| i.name == "idx_patterns_unique_lookup" }
       expect(idx).not_to be_nil

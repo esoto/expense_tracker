@@ -15,9 +15,6 @@ RSpec.describe BulkDeletionJob, type: :job, unit: true do
 
   before do
     # Stub constants for unit test environment
-    # PR 8: BaseJob now reloads the user via User.find_by (was AdminUser) so
-    # the background bulk-delete flow matches the foreground path and lets
-    # the `user.is_a?(User)` guard in DeletionService allow undo creation.
     user_class = double('UserClass')
     stub_const('User', user_class)
 

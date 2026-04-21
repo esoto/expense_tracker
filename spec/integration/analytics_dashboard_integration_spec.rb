@@ -3,7 +3,7 @@
 require "rails_helper"
 
 RSpec.describe "Analytics Dashboard Integration", type: :request, integration: true do
-  let(:admin_user) { create(:admin_user, role: :admin) }
+  let(:admin_user) { create(:user, :admin) }
   let(:category) { create(:category, name: "Test Category") }
   let(:expense) { create(:expense, amount: 100, description: "Test expense") }
 

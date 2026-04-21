@@ -380,17 +380,3 @@ end
 if default_user.persisted?
   puts "  ✓ Default admin user: #{admin_email}"
 end
-
-# (legacy — removed in PR 14)
-puts ""
-puts "👤 Creating admin user (legacy AdminUser)..."
-
-admin_user = AdminUser.find_or_create_by!(email: admin_email) do |user|
-  user.name = "System Administrator"
-  user.password = admin_password
-  user.role = "super_admin"
-end
-
-if admin_user.persisted?
-  puts "  ✓ Admin user: #{admin_email}"
-end

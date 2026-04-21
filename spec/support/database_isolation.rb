@@ -30,7 +30,6 @@ module DatabaseIsolation
     'Budget',
     'BulkOperation',
     'ApiToken',
-    'AdminUser',
     'FailedBroadcastStore'
   ].freeze
 

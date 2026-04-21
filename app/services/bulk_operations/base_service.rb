@@ -107,11 +107,7 @@ module Services::BulkOperations
     def find_authorized_expenses
       scope = Expense.where(id: expense_ids)
 
-      # Scope to the caller's email accounts. The `respond_to?(:email_accounts)`
-      # guard preserves behaviour during the PR 1–12 transition when `user`
-      # may still be an AdminUser (no email_accounts association) rather than
-      # a User. Once PR 12 lands and every bulk-op caller passes a User, the
-      # guard becomes unconditional.
+      # Scope to the caller's email accounts (PR-14: always a User).
       if user.present? && user.respond_to?(:email_accounts)
         scope = scope.where(email_account: user.email_accounts)
       end

@@ -654,10 +654,6 @@ class ExpensesController < ApplicationController
   end
 
   def current_user_for_bulk_operations
-    # Pass the User (not AdminUser) so bulk_operations/base_service can apply
-    # the `scope.where(email_account: user.email_accounts)` filter. Under the
-    # legacy admin auth path, `current_user` returns an AdminUser which has
-    # no email_accounts association, and the scope is silently skipped.
     scoping_user
   end
 

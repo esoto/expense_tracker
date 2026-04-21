@@ -4,7 +4,7 @@ require 'rails_helper'
 
 RSpec.describe BulkCategorizationActionsController, type: :controller, integration: true do
   describe 'Security Tests' do
-    let(:admin_user) { create(:admin_user) }
+    let(:admin_user) { create(:user, :admin) }
     let(:category) { create(:category) }
     let(:email_account) { create(:email_account) }
 
@@ -12,8 +12,6 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, integrati
 
     before do
       # Mock the session-based authentication
-      allow(controller).to receive(:session).and_return({ admin_session_token: 'valid_token' })
-      allow(AdminUser).to receive(:find_by_valid_session).with('valid_token', extend: false).and_return(admin_user)
       allow(controller).to receive(:require_authentication).and_return(true)
       allow(controller).to receive(:current_user).and_return(admin_user)
 
@@ -71,7 +69,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, integrati
           expect(response).to have_http_status(:ok)
           # Verify no SQL injection occurred by checking database integrity
           expect(Expense.count).to be > 0
-          expect(AdminUser.count).to be > 0
+          expect(User.count).to be > 0
         end
       end
 

@@ -10,29 +10,11 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_21_150200) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_21_160000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
   enable_extension "unaccent"
-
-  create_table "admin_users", force: :cascade do |t|
-    t.datetime "created_at", null: false
-    t.string "email"
-    t.integer "failed_login_attempts"
-    t.datetime "last_login_at"
-    t.datetime "locked_at"
-    t.string "name"
-    t.string "password_digest"
-    t.integer "role"
-    t.datetime "session_expires_at"
-    t.string "session_token"
-    t.boolean "two_factor_enabled"
-    t.string "two_factor_secret"
-    t.datetime "updated_at", null: false
-    t.index ["email"], name: "index_admin_users_on_email", unique: true
-    t.index ["session_token"], name: "index_admin_users_on_session_token", unique: true
-  end
 
   create_table "api_tokens", force: :cascade do |t|
     t.boolean "active", default: true, null: false
@@ -735,7 +717,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_150200) do
   end
 
   create_table "sync_sessions", force: :cascade do |t|
-    t.bigint "admin_user_id"
     t.datetime "completed_at"
     t.datetime "created_at", null: false
     t.integer "detected_expenses", default: 0
@@ -751,7 +732,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_150200) do
     t.integer "total_emails", default: 0
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
-    t.index ["admin_user_id"], name: "index_sync_sessions_on_admin_user_id"
     t.index ["created_at"], name: "index_sync_sessions_on_created_at"
     t.index ["metadata"], name: "index_sync_sessions_on_metadata", using: :gin
     t.index ["session_token"], name: "index_sync_sessions_on_session_token", unique: true
@@ -874,7 +854,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_150200) do
   add_foreign_key "sync_metrics", "users"
   add_foreign_key "sync_session_accounts", "email_accounts"
   add_foreign_key "sync_session_accounts", "sync_sessions"
-  add_foreign_key "sync_sessions", "admin_users"
   add_foreign_key "sync_sessions", "users"
   add_foreign_key "undo_histories", "users"
   add_foreign_key "user_category_preferences", "categories"

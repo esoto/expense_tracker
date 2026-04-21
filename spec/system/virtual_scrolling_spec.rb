@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Virtual Scrolling", type: :system, js: true do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:user, :admin) }
 
   context "with large dataset" do
     before do

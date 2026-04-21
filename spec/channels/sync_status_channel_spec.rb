@@ -1286,17 +1286,17 @@ RSpec.describe SyncStatusChannel, type: :channel, unit: true do
             sync_session_id: nil, # no session_id match => falls through to IP check
             verified_at: Time.current,
             ip_address: "10.0.0.1"
-            # no admin_user_id key => cannot verify ownership
+            # no IP in session metadata => legacy path, fail-closed
           })
 
           allow(Rails.logger).to receive(:warn)
 
           subscribe(session_id: legacy_session.id)
 
-          # Must be rejected — fail-closed when ownership cannot be verified
+          # Must be rejected — fail-closed when ownership cannot be verified (PR-14)
           expect(subscription).to be_rejected
           expect(Rails.logger).to have_received(:warn).with(
-            match(/Legacy session .+ — no IP metadata, checking user ownership/)
+            match(/Legacy session .+ — no IP metadata, cannot verify ownership/)
           ).at_least(:once)
         end
       end

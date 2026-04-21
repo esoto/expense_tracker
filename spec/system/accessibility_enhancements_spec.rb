@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Accessibility Enhancements", type: :system, js: true do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:user, :admin) }
   let!(:expense) { create(:expense, merchant_name: "Test Store", amount: 1000) }
 
   before { sign_in_admin_user(admin_user) }

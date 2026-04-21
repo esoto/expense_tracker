@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Dashboard Card Navigation", type: :system, js: true, tier: :system do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:user, :admin) }
 
   before do
     # Create test data

@@ -3,7 +3,7 @@ require 'rails_helper'
 RSpec.describe "Dashboard Accessibility", type: :system, js: true, tier: :system do
   include AccessibilityHelper
 
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:user, :admin) }
   let!(:categories) { create_list(:category, 3) }
   let!(:expenses) { create_list(:expense, 15, category: categories.first) }
 

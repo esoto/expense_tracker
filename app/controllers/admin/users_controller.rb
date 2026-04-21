@@ -41,9 +41,12 @@ module Admin
       end
 
       if @user.save
-        msg = "User #{@user.email} created."
-        msg += " Temporary password: #{temp_password}" if temp_password
-        redirect_to admin_users_path, notice: msg
+        # Put the temporary password in session (encrypted cookie) rather
+        # than flash[:notice], so it never shows up in Rails logs or
+        # exception-tracker breadcrumbs that capture flash strings. The
+        # index view reads session[:one_time_password] once and clears it.
+        session[:one_time_password] = { email: @user.email, password: temp_password } if temp_password
+        redirect_to admin_users_path, notice: "User #{@user.email} created."
       else
         render :new, status: :unprocessable_content
       end
@@ -98,8 +101,9 @@ module Admin
       @user.password = new_password
       @user.password_confirmation = new_password
       @user.save!
-      redirect_to admin_users_path,
-        notice: "Password reset for #{@user.email}. New password: #{new_password}"
+      # Session (encrypted cookie) rather than flash[:notice] — see #create.
+      session[:one_time_password] = { email: @user.email, password: new_password }
+      redirect_to admin_users_path, notice: "Password reset for #{@user.email}."
     end
 
     private
@@ -140,25 +144,33 @@ module Admin
 
     # Generates a password that satisfies User model complexity requirements:
     # min 12 chars, uppercase, lowercase, digit, special character.
+    # Uses SecureRandom for all random selections — Array#sample is backed
+    # by Mersenne Twister and is not cryptographically secure, which makes
+    # it unsuitable for credential generation.
     def generate_strong_password
       charset_lower   = ("a".."z").to_a
       charset_upper   = ("A".."Z").to_a
       charset_digit   = ("0".."9").to_a
       charset_special = %w[@ $ ! % * ? &]
 
-      # Guarantee at least one of each required class
+      # Guarantee at least one of each required class.
       required = [
-        charset_upper.sample,
-        charset_lower.sample,
-        charset_digit.sample,
-        charset_special.sample
+        secure_pick(charset_upper),
+        secure_pick(charset_lower),
+        secure_pick(charset_digit),
+        secure_pick(charset_special)
       ]
 
-      # Fill the rest with a random mix
+      # Fill the rest with a cryptographically random mix.
       all_chars = charset_lower + charset_upper + charset_digit + charset_special
-      filler = Array.new(12) { all_chars.sample }
+      filler = Array.new(12) { secure_pick(all_chars) }
 
-      (required + filler).shuffle.join
+      # SecureRandom-backed shuffle (sort_by { SecureRandom.random_number })
+      (required + filler).sort_by { SecureRandom.random_number }.join
+    end
+
+    def secure_pick(array)
+      array[SecureRandom.random_number(array.length)]
     end
   end
 end

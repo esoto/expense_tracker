@@ -143,19 +143,21 @@ RSpec.describe "Admin::Users", type: :request do
         expect(response).to redirect_to(admin_users_path)
       end
 
-      it "exposes the generated temp password in the flash" do
+      it "exposes the generated temp password in the session (not flash)" do
+        # PR 13a architect blocker: password stored in session[:one_time_password]
+        # instead of flash[:notice] to keep it out of Rails logs / error trackers.
         post admin_users_path, params: valid_params
-        expect(flash[:notice]).to be_present
-        expect(flash[:notice]).to include("Temporary password:")
+        otp = session[:one_time_password]
+        expect(otp).to be_present
+        expect(otp[:email] || otp["email"]).to eq(valid_params[:user][:email])
+        expect(otp[:password] || otp["password"]).to be_present
+        expect(flash[:notice].to_s).not_to include(otp[:password] || otp["password"])
       end
 
       it "generated password satisfies User model complexity requirements" do
         post admin_users_path, params: valid_params
-        # Extract the password from flash
-        password_match = flash[:notice].match(/Temporary password: (\S+)/)
-        expect(password_match).not_to be_nil
-
-        generated_password = password_match[1]
+        otp = session[:one_time_password]
+        generated_password = otp[:password] || otp["password"]
         expect(generated_password.length).to be >= User::PASSWORD_MIN_LENGTH
         expect(generated_password).to match(/[A-Z]/)
         expect(generated_password).to match(/[a-z]/)
@@ -429,9 +431,11 @@ RSpec.describe "Admin::Users", type: :request do
       expect(other_user.reload.password_digest).not_to eq(old_digest)
     end
 
-    it "exposes the new password ONCE in the flash" do
+    it "exposes the new password ONCE in the session, not flash" do
       post reset_password_admin_user_path(other_user)
-      expect(flash[:notice]).to include("New password:")
+      otp = session[:one_time_password]
+      expect(otp[:password] || otp["password"]).to be_present
+      expect(flash[:notice].to_s).not_to include(otp[:password] || otp["password"])
     end
 
     it "redirects after resetting" do
@@ -441,9 +445,8 @@ RSpec.describe "Admin::Users", type: :request do
 
     it "generated password satisfies complexity requirements" do
       post reset_password_admin_user_path(other_user)
-      password_match = flash[:notice].match(/New password: (\S+)/)
-      expect(password_match).not_to be_nil
-      new_pass = password_match[1]
+      otp = session[:one_time_password]
+      new_pass = otp[:password] || otp["password"]
       expect(new_pass.length).to be >= User::PASSWORD_MIN_LENGTH
       expect(new_pass).to match(/[A-Z]/)
       expect(new_pass).to match(/[a-z]/)
@@ -453,8 +456,8 @@ RSpec.describe "Admin::Users", type: :request do
 
     it "allows the user to log in with the new password" do
       post reset_password_admin_user_path(other_user)
-      new_pass = flash[:notice].match(/New password: (\S+)/)[1]
-
+      otp = session[:one_time_password]
+      new_pass = otp[:password] || otp["password"]
       sign_in_as(other_user, password: new_pass)
       expect(response).to redirect_to(root_path)
     end

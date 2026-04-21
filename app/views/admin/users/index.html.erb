@@ -9,6 +9,16 @@
   <p id="flash-alert"><%= flash[:alert] %></p>
 <% end %>
 
+<%# One-time password display — session-stored (not flash) to keep the
+    credential out of Rails logs. Cleared after first render. %>
+<% if (otp = session.delete(:one_time_password)) %>
+  <p id="one-time-password" role="alert">
+    Temporary password for <strong><%= otp["email"] || otp[:email] %></strong>:
+    <code><%= otp["password"] || otp[:password] %></code>
+    — copy it now; it will not be shown again.
+  </p>
+<% end %>
+
 <table>
   <thead>
     <tr>

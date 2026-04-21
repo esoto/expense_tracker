@@ -5,7 +5,7 @@ require_relative "../../../app/services/categorization/bulk_categorization_servi
 
 RSpec.describe Services::Categorization::BulkCategorizationService, type: :service, unit: true do
   # Test data setup
-  let(:user) { nil } # User is optional for this service
+  let(:user) { nil } # User is optional for this service (see store_bulk_operation)
   let(:category) { build(:category, id: 1, name: "Food & Dining") }
   let(:other_category) { build(:category, id: 2, name: "Transportation") }
   let(:expenses) { build_list(:expense, 3, category: nil) }

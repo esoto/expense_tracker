@@ -127,7 +127,7 @@ RSpec.describe Services::BulkOperations::DeletionService, type: :service, unit: 
 
     context 'with user authorization', unit: true do
       context 'when user has no email_accounts association (admin user)' do
-        let(:user) { double('AdminUser', id: 1, email: 'admin@test.com') }
+        let(:user) { double('LegacyUser', id: 1, email: 'admin@test.com') }
         let(:service) { described_class.new(expense_ids: expense_ids, user: user) }
 
         it 'allows full access (no per-user scoping)' do

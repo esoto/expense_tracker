@@ -12,12 +12,6 @@ module BulkOperations
 
     def perform(expense_ids:, user_id: nil, options: {})
       @expense_ids = expense_ids
-      # PR 8: the foreground path now passes a User.id via `user&.id` in
-      # base_service#enqueue_background_job. The old code reloaded as AdminUser,
-      # which either returned nil (because the id spaces don't overlap) or the
-      # wrong person, silently skipping UndoHistory creation in the background
-      # deletion flow. Reloading as User aligns background behaviour with the
-      # foreground path.
       @user = user_id ? User.find_by(id: user_id) : nil
       @options = options
       @job_id = job_id

@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Api::ClientErrorsController, type: :controller, unit: true do
-  # PR-12: Unified user — use create(:user, :admin) instead of AdminUser.create!
+  # Uses User model directly (AdminUser was dropped in PR-14).
   let(:admin_user) do
     create(:user, :admin,
       name: "Test User",

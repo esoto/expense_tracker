@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Expense View Toggle", type: :system, js: true do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:user, :admin) }
   let(:email_account) { create(:email_account) }
   let(:category) { create(:category, name: "Food", color: "#10B981") }
 

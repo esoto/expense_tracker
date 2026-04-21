@@ -19,8 +19,7 @@ require "rails_helper"
 #    (See Other) forces Turbo Drive to do a full-page visit.
 #
 # Fixes:
-# - Replace reset_session with targeted session.delete(:admin_session_token)
-#   and session.delete(:admin_user_id) so the CSRF token is preserved.
+# - Replace reset_session with targeted session key deletion so the CSRF token is preserved.
 # - Use HTTP 303 See Other for Turbo Drive session-expiry redirects.
 # - Skip session extension for prefetch requests.
 # - Skip store_location for prefetch requests.

@@ -75,7 +75,7 @@ RSpec.describe SyncAuthorization, type: :controller, unit: true do
   end
 
   describe "#sync_access_allowed?", unit: true do
-    let(:admin_user) { create(:admin_user) }
+    let(:admin_user) { create(:user, :admin) }
 
     context "when user is authenticated" do
       before { allow(controller).to receive(:current_user).and_return(admin_user) }
@@ -95,7 +95,7 @@ RSpec.describe SyncAuthorization, type: :controller, unit: true do
   end
 
   describe "session owner authorization", unit: true do
-    let(:admin_user) { create(:admin_user) }
+    let(:admin_user) { create(:user, :admin) }
 
     before do
       allow(controller).to receive(:current_user).and_return(admin_user)
@@ -137,7 +137,7 @@ RSpec.describe SyncAuthorization, type: :controller, unit: true do
   end
 
   describe "#sync_session_owner?", unit: true do
-    let(:admin_user) { create(:admin_user) }
+    let(:admin_user) { create(:user, :admin) }
 
     context "when user is authenticated" do
       before { allow(controller).to receive(:current_user).and_return(admin_user) }

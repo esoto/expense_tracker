@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe "Batch Selection System", type: :system, js: true do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:user, :admin) }
   let!(:category) { create(:category, name: "Food", color: "#22c55e") }
   let!(:email_account) { create(:email_account, email: "test@example.com") }
 

@@ -3,7 +3,7 @@
 require "rails_helper"
 
 RSpec.describe "Dashboard Virtual Scrolling", type: :system, js: true, tier: :system do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:user, :admin) }
   # Create test data
   let!(:email_account) { create(:email_account, :active) }
   let!(:categories) { create_list(:category, 5) }

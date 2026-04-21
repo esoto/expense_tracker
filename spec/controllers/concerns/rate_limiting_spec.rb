@@ -111,7 +111,7 @@ RSpec.describe RateLimiting, type: :controller, unit: true do
       key1 = controller.send(:rate_limit_key, :categorize)
       expect(key1).to eq("rate_limit:bulk_operations:#{user.id}:categorize")
 
-      another_user = create(:admin_user, email: "another_#{SecureRandom.hex(4)}@example.com")
+      another_user = create(:user, :admin, email: "another_#{SecureRandom.hex(4)}@example.com")
       allow(controller).to receive(:current_user).and_return(another_user)
 
       key2 = controller.send(:rate_limit_key, :categorize)

@@ -5,7 +5,7 @@ require "rails_helper"
 # End-to-end coverage for the inline category picker on unmapped external
 # budgets. Tagged :slow so it only runs in CI (and in the worktree on demand).
 RSpec.describe "Budgets external source UI", type: :system, slow: true do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:user, :admin) }
   let!(:email_account) { create(:email_account, active: true) }
   let!(:category) { create(:category, name: "Comida", i18n_key: "food") }
   # Seed at least one expense so the `has_many :categories, through: :expenses`

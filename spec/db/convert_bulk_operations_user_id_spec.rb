@@ -16,6 +16,10 @@ require migration_file
 #   Path E — no match anywhere → fallback to admin User (orphan string id)
 #   Path F — no match and no fallback → raises MigrationError
 RSpec.describe BackfillBulkOperationsUserBigint, unit: false, migration: true do
+  # PR-14: admin_users table was dropped. This migration spec tested the
+  # AdminUser → User backfill path which no longer applies.
+  before { skip "admin_users table dropped in PR-14" unless ActiveRecord::Base.connection.table_exists?(:admin_users) }
+
   let(:migration) { described_class.new }
   let(:conn)      { ActiveRecord::Base.connection }
 

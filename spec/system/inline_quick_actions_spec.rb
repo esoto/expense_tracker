@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Inline Quick Actions", type: :system, js: true do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:user, :admin) }
   let!(:email_account) { create(:email_account) }
   let!(:category1) { create(:category, name: "Food", color: "#22c55e") }
   let!(:category2) { create(:category, name: "Transport", color: "#3b82f6") }

@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Expense Filter Chips", type: :system, js: true do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:user, :admin) }
   let!(:category1) { create(:category, name: "Food", color: "emerald") }
   let!(:category2) { create(:category, name: "Transport", color: "amber") }
   let!(:expense1) { create(:expense, category: category1, bank_name: "BAC", amount: 1000) }

@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Dashboard tooltips', type: :system, js: true, tier: :system, skip: "JavaScript timing issues in CI environment" do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:user, :admin) }
   let(:email_account) { create(:email_account) }
 
   before do

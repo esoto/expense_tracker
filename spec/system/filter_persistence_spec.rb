@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Filter Persistence", type: :system, js: true do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:user, :admin) }
   let!(:category) { create(:category, name: "Food") }
   let!(:expenses) { create_list(:expense, 10, category: category) }
 

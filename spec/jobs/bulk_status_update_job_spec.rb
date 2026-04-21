@@ -16,7 +16,6 @@ RSpec.describe BulkStatusUpdateJob, type: :job, unit: true do
 
   before do
     # Stub constants for unit test environment
-    # PR 8: BaseJob reloads via User.find_by (was AdminUser).
     user_class = double('UserClass')
     stub_const('User', user_class)
 

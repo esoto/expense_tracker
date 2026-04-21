@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe 'Budget Indicators on Dashboard', type: :system do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:user, :admin) }
   let!(:email_account) { create(:email_account) }
   let!(:category) { create(:category, name: 'Alimentación') }
 

@@ -49,21 +49,10 @@ module RequestAuthenticationHelper
     }
   end
 
-  # Legacy alias kept for backward compatibility during spec migration.
-  # Historically called with create(:admin_user) — now expects create(:user, :admin).
-  # Falls back gracefully for legacy AdminUser objects by finding/creating a User.
-  # Password defaults to "TestPass123!" which matches the User factory default.
-  # Specs that create users with a custom password (e.g. "AdminPassword123!")
-  # MUST pass that password explicitly: sign_in_admin(user, password: "AdminPassword123!")
-  def sign_in_admin(user_or_admin_user, password: "TestPass123!")
-    if user_or_admin_user.is_a?(User)
-      sign_in_as(user_or_admin_user, password: password)
-    else
-      # Legacy AdminUser object: find or create corresponding User record.
-      user = User.find_by(email: user_or_admin_user.email) ||
-             create(:user, :admin, email: user_or_admin_user.email, password: password)
-      sign_in_as(user, password: password)
-    end
+  # Sign in a User (any role). Password defaults to the User factory default.
+  # Specs that create users with a custom password MUST pass it explicitly.
+  def sign_in_admin(user, password: "TestPass123!")
+    sign_in_as(user, password: password)
   end
 end
 

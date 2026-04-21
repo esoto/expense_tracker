@@ -10,7 +10,7 @@
 RSpec.configure do |config|
   config.before(:suite) do
     DatabaseCleaner.clean_with(:deletion, except: %w[
-      ar_internal_metadata schema_migrations categories admin_users
+      ar_internal_metadata schema_migrations categories
     ])
   end
 

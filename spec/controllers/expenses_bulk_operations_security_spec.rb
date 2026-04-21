@@ -3,7 +3,7 @@
 require 'rails_helper'
 
 RSpec.describe ExpensesController, type: :request, unit: true do
-  let(:admin_user) { create(:admin_user) }
+  let(:admin_user) { create(:user, :admin) }
   # PR 5: bulk ops now scope via scoping_user.email_accounts. Explicitly create
   # a User and anchor email_accounts/expenses to it so the scope fires on the
   # fixtures this spec owns.

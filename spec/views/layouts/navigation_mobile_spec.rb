@@ -9,7 +9,7 @@ RSpec.describe "Navigation mobile responsiveness", type: :controller, unit: true
     # Use ExpensesController as a representative controller that renders the layout
   end
 
-  let(:admin_user) { create(:admin_user, :with_session) }
+  let(:admin_user) { create(:user, :admin) }
   let!(:email_account) { create(:email_account) }
   let(:nav_html) do
     match = response.body.match(/<nav.*?<\/nav>/m)

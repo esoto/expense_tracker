@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_21_111400) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_21_120800) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -392,7 +392,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_111400) do
     t.datetime "last_synced_at"
     t.string "source_type", default: "salary_calculator", null: false
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.index ["email_account_id"], name: "index_external_budget_sources_on_email_account_id", unique: true
+    t.index ["user_id"], name: "index_external_budget_sources_on_user_id"
   end
 
   create_table "failed_broadcast_stores", force: :cascade do |t|
@@ -762,7 +764,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_111400) do
     t.string "undoable_type"
     t.datetime "undone_at"
     t.datetime "updated_at", null: false
-    t.bigint "user_id"
+    t.bigint "user_id", null: false
     t.index ["action_type", "undone_at"], name: "index_undo_histories_on_action_type_and_undone_at"
     t.index ["created_at"], name: "index_undo_histories_on_created_at"
     t.index ["expires_at", "undone_at"], name: "index_undo_histories_on_expires_at_and_undone_at", where: "(undone_at IS NULL)"
@@ -782,11 +784,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_111400) do
     t.integer "preference_weight", default: 1
     t.datetime "updated_at", null: false
     t.integer "usage_count", default: 0
+    t.bigint "user_id", null: false
     t.index ["category_id"], name: "index_user_category_preferences_on_category_id"
     t.index ["context_type", "context_value", "category_id"], name: "idx_user_prefs_merchant_lookup", where: "((context_type)::text = 'merchant'::text)", comment: "Optimized index for merchant preference lookups"
     t.index ["context_type", "context_value", "preference_weight"], name: "idx_user_prefs_context_weight"
     t.index ["email_account_id", "context_type", "context_value", "preference_weight"], name: "idx_user_pref_lookup"
     t.index ["preference_weight", "usage_count"], name: "idx_user_pref_priority", where: "(preference_weight >= 5)"
+    t.index ["user_id"], name: "index_user_category_preferences_on_user_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -832,6 +836,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_111400) do
   add_foreign_key "expenses", "email_accounts"
   add_foreign_key "expenses", "users"
   add_foreign_key "external_budget_sources", "email_accounts"
+  add_foreign_key "external_budget_sources", "users"
   add_foreign_key "llm_categorization_cache", "categories"
   add_foreign_key "merchant_aliases", "canonical_merchants"
   add_foreign_key "pattern_feedbacks", "categories"
@@ -858,6 +863,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_111400) do
   add_foreign_key "sync_session_accounts", "sync_sessions"
   add_foreign_key "sync_sessions", "admin_users"
   add_foreign_key "sync_sessions", "users"
+  add_foreign_key "undo_histories", "users"
   add_foreign_key "user_category_preferences", "categories"
   add_foreign_key "user_category_preferences", "email_accounts"
+  add_foreign_key "user_category_preferences", "users"
 end

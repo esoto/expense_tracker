@@ -4,6 +4,7 @@ FactoryBot.define do
   factory :user_category_preference do
     association :email_account
     association :category
+    user { email_account&.user || association(:user) }
     context_type { "merchant" }
     sequence(:context_value) { |n| "merchant_#{n}" }
     preference_weight { 1 }

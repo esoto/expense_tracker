@@ -32,8 +32,10 @@ module Services::BulkOperations
           end
         end
 
-        # Create undo history record if we deleted anything
-        if deleted_count > 0 && defined?(UndoHistory)
+        # Create undo history record if we deleted anything.
+        # user must be a User instance because UndoHistory.user_id is NOT NULL
+        # with a FK constraint pointing at the users table.
+        if deleted_count > 0 && defined?(UndoHistory) && user.is_a?(User)
           @undo_record = UndoHistory.create_for_bulk_deletion(
             expenses_to_delete.select { |e| expense_ids_to_delete.include?(e.id) },
             user: user

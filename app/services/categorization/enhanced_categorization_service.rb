@@ -370,6 +370,7 @@ module Services::Categorization
         context_type: "merchant",
         context_value: expense.merchant_name.downcase.strip
       ) do |pref|
+        pref.user = expense.email_account.user
         pref.category = category
         pref.preference_weight = 1
         pref.usage_count = 1

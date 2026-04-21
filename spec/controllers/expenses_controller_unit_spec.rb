@@ -268,7 +268,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
     end
 
     it "creates an undo history entry" do
-      expect(UndoHistory).to receive(:create_for_deletion).with(expense, user: nil)
+      expect(UndoHistory).to receive(:create_for_deletion).with(expense, user: email_account.user)
 
       delete :destroy, params: { id: expense.id }
     end

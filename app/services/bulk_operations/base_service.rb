@@ -107,9 +107,11 @@ module Services::BulkOperations
     def find_authorized_expenses
       scope = Expense.where(id: expense_ids)
 
-      # Scope to user's email accounts when per-user data isolation exists.
-      # Currently only AdminUser is used for auth, with no per-user scoping.
-      # When a User model with email_account associations is added, scope here.
+      # Scope to the caller's email accounts. The `respond_to?(:email_accounts)`
+      # guard preserves behaviour during the PR 1–12 transition when `user`
+      # may still be an AdminUser (no email_accounts association) rather than
+      # a User. Once PR 12 lands and every bulk-op caller passes a User, the
+      # guard becomes unconditional.
       if user.present? && user.respond_to?(:email_accounts)
         scope = scope.where(email_account: user.email_accounts)
       end

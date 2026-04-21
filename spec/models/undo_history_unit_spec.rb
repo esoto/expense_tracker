@@ -13,6 +13,10 @@ RSpec.describe UndoHistory, type: :model, unit: true do
     end
   end
 
+  describe "associations" do
+    it { should belong_to(:user) }
+  end
+
   describe "validations" do
     subject do
       build(:undo_history)
@@ -24,6 +28,24 @@ RSpec.describe UndoHistory, type: :model, unit: true do
   end
 
   describe "scopes" do
+    describe ".for_user" do
+      let!(:user_a) { create(:user) }
+      let!(:user_b) { create(:user) }
+      let!(:history_a) { create(:undo_history, user: user_a) }
+      let!(:history_b) { create(:undo_history, user: user_b) }
+
+      it "returns records for the given user" do
+        expect(UndoHistory.for_user(user_a)).to include(history_a)
+        expect(UndoHistory.for_user(user_a)).not_to include(history_b)
+      end
+
+      it "excludes records from other users" do
+        expect(UndoHistory.for_user(user_b)).to include(history_b)
+        expect(UndoHistory.for_user(user_b)).not_to include(history_a)
+      end
+    end
+
+
     describe ".recent" do
       it "includes records created within the undo window (5 minutes)" do
         recent = create(:undo_history, created_at: 4.minutes.ago)

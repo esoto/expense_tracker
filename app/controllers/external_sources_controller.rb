@@ -46,6 +46,7 @@ class ExternalSourcesController < ApplicationController
     ).call
 
     source = account.external_budget_source || account.build_external_budget_source
+    source.user ||= account.user
     source.assign_attributes(
       source_type: "salary_calculator",
       base_url: base_url,

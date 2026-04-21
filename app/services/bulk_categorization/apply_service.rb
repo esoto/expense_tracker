@@ -96,6 +96,9 @@ module Services::BulkCategorization
 
     def create_bulk_operation
       return unless options[:track_operation]
+      # bulk_operations.user_id is NOT NULL since PR 10; skip audit record when
+      # no user context is available.
+      return unless user_id
 
       @bulk_operation = BulkOperation.create!(
         operation_type: "categorization",

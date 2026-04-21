@@ -18,6 +18,7 @@ RSpec.describe BulkOperation, type: :model, unit: true do
   end
 
   describe "associations" do
+    it { should belong_to(:user) }
     it { should have_many(:bulk_operation_items).dependent(:destroy) }
     it { should have_many(:expenses).through(:bulk_operation_items) }
     it { should belong_to(:target_category).class_name("Category").optional }
@@ -308,7 +309,7 @@ RSpec.describe BulkOperation, type: :model, unit: true do
       it "creates undo operation record" do
         expect(BulkOperation).to receive(:create!) do |args|
           expect(args[:operation_type]).to eq(:undo)
-          expect(args[:user_id]).to eq("100")
+          expect(args[:user_id]).to eq(100)
           expect(args[:expense_count]).to eq(5)
           expect(args[:total_amount]).to eq(500.00)
           expect(args[:metadata]).to include(original_operation_id: 1)

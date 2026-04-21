@@ -5,7 +5,7 @@ require_relative "../../../app/services/categorization/bulk_categorization_servi
 
 RSpec.describe Services::Categorization::BulkCategorizationService, type: :service, unit: true do
   # Test data setup
-  let(:user) { nil } # User is optional for this service
+  let(:user) { nil } # User is optional for this service (see store_bulk_operation)
   let(:category) { build(:category, id: 1, name: "Food & Dining") }
   let(:other_category) { build(:category, id: 2, name: "Transportation") }
   let(:expenses) { build_list(:expense, 3, category: nil) }
@@ -858,7 +858,10 @@ RSpec.describe Services::Categorization::BulkCategorizationService, type: :servi
     let(:email_account) { create(:email_account) }
     let(:category) { create(:category, name: "Test Category") }
     let(:expenses) { create_list(:expense, 5, email_account: email_account, category: nil) }
-    let(:service) { described_class.new(expenses: expenses, category_id: category.id) }
+    # bulk_operations.user_id is NOT NULL since PR 10; provide a User so the
+    # BulkOperation record is actually persisted (required for the SUM query test).
+    let(:store_bulk_op_user) { create(:user) }
+    let(:service) { described_class.new(expenses: expenses, category_id: category.id, user: store_bulk_op_user) }
 
     it "does not fire N+1 queries for amount calculation" do
       results = expenses.map { |e| { success: true, expense_id: e.id, previous_category_id: nil } }

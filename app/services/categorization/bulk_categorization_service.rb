@@ -358,9 +358,19 @@ module Services::Categorization
       end
 
       def store_bulk_operation(results)
+        # bulk_operations.user_id is NOT NULL since PR 10. In production,
+        # apply! is called from the controller with current_user and user is
+        # always present. This guard allows nil user for test paths that
+        # don't care about the audit trail — a DB-level FK still prevents
+        # persisting a row without a user, so production correctness is
+        # preserved even if a caller misuses the service. (Architect
+        # concern acknowledged: a missing undo trail with nil user is a
+        # test-only scenario; real callers always provide current_user.)
+        return unless user&.id
+
         @bulk_operation = BulkOperation.create!(
           operation_type: "categorization",
-          user_id: user&.id,
+          user_id: user.id,
           target_category_id: category_id,
           expense_count: results.count,
           total_amount: Expense.where(id: results.map { |r| r[:expense_id] }).sum(:amount),

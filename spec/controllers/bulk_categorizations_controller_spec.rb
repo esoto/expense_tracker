@@ -1,12 +1,13 @@
 require "rails_helper"
 
 RSpec.describe BulkCategorizationsController, type: :controller, unit: true do
-  let(:user) { create(:admin_user, email: "admin_#{SecureRandom.hex(4)}@example.com") }
+  # bulk_operations.user_id is a FK to users (not admin_users) since PR 10
+  let(:user) { create(:user, email: "owner_#{SecureRandom.hex(4)}@example.com") }
   let(:category) { create(:category) }
   let!(:expense1) { create(:expense, category: nil) }
   let!(:expense2) { create(:expense, category: nil) }
   let!(:bulk_operation) do
-    operation = create(:bulk_operation, user_id: user.id, expense_count: 2, total_amount: 25.50)
+    operation = create(:bulk_operation, user: user, expense_count: 2, total_amount: 25.50)
     create(:bulk_operation_item, bulk_operation: operation, expense: expense1)
     create(:bulk_operation_item, bulk_operation: operation, expense: expense2)
     operation

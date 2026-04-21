@@ -107,6 +107,10 @@ class BulkCategorizationActionsController < ApplicationController
       return
     end
 
+    # FIXME(PR-5b): globally loading expenses by id lets any authenticated
+    # admin apply categorizations to another user's expenses. Scope via
+    # `Expense.for_user(scoping_user)` once the shared UserScoping concern
+    # lands in PR 12.
     # Find expenses with eager loading for performance
     @expenses = Expense.includes(:category, :email_account)
                        .where(id: expense_ids)

@@ -192,5 +192,51 @@ RSpec.describe "Expenses data isolation", type: :request, unit: true do
       expect(created).not_to be_nil
       expect(created.user_id).to eq(user_b.id)
     end
+
+    it "rejects a forged email_account_id pointing at another user's account" do
+      account_a = create(:email_account, user: user_a)
+
+      post expenses_path, params: {
+        expense: {
+          amount: 500.00,
+          currency: "crc",
+          transaction_date: Date.current.to_s,
+          merchant_name: "ForgedAccountMerchant",
+          description: "Forged email_account_id test",
+          email_account_id: account_a.id  # forged — user_b cannot attach to user_a's account
+        }
+      }
+
+      created = Expense.find_by(merchant_name: "ForgedAccountMerchant")
+      # Either creation was rejected, or email_account_id was nullified
+      # (depends on whether the rest of the params satisfied validations).
+      expect(created&.email_account_id).not_to eq(account_a.id)
+    end
+  end
+
+  # Owner forgery — a legitimate owner PATCHing with a forged email_account_id
+  # must not be able to move the record onto another user's account.
+  describe "PATCH /expenses/:id — owner cannot forge email_account_id to another user's account" do
+    let!(:user_a) { create(:user, :admin) }
+    let!(:user_b) { create(:user) }
+    let!(:account_a) { create(:email_account, user: user_a) }
+    let!(:account_b) { create(:email_account, user: user_b) }
+    let!(:expense_a) { create(:expense, user: user_a, email_account: account_a) }
+
+    before do
+      allow_any_instance_of(ExpensesController)
+        .to receive(:scoping_user)
+        .and_return(user_a)
+    end
+
+    it "strips the forged email_account_id so the record never lands on account_b" do
+      patch expense_path(expense_a), params: {
+        expense: { email_account_id: account_b.id }
+      }
+      # Critical invariant: the expense must NOT end up on user_b's account.
+      # Either the forged value was dropped (ending as nil) or held at account_a;
+      # both outcomes satisfy the isolation contract.
+      expect(expense_a.reload.email_account_id).not_to eq(account_b.id)
+    end
   end
 end

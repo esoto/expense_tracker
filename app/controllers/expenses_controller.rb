@@ -64,13 +64,13 @@ class ExpensesController < ApplicationController
   def new
     @expense = Expense.new
     @categories = Category.all.order(:name)
-    @email_accounts = EmailAccount.all.order(:email)
+    @email_accounts = EmailAccount.for_user(scoping_user).order(:email)
   end
 
   # GET /expenses/1/edit
   def edit
     @categories = Category.all.order(:name)
-    @email_accounts = EmailAccount.all.order(:email)
+    @email_accounts = EmailAccount.for_user(scoping_user).order(:email)
   end
 
   # POST /expenses
@@ -270,7 +270,15 @@ class ExpensesController < ApplicationController
 
   # POST /expenses/sync_emails
   def sync_emails
-    sync_result = Services::Email::SyncService.new.sync_emails(email_account_id: params[:email_account_id])
+    # Validate that the requested email_account belongs to the scoping user
+    # before handing off to the sync service, which otherwise looks up the
+    # account globally.
+    account_id = params[:email_account_id].presence
+    if account_id && !EmailAccount.for_user(scoping_user).exists?(id: account_id)
+      redirect_to dashboard_expenses_path, alert: t("expenses.flash.sync_error") and return
+    end
+
+    sync_result = Services::Email::SyncService.new.sync_emails(email_account_id: account_id)
     redirect_to dashboard_expenses_path, notice: sync_result[:message]
   rescue Services::Email::SyncService::SyncError => e
     redirect_to dashboard_expenses_path, alert: e.message
@@ -626,7 +634,15 @@ class ExpensesController < ApplicationController
   end
 
   def expense_params
-    params.require(:expense).permit(:amount, :currency, :transaction_date, :merchant_name, :description, :category_id, :email_account_id, :notes)
+    permitted = params.require(:expense).permit(:amount, :currency, :transaction_date, :merchant_name, :description, :category_id, :email_account_id, :notes)
+    # Reject email_account_id pointing at another user's account so it cannot
+    # be used to attach this user's expense to someone else's data. strong_params
+    # already drops :user_id; this guard closes the email_account_id side.
+    if permitted[:email_account_id].present? &&
+       !EmailAccount.for_user(scoping_user).exists?(id: permitted[:email_account_id])
+      permitted[:email_account_id] = nil
+    end
+    permitted
   end
 
   # Strong parameters for bulk operations
@@ -639,7 +655,11 @@ class ExpensesController < ApplicationController
   end
 
   def current_user_for_bulk_operations
-    current_user
+    # Pass the User (not AdminUser) so bulk_operations/base_service can apply
+    # the `scope.where(email_account: user.email_accounts)` filter. Under the
+    # legacy admin auth path, `current_user` returns an AdminUser which has
+    # no email_accounts association, and the scope is silently skipped.
+    scoping_user
   end
 
   def filter_params

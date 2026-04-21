@@ -68,7 +68,10 @@ RSpec.describe ApplicationController, type: :controller, unit: true do
   describe "inheritance chain", unit: true do
     it "provides base functionality for other controllers" do
       expect(ExpensesController.superclass).to eq(ApplicationController)
-      expect(Api::WebhooksController.superclass).to eq(ApplicationController)
+      # PR 11: WebhooksController now inherits from Api::BaseController (which itself
+      # inherits from ApplicationController), not directly from ApplicationController.
+      expect(Api::WebhooksController.superclass).to eq(Api::BaseController)
+      expect(Api::BaseController.superclass).to eq(ApplicationController)
     end
   end
 end

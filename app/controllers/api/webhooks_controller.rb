@@ -1,15 +1,7 @@
-class Api::WebhooksController < ApplicationController
-  skip_before_action :authenticate_user!
-  skip_before_action :verify_authenticity_token
-  before_action :authenticate_api_token
-  before_action :set_current_api_user
-
-  rescue_from ActionController::ParameterMissing do |exception|
-    render json: {
-      status: "error",
-      message: exception.message
-    }, status: :unprocessable_content
-  end
+class Api::WebhooksController < Api::BaseController
+  # Inheriting from Api::BaseController gets us the canonical
+  # authenticate_api_token (with locked-user check), @current_api_user
+  # wiring, and error handlers — no duplicate auth code to drift.
 
   def process_emails
     email_account_id = params[:email_account_id]
@@ -30,10 +22,19 @@ class Api::WebhooksController < ApplicationController
         email_account_id: account.id
       }, status: :accepted
     else
-      ProcessEmailsJob.perform_later(since: since)
+      # No specific account — process ONLY the token owner's active accounts.
+      # Pre-PR-11 this fell through to "all active accounts globally", which
+      # let any valid token trigger processing for other users' mailboxes.
+      owner_account_ids = @current_api_user.email_accounts.active.pluck(:id)
+      if owner_account_ids.empty?
+        render json: { error: "No active email accounts for this user", status: 404 }, status: :not_found
+        return
+      end
+      owner_account_ids.each { |id| ProcessEmailsJob.perform_later(id, since: since) }
       render json: {
         status: "success",
-        message: "Email processing queued for all active accounts"
+        message: "Email processing queued for #{owner_account_ids.size} account(s)",
+        email_account_ids: owner_account_ids
       }, status: :accepted
     end
   end
@@ -122,31 +123,6 @@ class Api::WebhooksController < ApplicationController
   end
 
   private
-
-  def authenticate_api_token
-    token = request.headers["Authorization"]&.remove("Bearer ")
-
-    unless token.present?
-      render json: { error: "Missing API token" }, status: :unauthorized
-      return
-    end
-
-    @current_api_token = ApiToken.authenticate(token)
-
-    unless @current_api_token
-      render json: { error: "Invalid or expired API token" }, status: :unauthorized
-    end
-  end
-
-  def set_current_api_user
-    return if performed? # halt if already rendered (e.g. auth failed)
-
-    @current_api_user = @current_api_token&.user
-
-    if @current_api_user.nil? || @current_api_user.locked?
-      render json: { error: "Token owner account is unavailable" }, status: :unauthorized
-    end
-  end
 
   def parse_since_parameter
     since_param = params[:since]

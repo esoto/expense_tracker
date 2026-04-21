@@ -63,7 +63,12 @@ module Services
   end
 
   def scoped_expenses
-    @user ? Expense.for_user(@user) : Expense.all
+    # PR 11: raise on missing user rather than silently falling back to
+    # Expense.all. The service is used from user-facing summary endpoints,
+    # and a nil-user call was leaking cross-user totals. Callers must supply
+    # user: current_user / current_api_user explicitly.
+    raise ArgumentError, "user is required for ExpenseSummaryService" unless @user
+    Expense.for_user(@user)
   end
 
   def total_amount_for_period(start_date, end_date)

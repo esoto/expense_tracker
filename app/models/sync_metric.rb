@@ -1,6 +1,9 @@
 class SyncMetric < ApplicationRecord
+  belongs_to :user
   belongs_to :sync_session
   belongs_to :email_account, optional: true # For session-level metrics
+
+  scope :for_user, ->(u) { where(user_id: u.id) }
 
   # Metric types
   METRIC_TYPES = {

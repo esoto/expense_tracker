@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_21_100500) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_21_111400) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -311,7 +311,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_100500) do
     t.text "raw_email_content"
     t.boolean "truncated", default: false
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.index ["email_account_id"], name: "index_email_parsing_failures_on_email_account_id"
+    t.index ["user_id"], name: "index_email_parsing_failures_on_user_id"
   end
 
   create_table "expenses", force: :cascade do |t|
@@ -516,9 +518,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_100500) do
     t.text "subject"
     t.string "uid"
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.index ["email_account_id"], name: "index_processed_emails_on_email_account_id"
     t.index ["message_id", "email_account_id"], name: "idx_processed_emails_unique", unique: true
     t.index ["processed_at"], name: "index_processed_emails_on_processed_at"
+    t.index ["user_id"], name: "index_processed_emails_on_user_id"
   end
 
   create_table "solid_queue_blocked_executions", force: :cascade do |t|
@@ -661,6 +665,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_100500) do
     t.string "status", default: "pending", null: false
     t.bigint "sync_session_id", null: false
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.index ["conflict_data"], name: "index_sync_conflicts_on_conflict_data", using: :gin
     t.index ["conflict_type"], name: "index_sync_conflicts_on_conflict_type"
     t.index ["differences"], name: "index_sync_conflicts_on_differences", using: :gin
@@ -671,6 +676,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_100500) do
     t.index ["similarity_score"], name: "index_sync_conflicts_on_similarity_score"
     t.index ["status", "conflict_type"], name: "index_sync_conflicts_on_status_and_conflict_type"
     t.index ["sync_session_id", "status"], name: "index_sync_conflicts_on_sync_session_id_and_status"
+    t.index ["user_id"], name: "index_sync_conflicts_on_user_id"
   end
 
   create_table "sync_metrics", force: :cascade do |t|
@@ -687,6 +693,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_100500) do
     t.boolean "success", default: true
     t.bigint "sync_session_id", null: false
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.index ["completed_at"], name: "index_sync_metrics_on_completed_at"
     t.index ["email_account_id", "metric_type"], name: "index_sync_metrics_on_email_account_id_and_metric_type"
     t.index ["error_type"], name: "index_sync_metrics_on_error_type"
@@ -696,6 +703,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_100500) do
     t.index ["started_at", "completed_at"], name: "index_sync_metrics_on_started_at_and_completed_at"
     t.index ["success", "metric_type"], name: "index_sync_metrics_on_success_and_metric_type"
     t.index ["sync_session_id", "metric_type"], name: "index_sync_metrics_on_sync_session_id_and_metric_type"
+    t.index ["user_id"], name: "index_sync_metrics_on_user_id"
   end
 
   create_table "sync_session_accounts", force: :cascade do |t|
@@ -732,11 +740,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_100500) do
     t.string "status", default: "pending", null: false
     t.integer "total_emails", default: 0
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.index ["admin_user_id"], name: "index_sync_sessions_on_admin_user_id"
     t.index ["created_at"], name: "index_sync_sessions_on_created_at"
     t.index ["metadata"], name: "index_sync_sessions_on_metadata", using: :gin
     t.index ["session_token"], name: "index_sync_sessions_on_session_token", unique: true
     t.index ["status"], name: "index_sync_sessions_on_status"
+    t.index ["user_id"], name: "index_sync_sessions_on_user_id"
   end
 
   create_table "undo_histories", force: :cascade do |t|
@@ -817,6 +827,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_100500) do
   add_foreign_key "conflict_resolutions", "sync_conflicts"
   add_foreign_key "email_accounts", "users"
   add_foreign_key "email_parsing_failures", "email_accounts"
+  add_foreign_key "email_parsing_failures", "users"
   add_foreign_key "expenses", "categories"
   add_foreign_key "expenses", "email_accounts"
   add_foreign_key "expenses", "users"
@@ -829,6 +840,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_100500) do
   add_foreign_key "pattern_learning_events", "categories"
   add_foreign_key "pattern_learning_events", "expenses"
   add_foreign_key "processed_emails", "email_accounts"
+  add_foreign_key "processed_emails", "users"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
@@ -838,11 +850,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_100500) do
   add_foreign_key "sync_conflicts", "expenses", column: "existing_expense_id"
   add_foreign_key "sync_conflicts", "expenses", column: "new_expense_id"
   add_foreign_key "sync_conflicts", "sync_sessions"
+  add_foreign_key "sync_conflicts", "users"
   add_foreign_key "sync_metrics", "email_accounts"
   add_foreign_key "sync_metrics", "sync_sessions"
+  add_foreign_key "sync_metrics", "users"
   add_foreign_key "sync_session_accounts", "email_accounts"
   add_foreign_key "sync_session_accounts", "sync_sessions"
   add_foreign_key "sync_sessions", "admin_users"
+  add_foreign_key "sync_sessions", "users"
   add_foreign_key "user_category_preferences", "categories"
   add_foreign_key "user_category_preferences", "email_accounts"
 end

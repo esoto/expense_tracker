@@ -2,10 +2,13 @@ class SyncSession < ApplicationRecord
   include ActionView::RecordIdentifier
   include Turbo::Broadcastable
 
+  belongs_to :user
   has_many :sync_session_accounts, dependent: :destroy
   has_many :email_accounts, through: :sync_session_accounts
   has_many :sync_conflicts, dependent: :destroy
   has_many :sync_metrics, dependent: :destroy
+
+  scope :for_user, ->(u) { where(user_id: u.id) }
 
   validates :status, presence: true, inclusion: { in: %w[pending running completed failed cancelled] }
 

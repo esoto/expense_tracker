@@ -18,6 +18,11 @@ class User < ApplicationRecord
   has_many :email_accounts, dependent: :restrict_with_exception
   has_many :expenses, dependent: :restrict_with_exception
   has_many :budgets, dependent: :restrict_with_exception
+  has_many :sync_sessions, dependent: :restrict_with_exception
+  has_many :sync_metrics, dependent: :restrict_with_exception
+  has_many :sync_conflicts, dependent: :restrict_with_exception
+  has_many :processed_emails, dependent: :restrict_with_exception
+  has_many :email_parsing_failures, dependent: :restrict_with_exception
 
   # Enums
   enum :role, {

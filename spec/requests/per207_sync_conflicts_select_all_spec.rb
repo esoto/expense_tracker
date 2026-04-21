@@ -48,7 +48,15 @@ RSpec.describe "SyncConflicts select-all page structure", type: :request, unit: 
   before { sign_in_admin(admin_user) }
 
   describe "GET /sync_conflicts" do
-    before { get sync_conflicts_path }
+    before do
+      # PR 7: SyncConflictsController is now scoped via for_user(scoping_user).
+      # Stub scoping_user to the owner of the sync_session so the conflicts
+      # created in `let!` are visible to this request.
+      allow_any_instance_of(SyncConflictsController)
+        .to receive(:scoping_user)
+        .and_return(sync_session.user)
+      get sync_conflicts_path
+    end
 
     it "returns HTTP 200" do
       expect(response).to have_http_status(:ok)

@@ -3,6 +3,7 @@
 # Model to track bulk categorization operations for audit and undo functionality
 class BulkOperation < ApplicationRecord
   # Associations
+  belongs_to :user
   has_many :bulk_operation_items, dependent: :destroy
   has_many :expenses, through: :bulk_operation_items
   belongs_to :target_category, class_name: "Category", optional: true
@@ -35,6 +36,7 @@ class BulkOperation < ApplicationRecord
   scope :successful, -> { where(status: [ :completed, :partially_completed ]) }
   scope :undoable, -> { where(status: :completed, undone_at: nil).where("created_at > ?", 24.hours.ago) }
   scope :by_user, ->(user_id) { where(user_id: user_id) }
+  scope :for_user, ->(u) { where(user_id: u.id) }
   scope :today, -> { where(created_at: Date.current.all_day) }
   scope :this_week, -> { where(created_at: Date.current.all_week) }
   scope :this_month, -> { where(created_at: Date.current.all_month) }

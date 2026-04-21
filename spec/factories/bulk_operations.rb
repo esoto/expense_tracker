@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :bulk_operation do
     operation_type { :categorization }
-    user_id { "user_123" }
+    association :user
     association :target_category, factory: :category
     expense_count { 1 }  # Must be greater than 0 for validation
     total_amount { 100.0 }

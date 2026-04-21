@@ -3,10 +3,11 @@ require "rails_helper"
 RSpec.describe BulkCategorizationActionsController, type: :controller, unit: true do
   setup_authentication_mocks
 
-  let(:current_user) { instance_double("User", id: "user_123") }
+  let(:current_user) { instance_double("User", id: 1) }
   let(:expense) { create(:expense, category: nil) }
   let(:category) { create(:category) }
-  let(:bulk_operation) { create(:bulk_operation, expense_count: 1, user_id: current_user.id) }
+  # BulkOperation.find is stubbed in before-block; use build_stubbed to avoid DB hits
+  let(:bulk_operation) { build_stubbed(:bulk_operation, expense_count: 1, user_id: 1) }
   let(:bulk_categorization_service) { instance_double(Services::Categorization::BulkCategorizationService) }
   let(:undo_service) { instance_double(Services::BulkCategorization::UndoService) }
 

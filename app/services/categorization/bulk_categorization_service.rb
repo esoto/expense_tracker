@@ -358,9 +358,13 @@ module Services::Categorization
       end
 
       def store_bulk_operation(results)
+        # bulk_operations.user_id is NOT NULL since PR 10. Skip the audit record
+        # when no user context is available (e.g. background jobs without a user).
+        return unless user&.id
+
         @bulk_operation = BulkOperation.create!(
           operation_type: "categorization",
-          user_id: user&.id,
+          user_id: user.id,
           target_category_id: category_id,
           expense_count: results.count,
           total_amount: Expense.where(id: results.map { |r| r[:expense_id] }).sum(:amount),

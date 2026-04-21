@@ -236,8 +236,14 @@ module UserAuthentication
     current_app_user
   end
 
+  # PR 12 architect catch: admin_signed_in? must actually check the admin
+  # role, not just "is a user signed in". Under the old AdminAuthentication
+  # concern, any signed-in user was by definition an admin (only admins had
+  # sessions). In the unified world, any User can have a session — so this
+  # helper must check `admin?` explicitly. The previous alias would have
+  # shown admin UI to non-admin users.
   def admin_signed_in?
-    app_user_signed_in?
+    current_app_user&.admin? == true
   end
 
   # Legacy alias from old Authentication concern.

@@ -92,12 +92,9 @@ class Rack::Attack
     end
   end
 
-  # Throttle password reset requests
-  throttle("password-reset/ip", limit: 3, period: 15.minutes) do |req|
-    if req.path == "/admin/password/reset" && req.post?
-      req.ip
-    end
-  end
+  # PR 12: the /admin/password/reset throttle was a no-op — the route never
+  # existed in config/routes.rb. Removed. Add a new throttle here if/when a
+  # password-reset flow is introduced.
 
   # Throttle API endpoints more strictly
   throttle("api/ip", limit: 100, period: 1.minute) do |req|

@@ -71,6 +71,30 @@ subcategories.each do |subcat_data|
   puts "  ✓ #{parent.display_name} > #{subcategory.display_name}"
 end
 
+# Create default admin User BEFORE any records that belong_to :user.
+# After the 14-PR User-model unification, ApiToken / SyncSession / SyncMetric /
+# EmailAccount all require user_id NOT NULL — seeding them before the User
+# exists fails with a NOT NULL / foreign-key violation.
+puts ""
+puts "👤 Creating default admin user..."
+
+admin_email = ENV.fetch("ADMIN_EMAIL", "admin@expense-tracker.com")
+admin_password = ENV.fetch("ADMIN_PASSWORD", "AdminPassword123!")
+
+if Rails.env.production? && (admin_email == "admin@expense-tracker.com" || admin_password == "AdminPassword123!")
+  abort "[seeds] Refusing to seed admin with default credentials in production. Set ADMIN_EMAIL and ADMIN_PASSWORD env vars."
+end
+
+default_user = User.find_or_create_by!(email: admin_email) do |user|
+  user.name = "System Administrator"
+  user.password = admin_password
+  user.role = :admin
+end
+
+if default_user.persisted?
+  puts "  ✓ Default admin user: #{admin_email}"
+end
+
 # Create API tokens
 puts "Creating API tokens..."
 
@@ -82,6 +106,7 @@ api_tokens = [
 created_tokens = []
 api_tokens.each do |token_data|
   token = ApiToken.find_or_create_by!(name: token_data[:name]) do |t|
+    t.user = default_user
     t.expires_at = token_data[:expires_at]
     t.active = true
   end
@@ -184,9 +209,11 @@ end
 puts ""
 puts "📊 Creating sync performance metrics..."
 
-if SyncSession.any? && EmailAccount.any?
-  # Use existing sessions and accounts for metrics
-  email_accounts = EmailAccount.active.to_a
+if SyncSession.any? && default_user.email_accounts.any?
+  # Scope to the default admin's accounts — avoid attaching metrics to accounts
+  # owned by another user, which would produce a User/EmailAccount ownership
+  # mismatch on SyncMetric since both belong_to :user.
+  email_accounts = default_user.email_accounts.active.to_a
 
   # Create metrics for the last 30 days
   30.times do |days_ago|
@@ -198,6 +225,7 @@ if SyncSession.any? && EmailAccount.any?
 
       # Create or find a sync session for this time
       sync_session = SyncSession.create!(
+        user: default_user,
         status: 'completed',
         started_at: session_start,
         completed_at: session_start + rand(5..30).minutes,
@@ -210,6 +238,7 @@ if SyncSession.any? && EmailAccount.any?
 
       # Create session-level metric
       SyncMetric.create!(
+        user: default_user,
         sync_session: sync_session,
         metric_type: 'session_overall',
         success: [ true, true, true, false ].sample, # 75% success rate
@@ -226,6 +255,7 @@ if SyncSession.any? && EmailAccount.any?
         # Email fetch metric
         fetch_duration = rand(1000..5000) # 1-5 seconds
         SyncMetric.create!(
+          user: default_user,
           sync_session: sync_session,
           email_account: account,
           metric_type: 'email_fetch',
@@ -244,6 +274,7 @@ if SyncSession.any? && EmailAccount.any?
           parse_duration = rand(50..500) # 50-500ms
 
           SyncMetric.create!(
+            user: default_user,
             sync_session: sync_session,
             email_account: account,
             metric_type: 'email_parse',
@@ -261,6 +292,7 @@ if SyncSession.any? && EmailAccount.any?
           detect_duration = rand(100..1000) # 100ms-1s
 
           SyncMetric.create!(
+            user: default_user,
             sync_session: sync_session,
             email_account: account,
             metric_type: 'expense_detection',
@@ -283,6 +315,7 @@ if SyncSession.any? && EmailAccount.any?
           conflict_duration = rand(200..2000) # 200ms-2s
 
           SyncMetric.create!(
+            user: default_user,
             sync_session: sync_session,
             email_account: account,
             metric_type: 'conflict_detection',
@@ -304,6 +337,7 @@ if SyncSession.any? && EmailAccount.any?
           write_duration = rand(10..100) # 10-100ms
 
           SyncMetric.create!(
+            user: default_user,
             sync_session: sync_session,
             email_account: account,
             metric_type: 'database_write',
@@ -321,6 +355,7 @@ if SyncSession.any? && EmailAccount.any?
           broadcast_duration = rand(5..50) # 5-50ms
 
           SyncMetric.create!(
+            user: default_user,
             sync_session: sync_session,
             email_account: account,
             metric_type: 'broadcast',
@@ -339,6 +374,7 @@ if SyncSession.any? && EmailAccount.any?
         # Account sync summary metric
         account_sync_duration = rand(10000..60000) # 10-60 seconds
         SyncMetric.create!(
+          user: default_user,
           sync_session: sync_session,
           email_account: account,
           metric_type: 'account_sync',
@@ -360,23 +396,5 @@ else
   puts "  ℹ️  Run sync operations first to generate real metrics"
 end
 
-# Create default User for development/transition (PR 3)
-puts ""
-puts "👤 Creating default admin user..."
-
-admin_email = ENV.fetch("ADMIN_EMAIL", "admin@expense-tracker.com")
-admin_password = ENV.fetch("ADMIN_PASSWORD", "AdminPassword123!")
-
-if Rails.env.production? && (admin_email == "admin@expense-tracker.com" || admin_password == "AdminPassword123!")
-  abort "[seeds] Refusing to seed admin with default credentials in production. Set ADMIN_EMAIL and ADMIN_PASSWORD env vars."
-end
-
-default_user = User.find_or_create_by!(email: admin_email) do |user|
-  user.name = "System Administrator"
-  user.password = admin_password
-  user.role = :admin
-end
-
-if default_user.persisted?
-  puts "  ✓ Default admin user: #{admin_email}"
-end
+# Default admin user is created near the top of this file, before any
+# belongs_to :user records. See §Creating default admin user.

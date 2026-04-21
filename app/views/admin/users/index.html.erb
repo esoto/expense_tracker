@@ -25,10 +25,19 @@
   <%# One-time password display — session-stored (not flash) to keep the
       credential out of Rails logs. Cleared after first render. %>
   <% if (otp = session.delete(:one_time_password)) %>
+    <% otp_email = otp["email"] || otp[:email] %>
+    <% otp_password = otp["password"] || otp[:password] %>
     <div id="one-time-password" class="mb-4 bg-amber-50 border border-amber-200 text-amber-900 px-4 py-3 rounded-lg text-sm" role="alert">
-      <p class="font-semibold">Temporary password for <strong><%= otp["email"] || otp[:email] %></strong>:</p>
-      <code class="block mt-2 font-mono text-amber-700"><%= otp["password"] || otp[:password] %></code>
-      <p class="mt-2 text-xs">Copy it now; it will not be shown again.</p>
+      <p class="font-semibold">Temporary password for <strong><%= otp_email %></strong>:</p>
+      <div class="mt-2 flex items-center gap-2">
+        <code id="otp-value" class="flex-1 px-3 py-2 bg-white border border-amber-300 rounded font-mono text-amber-900 select-all break-all"><%= otp_password %></code>
+        <button type="button"
+                onclick="navigator.clipboard.writeText(document.getElementById('otp-value').innerText).then(() => { this.innerText = 'Copied!'; setTimeout(() => this.innerText = 'Copy', 2000); })"
+                class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded text-xs font-medium whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1">
+          Copy
+        </button>
+      </div>
+      <p class="mt-2 text-xs">Share out of band (Signal, Slack DM, …). This value will not be shown again.</p>
     </div>
   <% end %>
 

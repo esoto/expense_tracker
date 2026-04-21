@@ -36,7 +36,9 @@ class Api::WebhooksController < ApplicationController
     )
 
     expense = Expense.new(expense_params)
-    expense.email_account = default_email_account
+    account = default_email_account
+    expense.email_account = account
+    expense.user = account&.user  # FIXME(PR-11): replace with api_token owner once api_tokens model is scoped
     expense.status = "processed"
 
     if expense.save
@@ -90,6 +92,10 @@ class Api::WebhooksController < ApplicationController
     limit = [ params[:limit].to_i, 50 ].min
     limit = 10 if limit <= 0
 
+    # FIXME(PR-11): scope to api_token.user once api_tokens become user-scoped.
+    # Today a webhook token sees every user's recent expenses; acceptable in
+    # the current single-user deploy but must be tightened before a second
+    # real user onboards.
     expenses = Expense.includes(:category, :email_account)
                      .recent
                      .limit(limit)

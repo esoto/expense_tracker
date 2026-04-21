@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :email_account do
-    association :user
+    association :user, :admin
     sequence(:email) { |n| "user#{n}_#{Time.current.to_i}@example.com" }
     provider { "gmail" }
     bank_name { "BAC" }

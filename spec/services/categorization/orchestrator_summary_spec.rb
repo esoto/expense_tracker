@@ -23,6 +23,7 @@ RSpec.describe "Services::Categorization::Orchestrator Test Summary", type: :ser
       )
 
       @expense = Expense.create!(
+        user: @email_account.user,
         merchant_name: "Test Merchant",
         description: "Test purchase",
         amount: 100.00,
@@ -43,6 +44,7 @@ RSpec.describe "Services::Categorization::Orchestrator Test Summary", type: :ser
         # Create 3 unique expenses instead of duplicating the same object
         expenses = 3.times.map do |i|
           Expense.create!(
+            user: @email_account.user,
             merchant_name: "Test Merchant #{i}",
             description: "Test purchase #{i}",
             amount: 100.00 + i,

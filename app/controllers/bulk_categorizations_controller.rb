@@ -46,6 +46,10 @@ class BulkCategorizationsController < ApplicationController
   private
 
   def load_uncategorized_expenses
+    # FIXME(PR-5b): this action currently exposes every user's uncategorized
+    # expenses. Scoping by `Expense.for_user(scoping_user)` is deferred to the
+    # shared UserScoping concern landing in PR 12. Acceptable while the app is
+    # effectively single-user.
     # Fix N+1 queries by including all necessary associations
     scope = Expense
       .uncategorized

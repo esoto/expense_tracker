@@ -19,6 +19,7 @@ require "rails_helper"
 #   • application.js does NOT import the adapter
 RSpec.describe "PER-184: Chart.js date-fns adapter regression guard", type: :request do
   let(:admin_user) { create(:admin_user) }
+  let!(:app_user) { create(:user, :admin) }
 
   before { sign_in_admin(admin_user) }
 

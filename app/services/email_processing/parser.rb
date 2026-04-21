@@ -94,6 +94,7 @@ module Services::EmailProcessing
         end
 
         expense = Expense.new(
+          user: email_account&.user,
           email_account: email_account,
           amount: parsed_data[:amount],
           transaction_date: parsed_data[:transaction_date],

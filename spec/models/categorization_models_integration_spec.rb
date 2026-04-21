@@ -7,6 +7,7 @@ RSpec.describe "Categorization Models Integration", type: :model, integration: t
   let(:email_account) { create(:email_account, email: "test@example.com", provider: "gmail", bank_name: "Test Bank") }
   let(:expense) do
     Expense.create!(
+      user: email_account.user,
       email_account: email_account,
       merchant_name: "Starbucks #1234",
       description: "Coffee and breakfast",

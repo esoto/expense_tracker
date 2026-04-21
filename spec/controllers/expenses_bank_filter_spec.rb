@@ -23,9 +23,8 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
   before do
     allow(controller).to receive(:authenticate_user!).and_return(true)
     allow(controller).to receive(:authorize_expense!).and_return(true)
-    allow(controller).to receive(:current_user_email_accounts).and_return(
-      EmailAccount.where(id: [ bac_account.id, bcr_account.id, inactive_account.id ])
-    )
+    scoping_user = bac_account.user
+    allow(controller).to receive(:scoping_user).and_return(scoping_user)
 
     allow(Services::ExpenseFilterService).to receive(:new).and_return(filter_service)
     allow(filter_service).to receive(:call).and_return(service_result)

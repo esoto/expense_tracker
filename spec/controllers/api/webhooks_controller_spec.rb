@@ -278,6 +278,7 @@ RSpec.describe Api::WebhooksController, type: :controller, unit: true do
         expense_double = double("Expense")
         allow(Expense).to receive(:new).and_return(expense_double)
         allow(expense_double).to receive(:email_account=)
+        allow(expense_double).to receive(:user=)
         allow(expense_double).to receive(:status=)
         allow(expense_double).to receive(:save).and_return(false)
         allow(expense_double).to receive(:errors).and_return(double(full_messages: [ "Validation error" ]))

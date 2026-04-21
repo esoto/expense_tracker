@@ -14,7 +14,7 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
 
     # Mock current user methods
     allow(controller).to receive(:current_user_for_bulk_operations).and_return(current_user_id)
-    allow(controller).to receive(:current_user_email_accounts).and_return(EmailAccount.where(id: email_account.id))
+    allow(controller).to receive(:scoping_user).and_return(email_account.user)
     allow(controller).to receive(:can_modify_expense?).and_return(true)
   end
 
@@ -601,37 +601,33 @@ RSpec.describe ExpensesController, type: :controller, unit: true do
       end
     end
 
-    describe "#current_user_expenses" do
-      it "returns expenses scoped to user's email accounts" do
-        allow(controller).to receive(:current_user_email_accounts).and_return(EmailAccount.where(id: email_account.id))
-
-        result = controller.send(:current_user_expenses)
-
-        expect(result).to be_a(ActiveRecord::Relation)
-        expect(result.to_sql).to include("email_account_id")
-      end
-    end
-
     describe "#can_modify_expense?" do
       # Remove the global mock for these tests to test the actual method behavior
       before do
         allow(controller).to receive(:can_modify_expense?).and_call_original
       end
 
-      it "returns true for expenses belonging to user's accounts" do
-        allow(controller).to receive(:current_user_email_accounts).and_return(EmailAccount.where(id: email_account.id))
+      it "returns true for expenses belonging to scoping_user" do
+        allow(controller).to receive(:scoping_user).and_return(expense.user)
 
         result = controller.send(:can_modify_expense?, expense)
 
         expect(result).to be_truthy
       end
 
-      it "returns false for expenses not belonging to user's accounts" do
-        other_account = create(:email_account, email: "other@example.com")
-        other_expense = build(:expense, email_account: other_account)
-        allow(controller).to receive(:current_user_email_accounts).and_return(EmailAccount.none)
+      it "returns false for expenses not belonging to scoping_user" do
+        other_user = create(:user)
+        allow(controller).to receive(:scoping_user).and_return(other_user)
 
-        result = controller.send(:can_modify_expense?, other_expense)
+        result = controller.send(:can_modify_expense?, expense)
+
+        expect(result).to be_falsy
+      end
+
+      it "returns false when expense is nil" do
+        allow(controller).to receive(:scoping_user).and_return(expense.user)
+
+        result = controller.send(:can_modify_expense?, nil)
 
         expect(result).to be_falsy
       end

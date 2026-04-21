@@ -34,6 +34,32 @@ RSpec.describe User, type: :model, unit: true do
         expect { user.destroy! }.not_to raise_error
       end
     end
+
+    describe 'has_many :expenses' do
+      it 'responds to expenses' do
+        user = create(:user)
+        expect(user).to respond_to(:expenses)
+      end
+
+      it 'returns only the user\'s expenses' do
+        user_a = create(:user)
+        user_b = create(:user)
+        account_a = create(:email_account, user: user_a)
+        account_b = create(:email_account, user: user_b)
+        expense_a = create(:expense, user: user_a, email_account: account_a)
+        create(:expense, user: user_b, email_account: account_b)
+
+        expect(user_a.expenses).to eq([ expense_a ])
+      end
+
+      it 'raises when destroying a user that has expenses' do
+        user = create(:user)
+        account = create(:email_account, user: user)
+        create(:expense, user: user, email_account: account)
+
+        expect { user.destroy! }.to raise_error(ActiveRecord::DeleteRestrictionError)
+      end
+    end
   end
 
   describe 'validations' do

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_20_213200) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_21_100200) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -343,6 +343,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_20_213200) do
     t.integer "status", default: 0, null: false
     t.datetime "transaction_date", null: false
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.index "EXTRACT(hour FROM transaction_date), EXTRACT(dow FROM transaction_date)", name: "idx_expenses_hour_dow"
     t.index "EXTRACT(year FROM transaction_date), EXTRACT(month FROM transaction_date)", name: "idx_expenses_year_month", where: "(deleted_at IS NULL)", comment: "For monthly/yearly aggregations"
     t.index ["amount", "transaction_date", "merchant_name"], name: "idx_expenses_manual_duplicate_check", unique: true, where: "((deleted_at IS NULL) AND (merchant_name IS NOT NULL) AND (email_account_id IS NULL))", comment: "Unique constraint for detecting duplicate manual expenses (email_account_id IS NULL)"
@@ -373,6 +374,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_20_213200) do
     t.index ["transaction_date", "category_id", "amount"], name: "idx_expenses_analytics", where: "(deleted_at IS NULL)", comment: "Covering index for date-based analytics"
     t.index ["updated_at", "category_id"], name: "idx_expenses_dashboard_metrics"
     t.index ["updated_at"], name: "idx_expenses_updated_at"
+    t.index ["user_id"], name: "index_expenses_on_user_id"
   end
 
   create_table "external_budget_sources", force: :cascade do |t|
@@ -814,6 +816,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_20_213200) do
   add_foreign_key "email_parsing_failures", "email_accounts"
   add_foreign_key "expenses", "categories"
   add_foreign_key "expenses", "email_accounts"
+  add_foreign_key "expenses", "users"
   add_foreign_key "external_budget_sources", "email_accounts"
   add_foreign_key "llm_categorization_cache", "categories"
   add_foreign_key "merchant_aliases", "canonical_merchants"

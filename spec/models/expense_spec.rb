@@ -69,6 +69,11 @@ RSpec.describe Expense, type: :model, integration: true do
   describe 'associations', integration: true do
     let(:expense) { create(:expense, email_account: email_account, category: category) }
 
+    it 'belongs to user', unit: true do
+      expect(expense).to respond_to(:user)
+      expect(expense.user).to be_a(User)
+    end
+
     it 'belongs to email_account optionally' do
       expect(expense.email_account).to eq(email_account)
 
@@ -81,6 +86,34 @@ RSpec.describe Expense, type: :model, integration: true do
 
       expense_without_category = create(:expense, category: nil, email_account: email_account)
       expect(expense_without_category.category).to be_nil
+    end
+  end
+
+  describe '.for_user scope', unit: true do
+    it 'returns only expenses belonging to the given user' do
+      user_a = create(:user)
+      user_b = create(:user)
+      expense_a = create(:expense, user: user_a, email_account: create(:email_account, user: user_a))
+      expense_b = create(:expense, user: user_b, email_account: create(:email_account, user: user_b))
+
+      expect(Expense.for_user(user_a)).to include(expense_a)
+      expect(Expense.for_user(user_a)).not_to include(expense_b)
+    end
+
+    it 'returns all expenses when user has multiple' do
+      user = create(:user)
+      account = create(:email_account, user: user)
+      expense1 = create(:expense, user: user, email_account: account)
+      expense2 = create(:expense, user: user, email_account: account)
+
+      result = Expense.for_user(user)
+      expect(result).to include(expense1, expense2)
+      expect(result.count).to eq(2)
+    end
+
+    it 'returns empty relation when user has no expenses' do
+      user = create(:user)
+      expect(Expense.for_user(user)).to be_empty
     end
   end
 

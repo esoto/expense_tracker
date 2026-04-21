@@ -1,0 +1,50 @@
+<h1>Users</h1>
+
+<%= link_to "New User", new_admin_user_path %>
+
+<% if flash[:notice] %>
+  <p id="flash-notice"><%= flash[:notice] %></p>
+<% end %>
+<% if flash[:alert] %>
+  <p id="flash-alert"><%= flash[:alert] %></p>
+<% end %>
+
+<%# One-time password display — session-stored (not flash) to keep the
+    credential out of Rails logs. Cleared after first render. %>
+<% if (otp = session.delete(:one_time_password)) %>
+  <p id="one-time-password" role="alert">
+    Temporary password for <strong><%= otp["email"] || otp[:email] %></strong>:
+    <code><%= otp["password"] || otp[:password] %></code>
+    — copy it now; it will not be shown again.
+  </p>
+<% end %>
+
+<table>
+  <thead>
+    <tr>
+      <th>Email</th>
+      <th>Name</th>
+      <th>Role</th>
+      <th>Locked</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @users.each do |user| %>
+      <tr>
+        <td><%= user.email %></td>
+        <td><%= user.name %></td>
+        <td><%= user.role %></td>
+        <td><%= user.locked_at? ? "Yes" : "No" %></td>
+        <td>
+          <%= link_to "Edit", edit_admin_user_path(user) %>
+          <%= button_to "Lock", lock_admin_user_path(user), method: :post %>
+          <%= button_to "Unlock", unlock_admin_user_path(user), method: :post %>
+          <%= button_to "Reset Password", reset_password_admin_user_path(user), method: :post %>
+          <%= button_to "Delete", admin_user_path(user), method: :delete,
+                data: { confirm: "Delete #{user.email}?" } %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

@@ -1,6 +1,26 @@
 {
   "ignored_warnings": [
     {
+      "warning_type": "Mass Assignment",
+      "warning_code": 70,
+      "fingerprint": "e623899df256a99b9b2ebb1245fedb5d5ff82a8c16f88619e7722a892bcd47eb",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/admin/users_controller.rb",
+      "line": 115,
+      "note": "Admin::UsersController#create_user_params: :role is intentionally permitted for admin-only user management. The endpoint is gated behind require_admin! and role is validated against User.roles.keys before assignment."
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 70,
+      "fingerprint": "cf8d294f52e49488e8ed5e93bb20e4add4fce2849f42d1b7b36009e420366a17",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/admin/users_controller.rb",
+      "line": 123,
+      "note": "Admin::UsersController#update_user_params: :role is intentionally permitted for admin-only user management. The endpoint is gated behind require_admin! and role is validated against User.roles.keys before assignment."
+    },
+    {
       "warning_type": "HTTP Verb Confusion",
       "warning_code": 118,
       "fingerprint": "7110067dff86b7b3cf2f34d5175c86ff2d4974d750db836a70e42cbeac669276",

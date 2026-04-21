@@ -32,13 +32,10 @@ class BackfillBulkOperationsUserBigint < ActiveRecord::Migration[8.1]
   end
 
   def up
-    # Load the fallback admin user once — avoids N+1 queries against users table.
-    fallback_user = MigrationUser.where(role: 1).order(:id).first
-
     MigrationBulkOp.where.not(user_id: nil).find_each do |row|
       next if row.user_bigint_id.present? # Already resolved (idempotent)
 
-      resolved_user_id = resolve_user_id(row, fallback_user)
+      resolved_user_id = resolve_user_id(row)
       row.update_columns(user_bigint_id: resolved_user_id)
     end
   end
@@ -52,7 +49,7 @@ class BackfillBulkOperationsUserBigint < ActiveRecord::Migration[8.1]
 
   private
 
-  def resolve_user_id(row, fallback_user)
+  def resolve_user_id(row)
     string_id = row.user_id.to_s.strip
     return nil if string_id.blank?
 
@@ -71,19 +68,17 @@ class BackfillBulkOperationsUserBigint < ActiveRecord::Migration[8.1]
     direct_user = MigrationUser.find_by(id: int_id)
     return direct_user.id if direct_user
 
-    # Step 4: fallback to first admin User — log a warning so it's visible.
-    if fallback_user
-      Rails.logger.warn(
-        "[BackfillBulkOperationsUserBigint] bulk_operations##{row.id} " \
-        "user_id='#{row.user_id}' could not be resolved to a User — " \
-        "falling back to admin user id=#{fallback_user.id}."
-      )
-      return fallback_user.id
-    end
-
+    # No resolution — abort the migration rather than silently reassigning
+    # ownership. Codex review flagged that a fallback to the first admin
+    # changes who owns the bulk_operation row, which is a data-integrity
+    # issue (e.g. another admin's historical bulk ops would be attributed
+    # to the lowest-id admin). Better to fail loudly so the operator can
+    # investigate the orphan row before deciding how to handle it.
     raise ActiveRecord::MigrationError,
       "bulk_operations##{row.id} user_id='#{row.user_id}' could not be " \
-      "resolved to any User and no fallback admin User exists. " \
-      "Run PR 3 migration (CreateDefaultUserFromAdminUsers) first."
+      "resolved to any User. Resolve the orphan row manually (either " \
+      "delete it or reassign it to the correct User), then re-run the " \
+      "migration. If PR 3 (CreateDefaultUserFromAdminUsers) has not run, " \
+      "run it first."
   end
 end

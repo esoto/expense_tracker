@@ -142,14 +142,12 @@ RSpec.describe BackfillBulkOperationsUserBigint, unit: false, migration: true do
   RowProxy = Struct.new(:id, :user_id)
 
   def run_migration_with_string_ids
-    fallback = User.where(role: 1).order(:id).first
-
     BulkOperation.where.not(string_user_id_test: nil).find_each do |row|
       string_id = row.string_user_id_test.to_s.strip
       next if string_id.blank? || row.user_id.present?
 
       proxy = RowProxy.new(row.id, string_id)
-      resolved_id = migration.send(:resolve_user_id, proxy, fallback)
+      resolved_id = migration.send(:resolve_user_id, proxy)
       row.update_columns(user_id: resolved_id) if resolved_id
     end
   end
@@ -167,17 +165,17 @@ RSpec.describe BackfillBulkOperationsUserBigint, unit: false, migration: true do
     end
   end
 
-  # ── Path B: AdminUser found → no matching User email ────────────────────────
-  describe "Path B — AdminUser found but no User with that email → fallback" do
-    it "falls back to the admin User when email is unmatched" do
-      admin_fallback = insert_user(email: "admin@example.com", role: 1)
-      admin          = insert_admin_user(email: "ghost@example.com")
+  # ── Path B: AdminUser found → no matching User email → raise ────────────────
+  describe "Path B — AdminUser found but no User with that email → raises" do
+    it "raises rather than silently reassigning ownership (Codex review)" do
+      insert_user(email: "admin@example.com", role: 1) # fallback admin exists
+      admin = insert_admin_user(email: "ghost@example.com")
       # Intentionally do NOT create a User with ghost@example.com
-      row = insert_bulk_op_with_string_user_id(admin.id.to_s, category_id: insert_category)
+      insert_bulk_op_with_string_user_id(admin.id.to_s, category_id: insert_category)
 
-      run_migration_with_string_ids
-
-      expect(row.reload.user_id).to eq(admin_fallback.id)
+      expect { run_migration_with_string_ids }.to raise_error(
+        ActiveRecord::MigrationError, /could not be resolved/
+      )
     end
   end
 
@@ -212,21 +210,21 @@ RSpec.describe BackfillBulkOperationsUserBigint, unit: false, migration: true do
     end
   end
 
-  # ── Path E: orphan string id — no AdminUser, no direct User → fallback ───────
-  describe "Path E — orphan string id resolves via fallback" do
-    it "falls back to the admin User for an unresolvable string id" do
-      admin_fallback = insert_user(email: "admin@example.com", role: 1)
+  # ── Path E: orphan string id — no AdminUser, no direct User → raises ───────
+  describe "Path E — orphan string id raises (Codex review)" do
+    it "raises ActiveRecord::MigrationError rather than silently reassigning" do
+      insert_user(email: "admin@example.com", role: 1) # admin exists but unused
       # Use a string id that matches neither AdminUser nor User table
-      row = insert_bulk_op_with_string_user_id("99999", category_id: insert_category)
+      insert_bulk_op_with_string_user_id("99999", category_id: insert_category)
 
-      run_migration_with_string_ids
-
-      expect(row.reload.user_id).to eq(admin_fallback.id)
+      expect { run_migration_with_string_ids }.to raise_error(
+        ActiveRecord::MigrationError, /could not be resolved/
+      )
     end
   end
 
-  # ── Path F: no match and no fallback → raises ────────────────────────────────
-  describe "Path F — unresolvable id with no fallback admin User" do
+  # ── Path F: no match and no admin → raises ──────────────────────────────────
+  describe "Path F — unresolvable id with no admin User" do
     it "raises ActiveRecord::MigrationError" do
       # No admin User created; only a regular user who won't match
       insert_user(email: "regular@example.com", role: 0)

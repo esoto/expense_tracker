@@ -32,13 +32,19 @@ class DropOldStringUserIdFromBulkOperations < ActiveRecord::Migration[8.1]
                    algorithm: :concurrently
     end
 
-    # 3. Drop the old string column. The FK on user_bigint_id is already in place.
-    remove_column :bulk_operations, :user_id
+    # 3 + 4. Drop the old string column and rename user_bigint_id → user_id.
+    #        `disable_ddl_transaction!` is on (for the concurrent indexes), so
+    #        remove_column and rename_column would otherwise commit separately
+    #        — opening a brief window where bulk_operations has NO user_id
+    #        column at all and live queries would error. Wrap them in an
+    #        explicit transaction so the column swap is atomic from live
+    #        traffic's perspective.
+    ActiveRecord::Base.transaction do
+      remove_column :bulk_operations, :user_id
+      rename_column :bulk_operations, :user_bigint_id, :user_id
+    end
 
-    # 4. Rename user_bigint_id → user_id.
-    rename_column :bulk_operations, :user_bigint_id, :user_id
-
-    # 5. Add the new composite covering index CONCURRENTLY.
+    # 5. Add the new composite covering index CONCURRENTLY (outside the txn).
     add_index :bulk_operations, %i[user_id created_at],
               algorithm: :concurrently,
               name: "index_bulk_operations_on_user_id_and_created_at"

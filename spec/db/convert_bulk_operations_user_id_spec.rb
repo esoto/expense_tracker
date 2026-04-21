@@ -47,8 +47,8 @@ RSpec.describe BackfillBulkOperationsUserBigint, unit: false, migration: true do
 
   def insert_category
     conn.execute(<<~SQL.squish)
-      INSERT INTO categories (name, display_name, created_at, updated_at)
-      VALUES ('test', 'Test', NOW(), NOW())
+      INSERT INTO categories (name, created_at, updated_at)
+      VALUES ('test-' || (SELECT COALESCE(MAX(id)+1, 1) FROM categories), NOW(), NOW())
     SQL
     conn.execute("SELECT id FROM categories ORDER BY id DESC LIMIT 1").first["id"]
   end
@@ -101,7 +101,10 @@ RSpec.describe BackfillBulkOperationsUserBigint, unit: false, migration: true do
   end
 
   def cleanup
-    BulkOperation.delete_all
+    # Order matters: bulk_operations.user_id FK prevents deleting users first,
+    # and bulk_operation_items has a FK on bulk_operations.
+    conn.execute("DELETE FROM bulk_operation_items")
+    conn.execute("DELETE FROM bulk_operations")
     User.delete_all
     AdminUser.delete_all
   end
@@ -129,41 +132,25 @@ RSpec.describe BackfillBulkOperationsUserBigint, unit: false, migration: true do
     enforce_not_null_user_id
   end
 
-  # ── Internal helper: re-implement resolve_user_id using string_user_id_test
-  #    because after migration there is no string user_id column any more.
-  #    We patch the migration to read from the temp column for testing.
-  def run_migration_with_string_ids
-    migration_class = described_class
-    conn_ref = conn
+  # ── Run the REAL migration logic directly against a row whose string user_id
+  #    is held in the temp column. We build a lightweight proxy with the
+  #    attributes the migration's private `resolve_user_id` reads (`.id`,
+  #    `.user_id`), then invoke it via `send`. This exercises the migration's
+  #    actual code path — earlier versions of this spec reimplemented the
+  #    lookup chain and would have passed even if the migration itself was
+  #    broken (architect review #10).
+  RowProxy = Struct.new(:id, :user_id)
 
-    # Build a lightweight proxy that reads string_user_id_test as user_id
+  def run_migration_with_string_ids
+    fallback = User.where(role: 1).order(:id).first
+
     BulkOperation.where.not(string_user_id_test: nil).find_each do |row|
       string_id = row.string_user_id_test.to_s.strip
       next if string_id.blank? || row.user_id.present?
 
-      int_id = string_id.to_i
-
-      admin_user = AdminUser.find_by(id: int_id)
-      resolved_id = if admin_user
-        User.find_by(email: admin_user.email.to_s.downcase)&.id
-      end
-
-      unless resolved_id
-        resolved_id = User.find_by(id: int_id)&.id
-      end
-
-      unless resolved_id
-        fallback = User.where(role: 1).order(:id).first
-        if fallback
-          resolved_id = fallback.id
-        else
-          raise ActiveRecord::MigrationError,
-            "bulk_operations##{row.id} user_id='#{string_id}' could not be resolved " \
-            "to any User and no fallback admin User exists."
-        end
-      end
-
-      row.update_columns(user_id: resolved_id)
+      proxy = RowProxy.new(row.id, string_id)
+      resolved_id = migration.send(:resolve_user_id, proxy, fallback)
+      row.update_columns(user_id: resolved_id) if resolved_id
     end
   end
 

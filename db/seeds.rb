@@ -105,8 +105,7 @@ api_tokens = [
 
 created_tokens = []
 api_tokens.each do |token_data|
-  token = ApiToken.find_or_create_by!(name: token_data[:name]) do |t|
-    t.user = default_user
+  token = default_user.api_tokens.find_or_create_by!(name: token_data[:name]) do |t|
     t.expires_at = token_data[:expires_at]
     t.active = true
   end

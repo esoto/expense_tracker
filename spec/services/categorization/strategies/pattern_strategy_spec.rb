@@ -161,8 +161,13 @@ RSpec.describe Services::Categorization::Strategies::PatternStrategy, :unit, typ
     end
 
     context "with user preferences" do
+      # PR 9: preferences are scoped per email_account. The preference
+      # MUST share the expense's email_account for the lookup to return
+      # it — otherwise it's treated as another user's preference and
+      # intentionally ignored.
       let!(:user_preference) do
         create(:user_category_preference,
+               email_account: expense.email_account,
                context_type: "merchant",
                context_value: "whole foods market",
                category: category,

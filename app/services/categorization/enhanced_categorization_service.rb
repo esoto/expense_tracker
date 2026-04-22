@@ -214,7 +214,13 @@ module Services::Categorization
     def find_user_preference_category(expense)
       return nil unless expense.merchant_name?
 
-      preference = @pattern_cache.get_user_preference(expense.merchant_name)
+      # PR 9: scope by email_account so user A's "McDonalds → Fast Food"
+      # preference never leaks to user B's expenses. Ephemeral API
+      # structs without email_account_id fall through to nil → no match.
+      preference = @pattern_cache.get_user_preference(
+        expense.merchant_name,
+        expense.respond_to?(:email_account_id) ? expense.email_account_id : nil
+      )
       preference&.category
     end
 
@@ -232,7 +238,14 @@ module Services::Categorization
       end
 
       # Try fuzzy matching against patterns
-      patterns = @pattern_cache.get_patterns_by_type("merchant")
+      # PR 9: filter cached patterns to those usable by the expense's owner.
+      # Personal patterns owned by other users must never match. Ephemeral
+      # API expenses arrive as Structs without user_id — those fall
+      # through to shared-only (fail closed).
+      patterns = CategorizationPattern.filter_usable_by(
+        @pattern_cache.get_patterns_by_type("merchant"),
+        expense.respond_to?(:user_id) ? expense.user_id : nil
+      )
       result = @fuzzy_matcher.match_pattern(canonical.name, patterns)
 
       if result.success? && result.best_score >= HIGH_CONFIDENCE_THRESHOLD
@@ -245,7 +258,12 @@ module Services::Categorization
     end
 
     def find_pattern_category(expense)
-      all_patterns = @pattern_cache.get_all_active_patterns
+      # PR 9: cache returns all active patterns regardless of owner;
+      # filter to those usable by this expense's owner before matching.
+      all_patterns = CategorizationPattern.filter_usable_by(
+        @pattern_cache.get_all_active_patterns,
+        expense.respond_to?(:user_id) ? expense.user_id : nil
+      )
 
       # Group patterns by type for efficient matching
       patterns_by_type = all_patterns.group_by(&:pattern_type)
@@ -344,7 +362,12 @@ module Services::Categorization
     end
 
     def find_pattern_matches(expense)
-      all_patterns = @pattern_cache.get_all_active_patterns
+      # PR 9: same scoping as find_pattern_category — never consider
+      # another user's personal patterns when matching.
+      all_patterns = CategorizationPattern.filter_usable_by(
+        @pattern_cache.get_all_active_patterns,
+        expense.respond_to?(:user_id) ? expense.user_id : nil
+      )
       matches = []
 
       # Match merchant patterns

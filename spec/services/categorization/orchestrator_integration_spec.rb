@@ -214,7 +214,9 @@ RSpec.describe "Services::Categorization::Orchestrator Integration", type: :serv
       end
 
       let!(:user_preference) do
+        # PR 9: scoped by email_account; must match the expense's account.
         create(:user_category_preference,
+               email_account: expense.email_account,
                context_type: "merchant",
                context_value: "coffee shop abc",
                category: restaurant_category,

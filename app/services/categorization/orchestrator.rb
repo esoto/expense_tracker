@@ -321,7 +321,12 @@ module Services::Categorization
     # User Preferences
 
     def check_user_preference(expense, options)
-      preference = @pattern_cache.get_user_preference(expense.merchant_name)
+      # PR 9: scope by email_account so users don't see each other's
+      # merchant preferences.
+      preference = @pattern_cache.get_user_preference(
+        expense.merchant_name,
+        expense.respond_to?(:email_account_id) ? expense.email_account_id : nil
+      )
       return nil unless preference
 
       confidence = calculate_preference_confidence(preference)

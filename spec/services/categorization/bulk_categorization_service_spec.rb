@@ -498,7 +498,7 @@ RSpec.describe Services::Categorization::BulkCategorizationService, type: :servi
 
     it "returns empty suggestions when no patterns exist" do
       # Stub pattern query to return empty
-      allow(CategorizationPattern).to receive_message_chain(:active, :with_category).and_return([])
+      allow(CategorizationPattern).to receive_message_chain(:active, :with_category, :usable_by).and_return([])
 
       suggestions = service.suggest_categories
       expect(suggestions).to be_empty
@@ -533,7 +533,7 @@ RSpec.describe Services::Categorization::BulkCategorizationService, type: :servi
 
       it "returns result with zero categorized when no patterns match" do
         # Stub pattern query to return empty
-        allow(CategorizationPattern).to receive_message_chain(:active, :with_category).and_return([])
+        allow(CategorizationPattern).to receive_message_chain(:active, :with_category, :usable_by).and_return([])
 
         result = service.auto_categorize!
 
@@ -963,7 +963,7 @@ RSpec.describe Services::Categorization::BulkCategorizationService, type: :servi
         matches?: false
       )
 
-      allow(CategorizationPattern).to receive_message_chain(:active, :with_category)
+      allow(CategorizationPattern).to receive_message_chain(:active, :with_category, :usable_by)
         .and_return([ non_matching_pattern, matching_pattern ])
 
       result = service.send(:find_best_category_match, expense)
@@ -978,7 +978,7 @@ RSpec.describe Services::Categorization::BulkCategorizationService, type: :servi
     it "returns nil when no patterns match" do
       non_matching = instance_double(CategorizationPattern, matches?: false)
 
-      allow(CategorizationPattern).to receive_message_chain(:active, :with_category)
+      allow(CategorizationPattern).to receive_message_chain(:active, :with_category, :usable_by)
         .and_return([ non_matching ])
 
       result = service.send(:find_best_category_match, expense)
@@ -996,7 +996,7 @@ RSpec.describe Services::Categorization::BulkCategorizationService, type: :servi
         pattern_value: "test"
       )
 
-      allow(CategorizationPattern).to receive_message_chain(:active, :with_category)
+      allow(CategorizationPattern).to receive_message_chain(:active, :with_category, :usable_by)
         .and_return([ pattern_with_effective ])
 
       result = service.send(:find_best_category_match, expense)
@@ -1014,7 +1014,7 @@ RSpec.describe Services::Categorization::BulkCategorizationService, type: :servi
         pattern_value: "test"
       )
 
-      allow(CategorizationPattern).to receive_message_chain(:active, :with_category)
+      allow(CategorizationPattern).to receive_message_chain(:active, :with_category, :usable_by)
         .and_return([ pattern_without_effective ])
 
       result = service.send(:find_best_category_match, expense)
@@ -1032,7 +1032,7 @@ RSpec.describe Services::Categorization::BulkCategorizationService, type: :servi
         pattern_value: "test"
       )
 
-      allow(CategorizationPattern).to receive_message_chain(:active, :with_category)
+      allow(CategorizationPattern).to receive_message_chain(:active, :with_category, :usable_by)
         .and_return([ pattern_no_confidence ])
 
       result = service.send(:find_best_category_match, expense)
@@ -1049,7 +1049,7 @@ RSpec.describe Services::Categorization::BulkCategorizationService, type: :servi
     end
 
     it "handles errors from pattern query gracefully" do
-      allow(CategorizationPattern).to receive_message_chain(:active, :with_category)
+      allow(CategorizationPattern).to receive_message_chain(:active, :with_category, :usable_by)
         .and_raise(ActiveRecord::ConnectionNotEstablished)
 
       result = service.send(:find_best_category_match, expense)

@@ -71,7 +71,14 @@ module Services::Categorization
       private
 
       def check_user_preference(expense)
-        preference = @pattern_cache_service.get_user_preference(expense.merchant_name)
+        # PR 9: scope preference lookup to the expense's own email_account
+        # so one user's "Whole Foods → Groceries" never suggests
+        # Groceries for another user whose history maps the same
+        # merchant to a different category.
+        preference = @pattern_cache_service.get_user_preference(
+          expense.merchant_name,
+          expense.respond_to?(:email_account_id) ? expense.email_account_id : nil
+        )
         return nil unless preference
 
         base_confidence = [ preference.preference_weight / 10.0, 1.0 ].min
@@ -92,7 +99,10 @@ module Services::Categorization
       def find_pattern_matches(expense, options)
         matches = []
 
-        load_patterns_in_batches(options).each do |patterns|
+        # PR 9: scope pattern candidates to those the expense's owner can
+        # see — shared categories plus their own personal ones. Without
+        # this, personal patterns would fire on every user's expenses.
+        load_patterns_in_batches(options.merge(user_id: expense.user_id)).each do |patterns|
           matches.concat(match_merchant_patterns(expense, patterns, options))
           matches.concat(match_description_patterns(expense, patterns, options))
 
@@ -126,6 +136,12 @@ module Services::Categorization
           .order(usage_count: :desc, success_rate: :desc)
 
         patterns = patterns.where(pattern_type: options[:pattern_types]) if options[:pattern_types].present?
+
+        # PR 9: scope by expense owner. options[:user_id] is set by
+        # find_pattern_matches from expense.user_id. A nil user_id means
+        # "shared patterns only" — fail closed, same rule as
+        # CategoryPolicy.visible_scope(nil).
+        patterns = patterns.usable_by(options[:user_id]) if options.key?(:user_id)
 
         batches = []
         patterns.find_in_batches(batch_size: PATTERN_BATCH_SIZE) do |batch|

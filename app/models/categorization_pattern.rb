@@ -54,6 +54,27 @@ class CategorizationPattern < ApplicationRecord
   scope :frequently_used, -> { where("usage_count >= ?", 10) }
   scope :ordered_by_success, -> { order(success_rate: :desc, usage_count: :desc) }
 
+  # PR 9: limit pattern candidates during categorization to those whose
+  # category the actor can see — shared (user_id NULL) or owned by the
+  # actor. Anonymous callers (nil) get only shared patterns. Accepts a
+  # User instance or a user_id.
+  scope :usable_by, ->(user_or_id) {
+    user_id = user_or_id.respond_to?(:id) ? user_or_id.id : user_or_id
+    joins(:category).where("categories.user_id IS NULL OR categories.user_id = ?", user_id)
+  }
+
+  # PR 9: in-memory filter mirror of .usable_by for code paths that
+  # receive patterns from a cache (PatternCache) and cannot re-run the
+  # SQL scope. Applies the same rule: shared (category.user_id IS NULL)
+  # plus those owned by the actor. Nil user_id → shared only.
+  def self.filter_usable_by(patterns, user_or_id)
+    user_id = user_or_id.respond_to?(:id) ? user_or_id.id : user_or_id
+    patterns.select do |p|
+      owner = p.category&.user_id
+      owner.nil? || owner == user_id
+    end
+  end
+
   # Performance optimized scopes
   scope :with_category, -> { includes(:category) }
   scope :with_statistics, -> { select(:id, :pattern_type, :pattern_value, :category_id, :usage_count, :success_count, :success_rate, :confidence_weight, :active) }

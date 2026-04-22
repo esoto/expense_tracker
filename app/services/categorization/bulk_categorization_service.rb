@@ -535,8 +535,17 @@ module Services::Categorization
         # Skip if expense doesn't have required attributes
         return nil unless expense.respond_to?(:description) && expense.respond_to?(:merchant_name)
 
-        # Try to find matching patterns for this expense
-        patterns = CategorizationPattern.active.with_category rescue []
+        # PR 9: scope pattern candidates by the expense's owner so bulk
+        # operations never route a user's expense into another user's
+        # personal category. `usable_by` returns shared + owner's
+        # patterns; nil user_id falls back to shared only.
+        patterns = begin
+          CategorizationPattern.active
+                               .with_category
+                               .usable_by(expense.respond_to?(:user_id) ? expense.user_id : nil)
+        rescue
+          []
+        end
 
         matching_pattern = patterns.find { |pattern| pattern.matches?(expense) }
 
@@ -547,20 +556,29 @@ module Services::Categorization
             reason: "Pattern match: #{matching_pattern.pattern_value}"
           }
         elsif expense.respond_to?(:persisted?) && expense.persisted? && expense.description?
-          # Fallback to finding similar categorized expenses - only for persisted records
+          # Fallback: similar categorized expenses. PR 9 scopes the similar
+          # expenses to same-owner AND to categories the owner can see,
+          # so we never suggest a category another user has personalized
+          # based on their own spending history.
           first_word = expense.description.split.first
           return nil unless first_word.present?
 
-          # Only search for similar expenses if this expense is persisted
-          similar = Expense.where.not(category_id: nil)
-                           .where("description ILIKE ?", "%#{first_word}%")
-                           .group(:category_id)
-                           .count
-                           .max_by { |_, count| count }
+          similar_scope = Expense.where.not(category_id: nil)
+                                 .where("description ILIKE ?", "%#{first_word}%")
+          if expense.respond_to?(:user_id) && expense.user_id.present?
+            similar_scope = similar_scope.where(user_id: expense.user_id)
+          end
+
+          similar = similar_scope.group(:category_id).count
+                                 .max_by { |_, count| count }
 
           if similar && similar[1] > 0  # Only if we found actual matches
             category = Category.find_by(id: similar[0])
-            if category
+            # Belt-and-suspenders: only surface categories the expense's
+            # owner can see (shared or their own personal).
+            if category &&
+               (category.user_id.nil? ||
+                (expense.respond_to?(:user_id) && category.user_id == expense.user_id))
               {
                 category: category,
                 confidence: 0.6,

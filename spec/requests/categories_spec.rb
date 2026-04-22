@@ -618,6 +618,19 @@ RSpec.describe "Categories API", type: :request do
         get categories_path
         expect(response.body).not_to include("New category")
       end
+
+      it "GET /categories/:id/confirm_delete redirects (write surface gated)" do
+        own = create(:category, name: "FlagOffConfirm", user: regular)
+        get confirm_delete_category_path(own)
+        expect(response).to have_http_status(:see_other)
+        expect(response).to redirect_to(categories_path)
+      end
+
+      it "DELETE /categories/:id is blocked (write gate)" do
+        own = create(:category, name: "FlagOffDestroy", user: regular)
+        expect { delete category_path(own) }.not_to change { Category.count }
+        expect(response).to redirect_to(categories_path)
+      end
     end
 
     context "when flag is on (outer before sets it true)" do

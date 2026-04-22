@@ -205,6 +205,38 @@ RSpec.describe "Category Patterns", type: :request, integration: true do
     end
   end
 
+  describe "feature flag gate (PR 10)" do
+    # Explicit flag-off coverage for the nested pattern resource —
+    # manage_patterns? aliases edit?, which requires the flag for
+    # non-admin users.
+    context "when the flag is off" do
+      before { ENV.delete("PERSONAL_CATEGORIES_OPEN_TO_ALL") }
+
+      before { sign_in_as(user) }
+
+      it "POST /categories/:id/patterns is blocked — category_panel shows authorization failure" do
+        expect {
+          post category_patterns_path(own), params: {
+            categorization_pattern: { pattern_type: "merchant", pattern_value: "blocked" }
+          }
+        }.not_to change { CategorizationPattern.count }
+        # CategoryPolicy#manage_patterns? returns false so the controller
+        # treats the request as out-of-scope (404) to preserve existence
+        # hiding.
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it "DELETE /categories/:id/patterns/:id is blocked" do
+        pattern = create(:categorization_pattern,
+                         category: own,
+                         pattern_type: "merchant",
+                         pattern_value: "blocked_destroy")
+        expect { delete category_pattern_path(own, pattern) }.not_to change { CategorizationPattern.count }
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+  end
+
   describe "show view patterns section" do
     before { sign_in_as(user) }
 

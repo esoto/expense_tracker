@@ -64,6 +64,11 @@ env:
     SOLID_QUEUE_IN_PUMA: true
     # Host for DNS rebinding protection
     RAILS_HOST: expense-tracker.estebansoto.dev
+    # Personal Category Management rollout kill-switch (PR 10/10).
+    # "true" → open to all users. Unset / any other value → admins only.
+    # Toggle by editing here and re-deploying; effect is immediate on
+    # restart. No migration needed to roll back.
+    PERSONAL_CATEGORIES_OPEN_TO_ALL: "false"
 
 # Useful aliases
 aliases:

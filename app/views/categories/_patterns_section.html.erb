@@ -47,6 +47,23 @@
   <% end %>
 
   <% if can_manage %>
+    <%# Surface validation errors from a failed POST /categories/:id/patterns
+        — the controller re-renders categories/show, and @pattern carries the
+        errors. Without this block the user sees only a flash banner outside
+        the Turbo Frame, so errors never reach the panel. %>
+    <% if defined?(@pattern) && @pattern&.errors&.any? %>
+      <div class="mb-3 rounded-md bg-rose-50 border border-rose-200 p-3 text-sm text-rose-800">
+        <p class="font-medium mb-1">
+          Could not add pattern:
+        </p>
+        <ul class="list-disc list-inside">
+          <% @pattern.errors.full_messages.each do |msg| %>
+            <li><%= msg %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
     <%= form_with url: category_patterns_path(category),
                   scope: :categorization_pattern,
                   data: { turbo_frame: "category_panel" },

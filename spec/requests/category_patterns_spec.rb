@@ -54,6 +54,81 @@ RSpec.describe "Category Patterns", type: :request, integration: true do
       expect(response).to have_http_status(:unprocessable_entity)
     end
 
+    it "surfaces validation errors inside the category_panel Turbo Frame" do
+      post category_patterns_path(own), params: {
+        categorization_pattern: { pattern_type: "invalid_type", pattern_value: "x" }
+      }
+      doc = Nokogiri::HTML(response.body)
+      frame = doc.at_css('turbo-frame#category_panel')
+      expect(frame).not_to be_nil
+      expect(frame.text).to include("Could not add pattern")
+    end
+
+    it "rejects an empty pattern_value (model presence)" do
+      expect {
+        post category_patterns_path(own), params: {
+          categorization_pattern: { pattern_type: "merchant", pattern_value: "" }
+        }
+      }.not_to change { CategorizationPattern.count }
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it "rejects a whitespace-only pattern_value" do
+      expect {
+        post category_patterns_path(own), params: {
+          categorization_pattern: { pattern_type: "merchant", pattern_value: "   " }
+        }
+      }.not_to change { CategorizationPattern.count }
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it "ignores a forged user_created=false param (server forces true)" do
+      post category_patterns_path(own), params: {
+        categorization_pattern: {
+          pattern_type: "merchant",
+          pattern_value: "forged",
+          user_created: false
+        }
+      }
+      created = own.categorization_patterns.find_by(pattern_value: "forged")
+      expect(created).not_to be_nil
+      expect(created.user_created).to be true
+    end
+
+    it "ignores a forged category_id in params (stays on the nested category)" do
+      post category_patterns_path(own), params: {
+        categorization_pattern: {
+          pattern_type: "merchant",
+          pattern_value: "crossposted",
+          category_id: others.id
+        }
+      }
+      created = CategorizationPattern.find_by(pattern_value: "crossposted")
+      expect(created).not_to be_nil
+      expect(created.category_id).to eq(own.id)
+      expect(created.category_id).not_to eq(others.id)
+    end
+
+    it "ignores forged confidence_weight / usage_count / active params" do
+      post category_patterns_path(own), params: {
+        categorization_pattern: {
+          pattern_type: "merchant",
+          pattern_value: "tampered",
+          confidence_weight: 9.9,
+          usage_count: 1_000,
+          success_count: 999,
+          active: false
+        }
+      }
+      created = own.categorization_patterns.find_by(pattern_value: "tampered")
+      expect(created).not_to be_nil
+      # New patterns start with defaults, not the forged values.
+      expect(created.confidence_weight).to eq(CategorizationPattern::DEFAULT_CONFIDENCE_WEIGHT)
+      expect(created.usage_count).to eq(0)
+      expect(created.success_count).to eq(0)
+      expect(created.active).to be true
+    end
+
     it "requires authentication" do
       delete logout_path
       post category_patterns_path(own), params: {

@@ -1,0 +1,69 @@
+<%# Pattern management section for the category side panel (PR 7).
+    Visible to users who can manage the category's patterns. Shows
+    existing patterns with usage metrics and a compact add form. %>
+<% can_manage = CategoryPolicy.new(current_user, category).manage_patterns? %>
+<% patterns = category.categorization_patterns.order(:pattern_type, :pattern_value) %>
+
+<section class="mt-6 pt-5 border-t border-slate-200">
+  <header class="flex items-center justify-between mb-3">
+    <h2 class="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+      Patterns
+      <span class="text-slate-400 font-normal normal-case ml-1">(<%= patterns.size %>)</span>
+    </h2>
+  </header>
+
+  <% if patterns.any? %>
+    <ul class="space-y-1.5 mb-4">
+      <% patterns.each do |p| %>
+        <li class="flex items-center justify-between gap-3 px-3 py-2 bg-slate-50 rounded-md text-sm">
+          <div class="min-w-0 flex items-center gap-2">
+            <span class="inline-block px-1.5 py-0.5 rounded text-xs font-mono bg-teal-50 text-teal-800 shrink-0">
+              <%= p.pattern_type %>
+            </span>
+            <span class="text-slate-900 truncate"><%= p.pattern_value %></span>
+          </div>
+          <div class="shrink-0 flex items-center gap-3">
+            <span class="text-xs text-slate-500">
+              <%= p.usage_count %>× · <%= "%.0f" % ((p.success_rate || 0) * 100) %>%
+            </span>
+            <% if can_manage %>
+              <%= button_to "×",
+                            category_pattern_path(category, p),
+                            method: :delete,
+                            data: {
+                              turbo_confirm: "Delete this pattern?",
+                              turbo_frame: "category_panel"
+                            },
+                            class: "text-rose-600 hover:text-rose-800 font-bold leading-none px-1",
+                            title: "Delete pattern",
+                            form_class: "inline" %>
+            <% end %>
+          </div>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <p class="text-sm text-slate-500 italic mb-4">No patterns yet.</p>
+  <% end %>
+
+  <% if can_manage %>
+    <%= form_with url: category_patterns_path(category),
+                  scope: :categorization_pattern,
+                  data: { turbo_frame: "category_panel" },
+                  class: "flex items-start gap-2" do |f| %>
+      <%= f.select :pattern_type,
+                   options_for_select(CategorizationPattern::PATTERN_TYPES.map { |t| [ t, t ] }),
+                   {},
+                   class: "rounded-md border-slate-300 text-sm w-28 shrink-0" %>
+      <%= f.text_field :pattern_value,
+                       placeholder: "value",
+                       required: true,
+                       class: "flex-1 rounded-md border-slate-300 shadow-sm text-sm focus:border-teal-500 focus:ring-teal-500" %>
+      <%= f.submit "Add",
+                   class: "shrink-0 px-3 py-1.5 rounded-md bg-teal-700 text-white hover:bg-teal-800 text-sm" %>
+    <% end %>
+    <p class="text-xs text-slate-500 mt-2">
+      Types: merchant / keyword / description (substring); amount_range (e.g. 10-50); regex; time.
+    </p>
+  <% end %>
+</section>

@@ -132,7 +132,13 @@ Rails.application.routes.draw do
 
   # Categories — full CRUD for personal category management (PR 3/10).
   # The JSON index keeps its shape as a dropdown data source for forms.
-  resources :categories
+  resources :categories do
+    # Nested user-facing pattern management (PR 7/10). Scoped to
+    # categories the user can edit; lives under the category side panel.
+    # Separate from Admin::PatternsController, which is the global
+    # admin surface for all patterns across all categories.
+    resources :patterns, only: %i[create destroy], controller: "category_patterns"
+  end
 
   # Bulk operations routes (must come before general resources to avoid conflicts)
   scope "/expenses", controller: :expenses do

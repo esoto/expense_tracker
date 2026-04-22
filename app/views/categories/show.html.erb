@@ -42,6 +42,8 @@
       <p class="text-slate-700 text-sm mb-3"><%= @category.description %></p>
     <% end %>
 
+    <%= render "categories/patterns_section", category: @category %>
+
     <p class="text-xs text-slate-500 mt-6">
       <%# Break out of the panel frame so this navigates to the full
           /categories/:id page. Without _top the link would load the

@@ -25,12 +25,17 @@ class CategoryPolicy
     return false if user.nil?
     return true if admin?
 
+    # Read access intentionally ignores the feature flag: if a user
+    # created personal categories while the flag was on and an admin
+    # later flips it off, their existing data stays visible (they just
+    # can't edit it). No silent data loss on rollback.
     category.shared? || owned_by_user?
   end
 
   def create?
     return false if user.nil?
     return true if admin?
+    return false unless user.can_manage_categories?
 
     # Non-admins cannot create shared categories (user_id nil) and cannot
     # create categories on behalf of another user.
@@ -40,6 +45,7 @@ class CategoryPolicy
   def edit?
     return false if user.nil?
     return true if admin?
+    return false unless user.can_manage_categories?
 
     owned_by_user?
   end
@@ -52,6 +58,15 @@ class CategoryPolicy
 
   def manage_patterns?
     edit?
+  end
+
+  # Gate for the /categories index surface — used by navigation
+  # helpers to hide the link for users without the feature flag.
+  # Admins always in.
+  def self.can_access?(user)
+    return false if user.nil?
+
+    user.can_manage_categories?
   end
 
   # Returns an ActiveRecord::Relation of categories the user may see.

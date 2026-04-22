@@ -20,7 +20,7 @@
       <% end %>
     </div>
     <div class="shrink-0 flex items-center gap-3">
-      <% if category.shared? && category.root? %>
+      <% if category.shared? && category.root? && CategoryPolicy.can_access?(current_user) %>
         <%= link_to "+ Add subcategory",
                     new_category_path(parent_id: category.id),
                     data: { turbo_frame: "category_panel" },

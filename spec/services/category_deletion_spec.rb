@@ -3,6 +3,13 @@
 require "rails_helper"
 
 RSpec.describe Services::CategoryDeletion, type: :service, integration: true do
+  # PR 10: the service delegates authorization to CategoryPolicy#destroy?,
+  # which now requires the feature flag for non-admin users. Enable the
+  # flag globally for this spec so the matrix tests keep exercising the
+  # real service logic.
+  before { ENV["PERSONAL_CATEGORIES_OPEN_TO_ALL"] = "true" }
+  after  { ENV.delete("PERSONAL_CATEGORIES_OPEN_TO_ALL") }
+
   let!(:user)  { create(:user, email: "cd_user@example.com") }
   let!(:other) { create(:user, email: "cd_other@example.com") }
   let!(:email_account) { create(:email_account, user: user) }

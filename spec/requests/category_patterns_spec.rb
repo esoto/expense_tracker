@@ -3,6 +3,11 @@
 require "rails_helper"
 
 RSpec.describe "Category Patterns", type: :request, integration: true do
+  # PR 10: these examples predate the feature flag — treat the flag as
+  # on so they continue to exercise the real authz matrix.
+  before { ENV["PERSONAL_CATEGORIES_OPEN_TO_ALL"] = "true" }
+  after  { ENV.delete("PERSONAL_CATEGORIES_OPEN_TO_ALL") }
+
   let!(:user)  { create(:user, email: "cp_user@example.com") }
   let!(:other) { create(:user, email: "cp_other@example.com") }
 
@@ -197,6 +202,38 @@ RSpec.describe "Category Patterns", type: :request, integration: true do
       expect {
         delete category_pattern_path(others, others_pattern)
       }.to change { CategorizationPattern.count }.by(-1)
+    end
+  end
+
+  describe "feature flag gate (PR 10)" do
+    # Explicit flag-off coverage for the nested pattern resource —
+    # manage_patterns? aliases edit?, which requires the flag for
+    # non-admin users.
+    context "when the flag is off" do
+      before { ENV.delete("PERSONAL_CATEGORIES_OPEN_TO_ALL") }
+
+      before { sign_in_as(user) }
+
+      it "POST /categories/:id/patterns is blocked — category_panel shows authorization failure" do
+        expect {
+          post category_patterns_path(own), params: {
+            categorization_pattern: { pattern_type: "merchant", pattern_value: "blocked" }
+          }
+        }.not_to change { CategorizationPattern.count }
+        # CategoryPolicy#manage_patterns? returns false so the controller
+        # treats the request as out-of-scope (404) to preserve existence
+        # hiding.
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it "DELETE /categories/:id/patterns/:id is blocked" do
+        pattern = create(:categorization_pattern,
+                         category: own,
+                         pattern_type: "merchant",
+                         pattern_value: "blocked_destroy")
+        expect { delete category_pattern_path(own, pattern) }.not_to change { CategorizationPattern.count }
+        expect(response).to have_http_status(:not_found)
+      end
     end
   end
 

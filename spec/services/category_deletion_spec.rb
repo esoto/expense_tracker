@@ -120,7 +120,16 @@ RSpec.describe Services::CategoryDeletion, type: :service, integration: true do
       expect(Category.exists?(source.id)).to be true
     end
 
-    it "rolls back when reassigning would violate a unique budget constraint" do
+    it "refuses when reassign_to is a direct child of the category being deleted (would create a cycle)" do
+      child = create(:category, name: "CycleChild", user: user, parent: source)
+      result = described_class.new(category: source, actor: user, strategy: :reassign, reassign_to: child).call
+      expect(result.success).to be false
+      expect(result.error).to match(/descendant/i)
+      expect(Category.exists?(source.id)).to be true
+      expect(child.reload.parent_id).to eq(source.id) # unchanged
+    end
+
+    it "rolls back fully when reassigning would violate a unique budget constraint" do
       # Existing active monthly budget on target for the same email_account
       create(:budget,
              email_account: email_account,
@@ -131,20 +140,31 @@ RSpec.describe Services::CategoryDeletion, type: :service, integration: true do
              period: :monthly,
              start_date: Date.current,
              currency: "CRC")
-      # Now create an active monthly budget on source — reassign would collide.
-      create(:budget,
-             email_account: email_account,
-             user: user,
-             category: source,
-             name: "Source Budget",
-             amount: 100,
-             period: :monthly,
-             start_date: Date.current,
-             currency: "CRC")
+      source_budget = create(:budget,
+                             email_account: email_account,
+                             user: user,
+                             category: source,
+                             name: "Source Budget",
+                             amount: 100,
+                             period: :monthly,
+                             start_date: Date.current,
+                             currency: "CRC")
+      source_expense = create(:expense, category: source, email_account: email_account)
+      source_child   = create(:category, name: "SourceChild", user: user, parent: source)
+      source_pattern = create(:categorization_pattern,
+                              category: source,
+                              pattern_type: "merchant",
+                              pattern_value: "rb_src")
 
       result = described_class.new(category: source, actor: user, strategy: :reassign, reassign_to: target).call
       expect(result.success).to be false
-      expect(Category.exists?(source.id)).to be true # rolled back
+
+      # Full rollback — nothing moved, nothing deleted
+      expect(Category.exists?(source.id)).to be true
+      expect(source_expense.reload.category_id).to eq(source.id)
+      expect(source_child.reload.parent_id).to eq(source.id)
+      expect(source_budget.reload.category_id).to eq(source.id)
+      expect(CategorizationPattern.exists?(source_pattern.id)).to be true
     end
   end
 
@@ -172,9 +192,9 @@ RSpec.describe Services::CategoryDeletion, type: :service, integration: true do
   end
 
   describe "shared category with personal children" do
-    it "blocks deletion while personal children exist under the shared parent" do
+    it "blocks deletion while personal children exist under the shared parent and preserves both" do
       shared_parent = create(:category, name: "SharedParent", user: nil)
-      create(:category, name: "PersonalChildUnderShared", user: user, parent: shared_parent)
+      child = create(:category, name: "PersonalChildUnderShared", user: user, parent: shared_parent)
       reassign_to = create(:category, name: "SharedFallback", user: nil)
 
       admin = create(:user, :admin, email: "cd_admin2@example.com")
@@ -184,6 +204,11 @@ RSpec.describe Services::CategoryDeletion, type: :service, integration: true do
                                    reassign_to: reassign_to).call
       expect(result.success).to be false
       expect(result.error).to match(/personal children/i)
+
+      # Nothing moved, nothing deleted.
+      expect(Category.exists?(shared_parent.id)).to be true
+      expect(child.reload.parent_id).to eq(shared_parent.id)
+      expect(child.user_id).to eq(user.id)
     end
   end
 end

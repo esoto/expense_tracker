@@ -78,9 +78,10 @@ module Services
       return blocked_by_personal_children_reason if blocked_by_personal_children?
 
       if @strategy == :reassign
-        return "A reassign target is required."          if @reassign_to.nil?
-        return "Cannot reassign to the deleted category." if @reassign_to.id == @category.id
-        return "Reassign target is not accessible."       unless reassign_target_visible?
+        return "A reassign target is required."            if @reassign_to.nil?
+        return "Cannot reassign to the deleted category."  if @reassign_to.id == @category.id
+        return "Reassign target is not accessible."        unless reassign_target_visible?
+        return "Reassign target cannot be a descendant."   if reassign_target_is_descendant?
       end
 
       nil
@@ -92,6 +93,23 @@ module Services
 
     def reassign_target_visible?
       CategoryPolicy.new(@actor, @reassign_to).show?
+    end
+
+    # Walk up the parent chain from the reassign target: if we encounter
+    # the category being deleted, the target is a descendant. Reparenting
+    # children to a descendant would create a cycle (or reparent the target
+    # to itself once its parent is destroyed). `update_all` bypasses the
+    # model's `cannot_be_parent_of_itself` validation, so this check is the
+    # last line of defense against corruption of the tree.
+    def reassign_target_is_descendant?
+      current = @reassign_to
+      seen = Set.new
+      while current && !seen.include?(current.id)
+        return true if current.id == @category.id
+        seen << current.id
+        current = current.parent
+      end
+      false
     end
 
     # Deleting a shared category while some user has a personal child under

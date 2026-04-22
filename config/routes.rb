@@ -1,6 +1,20 @@
 Rails.application.routes.draw do
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
+  # Browsers auto-request /favicon.ico regardless of the <link rel="icon"> tags
+  # in the layout, and Safari / iOS Safari do not reliably accept SVG at the
+  # /favicon.ico endpoint (only the explicit <link rel="icon" type="image/svg">
+  # path). Redirect to the PNG rendition so every browser resolves correctly.
+  # 301 is safe: the target is the stable 512x512 teal bar-chart PNG.
+  get "/favicon.ico", to: redirect("/icon.png", status: 301)
+
+  # iOS and macOS Safari also probe /apple-touch-icon.png (and the
+  # -precomposed variant) even when an apple-touch-icon <link> is declared.
+  # Redirect both so the 404s in the server log go away and the tab/home-screen
+  # icons resolve on the first try.
+  get "/apple-touch-icon.png", to: redirect("/icon.png", status: 301)
+  get "/apple-touch-icon-precomposed.png", to: redirect("/icon.png", status: 301)
+
   # End-user authentication (parallel to /admin/login during migration)
   get "login", to: "sessions#new", as: :login
   post "login", to: "sessions#create"

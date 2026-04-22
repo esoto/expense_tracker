@@ -139,10 +139,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_22_120000) do
     t.integer "parent_id"
     t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.index "user_id, lower((name)::text)", name: "index_categories_on_user_id_and_lower_name_personal", unique: true, where: "(user_id IS NOT NULL)"
     t.index ["i18n_key"], name: "index_categories_on_i18n_key", unique: true
     t.index ["name"], name: "index_categories_on_name"
     t.index ["parent_id"], name: "index_categories_on_parent_id"
-    t.index ["user_id", "name"], name: "index_categories_on_user_id_and_name_personal", unique: true, where: "(user_id IS NOT NULL)"
     t.index ["user_id", "parent_id"], name: "index_categories_on_user_id_and_parent_id"
     t.index ["user_id"], name: "index_categories_on_user_id"
   end

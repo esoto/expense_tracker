@@ -6,12 +6,13 @@ class AddUserIdToCategories < ActiveRecord::Migration[8.1]
     add_index :categories, [ :user_id, :parent_id ]
 
     # Partial unique index: a given user cannot have two personal categories
-    # with the same name. Shared categories (user_id IS NULL) are unaffected,
-    # so the current seeded set is not constrained.
+    # with the same name (case-insensitive). Shared categories
+    # (user_id IS NULL) are unaffected, so the current seeded set is not
+    # constrained. LOWER(name) mirrors the case_sensitive: false validation.
     add_index :categories,
-              [ :user_id, :name ],
+              "user_id, LOWER(name)",
               unique: true,
               where: "user_id IS NOT NULL",
-              name: "index_categories_on_user_id_and_name_personal"
+              name: "index_categories_on_user_id_and_lower_name_personal"
   end
 end

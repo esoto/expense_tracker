@@ -13,9 +13,10 @@ class Category < ApplicationRecord
   # Validations
   validates :name, presence: true, length: { maximum: 255 }
   validates :color, format: { with: /\A#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})\z/, message: "must be a valid hex color" }, allow_blank: true
-  validates :name, uniqueness: { scope: :user_id }, if: :personal?
+  validates :name, uniqueness: { scope: :user_id, case_sensitive: false }, if: :personal?
   validate :cannot_be_parent_of_itself
   validate :parent_ownership_must_match
+  validate :user_id_change_preserves_children
 
   # Scopes
   scope :root_categories, -> { where(parent_id: nil) }
@@ -83,5 +84,16 @@ class Category < ApplicationRecord
     elsif parent.personal? && user_id != parent.user_id
       errors.add(:parent, "must belong to the same user or be shared")
     end
+  end
+
+  # Changing a category's `user_id` can silently invalidate its existing
+  # children's `parent_ownership_must_match` state (e.g. a shared parent
+  # with shared children becomes personal, making the children invalid).
+  # Forbid the change while children exist — re-ownership is unusual and
+  # the safe workflow is to move or reparent children first.
+  def user_id_change_preserves_children
+    return unless persisted? && user_id_changed? && children.exists?
+
+    errors.add(:user_id, "cannot change while the category has children")
   end
 end

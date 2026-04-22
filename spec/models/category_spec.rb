@@ -256,10 +256,53 @@ RSpec.describe Category, type: :model, integration: true do
         expect(second).not_to be_valid
       end
 
-      it 'does not constrain shared categories against the uniqueness' do
+      it 'prevents case-insensitive duplicates for the same user' do
+        create(:category, name: 'Out Food', user: user_a)
+        mixed_case = build(:category, name: 'out food', user: user_a)
+        expect(mixed_case).not_to be_valid
+        expect(mixed_case.errors[:name]).to be_present
+      end
+
+      it 'allows two shared categories to share a name (no uniqueness constraint)' do
         create(:category, name: 'Food', user: nil)
-        another_shared = build(:category, name: 'Transport', user: nil)
-        expect(another_shared).to be_valid
+        duplicate_shared = build(:category, name: 'Food', user: nil)
+        expect(duplicate_shared).to be_valid
+      end
+    end
+
+    describe 'update-path tree rule invariants' do
+      let(:user_a) { create(:user, email: 'a@example.com') }
+      let(:user_b) { create(:user, email: 'b@example.com') }
+
+      it 'rejects reparenting a shared category under a personal one via update' do
+        shared_child = create(:category, name: 'Shared Child', user: nil)
+        personal = create(:category, name: 'A Branch', user: user_a)
+        shared_child.parent = personal
+        expect(shared_child).not_to be_valid
+        expect(shared_child.errors[:parent]).to include('shared category cannot have a personal parent')
+      end
+
+      it "rejects reparenting a personal category under another user's personal" do
+        a_child = create(:category, name: 'A Child', user: user_a)
+        b_personal = create(:category, name: 'B Branch', user: user_b)
+        a_child.parent = b_personal
+        expect(a_child).not_to be_valid
+        expect(a_child.errors[:parent]).to include('must belong to the same user or be shared')
+      end
+
+      it 'forbids changing user_id while the category has children (would orphan invariants)' do
+        parent = create(:category, name: 'Food', user: nil)
+        create(:category, name: 'Out Food', user: user_a, parent: parent)
+
+        parent.user = user_a
+        expect(parent).not_to be_valid
+        expect(parent.errors[:user_id]).to include('cannot change while the category has children')
+      end
+
+      it 'permits changing user_id on a childless category' do
+        childless = create(:category, name: 'Tmp', user: user_a)
+        childless.user = nil
+        expect(childless).to be_valid
       end
     end
   end

@@ -116,26 +116,42 @@ RSpec.describe "Categories API", type: :request do
         expect(response.body).to include("My Categories")
       end
 
-      it "shows the user's personal subcategory nested under the shared parent" do
-        expect(response.body).to include("TreeMyPersonalSub")
-        shared_idx = response.body.index("TreeSharedRoot")
-        my_sub_idx  = response.body.index("TreeMyPersonalSub")
-        branch_idx  = response.body.index("TreeMyPersonalBranch")
-        expect(shared_idx).to be_present
-        expect(my_sub_idx).to be > shared_idx
-        expect(branch_idx).to be > my_sub_idx # personal branch appears after the shared tree section
+      # Parse the DOM once and scope assertions to the Shared vs My
+      # Categories sections so a regression in tree placement produces a
+      # meaningful failure (not just a substring-index mismatch).
+      let(:doc) { Nokogiri::HTML(response.body) }
+      # The two column <section>s carry the `bg-white` class; the outer
+      # container does not. Scoping to that class keeps the h2 text match
+      # from matching the outer wrapper (which transitively contains both
+      # column headings via descendants).
+      let(:shared_section) do
+        doc.css("section.bg-white").find { |s| s.at_css("h2")&.text&.include?("Shared") }
+      end
+      let(:personal_section) do
+        doc.css("section.bg-white").find { |s| s.at_css("h2")&.text&.include?("My Categories") }
       end
 
-      it "shows the user's personal top-level branch" do
-        expect(response.body).to include("TreeMyPersonalBranch")
+      it "renders the user's personal subcategory under its shared parent" do
+        expect(shared_section).not_to be_nil
+        expect(shared_section.text).to include("TreeSharedRoot")
+        expect(shared_section.text).to include("TreeMyPersonalSub")
       end
 
-      it "hides another user's personal subcategory even though it lives under a shared parent" do
+      it "renders the user's personal top-level branch in the My Categories column" do
+        expect(personal_section).not_to be_nil
+        expect(personal_section.text).to include("TreeMyPersonalBranch")
+      end
+
+      it "does not place personal top-level branch in the Shared column" do
+        expect(shared_section.text).not_to include("TreeMyPersonalBranch")
+      end
+
+      it "hides another user's personal subcategory even when it lives under a shared parent" do
         expect(response.body).not_to include("TreeOthersSub")
       end
 
       it "renders shared children under shared parents" do
-        expect(response.body).to include("TreeSharedChild")
+        expect(shared_section.text).to include("TreeSharedChild")
       end
     end
   end

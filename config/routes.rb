@@ -1,6 +1,13 @@
 Rails.application.routes.draw do
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
+  # Browsers auto-request /favicon.ico regardless of the <link rel="icon"> tags
+  # in the layout. Redirect to the SVG tile (Financial Confidence palette,
+  # rounded-square bar chart) — modern browsers accept SVG favicons and cache
+  # the 301 aggressively, so the redirect costs effectively nothing after the
+  # first request per client.
+  get "/favicon.ico", to: redirect("/icon.svg", status: 301)
+
   # End-user authentication (parallel to /admin/login during migration)
   get "login", to: "sessions#new", as: :login
   post "login", to: "sessions#create"

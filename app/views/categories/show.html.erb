@@ -28,7 +28,7 @@
     </p>
   <% end %>
 
-  <% if @category.description.present? %>
+  <% if @category.description? %>
     <p class="text-slate-700 mb-4"><%= @category.description %></p>
   <% end %>
 

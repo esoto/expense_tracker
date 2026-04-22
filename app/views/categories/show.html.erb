@@ -19,10 +19,20 @@
                       data: { turbo_frame: "category_panel" },
                       class: "px-3 py-1.5 rounded-md border border-teal-700 text-teal-700 hover:bg-teal-50 text-sm" %>
           <% if CategoryPolicy.new(current_user, @category).destroy? %>
-            <%= button_to "Delete", category_path(@category),
-                          method: :delete,
-                          data: { turbo_confirm: "Delete this category?" },
+            <%# For empty categories the confirm_delete page would be
+                overkill — a single confirm dialog and straight delete is
+                nicer. For anything with dependents, route through the
+                reassign/orphan chooser. %>
+            <% if @category.expenses.exists? || @category.children.exists? || @category.categorization_patterns.exists? %>
+              <%= link_to "Delete", confirm_delete_category_path(@category),
+                          data: { turbo_frame: "category_panel" },
                           class: "px-3 py-1.5 rounded-md border border-rose-600 text-rose-600 hover:bg-rose-50 text-sm" %>
+            <% else %>
+              <%= button_to "Delete", category_path(@category),
+                            method: :delete,
+                            data: { turbo_confirm: "Delete this category?" },
+                            class: "px-3 py-1.5 rounded-md border border-rose-600 text-rose-600 hover:bg-rose-50 text-sm" %>
+            <% end %>
           <% end %>
         </div>
       <% end %>

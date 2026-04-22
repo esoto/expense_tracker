@@ -494,13 +494,35 @@ RSpec.describe "Categories API", type: :request do
       expect(response).to redirect_to(categories_path)
     end
 
-    it "refuses to destroy a category that is in use by expenses (deferred to PR 8)" do
+    it "deletes a personal category with expenses via :orphan by default" do
       victim = create(:category, name: "Occupied", user: user)
+      email_account = create(:email_account, user: user)
+      expense = create(:expense, category: victim, email_account: email_account)
+
+      expect { delete category_path(victim) }.to change { Category.count }.by(-1)
+      expect(expense.reload.category_id).to be_nil
+      expect(response).to redirect_to(categories_path)
+    end
+
+    it "deletes a personal category via :reassign when strategy+target are provided" do
+      victim = create(:category, name: "ReassignSource", user: user)
+      target = create(:category, name: "ReassignTarget", user: user)
+      email_account = create(:email_account, user: user)
+      expense = create(:expense, category: victim, email_account: email_account)
+
+      delete category_path(victim), params: { strategy: "reassign", reassign_to_id: target.id }
+      expect(Category.exists?(victim.id)).to be false
+      expect(expense.reload.category_id).to eq(target.id)
+    end
+
+    it "keeps the category and surfaces error when reassign is chosen without a target" do
+      victim = create(:category, name: "NoTarget", user: user)
       email_account = create(:email_account, user: user)
       create(:expense, category: victim, email_account: email_account)
 
-      expect { delete category_path(victim) }.not_to change { Category.count }
-      expect(response).to have_http_status(:unprocessable_entity).or redirect_to(category_path(victim))
+      delete category_path(victim), params: { strategy: "reassign" }
+      expect(Category.exists?(victim.id)).to be true
+      expect(response).to redirect_to(category_path(victim))
     end
 
     it "returns 404 on another user's personal category" do
@@ -510,32 +532,43 @@ RSpec.describe "Categories API", type: :request do
       expect(response).to have_http_status(:not_found)
     end
 
-    it "refuses destroy when the category has children" do
+    it "deletes a personal category with children via :orphan (children detach)" do
       victim = create(:category, name: "WithChild", user: user)
-      create(:category, name: "Child of WithChild", user: user, parent: victim)
-      expect { delete category_path(victim) }.not_to change { Category.count }
-      expect(response).to redirect_to(category_path(victim))
+      child = create(:category, name: "Child of WithChild", user: user, parent: victim)
+      expect { delete category_path(victim) }.to change { Category.count }.by(-1)
+      expect(child.reload.parent_id).to be_nil
     end
 
-    it "refuses destroy when the category has categorization_patterns" do
+    it "deletes a personal category with patterns via :orphan (patterns cascade)" do
       victim = create(:category, name: "WithPattern", user: user)
       create(:categorization_pattern, category: victim, pattern_type: "merchant", pattern_value: "somestore")
-      expect { delete category_path(victim) }.not_to change { Category.count }
-      expect(response).to redirect_to(category_path(victim))
+      expect {
+        delete category_path(victim)
+      }.to change { Category.count }.by(-1).and change { CategorizationPattern.count }.by(-1)
+    end
+  end
+
+  describe "GET /categories/:id/confirm_delete", :integration do
+    let!(:user) { create(:user, email: "confirm_user@example.com") }
+
+    before { sign_in_as(user) }
+
+    it "renders the reassign/orphan chooser for a category with dependents" do
+      victim = create(:category, name: "ConfirmVictim", user: user)
+      email_account = create(:email_account, user: user)
+      create(:expense, category: victim, email_account: email_account)
+
+      get confirm_delete_category_path(victim)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Orphan")
+      expect(response.body).to include("Reassign")
     end
 
-    it "refuses destroy when the category has user_category_preferences" do
-      victim = create(:category, name: "WithPref", user: user)
-      email_account = create(:email_account, user: user)
-      create(:user_category_preference,
-             email_account: email_account,
-             category: victim,
-             context_type: "merchant",
-             context_value: "foo",
-             preference_weight: 1,
-             usage_count: 1)
-      expect { delete category_path(victim) }.not_to change { Category.count }
-      expect(response).to redirect_to(category_path(victim))
+    it "returns 404 for another user's personal category" do
+      other = create(:user, email: "confirm_other@example.com")
+      theirs = create(:category, name: "NotYoursConfirm", user: other)
+      get confirm_delete_category_path(theirs)
+      expect(response).to have_http_status(:not_found)
     end
   end
 
@@ -559,9 +592,18 @@ RSpec.describe "Categories API", type: :request do
       expect(others_personal.color).to eq("#123456")
     end
 
-    it "admin can destroy an empty shared category" do
+    it "admin deleting a shared category must provide a reassign target (design-doc rule)" do
       victim = create(:category, name: "AdminDeleteShared", user: nil)
-      expect { delete category_path(victim) }.to change { Category.count }.by(-1)
+      fallback = create(:category, name: "AdminDeleteFallback", user: nil)
+      expect {
+        delete category_path(victim), params: { strategy: "reassign", reassign_to_id: fallback.id }
+      }.to change { Category.count }.by(-1)
+    end
+
+    it "admin deleting a shared category without a target surfaces the error" do
+      victim = create(:category, name: "AdminDeleteSharedNoTarget", user: nil)
+      expect { delete category_path(victim) }.not_to change { Category.count }
+      expect(response).to redirect_to(category_path(victim))
     end
   end
 end

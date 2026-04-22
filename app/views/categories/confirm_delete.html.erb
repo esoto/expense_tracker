@@ -1,0 +1,60 @@
+<%# PR 8 — deletion confirmation. Wrapped in the side-panel Turbo
+    Frame so it displays inline on /categories. %>
+<%= turbo_frame_tag "category_panel" do %>
+  <section class="p-6">
+    <header class="flex items-center justify-between mb-4">
+      <h1 class="text-lg font-semibold text-slate-900">Delete <%= @category.display_name %></h1>
+      <%= link_to "Cancel", category_path(@category),
+                  data: { turbo_frame: "category_panel" },
+                  class: "text-sm text-slate-600 hover:text-slate-900" %>
+    </header>
+
+    <p class="text-sm text-slate-700 mb-4">
+      This category has attached state. Choose what to do with it before deleting.
+    </p>
+
+    <%= form_with url: category_path(@category), method: :delete,
+                  data: { turbo_frame: "category_panel" },
+                  class: "space-y-4" do |f| %>
+      <fieldset class="space-y-3">
+        <% unless @category.shared? %>
+          <label class="flex items-start gap-3 p-3 border border-slate-200 rounded-md hover:bg-slate-50 cursor-pointer">
+            <%= f.radio_button :strategy, "orphan",
+                               checked: true,
+                               class: "mt-1 text-teal-700 focus:ring-teal-500" %>
+            <span>
+              <span class="block font-medium text-slate-900 text-sm">Orphan</span>
+              <span class="block text-xs text-slate-600 mt-0.5">
+                Leave expenses uncategorized; drop patterns. Children detach.
+              </span>
+            </span>
+          </label>
+        <% end %>
+
+        <label class="flex items-start gap-3 p-3 border border-slate-200 rounded-md hover:bg-slate-50 cursor-pointer">
+          <%= f.radio_button :strategy, "reassign",
+                             checked: @category.shared?,
+                             class: "mt-1 text-teal-700 focus:ring-teal-500" %>
+          <span class="flex-1">
+            <span class="block font-medium text-slate-900 text-sm">Reassign</span>
+            <span class="block text-xs text-slate-600 mt-0.5 mb-2">
+              Move expenses, budgets, and children to another category. Patterns are dropped.
+            </span>
+            <%= f.select :reassign_to_id,
+                         options_for_select(@reassign_candidates.map { |c| [ c.display_name, c.id ] }),
+                         { include_blank: "— pick a target —" },
+                         class: "block w-full rounded-md border-slate-300 shadow-sm text-sm" %>
+          </span>
+        </label>
+      </fieldset>
+
+      <div class="flex items-center gap-3 pt-2">
+        <%= f.submit "Delete category",
+                     class: "inline-flex items-center px-4 py-2 rounded-md bg-rose-600 text-white hover:bg-rose-700 text-sm" %>
+        <%= link_to "Cancel", category_path(@category),
+                    data: { turbo_frame: "category_panel" },
+                    class: "text-sm text-slate-600 hover:text-slate-900" %>
+      </div>
+    <% end %>
+  </section>
+<% end %>

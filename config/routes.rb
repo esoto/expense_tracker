@@ -133,6 +133,12 @@ Rails.application.routes.draw do
   # Categories — full CRUD for personal category management (PR 3/10).
   # The JSON index keeps its shape as a dropdown data source for forms.
   resources :categories do
+    # PR 8: deletion confirmation page — renders the reassign/orphan
+    # chooser for non-empty categories before hitting DELETE.
+    member do
+      get :confirm_delete
+    end
+
     # Nested user-facing pattern management (PR 7/10). Scoped to
     # categories the user can edit; lives under the category side panel.
     # Separate from Admin::PatternsController, which is the global

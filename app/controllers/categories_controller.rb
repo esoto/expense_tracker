@@ -1,22 +1,8 @@
 class CategoriesController < ApplicationController
-  before_action :set_category, only: %i[show edit update destroy]
+  before_action :set_category, only: %i[show edit update destroy confirm_delete]
   before_action :authorize_show!, only: %i[show]
-  before_action :authorize_edit!, only: %i[edit update destroy]
+  before_action :authorize_edit!, only: %i[edit update destroy confirm_delete]
   before_action :scope_parent_id, only: %i[create update]
-
-  # Associations that block an "empty category" fast-path destroy in this PR.
-  # Anything touching a category's identity must be resolved by PR 8's
-  # CategoryDeletion service (reassign vs. orphan). This list mirrors the
-  # dependent: :destroy/:nullify associations on Category.
-  DELETE_BLOCKING_ASSOCIATIONS = %i[
-    expenses
-    children
-    categorization_patterns
-    composite_patterns
-    pattern_feedbacks
-    pattern_learning_events
-    user_category_preferences
-  ].freeze
 
   # GET /categories(.json)
   #
@@ -86,21 +72,39 @@ class CategoriesController < ApplicationController
     end
   end
 
+  # GET /categories/:id/confirm_delete
+  #
+  # Shows the reassign/orphan choice page. Routed only when the category
+  # has attached state that needs resolving; empty categories skip
+  # straight to destroy.
+  def confirm_delete
+    @reassign_candidates = CategoryPolicy.visible_scope(current_user)
+                                         .where.not(id: @category.id)
+                                         .order(:name)
+  end
+
   # DELETE /categories/:id
   #
-  # PR 3 ships a narrow destroy that only deletes *empty* personal categories
-  # — no expenses, no children, no patterns, no feedbacks/metrics/preferences.
-  # The full reassign/orphan flow is the subject of PR 8 (CategoryDeletion
-  # service); refusing a non-empty destroy here avoids silent cascade of
-  # dependent: :destroy associations.
+  # Delegates to Services::CategoryDeletion which handles both the
+  # "empty fast-path" (no dependents → plain destroy) and the full
+  # reassign / orphan flows. The :strategy param chooses between them;
+  # defaults to :orphan for personal categories when the user confirms
+  # without selecting a target.
   def destroy
-    if category_in_use?
-      redirect_to category_path(@category),
-                  alert: "This category is in use. Full deletion flow arrives in PR 8.",
-                  status: :see_other
-    else
-      @category.destroy
+    strategy = extract_destroy_strategy
+    result = Services::CategoryDeletion.new(
+      category:    @category,
+      actor:       current_user,
+      strategy:    strategy,
+      reassign_to: lookup_reassign_target
+    ).call
+
+    if result.success
       redirect_to categories_path, notice: "Category deleted.", status: :see_other
+    else
+      redirect_to category_path(@category),
+                  alert: result.error,
+                  status: :see_other
     end
   end
 
@@ -153,8 +157,20 @@ class CategoriesController < ApplicationController
     end
   end
 
-  def category_in_use?
-    DELETE_BLOCKING_ASSOCIATIONS.any? { |assoc| @category.public_send(assoc).exists? }
+  def extract_destroy_strategy
+    raw = params[:strategy].to_s
+    return raw.to_sym if %w[reassign orphan].include?(raw)
+
+    # Default path: shared categories must reassign (service enforces this
+    # and returns a clear error); personal categories default to orphan.
+    @category.shared? ? :reassign : :orphan
+  end
+
+  def lookup_reassign_target
+    id = params[:reassign_to_id]
+    return nil if id.blank?
+
+    CategoryPolicy.visible_scope(current_user).find_by(id: id)
   end
 
   # Splits the visible category set into shared roots, personal roots, and a

@@ -11,6 +11,7 @@
             aria-hidden="true"></span>
       <%= link_to category.display_name,
                   category_path(category),
+                  data: { turbo_frame: "category_panel" },
                   class: "text-slate-900 hover:text-teal-700 truncate" %>
       <% if category.personal? %>
         <span class="shrink-0 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
@@ -22,11 +23,13 @@
       <% if category.shared? && category.root? %>
         <%= link_to "+ Add subcategory",
                     new_category_path(parent_id: category.id),
+                    data: { turbo_frame: "category_panel" },
                     class: "text-sm text-teal-700 hover:text-teal-900",
                     title: "Create a personal subcategory under #{category.display_name}" %>
       <% end %>
       <% if CategoryPolicy.new(current_user, category).edit? %>
         <%= link_to "Edit", edit_category_path(category),
+                    data: { turbo_frame: "category_panel" },
                     class: "text-sm text-teal-700 hover:text-teal-900" %>
       <% end %>
     </div>

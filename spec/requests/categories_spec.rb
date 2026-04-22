@@ -234,6 +234,62 @@ RSpec.describe "Categories API", type: :request do
     end
   end
 
+  describe "Turbo Frame side panel (PR 6)", :integration do
+    let!(:user) { create(:user, email: "frame_user@example.com") }
+    let!(:own)  { create(:category, name: "FrameOwn", user: user) }
+
+    before { sign_in_as(user) }
+
+    it "index renders the category_panel frame placeholder" do
+      get categories_path
+      expect(response.body).to match(/turbo-frame[^>]+id="category_panel"/)
+      expect(response.body).to include("Select a category to see details")
+    end
+
+    it "show wraps content in the category_panel frame" do
+      get category_path(own)
+      doc = Nokogiri::HTML(response.body)
+      frame = doc.at_css('turbo-frame#category_panel')
+      expect(frame).not_to be_nil
+      expect(frame.text).to include("FrameOwn")
+    end
+
+    it "edit wraps the form in the same frame" do
+      get edit_category_path(own)
+      doc = Nokogiri::HTML(response.body)
+      frame = doc.at_css('turbo-frame#category_panel')
+      expect(frame).not_to be_nil
+      form = frame.at_css("form")
+      expect(form).not_to be_nil
+      expect(form.at_css('input[name="category[name]"]')&.attr("value")).to eq("FrameOwn")
+    end
+
+    it "new wraps the form in the same frame" do
+      get new_category_path
+      doc = Nokogiri::HTML(response.body)
+      frame = doc.at_css('turbo-frame#category_panel')
+      expect(frame).not_to be_nil
+      expect(frame.at_css("form")).not_to be_nil
+    end
+
+    it "index tree links carry the frame target data attribute" do
+      get categories_path
+      doc = Nokogiri::HTML(response.body)
+      tree_link = doc.at_css('a[data-turbo-frame="category_panel"]')
+      expect(tree_link).not_to be_nil
+    end
+
+    it "updating within the frame redirects to show (which is framed)" do
+      patch category_path(own), params: { category: { name: "Renamed" } },
+            headers: { "Turbo-Frame" => "category_panel" }
+      # Controller redirects; follow manually to confirm final response is framed.
+      follow_redirect!
+      doc = Nokogiri::HTML(response.body)
+      expect(doc.at_css('turbo-frame#category_panel')).not_to be_nil
+      expect(doc.at_css('turbo-frame#category_panel').text).to include("Renamed")
+    end
+  end
+
   describe "inline '+ Add subcategory' affordance on shared roots", :integration do
     let!(:user) { create(:user, email: "affordance_user@example.com") }
     let!(:shared_root)  { create(:category, name: "AffordShared", user: nil) }

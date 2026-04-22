@@ -193,6 +193,27 @@ RSpec.describe "Categories API", type: :request do
       }.not_to change { Category.count }
       expect(response).to have_http_status(:unprocessable_entity)
     end
+
+    it "returns 404 when parent_id points at another user's personal category" do
+      other = create(:user, email: "sneaky_parent@example.com")
+      others_personal = create(:category, name: "SneakyParent", user: other)
+
+      expect {
+        post categories_path, params: {
+          category: { name: "TryCrossParent", parent_id: others_personal.id }
+        }
+      }.not_to change { Category.count }
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "returns 404 when parent_id points at a nonexistent category" do
+      expect {
+        post categories_path, params: {
+          category: { name: "TryMissingParent", parent_id: 9_999_999 }
+        }
+      }.not_to change { Category.count }
+      expect(response).to have_http_status(:not_found)
+    end
   end
 
   describe "GET /categories/:id/edit", :integration do
@@ -285,6 +306,60 @@ RSpec.describe "Categories API", type: :request do
       theirs = create(:category, name: "Theirs2", user: other)
       expect { delete category_path(theirs) }.not_to change { Category.count }
       expect(response).to have_http_status(:not_found)
+    end
+
+    it "refuses destroy when the category has children" do
+      victim = create(:category, name: "WithChild", user: user)
+      create(:category, name: "Child of WithChild", user: user, parent: victim)
+      expect { delete category_path(victim) }.not_to change { Category.count }
+      expect(response).to redirect_to(category_path(victim))
+    end
+
+    it "refuses destroy when the category has categorization_patterns" do
+      victim = create(:category, name: "WithPattern", user: user)
+      create(:categorization_pattern, category: victim, pattern_type: "merchant", pattern_value: "somestore")
+      expect { delete category_path(victim) }.not_to change { Category.count }
+      expect(response).to redirect_to(category_path(victim))
+    end
+
+    it "refuses destroy when the category has user_category_preferences" do
+      victim = create(:category, name: "WithPref", user: user)
+      email_account = create(:email_account, user: user)
+      create(:user_category_preference,
+             email_account: email_account,
+             category: victim,
+             context_type: "merchant",
+             context_value: "foo",
+             preference_weight: 1,
+             usage_count: 1)
+      expect { delete category_path(victim) }.not_to change { Category.count }
+      expect(response).to redirect_to(category_path(victim))
+    end
+  end
+
+  describe "admin paths", :integration do
+    let!(:admin_current) { create(:user, :admin, email: "admin_current@example.com") }
+    let!(:other)         { create(:user, email: "admin_other@example.com") }
+    let!(:shared_c)      { create(:category, name: "AdminCanEditShared", user: nil) }
+    let!(:others_personal) { create(:category, name: "AdminCanEditOthers", user: other) }
+
+    before { sign_in_as(admin_current) }
+
+    it "admin can edit a shared category" do
+      get edit_category_path(shared_c)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "admin can update another user's personal category" do
+      patch category_path(others_personal), params: { category: { color: "#123456" } }
+      expect(response).to redirect_to(category_path(others_personal))
+      others_personal.reload
+      expect(others_personal.color).to eq("#123456")
+    end
+
+    it "admin can destroy an empty shared category" do
+      victim = create(:category, name: "AdminDeleteShared", user: nil)
+      expect { delete category_path(victim) }.to change { Category.count }.by(-1)
     end
   end
 end

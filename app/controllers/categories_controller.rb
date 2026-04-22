@@ -2,6 +2,21 @@ class CategoriesController < ApplicationController
   before_action :set_category, only: %i[show edit update destroy]
   before_action :authorize_show!, only: %i[show]
   before_action :authorize_edit!, only: %i[edit update destroy]
+  before_action :scope_parent_id, only: %i[create update]
+
+  # Associations that block an "empty category" fast-path destroy in this PR.
+  # Anything touching a category's identity must be resolved by PR 8's
+  # CategoryDeletion service (reassign vs. orphan). This list mirrors the
+  # dependent: :destroy/:nullify associations on Category.
+  DELETE_BLOCKING_ASSOCIATIONS = %i[
+    expenses
+    children
+    categorization_patterns
+    composite_patterns
+    pattern_feedbacks
+    pattern_learning_events
+    user_category_preferences
+  ].freeze
 
   # GET /categories(.json)
   def index
@@ -58,10 +73,12 @@ class CategoriesController < ApplicationController
   # DELETE /categories/:id
   #
   # PR 3 ships a narrow destroy that only deletes *empty* personal categories
-  # (no expenses, no children, no patterns). The full reassign/orphan flow is
-  # the subject of PR 8 (CategoryDeletion service).
+  # — no expenses, no children, no patterns, no feedbacks/metrics/preferences.
+  # The full reassign/orphan flow is the subject of PR 8 (CategoryDeletion
+  # service); refusing a non-empty destroy here avoids silent cascade of
+  # dependent: :destroy associations.
   def destroy
-    if @category.expenses.exists? || @category.children.exists? || @category.categorization_patterns.exists?
+    if category_in_use?
       redirect_to category_path(@category),
                   alert: "This category is in use. Full deletion flow arrives in PR 8.",
                   status: :see_other
@@ -101,7 +118,27 @@ class CategoriesController < ApplicationController
     # user_id is intentionally NOT permitted. Ownership is forced to
     # current_user at create time and immutable thereafter (see Category
     # model's user_id_change_preserves_children validation).
-    params.require(:category).permit(:name, :description, :color, :parent_id, :i18n_key)
+    # i18n_key is not user-facing yet (used for shared category translation
+    # keys) — omit from permitted params until the admin UI lands.
+    params.require(:category).permit(:name, :description, :color, :parent_id)
+  end
+
+  # Reject parent_id values that point at categories the current user cannot
+  # see (other users' personal categories or nonexistent IDs) before they
+  # reach the model. Without this, the model validation fires and returns
+  # 422 — which leaks the existence of hidden categories via error message
+  # differences. Normalize to 404 (out-of-scope) instead.
+  def scope_parent_id
+    pid = params.dig(:category, :parent_id)
+    return if pid.blank?
+
+    unless CategoryPolicy.visible_scope(current_user).exists?(id: pid)
+      render_not_found
+    end
+  end
+
+  def category_in_use?
+    DELETE_BLOCKING_ASSOCIATIONS.any? { |assoc| @category.public_send(assoc).exists? }
   end
 
   def render_not_found

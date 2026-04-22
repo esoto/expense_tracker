@@ -92,7 +92,10 @@ module Services::Categorization
       def find_pattern_matches(expense, options)
         matches = []
 
-        load_patterns_in_batches(options).each do |patterns|
+        # PR 9: scope pattern candidates to those the expense's owner can
+        # see — shared categories plus their own personal ones. Without
+        # this, personal patterns would fire on every user's expenses.
+        load_patterns_in_batches(options.merge(user_id: expense.user_id)).each do |patterns|
           matches.concat(match_merchant_patterns(expense, patterns, options))
           matches.concat(match_description_patterns(expense, patterns, options))
 
@@ -126,6 +129,12 @@ module Services::Categorization
           .order(usage_count: :desc, success_rate: :desc)
 
         patterns = patterns.where(pattern_type: options[:pattern_types]) if options[:pattern_types].present?
+
+        # PR 9: scope by expense owner. options[:user_id] is set by
+        # find_pattern_matches from expense.user_id. A nil user_id means
+        # "shared patterns only" — fail closed, same rule as
+        # CategoryPolicy.visible_scope(nil).
+        patterns = patterns.usable_by(options[:user_id]) if options.key?(:user_id)
 
         batches = []
         patterns.find_in_batches(batch_size: PATTERN_BATCH_SIZE) do |batch|

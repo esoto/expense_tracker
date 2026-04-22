@@ -499,6 +499,53 @@ RSpec.describe CategorizationPattern, type: :model, performance: true do
     end
   end
 
+  describe ".usable_by", integration: true do
+    let!(:user_a) { create(:user, email: "patua_a@example.com") }
+    let!(:user_b) { create(:user, email: "patub_b@example.com") }
+
+    let!(:shared_cat)     { create(:category, name: "UsablesShared", user: nil) }
+    let!(:personal_a_cat) { create(:category, name: "UsablesPersonalA", user: user_a) }
+    let!(:personal_b_cat) { create(:category, name: "UsablesPersonalB", user: user_b) }
+
+    let!(:shared_pattern) {
+      described_class.create!(category: shared_cat,
+                              pattern_type: "merchant",
+                              pattern_value: "usables_shared")
+    }
+    let!(:a_pattern) {
+      described_class.create!(category: personal_a_cat,
+                              pattern_type: "merchant",
+                              pattern_value: "usables_a")
+    }
+    let!(:b_pattern) {
+      described_class.create!(category: personal_b_cat,
+                              pattern_type: "merchant",
+                              pattern_value: "usables_b")
+    }
+
+    it "returns shared patterns plus the user's own personal patterns" do
+      result = described_class.usable_by(user_a)
+      expect(result).to include(shared_pattern, a_pattern)
+      expect(result).not_to include(b_pattern)
+    end
+
+    it "excludes other users' personal patterns" do
+      expect(described_class.usable_by(user_b)).not_to include(a_pattern)
+    end
+
+    it "accepts a user id directly" do
+      result = described_class.usable_by(user_a.id)
+      expect(result).to include(shared_pattern, a_pattern)
+      expect(result).not_to include(b_pattern)
+    end
+
+    it "returns only shared patterns when given nil (fail closed)" do
+      result = described_class.usable_by(nil)
+      expect(result).to include(shared_pattern)
+      expect(result).not_to include(a_pattern, b_pattern)
+    end
+  end
+
   describe "constants", performance: true do
     it "defines pattern types" do
       expect(described_class::PATTERN_TYPES).to eq(%w[merchant keyword description amount_range regex time])

@@ -170,4 +170,97 @@ RSpec.describe Category, type: :model, integration: true do
       expect(grandparent.errors[:parent]).to include('cannot create circular reference')
     end
   end
+
+  describe 'user ownership', integration: true do
+    it { should belong_to(:user).optional }
+
+    describe 'shared vs personal' do
+      let(:shared) { create(:category, name: 'Food', user: nil) }
+      let(:user)   { create(:user) }
+      let(:personal) { create(:category, name: 'Home Food', user: user) }
+
+      it 'treats user_id IS NULL as a shared category' do
+        expect(shared.user_id).to be_nil
+        expect(shared).to be_shared
+        expect(shared).not_to be_personal
+      end
+
+      it 'treats a category with a user_id as personal' do
+        expect(personal).to be_personal
+        expect(personal).not_to be_shared
+        expect(personal.user).to eq(user)
+      end
+    end
+
+    describe '.visible_to' do
+      let(:user_a) { create(:user, email: 'a@example.com') }
+      let(:user_b) { create(:user, email: 'b@example.com') }
+      let!(:shared)     { create(:category, name: 'Food', user: nil) }
+      let!(:a_personal) { create(:category, name: 'Home Food', user: user_a) }
+      let!(:b_personal) { create(:category, name: 'Out Food', user: user_b) }
+
+      it "returns shared plus the user's own personal categories" do
+        visible = Category.visible_to(user_a)
+        expect(visible).to include(shared, a_personal)
+        expect(visible).not_to include(b_personal)
+      end
+
+      it "excludes other users' personal categories" do
+        expect(Category.visible_to(user_b)).not_to include(a_personal)
+      end
+    end
+
+    describe 'tree rules across ownership' do
+      let(:user_a) { create(:user, email: 'a@example.com') }
+      let(:user_b) { create(:user, email: 'b@example.com') }
+      let(:shared_parent) { create(:category, name: 'Food', user: nil) }
+
+      it 'allows a personal category parented under a shared category' do
+        personal = build(:category, name: 'Out Food', user: user_a, parent: shared_parent)
+        expect(personal).to be_valid
+      end
+
+      it 'allows a personal category with no parent (own top-level branch)' do
+        personal = build(:category, name: 'Home Food', user: user_a, parent: nil)
+        expect(personal).to be_valid
+      end
+
+      it "rejects a personal category parenting under another user's personal category" do
+        b_personal = create(:category, name: 'B Out Food', user: user_b)
+        invalid = build(:category, name: 'A Child', user: user_a, parent: b_personal)
+        expect(invalid).not_to be_valid
+        expect(invalid.errors[:parent]).to include('must belong to the same user or be shared')
+      end
+
+      it 'rejects a shared category being parented under a personal category' do
+        a_personal = create(:category, name: 'A Branch', user: user_a)
+        invalid = build(:category, name: 'New Shared', user: nil, parent: a_personal)
+        expect(invalid).not_to be_valid
+        expect(invalid.errors[:parent]).to include('shared category cannot have a personal parent')
+      end
+    end
+
+    describe 'unique name per user scope' do
+      let(:user_a) { create(:user, email: 'a@example.com') }
+      let(:user_b) { create(:user, email: 'b@example.com') }
+
+      it 'allows two users to each own a category with the same name' do
+        create(:category, name: 'Out Food', user: user_a)
+        duplicate_for_b = build(:category, name: 'Out Food', user: user_b)
+        expect(duplicate_for_b).to be_valid
+      end
+
+      it 'prevents the same user from having two personal categories with the same name' do
+        create(:category, name: 'Out Food', user: user_a)
+        second = build(:category, name: 'Out Food', user: user_a)
+        expect(second).not_to be_valid
+      end
+
+      it 'does not constrain shared categories against the uniqueness' do
+        create(:category, name: 'Food', user: nil)
+        another_shared = build(:category, name: 'Transport', user: nil)
+        expect(another_shared).to be_valid
+      end
+    end
+  end
 end

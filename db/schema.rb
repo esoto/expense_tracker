@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_21_160000) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_22_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -138,9 +138,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_160000) do
     t.string "name", null: false
     t.integer "parent_id"
     t.datetime "updated_at", null: false
+    t.bigint "user_id"
     t.index ["i18n_key"], name: "index_categories_on_i18n_key", unique: true
     t.index ["name"], name: "index_categories_on_name"
     t.index ["parent_id"], name: "index_categories_on_parent_id"
+    t.index ["user_id", "name"], name: "index_categories_on_user_id_and_name_personal", unique: true, where: "(user_id IS NOT NULL)"
+    t.index ["user_id", "parent_id"], name: "index_categories_on_user_id_and_parent_id"
+    t.index ["user_id"], name: "index_categories_on_user_id"
   end
 
   create_table "categorization_metrics", force: :cascade do |t|
@@ -811,6 +815,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_21_160000) do
   add_foreign_key "bulk_operations", "categories", column: "target_category_id"
   add_foreign_key "bulk_operations", "users"
   add_foreign_key "categories", "categories", column: "parent_id"
+  add_foreign_key "categories", "users"
   add_foreign_key "categorization_metrics", "categories"
   add_foreign_key "categorization_metrics", "categories", column: "corrected_to_category_id"
   add_foreign_key "categorization_metrics", "expenses"

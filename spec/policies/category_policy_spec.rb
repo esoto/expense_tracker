@@ -127,10 +127,8 @@ RSpec.describe CategoryPolicy, type: :policy, integration: true do
       expect(result).to include(shared_seed, user_personal, other_personal)
     end
 
-    it "returns only shared categories when user is nil" do
-      result = described_class.visible_scope(nil)
-      expect(result).to include(shared_seed)
-      expect(result).not_to include(user_personal, other_personal)
+    it "returns an empty relation when user is nil (fail closed)" do
+      expect(described_class.visible_scope(nil)).to be_empty
     end
   end
 end

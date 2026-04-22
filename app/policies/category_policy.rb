@@ -56,9 +56,10 @@ class CategoryPolicy
 
   # Returns an ActiveRecord::Relation of categories the user may see.
   # Admins see everything; regular users see shared plus their own personal;
-  # a nil user sees only shared categories.
+  # a nil user sees nothing — the app requires authentication to hit any
+  # category surface, and fail-closed matches `show?(nil, _) == false`.
   def self.visible_scope(user)
-    return Category.shared if user.nil?
+    return Category.none if user.nil?
     return Category.all if user.admin?
 
     Category.visible_to(user)
@@ -67,7 +68,7 @@ class CategoryPolicy
   private
 
   def admin?
-    user.respond_to?(:admin?) && user.admin?
+    user.admin?
   end
 
   def owned_by_user?

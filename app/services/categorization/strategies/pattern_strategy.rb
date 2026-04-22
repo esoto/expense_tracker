@@ -71,7 +71,14 @@ module Services::Categorization
       private
 
       def check_user_preference(expense)
-        preference = @pattern_cache_service.get_user_preference(expense.merchant_name)
+        # PR 9: scope preference lookup to the expense's own email_account
+        # so one user's "Whole Foods → Groceries" never suggests
+        # Groceries for another user whose history maps the same
+        # merchant to a different category.
+        preference = @pattern_cache_service.get_user_preference(
+          expense.merchant_name,
+          expense.respond_to?(:email_account_id) ? expense.email_account_id : nil
+        )
         return nil unless preference
 
         base_confidence = [ preference.preference_weight / 10.0, 1.0 ].min

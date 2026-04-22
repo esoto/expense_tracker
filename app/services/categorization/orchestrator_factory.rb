@@ -271,8 +271,11 @@ module Services::Categorization
         CategorizationPattern.active.limit(10)
       end
 
-      def get_user_preference(merchant_name)
+      def get_user_preference(merchant_name, email_account_id = nil)
+        return nil if email_account_id.nil?
+
         UserCategoryPreference.find_by(
+          email_account_id: email_account_id,
           context_type: "merchant",
           context_value: merchant_name.downcase
         )

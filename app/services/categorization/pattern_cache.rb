@@ -192,19 +192,32 @@ module Services::Categorization
       end
     end
 
-    # Get user preference with caching
-    def get_user_preference(merchant_name)
+    # Get user preference with caching.
+    #
+    # PR 9: user preferences are per-user via email_account_id — they must
+    # not leak across users. The lookup now requires email_account_id so
+    # each user's history is isolated. Cache keys include the account id
+    # so different users' entries don't overwrite each other.
+    #
+    # Passing `nil` for email_account_id returns `nil` (fail closed) —
+    # an anonymous call has no owner context to match preferences to.
+    def get_user_preference(merchant_name, email_account_id = nil)
       return nil if merchant_name.blank?
+      return nil if email_account_id.nil?
 
       benchmark_with_metrics("get_user_preference") do
         normalized_merchant = merchant_name.downcase.strip
 
         fetch_with_tiered_cache(
-          user_pref_cache_key(normalized_merchant),
+          user_pref_cache_key(normalized_merchant, email_account_id),
           memory_ttl: memory_ttl * 2, # Longer TTL for user preferences
           l2_ttl: l2_ttl * 2
         ) do
-          UserCategoryPreference.find_by(context_type: "merchant", context_value: normalized_merchant)
+          UserCategoryPreference.find_by(
+            email_account_id: email_account_id,
+            context_type: "merchant",
+            context_value: normalized_merchant
+          )
         end
       end
     end
@@ -374,12 +387,14 @@ module Services::Categorization
     def preload_for_expenses(expenses)
       return if expenses.blank?
 
-      # Extract unique merchant names
-      merchant_names = expenses.map(&:merchant_name).compact.uniq
+      # PR 9: preload user preferences keyed by (merchant, email_account)
+      # so each user's preferences are isolated in the cache. API-layer
+      # ephemeral expenses may lack email_account_id — skip those.
+      expenses.each do |expense|
+        next unless expense.merchant_name?
+        next unless expense.respond_to?(:email_account_id) && expense.email_account_id.present?
 
-      # Preload user preferences
-      merchant_names.each do |merchant|
-        get_user_preference(merchant)
+        get_user_preference(expense.merchant_name, expense.email_account_id)
       end
 
       # Preload all active patterns (they'll be needed for matching)
@@ -498,7 +513,10 @@ module Services::Categorization
       return unless preference.context_type == "merchant"
 
       normalized_merchant = preference.context_value.downcase.strip
-      key = user_pref_cache_key(normalized_merchant)
+      # PR 9: cache keys include email_account_id, so invalidation must
+      # target the specific user's key. Invalidate just this preference's
+      # entry instead of a broad sweep.
+      key = user_pref_cache_key(normalized_merchant, preference.email_account_id)
       invalidate_key(key)
     end
 
@@ -528,8 +546,10 @@ module Services::Categorization
       "#{COMPOSITE_KEY_PREFIX}:#{composite_id}:#{CACHE_VERSION}"
     end
 
-    def user_pref_cache_key(merchant_name)
-      "#{USER_PREF_KEY_PREFIX}:#{merchant_name}:#{CACHE_VERSION}"
+    def user_pref_cache_key(merchant_name, email_account_id = nil)
+      # PR 9: include the account id so different users' preferences
+      # don't overwrite each other in the shared cache.
+      "#{USER_PREF_KEY_PREFIX}:#{email_account_id || 'global'}:#{merchant_name}:#{CACHE_VERSION}"
     end
 
     # Returns the current pattern cache version integer, reading from Rails.cache

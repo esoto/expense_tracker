@@ -45,8 +45,12 @@ RSpec.describe Services::Categorization::Engine, type: :service do
 
   describe "#categorize" do
     context "with user preference" do
+      # PR 9: preferences are scoped per email_account. This test's expense
+      # is factory-built with its own email_account; the preference must
+      # match that account or it's (correctly) ignored as "another user's".
       let!(:user_preference) do
         create(:user_category_preference,
+               email_account: expense.email_account,
                context_type: "merchant",
                context_value: "whole foods market",
                category: category,

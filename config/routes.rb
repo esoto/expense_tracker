@@ -130,8 +130,9 @@ Rails.application.routes.draw do
     root "patterns#index"
   end
 
-  # Categories route for JSON endpoint
-  resources :categories, only: [ :index ]
+  # Categories — full CRUD for personal category management (PR 3/10).
+  # The JSON index keeps its shape as a dropdown data source for forms.
+  resources :categories
 
   # Bulk operations routes (must come before general resources to avoid conflicts)
   scope "/expenses", controller: :expenses do

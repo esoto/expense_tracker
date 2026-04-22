@@ -1,0 +1,45 @@
+<%= form_with(model: category, local: true, class: "space-y-4") do |f| %>
+  <% if category.errors.any? %>
+    <div class="rounded-md bg-rose-50 border border-rose-200 p-3 text-sm text-rose-800">
+      <p class="font-medium mb-1"><%= pluralize(category.errors.count, "error") %> prevented saving:</p>
+      <ul class="list-disc list-inside">
+        <% category.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= f.label :name, class: "block text-sm font-medium text-slate-700" %>
+    <%= f.text_field :name,
+                     class: "mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
+  </div>
+
+  <div>
+    <%= f.label :description, class: "block text-sm font-medium text-slate-700" %>
+    <%= f.text_area :description, rows: 3,
+                    class: "mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
+  </div>
+
+  <div>
+    <%= f.label :color, class: "block text-sm font-medium text-slate-700" %>
+    <%= f.text_field :color, placeholder: "#0f766e",
+                     class: "mt-1 block w-48 rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
+    <p class="text-xs text-slate-500 mt-1">Hex color, e.g. #0f766e. Stimulus picker arrives in PR 5.</p>
+  </div>
+
+  <div>
+    <%= f.label :parent_id, "Parent category", class: "block text-sm font-medium text-slate-700" %>
+    <%= f.collection_select :parent_id,
+                            CategoryPolicy.visible_scope(current_user).where.not(id: category.id).order(:name),
+                            :id, :display_name,
+                            { include_blank: "— none (top-level branch)" },
+                            class: "mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-teal-500 focus:ring-teal-500" %>
+  </div>
+
+  <div class="flex items-center gap-3 pt-2">
+    <%= f.submit class: "inline-flex items-center px-4 py-2 rounded-md bg-teal-700 text-white hover:bg-teal-800" %>
+    <%= link_to "Cancel", categories_path, class: "text-sm text-slate-600 hover:text-slate-900" %>
+  </div>
+<% end %>

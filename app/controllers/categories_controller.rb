@@ -1,4 +1,10 @@
 class CategoriesController < ApplicationController
+  # Read actions (index/show) stay open so existing consumers (dropdowns,
+  # budgets) keep working during the Personal Category Management
+  # rollout. Write actions require the PR 10 feature flag.
+  before_action :require_category_management_feature,
+                only: %i[new create edit update destroy confirm_delete]
+
   before_action :set_category, only: %i[show edit update destroy confirm_delete]
   before_action :authorize_show!, only: %i[show]
   before_action :authorize_edit!, only: %i[edit update destroy confirm_delete]
@@ -203,5 +209,15 @@ class CategoriesController < ApplicationController
       format.html { render file: Rails.root.join("public/404.html"), layout: false, status: :not_found }
       format.json { render json: { error: "Not Found" }, status: :not_found }
     end
+  end
+
+  # Feature-flag gate — admins always pass; everyone else needs the
+  # PERSONAL_CATEGORIES_OPEN_TO_ALL env flag.
+  def require_category_management_feature
+    return if current_user&.can_manage_categories?
+
+    redirect_to categories_path,
+                alert: "Personal category management isn't available on your account yet.",
+                status: :see_other
   end
 end

@@ -10,8 +10,10 @@
         Shared categories on the left; your personal categories on the right.
       </p>
     </div>
-    <%= link_to "New category", new_category_path,
-                class: "inline-flex items-center px-4 py-2 rounded-md bg-teal-700 text-white hover:bg-teal-800 text-sm" %>
+    <% if CategoryPolicy.can_access?(current_user) %>
+      <%= link_to "New category", new_category_path,
+                  class: "inline-flex items-center px-4 py-2 rounded-md bg-teal-700 text-white hover:bg-teal-800 text-sm" %>
+    <% end %>
   </header>
 
   <div class="grid grid-cols-1 lg:grid-cols-[1fr_1fr_minmax(320px,400px)] gap-6 items-start">

@@ -7,6 +7,17 @@ RSpec.describe "Categories API", type: :request do
   let!(:category_food) { create(:category, name: "Food", color: "#FF6B6B") }
   let!(:category_transport) { create(:category, name: "Transport", color: "#4ECDC4") }
 
+  # PR 10: most examples exercise the write surface and predate the
+  # feature flag — treat the flag as on by default, and let the one
+  # describe that tests the gate unset it explicitly.
+  before do
+    ENV["PERSONAL_CATEGORIES_OPEN_TO_ALL"] = "true"
+  end
+
+  after do
+    ENV.delete("PERSONAL_CATEGORIES_OPEN_TO_ALL")
+  end
+
   describe "GET /categories.json", :unit do
     context "when authenticated" do
       before { sign_in_admin(admin_user) }
@@ -569,6 +580,62 @@ RSpec.describe "Categories API", type: :request do
       theirs = create(:category, name: "NotYoursConfirm", user: other)
       get confirm_delete_category_path(theirs)
       expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe "feature flag (PR 10)", :integration do
+    let!(:regular) { create(:user, email: "flag_regular@example.com") }
+
+    before { sign_in_as(regular) }
+
+    context "when the flag is off" do
+      # The outer before block sets the flag on by default. Flip it off
+      # for this context via an after-all setup. The nested-hook ordering
+      # guarantees this before runs AFTER the outer "set flag on" before.
+      before { ENV.delete("PERSONAL_CATEGORIES_OPEN_TO_ALL") }
+
+      it "GET /categories/new redirects" do
+        get new_category_path
+        expect(response).to have_http_status(:see_other)
+        expect(response).to redirect_to(categories_path)
+        follow_redirect!
+        expect(response.body).to include("Personal category management isn&#39;t available")
+      end
+
+      it "POST /categories is blocked" do
+        expect {
+          post categories_path, params: { category: { name: "ShouldNotCreate" } }
+        }.not_to change { Category.count }
+        expect(response).to redirect_to(categories_path)
+      end
+
+      it "GET /categories still loads (read access is always open)" do
+        get categories_path
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "does not render the 'New category' button" do
+        get categories_path
+        expect(response.body).not_to include("New category")
+      end
+    end
+
+    context "when flag is on (outer before sets it true)" do
+      it "GET /categories/new renders normally" do
+        get new_category_path
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "POST /categories creates as expected" do
+        expect {
+          post categories_path, params: { category: { name: "FlagEnabledCreate" } }
+        }.to change { Category.count }.by(1)
+      end
+
+      it "renders the 'New category' button" do
+        get categories_path
+        expect(response.body).to include("New category")
+      end
     end
   end
 

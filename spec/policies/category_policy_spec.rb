@@ -3,6 +3,14 @@
 require "rails_helper"
 
 RSpec.describe CategoryPolicy, type: :policy, integration: true do
+  # PR 10: most policy examples predate the feature flag and exercise
+  # the authz matrix assuming the flag is on. The flag-off gating is
+  # covered in its own describe block below. Keep the global default
+  # "flag on" so those earlier cases keep testing the matrix, not the
+  # rollout.
+  before { ENV["PERSONAL_CATEGORIES_OPEN_TO_ALL"] = "true" }
+  after  { ENV.delete("PERSONAL_CATEGORIES_OPEN_TO_ALL") }
+
   let(:user)       { create(:user) }
   let(:other)      { create(:user, email: "other@example.com") }
   let(:admin)      { create(:user, :admin, email: "admin@example.com") }
@@ -129,6 +137,86 @@ RSpec.describe CategoryPolicy, type: :policy, integration: true do
 
     it "returns an empty relation when user is nil (fail closed)" do
       expect(described_class.visible_scope(nil)).to be_empty
+    end
+  end
+
+  describe "feature-flag gating (PR 10)" do
+    let(:user)  { create(:user, email: "flag_reg@example.com") }
+    let(:admin) { create(:user, :admin, email: "flag_admin@example.com") }
+    let(:own)   { create(:category, name: "FlagOwn", user: user) }
+    let(:shared_c) { create(:category, name: "FlagShared", user: nil) }
+
+    context "when the flag is off and user is not admin" do
+      before { ENV.delete("PERSONAL_CATEGORIES_OPEN_TO_ALL") }
+
+      it "blocks create on own personal" do
+        new_personal = Category.new(user: user, name: "X")
+        expect(described_class.new(user, new_personal).create?).to be false
+      end
+
+      it "blocks edit on own personal" do
+        expect(described_class.new(user, own).edit?).to be false
+      end
+
+      it "blocks destroy on own personal" do
+        expect(described_class.new(user, own).destroy?).to be false
+      end
+
+      it "keeps show open for existing owned categories (no silent data loss on rollback)" do
+        expect(described_class.new(user, own).show?).to be true
+      end
+
+      it "keeps show open for shared categories" do
+        expect(described_class.new(user, shared_c).show?).to be true
+      end
+    end
+
+    context "when the flag is on" do
+      around do |example|
+        ENV["PERSONAL_CATEGORIES_OPEN_TO_ALL"] = "true"
+        example.run
+        ENV.delete("PERSONAL_CATEGORIES_OPEN_TO_ALL")
+      end
+
+      it "allows create on own personal" do
+        new_personal = Category.new(user: user, name: "X")
+        expect(described_class.new(user, new_personal).create?).to be true
+      end
+
+      it "allows edit + destroy on own personal" do
+        expect(described_class.new(user, own).edit?).to be true
+        expect(described_class.new(user, own).destroy?).to be true
+      end
+    end
+
+    it "admins bypass the flag" do
+      expect(described_class.new(admin, shared_c).edit?).to be true
+    end
+  end
+
+  describe ".can_access?" do
+    let(:user)  { create(:user, email: "access_user@example.com") }
+    let(:admin) { create(:user, :admin, email: "access_admin@example.com") }
+
+    before { ENV.delete("PERSONAL_CATEGORIES_OPEN_TO_ALL") }
+
+    it "returns false for nil" do
+      expect(described_class.can_access?(nil)).to be false
+    end
+
+    it "returns true for admin regardless of flag" do
+      expect(described_class.can_access?(admin)).to be true
+    end
+
+    it "returns false for regular user without flag" do
+      expect(described_class.can_access?(user)).to be false
+    end
+
+    it "returns true for regular user when flag is on" do
+      ENV["PERSONAL_CATEGORIES_OPEN_TO_ALL"] = "true"
+      expect(described_class.can_access?(user)).to be true
+    ensure
+      ENV.delete("PERSONAL_CATEGORIES_OPEN_TO_ALL")
     end
   end
 end

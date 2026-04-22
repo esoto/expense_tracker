@@ -3,6 +3,11 @@
 require "rails_helper"
 
 RSpec.describe "Category Patterns", type: :request, integration: true do
+  # PR 10: these examples predate the feature flag — treat the flag as
+  # on so they continue to exercise the real authz matrix.
+  before { ENV["PERSONAL_CATEGORIES_OPEN_TO_ALL"] = "true" }
+  after  { ENV.delete("PERSONAL_CATEGORIES_OPEN_TO_ALL") }
+
   let!(:user)  { create(:user, email: "cp_user@example.com") }
   let!(:other) { create(:user, email: "cp_other@example.com") }
 

@@ -190,6 +190,22 @@ class User < ApplicationRecord
     admin?
   end
 
+  # Personal Category Management feature flag (PR 10/10).
+  #
+  # Gates whether a user can see and use the /categories surface:
+  # the tree index, create/edit/delete personal categories, inline
+  # pattern management. Admins are always in; everyone else is opt-in
+  # per env flag so we can ship to ourselves first, exercise the flow,
+  # then open up.
+  #
+  # To roll out to all users, set PERSONAL_CATEGORIES_OPEN_TO_ALL=true
+  # in credentials/env. To roll back, unset it — admins keep access.
+  def can_manage_categories?
+    return true if admin?
+
+    ENV["PERSONAL_CATEGORIES_OPEN_TO_ALL"].to_s == "true"
+  end
+
   private
 
   def downcase_email

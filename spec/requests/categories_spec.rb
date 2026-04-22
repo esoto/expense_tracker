@@ -210,6 +210,14 @@ RSpec.describe "Categories API", type: :request do
         expect(selected&.attr("value")).to eq(shared_parent.id.to_s)
       end
 
+      it "preselects the user's own personal category as a parent" do
+        own = create(:category, name: "PrefillOwnPersonal", user: user)
+        get new_category_path(parent_id: own.id)
+        doc = Nokogiri::HTML(response.body)
+        selected = doc.at_css('select[name="category[parent_id]"] option[selected]')
+        expect(selected&.attr("value")).to eq(own.id.to_s)
+      end
+
       it "silently drops a parent_id pointing at another user's personal category" do
         other = create(:user, email: "prefill_other@example.com")
         others = create(:category, name: "OthersPrefill", user: other)

@@ -288,6 +288,32 @@ RSpec.describe "Categories API", type: :request do
       expect(doc.at_css('turbo-frame#category_panel')).not_to be_nil
       expect(doc.at_css('turbo-frame#category_panel').text).to include("Renamed")
     end
+
+    it "the 'Open full page' link breaks out of the frame via _top" do
+      get category_path(own)
+      doc = Nokogiri::HTML(response.body)
+      link = doc.at_css('a[data-turbo-frame="_top"]')
+      expect(link).not_to be_nil
+      expect(link.text).to include("Open full page")
+    end
+
+    it "destroy from within the frame redirects to the index placeholder" do
+      delete category_path(own), headers: { "Turbo-Frame" => "category_panel" }
+      follow_redirect!
+      doc = Nokogiri::HTML(response.body)
+      # After destroy, the panel on /categories renders the empty-state
+      # placeholder we put in the frame.
+      expect(doc.at_css('turbo-frame#category_panel').text).to include("Select a category to see details")
+    end
+
+    it "creating within the frame redirects into a framed show" do
+      post categories_path, params: { category: { name: "CreatedInFrame" } },
+           headers: { "Turbo-Frame" => "category_panel" }
+      follow_redirect!
+      doc = Nokogiri::HTML(response.body)
+      expect(doc.at_css('turbo-frame#category_panel')).not_to be_nil
+      expect(doc.at_css('turbo-frame#category_panel').text).to include("CreatedInFrame")
+    end
   end
 
   describe "inline '+ Add subcategory' affordance on shared roots", :integration do

@@ -43,7 +43,11 @@
     <% end %>
 
     <p class="text-xs text-slate-500 mt-6">
+      <%# Break out of the panel frame so this navigates to the full
+          /categories/:id page. Without _top the link would load the
+          same content back into the panel. %>
       <%= link_to "Open full page", category_path(@category),
+                  data: { turbo_frame: "_top" },
                   class: "hover:text-teal-700" %>
     </p>
   </article>

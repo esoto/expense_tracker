@@ -51,3 +51,15 @@
 /.claude/worktrees
 
 /.kamal/secrets
+
+# Playwright MCP session artifacts (page snapshots, console logs) —
+# regenerated on every browser-agent run, no value in the repo.
+/.playwright-mcp/
+
+# Ephemeral PR-review workspaces written by the /review-pr skill.
+/.claude/pr-review-*/
+
+# Ad-hoc debug screenshots dropped in the repo root by browser-based
+# debugging sessions. Intentional keeps should live under docs/ or
+# tmp/ and be committed explicitly.
+/*.png

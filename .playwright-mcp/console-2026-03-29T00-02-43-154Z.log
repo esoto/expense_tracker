@@ -1,5 +1,0 @@
-[      75ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://localhost:3000/assets/controllers/sync_sessions_controller-8bdd2b18.js:0
-[     344ms] [ERROR] Failed to register controller: sync-sessions (controllers/sync_sessions_controller) TypeError: Failed to fetch dynamically imported module: http://localhost:3000/assets/controllers/sync_sessions_controller-8bdd2b18.js @ http://localhost:3000/assets/stimulus-loading-1fc53fe7.js:25
-[    3123ms] [ERROR] X-Frame-Options may only be set via an HTTP header sent along with a document. It may not be set inside <meta>. @ http://localhost:3000/admin/login:153
-[    3137ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://localhost:3000/assets/controllers/sync_sessions_controller-8bdd2b18.js:0
-[    3282ms] [ERROR] Failed to register controller: sync-sessions (controllers/sync_sessions_controller) TypeError: Failed to fetch dynamically imported module: http://localhost:3000/assets/controllers/sync_sessions_controller-8bdd2b18.js @ http://localhost:3000/assets/stimulus-loading-1fc53fe7.js:25

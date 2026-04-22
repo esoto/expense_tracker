@@ -1,4 +1,0 @@
-[      46ms] [ERROR] X-Frame-Options may only be set via an HTTP header sent along with a document. It may not be set inside <meta>. @ http://localhost:3000/admin/patterns:161
-[     164ms] [ERROR] Failed to load resource: the server responded with a status of 406 (Not Acceptable) @ http://localhost:3000/admin/login:0
-[     165ms] [ERROR] Error loading chart data: Error: HTTP error! status: 406
-    at t.loadChart (http://localhost:3000/assets/controllers/pattern_chart_controller-fbbf8275.js:115:15) @ http://localhost:3000/assets/controllers/pattern_chart_controller-fbbf8275.js:128

@@ -19,11 +19,20 @@ class CategoriesController < ApplicationController
   ].freeze
 
   # GET /categories(.json)
+  #
+  # HTML: renders a two-column tree view — shared categories (with the
+  # user's personal subcategories nested under their shared parents) on
+  # the left, personal top-level branches on the right. Single query;
+  # children are grouped in memory to avoid N+1.
+  #
+  # JSON: flat list kept for existing dropdown consumers.
   def index
     @categories = CategoryPolicy.visible_scope(current_user).order(:name)
 
     respond_to do |format|
-      format.html
+      format.html do
+        build_category_tree(@categories)
+      end
       format.json do
         render json: @categories.map { |category|
           {
@@ -139,6 +148,25 @@ class CategoriesController < ApplicationController
 
   def category_in_use?
     DELETE_BLOCKING_ASSOCIATIONS.any? { |assoc| @category.public_send(assoc).exists? }
+  end
+
+  # Splits the visible category set into shared roots, personal roots, and a
+  # parent_id → [children] lookup so the tree view can render recursively
+  # without per-node queries. current_user_id can be nil (unauthenticated
+  # contexts shouldn't reach here because of require_authentication, but the
+  # nil-safe split keeps the view robust).
+  def build_category_tree(categories)
+    grouped = categories.group_by { |c| tree_bucket_for(c) }
+    @shared_roots      = grouped.fetch(:shared_root, [])
+    @personal_roots    = grouped.fetch(:personal_root, [])
+    @children_by_parent = categories.group_by(&:parent_id)
+  end
+
+  def tree_bucket_for(category)
+    return :shared_root   if category.parent_id.nil? && category.shared?
+    return :personal_root if category.parent_id.nil? && category.personal?
+
+    :child
   end
 
   def render_not_found

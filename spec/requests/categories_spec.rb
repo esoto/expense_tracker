@@ -99,6 +99,45 @@ RSpec.describe "Categories API", type: :request do
       get categories_path
       expect(response.body).not_to include("Others Bucket")
     end
+
+    context "tree structure" do
+      let!(:shared_root)       { create(:category, name: "TreeSharedRoot", user: nil) }
+      let!(:shared_child)      { create(:category, name: "TreeSharedChild", user: nil, parent: shared_root) }
+      let!(:personal_subchild) { create(:category, name: "TreeMyPersonalSub", user: user, parent: shared_root) }
+      let!(:personal_branch)   { create(:category, name: "TreeMyPersonalBranch", user: user) }
+      let!(:other_personal_under_shared) {
+        create(:category, name: "TreeOthersSub", user: other, parent: shared_root)
+      }
+
+      before { get categories_path }
+
+      it "renders a Shared heading and a My Categories heading" do
+        expect(response.body).to include("Shared")
+        expect(response.body).to include("My Categories")
+      end
+
+      it "shows the user's personal subcategory nested under the shared parent" do
+        expect(response.body).to include("TreeMyPersonalSub")
+        shared_idx = response.body.index("TreeSharedRoot")
+        my_sub_idx  = response.body.index("TreeMyPersonalSub")
+        branch_idx  = response.body.index("TreeMyPersonalBranch")
+        expect(shared_idx).to be_present
+        expect(my_sub_idx).to be > shared_idx
+        expect(branch_idx).to be > my_sub_idx # personal branch appears after the shared tree section
+      end
+
+      it "shows the user's personal top-level branch" do
+        expect(response.body).to include("TreeMyPersonalBranch")
+      end
+
+      it "hides another user's personal subcategory even though it lives under a shared parent" do
+        expect(response.body).not_to include("TreeOthersSub")
+      end
+
+      it "renders shared children under shared parents" do
+        expect(response.body).to include("TreeSharedChild")
+      end
+    end
   end
 
   describe "GET /categories/:id", :integration do

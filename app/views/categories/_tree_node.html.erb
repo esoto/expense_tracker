@@ -1,0 +1,37 @@
+<%# Recursively renders one category + its children. Locals:
+    - category
+    - children_by_parent: { parent_id => [child, ...] } (already sorted)
+    - depth: nesting level (0 for a root) %>
+<% children = children_by_parent[category.id] || [] %>
+<li class="<%= depth.zero? ? 'px-4 py-3' : 'pl-8 py-2 border-l border-slate-200 ml-4' %>">
+  <div class="flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3 min-w-0">
+      <span class="shrink-0 inline-block w-3 h-3 rounded-full"
+            style="background-color: <%= category.color.presence || "#94a3b8" %>;"
+            aria-hidden="true"></span>
+      <%= link_to category.display_name,
+                  category_path(category),
+                  class: "text-slate-900 hover:text-teal-700 truncate" %>
+      <% if category.personal? %>
+        <span class="shrink-0 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+          personal
+        </span>
+      <% end %>
+    </div>
+    <% if CategoryPolicy.new(current_user, category).edit? %>
+      <%= link_to "Edit", edit_category_path(category),
+                  class: "shrink-0 text-sm text-teal-700 hover:text-teal-900" %>
+    <% end %>
+  </div>
+
+  <% if children.any? %>
+    <ul class="mt-2 space-y-0">
+      <% children.each do |child| %>
+        <%= render "tree_node",
+                   category: child,
+                   children_by_parent: children_by_parent,
+                   depth: depth + 1 %>
+      <% end %>
+    </ul>
+  <% end %>
+</li>

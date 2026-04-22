@@ -1,4 +1,13 @@
-<section class="max-w-2xl mx-auto p-6">
-  <h1 class="text-2xl font-semibold text-slate-900 mb-6">New category</h1>
-  <%= render "form", category: @category %>
-</section>
+<%# PR 6 — new wrapped in the Turbo Frame so the inline "+ Add
+    subcategory" affordance opens a form in the side panel. %>
+<%= turbo_frame_tag "category_panel" do %>
+  <section class="p-6">
+    <header class="flex items-center justify-between mb-4">
+      <h1 class="text-lg font-semibold text-slate-900">New category</h1>
+      <%= link_to "Cancel", categories_path,
+                  data: { turbo_frame: "category_panel" },
+                  class: "text-sm text-slate-600 hover:text-slate-900" %>
+    </header>
+    <%= render "form", category: @category %>
+  </section>
+<% end %>

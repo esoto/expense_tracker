@@ -14,7 +14,7 @@
                 class: "inline-flex items-center px-4 py-2 rounded-md bg-teal-700 text-white hover:bg-teal-800 text-sm" %>
   </header>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div class="grid grid-cols-1 lg:grid-cols-[1fr_1fr_minmax(320px,400px)] gap-6 items-start">
     <section class="bg-white rounded-lg shadow-sm border border-slate-200">
       <header class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
         <h2 class="text-sm font-semibold text-slate-700 uppercase tracking-wide">Shared</h2>
@@ -59,5 +59,19 @@
         </div>
       <% end %>
     </section>
+
+    <%# PR 6 — Turbo Frame side panel. Tree-node links target this frame
+        so clicking a category loads its show/edit view inline without
+        navigating away. Direct visits to /categories/:id still render
+        the full page (the frame wraps the same content). %>
+    <aside class="lg:sticky lg:top-6">
+      <%= turbo_frame_tag "category_panel",
+                          class: "block bg-white rounded-lg shadow-sm border border-slate-200 min-h-[200px]" do %>
+        <div class="p-6 text-center text-sm text-slate-500">
+          <p class="mb-1">Select a category to see details.</p>
+          <p class="text-xs text-slate-400">Rename, recolor, and more — without leaving this page.</p>
+        </div>
+      <% end %>
+    </aside>
   </div>
 </section>

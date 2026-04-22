@@ -51,8 +51,15 @@ class CategoriesController < ApplicationController
   end
 
   # GET /categories/new
+  #
+  # Supports ?parent_id=X to prefill the parent selector, used by the
+  # inline "+ Add subcategory" affordance on each shared root in the tree
+  # view. The parent_id is validated against the visible scope — an
+  # invalid or out-of-scope id is silently dropped (the user can still
+  # pick a parent from the form).
   def new
-    @category = Category.new(user: current_user)
+    parent = resolve_prefill_parent(params[:parent_id])
+    @category = Category.new(user: current_user, parent: parent)
   end
 
   # POST /categories
@@ -167,6 +174,12 @@ class CategoriesController < ApplicationController
     return :personal_root if category.parent_id.nil? && category.personal?
 
     :child
+  end
+
+  def resolve_prefill_parent(id)
+    return nil if id.blank?
+
+    CategoryPolicy.visible_scope(current_user).find_by(id: id)
   end
 
   def render_not_found

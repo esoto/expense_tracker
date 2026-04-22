@@ -18,10 +18,18 @@
         </span>
       <% end %>
     </div>
-    <% if CategoryPolicy.new(current_user, category).edit? %>
-      <%= link_to "Edit", edit_category_path(category),
-                  class: "shrink-0 text-sm text-teal-700 hover:text-teal-900" %>
-    <% end %>
+    <div class="shrink-0 flex items-center gap-3">
+      <% if category.shared? && category.root? %>
+        <%= link_to "+ Add subcategory",
+                    new_category_path(parent_id: category.id),
+                    class: "text-sm text-teal-700 hover:text-teal-900",
+                    title: "Create a personal subcategory under #{category.display_name}" %>
+      <% end %>
+      <% if CategoryPolicy.new(current_user, category).edit? %>
+        <%= link_to "Edit", edit_category_path(category),
+                    class: "text-sm text-teal-700 hover:text-teal-900" %>
+      <% end %>
+    </div>
   </div>
 
   <% if children.any? %>

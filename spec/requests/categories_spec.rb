@@ -198,6 +198,63 @@ RSpec.describe "Categories API", type: :request do
       get new_category_path
       expect(response).to redirect_to(login_path)
     end
+
+    context "with a ?parent_id= prefill (inline + Add subcategory flow)" do
+      let!(:shared_parent) { create(:category, name: "PrefillShared", user: nil) }
+
+      it "preselects the shared parent in the form select" do
+        get new_category_path(parent_id: shared_parent.id)
+        expect(response).to have_http_status(:ok)
+        doc = Nokogiri::HTML(response.body)
+        selected = doc.at_css('select[name="category[parent_id]"] option[selected]')
+        expect(selected&.attr("value")).to eq(shared_parent.id.to_s)
+      end
+
+      it "silently drops a parent_id pointing at another user's personal category" do
+        other = create(:user, email: "prefill_other@example.com")
+        others = create(:category, name: "OthersPrefill", user: other)
+        get new_category_path(parent_id: others.id)
+        expect(response).to have_http_status(:ok)
+        doc = Nokogiri::HTML(response.body)
+        expect(doc.at_css('select[name="category[parent_id]"] option[selected]')).to be_nil
+      end
+
+      it "silently drops a parent_id that does not exist" do
+        get new_category_path(parent_id: 9_999_999)
+        expect(response).to have_http_status(:ok)
+      end
+    end
+  end
+
+  describe "inline '+ Add subcategory' affordance on shared roots", :integration do
+    let!(:user) { create(:user, email: "affordance_user@example.com") }
+    let!(:shared_root)  { create(:category, name: "AffordShared", user: nil) }
+    let!(:shared_child) { create(:category, name: "AffordSharedChild", user: nil, parent: shared_root) }
+    let!(:personal_root) { create(:category, name: "AffordPersonal", user: user) }
+
+    before { sign_in_as(user) }
+
+    it "shows an Add subcategory link on shared root rows" do
+      get categories_path
+      doc = Nokogiri::HTML(response.body)
+      links = doc.css("a").select { |a| a.text.include?("Add subcategory") && a["href"] =~ /parent_id=#{shared_root.id}/ }
+      expect(links).not_to be_empty
+    end
+
+    it "does not show Add subcategory on shared children (only on roots)" do
+      get categories_path
+      doc = Nokogiri::HTML(response.body)
+      # Find the tree-node row for the shared child and make sure it has no affordance.
+      link = doc.css("a").find { |a| a.text.include?("Add subcategory") && a["href"] =~ /parent_id=#{shared_child.id}/ }
+      expect(link).to be_nil
+    end
+
+    it "does not show Add subcategory on personal roots" do
+      get categories_path
+      doc = Nokogiri::HTML(response.body)
+      link = doc.css("a").find { |a| a.text.include?("Add subcategory") && a["href"] =~ /parent_id=#{personal_root.id}/ }
+      expect(link).to be_nil
+    end
   end
 
   describe "POST /categories", :integration do

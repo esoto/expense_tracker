@@ -1,2 +1,0 @@
-[   22811ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://localhost:3000/api/sync_sessions/5/status:0
-[   22823ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/api/sync_sessions/999999/status:0

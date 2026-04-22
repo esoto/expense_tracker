@@ -1,4 +1,0 @@
-[    8357ms] [ERROR] ❌ Subscription rejected by server @ http://localhost:3000/assets/controllers/sync_sessions_controller-8bdd2b18.js:61
-[   11771ms] [ERROR] X-Frame-Options may only be set via an HTTP header sent along with a document. It may not be set inside <meta>. @ http://localhost:3000/admin/patterns:161
-[   12216ms] [ERROR] Failed to load resource: the server responded with a status of 422 (Unprocessable Content) @ http://localhost:3000/admin/patterns:0
-[   14313ms] [ERROR] ❌ Subscription rejected by server @ http://localhost:3000/assets/controllers/sync_sessions_controller-8bdd2b18.js:61

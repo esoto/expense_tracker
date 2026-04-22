@@ -1,4 +1,0 @@
-[   18026ms] TypeError: Cannot set properties of null (setting 'disabled')
-    at t.bulkResolve (http://localhost:3000/assets/controllers/bulk_actions_controller-8a84989c.js:67:21)
-[   36426ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://localhost:3000/sync_conflicts/bulk_resolve:0
-[   66124ms] [ERROR] Failed to load resource: the server responded with a status of 406 (Not Acceptable) @ http://localhost:3000/sync_conflicts/bulk_resolve:0

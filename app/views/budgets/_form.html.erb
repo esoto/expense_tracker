@@ -1,5 +1,8 @@
 <%# Budget form partial %>
 <%= form_with(model: budget, local: true, class: "space-y-6") do |form| %>
+  <%# email_account is assigned by the controller (scoping_user.email_accounts.first)
+      for new records. Serialize it so the M2M create flow works end-to-end. %>
+  <%= form.hidden_field :email_account_id %>
   <% if budget.errors.any? %>
     <div class="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg">
       <h3 class="font-semibold mb-2"><%= t("budgets.form.errors_title") %></h3>

@@ -278,80 +278,10 @@ RSpec.describe Budget, type: :model, unit: true do
     end
 
     describe "#calculate_current_spend!" do
-      let(:expenses_relation) { double("expenses relation") }
-
-      before do
-        allow(budget).to receive(:active?).and_return(true)
-        allow(budget).to receive(:current_period_range).and_return(Date.current.beginning_of_month..Date.current.end_of_month)
-        allow(email_account).to receive(:expenses).and_return(expenses_relation)
-        allow(expenses_relation).to receive(:includes).with(:category).and_return(expenses_relation)
-        allow(expenses_relation).to receive(:where).and_return(expenses_relation)
-        allow(expenses_relation).to receive(:sum).with(:amount).and_return(75_000)
-        allow(budget).to receive(:update_columns)
-        allow(budget).to receive(:check_and_track_exceeded)
-      end
-
-      context "when budget is inactive" do
-        it "returns 0" do
-          allow(budget).to receive(:active?).and_return(false)
-
-          expect(budget.calculate_current_spend!).to eq(0.0)
-        end
-      end
-
-      context "when budget is active" do
-        it "calculates spend for general budget" do
-          budget.category_id = nil
-
-          expect(expenses_relation).to receive(:includes).with(:category)
-          expect(expenses_relation).to receive(:where).with(
-            transaction_date: budget.current_period_range
-          )
-          expect(expenses_relation).to receive(:where).with(
-            currency: 0 # CRC enum value
-          )
-          expect(expenses_relation).not_to receive(:where).with(category_id: anything)
-
-          result = budget.calculate_current_spend!
-          expect(result).to eq(75_000.0)
-        end
-
-        it "calculates spend for category-specific budget" do
-          budget.category_id = 5
-
-          expect(expenses_relation).to receive(:where).with(category_id: 5)
-
-          result = budget.calculate_current_spend!
-          expect(result).to eq(75_000.0)
-        end
-
-        it "updates cached values" do
-          expect(budget).to receive(:update_columns).with(
-            current_spend: 75_000.0,
-            current_spend_updated_at: anything
-          )
-
-          budget.calculate_current_spend!
-        end
-
-        it "checks and tracks if exceeded" do
-          expect(budget).to receive(:check_and_track_exceeded).with(75_000.0)
-
-          budget.calculate_current_spend!
-        end
-      end
-
-      context "currency mapping" do
-        it "maps currencies to expense enum values correctly" do
-          allow(Expense).to receive(:currencies).and_return({ crc: 0, usd: 1, eur: 2 })
-
-          { "CRC" => 0, "USD" => 1, "EUR" => 2 }.each do |currency, enum_value|
-            budget.currency = currency
-            expect(expenses_relation).to receive(:where).with(currency: enum_value)
-            budget.calculate_current_spend!
-          end
-        end
-      end
+      # Integration tests for the override + M2M rules live in
+      # spec/models/budget_spend_calculation_spec.rb. The old mock-based
+      # tests were tightly coupled to the single-category_id implementation
+      # and have been superseded.
     end
 
     describe "#current_spend_amount" do

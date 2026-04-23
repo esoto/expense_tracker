@@ -104,46 +104,55 @@ class Budget < ApplicationRecord
     external_source.present?
   end
 
-  # True when an external budget has not yet been mapped to a local category.
+  # True when an external budget has no claimed categories.
   # Spend calculation is skipped for unmapped rows to avoid noise.
+  # During the M2M transition, we honor both the legacy category_id path
+  # and the new budget_categories join — a budget is "mapped" once either
+  # one is populated. Task 15 collapses this to budget_categories only.
   def unmapped?
-    external? && category_id.nil?
+    external? && category_id.nil? && budget_categories.empty?
   end
 
-  # Calculate actual spending for the current period
+  # Calculate actual spending for the current period.
+  # Rules:
+  #   1. expenses.budget_id = self.id always count (override).
+  #   2. expenses.budget_id IS NULL AND category IN claimed categories count (default routing).
+  #   3. expenses targeting a different budget never count here.
+  # Overlap across budgets is allowed — if two budgets claim the same category,
+  # the same expense counts toward each. The bucket rollup (Services::Budgets::BucketSummary)
+  # dedupes via DISTINCT expense_id.
   def calculate_current_spend!
     return 0.0 unless active?
 
-    if unmapped?
-      # Stamp the cache so callers of current_spend_amount don't re-enter this
-      # method on every read. Unmapped external rows always have zero spend.
+    if unmapped? && override_expenses.empty?
       update_columns(current_spend: 0.0, current_spend_updated_at: Time.current) if persisted?
       return 0.0
     end
 
     date_range = current_period_range
+    claimed_category_ids = category_ids
 
-    # Base query for expenses in the period with eager loading
-    expenses_query = email_account.expenses
-      .includes(:category)
+    base_query = email_account.expenses
       .where(transaction_date: date_range)
       .where(currency: currency_to_expense_currency)
 
-    # Filter by category if this is a category-specific budget
-    expenses_query = expenses_query.where(category_id: category_id) if category_id.present?
+    conditions = []
+    bindings = {}
 
-    # Calculate and cache the spend
-    spend = expenses_query.sum(:amount).to_f
+    if persisted?
+      conditions << "expenses.budget_id = :budget_id"
+      bindings[:budget_id] = id
+    end
 
-    # Update the budget record with cached values
-    update_columns(
-      current_spend: spend,
-      current_spend_updated_at: Time.current
-    )
+    if claimed_category_ids.any?
+      conditions << "(expenses.budget_id IS NULL AND expenses.category_id IN (:claimed))"
+      bindings[:claimed] = claimed_category_ids
+    end
 
-    # Track if budget was exceeded
+    spend = conditions.empty? ? 0.0 : base_query.where(conditions.join(" OR "), bindings).sum(:amount).to_f
+
+    update_columns(current_spend: spend, current_spend_updated_at: Time.current)
     check_and_track_exceeded(spend)
-
     spend
   end
 
@@ -337,6 +346,10 @@ class Budget < ApplicationRecord
 
   def unique_active_budget_per_scope
     return unless active?
+    # In the M2M world, budgets without a legacy category_id and without an
+    # external source are free to overlap — two general budgets in the same
+    # email_account/period are allowed (Task 15 drops this validation entirely).
+    return if category_id.nil? && external_source.nil?
 
     existing = self.class
       .active

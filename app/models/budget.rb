@@ -135,7 +135,9 @@ class Budget < ApplicationRecord
   # Spend calculation is skipped for unmapped rows to avoid noise.
   # During the M2M transition, we honor both the legacy category_id path
   # and the new budget_categories join — a budget is "mapped" once either
-  # one is populated. Task 15 collapses this to budget_categories only.
+  # one is populated.
+  # TODO(multi-category-rollout): drop the legacy category_id leg once
+  # budgets.category_id column is removed in the follow-up migration.
   def unmapped?
     external? && category_id.nil? && budget_categories.empty?
   end
@@ -149,7 +151,12 @@ class Budget < ApplicationRecord
   # the same expense counts toward each. The bucket rollup (Services::Budgets::BucketSummary)
   # dedupes via DISTINCT expense_id.
   def calculate_current_spend!
-    return 0.0 unless active?
+    # Stamp the cache on the inactive short-circuit too so #current_spend_amount
+    # doesn't re-enter this method on every subsequent read.
+    unless active?
+      update_columns(current_spend: 0.0, current_spend_updated_at: Time.current) if persisted?
+      return 0.0
+    end
 
     if unmapped? && override_expenses.empty?
       update_columns(current_spend: 0.0, current_spend_updated_at: Time.current) if persisted?
@@ -321,7 +328,9 @@ class Budget < ApplicationRecord
     update!(active: false)
   end
 
-  # Duplicate budget for next period
+  # Duplicate budget for next period. Carries forward salary_bucket and
+  # the M2M claimed categories so the new period routes spend the same way
+  # the old one did.
   def duplicate_for_next_period
     next_start = calculate_next_period_start
 
@@ -329,6 +338,8 @@ class Budget < ApplicationRecord
       user: user,
       email_account: email_account,
       category: category,
+      categories: categories.to_a,
+      salary_bucket: salary_bucket,
       name: name,
       description: description,
       period: period,

@@ -57,6 +57,34 @@ RSpec.describe Budget, "#calculate_current_spend! — new rules", type: :model, 
 
       expect(ours.calculate_current_spend!).to eq(0.0)
     end
+
+    it "does not count an override expense on an inactive budget" do
+      b = create(:budget, email_account: email_account, active: false)
+      make_expense(category: food, amount: 5_000, budget: b)
+
+      # Active guard short-circuits before routing rules; override is silently
+      # ignored so the budget reports 0 until re-activated.
+      expect(b.calculate_current_spend!).to eq(0.0)
+    end
+
+    it "excludes override expenses outside the budget's current period" do
+      b = create(:budget, email_account: email_account)
+      make_expense(
+        category: food,
+        amount: 15_000,
+        budget: b,
+        transaction_date: Date.current.beginning_of_month - 10.days
+      )
+
+      expect(b.calculate_current_spend!).to eq(0.0)
+    end
+
+    it "excludes override expenses whose currency differs from the budget's" do
+      b = create(:budget, email_account: email_account, currency: "CRC")
+      make_expense(category: food, amount: 20_000, budget: b, currency: :usd)
+
+      expect(b.calculate_current_spend!).to eq(0.0)
+    end
   end
 
   context "overlapping categories across budgets" do

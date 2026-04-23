@@ -218,5 +218,20 @@ RSpec.describe "Budgets", type: :request, integration: true do
       post budgets_path, params: attrs
       expect(Budget.last.categories).to be_empty
     end
+
+    it "rejects category_ids belonging to another user (IDOR guard)" do
+      stranger = create(:user)
+      stranger_category = create(:category, name: "Stranger", user: stranger)
+      # Baseline sanity: the stranger's personal category is NOT visible to our
+      # scoping user, so the controller must strip it from category_ids.
+      expect(Category.visible_to(user)).not_to include(stranger_category)
+
+      attrs = multi_attributes.deep_dup
+      attrs[:budget][:category_ids] = [ food.id, stranger_category.id ]
+      post budgets_path, params: attrs
+
+      expect(Budget.last.categories).to contain_exactly(food)
+      expect(Budget.last.categories).not_to include(stranger_category)
+    end
   end
 end

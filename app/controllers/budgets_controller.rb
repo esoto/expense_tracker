@@ -178,12 +178,25 @@ class BudgetsController < ApplicationController
     end
 
     # Support the legacy single-category picker on the card partial:
+    # TODO(multi-category-rollout): remove this shim once the unmapped-card
+    # form emits `budget[category_ids][]` instead of `budget[category_id]`.
     if permitted[:category_id].present? && permitted[:category_ids].blank?
       permitted[:category_ids] = [ permitted.delete(:category_id) ]
     end
     permitted.delete(:category_id)
 
     permitted[:category_ids] = Array(permitted[:category_ids]).reject(&:blank?)
+
+    # Scope category_ids to categories the user can actually see (shared +
+    # their own personal categories). Drops any ids that belong to another
+    # user's personal category — prevents IDOR via the budget form.
+    if permitted[:category_ids].any?
+      permitted[:category_ids] = Category.visible_to(scoping_user)
+        .where(id: permitted[:category_ids])
+        .pluck(:id)
+        .map(&:to_s)
+    end
+
     permitted[:salary_bucket] = nil if permitted[:salary_bucket].blank?
 
     permitted

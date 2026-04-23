@@ -108,4 +108,17 @@ module BudgetsHelper
     options << [ "General (todas las categorías)", nil ] if include_general
     options + categories.map { |c| [ c.name, c.id ] }
   end
+
+  # Returns salary bucket options for select dropdowns
+  def budget_salary_bucket_options
+    Budget.salary_buckets.keys.map { |key| [ t("budgets.salary_buckets.#{key}"), key ] }
+  end
+
+  # Returns a comma-separated string of category names for a budget, or the
+  # general label when no categories are associated.
+  def budget_category_summary(budget)
+    names = budget.categories.map(&:display_name)
+    return t("budgets.show.general") if names.empty?
+    names.join(", ")
+  end
 end

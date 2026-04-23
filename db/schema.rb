@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_22_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_23_193940) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -32,6 +32,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_22_120000) do
     t.index ["token_digest"], name: "index_api_tokens_on_token_digest", unique: true
     t.index ["token_hash"], name: "index_api_tokens_on_token_hash", unique: true
     t.index ["user_id"], name: "index_api_tokens_on_user_id"
+  end
+
+  create_table "budget_categories", force: :cascade do |t|
+    t.bigint "budget_id", null: false
+    t.bigint "category_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["budget_id", "category_id"], name: "index_budget_categories_on_budget_and_category", unique: true
+    t.index ["budget_id"], name: "index_budget_categories_on_budget_id"
+    t.index ["category_id"], name: "index_budget_categories_on_category_id"
   end
 
   create_table "budgets", force: :cascade do |t|
@@ -805,6 +815,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_22_120000) do
   end
 
   add_foreign_key "api_tokens", "users"
+  add_foreign_key "budget_categories", "budgets"
+  add_foreign_key "budget_categories", "categories"
   add_foreign_key "budgets", "categories"
   add_foreign_key "budgets", "email_accounts"
   add_foreign_key "budgets", "users"

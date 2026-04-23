@@ -479,7 +479,9 @@ RSpec.describe "PER-126 Index Audit", :unit do
       # +3 for learning signals cluster user_id FK indexes (PR 9: pattern_feedbacks,
       #     pattern_learning_events, categorization_metrics — one concurrent index each)
       # +1 for api_tokens.user_id FK index (PR 11: api token user ownership)
-      expect(total).to be <= 245  # small buffer for schema drift
+      # +3 for budget_categories join table (multi-category budgets: budget_id, category_id,
+      #     unique composite budget_id+category_id)
+      expect(total).to be <= 251  # small buffer for schema drift
     end
   end
 end

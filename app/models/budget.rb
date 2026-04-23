@@ -104,6 +104,27 @@ class Budget < ApplicationRecord
     external_source.present?
   end
 
+  # Other active budgets in the same email_account that claim at least one
+  # category in common with this budget. Used to surface overlap in UI /
+  # warnings without blocking the save (overlap is allowed by design — see
+  # #calculate_current_spend!).
+  def overlapping_budgets
+    cat_ids = category_ids
+    return self.class.none if cat_ids.empty?
+
+    self.class
+      .active
+      .where(email_account_id: email_account_id)
+      .where.not(id: id)
+      .joins(:budget_categories)
+      .where(budget_categories: { category_id: cat_ids })
+      .distinct
+  end
+
+  def overlapping?
+    overlapping_budgets.exists?
+  end
+
   # True when an external budget has no claimed categories.
   # Spend calculation is skipped for unmapped rows to avoid noise.
   # During the M2M transition, we honor both the legacy category_id path

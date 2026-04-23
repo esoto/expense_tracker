@@ -835,4 +835,44 @@ RSpec.describe Budget, type: :model, unit: true do
       end
     end
   end
+
+  describe "#overlapping_budgets" do
+    let(:email_account) { create(:email_account) }
+    let(:food)          { create(:category, name: "Food") }
+    let(:transport)     { create(:category, name: "Transport") }
+
+    it "is empty when no other budget shares a category" do
+      mine = create(:budget, email_account: email_account, name: "Mine")
+      mine.categories << food
+      other = create(:budget, email_account: email_account, name: "Other")
+      other.categories << transport
+
+      expect(mine.overlapping_budgets).to be_empty
+      expect(mine).not_to be_overlapping
+    end
+
+    it "includes other active budgets in the same email_account sharing any category" do
+      mine = create(:budget, email_account: email_account, name: "Mine")
+      mine.categories << food
+      twin = create(:budget, email_account: email_account, name: "Twin")
+      twin.categories << food
+
+      expect(mine.overlapping_budgets).to include(twin)
+      expect(mine).to be_overlapping
+    end
+
+    it "ignores inactive budgets and other email_accounts" do
+      mine = create(:budget, email_account: email_account, name: "Mine")
+      mine.categories << food
+
+      inactive = create(:budget, email_account: email_account, name: "Inactive", active: false)
+      inactive.categories << food
+
+      stranger = create(:budget, email_account: create(:email_account), name: "Stranger")
+      stranger.categories << food
+
+      expect(mine.overlapping_budgets).not_to include(inactive)
+      expect(mine.overlapping_budgets).not_to include(stranger)
+    end
+  end
 end

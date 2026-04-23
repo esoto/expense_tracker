@@ -29,6 +29,8 @@ RSpec.describe Budget, type: :model, unit: true do
   describe "associations" do
     it { is_expected.to belong_to(:email_account) }
     it { is_expected.to belong_to(:category).optional }
+    it { is_expected.to have_many(:budget_categories).dependent(:destroy) }
+    it { is_expected.to have_many(:categories).through(:budget_categories) }
   end
 
   describe "validations" do

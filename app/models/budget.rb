@@ -18,6 +18,8 @@ class Budget < ApplicationRecord
   belongs_to :user
   belongs_to :email_account
   belongs_to :category, optional: true
+  has_many :budget_categories, dependent: :destroy
+  has_many :categories, through: :budget_categories
 
   # Validations
   validates :name, presence: true, length: { maximum: 100 }

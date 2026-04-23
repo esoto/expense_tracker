@@ -31,6 +31,7 @@ RSpec.describe Budget, type: :model, unit: true do
     it { is_expected.to belong_to(:category).optional }
     it { is_expected.to have_many(:budget_categories).dependent(:destroy) }
     it { is_expected.to have_many(:categories).through(:budget_categories) }
+    it { is_expected.to have_many(:override_expenses).class_name("Expense").dependent(:nullify) }
   end
 
   describe "validations" do

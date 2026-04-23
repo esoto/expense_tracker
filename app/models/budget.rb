@@ -23,6 +23,7 @@ class Budget < ApplicationRecord
   belongs_to :category, optional: true
   has_many :budget_categories, dependent: :destroy
   has_many :categories, through: :budget_categories
+  has_many :override_expenses, class_name: "Expense", foreign_key: :budget_id, dependent: :nullify, inverse_of: :budget
 
   # Validations
   validates :name, presence: true, length: { maximum: 100 }

@@ -8,6 +8,7 @@ class Expense < ApplicationRecord
   belongs_to :email_account, optional: true
   belongs_to :category, optional: true
   belongs_to :ml_suggested_category, class_name: "Category", foreign_key: "ml_suggested_category_id", optional: true
+  belongs_to :budget, optional: true, inverse_of: :override_expenses
   has_many :pattern_feedbacks, dependent: :destroy
   has_many :pattern_learning_events, dependent: :destroy
   has_many :bulk_operation_items, dependent: :destroy
@@ -24,7 +25,7 @@ class Expense < ApplicationRecord
   validate :category_exists_if_provided
 
   # Attributes whose changes warrant dashboard cache invalidation
-  CACHE_RELEVANT_ATTRIBUTES = %w[amount currency category_id transaction_date status email_account_id deleted_at].freeze
+  CACHE_RELEVANT_ATTRIBUTES = %w[amount currency category_id budget_id transaction_date status email_account_id deleted_at].freeze
 
   # Callbacks
   before_save :ensure_bank_name

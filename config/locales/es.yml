@@ -688,6 +688,11 @@ es:
 
   # Budgets
   budgets:
+    salary_buckets:
+      fixed: "Gastos fijos"
+      guilt_free: "Sin culpa"
+      savings: "Ahorros"
+      investment: "Inversión"
     external_badge: "desde salary_calc"
     unmapped_banner: "Selecciona una categoría para empezar a rastrear tus gastos"
     pick_category: "Elige una categoría..."

@@ -45,7 +45,7 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
 
     it "loads budgets for the scoping user" do
       expect(Budget).to receive(:for_user).with(user).and_return(budgets_relation)
-      expect(budgets_relation).to receive(:includes).with(:category).and_return(budgets_relation)
+      expect(budgets_relation).to receive(:includes).with(:categories).and_return(budgets_relation)
       expect(budgets_relation).to receive(:order).with(active: :desc, period: :asc, created_at: :desc).and_return(budgets)
 
       get :index

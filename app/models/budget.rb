@@ -14,10 +14,23 @@ class Budget < ApplicationRecord
     yearly: 3
   }, prefix: true
 
+  enum :salary_bucket, {
+    fixed: 0,
+    guilt_free: 1,
+    savings: 2,
+    investment: 3
+  }, prefix: :bucket
+
   # Associations
   belongs_to :user
   belongs_to :email_account
+  # Legacy single-category path — being superseded by the M2M :categories
+  # association below. Kept during the multi-category rollout; dropped in a
+  # follow-up migration. Prefer #categories over #category in new code.
   belongs_to :category, optional: true
+  has_many :budget_categories, dependent: :destroy
+  has_many :categories, through: :budget_categories
+  has_many :override_expenses, class_name: "Expense", foreign_key: :budget_id, dependent: :nullify, inverse_of: :budget
 
   # Validations
   validates :name, presence: true, length: { maximum: 100 }
@@ -29,7 +42,6 @@ class Budget < ApplicationRecord
   validates :critical_threshold, numericality: { greater_than: 0, less_than_or_equal_to: 100 }
   validate :thresholds_order
   validate :end_date_after_start_date
-  validate :unique_active_budget_per_scope
 
   # Scopes
   scope :for_user, ->(u) { where(user_id: u.id) }
@@ -98,46 +110,83 @@ class Budget < ApplicationRecord
     external_source.present?
   end
 
-  # True when an external budget has not yet been mapped to a local category.
-  # Spend calculation is skipped for unmapped rows to avoid noise.
-  def unmapped?
-    external? && category_id.nil?
+  # Other active budgets in the same email_account that claim at least one
+  # category in common with this budget. Used to surface overlap in UI /
+  # warnings without blocking the save (overlap is allowed by design — see
+  # #calculate_current_spend!).
+  def overlapping_budgets
+    cat_ids = category_ids
+    return self.class.none if cat_ids.empty?
+
+    self.class
+      .active
+      .where(email_account_id: email_account_id)
+      .where.not(id: id)
+      .joins(:budget_categories)
+      .where(budget_categories: { category_id: cat_ids })
+      .distinct
   end
 
-  # Calculate actual spending for the current period
-  def calculate_current_spend!
-    return 0.0 unless active?
+  def overlapping?
+    overlapping_budgets.exists?
+  end
 
-    if unmapped?
-      # Stamp the cache so callers of current_spend_amount don't re-enter this
-      # method on every read. Unmapped external rows always have zero spend.
+  # True when an external budget has no claimed categories.
+  # Spend calculation is skipped for unmapped rows to avoid noise.
+  # During the M2M transition, we honor both the legacy category_id path
+  # and the new budget_categories join — a budget is "mapped" once either
+  # one is populated.
+  # TODO(multi-category-rollout): drop the legacy category_id leg once
+  # budgets.category_id column is removed in the follow-up migration.
+  def unmapped?
+    external? && category_id.nil? && budget_categories.empty?
+  end
+
+  # Calculate actual spending for the current period.
+  # Rules:
+  #   1. expenses.budget_id = self.id always count (override).
+  #   2. expenses.budget_id IS NULL AND category IN claimed categories count (default routing).
+  #   3. expenses targeting a different budget never count here.
+  # Overlap across budgets is allowed — if two budgets claim the same category,
+  # the same expense counts toward each. The bucket rollup (Services::Budgets::BucketSummary)
+  # dedupes via DISTINCT expense_id.
+  def calculate_current_spend!
+    # Stamp the cache on the inactive short-circuit too so #current_spend_amount
+    # doesn't re-enter this method on every subsequent read.
+    unless active?
+      update_columns(current_spend: 0.0, current_spend_updated_at: Time.current) if persisted?
+      return 0.0
+    end
+
+    if unmapped? && override_expenses.empty?
       update_columns(current_spend: 0.0, current_spend_updated_at: Time.current) if persisted?
       return 0.0
     end
 
     date_range = current_period_range
+    claimed_category_ids = category_ids
 
-    # Base query for expenses in the period with eager loading
-    expenses_query = email_account.expenses
-      .includes(:category)
+    base_query = email_account.expenses
       .where(transaction_date: date_range)
       .where(currency: currency_to_expense_currency)
 
-    # Filter by category if this is a category-specific budget
-    expenses_query = expenses_query.where(category_id: category_id) if category_id.present?
+    conditions = []
+    bindings = {}
 
-    # Calculate and cache the spend
-    spend = expenses_query.sum(:amount).to_f
+    if persisted?
+      conditions << "expenses.budget_id = :budget_id"
+      bindings[:budget_id] = id
+    end
 
-    # Update the budget record with cached values
-    update_columns(
-      current_spend: spend,
-      current_spend_updated_at: Time.current
-    )
+    if claimed_category_ids.any?
+      conditions << "(expenses.budget_id IS NULL AND expenses.category_id IN (:claimed))"
+      bindings[:claimed] = claimed_category_ids
+    end
 
-    # Track if budget was exceeded
+    spend = conditions.empty? ? 0.0 : base_query.where(conditions.join(" OR "), bindings).sum(:amount).to_f
+
+    update_columns(current_spend: spend, current_spend_updated_at: Time.current)
     check_and_track_exceeded(spend)
-
     spend
   end
 
@@ -279,7 +328,9 @@ class Budget < ApplicationRecord
     update!(active: false)
   end
 
-  # Duplicate budget for next period
+  # Duplicate budget for next period. Carries forward salary_bucket and
+  # the M2M claimed categories so the new period routes spend the same way
+  # the old one did.
   def duplicate_for_next_period
     next_start = calculate_next_period_start
 
@@ -287,6 +338,8 @@ class Budget < ApplicationRecord
       user: user,
       email_account: email_account,
       category: category,
+      categories: categories.to_a,
+      salary_bucket: salary_bucket,
       name: name,
       description: description,
       period: period,
@@ -326,23 +379,6 @@ class Budget < ApplicationRecord
 
     if end_date < start_date
       errors.add(:end_date, "debe ser posterior a la fecha de inicio")
-    end
-  end
-
-  def unique_active_budget_per_scope
-    return unless active?
-
-    existing = self.class
-      .active
-      .where(email_account_id: email_account_id)
-      .where(period: period)
-      .where(category_id: category_id)
-      .where(external_source: external_source, external_id: external_id)
-
-    existing = existing.where.not(id: id) if persisted?
-
-    if existing.exists?
-      errors.add(:base, "Ya existe un presupuesto activo para este período y categoría")
     end
   end
 

@@ -688,7 +688,19 @@ es:
 
   # Budgets
   budgets:
+    salary_buckets:
+      fixed: "Gastos fijos"
+      guilt_free: "Sin culpa"
+      savings: "Ahorros"
+      investment: "Inversión"
     external_badge: "desde salary_calc"
+    overlap_warning: "Comparte categorías con otros presupuestos"
+    overlap_tooltip: "Este presupuesto tiene categorías que también están en otros presupuestos. Considera usar una categoría por presupuesto, o abrir el gasto y asignarlo manualmente a un presupuesto específico."
+    buckets:
+      overview_title: "Vista por bucket salarial"
+      budgeted: "Presupuestado"
+      spent: "Gastado"
+      remaining: "Restante"
     unmapped_banner: "Selecciona una categoría para empezar a rastrear tus gastos"
     pick_category: "Elige una categoría..."
     save_category: "Guardar"
@@ -718,6 +730,10 @@ es:
       period_label: "Período"
       currency_label: "Moneda"
       category_label: "Categoría"
+      categories_label: "Categorías"
+      categories_hint: "Selecciona una o más categorías. Los gastos en estas categorías cuentan hacia este presupuesto."
+      salary_bucket_label: "Bucket salarial (opcional)"
+      salary_bucket_blank: "— Sin bucket —"
       warning_threshold_label: "Umbral de advertencia (%)"
       critical_threshold_label: "Umbral crítico (%)"
       description_placeholder: "Descripción opcional del presupuesto..."
@@ -736,6 +752,7 @@ es:
       budget_details_title: "Detalles del Presupuesto"
       period_label: "Período"
       category_label: "Categoría"
+      categories_label: "Categorías"
       amount_label: "Monto"
       currency_label: "Moneda"
       start_date_label: "Fecha de inicio"

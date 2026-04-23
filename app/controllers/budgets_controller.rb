@@ -8,7 +8,7 @@ class BudgetsController < ApplicationController
   # GET /budgets
   def index
     @budgets = Budget.for_user(scoping_user)
-      .includes(:category)
+      .includes(:categories)
       .order(active: :desc, period: :asc, created_at: :desc)
 
     # Group budgets by period for better display
@@ -24,6 +24,12 @@ class BudgetsController < ApplicationController
     # Drives the empty-state CTA and sync-in-progress messaging.
     email_account = scoping_user.email_accounts.first
     @has_external_source = email_account&.external_budget_source&.active? || false
+
+    # Salary-bucket rollup (fixed / guilt_free / savings / investment).
+    # Scoped to the user's first email_account to match the rest of the index.
+    # Broadening to all accounts is a follow-up.
+    primary_account = scoping_user.email_accounts.first
+    @bucket_summary = Services::Budgets::BucketSummary.new(primary_account).call
   end
 
   # GET /budgets/1
@@ -158,15 +164,41 @@ class BudgetsController < ApplicationController
       :name, :description, :category_id, :period, :amount, :currency,
       :start_date, :end_date, :warning_threshold, :critical_threshold,
       :notify_on_warning, :notify_on_critical, :notify_on_exceeded,
-      :rollover_enabled, :active, :email_account_id
+      :rollover_enabled, :active, :email_account_id, :salary_bucket,
+      category_ids: []
     )
+
     # Drop user_id if someone tries to forge it via params.
     permitted.delete(:user_id) if permitted.key?(:user_id)
+
     # Validate email_account_id belongs to scoping_user; nullify if forged.
     if permitted[:email_account_id].present? &&
        !scoping_user.email_accounts.exists?(id: permitted[:email_account_id])
       permitted[:email_account_id] = nil
     end
+
+    # Support the legacy single-category picker on the card partial:
+    # TODO(multi-category-rollout): remove this shim once the unmapped-card
+    # form emits `budget[category_ids][]` instead of `budget[category_id]`.
+    if permitted[:category_id].present? && permitted[:category_ids].blank?
+      permitted[:category_ids] = [ permitted.delete(:category_id) ]
+    end
+    permitted.delete(:category_id)
+
+    permitted[:category_ids] = Array(permitted[:category_ids]).reject(&:blank?)
+
+    # Scope category_ids to categories the user can actually see (shared +
+    # their own personal categories). Drops any ids that belong to another
+    # user's personal category — prevents IDOR via the budget form.
+    if permitted[:category_ids].any?
+      permitted[:category_ids] = Category.visible_to(scoping_user)
+        .where(id: permitted[:category_ids])
+        .pluck(:id)
+        .map(&:to_s)
+    end
+
+    permitted[:salary_bucket] = nil if permitted[:salary_bucket].blank?
+
     permitted
   end
 

@@ -62,11 +62,14 @@ RSpec.describe Budget, type: :model, integration: true do
         expect(budget.errors[:end_date]).to include('debe ser posterior a la fecha de inicio')
       end
 
-      it 'ensures only one active budget per email_account/category/period combination' do
+      it 'allows two general (category-less) budgets in the same period — overlap is allowed by design' do
+        # Rationale: multi-category budgets can intentionally claim the same categories across
+        # budgets (e.g., "Familia" and "Esteban" both covering Food). Uniqueness on the legacy
+        # category_id column is obsolete under the new M2M routing. Dup-blocking is still enforced
+        # for external-source budgets (see #unique_active_budget_per_scope with external sources).
         create(:budget, email_account: email_account, category: nil, period: 'monthly', active: true)
         duplicate = build(:budget, email_account: email_account, category: nil, period: 'monthly', active: true)
-        expect(duplicate).not_to be_valid
-        expect(duplicate.errors[:base]).to include('Ya existe un presupuesto activo para este período y categoría')
+        expect(duplicate).to be_valid
       end
     end
   end
@@ -153,13 +156,22 @@ RSpec.describe Budget, type: :model, integration: true do
   end
 
   describe '#calculate_current_spend!', integration: true do
-    let(:budget) { create(:budget, email_account: email_account, period: 'monthly', amount: 100000) }
+    # NOTE: Comprehensive unit-style coverage of spend calc rules (override,
+    # M2M routing, overlap, empty budgets) lives in
+    # spec/models/budget_spend_calculation_spec.rb. Tests below exercise the
+    # full DB persistence + cache-update path as an integration smoke.
+
+    let(:budget) do
+      b = create(:budget, email_account: email_account, period: 'monthly', amount: 100000)
+      b.categories << category
+      b
+    end
 
     context 'with expenses in period' do
       before do
-        create(:expense, email_account: email_account, amount: 25000, transaction_date: Date.current, currency: 'crc')
-        create(:expense, email_account: email_account, amount: 30000, transaction_date: Date.current, currency: 'crc')
-        create(:expense, email_account: email_account, amount: 20000, transaction_date: 1.month.ago, currency: 'crc') # Outside period
+        create(:expense, email_account: email_account, category: category, amount: 25000, transaction_date: Date.current, currency: 'crc')
+        create(:expense, email_account: email_account, category: category, amount: 30000, transaction_date: Date.current, currency: 'crc')
+        create(:expense, email_account: email_account, category: category, amount: 20000, transaction_date: 1.month.ago, currency: 'crc') # Outside period
       end
 
       it 'calculates total spend for current period' do
@@ -172,15 +184,13 @@ RSpec.describe Budget, type: :model, integration: true do
       end
     end
 
-    context 'with category-specific budget' do
-      let(:budget) { create(:budget, email_account: email_account, category: category, period: 'monthly') }
-
+    context 'with a claimed category' do
       before do
         create(:expense, email_account: email_account, category: category, amount: 15000, transaction_date: Date.current, currency: 'crc')
         create(:expense, email_account: email_account, category: nil, amount: 20000, transaction_date: Date.current, currency: 'crc')
       end
 
-      it 'only counts expenses in the specified category' do
+      it 'only counts expenses in a claimed category' do
         expect(budget.calculate_current_spend!).to eq(15000.0)
       end
     end
@@ -379,7 +389,7 @@ RSpec.describe Budget, type: :model, integration: true do
     end
   end
 
-  describe 'unique_active_budget_per_scope with external sources', integration: true do
+  describe 'external-source dedup (DB-level)', integration: true do
     it 'allows an unmapped external budget to coexist with a native category-less budget in same period' do
       create(:budget, email_account: email_account, category: nil, period: 'monthly', active: true)
       external = build(:budget, email_account: email_account, category: nil, period: 'monthly', active: true,
@@ -397,21 +407,30 @@ RSpec.describe Budget, type: :model, integration: true do
       expect(second).to be_valid
     end
 
-    it 'rejects a duplicate external budget with the same external_source + external_id' do
+    it 'rejects a duplicate external budget with the same external_source + external_id via DB unique index' do
+      # With the model-level unique_active_budget_per_scope removed, external
+      # dedup is enforced by the partial unique DB index on
+      # (email_account_id, external_source, external_id, start_date) where external_source IS NOT NULL.
+      # See db/schema.rb index "idx_budgets_external_unique".
+      start_date = Date.current.beginning_of_month
       create(:budget, email_account: email_account, category: nil, period: 'monthly', active: true,
+                      start_date: start_date,
                       external_source: 'salary_calculator', external_id: 501)
       duplicate = build(:budget, email_account: email_account, category: nil, period: 'monthly', active: true,
+                                 start_date: start_date,
                                  external_source: 'salary_calculator', external_id: 501)
 
-      expect(duplicate).not_to be_valid
-      expect(duplicate.errors[:base]).to include('Ya existe un presupuesto activo para este período y categoría')
+      expect { duplicate.save!(validate: false) }.to raise_error(ActiveRecord::RecordNotUnique)
     end
 
-    it 'still rejects two native budgets in the same period/category' do
+    it 'allows two native general budgets in the same period — overlap is allowed by design' do
+      # Under multi-category budgets, two general (category-less) budgets in the same
+      # email_account + period can legitimately coexist. Dup-blocking only applies to
+      # external-source budgets (keyed by external_source + external_id).
       create(:budget, email_account: email_account, category: nil, period: 'monthly', active: true)
       duplicate = build(:budget, email_account: email_account, category: nil, period: 'monthly', active: true)
 
-      expect(duplicate).not_to be_valid
+      expect(duplicate).to be_valid
     end
   end
 

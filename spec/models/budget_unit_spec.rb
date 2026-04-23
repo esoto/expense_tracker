@@ -29,6 +29,9 @@ RSpec.describe Budget, type: :model, unit: true do
   describe "associations" do
     it { is_expected.to belong_to(:email_account) }
     it { is_expected.to belong_to(:category).optional }
+    it { is_expected.to have_many(:budget_categories).dependent(:destroy) }
+    it { is_expected.to have_many(:categories).through(:budget_categories) }
+    it { is_expected.to have_many(:override_expenses).class_name("Expense").dependent(:nullify) }
   end
 
   describe "validations" do
@@ -72,7 +75,7 @@ RSpec.describe Budget, type: :model, unit: true do
       end
     end
 
-    describe 'unique_active_budget_per_scope' do
+    describe 'multi-category overlap (allowed by design)' do
       before do
         create(:budget,
           email_account: email_account,
@@ -81,15 +84,17 @@ RSpec.describe Budget, type: :model, unit: true do
           active: true)
       end
 
-      it 'validates uniqueness of active budget per email_account and category' do
+      it 'allows two active budgets with the same email_account + category (overlap is intentional)' do
+        # Rationale: under multi-category budgets, two budgets in the same email_account
+        # can legitimately claim the same category (e.g., "Familia" and "Esteban" both
+        # covering Food). Overlap surfaces via #overlapping_budgets, not validation errors.
         budget = build(:budget,
           email_account: email_account,
           category: category,
           name: "New Budget",
           active: true)
 
-        expect(budget).to be_invalid
-        expect(budget.errors[:base]).to include("Ya existe un presupuesto activo para este período y categoría")
+        expect(budget).to be_valid
       end
 
       it 'allows multiple inactive budgets for same scope' do
@@ -275,80 +280,10 @@ RSpec.describe Budget, type: :model, unit: true do
     end
 
     describe "#calculate_current_spend!" do
-      let(:expenses_relation) { double("expenses relation") }
-
-      before do
-        allow(budget).to receive(:active?).and_return(true)
-        allow(budget).to receive(:current_period_range).and_return(Date.current.beginning_of_month..Date.current.end_of_month)
-        allow(email_account).to receive(:expenses).and_return(expenses_relation)
-        allow(expenses_relation).to receive(:includes).with(:category).and_return(expenses_relation)
-        allow(expenses_relation).to receive(:where).and_return(expenses_relation)
-        allow(expenses_relation).to receive(:sum).with(:amount).and_return(75_000)
-        allow(budget).to receive(:update_columns)
-        allow(budget).to receive(:check_and_track_exceeded)
-      end
-
-      context "when budget is inactive" do
-        it "returns 0" do
-          allow(budget).to receive(:active?).and_return(false)
-
-          expect(budget.calculate_current_spend!).to eq(0.0)
-        end
-      end
-
-      context "when budget is active" do
-        it "calculates spend for general budget" do
-          budget.category_id = nil
-
-          expect(expenses_relation).to receive(:includes).with(:category)
-          expect(expenses_relation).to receive(:where).with(
-            transaction_date: budget.current_period_range
-          )
-          expect(expenses_relation).to receive(:where).with(
-            currency: 0 # CRC enum value
-          )
-          expect(expenses_relation).not_to receive(:where).with(category_id: anything)
-
-          result = budget.calculate_current_spend!
-          expect(result).to eq(75_000.0)
-        end
-
-        it "calculates spend for category-specific budget" do
-          budget.category_id = 5
-
-          expect(expenses_relation).to receive(:where).with(category_id: 5)
-
-          result = budget.calculate_current_spend!
-          expect(result).to eq(75_000.0)
-        end
-
-        it "updates cached values" do
-          expect(budget).to receive(:update_columns).with(
-            current_spend: 75_000.0,
-            current_spend_updated_at: anything
-          )
-
-          budget.calculate_current_spend!
-        end
-
-        it "checks and tracks if exceeded" do
-          expect(budget).to receive(:check_and_track_exceeded).with(75_000.0)
-
-          budget.calculate_current_spend!
-        end
-      end
-
-      context "currency mapping" do
-        it "maps currencies to expense enum values correctly" do
-          allow(Expense).to receive(:currencies).and_return({ crc: 0, usd: 1, eur: 2 })
-
-          { "CRC" => 0, "USD" => 1, "EUR" => 2 }.each do |currency, enum_value|
-            budget.currency = currency
-            expect(expenses_relation).to receive(:where).with(currency: enum_value)
-            budget.calculate_current_spend!
-          end
-        end
-      end
+      # Integration tests for the override + M2M rules live in
+      # spec/models/budget_spend_calculation_spec.rb. The old mock-based
+      # tests were tightly coupled to the single-category_id implementation
+      # and have been superseded.
     end
 
     describe "#current_spend_amount" do
@@ -900,6 +835,65 @@ RSpec.describe Budget, type: :model, unit: true do
         budget.name = "a" * 101
         expect(budget).not_to be_valid
       end
+    end
+  end
+
+  describe "salary_bucket enum" do
+    it "defines the four buckets" do
+      expect(described_class.salary_buckets).to eq({
+        "fixed" => 0, "guilt_free" => 1, "savings" => 2, "investment" => 3
+      })
+    end
+
+    it "exposes prefixed predicates" do
+      budget = build(:budget, salary_bucket: :savings)
+      expect(budget.bucket_savings?).to be true
+      expect(budget.bucket_fixed?).to be false
+    end
+
+    it "permits nil salary_bucket" do
+      budget = build(:budget, salary_bucket: nil)
+      expect(budget).to be_valid
+    end
+  end
+
+  describe "#overlapping_budgets" do
+    let(:email_account) { create(:email_account) }
+    let(:food)          { create(:category, name: "Food") }
+    let(:transport)     { create(:category, name: "Transport") }
+
+    it "is empty when no other budget shares a category" do
+      mine = create(:budget, email_account: email_account, name: "Mine")
+      mine.categories << food
+      other = create(:budget, email_account: email_account, name: "Other")
+      other.categories << transport
+
+      expect(mine.overlapping_budgets).to be_empty
+      expect(mine).not_to be_overlapping
+    end
+
+    it "includes other active budgets in the same email_account sharing any category" do
+      mine = create(:budget, email_account: email_account, name: "Mine")
+      mine.categories << food
+      twin = create(:budget, email_account: email_account, name: "Twin")
+      twin.categories << food
+
+      expect(mine.overlapping_budgets).to include(twin)
+      expect(mine).to be_overlapping
+    end
+
+    it "ignores inactive budgets and other email_accounts" do
+      mine = create(:budget, email_account: email_account, name: "Mine")
+      mine.categories << food
+
+      inactive = create(:budget, email_account: email_account, name: "Inactive", active: false)
+      inactive.categories << food
+
+      stranger = create(:budget, email_account: create(:email_account), name: "Stranger")
+      stranger.categories << food
+
+      expect(mine.overlapping_budgets).not_to include(inactive)
+      expect(mine.overlapping_budgets).not_to include(stranger)
     end
   end
 end

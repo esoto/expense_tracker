@@ -516,7 +516,7 @@ module Services
     {
       id: budget.id,
       name: budget.name,
-      category: budget.category&.display_name,
+      category: budget.categories.map(&:display_name).join(", ").presence,
       period: budget.period,
       amount: budget.amount.to_f,
       currency: budget.currency,

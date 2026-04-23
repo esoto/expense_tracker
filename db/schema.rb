@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_22_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_23_232621) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -32,6 +32,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_22_120000) do
     t.index ["token_digest"], name: "index_api_tokens_on_token_digest", unique: true
     t.index ["token_hash"], name: "index_api_tokens_on_token_hash", unique: true
     t.index ["user_id"], name: "index_api_tokens_on_user_id"
+  end
+
+  create_table "budget_categories", force: :cascade do |t|
+    t.bigint "budget_id", null: false
+    t.bigint "category_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["budget_id", "category_id"], name: "index_budget_categories_on_budget_and_category", unique: true
+    t.index ["budget_id"], name: "index_budget_categories_on_budget_id"
+    t.index ["category_id"], name: "index_budget_categories_on_category_id"
   end
 
   create_table "budgets", force: :cascade do |t|
@@ -58,6 +68,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_22_120000) do
     t.integer "period", default: 2, null: false
     t.decimal "rollover_amount", precision: 12, scale: 2, default: "0.0"
     t.boolean "rollover_enabled", default: false
+    t.integer "salary_bucket"
     t.date "start_date", null: false
     t.integer "times_exceeded", default: 0
     t.datetime "updated_at", null: false
@@ -73,6 +84,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_22_120000) do
     t.index ["email_account_id"], name: "index_budgets_on_email_account_id"
     t.index ["external_source"], name: "index_budgets_on_external_source", where: "(external_source IS NOT NULL)"
     t.index ["metadata"], name: "index_budgets_on_metadata", using: :gin
+    t.index ["salary_bucket"], name: "index_budgets_on_salary_bucket"
     t.index ["start_date", "end_date"], name: "index_budgets_on_start_date_and_end_date"
     t.index ["user_id"], name: "index_budgets_on_user_id"
   end
@@ -310,6 +322,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_22_120000) do
     t.decimal "amount", precision: 10, scale: 2, null: false
     t.boolean "auto_categorized", default: false
     t.string "bank_name"
+    t.bigint "budget_id"
     t.float "categorization_confidence"
     t.string "categorization_method"
     t.datetime "categorized_at"
@@ -345,6 +358,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_22_120000) do
     t.index ["auto_categorized", "categorization_confidence"], name: "idx_expenses_auto_categorization", where: "((auto_categorized = true) AND (deleted_at IS NULL))", comment: "Index for tracking auto-categorization"
     t.index ["bank_name", "transaction_date"], name: "idx_expenses_bank_date", where: "(deleted_at IS NULL)"
     t.index ["bank_name", "transaction_date"], name: "index_expenses_on_bank_name_and_transaction_date"
+    t.index ["budget_id"], name: "index_expenses_on_budget_id"
     t.index ["categorization_method"], name: "index_expenses_on_categorization_method"
     t.index ["categorized_at"], name: "index_expenses_on_categorized_at"
     t.index ["categorized_by"], name: "index_expenses_on_categorized_by"
@@ -805,6 +819,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_22_120000) do
   end
 
   add_foreign_key "api_tokens", "users"
+  add_foreign_key "budget_categories", "budgets"
+  add_foreign_key "budget_categories", "categories"
   add_foreign_key "budgets", "categories"
   add_foreign_key "budgets", "email_accounts"
   add_foreign_key "budgets", "users"
@@ -828,6 +844,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_22_120000) do
   add_foreign_key "email_accounts", "users"
   add_foreign_key "email_parsing_failures", "email_accounts"
   add_foreign_key "email_parsing_failures", "users"
+  add_foreign_key "expenses", "budgets", on_delete: :nullify
   add_foreign_key "expenses", "categories"
   add_foreign_key "expenses", "email_accounts"
   add_foreign_key "expenses", "users"

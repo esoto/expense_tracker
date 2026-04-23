@@ -69,6 +69,8 @@ RSpec.describe Expense, type: :model, integration: true do
   describe 'associations', integration: true do
     let(:expense) { create(:expense, email_account: email_account, category: category) }
 
+    it { is_expected.to belong_to(:budget).optional }
+
     it 'belongs to user', unit: true do
       expect(expense).to respond_to(:user)
       expect(expense.user).to be_a(User)

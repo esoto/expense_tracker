@@ -17,6 +17,9 @@ class Budget < ApplicationRecord
   # Associations
   belongs_to :user
   belongs_to :email_account
+  # Legacy single-category path — being superseded by the M2M :categories
+  # association below. Kept during the multi-category rollout; dropped in a
+  # follow-up migration. Prefer #categories over #category in new code.
   belongs_to :category, optional: true
   has_many :budget_categories, dependent: :destroy
   has_many :categories, through: :budget_categories

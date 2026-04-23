@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_23_193940) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_23_201507) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -320,6 +320,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_23_193940) do
     t.decimal "amount", precision: 10, scale: 2, null: false
     t.boolean "auto_categorized", default: false
     t.string "bank_name"
+    t.bigint "budget_id"
     t.float "categorization_confidence"
     t.string "categorization_method"
     t.datetime "categorized_at"
@@ -355,6 +356,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_23_193940) do
     t.index ["auto_categorized", "categorization_confidence"], name: "idx_expenses_auto_categorization", where: "((auto_categorized = true) AND (deleted_at IS NULL))", comment: "Index for tracking auto-categorization"
     t.index ["bank_name", "transaction_date"], name: "idx_expenses_bank_date", where: "(deleted_at IS NULL)"
     t.index ["bank_name", "transaction_date"], name: "index_expenses_on_bank_name_and_transaction_date"
+    t.index ["budget_id"], name: "index_expenses_on_budget_id"
     t.index ["categorization_method"], name: "index_expenses_on_categorization_method"
     t.index ["categorized_at"], name: "index_expenses_on_categorized_at"
     t.index ["categorized_by"], name: "index_expenses_on_categorized_by"
@@ -840,6 +842,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_23_193940) do
   add_foreign_key "email_accounts", "users"
   add_foreign_key "email_parsing_failures", "email_accounts"
   add_foreign_key "email_parsing_failures", "users"
+  add_foreign_key "expenses", "budgets"
   add_foreign_key "expenses", "categories"
   add_foreign_key "expenses", "email_accounts"
   add_foreign_key "expenses", "users"

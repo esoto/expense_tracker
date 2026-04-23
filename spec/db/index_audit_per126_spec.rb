@@ -480,8 +480,9 @@ RSpec.describe "PER-126 Index Audit", :unit do
       #     pattern_learning_events, categorization_metrics — one concurrent index each)
       # +1 for api_tokens.user_id FK index (PR 11: api token user ownership)
       # +3 for budget_categories join table (multi-category budgets: budget_id, category_id,
-      #     unique composite budget_id+category_id). Current actual count: 250.
-      expect(total).to be <= 251  # small buffer for schema drift
+      #     unique composite budget_id+category_id). Actual count after this: 250.
+      # +1 for expenses.budget_id FK index (per-expense budget override). Actual: 251.
+      expect(total).to be <= 252  # small buffer for schema drift
     end
   end
 end

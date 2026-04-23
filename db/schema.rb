@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_23_201507) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_23_210000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -68,6 +68,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_23_201507) do
     t.integer "period", default: 2, null: false
     t.decimal "rollover_amount", precision: 12, scale: 2, default: "0.0"
     t.boolean "rollover_enabled", default: false
+    t.integer "salary_bucket"
     t.date "start_date", null: false
     t.integer "times_exceeded", default: 0
     t.datetime "updated_at", null: false
@@ -83,6 +84,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_23_201507) do
     t.index ["email_account_id"], name: "index_budgets_on_email_account_id"
     t.index ["external_source"], name: "index_budgets_on_external_source", where: "(external_source IS NOT NULL)"
     t.index ["metadata"], name: "index_budgets_on_metadata", using: :gin
+    t.index ["salary_bucket"], name: "index_budgets_on_salary_bucket"
     t.index ["start_date", "end_date"], name: "index_budgets_on_start_date_and_end_date"
     t.index ["user_id"], name: "index_budgets_on_user_id"
   end

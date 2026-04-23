@@ -14,6 +14,13 @@ class Budget < ApplicationRecord
     yearly: 3
   }, prefix: true
 
+  enum :salary_bucket, {
+    fixed: 0,
+    guilt_free: 1,
+    savings: 2,
+    investment: 3
+  }, prefix: :bucket
+
   # Associations
   belongs_to :user
   belongs_to :email_account

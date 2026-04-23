@@ -482,7 +482,8 @@ RSpec.describe "PER-126 Index Audit", :unit do
       # +3 for budget_categories join table (multi-category budgets: budget_id, category_id,
       #     unique composite budget_id+category_id). Actual count after this: 250.
       # +1 for expenses.budget_id FK index (per-expense budget override). Actual: 251.
-      expect(total).to be <= 252  # small buffer for schema drift
+      # +1 for budgets.salary_bucket index (salary-bucket rollup). Actual: 252.
+      expect(total).to be <= 253  # small buffer for schema drift
     end
   end
 end

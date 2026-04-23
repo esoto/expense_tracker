@@ -836,6 +836,25 @@ RSpec.describe Budget, type: :model, unit: true do
     end
   end
 
+  describe "salary_bucket enum" do
+    it "defines the four buckets" do
+      expect(described_class.salary_buckets).to eq({
+        "fixed" => 0, "guilt_free" => 1, "savings" => 2, "investment" => 3
+      })
+    end
+
+    it "exposes prefixed predicates" do
+      budget = build(:budget, salary_bucket: :savings)
+      expect(budget.bucket_savings?).to be true
+      expect(budget.bucket_fixed?).to be false
+    end
+
+    it "permits nil salary_bucket" do
+      budget = build(:budget, salary_bucket: nil)
+      expect(budget).to be_valid
+    end
+  end
+
   describe "#overlapping_budgets" do
     let(:email_account) { create(:email_account) }
     let(:food)          { create(:category, name: "Food") }

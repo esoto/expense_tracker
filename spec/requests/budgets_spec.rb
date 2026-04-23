@@ -188,4 +188,35 @@ RSpec.describe "Budgets", type: :request, integration: true do
       expect(assigns(:suggested_amount)).to be > 0
     end
   end
+
+  describe "POST /budgets with multi-category + salary_bucket" do
+    let(:food)  { create(:category, name: "Food Multi") }
+    let(:trans) { create(:category, name: "Transport Multi") }
+
+    let(:multi_attributes) do
+      {
+        budget: valid_attributes[:budget].merge(
+          category_ids: [ food.id, trans.id ],
+          salary_bucket: "fixed"
+        )
+      }
+    end
+
+    it "persists multiple claimed categories" do
+      post budgets_path, params: multi_attributes
+      expect(Budget.last.categories).to contain_exactly(food, trans)
+    end
+
+    it "persists the salary_bucket" do
+      post budgets_path, params: multi_attributes
+      expect(Budget.last.salary_bucket).to eq("fixed")
+    end
+
+    it "treats blank category_ids (hidden-input placeholder) as no selection" do
+      attrs = multi_attributes.deep_dup
+      attrs[:budget][:category_ids] = [ "" ]
+      post budgets_path, params: attrs
+      expect(Budget.last.categories).to be_empty
+    end
+  end
 end

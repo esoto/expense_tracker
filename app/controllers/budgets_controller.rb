@@ -8,7 +8,7 @@ class BudgetsController < ApplicationController
   # GET /budgets
   def index
     @budgets = Budget.for_user(scoping_user)
-      .includes(:category)
+      .includes(:categories)
       .order(active: :desc, period: :asc, created_at: :desc)
 
     # Group budgets by period for better display
@@ -158,15 +158,28 @@ class BudgetsController < ApplicationController
       :name, :description, :category_id, :period, :amount, :currency,
       :start_date, :end_date, :warning_threshold, :critical_threshold,
       :notify_on_warning, :notify_on_critical, :notify_on_exceeded,
-      :rollover_enabled, :active, :email_account_id
+      :rollover_enabled, :active, :email_account_id, :salary_bucket,
+      category_ids: []
     )
+
     # Drop user_id if someone tries to forge it via params.
     permitted.delete(:user_id) if permitted.key?(:user_id)
+
     # Validate email_account_id belongs to scoping_user; nullify if forged.
     if permitted[:email_account_id].present? &&
        !scoping_user.email_accounts.exists?(id: permitted[:email_account_id])
       permitted[:email_account_id] = nil
     end
+
+    # Support the legacy single-category picker on the card partial:
+    if permitted[:category_id].present? && permitted[:category_ids].blank?
+      permitted[:category_ids] = [ permitted.delete(:category_id) ]
+    end
+    permitted.delete(:category_id)
+
+    permitted[:category_ids] = Array(permitted[:category_ids]).reject(&:blank?)
+    permitted[:salary_bucket] = nil if permitted[:salary_bucket].blank?
+
     permitted
   end
 

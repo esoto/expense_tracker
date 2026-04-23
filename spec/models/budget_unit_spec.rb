@@ -75,7 +75,7 @@ RSpec.describe Budget, type: :model, unit: true do
       end
     end
 
-    describe 'unique_active_budget_per_scope' do
+    describe 'multi-category overlap (allowed by design)' do
       before do
         create(:budget,
           email_account: email_account,
@@ -84,15 +84,17 @@ RSpec.describe Budget, type: :model, unit: true do
           active: true)
       end
 
-      it 'validates uniqueness of active budget per email_account and category' do
+      it 'allows two active budgets with the same email_account + category (overlap is intentional)' do
+        # Rationale: under multi-category budgets, two budgets in the same email_account
+        # can legitimately claim the same category (e.g., "Familia" and "Esteban" both
+        # covering Food). Overlap surfaces via #overlapping_budgets, not validation errors.
         budget = build(:budget,
           email_account: email_account,
           category: category,
           name: "New Budget",
           active: true)
 
-        expect(budget).to be_invalid
-        expect(budget.errors[:base]).to include("Ya existe un presupuesto activo para este período y categoría")
+        expect(budget).to be_valid
       end
 
       it 'allows multiple inactive budgets for same scope' do

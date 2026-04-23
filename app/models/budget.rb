@@ -42,7 +42,6 @@ class Budget < ApplicationRecord
   validates :critical_threshold, numericality: { greater_than: 0, less_than_or_equal_to: 100 }
   validate :thresholds_order
   validate :end_date_after_start_date
-  validate :unique_active_budget_per_scope
 
   # Scopes
   scope :for_user, ->(u) { where(user_id: u.id) }
@@ -369,27 +368,6 @@ class Budget < ApplicationRecord
 
     if end_date < start_date
       errors.add(:end_date, "debe ser posterior a la fecha de inicio")
-    end
-  end
-
-  def unique_active_budget_per_scope
-    return unless active?
-    # In the M2M world, budgets without a legacy category_id and without an
-    # external source are free to overlap — two general budgets in the same
-    # email_account/period are allowed (Task 15 drops this validation entirely).
-    return if category_id.nil? && external_source.nil?
-
-    existing = self.class
-      .active
-      .where(email_account_id: email_account_id)
-      .where(period: period)
-      .where(category_id: category_id)
-      .where(external_source: external_source, external_id: external_id)
-
-    existing = existing.where.not(id: id) if persisted?
-
-    if existing.exists?
-      errors.add(:base, "Ya existe un presupuesto activo para este período y categoría")
     end
   end
 

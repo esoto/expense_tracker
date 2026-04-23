@@ -389,7 +389,7 @@ RSpec.describe Budget, type: :model, integration: true do
     end
   end
 
-  describe 'unique_active_budget_per_scope with external sources', integration: true do
+  describe 'external-source dedup (DB-level)', integration: true do
     it 'allows an unmapped external budget to coexist with a native category-less budget in same period' do
       create(:budget, email_account: email_account, category: nil, period: 'monthly', active: true)
       external = build(:budget, email_account: email_account, category: nil, period: 'monthly', active: true,
@@ -407,14 +407,20 @@ RSpec.describe Budget, type: :model, integration: true do
       expect(second).to be_valid
     end
 
-    it 'rejects a duplicate external budget with the same external_source + external_id' do
+    it 'rejects a duplicate external budget with the same external_source + external_id via DB unique index' do
+      # With the model-level unique_active_budget_per_scope removed, external
+      # dedup is enforced by the partial unique DB index on
+      # (email_account_id, external_source, external_id, start_date) where external_source IS NOT NULL.
+      # See db/schema.rb index "idx_budgets_external_unique".
+      start_date = Date.current.beginning_of_month
       create(:budget, email_account: email_account, category: nil, period: 'monthly', active: true,
+                      start_date: start_date,
                       external_source: 'salary_calculator', external_id: 501)
       duplicate = build(:budget, email_account: email_account, category: nil, period: 'monthly', active: true,
+                                 start_date: start_date,
                                  external_source: 'salary_calculator', external_id: 501)
 
-      expect(duplicate).not_to be_valid
-      expect(duplicate.errors[:base]).to include('Ya existe un presupuesto activo para este período y categoría')
+      expect { duplicate.save!(validate: false) }.to raise_error(ActiveRecord::RecordNotUnique)
     end
 
     it 'allows two native general budgets in the same period — overlap is allowed by design' do

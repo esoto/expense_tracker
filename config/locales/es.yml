@@ -752,6 +752,7 @@ es:
       budget_details_title: "Detalles del Presupuesto"
       period_label: "Período"
       category_label: "Categoría"
+      categories_label: "Categorías"
       amount_label: "Monto"
       currency_label: "Moneda"
       start_date_label: "Fecha de inicio"

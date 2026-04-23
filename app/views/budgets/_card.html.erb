@@ -2,15 +2,33 @@
 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
   <div class="flex items-start justify-between gap-2 mb-2">
     <h3 class="font-semibold text-slate-900"><%= budget.name %></h3>
-    <% if budget.external? %>
-      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-50 text-teal-700 border border-teal-200 whitespace-nowrap">
-        <%= t("budgets.external_badge") %>
-      </span>
-    <% end %>
+    <div class="flex items-center gap-1">
+      <% if budget.external? %>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-50 text-teal-700 border border-teal-200 whitespace-nowrap">
+          <%= t("budgets.external_badge") %>
+        </span>
+      <% end %>
+      <% if budget.salary_bucket.present? %>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200 whitespace-nowrap">
+          <%= t("budgets.salary_buckets.#{budget.salary_bucket}") %>
+        </span>
+      <% end %>
+    </div>
   </div>
   <p class="text-sm text-slate-600 mb-4">
-    <%= budget.category&.display_name || t("budgets.show.general") %>
+    <%= budget_category_summary(budget) %>
   </p>
+
+  <% if budget.overlapping? %>
+    <div class="mb-3 flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1.5"
+         title="<%= t("budgets.overlap_tooltip") %>">
+      <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 9v2m0 4h.01M4.93 19h14.14c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 00-3.46 0L3.2 16c-.77 1.33.19 3 1.73 3z"/>
+      </svg>
+      <span><%= t("budgets.overlap_warning") %></span>
+    </div>
+  <% end %>
 
   <% if budget.unmapped? %>
     <div class="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4">

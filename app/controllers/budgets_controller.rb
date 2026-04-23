@@ -24,6 +24,12 @@ class BudgetsController < ApplicationController
     # Drives the empty-state CTA and sync-in-progress messaging.
     email_account = scoping_user.email_accounts.first
     @has_external_source = email_account&.external_budget_source&.active? || false
+
+    # Salary-bucket rollup (fixed / guilt_free / savings / investment).
+    # Scoped to the user's first email_account to match the rest of the index.
+    # Broadening to all accounts is a follow-up.
+    primary_account = scoping_user.email_accounts.first
+    @bucket_summary = Services::Budgets::BucketSummary.new(primary_account).call
   end
 
   # GET /budgets/1

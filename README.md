@@ -1,6 +1,6 @@
 # Expense Tracker
 
-A comprehensive Rails 8.0.2 expense tracking application designed for Costa Rican banking systems with advanced categorization, real-time synchronization, and intelligent expense management.
+A comprehensive Rails 8.1.2 expense tracking application designed for Costa Rican banking systems with advanced categorization, real-time synchronization, and intelligent expense management.
 
 ## Features
 
@@ -31,7 +31,7 @@ A comprehensive Rails 8.0.2 expense tracking application designed for Costa Rica
 ### Technology Stack
 
 **Backend:**
-- Ruby on Rails 8.0.2
+- Ruby on Rails 8.1.2
 - PostgreSQL database with performance optimization
 - Solid Cache, Queue, and Cable for high performance
 - Puma web server
@@ -372,4 +372,4 @@ For development questions or issues:
 
 ---
 
-**Built with Rails 8.0.2 • Designed for Costa Rican Banking Systems • Optimized for Performance & Accessibility**
+**Built with Rails 8.1.2 • Designed for Costa Rican Banking Systems • Optimized for Performance & Accessibility**

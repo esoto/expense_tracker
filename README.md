@@ -7,6 +7,7 @@ A comprehensive Rails 8.0.2 expense tracking application designed for Costa Rica
 ### Core Functionality
 - **Email-based Expense Extraction**: Automatic parsing of bank emails to extract expense data
 - **Intelligent Categorization**: AI-powered expense categorization with learning capabilities
+- **Personal Category Management**: Users can create private subcategories and top-level branches alongside the shared tree, attach their own patterns, and keep their history isolated from other accounts (PRs #485–#494; feature-flagged via `PERSONAL_CATEGORIES_OPEN_TO_ALL`)
 - **Real-time Dashboard**: Live expense tracking with performance-optimized queries (<50ms)
 - **Multi-bank Support**: Compatible with Costa Rican banking systems
 - **API Integration**: iPhone Shortcuts support via webhook endpoints
@@ -71,7 +72,7 @@ app/services/
 ### Database Design
 
 **Core Models:**
-- `Category` - Expense categorization with hierarchical support
+- `Category` - Expense categorization with hierarchical support + per-user personal categories (NULL `user_id` = shared, non-NULL = private to that user)
 - `EmailAccount` - Bank email account configuration
 - `Expense` - Central expense records with full metadata
 - `ParsingRule` - Configurable email parsing patterns

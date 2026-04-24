@@ -1,0 +1,33 @@
+<%# Inner content of a tree-node header. Kept in its own partial so the
+    update.turbo_stream response can re-render exactly this block after an
+    inline rename / recolor. Locals: category. %>
+<div id="<%= dom_id(category, :tree_header) %>" class="flex items-center justify-between gap-3">
+  <div class="flex items-center gap-3 min-w-0">
+    <span class="shrink-0 inline-block w-3 h-3 rounded-full"
+          style="background-color: <%= category.color.presence || "#94a3b8" %>;"
+          aria-hidden="true"></span>
+    <%= link_to category.display_name,
+                category_path(category),
+                data: { turbo_frame: "category_panel" },
+                class: "text-slate-900 hover:text-teal-700 truncate" %>
+    <% if category.personal? %>
+      <span class="shrink-0 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+        personal
+      </span>
+    <% end %>
+  </div>
+  <div class="shrink-0 flex items-center gap-3">
+    <% if category.shared? && category.root? && CategoryPolicy.can_access?(current_user) %>
+      <%= link_to "+ Add subcategory",
+                  new_category_path(parent_id: category.id),
+                  data: { turbo_frame: "category_panel" },
+                  class: "text-sm text-teal-700 hover:text-teal-900",
+                  title: "Create a personal subcategory under #{category.display_name}" %>
+    <% end %>
+    <% if CategoryPolicy.new(current_user, category).edit? %>
+      <%= link_to "Edit", edit_category_path(category),
+                  data: { turbo_frame: "category_panel" },
+                  class: "text-sm text-teal-700 hover:text-teal-900" %>
+    <% end %>
+  </div>
+</div>

@@ -492,6 +492,32 @@ RSpec.describe "Categories API", type: :request do
       theirs.reload
       expect(theirs.name).to eq("Theirs")
     end
+
+    context "when the request accepts turbo_stream (side-panel submit)" do
+      let(:turbo_headers) { { "Accept" => "text/vnd.turbo-stream.html" } }
+
+      it "replaces the tree-node header and the panel so the left tree stays in sync" do
+        patch category_path(own),
+              params: { category: { name: "StreamedName" } },
+              headers: turbo_headers
+
+        expect(response).to have_http_status(:ok)
+        expect(response.media_type).to eq(Mime[:turbo_stream])
+        expect(response.body).to include(%(target="#{ActionView::RecordIdentifier.dom_id(own, :tree_header)}"))
+        expect(response.body).to include('target="category_panel"')
+        expect(response.body).to include("StreamedName")
+      end
+
+      it "falls back to a redirect when parent_id changes (tree structure shifts)" do
+        parent = create(:category, name: "NewParent", user: nil)
+
+        patch category_path(own),
+              params: { category: { parent_id: parent.id } },
+              headers: turbo_headers
+
+        expect(response).to redirect_to(category_path(own))
+      end
+    end
   end
 
   describe "DELETE /categories/:id", :integration do

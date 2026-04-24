@@ -1,0 +1,13 @@
+<%# Keeps the tree header in sync with the side panel after an inline
+    rename / recolor. Only runs when parent_id did not change — moves fall
+    back to the HTML redirect so the tree structure reflows. %>
+<%= turbo_stream.replace dom_id(@category, :tree_header) do %>
+  <%= render "tree_header", category: @category %>
+<% end %>
+
+<%# Replace the panel with the show view. show.html.erb wraps its content
+    in `turbo_frame_tag "category_panel"` already, so this re-renders the
+    panel with the fresh attributes in a single stream action. %>
+<%= turbo_stream.replace "category_panel" do %>
+  <%= render template: "categories/show" %>
+<% end %>

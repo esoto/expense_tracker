@@ -70,9 +70,26 @@ class CategoriesController < ApplicationController
   end
 
   # PATCH/PUT /categories/:id
+  #
+  # On success, Turbo Frame submits from the side panel receive a stream
+  # response that re-renders both the panel (show view) and the matching
+  # tree-node header on the index — keeping the left-hand tree in sync
+  # with the rename/recolor without a full reload. Parent moves fall
+  # back to a redirect because the tree structure shifts.
   def update
+    previous_parent_id = @category.parent_id
+
     if @category.update(category_params)
-      redirect_to category_path(@category), notice: "Category updated."
+      respond_to do |format|
+        format.html { redirect_to category_path(@category), notice: "Category updated." }
+        format.turbo_stream do
+          if @category.parent_id == previous_parent_id
+            render :update
+          else
+            redirect_to category_path(@category), notice: "Category updated."
+          end
+        end
+      end
     else
       render :edit, status: :unprocessable_entity
     end

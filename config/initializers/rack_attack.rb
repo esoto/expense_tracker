@@ -271,10 +271,12 @@ class Rack::Attack
 
   # === Blocked Response ===
 
-  self.blocklisted_responder = lambda do |env|
-    Rails.logger.error(
-      "Blocked request from IP #{env['HTTP_X_FORWARDED_FOR'] || env['REMOTE_ADDR']}: #{env['PATH_INFO']}"
-    )
+  # Rack::Attack passes a Rack::Attack::Request (a Rack::Request subclass) here,
+  # not a raw env hash — `req.ip` already honors X-Forwarded-For via Rack's
+  # trusted-proxy chain. Treating it like a hash raised NoMethodError on every
+  # blocked request, returning 500 instead of the intended 403.
+  self.blocklisted_responder = lambda do |req|
+    Rails.logger.error("Blocked request from IP #{req.ip}: #{req.path}")
 
     [
       403,

@@ -312,13 +312,19 @@ RSpec.describe Services::DashboardExpenseFilterService, type: :service do
         end
       end
 
+      # transaction_date is a zone-aware Time (Central America, UTC-6).
+      # Comparing Time to a plain Date coerces the Date as 00:00 UTC, which
+      # breaks at zone boundaries — e.g. a Sunday fixture at 00:00 -0600 is
+      # 06:00 UTC, which is *after* end_of_week (Sun 00:00 UTC). Compare
+      # Time-to-Time using .beginning_of_day / .end_of_day so both sides
+      # share the configured zone.
       context "week filter" do
         let(:params) { base_params.merge(period: "week") }
 
         it "returns current week's expenses" do
           dates = result.expenses.map(&:transaction_date)
-          expect(dates.min).to be >= Date.current.beginning_of_week
-          expect(dates.max).to be <= Date.current.end_of_week
+          expect(dates.min).to be >= Date.current.beginning_of_week.beginning_of_day
+          expect(dates.max).to be <= Date.current.end_of_week.end_of_day
         end
       end
 
@@ -327,8 +333,8 @@ RSpec.describe Services::DashboardExpenseFilterService, type: :service do
 
         it "returns current month's expenses" do
           dates = result.expenses.map(&:transaction_date)
-          expect(dates.min).to be >= Date.current.beginning_of_month
-          expect(dates.max).to be <= Date.current.end_of_month
+          expect(dates.min).to be >= Date.current.beginning_of_month.beginning_of_day
+          expect(dates.max).to be <= Date.current.end_of_month.end_of_day
         end
       end
     end

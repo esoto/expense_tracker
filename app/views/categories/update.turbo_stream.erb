@@ -1,6 +1,8 @@
 <%# Keeps the tree header in sync with the side panel after an inline
     rename / recolor. Only runs when parent_id did not change — moves fall
     back to the HTML redirect so the tree structure reflows. %>
+<% flash.now[:notice] = "Category updated." %>
+
 <%= turbo_stream.replace dom_id(@category, :tree_header) do %>
   <%= render "tree_header", category: @category %>
 <% end %>
@@ -11,3 +13,7 @@
 <%= turbo_stream.replace "category_panel" do %>
   <%= render template: "categories/show" %>
 <% end %>
+
+<%# Restore the toast that the redirect path used to provide. Matches the
+    existing project pattern (e.g. admin/patterns_controller.rb:713). %>
+<%= turbo_stream.replace "flash", partial: "shared/flash" %>

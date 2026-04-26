@@ -271,10 +271,13 @@ class Rack::Attack
 
   # === Blocked Response ===
 
-  # Rack::Attack passes a Rack::Attack::Request (a Rack::Request subclass) here,
-  # not a raw env hash — `req.ip` already honors X-Forwarded-For via Rack's
-  # trusted-proxy chain. Treating it like a hash raised NoMethodError on every
-  # blocked request, returning 500 instead of the intended 403.
+  # Rack::Attack >= 6.0 passes a Rack::Attack::Request (a Rack::Request
+  # subclass) here, not a raw env hash. `req.ip` honors the trusted-proxy
+  # chain via action_dispatch.trusted_proxies, so it returns the real
+  # client IP behind kamal-proxy. Reading env['HTTP_X_FORWARDED_FOR']
+  # directly bypasses that chain and is spoofable. Treating it like a
+  # hash raised NoMethodError on every blocked request, returning 500
+  # instead of the intended 403.
   self.blocklisted_responder = lambda do |req|
     Rails.logger.error("Blocked request from IP #{req.ip}: #{req.path}")
 

@@ -155,6 +155,41 @@ RSpec.describe "Rack::Attack throttle path matching", :unit do
     end
   end
 
+  describe "blocklisted_responder" do
+    # Rack::Attack hands the responder a Rack::Attack::Request, not a Rack
+    # env hash. Treating it like a hash (e.g. env['HTTP_X_FORWARDED_FOR'])
+    # raises NoMethodError on every blocked request, swallowing the intended
+    # 403 with a 500. Lock the request-object API in.
+    let(:initializer_content) { File.read(Rails.root.join("config/initializers/rack_attack.rb")) }
+    # Anchor on the comment-section header below the lambda. The previous
+    # `.*?end$` pattern truncated at the first inner `end` if the lambda
+    # ever grew an `if/end` or `begin/rescue/end`, which would silently let
+    # a regression past the negative assertions.
+    let(:responder_block) do
+      initializer_content[/self\.blocklisted_responder = lambda do.*?(?=^\s*# ===|\Z)/m]
+    end
+
+    it "is defined" do
+      expect(responder_block).to be_present
+    end
+
+    it "uses the request object's API (req.ip, req.path), not env hash access" do
+      # Word-boundary anchors so a typo like `req.ip_address` (which
+      # doesn't exist on Rack::Request and would 500 in production) can't
+      # silently pass a substring match.
+      expect(responder_block).to match(/\breq\.ip\b/)
+      expect(responder_block).to match(/\breq\.path\b/)
+      expect(responder_block).not_to match(/env\[['"]HTTP_X_FORWARDED_FOR['"]\]/)
+      expect(responder_block).not_to match(/env\[['"]REMOTE_ADDR['"]\]/)
+      expect(responder_block).not_to match(/env\[['"]PATH_INFO['"]\]/)
+    end
+
+    it "returns 403 with a forbidden message" do
+      expect(responder_block).to include("403")
+      expect(responder_block).to include("Forbidden")
+    end
+  end
+
   describe "cache store configuration" do
     it "uses Rails.cache unconditionally without Redis branching" do
       initializer_path = Rails.root.join("config/initializers/rack_attack.rb")

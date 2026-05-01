@@ -36,7 +36,12 @@ module Services::Categorization
         if client
           @client = client
         else
-          api_key = Rails.application.credentials.dig(:anthropic, :api_key)
+          # Credentials first (encrypted in repo), then ENV fallback so the
+          # key can be rotated via `kamal env push` without rebuilding the
+          # image. Without the ENV branch a stale credentials entry silently
+          # 401s on every call (PER-548).
+          api_key = Rails.application.credentials.dig(:anthropic, :api_key).presence ||
+                    ENV["ANTHROPIC_API_KEY"].presence
           raise ConfigurationError, "Anthropic API key not configured" unless api_key
 
           @client = Anthropic::Client.new(

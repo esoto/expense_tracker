@@ -43,6 +43,10 @@ env:
     - POSTGRES_PASSWORD
     - ADMIN_EMAIL
     - ADMIN_PASSWORD
+    # Required for Categorization::Strategies::LlmStrategy (PR #421/#433).
+    # Without this the strategy 401s on every call and the circuit-breaker
+    # silently degrades to pattern-only categorization (PER-548).
+    - ANTHROPIC_API_KEY
   clear:
     RAILS_ENV: production
     POSTGRES_USER: expense_tracker

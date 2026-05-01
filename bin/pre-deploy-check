@@ -30,6 +30,7 @@ REQUIRED_SECRETS = %w[
   KAMAL_REGISTRY_PASSWORD
   ADMIN_EMAIL
   ADMIN_PASSWORD
+  ANTHROPIC_API_KEY
 ].freeze
 
 # Must stay in sync with db/seeds.rb:370 — the production seed guard.
@@ -145,12 +146,16 @@ if secrets["ADMIN_EMAIL"] && !secrets["ADMIN_EMAIL"].empty? && secrets["ADMIN_EM
 end
 
 # --- Gate 4: config/deploy.yml env.secret sanity -------------------------
-say "Gate 4/8: config/deploy.yml declares ADMIN_EMAIL / ADMIN_PASSWORD under env.secret"
+say "Gate 4/8: config/deploy.yml declares ADMIN_EMAIL / ADMIN_PASSWORD / ANTHROPIC_API_KEY under env.secret"
 if DEPLOY_YML.file?
   yml = DEPLOY_YML.read.force_encoding(Encoding::UTF_8)
   yml = yml.scrub unless yml.valid_encoding?
   in_env_secret = false
-  seen = { "ADMIN_EMAIL" => false, "ADMIN_PASSWORD" => false }
+  # ANTHROPIC_API_KEY: required by Categorization::Strategies::LlmStrategy.
+  # Missing it makes the strategy 401 on every call and silently degrade to
+  # pattern-only categorization (PER-548). Treated as a deploy gate so the
+  # next contributor can't ship a deploy.yml that drops it.
+  seen = { "ADMIN_EMAIL" => false, "ADMIN_PASSWORD" => false, "ANTHROPIC_API_KEY" => false }
   yml.each_line do |line|
     stripped = line.strip
     if stripped.start_with?("secret:")

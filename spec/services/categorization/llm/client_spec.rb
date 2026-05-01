@@ -79,13 +79,52 @@ RSpec.describe Services::Categorization::Llm::Client, :unit do
       end
     end
 
-    it "raises an error when API key is not configured" do
+    it "raises an error when API key is not configured in credentials or ENV" do
       allow(Rails.application.credentials).to receive(:dig)
         .with(:anthropic, :api_key).and_return(nil)
+      ENV.delete("ANTHROPIC_API_KEY")
 
       expect { described_class.new }.to raise_error(
         Services::Categorization::Llm::Client::ConfigurationError,
         /API key not configured/
+      )
+    end
+
+    it "falls back to ENV['ANTHROPIC_API_KEY'] when credentials are blank (PER-548)" do
+      # Production scenario: credentials.yml.enc has a stale/blank entry but
+      # the operator pushed a fresh key via kamal env push. ENV must win.
+      allow(Rails.application.credentials).to receive(:dig)
+        .with(:anthropic, :api_key).and_return(nil)
+      env_key = "env-fallback-key-456"
+      ENV["ANTHROPIC_API_KEY"] = env_key
+      allow(Anthropic::Client).to receive(:new).and_call_original
+
+      begin
+        described_class.new
+      ensure
+        ENV.delete("ANTHROPIC_API_KEY")
+      end
+
+      expect(Anthropic::Client).to have_received(:new).with(
+        hash_including(api_key: env_key)
+      )
+    end
+
+    it "prefers credentials over ENV when both are present" do
+      # Credentials are the primary source of truth (encrypted at rest).
+      # ENV is fallback only — flipping the precedence would mean a
+      # forgotten dev shell could hijack the prod-resolved key path.
+      ENV["ANTHROPIC_API_KEY"] = "should-not-be-used"
+      allow(Anthropic::Client).to receive(:new).and_call_original
+
+      begin
+        described_class.new
+      ensure
+        ENV.delete("ANTHROPIC_API_KEY")
+      end
+
+      expect(Anthropic::Client).to have_received(:new).with(
+        hash_including(api_key: api_key)
       )
     end
   end

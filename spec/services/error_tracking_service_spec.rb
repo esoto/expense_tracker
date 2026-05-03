@@ -93,14 +93,27 @@ RSpec.describe Services::ErrorTrackingService, type: :service, unit: true do
 
   describe "#track_message" do
     context "when Sentry is initialized" do
-      it "calls Sentry.capture_message with the message and level" do
+      it "calls Sentry.capture_message with the message and Sentry-canonical level" do
         with_sentry_active do
+          # Caller passes :warn (Rails.logger convention); Sentry receives
+          # :warning (its canonical level — Sentry has no :warn).
           expect(Sentry).to receive(:capture_message).with(
             "hello",
-            hash_including(level: :warn)
+            hash_including(level: :warning)
           )
 
           service.track_message("hello", :warn, context)
+        end
+      end
+
+      it "passes :warning through unchanged" do
+        with_sentry_active do
+          expect(Sentry).to receive(:capture_message).with(
+            "hello",
+            hash_including(level: :warning)
+          )
+
+          service.track_message("hello", :warning, context)
         end
       end
     end
@@ -171,16 +184,6 @@ RSpec.describe Services::ErrorTrackingService, type: :service, unit: true do
           expect(Sentry).not_to receive(:set_user)
           service.set_user(user_data)
         end
-      end
-    end
-  end
-
-  describe "#set_user_context (alias)" do
-    it "delegates to set_user" do
-      user_data = { id: 99 }
-      with_sentry_active do
-        expect(Sentry).to receive(:set_user).with(user_data)
-        service.set_user_context(user_data)
       end
     end
   end

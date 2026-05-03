@@ -29,14 +29,22 @@ module Services
     end
 
     # Track a plain message (no exception object).
+    #
+    # Sentry expects level symbols :debug, :info, :warning, :error, :fatal.
+    # Rails.logger uses :warn (no `:warning` method). Normalize: callers may
+    # pass either; Sentry receives :warning, Rails.logger receives :warn.
     def track_message(message, level = :info, context = {})
       enriched = enrich_context(context)
+      sentry_level = (level == :warn) ? :warning : level
+      logger_level = (level == :warning) ? :warn : level
 
       if sentry_active?
-        Sentry.capture_message(message, level: level, extra: enriched)
+        Sentry.capture_message(message, level: sentry_level, extra: enriched)
       end
 
-      Rails.logger.public_send(level, { message: message, context: enriched }.to_json)
+      Rails.logger.public_send(logger_level, { message: message, context: enriched }.to_json)
+    rescue StandardError => e
+      Rails.logger.error "ErrorTrackingService#track_message failed: #{e.message}"
     end
 
     # Add a breadcrumb to the current Sentry scope.
@@ -56,14 +64,17 @@ module Services
     end
 
     # Set the current user on the Sentry scope (call from a controller concern).
+    #
+    # Accepts a hash like { id:, email:, role: }, NOT an AR User object —
+    # caller is responsible for extracting the fields they want to attach.
+    # Pre-PER-526 set_user_context took a User object and extracted internally;
+    # the alias was removed because the contract change was a silent trap for
+    # the next caller.
     def set_user(user_data)
       return unless sentry_active?
 
       Sentry.set_user(user_data)
     end
-
-    # Convenience alias kept for callers that used the old API name.
-    alias_method :set_user_context, :set_user
 
     # Track a bulk operation error — delegates to track_exception with enriched context.
     def track_bulk_operation_error(operation_type, error, context = {})
@@ -86,7 +97,7 @@ module Services
 
     class << self
       delegate :track_exception, :track_message, :track_performance,
-               :track_bulk_operation_error, :set_user_context, :set_user,
+               :track_bulk_operation_error, :set_user,
                :add_breadcrumb,
                to: :instance
     end

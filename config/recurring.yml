@@ -102,6 +102,16 @@ default: &default
     schedule: every day at 6am
     description: "Pull latest monthly budget from each active external source"
 
+  # Nightly Postgres backup to Hetzner Storage Box.
+  # Runs pg_dump → GPG-encrypts → uploads via SFTP. Applies 30-day daily +
+  # 12-month monthly retention after each run (PER-527).
+  postgres_nightly_backup:
+    class: PostgresBackupJob
+    queue: low
+    priority: 10
+    schedule: every day at 2am
+    description: "Nightly Postgres backup to Hetzner Storage Box with encryption and retention (PER-527)"
+
 development:
   <<: *default
   # In development, run metrics calculation more frequently for testing

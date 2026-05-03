@@ -47,6 +47,16 @@ env:
     # Without this the strategy 401s on every call and the circuit-breaker
     # silently degrades to pattern-only categorization (PER-548).
     - ANTHROPIC_API_KEY
+    # Hetzner Storage Box credentials for nightly Postgres backup (PER-527).
+    # STORAGE_BOX_HOST:    u<id>.your-storagebox.de
+    # STORAGE_BOX_USER:    u<id> (the Storage Box username)
+    # STORAGE_BOX_SSH_KEY: path to the private key inside the container
+    #                      (mount via kamal volumes or write via env)
+    # BACKUP_GPG_PASSPHRASE: symmetric GPG passphrase for .dump.gpg files
+    - STORAGE_BOX_HOST
+    - STORAGE_BOX_USER
+    - STORAGE_BOX_SSH_KEY
+    - BACKUP_GPG_PASSPHRASE
   clear:
     RAILS_ENV: production
     POSTGRES_USER: expense_tracker

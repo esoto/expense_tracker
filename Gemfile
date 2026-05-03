@@ -26,6 +26,9 @@ gem "bcrypt", "~> 3.1.22"
 gem "mail"
 gem "net-imap"
 
+# SFTP uploads for off-host backups (PostgresBackupJob → Hetzner Storage Box)
+gem "net-sftp", "~> 4.0"
+
 # Authentication and API
 gem "jwt"
 

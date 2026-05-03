@@ -31,6 +31,10 @@ REQUIRED_SECRETS = %w[
   ADMIN_EMAIL
   ADMIN_PASSWORD
   ANTHROPIC_API_KEY
+  STORAGE_BOX_HOST
+  STORAGE_BOX_USER
+  STORAGE_BOX_SSH_KEY
+  BACKUP_GPG_PASSPHRASE
 ].freeze
 
 # Must stay in sync with db/seeds.rb:370 — the production seed guard.
@@ -45,7 +49,7 @@ SENTINEL_PASSWORD = "AdminPassword123!"
 # Add it back once it's been fixed and stabilized.
 REQUIRED_WORKFLOWS = [
   "CI",
-  "Unit Tests",
+  "Unit Tests"
 ].freeze
 
 options = { offline: false, skip_ci: false }

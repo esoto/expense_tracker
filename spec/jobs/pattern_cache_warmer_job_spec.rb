@@ -425,8 +425,11 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
     context 'with nil hit_rate' do
       let(:hit_rate) { nil }
 
-      it 'treats nil as 0 and logs warning' do
-        expect(Rails.logger).to receive(:warn).with(/Low cache hit rate: 0%/)
+      it 'treats nil as "no traffic" and skips the low-hit-rate warning (PER-549)' do
+        # Pre-PER-549 this test asserted the OLD bug: nil → coerced to 0
+        # → warned every quiet run. The new contract is nil means "no
+        # lookups in window," which is healthy, not low.
+        expect(Rails.logger).not_to receive(:warn).with(/Low cache hit rate/)
         job.send(:check_cache_health, cache)
       end
     end
@@ -444,7 +447,10 @@ RSpec.describe PatternCacheWarmerJob, type: :job, unit: true do
       let(:cache_metrics) { {} }
 
       it 'handles missing keys gracefully' do
-        expect(Rails.logger).to receive(:warn).with(/Low cache hit rate: 0%/)
+        # No hit_rate key (treated as nil → no warn, per PER-549). L2
+        # availability is the only orthogonal warning that should still
+        # fire on an empty metrics hash.
+        expect(Rails.logger).not_to receive(:warn).with(/Low cache hit rate/)
         expect(Rails.logger).to receive(:warn).with(/L2 cache is not available/)
         job.send(:check_cache_health, cache)
       end

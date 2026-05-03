@@ -133,15 +133,17 @@ class PatternCacheWarmerJob < ApplicationJob
   def check_cache_health(cache)
     metrics = cache.metrics
 
-    # Check hit rate using configuration
-    hit_rate = metrics[:hit_rate] || 0
+    # Check hit rate using configuration. nil means "no lookups in window"
+    # — skip the warn entirely rather than coerce nil → 0 and log a false
+    # "Low cache hit rate: 0%" on every quiet warmer run (PER-549).
+    hit_rate = metrics[:hit_rate]
     target_hit_rate = if defined?(Services::Infrastructure::PerformanceConfig)
                         Services::Infrastructure::PerformanceConfig.threshold_for(:cache, :hit_rate, :target)
     else
                         80.0
     end
 
-    if hit_rate < target_hit_rate
+    if hit_rate && hit_rate < target_hit_rate
       Rails.logger.warn "[PatternCacheWarmer] Low cache hit rate: #{hit_rate}% (target: #{target_hit_rate}%)"
     end
 

@@ -339,8 +339,12 @@ module Services::Categorization
         # Check L2 (Rails.cache) is responding
         Rails.cache.write("cat:health_check", true, expires_in: 30.seconds)
 
-        # Check metrics are being collected
-        @metrics_collector.hit_rate >= 0
+        # Check metrics are being collected. hit_rate may be nil if no
+        # lookups have happened yet; that's a healthy "no traffic" state,
+        # not a failure. The actual contract for this method is "did the
+        # health probes succeed?" — the metrics call merely needs to not
+        # raise.
+        @metrics_collector.hit_rate
 
         true
       rescue => e
@@ -365,13 +369,23 @@ module Services::Categorization
     # Get cache statistics (alias for metrics for compatibility)
     def stats
       metrics_data = metrics
+      rate = hit_rate
+      hits_hash = metrics_data[:hits]
       {
         entries: metrics_data[:memory_cache_entries] || 0,
         memory_bytes: (metrics_data[:memory_cache_entries] || 0) * 1024, # Rough estimate
-        hits: metrics_data.dig(:hits, :total) || 0,
+        # Sum the per-tier hash directly. Pre-PER-549 this read
+        # `metrics_data.dig(:hits, :total)` but `:total` was never a key
+        # in the {memory:, redis:} shape, so #stats has been silently
+        # returning hits=0 to dashboard helpers and the /api/health
+        # endpoint since the metrics shape was introduced.
+        hits: hits_hash.is_a?(Hash) ? hits_hash.values.sum : (hits_hash || 0),
         misses: metrics_data[:misses] || 0,
         evictions: metrics_data[:evictions] || 0,
-        hit_rate: (hit_rate / 100.0) # Convert percentage to decimal
+        # Decimal in [0, 1] for callers that want a fraction; nil when no
+        # lookups have happened yet so callers can distinguish "quiet"
+        # from "0% hit rate".
+        hit_rate: rate.nil? ? nil : (rate / 100.0)
       }
     end
 
@@ -426,17 +440,20 @@ module Services::Categorization
                             10.seconds
       end
 
+      # Detect L2 hit vs miss by tracking whether the fetch block ran. The
+      # earlier comment claimed "we handle this when we promote to L1" but
+      # the actual record_hit(:redis) call was never wired up — the result
+      # was that every L2 hit went uncounted, which is what produced the
+      # always-0% hit rate alert (PER-549).
+      block_ran = false
       value = Rails.cache.fetch(key, expires_in: l2_ttl, race_condition_ttl: race_condition_ttl) do
+        block_ran = true
         @metrics_collector.record_miss
         yield
       end
 
       if value
-        # Record L2 hit if the block was not executed (value was in L2 cache).
-        # Rails.cache.fetch doesn't distinguish, but the miss was already recorded
-        # inside the block if the block ran. If the block didn't run, we got an L2 hit.
-        # We handle this by recording the L2 hit when we promote to L1.
-
+        @metrics_collector.record_hit(:redis) unless block_ran
         # Promote to L1 memory cache
         write_to_memory(key, value, memory_ttl)
       end
@@ -601,20 +618,55 @@ module Services::Categorization
     end
 
     # Internal metrics collector
+    #
+    # Hit/miss counters are backed by Rails.cache (Solid Cache → Postgres) so
+    # that the running Puma process AND the forked Solid Queue worker
+    # processes (`processes: 2` for high priority + `processes: 1` for
+    # standard, per config/queue.yml) share a single source of truth.
+    #
+    # Before this change, every process had its own per-instance counters,
+    # the PerformanceMonitoring thread runs in only one of them, and most
+    # real categorizations happen in different processes — so the monitoring
+    # thread always reported 0% hit rate even when categorization was
+    # working perfectly (PER-549).
+    #
+    # Operation timing samples (`@operations`) stay in-process — they're a
+    # debugging aid, not a cross-process metric, and shipping them through
+    # Rails.cache on every cached lookup would dwarf the underlying ops.
     class MetricsCollector
+      # Hit/miss keys are namespaced under the pattern cache and rotate
+      # daily, so today's counts are isolated from older windows and old
+      # windows expire naturally via Solid Cache's max_age. Rails.cache has
+      # no native key TTL on increment-only flows; the explicit window key
+      # handles rotation without the write+increment dance.
+      COUNTER_NAMESPACE = "#{CACHE_NAMESPACE}metrics:".freeze
+      WINDOW_TTL        = 25.hours # one full window plus the rotation overlap
+
+      # Test helper: clears the current window's hit/miss counters
+      # globally across every process reading this Rails.cache. Use in
+      # spec before-blocks so prior examples don't pollute the asserted
+      # counts. Not for production — counters are window-rotated and
+      # auto-expire via Solid Cache's max_age, and zeroing them mid-day
+      # would silence the very alerts PER-549/PER-550 added.
+      def self.reset_window!
+        raise "reset_window! is a test helper; never invoke from production" if Rails.env.production?
+
+        Rails.cache.delete("#{COUNTER_NAMESPACE}hits:memory:#{Date.current}")
+        Rails.cache.delete("#{COUNTER_NAMESPACE}hits:redis:#{Date.current}")
+        Rails.cache.delete("#{COUNTER_NAMESPACE}misses:#{Date.current}")
+      end
+
       def initialize
-        @hits = { memory: 0, redis: 0 }
-        @misses = 0
         @operations = Hash.new { |h, k| h[k] = [] }
         @lock = Mutex.new
       end
 
       def record_hit(level)
-        @lock.synchronize { @hits[level] += 1 }
+        cache_increment("hits:#{level}")
       end
 
       def record_miss
-        @lock.synchronize { @misses += 1 }
+        cache_increment("misses")
       end
 
       def record_operation(name, duration_ms)
@@ -625,25 +677,75 @@ module Services::Categorization
         end
       end
 
+      # Returns the hit rate as a percentage (0..100) for the current window,
+      # or nil when no lookups have happened yet. Returning nil instead of
+      # 0.0 lets the monitoring layer distinguish "no traffic" from "all
+      # misses" so it doesn't fire a critical alert during quiet periods.
       def hit_rate
-        total = @hits.values.sum + @misses
-        return 0.0 if total.zero?
+        h = hits
+        m = misses_count
+        total = h.values.sum + m
+        return nil if total.zero?
 
-        (@hits.values.sum.to_f / total * 100).round(2)
+        (h.values.sum.to_f / total * 100).round(2)
+      end
+
+      def hits
+        { memory: cache_read("hits:memory"), redis: cache_read("hits:redis") }
+      end
+
+      def misses_count
+        cache_read("misses")
       end
 
       def summary
-        @lock.synchronize do
-          {
-            hits: @hits.dup,
-            misses: @misses,
-            hit_rate: hit_rate,
-            operations: operation_stats
-          }
-        end
+        # hits / misses_count / hit_rate read from Rails.cache and don't
+        # need the in-process @lock — fetch them outside the synchronize
+        # block so a slow Rails.cache read can't serialize concurrent
+        # summary calls. The lock only guards @operations.
+        cache_hits = hits
+        cache_misses = misses_count
+        cache_hit_rate = hit_rate
+
+        ops = @lock.synchronize { operation_stats }
+
+        {
+          hits: cache_hits,
+          misses: cache_misses,
+          hit_rate: cache_hit_rate,
+          operations: ops
+        }
       end
 
       private
+
+      def cache_increment(suffix)
+        # Solid Cache's `increment` is upsert-atomic: missing key → seeds
+        # at amount, existing → SELECT...FOR UPDATE-protected increment.
+        # The earlier "exist? + write 0 + increment" sequence assumed
+        # Memcached semantics ("raises on missing key") which Solid Cache
+        # does not share. Single round-trip on every code path.
+        # `expires_in:` only takes effect on the seeding write — once the
+        # key exists, Solid Cache preserves the original `expires_at`.
+        # That's fine here because window keys rotate by date suffix, so
+        # each new day's first increment establishes the TTL fresh.
+        Rails.cache.increment(window_key(suffix), 1, expires_in: WINDOW_TTL)
+      rescue StandardError => e
+        # Don't let a metrics-cache hiccup propagate into the lookup path.
+        # The lookup result is the user-visible thing; metrics are
+        # diagnostic and can degrade gracefully.
+        Rails.logger.warn "[PatternCache::MetricsCollector] cache_increment(#{suffix}) failed: #{e.class}: #{e.message}"
+      end
+
+      def cache_read(suffix)
+        Rails.cache.read(window_key(suffix), raw: true).to_i
+      rescue StandardError
+        0
+      end
+
+      def window_key(suffix)
+        "#{COUNTER_NAMESPACE}#{suffix}:#{Date.current}"
+      end
 
       def operation_stats
         @operations.transform_values do |durations|

@@ -38,6 +38,9 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
     cache.invalidate_all
     # Reset singleton for test isolation
     Services::Categorization::PatternCache.instance_variable_set(:@instance, nil)
+    # Reset cross-process metric counters (PER-549) so prior examples
+    # don't pollute hit/miss assertions in this one.
+    Services::Categorization::PatternCache::MetricsCollector.reset_window!
   end
 
   describe "#initialize", performance: true do
@@ -403,6 +406,92 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
         :min_ms,
         :max_ms
       )
+    end
+  end
+
+  describe "metrics behavior — PER-549 fixes", performance: true do
+    let(:fresh_cache) { described_class.new }
+
+    before do
+      Services::Categorization::PatternCache::MetricsCollector.reset_window!
+    end
+
+    it "returns nil hit_rate when no lookups have happened in the window" do
+      # Before this fix, hit_rate returned 0.0 with no traffic, which
+      # tripped the :low_hit_rate critical alert every monitoring tick on
+      # a freshly-warmed cache. nil now signals "no data, not zero" so the
+      # initializer can skip the alert.
+      expect(fresh_cache.hit_rate).to be_nil
+    end
+
+    it "records an L2 hit when the value is in Rails.cache but not L1 memory" do
+      # Seed L2 directly, bypass L1, then hit_rate must include the L2 hit.
+      key = "#{described_class::PATTERN_KEY_PREFIX}seed:42"
+      Rails.cache.write(key, { id: 42, name: "test" })
+
+      fresh_cache.send(
+        :fetch_with_tiered_cache,
+        key,
+        memory_ttl: 5.minutes,
+        l2_ttl: 1.hour
+      ) { raise "block should not run on L2 hit" }
+
+      hits = fresh_cache.metrics[:hits]
+      expect(hits[:redis]).to eq(1), "expected 1 L2 hit, got #{hits.inspect} (PER-549 regression)"
+      expect(hits[:memory]).to eq(0)
+    end
+
+    it "shares counters across instances via Rails.cache (cross-process visibility)" do
+      # Two PatternCache instances stand in for two separate Solid Queue
+      # worker processes. They share the Rails.cache backing store, so a
+      # hit recorded by one is visible to the other. Before this fix the
+      # counters were per-instance, so the monitoring thread (running in
+      # one process) couldn't see hits in another.
+      cache_a = described_class.new
+      cache_b = described_class.new
+
+      cache_a.instance_variable_get(:@metrics_collector).record_hit(:memory)
+      cache_a.instance_variable_get(:@metrics_collector).record_hit(:memory)
+
+      # Assert the storage location, not just visibility — that's the
+      # property which gives cross-process safety. A regression that
+      # moved counters back into instance state would still pass a pure
+      # cache_b.metrics check (since both instances are in the same
+      # process), but would fail this Rails.cache.read assertion.
+      key = "cat:metrics:hits:memory:#{Date.current}"
+      expect(Rails.cache.read(key, raw: true).to_i).to eq(2)
+      expect(cache_b.metrics[:hits][:memory]).to eq(2)
+      expect(cache_b.hit_rate).to eq(100.0)
+    end
+
+    it "records an L2 hit through the public get_pattern path (regression guard)" do
+      # The unit-style L2-hit spec above calls fetch_with_tiered_cache via
+      # send to keep the assertion narrow. This sibling spec drives the
+      # public API end-to-end: warm L1+L2 once, drop L1, then a second
+      # public call must hit L2 and increment :redis. Without this the
+      # narrow spec could silently rot if a future refactor inlined
+      # Rails.cache.fetch outside fetch_with_tiered_cache.
+      pattern  # create the AR record
+      fresh_cache.get_pattern(pattern.id)
+      fresh_cache.clear_memory_cache
+      Services::Categorization::PatternCache::MetricsCollector.reset_window!
+
+      fresh_cache.get_pattern(pattern.id)
+
+      hits = fresh_cache.metrics[:hits]
+      expect(hits[:redis]).to eq(1), "expected an L2 hit via public API; got #{hits.inspect}"
+      expect(hits[:memory]).to eq(0)
+    end
+
+    it "swallows Rails.cache errors during record_hit so the lookup path stays alive" do
+      # The cache_increment rescue is load-bearing — its comment
+      # explicitly says metrics must never break categorization. This
+      # spec locks that guarantee in.
+      collector = described_class::MetricsCollector.new
+      allow(Rails.cache).to receive(:increment).and_raise(StandardError, "DB down")
+
+      expect(Rails.logger).to receive(:warn).with(/cache_increment.*failed/)
+      expect { collector.record_hit(:memory) }.not_to raise_error
     end
   end
 

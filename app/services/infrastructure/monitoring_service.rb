@@ -675,7 +675,9 @@ module Services::Infrastructure
           def identify_pattern_cache_issues(metrics)
             issues = []
 
-            issues << "Low hit rate (#{metrics[:hit_rate]}%)" if metrics[:hit_rate].to_f < 80
+            # Skip the hit-rate issue when nil — that's "no traffic in the
+            # current window," not a real performance problem (PER-549).
+            issues << "Low hit rate (#{metrics[:hit_rate]}%)" if metrics[:hit_rate] && metrics[:hit_rate] < 80
             issues << "High memory usage (#{metrics[:memory_entries]} entries)" if metrics[:memory_entries].to_i > 10_000
             issues << "L2 cache unavailable" unless metrics[:l2_cache_available]
             issues << "Slow lookups (#{metrics[:average_lookup_time_ms]}ms)" if metrics[:average_lookup_time_ms].to_f > 5
@@ -686,7 +688,9 @@ module Services::Infrastructure
           def generate_cache_recommendations(pattern_cache_health, rails_cache_health)
             recommendations = []
 
-            if pattern_cache_health[:hit_rate].to_f < 80
+            # Same nil-aware guard: don't recommend cache tuning when there's
+            # no traffic in the current window.
+            if pattern_cache_health[:hit_rate] && pattern_cache_health[:hit_rate] < 80
               recommendations << "Consider increasing cache warming frequency"
               recommendations << "Review pattern matching logic for optimization"
             end

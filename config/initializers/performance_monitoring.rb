@@ -155,7 +155,8 @@ module PerformanceMonitoring
       health = metrics[:health]
 
       Rails.logger.info "[PerformanceMonitoring] Cache Performance Summary:"
-      Rails.logger.info "  Hit Rate: #{cache_metrics[:hit_rate]}%"
+      hit_rate_display = cache_metrics[:hit_rate].nil? ? "n/a (no lookups in window)" : "#{cache_metrics[:hit_rate]}%"
+      Rails.logger.info "  Hit Rate: #{hit_rate_display}"
       Rails.logger.info "  Memory Entries: #{cache_metrics[:memory_entries]}"
       Rails.logger.info "  Avg Lookup Time: #{cache_metrics[:average_lookup_time_ms]}ms"
       Rails.logger.info "  Health Status: #{health[:overall]}"
@@ -174,18 +175,23 @@ module PerformanceMonitoring
       cache_metrics = metrics[:pattern_cache]
       issues = []
 
-      # Check cache hit rate using configuration
-      hit_rate = cache_metrics[:hit_rate].to_f
-      hit_rate_severity = Services::Infrastructure::PerformanceConfig.check_threshold(:cache, :hit_rate, 100 - hit_rate)
+      # Check cache hit rate using configuration. PatternCache#hit_rate
+      # returns nil when there have been no lookups in the current window —
+      # treat that as "no traffic, healthy" rather than "0% hit rate", or
+      # the alert fires every monitoring tick on a freshly-warmed cache.
+      hit_rate = cache_metrics[:hit_rate]
+      if hit_rate
+        hit_rate_severity = Services::Infrastructure::PerformanceConfig.check_threshold(:cache, :hit_rate, 100 - hit_rate.to_f)
 
-      if hit_rate_severity != :healthy
-        target = Services::Infrastructure::PerformanceConfig.threshold_for(:cache, :hit_rate, :target)
-        issues << {
-          type: :low_hit_rate,
-          severity: hit_rate_severity,
-          message: "Cache hit rate is #{hit_rate}% (target: >#{target}%)",
-          metrics: { hit_rate: hit_rate }
-        }
+        if hit_rate_severity != :healthy
+          target = Services::Infrastructure::PerformanceConfig.threshold_for(:cache, :hit_rate, :target)
+          issues << {
+            type: :low_hit_rate,
+            severity: hit_rate_severity,
+            message: "Cache hit rate is #{hit_rate}% (target: >#{target}%)",
+            metrics: { hit_rate: hit_rate }
+          }
+        end
       end
 
       # Check lookup time using configuration

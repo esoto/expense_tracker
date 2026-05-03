@@ -236,7 +236,7 @@ namespace :cache do
     metrics = cache.metrics
     puts "   Memory entries: #{metrics[:memory_cache_entries]}"
     puts "   Hit rate: #{cache.hit_rate}%"
-    puts "   Total hits: #{metrics.dig(:hits, :memory).to_i + metrics.dig(:hits, :redis).to_i}"
+    puts "   Total hits: #{metrics.dig(:hits, :memory).to_i + metrics.dig(:hits, :l2).to_i}"
     puts "   Total misses: #{metrics[:misses] || 0}"
   end
 end

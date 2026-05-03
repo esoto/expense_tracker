@@ -376,7 +376,7 @@ module Services::Categorization
         memory_bytes: (metrics_data[:memory_cache_entries] || 0) * 1024, # Rough estimate
         # Sum the per-tier hash directly. Pre-PER-549 this read
         # `metrics_data.dig(:hits, :total)` but `:total` was never a key
-        # in the {memory:, redis:} shape, so #stats has been silently
+        # in the {memory:, l2:} shape, so #stats has been silently
         # returning hits=0 to dashboard helpers and the /api/health
         # endpoint since the metrics shape was introduced.
         hits: hits_hash.is_a?(Hash) ? hits_hash.values.sum : (hits_hash || 0),

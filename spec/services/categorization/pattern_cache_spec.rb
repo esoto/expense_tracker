@@ -437,7 +437,7 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
       ) { raise "block should not run on L2 hit" }
 
       hits = fresh_cache.metrics[:hits]
-      expect(hits[:redis]).to eq(1), "expected 1 L2 hit, got #{hits.inspect} (PER-549 regression)"
+      expect(hits[:l2]).to eq(1), "expected 1 L2 hit, got #{hits.inspect} (PER-549 regression)"
       expect(hits[:memory]).to eq(0)
     end
 
@@ -468,7 +468,7 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
       # The unit-style L2-hit spec above calls fetch_with_tiered_cache via
       # send to keep the assertion narrow. This sibling spec drives the
       # public API end-to-end: warm L1+L2 once, drop L1, then a second
-      # public call must hit L2 and increment :redis. Without this the
+      # public call must hit L2 and increment :l2. Without this the
       # narrow spec could silently rot if a future refactor inlined
       # Rails.cache.fetch outside fetch_with_tiered_cache.
       pattern  # create the AR record
@@ -479,7 +479,7 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
       fresh_cache.get_pattern(pattern.id)
 
       hits = fresh_cache.metrics[:hits]
-      expect(hits[:redis]).to eq(1), "expected an L2 hit via public API; got #{hits.inspect}"
+      expect(hits[:l2]).to eq(1), "expected an L2 hit via public API; got #{hits.inspect}"
       expect(hits[:memory]).to eq(0)
     end
 

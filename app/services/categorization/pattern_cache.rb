@@ -442,8 +442,8 @@ module Services::Categorization
 
       # Detect L2 hit vs miss by tracking whether the fetch block ran. The
       # earlier comment claimed "we handle this when we promote to L1" but
-      # the actual record_hit(:redis) call was never wired up — the result
-      # was that every L2 hit went uncounted, which is what produced the
+      # the actual record_hit call was never wired up — the result was
+      # that every L2 hit went uncounted, which is what produced the
       # always-0% hit rate alert (PER-549).
       block_ran = false
       value = Rails.cache.fetch(key, expires_in: l2_ttl, race_condition_ttl: race_condition_ttl) do
@@ -453,7 +453,7 @@ module Services::Categorization
       end
 
       if value
-        @metrics_collector.record_hit(:redis) unless block_ran
+        @metrics_collector.record_hit(:l2) unless block_ran
         # Promote to L1 memory cache
         write_to_memory(key, value, memory_ttl)
       end
@@ -652,7 +652,7 @@ module Services::Categorization
         raise "reset_window! is a test helper; never invoke from production" if Rails.env.production?
 
         Rails.cache.delete("#{COUNTER_NAMESPACE}hits:memory:#{Date.current}")
-        Rails.cache.delete("#{COUNTER_NAMESPACE}hits:redis:#{Date.current}")
+        Rails.cache.delete("#{COUNTER_NAMESPACE}hits:l2:#{Date.current}")
         Rails.cache.delete("#{COUNTER_NAMESPACE}misses:#{Date.current}")
       end
 
@@ -691,7 +691,11 @@ module Services::Categorization
       end
 
       def hits
-        { memory: cache_read("hits:memory"), redis: cache_read("hits:redis") }
+        # Keys named after the cache layer they count, not the underlying
+        # store. PER-315 migrated L2 from Redis → Solid Cache; the hash
+        # key is :l2 to reflect that. (Pre-2026-05-03 the key was :redis
+        # — leftover from the Redis era.)
+        { memory: cache_read("hits:memory"), l2: cache_read("hits:l2") }
       end
 
       def misses_count

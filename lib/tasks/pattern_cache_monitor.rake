@@ -25,17 +25,17 @@ namespace :cache do
         puts "🏥 CACHE HEALTH"
         puts "-" * 30
         puts "Status: #{cache.healthy? ? '✅ Healthy' : '❌ Unhealthy'}"
-        puts "Redis Available: #{metrics[:redis_available] ? '✅ Yes' : '❌ No'}"
+        puts "L2 Cache Available: #{metrics[:l2_cache_available] ? '✅ Yes' : '❌ No'}"
         puts
 
         # Cache Statistics
         puts "📊 CACHE STATISTICS"
         puts "-" * 30
         puts "Memory Cache Entries: #{metrics[:memory_cache_entries]}"
-        puts "Hit Rate: #{cache.hit_rate}%"
-        puts "Total Hits: #{metrics.dig(:hits, :memory).to_i + metrics.dig(:hits, :redis).to_i}"
-        puts "  - Memory Hits: #{metrics.dig(:hits, :memory) || 0}"
-        puts "  - Redis Hits: #{metrics.dig(:hits, :redis) || 0}"
+        puts "Hit Rate: #{cache.hit_rate.nil? ? 'n/a (no lookups in window)' : "#{cache.hit_rate}%"}"
+        puts "Total Hits: #{metrics.dig(:hits, :memory).to_i + metrics.dig(:hits, :l2).to_i}"
+        puts "  - Memory (L1) Hits: #{metrics.dig(:hits, :memory) || 0}"
+        puts "  - L2 Hits: #{metrics.dig(:hits, :l2) || 0}"
         puts "Total Misses: #{metrics[:misses] || 0}"
         puts
 
@@ -44,7 +44,7 @@ namespace :cache do
         puts "-" * 30
         config = metrics[:configuration] || {}
         puts "Memory TTL: #{config[:memory_ttl]} seconds"
-        puts "Redis TTL: #{config[:redis_ttl]} seconds"
+        puts "L2 TTL: #{config[:l2_ttl]} seconds"
         puts "Max Memory Size: #{config[:max_memory_size]} KB"
         puts
 
@@ -115,17 +115,17 @@ namespace :cache do
     puts "🏥 CACHE HEALTH"
     puts "-" * 30
     puts "Status: #{cache.healthy? ? '✅ Healthy' : '❌ Unhealthy'}"
-    puts "Redis Available: #{metrics[:redis_available] ? '✅ Yes' : '❌ No'}"
+    puts "L2 Cache Available: #{metrics[:l2_cache_available] ? '✅ Yes' : '❌ No'}"
     puts
 
     # Cache Statistics
     puts "📊 CACHE STATISTICS"
     puts "-" * 30
     puts "Memory Cache Entries: #{metrics[:memory_cache_entries]}"
-    puts "Hit Rate: #{cache.hit_rate}%"
-    puts "Total Hits: #{metrics.dig(:hits, :memory).to_i + metrics.dig(:hits, :redis).to_i}"
-    puts "  - Memory Hits: #{metrics.dig(:hits, :memory) || 0}"
-    puts "  - Redis Hits: #{metrics.dig(:hits, :redis) || 0}"
+    puts "Hit Rate: #{cache.hit_rate.nil? ? 'n/a (no lookups in window)' : "#{cache.hit_rate}%"}"
+    puts "Total Hits: #{metrics.dig(:hits, :memory).to_i + metrics.dig(:hits, :l2).to_i}"
+    puts "  - Memory (L1) Hits: #{metrics.dig(:hits, :memory) || 0}"
+    puts "  - L2 Hits: #{metrics.dig(:hits, :l2) || 0}"
     puts "Total Misses: #{metrics[:misses] || 0}"
     puts
 
@@ -134,7 +134,7 @@ namespace :cache do
     puts "-" * 30
     config = metrics[:configuration] || {}
     puts "Memory TTL: #{config[:memory_ttl]} seconds"
-    puts "Redis TTL: #{config[:redis_ttl]} seconds"
+    puts "L2 TTL: #{config[:l2_ttl]} seconds"
     puts "Max Memory Size: #{config[:max_memory_size]} KB"
     puts
 
@@ -236,7 +236,7 @@ namespace :cache do
     metrics = cache.metrics
     puts "   Memory entries: #{metrics[:memory_cache_entries]}"
     puts "   Hit rate: #{cache.hit_rate}%"
-    puts "   Total hits: #{metrics.dig(:hits, :memory).to_i + metrics.dig(:hits, :redis).to_i}"
+    puts "   Total hits: #{metrics.dig(:hits, :memory).to_i + metrics.dig(:hits, :l2).to_i}"
     puts "   Total misses: #{metrics[:misses] || 0}"
   end
 end

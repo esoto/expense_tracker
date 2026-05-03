@@ -6,15 +6,14 @@
 # Usage:
 #   bin/rails encrypt:expense_raw_email
 #
-# This task is idempotent — re-running it safely skips already-encrypted rows.
-# A row is considered already encrypted when its raw column value starts with
-# the ActiveRecord::Encryption header prefix "{".
+# Idempotent — re-running it scans only plaintext rows (filtered at the SQL
+# layer, no per-row probe) and is a no-op once everything is encrypted.
 #
-# It processes rows in batches of 1000 with a small sleep between batches to
-# avoid saturating the database in production.
+# Includes soft-deleted rows (Expense.unscoped). Soft-deleted expenses still
+# carry the same bank PII; encryption parity covers them too.
 #
 # TODO(PER-534): Once all rows are confirmed encrypted (30+ days after this
-# rake task runs in production), remove support_unencrypted_data: true from
+# task runs in production), remove support_unencrypted_data: true from
 # Expense#raw_email_content and delete this task.
 
 namespace :encrypt do
@@ -25,61 +24,56 @@ namespace :encrypt do
 
     total     = 0
     encrypted = 0
-    skipped   = 0
     errored   = 0
 
     start_time = Time.current
     Rails.logger.info "[PER-533] Starting Expense#raw_email_content encryption backfill"
     puts "[PER-533] Starting Expense#raw_email_content encryption backfill"
 
-    # Query the raw column via SQL to identify truly plaintext rows.
-    # An already-encrypted row's raw column value begins with the JSON header
-    # that ActiveRecord::Encryption writes (e.g. {"p":"..."}). We check for
-    # rows where the raw value does NOT start with "{" — those are plaintext.
-    Expense.in_batches(of: batch_size) do |batch|
-      batch.each do |expense|
-        total += 1
+    # Pre-filter at the DB layer: only rows whose raw column value is
+    # plaintext. AR::Encryption ciphertext serializes as a JSON envelope
+    # starting with `{"p":` (the payload header). A NOT LIKE check on the
+    # short prefix is sargable enough and lets re-runs short-circuit at the
+    # WHERE clause instead of probing every row. unscoped covers
+    # soft-deleted expenses whose default_scope would otherwise hide them.
+    Expense.unscoped
+           .where.not(raw_email_content: nil)
+           .where("raw_email_content NOT LIKE ?", '{"p":%')
+           .find_each(batch_size: batch_size) do |expense|
+      total += 1
 
-        raw_value = ActiveRecord::Base.connection.execute(
-          "SELECT raw_email_content FROM expenses WHERE id = #{expense.id}"
-        ).first&.fetch("raw_email_content", nil)
+      # AR Encryption with support_unencrypted_data: true returns the
+      # plaintext for legacy rows on read. Re-assign and save with
+      # validate: false to:
+      #   - go through the AR Encryption write path (correct ciphertext
+      #     envelope produced by the attribute type)
+      #   - skip validations (legacy rows may fail rules added later;
+      #     we don't want them to orphan plaintext)
+      #   - run callbacks (no-ops here: clear_dashboard_cache and
+      #     trigger_metrics_refresh both gate on columns we aren't
+      #     touching, and the before_save normalizers are idempotent)
+      plaintext = expense.raw_email_content
+      expense.raw_email_content = plaintext
+      expense.send(:raw_email_content_will_change!)
+      expense.save(validate: false)
+      encrypted += 1
 
-        # Skip rows with no raw email content
-        if raw_value.nil?
-          skipped += 1
-          next
-        end
-
-        # Skip rows that already have ciphertext (header starts with "{")
-        if raw_value.start_with?("{")
-          skipped += 1
-          next
-        end
-
-        # Re-assign the attribute so AR Encryption marks it dirty and writes
-        # the ciphertext on save. Without this, AR skips the column update
-        # because the decrypted value matches what's already in memory.
-        # We reload first to ensure AR reads the plaintext from the raw column
-        # before we reassign, then force the attribute change via clear_attribute_change.
-        expense.reload
-        expense.raw_email_content = raw_value
-        # Mark as changed even if the decoded value appears identical —
-        # AR Encryption may otherwise skip the write because the String
-        # objects compare equal.
-        expense.send(:raw_email_content_will_change!)
-        expense.save!
-        encrypted += 1
-      rescue StandardError => e
-        errored += 1
-        Rails.logger.error "[PER-533] Error encrypting Expense id=#{expense.id}: #{e.message}"
+      if total % batch_size == 0
+        progress = "[PER-533] processed=#{total} encrypted=#{encrypted} errored=#{errored}"
+        Rails.logger.info progress
+        puts progress
+        sleep(sleep_seconds) if sleep_seconds > 0
       end
-
-      sleep(sleep_seconds) if sleep_seconds > 0
+    rescue StandardError => e
+      errored += 1
+      # Log only the exception class — `e.message` may interpolate the
+      # column value (PG::ValueTooLong, custom validation messages),
+      # which would echo plaintext bank PII into production.log.
+      Rails.logger.error "[PER-533] Error encrypting Expense id=#{expense&.id}: #{e.class}"
     end
 
     elapsed = (Time.current - start_time).round(1)
-    summary = "[PER-533] Done. total=#{total} encrypted=#{encrypted} " \
-              "skipped=#{skipped} errored=#{errored} elapsed=#{elapsed}s"
+    summary = "[PER-533] Done. total=#{total} encrypted=#{encrypted} errored=#{errored} elapsed=#{elapsed}s"
     Rails.logger.info summary
     puts summary
   end

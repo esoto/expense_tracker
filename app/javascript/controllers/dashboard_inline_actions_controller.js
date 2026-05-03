@@ -2,6 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 import { shouldSuppressShortcut } from "utilities/keyboard_shortcut_helpers"
 import { createUndoNotification } from "utilities/undo_notification_helper"
 import { t } from "services/i18n"
+import { createElement } from "utilities/safe_dom"
 
 // Dashboard Inline Actions Controller for Epic 3 Task 3.3
 // Handles quick actions: categorize, status toggle, duplicate, and delete
@@ -494,33 +495,65 @@ export default class extends Controller {
     
     toast.className += ` ${colors[type] || colors.info}`
     
-    toast.innerHTML = `
-      <div class="flex items-center">
-        <div class="flex-shrink-0">
-          ${type === 'success' ? 
-            '<svg aria-hidden="true" class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>' :
-            type === 'error' ?
-            '<svg aria-hidden="true" class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>' :
-            '<svg aria-hidden="true" class="w-5 h-5 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>'
-          }
-        </div>
-        <div class="ml-3 flex-1">
-          <p class="text-sm font-medium ${textColors[type] || textColors.info}">
-            ${message}
-          </p>
-        </div>
-        <div class="ml-4 flex-shrink-0">
-          <button type="button"
-                  class="inline-flex ${textColors[type] || textColors.info} hover:text-slate-500 focus:outline-none"
-                  onclick="this.parentElement.parentElement.parentElement.remove()">
-            <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
-    `
-    
+    // Build icon SVG — static paths, no user data
+    const iconPaths = {
+      success: { color: 'text-emerald-500', d: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+      error:   { color: 'text-rose-500',    d: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
+      info:    { color: 'text-teal-500',    d: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' }
+    }
+    const iconCfg = iconPaths[type] || iconPaths.info
+    const iconSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    iconSvg.setAttribute('aria-hidden', 'true')
+    iconSvg.setAttribute('class', `w-5 h-5 ${iconCfg.color}`)
+    iconSvg.setAttribute('fill', 'none')
+    iconSvg.setAttribute('stroke', 'currentColor')
+    iconSvg.setAttribute('viewBox', '0 0 24 24')
+    const iconPath = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    iconPath.setAttribute('stroke-linecap', 'round')
+    iconPath.setAttribute('stroke-linejoin', 'round')
+    iconPath.setAttribute('stroke-width', '2')
+    iconPath.setAttribute('d', iconCfg.d)
+    iconSvg.appendChild(iconPath)
+
+    const iconDiv = createElement('div', { classes: ['flex-shrink-0'], children: [iconSvg] })
+
+    // message rendered as textContent — XSS-safe
+    const messageP = createElement('p', {
+      text: message,
+      classes: ['text-sm', 'font-medium', textColors[type] || textColors.info]
+    })
+    const messageDiv = createElement('div', { classes: ['ml-3', 'flex-1'], children: [messageP] })
+
+    // Close button — addEventListener replaces onclick
+    const closeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    closeSvg.setAttribute('aria-hidden', 'true')
+    closeSvg.setAttribute('class', 'w-4 h-4')
+    closeSvg.setAttribute('fill', 'none')
+    closeSvg.setAttribute('stroke', 'currentColor')
+    closeSvg.setAttribute('viewBox', '0 0 24 24')
+    const closePath = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    closePath.setAttribute('stroke-linecap', 'round')
+    closePath.setAttribute('stroke-linejoin', 'round')
+    closePath.setAttribute('stroke-width', '2')
+    closePath.setAttribute('d', 'M6 18L18 6M6 6l12 12')
+    closeSvg.appendChild(closePath)
+
+    const closeBtn = createElement('button', {
+      attrs: { type: 'button' },
+      classes: ['inline-flex', textColors[type] || textColors.info, 'hover:text-slate-500', 'focus:outline-none'],
+      children: [closeSvg]
+    })
+    closeBtn.addEventListener('click', () => toast.remove())
+
+    const closeDiv = createElement('div', { classes: ['ml-4', 'flex-shrink-0'], children: [closeBtn] })
+
+    const innerFlex = createElement('div', {
+      classes: ['flex', 'items-center'],
+      children: [iconDiv, messageDiv, closeDiv]
+    })
+
+    toast.appendChild(innerFlex)
+
     document.body.appendChild(toast)
     
     // Animate in

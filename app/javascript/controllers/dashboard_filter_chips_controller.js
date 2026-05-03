@@ -1,6 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 import FilterStateManager from "utilities/filter_state_manager"
 import { shouldSuppressShortcut } from "utilities/keyboard_shortcut_helpers"
+import { createElement } from "utilities/safe_dom"
 
 // Dashboard Filter Chips Controller
 // Manages filter chip selection, state management, and real-time filtering
@@ -359,8 +360,14 @@ export default class extends Controller {
     // Wait for fade out
     await new Promise(resolve => setTimeout(resolve, 200))
     
-    // Update content
-    this.expenseContainerTarget.innerHTML = html
+    // Update content — parse server HTML via DOMParser to avoid direct innerHTML assignment.
+    // The html string is from our own Rails backend (trusted), but using DOMParser +
+    // replaceChildren is the recommended pattern: it avoids executing inline scripts
+    // and keeps the mutation contained to the target element.
+    const parsed = new DOMParser().parseFromString(html, 'text/html')
+    const fragment = document.createDocumentFragment()
+    parsed.body.childNodes.forEach(node => fragment.appendChild(document.importNode(node, true)))
+    this.expenseContainerTarget.replaceChildren(fragment)
     
     // Fade in new content
     this.expenseContainerTarget.style.opacity = '1'
@@ -400,14 +407,23 @@ export default class extends Controller {
     // Create toast notification
     const toast = document.createElement('div')
     toast.className = 'fixed bottom-4 right-4 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg shadow-lg z-50'
-    toast.innerHTML = `
-      <div class="flex items-center gap-2">
-        <svg aria-hidden="true" class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-        <span>${message}</span>
-      </div>
-    `
+    // Build safely — message rendered via textContent (XSS-safe)
+    const errorSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    errorSvg.setAttribute('aria-hidden', 'true')
+    errorSvg.setAttribute('class', 'w-5 h-5 text-rose-500')
+    errorSvg.setAttribute('fill', 'none')
+    errorSvg.setAttribute('stroke', 'currentColor')
+    errorSvg.setAttribute('viewBox', '0 0 24 24')
+    const errorPath = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    errorPath.setAttribute('stroke-linecap', 'round')
+    errorPath.setAttribute('stroke-linejoin', 'round')
+    errorPath.setAttribute('stroke-width', '2')
+    errorPath.setAttribute('d', 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z')
+    errorSvg.appendChild(errorPath)
+
+    const msgSpan = createElement('span', { text: message })
+    const inner = createElement('div', { classes: ['flex', 'items-center', 'gap-2'], children: [errorSvg, msgSpan] })
+    toast.appendChild(inner)
     
     document.body.appendChild(toast)
     

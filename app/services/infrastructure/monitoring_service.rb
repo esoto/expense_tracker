@@ -645,11 +645,16 @@ module Services::Infrastructure
 
             metrics = pattern_cache_metrics
 
+            # nil hit_rate means "no lookups in window" — treat as healthy
+            # rather than degraded (PER-549). nil.to_f silently coerces to
+            # 0.0 which would otherwise classify a quiet cache as "degraded".
             status = if metrics[:error]
                        "critical"
-            elsif metrics[:hit_rate].to_f < 50
+            elsif metrics[:hit_rate].nil?
+                       "healthy"
+            elsif metrics[:hit_rate] < 50
                        "degraded"
-            elsif metrics[:hit_rate].to_f < 80
+            elsif metrics[:hit_rate] < 80
                        "warning"
             else
                        "healthy"

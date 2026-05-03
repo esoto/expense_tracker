@@ -340,9 +340,11 @@ module Services::Categorization
         Rails.cache.write("cat:health_check", true, expires_in: 30.seconds)
 
         # Check metrics are being collected. hit_rate may be nil if no
-        # lookups have happened yet; that's a healthy "no traffic" state.
-        rate = @metrics_collector.hit_rate
-        rate.nil? || rate >= 0
+        # lookups have happened yet; that's a healthy "no traffic" state,
+        # not a failure. The actual contract for this method is "did the
+        # health probes succeed?" — the metrics call merely needs to not
+        # raise.
+        @metrics_collector.hit_rate
 
         true
       rescue => e
@@ -368,10 +370,16 @@ module Services::Categorization
     def stats
       metrics_data = metrics
       rate = hit_rate
+      hits_hash = metrics_data[:hits]
       {
         entries: metrics_data[:memory_cache_entries] || 0,
         memory_bytes: (metrics_data[:memory_cache_entries] || 0) * 1024, # Rough estimate
-        hits: metrics_data.dig(:hits, :total) || 0,
+        # Sum the per-tier hash directly. Pre-PER-549 this read
+        # `metrics_data.dig(:hits, :total)` but `:total` was never a key
+        # in the {memory:, redis:} shape, so #stats has been silently
+        # returning hits=0 to dashboard helpers and the /api/health
+        # endpoint since the metrics shape was introduced.
+        hits: hits_hash.is_a?(Hash) ? hits_hash.values.sum : (hits_hash || 0),
         misses: metrics_data[:misses] || 0,
         evictions: metrics_data[:evictions] || 0,
         # Decimal in [0, 1] for callers that want a fraction; nil when no
@@ -634,11 +642,15 @@ module Services::Categorization
       COUNTER_NAMESPACE = "#{CACHE_NAMESPACE}metrics:".freeze
       WINDOW_TTL        = 25.hours # one full window plus the rotation overlap
 
-      # Test helper: clears the current window's hit/miss counters. Use in
+      # Test helper: clears the current window's hit/miss counters
+      # globally across every process reading this Rails.cache. Use in
       # spec before-blocks so prior examples don't pollute the asserted
-      # counts. Not for production code — counters are window-rotated and
-      # auto-expire via Solid Cache's max_age.
+      # counts. Not for production — counters are window-rotated and
+      # auto-expire via Solid Cache's max_age, and zeroing them mid-day
+      # would silence the very alerts PER-549/PER-550 added.
       def self.reset_window!
+        raise "reset_window! is a test helper; never invoke from production" if Rails.env.production?
+
         Rails.cache.delete("#{COUNTER_NAMESPACE}hits:memory:#{Date.current}")
         Rails.cache.delete("#{COUNTER_NAMESPACE}hits:redis:#{Date.current}")
         Rails.cache.delete("#{COUNTER_NAMESPACE}misses:#{Date.current}")
@@ -687,26 +699,37 @@ module Services::Categorization
       end
 
       def summary
-        @lock.synchronize do
-          {
-            hits: hits,
-            misses: misses_count,
-            hit_rate: hit_rate,
-            operations: operation_stats
-          }
-        end
+        # hits / misses_count / hit_rate read from Rails.cache and don't
+        # need the in-process @lock — fetch them outside the synchronize
+        # block so a slow Rails.cache read can't serialize concurrent
+        # summary calls. The lock only guards @operations.
+        cache_hits = hits
+        cache_misses = misses_count
+        cache_hit_rate = hit_rate
+
+        ops = @lock.synchronize { operation_stats }
+
+        {
+          hits: cache_hits,
+          misses: cache_misses,
+          hit_rate: cache_hit_rate,
+          operations: ops
+        }
       end
 
       private
 
       def cache_increment(suffix)
-        key = window_key(suffix)
-        # Solid Cache's increment is atomic but raises on missing key; seed
-        # then increment. The race between the two is benign — at worst we
-        # double-seed (write 0 twice) and one of the increments lands on a
-        # 0 we just wrote, which is the correct value anyway.
-        Rails.cache.write(key, 0, expires_in: WINDOW_TTL, raw: true) unless Rails.cache.exist?(key)
-        Rails.cache.increment(key, 1, expires_in: WINDOW_TTL)
+        # Solid Cache's `increment` is upsert-atomic: missing key → seeds
+        # at amount, existing → SELECT...FOR UPDATE-protected increment.
+        # The earlier "exist? + write 0 + increment" sequence assumed
+        # Memcached semantics ("raises on missing key") which Solid Cache
+        # does not share. Single round-trip on every code path.
+        # `expires_in:` only takes effect on the seeding write — once the
+        # key exists, Solid Cache preserves the original `expires_at`.
+        # That's fine here because window keys rotate by date suffix, so
+        # each new day's first increment establishes the TTL fresh.
+        Rails.cache.increment(window_key(suffix), 1, expires_in: WINDOW_TTL)
       rescue StandardError => e
         # Don't let a metrics-cache hiccup propagate into the lookup path.
         # The lookup result is the user-visible thing; metrics are

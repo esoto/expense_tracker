@@ -453,8 +453,45 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
       cache_a.instance_variable_get(:@metrics_collector).record_hit(:memory)
       cache_a.instance_variable_get(:@metrics_collector).record_hit(:memory)
 
+      # Assert the storage location, not just visibility — that's the
+      # property which gives cross-process safety. A regression that
+      # moved counters back into instance state would still pass a pure
+      # cache_b.metrics check (since both instances are in the same
+      # process), but would fail this Rails.cache.read assertion.
+      key = "cat:metrics:hits:memory:#{Date.current}"
+      expect(Rails.cache.read(key, raw: true).to_i).to eq(2)
       expect(cache_b.metrics[:hits][:memory]).to eq(2)
       expect(cache_b.hit_rate).to eq(100.0)
+    end
+
+    it "records an L2 hit through the public get_pattern path (regression guard)" do
+      # The unit-style L2-hit spec above calls fetch_with_tiered_cache via
+      # send to keep the assertion narrow. This sibling spec drives the
+      # public API end-to-end: warm L1+L2 once, drop L1, then a second
+      # public call must hit L2 and increment :redis. Without this the
+      # narrow spec could silently rot if a future refactor inlined
+      # Rails.cache.fetch outside fetch_with_tiered_cache.
+      pattern  # create the AR record
+      fresh_cache.get_pattern(pattern.id)
+      fresh_cache.clear_memory_cache
+      Services::Categorization::PatternCache::MetricsCollector.reset_window!
+
+      fresh_cache.get_pattern(pattern.id)
+
+      hits = fresh_cache.metrics[:hits]
+      expect(hits[:redis]).to eq(1), "expected an L2 hit via public API; got #{hits.inspect}"
+      expect(hits[:memory]).to eq(0)
+    end
+
+    it "swallows Rails.cache errors during record_hit so the lookup path stays alive" do
+      # The cache_increment rescue is load-bearing — its comment
+      # explicitly says metrics must never break categorization. This
+      # spec locks that guarantee in.
+      collector = described_class::MetricsCollector.new
+      allow(Rails.cache).to receive(:increment).and_raise(StandardError, "DB down")
+
+      expect(Rails.logger).to receive(:warn).with(/cache_increment.*failed/)
+      expect { collector.record_hit(:memory) }.not_to raise_error
     end
   end
 

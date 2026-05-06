@@ -36,11 +36,37 @@ export function createElement(tag, { text = null, attrs = {}, classes = [], chil
  * Prefer createElement() with text: instead — this is only for cases where
  * the surrounding structural HTML is unavoidable (e.g. SVG paths).
  *
+ * IMPORTANT: this is for TEXT context only. The textContent→innerHTML
+ * round-trip does NOT escape quotes, so embedding the result inside an
+ * attribute value (e.g. `<div title="${escapeHtml(x)}">`) is unsafe.
+ * Use escapeAttr() for attribute context.
+ *
  * @param {string|null|undefined} str
- * @returns {string} HTML-escaped string
+ * @returns {string} HTML-escaped string (text context)
  */
 export function escapeHtml(str) {
   const div = document.createElement('div')
   div.textContent = String(str ?? '')
   return div.innerHTML
+}
+
+/**
+ * Escape a string for safe insertion inside an HTML attribute value.
+ * Use this when interpolating user data into a template literal that
+ * will be assigned to innerHTML inside an attribute context — e.g.
+ * `<option value="${escapeAttr(id)}">` or `<div data-x="${escapeAttr(s)}">`.
+ *
+ * Escapes &, <, >, ", and ' so the attribute can use either single or
+ * double-quote delimiters safely.
+ *
+ * @param {string|null|undefined} str
+ * @returns {string} attribute-safe escaped string
+ */
+export function escapeAttr(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }

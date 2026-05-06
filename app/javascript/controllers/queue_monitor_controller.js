@@ -3,6 +3,17 @@ import { createConsumer } from "@rails/actioncable"
 import { t } from "services/i18n"
 import { createElement } from "utilities/safe_dom"
 
+// Helper: build a single <path> element with the standard stroke options.
+// Used for icon SVGs whose <svg> wrapper already exists in the DOM.
+function buildSvgPath(d) {
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+  path.setAttribute('stroke-linecap', 'round')
+  path.setAttribute('stroke-linejoin', 'round')
+  path.setAttribute('stroke-width', '2')
+  path.setAttribute('d', d)
+  return path
+}
+
 // Queue Monitor Stimulus Controller
 // Manages real-time queue visualization and control operations
 export default class extends Controller {
@@ -227,16 +238,16 @@ export default class extends Controller {
     if (this.isPaused) {
       this.pauseButtonTarget.className = "px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center space-x-1"
       this.pauseTextTarget.textContent = t("queue.actions.resume_all")
-      this.pauseIconTarget.innerHTML = `
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-      `
+      this.pauseIconTarget.replaceChildren(
+        buildSvgPath("M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"),
+        buildSvgPath("M21 12a9 9 0 11-18 0 9 9 0 0118 0z")
+      )
     } else {
       this.pauseButtonTarget.className = "px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center space-x-1"
       this.pauseTextTarget.textContent = t("queue.actions.pause_all")
-      this.pauseIconTarget.innerHTML = `
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-      `
+      this.pauseIconTarget.replaceChildren(
+        buildSvgPath("M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z")
+      )
     }
   }
 
@@ -271,13 +282,16 @@ export default class extends Controller {
     })
 
     const metaDiv = createElement('div', { classes: ['text-xs', 'text-slate-600', 'mt-1'] })
-    metaDiv.append(`${duration} • Prioridad ${job.priority}`)
     if (job.process_info) {
       const pidSpan = createElement('span', {
         text: `Trabajador ${job.process_info.pid}@${job.process_info.hostname}`,
         classes: ['text-xs', 'text-slate-500']
       })
-      metaDiv.appendChild(pidSpan)
+      // Trailing space preserves the visual gap between meta line and PID
+      // span. Without it the rendered text reads "Prioridad 1Trabajador …"
+      metaDiv.append(`${duration} • Prioridad ${job.priority} `, pidSpan)
+    } else {
+      metaDiv.append(`${duration} • Prioridad ${job.priority}`)
     }
 
     const innerDiv = createElement('div', { classes: ['flex-1'], children: [headerRow, metaDiv] })

@@ -166,8 +166,9 @@ export default class extends Controller {
 
     if (loading) {
       this.undoButtonTarget.disabled = true
-      this.undoButtonTarget.innerHTML =
-        '<span class="undo-spinner"></span> Deshaciendo...'
+      const spinner = document.createElement('span')
+      spinner.className = 'undo-spinner'
+      this.undoButtonTarget.replaceChildren(spinner, document.createTextNode(' Deshaciendo...'))
     } else {
       this.undoButtonTarget.disabled = false
       this.undoButtonTarget.textContent = "Deshacer"

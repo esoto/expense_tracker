@@ -328,11 +328,14 @@ export default class extends Controller {
       // Update icon
       const icon = statusButton.querySelector("svg")
       if (icon) {
-        if (newStatus === 'pending') {
-          icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>'
-        } else {
-          icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>'
-        }
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+        path.setAttribute('stroke-linecap', 'round')
+        path.setAttribute('stroke-linejoin', 'round')
+        path.setAttribute('stroke-width', '2')
+        path.setAttribute('d', newStatus === 'pending'
+          ? 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'
+          : 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z')
+        icon.replaceChildren(path)
       }
     }
     

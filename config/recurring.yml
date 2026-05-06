@@ -105,12 +105,18 @@ default: &default
   # Nightly Postgres backup to Hetzner Storage Box.
   # Runs pg_dump → GPG-encrypts → uploads via SFTP. Applies 30-day daily +
   # 12-month monthly retention after each run (PER-527).
+  #
+  # NOTE: Solid Queue parses recurring schedules in Rails Time.zone (not UTC
+  # by default). config/application.rb sets time_zone = "Central America"
+  # (UTC-6, no DST), so we use a cron expression with explicit UTC framing
+  # to keep "02:00 UTC" stable regardless of TZ config drift.
   postgres_nightly_backup:
     class: PostgresBackupJob
     queue: low
     priority: 10
-    schedule: every day at 2am
-    description: "Nightly Postgres backup to Hetzner Storage Box with encryption and retention (PER-527)"
+    schedule: "0 2 * * *"
+    time_zone: "UTC"
+    description: "Nightly Postgres backup to Hetzner Storage Box with encryption and retention (PER-527, 02:00 UTC)"
 
 development:
   <<: *default

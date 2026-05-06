@@ -56,6 +56,14 @@ namespace :postgres_backup do
     filename = args[:filename]
     abort "Usage: bin/rails 'postgres_backup:restore[FILENAME]'" if filename.blank?
 
+    # Strict allowlist on filename — operator-supplied input flows into a
+    # remote SFTP path and a gpg argv. The anchored regex blocks shell-meta,
+    # path traversal (../), and any deviation from the timestamped naming
+    # written by PostgresBackupJob.
+    unless filename.match?(/\Aexpense_tracker_production-\d{8}T\d{6}Z\.dump\.gpg\z/)
+      abort "Invalid filename. Expected: expense_tracker_production-YYYYMMDDTHHMMSSZ.dump.gpg"
+    end
+
     # Resolve credentials
     passphrase = Rails.application.credentials.dig(:backup, :gpg_passphrase) ||
                  ENV["BACKUP_GPG_PASSPHRASE"]
@@ -65,12 +73,15 @@ namespace :postgres_backup do
     user     = ENV.fetch("STORAGE_BOX_USER") { abort "STORAGE_BOX_USER not set" }
     key_path = ENV.fetch("STORAGE_BOX_SSH_KEY") { abort "STORAGE_BOX_SSH_KEY not set" }
 
-    # Derive the remote path from the filename
+    # Derive the remote path from the filename (regex-validated above).
     m = filename.match(/(\d{4})(\d{2})\d{2}T/)
-    abort "Cannot parse YYYY/MM from filename: #{filename}" unless m
     remote_path = "expense-tracker/#{m[1]}/#{m[2]}/#{filename}"
 
-    local_gpg  = File.join(Dir.pwd, filename)
+    # Decrypted dump contains plaintext bank PII. Drop it in a private tmpdir
+    # rather than Dir.pwd so it can't accidentally land in a Docker image
+    # build context or git status.
+    output_dir = ENV["OUTPUT_DIR"] || Dir.mktmpdir("postgres_backup_restore_")
+    local_gpg  = File.join(output_dir, filename)
     local_dump = local_gpg.sub(/\.gpg\z/, "")
 
     puts "[postgres_backup:restore] Downloading #{remote_path}..."
@@ -86,16 +97,14 @@ namespace :postgres_backup do
       passphrase_file.flush
       passphrase_file.chmod(0o600)
 
-      cmd = [
+      stdout, stderr, status = Open3.capture3(
         "gpg",
         "--batch",
         "--yes",
-        "--passphrase-file #{passphrase_file.path}",
-        "--output #{local_dump}",
-        "--decrypt #{local_gpg}"
-      ].join(" ")
-
-      stdout, stderr, status = Open3.capture3(cmd)
+        "--passphrase-file", passphrase_file.path,
+        "--output",          local_dump,
+        "--decrypt",         local_gpg
+      )
       unless status.success?
         abort "gpg decryption failed (exit #{status.exitstatus}): #{stderr.presence || stdout}"
       end
@@ -109,7 +118,9 @@ namespace :postgres_backup do
     puts "To restore into a local database run:"
     puts "  pg_restore --clean --if-exists -d <DBNAME> #{local_dump}"
     puts ""
-    puts "NOTE: this does NOT auto-load the dump. Run pg_restore manually and verify the result."
+    puts "NOTE: this does NOT auto-load the dump. Run pg_restore manually."
+    puts "      The decrypted dump contains plaintext bank PII — delete it"
+    puts "      with 'rm #{local_dump}' (or 'rm -rf #{output_dir}') after use."
   end
   # rubocop:enable Metrics/BlockLength
 end

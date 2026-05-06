@@ -35,26 +35,6 @@
         "method": "refresh_csrf_token_for_turbo"
       },
       "note": "PER-213 Fix 5: HEAD responses carry no body so the memoized CSRF token is never delivered. Intentionally excluding HEAD from refresh_csrf_token_for_turbo is the desired behavior, not a security flaw."
-    },
-    {
-      "warning_type": "Command Injection",
-      "warning_code": 14,
-      "fingerprint": "d520ed829a6529c1c22008bb6a34ac184d6c3466f39c711772b176c9f6d2be7f",
-      "check_name": "Execute",
-      "message": "Possible command injection",
-      "file": "app/jobs/postgres_backup_job.rb",
-      "line": 91,
-      "note": "PER-527: All interpolated values (pg_host, pg_port, pg_user, pg_database, output_path) come from Rails credentials or fixed constants — never from user input. pg_host/pg_user are ENV vars set at deploy time; output_path is a system tmpdir path composed from a fixed prefix and a UTC timestamp. No user-controlled data enters the command string."
-    },
-    {
-      "warning_type": "Command Injection",
-      "warning_code": 14,
-      "fingerprint": "bd3cf0ea0cd4364b9b06330b62074562e7a276085dea3f8bd41c85480a3a80ee",
-      "check_name": "Execute",
-      "message": "Possible command injection",
-      "file": "app/jobs/postgres_backup_job.rb",
-      "line": 122,
-      "note": "PER-527: The GPG command interpolates output_path (system tmpdir + timestamp), input_path (same), and passphrase_file.path (Tempfile created by the job itself). None of these values are user-controlled. The passphrase is sourced from Rails credentials and written to a mode-600 tempfile; it is never interpolated into the command string."
     }
   ]
 }

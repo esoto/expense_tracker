@@ -29,6 +29,13 @@ require "net/sftp"
 # PGPASSWORD is passed via Open3 env hash so it never appears on the command line.
 class PostgresBackupJob < ApplicationJob
   queue_as :low
+
+  # Prevent overlapping runs. pg_dump can take >10 min as the DB grows; the
+  # nightly schedule, retry_on retries, and a manual postgres_backup:run_now
+  # could otherwise run two pg_dumps and SFTP uploads concurrently against
+  # the shared personal-blog-db host.
+  limits_concurrency key: "postgres_backup", duration: 2.hours
+
   retry_on StandardError, wait: :polynomially_longer, attempts: 3
 
   # Raised on any unrecoverable backup step failure.
@@ -57,6 +64,7 @@ class PostgresBackupJob < ApplicationJob
       FileUtils.rm_f(gpg_path)
     end
 
+    Rails.cache.write("postgres_backup.last_success_at", Time.now.utc.iso8601, expires_in: 7.days)
     Rails.logger.info "[PostgresBackup] Backup complete (timestamp=#{timestamp})"
   rescue BackupError => e
     Rails.logger.error "[PostgresBackup] Backup failed: #{e.message}"
@@ -74,25 +82,38 @@ class PostgresBackupJob < ApplicationJob
   def run_pg_dump(output_path)
     Rails.logger.info "[PostgresBackup] Running pg_dump → #{output_path}"
 
-    cmd = [
+    env = { "PGPASSWORD" => pg_password }
+
+    # argv form (no shell) — bypasses /bin/sh -c, immune to metacharacters
+    # in pg_host / pg_user / output_path even if their sources change later.
+    # Each option value is its own argv element (e.g. "--host", pg_host) so
+    # we never interpolate non-literal data into a string.
+    stdout, stderr, status = Open3.capture3(
+      env,
       "pg_dump",
       "--format=custom",
       "--no-owner",
       "--no-acl",
-      "--host=#{pg_host}",
-      "--port=#{pg_port}",
-      "--username=#{pg_user}",
-      "--file=#{output_path}",
+      "--lock-wait-timeout=30000",
+      "--host",     pg_host,
+      "--port",     pg_port,
+      "--username", pg_user,
+      "--file",     output_path,
       pg_database
-    ].join(" ")
+    )
 
-    env = { "PGPASSWORD" => pg_password }
+    unless status.success?
+      raise BackupError, "pg_dump failed (exit #{status.exitstatus}): #{stderr.presence || stdout}"
+    end
 
-    stdout, stderr, status = Open3.capture3(env, cmd)
+    # 0600 immediately so the plaintext dump is not readable by other UIDs
+    # in the (small) window between pg_dump completing and gpg encrypting.
+    File.chmod(0o600, output_path) if File.exist?(output_path)
 
-    return if status.success?
+    size = File.size?(output_path).to_i
+    raise BackupError, "pg_dump produced empty/missing file at #{output_path}" if size < 512
 
-    raise BackupError, "pg_dump failed (exit #{status.exitstatus}): #{stderr.presence || stdout}"
+    Rails.logger.info "[PostgresBackup] pg_dump complete (size=#{size} bytes)"
   end
 
   # ── GPG symmetric encryption ─────────────────────────────────────────────
@@ -108,18 +129,16 @@ class PostgresBackupJob < ApplicationJob
       passphrase_file.flush
       passphrase_file.chmod(0o600)
 
-      cmd = [
+      stdout, stderr, status = Open3.capture3(
         "gpg",
         "--batch",
         "--yes",
         "--symmetric",
-        "--cipher-algo AES256",
-        "--passphrase-file #{passphrase_file.path}",
-        "--output #{output_path}",
+        "--cipher-algo", "AES256",
+        "--passphrase-file", passphrase_file.path,
+        "--output", output_path,
         input_path
-      ].join(" ")
-
-      stdout, stderr, status = Open3.capture3(cmd)
+      )
 
       return if status.success?
 
@@ -150,11 +169,11 @@ class PostgresBackupJob < ApplicationJob
       partial = "/#{partial}" if path.start_with?("/")
       sftp.mkdir!(partial)
     rescue Net::SFTP::StatusException => e
-      # FX_FAILURE (4) is returned when the directory already exists on many
-      # SFTP servers. FX_PERMISSION_DENIED (3) can also appear on the root.
-      # Re-raise for any other error code.
-      raise unless e.code == Net::SFTP::Constants::StatusCodes::FX_FAILURE ||
-                   e.code == Net::SFTP::Constants::StatusCodes::FX_PERMISSION_DENIED
+      # FX_FAILURE (4) is returned when the directory already exists on most
+      # SFTP servers. Re-raise FX_PERMISSION_DENIED so an ACL/path misconfig
+      # surfaces with a clear error rather than masquerading as an upload
+      # failure later.
+      raise unless e.code == Net::SFTP::Constants::StatusCodes::FX_FAILURE
     end
   end
 
@@ -197,7 +216,8 @@ class PostgresBackupJob < ApplicationJob
   def files_to_delete(all_files)
     now            = Time.now.utc
     daily_cutoff   = now - 30.days
-    monthly_cutoff = (now.beginning_of_month - 12.months)
+    # Keep 12 monthly anchors total (current month + 11 prior).
+    monthly_cutoff = (now.beginning_of_month - 11.months)
 
     keep = Set.new
 

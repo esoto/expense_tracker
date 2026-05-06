@@ -32,6 +32,10 @@ REQUIRED_SECRETS = %w[
   ADMIN_PASSWORD
   ANTHROPIC_API_KEY
   SENTRY_DSN
+  STORAGE_BOX_HOST
+  STORAGE_BOX_USER
+  STORAGE_BOX_SSH_KEY
+  BACKUP_GPG_PASSPHRASE
 ].freeze
 
 # Must stay in sync with db/seeds.rb:370 — the production seed guard.

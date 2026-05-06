@@ -137,8 +137,8 @@ if SECRETS_FILE.file?
   end
   RECOMMENDED_SECRETS.each do |key|
     if !secrets.key?(key) || secrets[key].to_s.empty?
-      info << "#{key} not set in .kamal/secrets — feature using it (Sentry/Storage Box) " \
-              "will be inert until provisioned. Move to REQUIRED_SECRETS once stable."
+      info << "#{key} not set in .kamal/secrets — feature using it will be " \
+              "inert until provisioned. Move to REQUIRED_SECRETS once stable."
     end
   end
   unless unresolved_substitution.empty?

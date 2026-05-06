@@ -1,5 +1,6 @@
 import { Controller } from "@hotwired/stimulus"
 import { t } from "services/i18n"
+import { createElement } from "utilities/safe_dom"
 
 export default class extends Controller {
   static targets = ["categorySelect", "expandIcon", "expenseList"]
@@ -263,41 +264,69 @@ export default class extends Controller {
   showNotification(message, type = 'info') {
     const notifications = document.getElementById('notifications')
     if (!notifications) return
-    
-    const notification = document.createElement('div')
-    notification.className = `mb-4 p-4 rounded-lg flex items-start space-x-3 ${
-      type === 'error' ? 'bg-rose-50 border border-rose-200' :
-      type === 'success' ? 'bg-emerald-50 border border-emerald-200' :
-      'bg-amber-50 border border-amber-200'
-    }`
-    
-    const icon = type === 'error' ?
-      '<svg aria-hidden="true" class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>' :
-      type === 'success' ?
-      '<svg aria-hidden="true" class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>' :
-      '<svg aria-hidden="true" class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>'
-    
-    notification.innerHTML = `
-      ${icon}
-      <div class="flex-1">
-        <p class="text-sm ${
-          type === 'error' ? 'text-rose-700' :
-          type === 'success' ? 'text-emerald-700' :
-          'text-amber-700'
-        }">${message}</p>
-      </div>
-      <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600">
-        <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
-      </button>
-    `
-    
+
+    const iconColor = type === 'error' ? 'text-rose-600' :
+                      type === 'success' ? 'text-emerald-600' : 'text-amber-600'
+    const iconPath = type === 'error' ? 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' :
+                     type === 'success' ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' :
+                     'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'
+    const wrapperBg = type === 'error' ? ['bg-rose-50', 'border', 'border-rose-200'] :
+                      type === 'success' ? ['bg-emerald-50', 'border', 'border-emerald-200'] :
+                      ['bg-amber-50', 'border', 'border-amber-200']
+    const textColor = type === 'error' ? 'text-rose-700' :
+                      type === 'success' ? 'text-emerald-700' : 'text-amber-700'
+
+    // Status icon (static SVG, namespaced)
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    icon.setAttribute('aria-hidden', 'true')
+    icon.setAttribute('class', `w-5 h-5 ${iconColor}`)
+    icon.setAttribute('fill', 'none')
+    icon.setAttribute('stroke', 'currentColor')
+    icon.setAttribute('viewBox', '0 0 24 24')
+    const iconPathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    iconPathEl.setAttribute('stroke-linecap', 'round')
+    iconPathEl.setAttribute('stroke-linejoin', 'round')
+    iconPathEl.setAttribute('stroke-width', '2')
+    iconPathEl.setAttribute('d', iconPath)
+    icon.appendChild(iconPathEl)
+
+    // Message — textContent, XSS-safe even if `message` carries user data.
+    const messageP = createElement('p', {
+      text: message,
+      classes: ['text-sm', textColor]
+    })
+    const textWrap = createElement('div', { classes: ['flex-1'], children: [messageP] })
+
+    // Close button — addEventListener instead of inline onclick (CSP-safe).
+    const closeIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    closeIcon.setAttribute('aria-hidden', 'true')
+    closeIcon.setAttribute('class', 'w-4 h-4')
+    closeIcon.setAttribute('fill', 'none')
+    closeIcon.setAttribute('stroke', 'currentColor')
+    closeIcon.setAttribute('viewBox', '0 0 24 24')
+    const closePath = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    closePath.setAttribute('stroke-linecap', 'round')
+    closePath.setAttribute('stroke-linejoin', 'round')
+    closePath.setAttribute('stroke-width', '2')
+    closePath.setAttribute('d', 'M6 18L18 6M6 6l12 12')
+    closeIcon.appendChild(closePath)
+
+    const closeBtn = createElement('button', {
+      attrs: { type: 'button', 'aria-label': t('common.actions.close') || 'Cerrar' },
+      classes: ['text-slate-400', 'hover:text-slate-600'],
+      children: [closeIcon]
+    })
+
+    const notification = createElement('div', {
+      classes: ['mb-4', 'p-4', 'rounded-lg', 'flex', 'items-start', 'space-x-3', ...wrapperBg],
+      children: [icon, textWrap, closeBtn]
+    })
+
+    closeBtn.addEventListener('click', () => notification.remove())
+
     notifications.appendChild(notification)
-    
+
     // Auto-remove after 5 seconds
-    setTimeout(() => {
-      notification.remove()
-    }, 5000)
+    setTimeout(() => notification.remove(), 5000)
   }
 }

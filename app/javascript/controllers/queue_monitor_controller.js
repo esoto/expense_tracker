@@ -1,6 +1,18 @@
 import { Controller } from "@hotwired/stimulus"
 import { createConsumer } from "@rails/actioncable"
 import { t } from "services/i18n"
+import { createElement } from "utilities/safe_dom"
+
+// Helper: build a single <path> element with the standard stroke options.
+// Used for icon SVGs whose <svg> wrapper already exists in the DOM.
+function buildSvgPath(d) {
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+  path.setAttribute('stroke-linecap', 'round')
+  path.setAttribute('stroke-linejoin', 'round')
+  path.setAttribute('stroke-width', '2')
+  path.setAttribute('d', d)
+  return path
+}
 
 // Queue Monitor Stimulus Controller
 // Manages real-time queue visualization and control operations
@@ -226,16 +238,16 @@ export default class extends Controller {
     if (this.isPaused) {
       this.pauseButtonTarget.className = "px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center space-x-1"
       this.pauseTextTarget.textContent = t("queue.actions.resume_all")
-      this.pauseIconTarget.innerHTML = `
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-      `
+      this.pauseIconTarget.replaceChildren(
+        buildSvgPath("M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"),
+        buildSvgPath("M21 12a9 9 0 11-18 0 9 9 0 0118 0z")
+      )
     } else {
       this.pauseButtonTarget.className = "px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center space-x-1"
       this.pauseTextTarget.textContent = t("queue.actions.pause_all")
-      this.pauseIconTarget.innerHTML = `
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-      `
+      this.pauseIconTarget.replaceChildren(
+        buildSvgPath("M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z")
+      )
     }
   }
 
@@ -247,29 +259,47 @@ export default class extends Controller {
     }
 
     this.activeJobsSectionTarget.style.display = "block"
-    this.activeJobsListTarget.innerHTML = activeJobs.map(job => this.renderActiveJob(job)).join("")
+    // Build DOM nodes safely — no innerHTML for job data
+    const nodes = activeJobs.map(job => this.renderActiveJob(job))
+    this.activeJobsListTarget.replaceChildren(...nodes)
   }
 
-  // Render a single active job
+  // Render a single active job — safe DOM construction (no innerHTML for user data)
   renderActiveJob(job) {
     const duration = job.duration ? this.formatDuration(job.duration) : t("queue.status.just_started")
-    const processInfo = job.process_info ?
-      `<span class="text-xs text-slate-500">Trabajador ${job.process_info.pid}@${job.process_info.hostname}</span>` : ""
 
-    return `
-      <div class="flex items-center justify-between p-3 bg-teal-50 rounded-lg">
-        <div class="flex-1">
-          <div class="flex items-center space-x-2">
-            <span class="text-sm font-medium text-slate-900">${this.formatJobClass(job.class_name)}</span>
-            <span class="text-xs px-2 py-0.5 bg-teal-100 text-teal-700 rounded-full">${job.queue_name}</span>
-          </div>
-          <div class="text-xs text-slate-600 mt-1">
-            ${duration} • Prioridad ${job.priority}
-            ${processInfo}
-          </div>
-        </div>
-      </div>
-    `
+    const classSpan = createElement('span', {
+      text: this.formatJobClass(job.class_name),
+      classes: ['text-sm', 'font-medium', 'text-slate-900']
+    })
+    const queueSpan = createElement('span', {
+      text: job.queue_name,
+      classes: ['text-xs', 'px-2', 'py-0.5', 'bg-teal-100', 'text-teal-700', 'rounded-full']
+    })
+    const headerRow = createElement('div', {
+      classes: ['flex', 'items-center', 'space-x-2'],
+      children: [classSpan, queueSpan]
+    })
+
+    const metaDiv = createElement('div', { classes: ['text-xs', 'text-slate-600', 'mt-1'] })
+    if (job.process_info) {
+      const pidSpan = createElement('span', {
+        text: `Trabajador ${job.process_info.pid}@${job.process_info.hostname}`,
+        classes: ['text-xs', 'text-slate-500']
+      })
+      // Trailing space preserves the visual gap between meta line and PID
+      // span. Without it the rendered text reads "Prioridad 1Trabajador …"
+      metaDiv.append(`${duration} • Prioridad ${job.priority} `, pidSpan)
+    } else {
+      metaDiv.append(`${duration} • Prioridad ${job.priority}`)
+    }
+
+    const innerDiv = createElement('div', { classes: ['flex-1'], children: [headerRow, metaDiv] })
+
+    return createElement('div', {
+      classes: ['flex', 'items-center', 'justify-between', 'p-3', 'bg-teal-50', 'rounded-lg'],
+      children: [innerDiv]
+    })
   }
 
   // Update failed jobs list
@@ -280,40 +310,69 @@ export default class extends Controller {
     }
 
     this.failedJobsSectionTarget.style.display = "block"
-    this.failedJobsListTarget.innerHTML = failedJobs.map(job => this.renderFailedJob(job)).join("")
+    // Build DOM nodes safely — no innerHTML for job data
+    const nodes = failedJobs.map(job => this.renderFailedJob(job))
+    this.failedJobsListTarget.replaceChildren(...nodes)
   }
 
-  // Render a single failed job
+  // Render a single failed job — safe DOM construction (no innerHTML for user data)
   renderFailedJob(job) {
     const errorMessage = this.extractErrorMessage(job.error)
     const failedAt = new Date(job.created_at).toLocaleString()
 
-    return `
-      <div class="p-3 bg-rose-50 rounded-lg">
-        <div class="flex items-start justify-between">
-          <div class="flex-1">
-            <div class="flex items-center space-x-2">
-              <span class="text-sm font-medium text-slate-900">${this.formatJobClass(job.class_name)}</span>
-              <span class="text-xs px-2 py-0.5 bg-rose-100 text-rose-700 rounded-full">${job.queue_name}</span>
-            </div>
-            <div class="text-xs text-rose-600 mt-1">${errorMessage}</div>
-            <div class="text-xs text-slate-500 mt-1">${t("queue.status.failed_at")}${failedAt}</div>
-          </div>
-          <div class="flex items-center space-x-1 ml-4">
-            <button data-job-id="${job.id}"
-                    data-action="click->queue-monitor#retryJob"
-                    class="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium rounded transition-colors">
-              ${t("common.actions.retry")}
-            </button>
-            <button data-job-id="${job.id}"
-                    data-action="click->queue-monitor#clearJob"
-                    class="px-2 py-1 bg-slate-600 hover:bg-slate-700 text-white text-xs font-medium rounded transition-colors">
-              ${t("common.actions.clear")}
-            </button>
-          </div>
-        </div>
-      </div>
-    `
+    const classSpan = createElement('span', {
+      text: this.formatJobClass(job.class_name),
+      classes: ['text-sm', 'font-medium', 'text-slate-900']
+    })
+    const queueSpan = createElement('span', {
+      text: job.queue_name,
+      classes: ['text-xs', 'px-2', 'py-0.5', 'bg-rose-100', 'text-rose-700', 'rounded-full']
+    })
+    const headerRow = createElement('div', {
+      classes: ['flex', 'items-center', 'space-x-2'],
+      children: [classSpan, queueSpan]
+    })
+
+    const errorDiv = createElement('div', {
+      text: errorMessage,
+      classes: ['text-xs', 'text-rose-600', 'mt-1']
+    })
+    const failedAtDiv = createElement('div', {
+      text: `${t("queue.status.failed_at")}${failedAt}`,
+      classes: ['text-xs', 'text-slate-500', 'mt-1']
+    })
+    const infoDiv = createElement('div', { classes: ['flex-1'], children: [headerRow, errorDiv, failedAtDiv] })
+
+    const retryBtn = createElement('button', {
+      text: t("common.actions.retry"),
+      attrs: {
+        'data-job-id': String(job.id),
+        'data-action': 'click->queue-monitor#retryJob'
+      },
+      classes: ['px-2', 'py-1', 'bg-rose-600', 'hover:bg-rose-700', 'text-white', 'text-xs', 'font-medium', 'rounded', 'transition-colors']
+    })
+    const clearBtn = createElement('button', {
+      text: t("common.actions.clear"),
+      attrs: {
+        'data-job-id': String(job.id),
+        'data-action': 'click->queue-monitor#clearJob'
+      },
+      classes: ['px-2', 'py-1', 'bg-slate-600', 'hover:bg-slate-700', 'text-white', 'text-xs', 'font-medium', 'rounded', 'transition-colors']
+    })
+    const actionsDiv = createElement('div', {
+      classes: ['flex', 'items-center', 'space-x-1', 'ml-4'],
+      children: [retryBtn, clearBtn]
+    })
+
+    const rowFlex = createElement('div', {
+      classes: ['flex', 'items-start', 'justify-between'],
+      children: [infoDiv, actionsDiv]
+    })
+
+    return createElement('div', {
+      classes: ['p-3', 'bg-rose-50', 'rounded-lg'],
+      children: [rowFlex]
+    })
   }
 
   // Update queue breakdown
@@ -324,15 +383,18 @@ export default class extends Controller {
     }
 
     this.queueBreakdownTarget.style.display = "block"
-    
+
     const sortedQueues = Object.entries(queueDepths).sort((a, b) => b[1] - a[1])
-    
-    this.queueListTarget.innerHTML = sortedQueues.map(([name, count]) => `
-      <div class="flex items-center justify-between p-2 bg-slate-50 rounded">
-        <span class="text-sm text-slate-700">${name}</span>
-        <span class="text-sm font-medium text-slate-900">${count}</span>
-      </div>
-    `).join("")
+
+    // Build DOM nodes safely — no innerHTML for queue names or counts
+    const nodes = sortedQueues.map(([name, count]) => createElement('div', {
+      classes: ['flex', 'items-center', 'justify-between', 'p-2', 'bg-slate-50', 'rounded'],
+      children: [
+        createElement('span', { text: name,        classes: ['text-sm', 'text-slate-700'] }),
+        createElement('span', { text: String(count), classes: ['text-sm', 'font-medium', 'text-slate-900'] })
+      ]
+    }))
+    this.queueListTarget.replaceChildren(...nodes)
   }
 
   // Update worker status

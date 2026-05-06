@@ -2,6 +2,8 @@ import { Controller } from "@hotwired/stimulus"
 import { Turbo } from "@hotwired/turbo-rails"
 import { shouldSuppressShortcut } from "utilities/keyboard_shortcut_helpers"
 import { t } from "services/i18n"
+import { createElement, escapeHtml, escapeAttr } from "utilities/safe_dom"
+import { createUndoNotification } from "utilities/undo_notification_helper"
 
 // Dashboard Expenses Controller for Epic 3 Task 3.2
 // Manages view toggle between compact and expanded modes with responsive behavior
@@ -1104,8 +1106,13 @@ export default class extends Controller {
         return response.json()
       })
       .then(categories => {
-        const categoryOptions = categories.map(cat => 
-          `<option value="${cat.id}" data-color="${cat.color}">${cat.name}</option>`
+        // cat.name and cat.color are user-editable category fields persisted
+        // in the DB. They flow into innerHTML below via modalHtml, so:
+        //   - attribute context (value=, data-color=) → escapeAttr (escapes
+        //     ", ', <, >, & so a malicious value can't break out of quotes)
+        //   - text context (the option's textContent) → escapeHtml
+        const categoryOptions = categories.map(cat =>
+          `<option value="${escapeAttr(cat.id)}" data-color="${escapeAttr(cat.color)}">${escapeHtml(cat.name)}</option>`
         ).join('')
         
         const modalHtml = `
@@ -1497,41 +1504,29 @@ export default class extends Controller {
   showToast(message, type = "info") {
     const toastTypes = {
       success: {
-        bg: "bg-emerald-50",
-        border: "border-emerald-200",
-        text: "text-emerald-800",
-        icon: `<svg aria-hidden="true" class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>`
+        bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-800",
+        iconColor: "text-emerald-600",
+        iconPath: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
       },
       error: {
-        bg: "bg-rose-50",
-        border: "border-rose-200",
-        text: "text-rose-800",
-        icon: `<svg aria-hidden="true" class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>`
+        bg: "bg-rose-50", border: "border-rose-200", text: "text-rose-800",
+        iconColor: "text-rose-600",
+        iconPath: "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
       },
       warning: {
-        bg: "bg-amber-50",
-        border: "border-amber-200",
-        text: "text-amber-800",
-        icon: `<svg aria-hidden="true" class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-              </svg>`
+        bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-800",
+        iconColor: "text-amber-600",
+        iconPath: "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
       },
       info: {
-        bg: "bg-slate-50",
-        border: "border-slate-200",
-        text: "text-slate-800",
-        icon: `<svg aria-hidden="true" class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>`
+        bg: "bg-slate-50", border: "border-slate-200", text: "text-slate-800",
+        iconColor: "text-slate-600",
+        iconPath: "M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
       }
     }
-    
+
     const config = toastTypes[type] || toastTypes.info
-    
+
     // Create toast container if it doesn't exist
     let toastContainer = document.getElementById('toast-container')
     if (!toastContainer) {
@@ -1540,24 +1535,58 @@ export default class extends Controller {
       toastContainer.className = 'fixed top-4 right-4 z-[9999] space-y-2'
       document.body.appendChild(toastContainer)
     }
-    
-    // Create toast element
+
+    // Build status icon via SVG namespace — no innerHTML, no static-string
+    // escape-hatch (PER-525 needs all innerHTML in this controller gone).
+    const statusSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    statusSvg.setAttribute('aria-hidden', 'true')
+    statusSvg.setAttribute('class', `w-5 h-5 ${config.iconColor}`)
+    statusSvg.setAttribute('fill', 'none')
+    statusSvg.setAttribute('stroke', 'currentColor')
+    statusSvg.setAttribute('viewBox', '0 0 24 24')
+    const statusPath = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    statusPath.setAttribute('stroke-linecap', 'round')
+    statusPath.setAttribute('stroke-linejoin', 'round')
+    statusPath.setAttribute('stroke-width', '2')
+    statusPath.setAttribute('d', config.iconPath)
+    statusSvg.appendChild(statusPath)
+
+    const iconWrapper = createElement('div', {
+      classes: ['flex-shrink-0', 'mr-3'],
+      children: [statusSvg]
+    })
+
+    const messageEl = createElement('div', {
+      text: message,
+      classes: ['flex-1', 'text-sm', 'font-medium']
+    })
+
+    const closeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    closeSvg.setAttribute('aria-hidden', 'true')
+    closeSvg.setAttribute('class', 'w-4 h-4')
+    closeSvg.setAttribute('fill', 'none')
+    closeSvg.setAttribute('stroke', 'currentColor')
+    closeSvg.setAttribute('viewBox', '0 0 24 24')
+    const closePath = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    closePath.setAttribute('stroke-linecap', 'round')
+    closePath.setAttribute('stroke-linejoin', 'round')
+    closePath.setAttribute('stroke-width', '2')
+    closePath.setAttribute('d', 'M6 18L18 6M6 6l12 12')
+    closeSvg.appendChild(closePath)
+
+    const closeButton = createElement('button', {
+      attrs: { type: 'button' },
+      classes: ['ml-3', '-mr-1', 'flex-shrink-0'],
+      children: [closeSvg]
+    })
+    closeButton.addEventListener('click', () => toast.remove())
+
     const toast = document.createElement('div')
     toast.className = `flex items-center p-4 rounded-lg border ${config.bg} ${config.border} ${config.text} shadow-lg max-w-sm animate-slide-in`
-    toast.innerHTML = `
-      <div class="flex-shrink-0 mr-3">
-        ${config.icon}
-      </div>
-      <div class="flex-1 text-sm font-medium">
-        ${message}
-      </div>
-      <button type="button" class="ml-3 -mr-1 flex-shrink-0" onclick="this.parentElement.remove()">
-        <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-        </svg>
-      </button>
-    `
-    
+    toast.appendChild(iconWrapper)
+    toast.appendChild(messageEl)
+    toast.appendChild(closeButton)
+
     toastContainer.appendChild(toast)
     
     // Auto-remove after 5 seconds
@@ -1657,55 +1686,14 @@ export default class extends Controller {
     this.element.appendChild(this.ariaLiveRegion)
   }
   
-  // Show undo notification
+  // Show undo notification — delegates to the shared helper used by
+  // dashboard_inline_actions_controller. The helper builds the full DOM
+  // (including the progressBar target undo_manager_controller writes to
+  // every tick) via createElement + textContent — XSS-safe.
+  // Helper signature: (undoId, timeRemaining, message). Call sites pass
+  // (undoId, message, timeRemaining); we flip here.
   showUndoNotification(undoId, message, timeRemaining) {
-    // Create undo notification element
-    const notificationHtml = `
-      <div class="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 
-                  bg-white rounded-lg shadow-xl border border-slate-200 p-4 
-                  transform transition-all duration-300 slide-in-bottom"
-           data-controller="undo-manager"
-           data-undo-manager-undo-id-value="${undoId}"
-           data-undo-manager-time-remaining-value="${timeRemaining}">
-        <div class="flex items-start justify-between">
-          <div class="flex items-start space-x-3 flex-1">
-            <div class="flex-shrink-0">
-              <svg aria-hidden="true" class="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-              </svg>
-            </div>
-            <div class="flex-1">
-              <p class="text-sm font-medium text-slate-900" data-undo-manager-target="message">
-                ${message}
-              </p>
-              <p class="text-xs text-slate-600 mt-1">
-                Tiempo restante: <span class="font-medium" data-undo-manager-target="timer">${timeRemaining}s</span>
-              </p>
-            </div>
-          </div>
-          <div class="flex items-center space-x-2 ml-4">
-            <button type="button"
-                    class="px-3 py-1.5 text-sm font-medium text-white bg-teal-700 rounded-lg hover:bg-teal-800 transition-colors"
-                    data-undo-manager-target="undoButton"
-                    data-action="click->undo-manager#undo">
-              Deshacer
-            </button>
-            <button type="button"
-                    class="p-1 text-slate-400 hover:text-slate-600 transition-colors"
-                    data-action="click->undo-manager#dismiss">
-              <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-    `
-    
-    // Add notification to page
-    const container = document.createElement('div')
-    container.innerHTML = notificationHtml
-    document.body.appendChild(container.firstElementChild)
+    createUndoNotification(undoId, timeRemaining || 30, message)
   }
   
   // Announce to screen readers

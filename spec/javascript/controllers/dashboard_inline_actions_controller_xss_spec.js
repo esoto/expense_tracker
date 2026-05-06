@@ -12,11 +12,19 @@ import DashboardInlineActionsController from "../../../app/javascript/controller
 
 describe("DashboardInlineActionsController — XSS hardening (PER-543)", () => {
   const XSS_PAYLOAD = '<script>alert(1)</script>'
+  const XSS_SVG     = '<svg/onload="window.__xss = true">'
+  const XSS_IMG     = '<img src=x onerror="window.__xss = true">'
+  const XSS_ENTITY  = '&#60;script&#62;alert(1)&#60;/script&#62;'
   let application
   let element
   let controller
 
   beforeEach(() => {
+    // Sentinel: any DOM payload that gets *executed* (not just inserted as
+    // text) sets this flag. Asserting it stays false defeats the
+    // "jsdom-doesn't-run-scripts" vacuous-pass concern.
+    window.__xss = false
+
     document.body.innerHTML = `
       <div data-controller="dashboard-inline-actions"
            data-dashboard-inline-actions-expense-id-value="42"
@@ -76,6 +84,25 @@ describe("DashboardInlineActionsController — XSS hardening (PER-543)", () => {
       const closeBtn = toast.querySelector('button')
       expect(closeBtn).not.toBeNull()
       expect(closeBtn.getAttribute('onclick')).toBeNull()
+    })
+
+    it("sentinel: <svg/onload> payload does not execute", () => {
+      controller.showToast(XSS_SVG, "warning")
+      expect(window.__xss).toBe(false)
+    })
+
+    it("sentinel: <img onerror> payload does not execute", () => {
+      controller.showToast(XSS_IMG, "warning")
+      expect(window.__xss).toBe(false)
+    })
+
+    it("HTML-entity-encoded payload renders as literal text (no double-decode)", () => {
+      controller.showToast(XSS_ENTITY, "info")
+
+      const toasts = document.querySelectorAll('body > div[class*="fixed"]')
+      const toast = toasts[toasts.length - 1]
+      expect(toast.textContent).toContain(XSS_ENTITY)
+      expect(toast.querySelector('script')).toBeNull()
     })
   })
 })

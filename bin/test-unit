@@ -9,7 +9,7 @@
 # Toggles:
 #   PARALLEL=1  forces parallel even in CI
 #   PARALLEL=0  forces serial even locally
-#   PARALLEL_TEST_PROCESSORS=N  override worker count (default: 4 local, 1 CI)
+#   PARALLEL_TEST_PROCESSORS=N  override worker count (default 4; ignored when running serial)
 
 require 'fileutils'
 
@@ -37,6 +37,8 @@ cmd = if parallel && workers > 1
   # parallel_rspec splits files across N processes, each binding to its
   # own DB suffix (TEST_ENV_NUMBER). --fail-fast doesn't work cross-process,
   # so we drop it from the parallel path.
+  # rspec_opts is interpolated into a single-quoted shell argument below;
+  # keep it free of single quotes / unescaped shell metacharacters.
   rspec_opts = "--tag unit --tag ~slow --format progress --order random"
   "bundle exec parallel_rspec spec/ -n #{workers} -o '#{rspec_opts}'"
 elsif ENV['CI']

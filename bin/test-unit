@@ -1,6 +1,15 @@
 #!/usr/bin/env ruby
 # Fast unit tests for development workflow
 # Only runs tests tagged as :unit or by default (models, controllers, services without integration tags)
+#
+# Local runs default to parallel_rspec across N worker processes for speed.
+# CI stays serial: GitHub Actions runners have ~2 vCPUs and the parallel
+# overhead (process boot + DB pool setup x N) often eats the savings.
+#
+# Toggles:
+#   PARALLEL=1  forces parallel even in CI
+#   PARALLEL=0  forces serial even locally
+#   PARALLEL_TEST_PROCESSORS=N  override worker count (default: 4 local, 1 CI)
 
 require 'fileutils'
 
@@ -11,16 +20,36 @@ Dir.chdir(File.expand_path('..', __dir__))
 ENV['RAILS_ENV'] = 'test'
 ENV['TEST_TIER'] = 'unit'
 
+# Decide parallel vs serial.
+parallel = if ENV.key?('PARALLEL')
+  ENV['PARALLEL'] == '1'
+else
+  !ENV['CI']
+end
+
+workers = (ENV['PARALLEL_TEST_PROCESSORS'] || '4').to_i
+workers = 1 if workers < 1
+
 # Build RSpec command with properly quoted arguments
 # --tag unit: include tests auto-tagged from standard Rails dirs (models, services, controllers, etc.)
 # --tag ~slow: exclude slow tests (system, performance)
-cmd = if ENV['CI']
+cmd = if parallel && workers > 1
+  # parallel_rspec splits files across N processes, each binding to its
+  # own DB suffix (TEST_ENV_NUMBER). --fail-fast doesn't work cross-process,
+  # so we drop it from the parallel path.
+  rspec_opts = "--tag unit --tag ~slow --format progress --order random"
+  "bundle exec parallel_rspec spec/ -n #{workers} -o '#{rspec_opts}'"
+elsif ENV['CI']
   "bundle exec rspec --tag unit --tag ~slow --format progress --fail-fast=10 --order random"
 else
   "bundle exec rspec --tag unit --tag ~slow --format progress --profile=5 --fail-fast=5 --order random"
 end
 
-puts "🧪 Running unit tests (should complete in <30 seconds)..."
+if parallel && workers > 1
+  puts "🧪 Running unit tests in parallel (#{workers} workers)..."
+else
+  puts "🧪 Running unit tests (serial)..."
+end
 puts "Command: #{cmd}"
 puts
 

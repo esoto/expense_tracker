@@ -15,11 +15,14 @@ if ENV['TEST_ENV_NUMBER']
       # These use the base test database directly
       return unless test_number.match?(/\A\d+\z/)
 
-      # Each parallel process gets its own database
+      # `config/database.yml` already interpolates ENV['TEST_ENV_NUMBER']
+      # into the database name, so the resolved value is already the
+      # parallel-worker DB (e.g. expense_tracker_test2). Just re-establish
+      # the connection with tuned pool settings — do NOT append the suffix
+      # a second time, which produced expense_tracker_test2_2 and broke
+      # parallel runs.
       base_config = ActiveRecord::Base.configurations.configs_for(env_name: 'test').first.configuration_hash.dup
-      base_config[:database] = "#{base_config[:database]}_#{test_number.to_i}"
 
-      # Establish connection with the parallel database
       ActiveRecord::Base.establish_connection(
         base_config.merge(
           pool: 5,

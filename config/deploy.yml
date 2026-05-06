@@ -47,6 +47,11 @@ env:
     # Without this the strategy 401s on every call and the circuit-breaker
     # silently degrades to pattern-only categorization (PER-548).
     - ANTHROPIC_API_KEY
+    # Sentry APM/error-tracking DSN (PER-526). Without this the gem stays
+    # inert (no events sent). Store in 1Password:
+    #   op://Personal Brand/Expense Tracker/SENTRY_DSN
+    # and append to .kamal/secrets before deploying.
+    - SENTRY_DSN
     # Hetzner Storage Box credentials for nightly Postgres backup (PER-527).
     # STORAGE_BOX_HOST:    u<id>.your-storagebox.de
     # STORAGE_BOX_USER:    u<id> (the Storage Box username)

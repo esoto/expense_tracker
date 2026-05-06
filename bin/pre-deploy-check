@@ -31,6 +31,7 @@ REQUIRED_SECRETS = %w[
   ADMIN_EMAIL
   ADMIN_PASSWORD
   ANTHROPIC_API_KEY
+  SENTRY_DSN
   STORAGE_BOX_HOST
   STORAGE_BOX_USER
   STORAGE_BOX_SSH_KEY
@@ -159,7 +160,9 @@ if DEPLOY_YML.file?
   # Missing it makes the strategy 401 on every call and silently degrade to
   # pattern-only categorization (PER-548). Treated as a deploy gate so the
   # next contributor can't ship a deploy.yml that drops it.
-  seen = { "ADMIN_EMAIL" => false, "ADMIN_PASSWORD" => false, "ANTHROPIC_API_KEY" => false }
+  # SENTRY_DSN: required for Sentry APM/error-tracking (PER-526). Without it
+  # the gem stays inert and no error events are sent to Sentry.
+  seen = { "ADMIN_EMAIL" => false, "ADMIN_PASSWORD" => false, "ANTHROPIC_API_KEY" => false, "SENTRY_DSN" => false }
   yml.each_line do |line|
     stripped = line.strip
     if stripped.start_with?("secret:")

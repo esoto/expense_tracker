@@ -13,6 +13,15 @@ class Expense < ApplicationRecord
   has_many :pattern_learning_events, dependent: :destroy
   has_many :bulk_operation_items, dependent: :destroy
 
+  # PER-533: raw_email_content holds bank PII (amounts, merchants, account
+  # refs, recipient addresses, transaction times). Encrypt at rest to match
+  # PER-496 parity with EmailParsingFailure.
+  # support_unencrypted_data: true keeps existing plaintext rows readable
+  # until the backfill rake task (encrypt:expense_raw_email) has been run.
+  # TODO(PER-534): Remove support_unencrypted_data once all rows are encrypted
+  # (30+ days after this PR reaches production).
+  encrypts :raw_email_content, support_unencrypted_data: true
+
   # Enums
   enum :currency, { crc: 0, usd: 1, eur: 2 }
   enum :status, { pending: 0, processed: 1, failed: 2, duplicate: 3 }

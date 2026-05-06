@@ -31,6 +31,14 @@ REQUIRED_SECRETS = %w[
   ADMIN_EMAIL
   ADMIN_PASSWORD
   ANTHROPIC_API_KEY
+].freeze
+
+# Secrets the app uses but that are non-fatal at deploy time. Missing
+# entries warn but do not abort, so a feature that hasn't been provisioned
+# yet (Sentry account, Hetzner Storage Box) doesn't block deploys of
+# unrelated PRs. Promote to REQUIRED_SECRETS once the underlying service
+# is live in production and the secret is stable in 1Password.
+RECOMMENDED_SECRETS = %w[
   SENTRY_DSN
   STORAGE_BOX_HOST
   STORAGE_BOX_USER
@@ -125,6 +133,12 @@ if SECRETS_FILE.file?
       failures << "#{key} missing from .kamal/secrets"
     elsif secrets[key].to_s.empty?
       failures << "#{key} present but empty in .kamal/secrets"
+    end
+  end
+  RECOMMENDED_SECRETS.each do |key|
+    if !secrets.key?(key) || secrets[key].to_s.empty?
+      info << "#{key} not set in .kamal/secrets — feature using it (Sentry/Storage Box) " \
+              "will be inert until provisioned. Move to REQUIRED_SECRETS once stable."
     end
   end
   unless unresolved_substitution.empty?

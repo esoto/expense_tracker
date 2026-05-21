@@ -86,7 +86,7 @@ jobs:
 
       - name: Find latest workflow runs for this commit
         id: find-runs
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const sha = '${{ github.event.workflow_run.head_sha }}';

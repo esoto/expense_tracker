@@ -115,6 +115,9 @@ RSpec.describe Api::ClientErrorsController, type: :controller, unit: true do
         expect(details).to be_present
         expect(details).not_to include("\n")
         expect(details).not_to include("\r")
+        # Positive assertion: the legitimate content survives (control chars -> spaces).
+        expect(details).to include("legit")
+        expect(details).to include("forged admin line")
       end
 
       it 'truncates very long fields' do

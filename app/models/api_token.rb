@@ -3,7 +3,6 @@ require "digest"
 class ApiToken < ApplicationRecord
   # Configuration constants
   TOKEN_LENGTH = 32
-  CACHE_KEY_LENGTH = 16
   CACHE_EXPIRY = 1.minute
   attr_accessor :token
 

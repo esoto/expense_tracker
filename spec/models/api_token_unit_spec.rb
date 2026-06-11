@@ -117,7 +117,6 @@ RSpec.describe ApiToken, type: :model, unit: true do
   describe 'constants' do
     it 'defines expected constants' do
       expect(ApiToken::TOKEN_LENGTH).to eq(32)
-      expect(ApiToken::CACHE_KEY_LENGTH).to eq(16)
       expect(ApiToken::CACHE_EXPIRY).to eq(1.minute)
     end
   end

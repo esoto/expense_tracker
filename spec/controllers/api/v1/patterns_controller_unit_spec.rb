@@ -14,6 +14,10 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
     # Return the class itself so the existing .find/.includes stubs below still apply.
     allow(CategorizationPattern).to receive(:usable_by).and_return(CategorizationPattern)
 
+    # #create validates the category through CategoryPolicy.visible_scope(...).exists?.
+    # Default to visible so the create happy-path stubs below exercise the save flow.
+    allow(CategoryPolicy).to receive(:visible_scope).and_return(double("CategoryScope", exists?: true))
+
     # Mock serializer classes
     serializer_module = Module.new
     api_module = Module.new
@@ -53,16 +57,18 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
     let(:mock_patterns) { double("patterns", current_page: 1, total_pages: 1, total_count: 1, limit_value: 10, next_page: nil, prev_page: nil, map: []) }
 
     before do
-      allow(CategorizationPattern).to receive(:includes).and_return(mock_patterns)
+      # index scopes through usable_by(current_api_user); return a chainable double.
+      allow(CategorizationPattern).to receive(:usable_by).and_return(mock_patterns)
       allow(mock_patterns).to receive(:where).and_return(mock_patterns)
       allow(mock_patterns).to receive(:order).and_return(mock_patterns)
       allow(mock_patterns).to receive(:ordered_by_success).and_return(mock_patterns)
+      allow(mock_patterns).to receive(:includes).and_return(mock_patterns)
       allow(controller).to receive(:paginate).and_return(mock_patterns)
       allow(controller).to receive(:render_success).and_return(nil)
     end
 
-    it "includes category associations" do
-      expect(CategorizationPattern).to receive(:includes).with(:category)
+    it "scopes patterns to the token owner (usable_by current_api_user)" do
+      expect(CategorizationPattern).to receive(:usable_by).with(controller.send(:current_api_user)).and_return(mock_patterns)
       get :index
     end
 

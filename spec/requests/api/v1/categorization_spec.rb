@@ -212,9 +212,15 @@ RSpec.describe "Api::V1::Categorization", type: :request, integration: true do
             was_correct: true
           }
         }
+
+        # The controller resolves the pattern via usable_by(...).find_by, which
+        # returns nil for a foreign pattern — so record_feedback gets pattern: nil.
+        allow(PatternFeedback).to receive(:record_feedback).and_call_original
+
         post "/api/v1/categorization/feedback", params: params.to_json, headers: tenant_headers
 
-        # Foreign pattern is scoped out (find_by → nil), so its stats are untouched.
+        expect(PatternFeedback).to have_received(:record_feedback)
+          .with(hash_including(pattern: nil))
         expect(foreign_pattern.reload.usage_count).to eq(0)
       end
     end
@@ -319,6 +325,22 @@ RSpec.describe "Api::V1::Categorization", type: :request, integration: true do
 
       expect(top_categories).to be_an(Array)
       expect(top_categories.first).to include("name", "pattern_count") if top_categories.any?
+    end
+
+    it "does not count another tenant's patterns (cross-tenant isolation)" do
+      non_admin = create(:user)
+      tenant_token = create(:api_token, user: non_admin)
+      tenant_headers = { "Authorization" => "Bearer #{tenant_token.token}", "Content-Type" => "application/json" }
+
+      foreign_category = create(:category, user: create(:user))
+      create_list(:categorization_pattern, 4, category: foreign_category)
+
+      get "/api/v1/categorization/statistics", headers: tenant_headers
+
+      stats = JSON.parse(response.body)["statistics"]
+      # The 4 foreign patterns must be excluded from this tenant's aggregates.
+      expect(stats["total_patterns"]).to eq(CategorizationPattern.usable_by(non_admin).count)
+      expect(stats["total_patterns"]).to be < CategorizationPattern.count
     end
   end
 

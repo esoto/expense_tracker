@@ -177,6 +177,47 @@ RSpec.describe "Api::V1::Categorization", type: :request, integration: true do
         expect(response).to have_http_status(:not_found)
       end
     end
+
+    context "cross-tenant isolation (IDOR)" do
+      let(:non_admin) { create(:user) }
+      let(:tenant_token) { create(:api_token, user: non_admin) }
+      let(:tenant_headers) do
+        { "Authorization" => "Bearer #{tenant_token.token}", "Content-Type" => "application/json" }
+      end
+      let(:tenant_account) { create(:email_account, user: non_admin) }
+      let(:tenant_expense) { create(:expense, user: non_admin, email_account: tenant_account) }
+
+      let(:foreign_user) { create(:user) }
+      let(:foreign_category) { create(:category, user: foreign_user) }
+      let(:foreign_pattern) { create(:categorization_pattern, category: foreign_category) }
+
+      it "rejects feedback referencing another user's category" do
+        params = {
+          feedback: { expense_id: tenant_expense.id, category_id: foreign_category.id, was_correct: true }
+        }
+        expect {
+          post "/api/v1/categorization/feedback", params: params.to_json, headers: tenant_headers
+        }.not_to change(PatternFeedback, :count)
+
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it "ignores another user's pattern_id rather than recording feedback against it" do
+        own_category = create(:category, user: non_admin)
+        params = {
+          feedback: {
+            expense_id: tenant_expense.id,
+            category_id: own_category.id,
+            pattern_id: foreign_pattern.id,
+            was_correct: true
+          }
+        }
+        post "/api/v1/categorization/feedback", params: params.to_json, headers: tenant_headers
+
+        # Foreign pattern is scoped out (find_by → nil), so its stats are untouched.
+        expect(foreign_pattern.reload.usage_count).to eq(0)
+      end
+    end
   end
 
   describe "POST /api/v1/categorization/batch_suggest", integration: true do

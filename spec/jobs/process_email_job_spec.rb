@@ -62,14 +62,22 @@ RSpec.describe ProcessEmailJob, type: :job, integration: true do
         )
       end
 
-      it 'logs email data in debug mode' do
+      it 'logs only non-sensitive email metadata in debug mode' do
         allow(Rails.logger).to receive(:debug)
 
         ProcessEmailJob.new.perform(email_account.id, email_data)
 
         expect(Rails.logger).to have_received(:debug).with(
-          "Email data: #{email_data.inspect}"
+          "Email data: subject=#{email_data[:subject].inspect}, message_id=#{email_data[:message_id].inspect}"
         )
+      end
+
+      it 'never writes the email body (bank PII) to the debug log' do
+        allow(Rails.logger).to receive(:debug)
+
+        ProcessEmailJob.new.perform(email_account.id, email_data)
+
+        expect(Rails.logger).not_to have_received(:debug).with(/#{Regexp.escape(email_data[:body])}/)
       end
 
       it 'creates expense with correct attributes' do

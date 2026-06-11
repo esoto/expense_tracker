@@ -60,8 +60,10 @@ RSpec.describe ProcessEmailJob, type: :job, unit: true do
             job.perform(email_account_id, email_data)
           end
 
-          it 'logs the email data in debug mode' do
-            expect(Rails.logger).to receive(:debug).with("Email data: #{email_data.inspect}")
+          it 'logs only non-sensitive email metadata in debug mode (never the body)' do
+            expect(Rails.logger).to receive(:debug).with(
+              "Email data: subject=#{email_data[:subject].inspect}, message_id=#{email_data[:message_id].inspect}"
+            )
             job.perform(email_account_id, email_data)
           end
 

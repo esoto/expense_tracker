@@ -217,7 +217,7 @@ RSpec.describe ApiToken, type: :model, unit: true do
         end
 
         it 'uses cache with correct key and expiry' do
-          cache_key = "api_token:#{token_hash[0..ApiToken::CACHE_KEY_LENGTH]}"
+          cache_key = "api_token:#{token_hash}"
           expect(Rails.cache).to receive(:fetch).with(cache_key, expires_in: ApiToken::CACHE_EXPIRY)
           ApiToken.authenticate(token_string)
         end
@@ -393,7 +393,7 @@ RSpec.describe ApiToken, type: :model, unit: true do
       it 'handles very long tokens in cache key' do
         very_long_token = 'a' * 1000
         token_hash = Digest::SHA256.hexdigest(very_long_token)
-        cache_key = "api_token:#{token_hash[0..ApiToken::CACHE_KEY_LENGTH]}"
+        cache_key = "api_token:#{token_hash}"
 
         expect(cache_key.length).to be < 250  # Memcached key length limit
       end

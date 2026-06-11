@@ -109,7 +109,7 @@ RSpec.describe ApiToken, type: :model, integration: true do
 
       it 'caches successful authentication' do
         # Verify Rails.cache.fetch is called with correct parameters
-        cache_key = "api_token:#{Digest::SHA256.hexdigest(valid_token.token)[0..16]}"
+        cache_key = "api_token:#{Digest::SHA256.hexdigest(valid_token.token)}"
 
         expect(Rails.cache).to receive(:fetch).with(cache_key, expires_in: 1.minute).and_call_original
         result = ApiToken.authenticate(valid_token.token)

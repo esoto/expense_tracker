@@ -41,8 +41,10 @@ class ApiToken < ApplicationRecord
   def self.authenticate(token_string)
     return nil unless token_string.present?
 
-    # Short-lived cache for successful authentications
-    cache_key = "api_token:#{Digest::SHA256.hexdigest(token_string)[0..CACHE_KEY_LENGTH]}"
+    # Short-lived cache for successful authentications. Key on the FULL SHA256
+    # digest: a truncated key risked two distinct tokens colliding to the same
+    # cache entry and authenticating as the wrong account.
+    cache_key = "api_token:#{Digest::SHA256.hexdigest(token_string)}"
 
     Rails.cache.fetch(cache_key, expires_in: CACHE_EXPIRY) do
       # Use token_hash for quick lookup, then verify with BCrypt

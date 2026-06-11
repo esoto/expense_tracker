@@ -36,11 +36,13 @@ module Api
         validate_feedback_params!
 
         expense = Expense.for_user(current_api_user).find(feedback_params[:expense_id])
-        category = Category.find(feedback_params[:category_id])
+        # PER-security: scope category and pattern to what the token owner can see,
+        # so feedback cannot reference (and poison learning from) another tenant's data.
+        category = CategoryPolicy.visible_scope(current_api_user).find(feedback_params[:category_id])
 
         # Find the pattern that was used (if any)
         pattern = if feedback_params[:pattern_id].present?
-                    CategorizationPattern.find_by(id: feedback_params[:pattern_id])
+                    CategorizationPattern.usable_by(current_api_user).find_by(id: feedback_params[:pattern_id])
         end
 
         # Record the feedback

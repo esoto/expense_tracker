@@ -69,6 +69,16 @@ RSpec.describe Api::SyncSessionsController, type: :controller, integration: true
 
           expect(response).to have_http_status(:unauthorized)
         end
+
+        it 'denies access when no IP was stored (no anonymous fallback)' do
+          # Security: a missing stored IP must NOT grant access. Previously this
+          # let anyone poll a recent session by id and leak account email/bank.
+          sync_session_no_token.update_columns(created_at: 1.hour.ago, metadata: {})
+
+          get :status, params: { id: sync_session_no_token.id }, format: :json
+
+          expect(response).to have_http_status(:unauthorized)
+        end
       end
     end
 

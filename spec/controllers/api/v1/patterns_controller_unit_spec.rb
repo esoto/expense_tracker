@@ -10,6 +10,10 @@ RSpec.describe Api::V1::PatternsController, type: :controller, unit: true do
     allow(controller).to receive(:set_default_headers).and_return(true)
     allow(controller).to receive(:log_request).and_return(true)
 
+    # Patterns are scoped through .usable_by(current_api_user) for tenant isolation.
+    # Return the class itself so the existing .find/.includes stubs below still apply.
+    allow(CategorizationPattern).to receive(:usable_by).and_return(CategorizationPattern)
+
     # Mock serializer classes
     serializer_module = Module.new
     api_module = Module.new

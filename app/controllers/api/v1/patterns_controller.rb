@@ -11,7 +11,10 @@ module Api
 
       # GET /api/v1/patterns
       def index
-        patterns = CategorizationPattern.includes(:category)
+        # PER-security: only patterns whose category the token owner can see
+        # (shared or owned). Prevents cross-tenant pattern enumeration.
+        # PatternSerializer.collection preloads :category, so no .includes here.
+        patterns = CategorizationPattern.usable_by(current_api_user)
 
         # Apply filters
         patterns = filter_patterns(patterns)
@@ -53,6 +56,13 @@ module Api
 
       # POST /api/v1/patterns
       def create
+        # PER-security: a user may only attach a pattern to a category they can
+        # see, preventing writes against another tenant's category. Uses the
+        # canonical CategoryPolicy.visible_scope (same helper as #feedback).
+        unless CategoryPolicy.visible_scope(current_api_user).exists?(id: pattern_params[:category_id])
+          return render_error("Invalid category", [ "Category not found" ], status: :not_found)
+        end
+
         pattern = CategorizationPattern.new(pattern_params)
         pattern.user_created = true
         pattern.confidence_weight ||= 1.0
@@ -102,7 +112,9 @@ module Api
       private
 
       def set_pattern
-        @pattern = CategorizationPattern.find(params[:id])
+        # PER-security: scope by category ownership so show/update/destroy cannot
+        # reach another tenant's pattern. Not-found is handled by BaseController.
+        @pattern = CategorizationPattern.usable_by(current_api_user).find(params[:id])
       end
 
       def pattern_params

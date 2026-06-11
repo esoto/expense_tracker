@@ -52,7 +52,10 @@ RSpec.describe Api::V1::CategorizationController, type: :controller, unit: true 
       expense_scope = double("ExpenseScope")
       allow(Expense).to receive(:for_user).with(user_double).and_return(expense_scope)
       allow(expense_scope).to receive(:find).and_return(expense)
-      allow(Category).to receive(:find).and_return(category)
+      # Category is now resolved through the user-visible scope for tenant isolation.
+      category_scope = double("CategoryScope")
+      allow(CategoryPolicy).to receive(:visible_scope).with(user_double).and_return(category_scope)
+      allow(category_scope).to receive(:find).and_return(category)
       allow(PatternFeedback).to receive(:record_feedback).and_return(double(improvement_suggestion: "Test"))
       allow(categorization_service).to receive(:learn_from_feedback)
       allow(controller).to receive(:serialize_feedback).and_return({})

@@ -67,15 +67,13 @@ module Api
         return true
       end
 
-      # Check IP address for recent sessions (when no token)
+      # Legacy fallback for token-less sessions: match on the originating IP.
+      # PER-security: a missing stored IP must NOT grant access — that previously
+      # let anyone poll a recent session by guessing its sequential id and leaked
+      # the account email/bank. Require a stored IP that matches the requester.
       if @sync_session.created_at > 24.hours.ago
         stored_ip = @sync_session.metadata&.dig("ip_address")
-        current_ip = request.remote_ip
-
-        # Allow if no IP stored (backward compatibility) OR if stored IP matches current
-        if stored_ip.nil? || stored_ip == current_ip
-          return true
-        end
+        return true if stored_ip.present? && stored_ip == request.remote_ip
       end
 
       false

@@ -9,18 +9,23 @@ module Api
     # POST /api/client_errors
     # Receives error reports from client-side JavaScript
     # Requires a valid user session to prevent unauthenticated log flooding
+    # Cap on any single client-supplied string written to logs/DB.
+    MAX_FIELD_LENGTH = 2_000
+
     def create
-      # Parse error data
+      # Parse error data. Client-supplied strings are sanitized to strip control
+      # characters (CR/LF) — otherwise an attacker could inject forged lines into
+      # the production log — and truncated to bound log volume (CWE-117).
       error_data = {
-        message: params[:message],
-        data: params[:data],
-        session_id: params[:sessionId],
-        timestamp: params[:timestamp],
-        user_agent: params[:userAgent],
-        url: params[:url],
+        message: sanitize_field(params[:message]),
+        data: sanitize_field(params[:data]),
+        session_id: sanitize_field(params[:sessionId]),
+        timestamp: sanitize_field(params[:timestamp]),
+        user_agent: sanitize_field(params[:userAgent]),
+        url: sanitize_field(params[:url]),
         error_count: params[:errorCount],
-        polling_mode: params[:pollingMode],
-        connection_state: params[:connectionState],
+        polling_mode: sanitize_field(params[:pollingMode]),
+        connection_state: sanitize_field(params[:connectionState]),
         ip_address: request.remote_ip,
         reported_at: Time.current
       }
@@ -60,6 +65,14 @@ module Api
       return if user_signed_in?
 
       render json: { error: "Authentication required" }, status: :unauthorized
+    end
+
+    # Strip control characters (including CR/LF to prevent log injection) and
+    # truncate. Non-string values are coerced to string first; nil stays nil.
+    def sanitize_field(value)
+      return nil if value.nil?
+
+      value.to_s.gsub(/[[:cntrl:]]/, " ").truncate(MAX_FIELD_LENGTH)
     end
   end
 end

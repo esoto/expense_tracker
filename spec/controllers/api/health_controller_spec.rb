@@ -257,15 +257,17 @@ RSpec.describe Api::HealthController, type: :controller, unit: true do
       expect(system["database_pool"]["idle"]).to eq(1)
     end
 
-    it "handles metrics collection errors gracefully" do
+    it "handles metrics collection errors gracefully without leaking the exception message" do
       allow(controller).to receive(:collect_metrics).and_raise(StandardError, "Metrics error")
+      expect(Rails.logger).to receive(:error).with(/Metrics error/)
 
       get :metrics
 
       expect(response).to have_http_status(:internal_server_error)
       json_response = JSON.parse(response.body)
       expect(json_response["error"]).to eq("Failed to collect metrics")
-      expect(json_response["message"]).to eq("Metrics error")
+      # Security: internal exception text must not be echoed to the client.
+      expect(json_response).not_to have_key("message")
     end
 
     context "authentication" do

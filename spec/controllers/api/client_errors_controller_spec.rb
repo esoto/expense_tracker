@@ -101,6 +101,37 @@ RSpec.describe Api::ClientErrorsController, type: :controller, unit: true do
       post :create, params: error_params, format: :json
     end
 
+    context 'with malicious / oversized input (log injection)' do
+      it 'strips control characters (CR/LF) from logged fields' do
+        logged = []
+        allow(Rails.logger).to receive(:error) { |msg| logged << msg }
+
+        post :create,
+             params: { message: "legit\r\n[CLIENT_ERROR] forged admin line", data: "x" },
+             format: :json
+
+        expect(response).to have_http_status(:ok)
+        details = logged.find { |m| m.include?('Details:') }
+        expect(details).to be_present
+        expect(details).not_to include("\n")
+        expect(details).not_to include("\r")
+        # Positive assertion: the legitimate content survives (control chars -> spaces).
+        expect(details).to include("legit")
+        expect(details).to include("forged admin line")
+      end
+
+      it 'truncates very long fields' do
+        logged = []
+        allow(Rails.logger).to receive(:error) { |msg| logged << msg }
+
+        post :create, params: { message: 'A' * 10_000, data: 'x' }, format: :json
+
+        expect(response).to have_http_status(:ok)
+        # The message field is capped well below its raw 10k length.
+        expect(logged.any? { |m| m.include?('A' * 9_000) }).to be false
+      end
+    end
+
     context 'with minimal parameters' do
       it 'still accepts the error report' do
         post :create, params: { message: 'Test error' }, format: :json

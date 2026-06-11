@@ -285,16 +285,16 @@ RSpec.describe Api::SyncSessionsController, type: :controller, unit: true do
           end
         end
 
-        context "with no stored IP (backward compatibility)" do
+        context "with no stored IP" do
           before do
             allow(session).to receive(:[]).with(:sync_session_id).and_return(nil)
             allow(sync_session).to receive(:created_at).and_return(1.hour.ago)
             allow(sync_session).to receive(:metadata).and_return(nil)
           end
 
-          it "returns true" do
+          it "returns false (no anonymous fallback — prevents IDOR)" do
             result = controller.send(:can_access_sync_session?)
-            expect(result).to be true
+            expect(result).to be false
           end
         end
 

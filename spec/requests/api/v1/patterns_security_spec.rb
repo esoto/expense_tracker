@@ -69,6 +69,22 @@ RSpec.describe "Api::V1::Patterns Security", type: :request, integration: true d
         expect(response).to have_http_status(:unauthorized)
       end
     end
+
+    context "when the token owner's account is locked" do
+      let(:token) { create(:api_token) }
+
+      before { token.user.lock_account! }
+
+      it "returns 401 and does not execute the action" do
+        create(:categorization_pattern, category: category)
+        get "/api/v1/patterns", headers: { "Authorization" => "Bearer #{token.token}" }
+
+        expect(response).to have_http_status(:unauthorized)
+        expect(JSON.parse(response.body)["error"]).to eq("Token owner account is unavailable")
+        # Action body must not run: no patterns payload is rendered.
+        expect(JSON.parse(response.body)).not_to have_key("patterns")
+      end
+    end
   end
 
   describe "Token BCrypt verification", integration: true do
@@ -143,6 +159,50 @@ RSpec.describe "Api::V1::Patterns Security", type: :request, integration: true d
       json = JSON.parse(response.body)
       # Pattern values are normalized to lowercase for consistent matching
       expect(json["pattern"]["pattern_value"]).to eq("<script>alert('xss')</script>")
+    end
+  end
+
+  describe "Cross-tenant isolation (IDOR)", integration: true do
+    let(:other_user) { create(:user) }
+    let(:other_category) { create(:category, user: other_user) }
+    let(:other_pattern) { create(:categorization_pattern, category: other_category) }
+
+    let(:token) { create(:api_token, user: create(:user)) }
+    let(:headers) do
+      { "Authorization" => "Bearer #{token.token}", "Content-Type" => "application/json" }
+    end
+
+    it "does not include another user's patterns in index" do
+      other_pattern # create it
+      get "/api/v1/patterns", headers: headers
+      expect(response).to have_http_status(:ok)
+      ids = JSON.parse(response.body)["patterns"].map { |p| p["id"] }
+      expect(ids).not_to include(other_pattern.id)
+    end
+
+    it "returns 404 when showing another user's pattern" do
+      get "/api/v1/patterns/#{other_pattern.id}", headers: headers
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "returns 404 when updating another user's pattern" do
+      patch "/api/v1/patterns/#{other_pattern.id}",
+            params: { pattern: { confidence_weight: 5.0 } }.to_json, headers: headers
+      expect(response).to have_http_status(:not_found)
+      expect(other_pattern.reload.confidence_weight).to eq(1.0)
+    end
+
+    it "returns 404 when deleting (deactivating) another user's pattern" do
+      delete "/api/v1/patterns/#{other_pattern.id}", headers: headers
+      expect(response).to have_http_status(:not_found)
+      expect(other_pattern.reload.active).to be true
+    end
+
+    it "rejects creating a pattern on another user's category" do
+      post "/api/v1/patterns",
+           params: { pattern: { pattern_type: "merchant", pattern_value: "x", category_id: other_category.id } }.to_json,
+           headers: headers
+      expect(response).to have_http_status(:not_found)
     end
   end
 

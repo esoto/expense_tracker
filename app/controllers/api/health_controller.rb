@@ -66,9 +66,10 @@ module Api
 
       render json: metrics, status: :ok
     rescue => e
+      # Log internals server-side; never echo exception text to the client.
+      Rails.logger.error "[HEALTH] Failed to collect metrics: #{e.class}: #{e.message}"
       render json: {
-        error: "Failed to collect metrics",
-        message: e.message
+        error: "Failed to collect metrics"
       }, status: :internal_server_error
     end
 

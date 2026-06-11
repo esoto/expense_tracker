@@ -36,11 +36,13 @@ module Api
         validate_feedback_params!
 
         expense = Expense.for_user(current_api_user).find(feedback_params[:expense_id])
-        category = Category.find(feedback_params[:category_id])
+        # PER-security: scope category and pattern to what the token owner can see,
+        # so feedback cannot reference (and poison learning from) another tenant's data.
+        category = CategoryPolicy.visible_scope(current_api_user).find(feedback_params[:category_id])
 
         # Find the pattern that was used (if any)
         pattern = if feedback_params[:pattern_id].present?
-                    CategorizationPattern.find_by(id: feedback_params[:pattern_id])
+                    CategorizationPattern.usable_by(current_api_user).find_by(id: feedback_params[:pattern_id])
         end
 
         # Record the feedback
@@ -83,23 +85,26 @@ module Api
 
       # GET /api/v1/categorization/statistics
       def statistics
-        # CategorizationPattern is global reference data (shared across users,
-        # same posture as Category). PatternFeedback holds per-user signals
-        # (PR 9 added user_id), so it must be scoped to the token owner.
+        # PER-security: scope pattern aggregates to what the token owner can see
+        # (shared + own, via category ownership). Patterns can be tenant-owned
+        # (a user creates one on a personal category), so global counts would
+        # leak the existence/shape of other tenants' patterns. PatternFeedback
+        # holds per-user signals and is scoped to the token owner.
+        patterns = CategorizationPattern.usable_by(current_api_user)
         user_feedback = PatternFeedback.for_user(current_api_user)
 
         stats = {
-          total_patterns: CategorizationPattern.count,
-          active_patterns: CategorizationPattern.active.count,
-          user_created_patterns: CategorizationPattern.user_created.count,
-          high_confidence_patterns: CategorizationPattern.high_confidence.count,
-          successful_patterns: CategorizationPattern.successful.count,
-          frequently_used_patterns: CategorizationPattern.frequently_used.count,
+          total_patterns: patterns.count,
+          active_patterns: patterns.active.count,
+          user_created_patterns: patterns.user_created.count,
+          high_confidence_patterns: patterns.high_confidence.count,
+          successful_patterns: patterns.successful.count,
+          frequently_used_patterns: patterns.frequently_used.count,
           recent_feedback_count: user_feedback.where(created_at: 7.days.ago..).count,
           feedback_by_type: user_feedback.group(:feedback_type).count,
-          average_success_rate: CategorizationPattern.active.average(:success_rate)&.round(3) || 0,
-          patterns_by_type: CategorizationPattern.group(:pattern_type).count,
-          top_categories: top_categorized_categories
+          average_success_rate: patterns.active.average(:success_rate)&.round(3) || 0,
+          patterns_by_type: patterns.group(:pattern_type).count,
+          top_categories: top_categorized_categories(current_api_user)
         }
 
         render_success({ statistics: stats })
@@ -238,8 +243,9 @@ module Api
         CategorizationSerializer.feedback(feedback)
       end
 
-      def top_categorized_categories(limit = 5)
+      def top_categorized_categories(user, limit = 5)
         Category
+          .visible_to(user)
           .joins("LEFT JOIN categorization_patterns ON categorization_patterns.category_id = categories.id")
           .group("categories.id", "categories.name")
           .order("COUNT(categorization_patterns.id) DESC")

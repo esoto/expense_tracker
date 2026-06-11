@@ -21,7 +21,9 @@ class ProcessEmailJob < ApplicationJob
     end
 
     Rails.logger.info "Processing individual email for: #{email_account.email}"
-    Rails.logger.debug "Email data: #{email_data.inspect}"
+    # Do NOT log email_data.inspect — the :body contains plaintext bank PII and is
+    # a plain Hash, so filter_parameters/filter_attributes do not redact it.
+    Rails.logger.debug "Email data: subject=#{email_data&.dig(:subject).inspect}, message_id=#{email_data&.dig(:message_id).inspect}"
 
     # Use explicit sync session ID instead of global lookup
     sync_session = sync_session_id ? SyncSession.find_by(id: sync_session_id) : nil

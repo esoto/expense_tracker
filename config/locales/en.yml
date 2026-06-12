@@ -178,6 +178,16 @@ en:
       email: "Verify that your email credentials are correct."
       parsing: "Some emails could not be processed. Contact support if this persists."
 
+  # Actions
+  actions:
+    retry: "Retry"
+    dismiss: "Dismiss"
+    reload: "Reload page"
+    check_connection: "Check connection"
+    contact_support: "Contact support"
+    view_details: "View details"
+    report_issue: "Report issue"
+
   # Email accounts
   email_accounts:
     index:

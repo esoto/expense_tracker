@@ -4,7 +4,7 @@ require "rails_helper"
 
 RSpec.describe SyncSessionsHelper, type: :helper, unit: true do
   describe "#sync_widget_messages", unit: true do
-    subject(:messages) { helper.sync_widget_messages }
+    subject(:messages) { I18n.with_locale(:es) { helper.sync_widget_messages } }
 
     it "returns a hash with exactly the expected top-level keys" do
       expect(messages.keys).to contain_exactly(
@@ -12,15 +12,29 @@ RSpec.describe SyncSessionsHelper, type: :helper, unit: true do
       )
     end
 
-    describe "I18n values — Spanish locale (default)", unit: true do
+    describe "namespace completeness across locales", unit: true do
+      # Guards against a namespace missing in one locale: I18n.t on a missing
+      # namespace returns a "translation missing" String, which would silently
+      # serialize into the widget JSON and break every JS lookup.
+      I18n.available_locales.each do |locale|
+        it "returns a Hash for every namespace in #{locale}" do
+          I18n.with_locale(locale) do
+            helper.sync_widget_messages.each do |namespace, value|
+              expect(value).to be_a(Hash), "expected #{locale}.#{namespace} to be a Hash, got: #{value.inspect}"
+              expect(value).not_to be_empty
+            end
+          end
+        end
+      end
+    end
+
+    describe "I18n values — Spanish locale", unit: true do
       it "returns the Spanish sync.email_connection string" do
-        expect(messages[:sync][:email_connection]).to eq(
-          I18n.t("errors.sync.email_connection")
-        )
+        expect(messages[:sync][:email_connection]).to eq("No se pudo conectar con el servidor de correo")
       end
 
-      it "returns a non-empty String for sync.email_connection" do
-        expect(messages[:sync][:email_connection]).to be_a(String).and be_present
+      it "returns the Spanish retry action label" do
+        expect(messages[:actions][:retry]).to eq("Reintentar")
       end
     end
 
@@ -28,19 +42,11 @@ RSpec.describe SyncSessionsHelper, type: :helper, unit: true do
       subject(:en_messages) { I18n.with_locale(:en) { helper.sync_widget_messages } }
 
       it "returns the English sync.email_connection string" do
-        expect(en_messages[:sync][:email_connection]).to eq(
-          I18n.t("errors.sync.email_connection", locale: :en)
-        )
+        expect(en_messages[:sync][:email_connection]).to eq("Could not connect to email server")
       end
 
-      it "returns a non-empty String for sync.email_connection in English" do
-        expect(en_messages[:sync][:email_connection]).to be_a(String).and be_present
-      end
-
-      it "returns a different string than Spanish for sync.email_connection" do
-        es_value = I18n.with_locale(:es) { helper.sync_widget_messages[:sync][:email_connection] }
-        en_value = en_messages[:sync][:email_connection]
-        expect(en_value).not_to eq(es_value)
+      it "returns the English retry action label" do
+        expect(en_messages[:actions][:retry]).to eq("Retry")
       end
     end
 
@@ -59,18 +65,12 @@ RSpec.describe SyncSessionsHelper, type: :helper, unit: true do
     end
 
     describe "JSON round-trip", unit: true do
-      it "serializes and deserializes without error" do
-        expect { JSON.parse(messages.to_json) }.not_to raise_error
-      end
-
-      it "round-tripped JSON contains 'status' key" do
+      it "round-trips through JSON with all namespaces intact as objects" do
         parsed = JSON.parse(messages.to_json)
-        expect(parsed).to have_key("status")
-      end
-
-      it "round-tripped JSON contains 'connection' key" do
-        parsed = JSON.parse(messages.to_json)
-        expect(parsed).to have_key("connection")
+        expect(parsed.keys).to contain_exactly(
+          "connection", "auth", "server", "recovery", "sync", "generic", "suggestions", "actions", "status"
+        )
+        expect(parsed.values).to all(be_a(Hash))
       end
     end
   end

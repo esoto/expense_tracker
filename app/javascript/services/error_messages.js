@@ -18,13 +18,22 @@ export class ErrorMessages {
       if (!el) return {}
       const raw = el.getAttribute('data-sync-widget-messages-value')
       if (!raw) return {}
-      this._messages = JSON.parse(raw)
+      const parsed = JSON.parse(raw)
+      if (!parsed || typeof parsed !== 'object') return {}
+      this._messages = parsed
       return this._messages
-    } catch (_) {
+    } catch (error) {
       // Parse failed — do not cache so we retry on next lookup (widget may
       // not yet be in the DOM on first call).
+      console.error("ErrorMessages: failed to parse data-sync-widget-messages-value", error)
       return {}
     }
+  }
+
+  // Drop the cached translations (e.g. after a Turbo navigation, where the
+  // page may have re-rendered with a different locale).
+  reset() {
+    this._messages = null
   }
 
   // ---------------------------------------------------------------------------
@@ -98,4 +107,10 @@ export class ErrorMessages {
 }
 
 // Export singleton instance
-export default new ErrorMessages()
+const errorMessages = new ErrorMessages()
+
+// The singleton survives Turbo navigations; the locale (and thus the rendered
+// messages attribute) can change mid-session via the locale switcher.
+document.addEventListener("turbo:load", () => errorMessages.reset())
+
+export default errorMessages

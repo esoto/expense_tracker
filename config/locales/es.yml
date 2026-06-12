@@ -124,7 +124,33 @@ es:
       recovered: "Conexión recuperada"
       switching_mode: "Cambiando a modo alternativo"
       degraded_mode: "Modo limitado activo"
-      
+
+    sync:
+      email_connection: "No se pudo conectar con el servidor de correo"
+      email_auth: "Error de autenticación con el correo. Verifica tus credenciales"
+      rate_limit: "Demasiadas solicitudes. Esperando antes de continuar..."
+      parsing_error: "Error al procesar los correos electrónicos"
+      duplicate_detected: "Se detectaron transacciones duplicadas"
+      no_emails: "No se encontraron correos nuevos para sincronizar"
+      account_locked: "La cuenta de correo está bloqueada temporalmente"
+      quota_exceeded: "Se excedió el límite de sincronización diario"
+      processing_error: "Error al procesar las transacciones"
+      invalid_format: "Formato de correo no reconocido"
+
+    generic:
+      network: "Error de conexión. Por favor, intenta de nuevo."
+      server: "Error del servidor. Por favor, intenta más tarde."
+      client: "Error en la aplicación. Por favor, recarga la página."
+      unknown: "Ocurrió un error inesperado."
+
+    suggestions:
+      network: "Verifica tu conexión a internet e intenta de nuevo."
+      auth: "Por favor, recarga la página e inicia sesión nuevamente."
+      rate_limit: "Espera unos minutos antes de intentar de nuevo."
+      server: "El problema es temporal. Intenta de nuevo en unos minutos."
+      email: "Verifica que las credenciales del correo sean correctas."
+      parsing: "Algunos correos no pudieron ser procesados. Contacta soporte si persiste."
+
   # Actions
   actions:
     retry: "Reintentar"

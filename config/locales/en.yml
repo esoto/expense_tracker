@@ -152,6 +152,42 @@ en:
       switching_mode: "Switching to alternate mode"
       degraded_mode: "Limited mode active"
 
+    sync:
+      email_connection: "Could not connect to email server"
+      email_auth: "Email authentication error. Check your credentials"
+      rate_limit: "Too many requests. Waiting before continuing..."
+      parsing_error: "Error processing emails"
+      duplicate_detected: "Duplicate transactions detected"
+      no_emails: "No new emails found to sync"
+      account_locked: "Email account is temporarily locked"
+      quota_exceeded: "Daily sync limit exceeded"
+      processing_error: "Error processing transactions"
+      invalid_format: "Unrecognized email format"
+
+    generic:
+      network: "Connection error. Please try again."
+      server: "Server error. Please try again later."
+      client: "Application error. Please reload the page."
+      unknown: "An unexpected error occurred."
+
+    suggestions:
+      network: "Check your internet connection and try again."
+      auth: "Please reload the page and log in again."
+      rate_limit: "Wait a few minutes before trying again."
+      server: "This is a temporary issue. Try again in a few minutes."
+      email: "Verify that your email credentials are correct."
+      parsing: "Some emails could not be processed. Contact support if this persists."
+
+  # Actions
+  actions:
+    retry: "Retry"
+    dismiss: "Dismiss"
+    reload: "Reload page"
+    check_connection: "Check connection"
+    contact_support: "Contact support"
+    view_details: "View details"
+    report_issue: "Report issue"
+
   # Email accounts
   email_accounts:
     index:

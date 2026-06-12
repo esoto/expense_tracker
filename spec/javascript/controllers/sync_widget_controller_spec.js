@@ -44,10 +44,11 @@ describe("SyncWidgetController", () => {
   beforeEach(() => {
     // Setup DOM
     document.body.innerHTML = `
-      <div data-controller="sync-widget" 
+      <div data-controller="sync-widget"
            data-sync-widget-session-id-value="123"
            data-sync-widget-active-value="true"
-           data-sync-widget-debug-value="false">
+           data-sync-widget-debug-value="false"
+           data-sync-widget-messages-value='{"status":{"connecting":"Conectando...","connected":"Conectado","disconnected":"Desconectado"},"connection":{"lost":"Se perdió la conexión con el servidor"}}'>
         <div data-sync-widget-target="progressBar"></div>
         <div data-sync-widget-target="progressPercentage">0%</div>
         <div data-sync-widget-target="processedCount">0</div>

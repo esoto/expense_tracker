@@ -6,6 +6,7 @@
        data-sync-widget-session-token-value="<%= @active_sync_session&.session_token %>"
        data-sync-widget-active-value="<%= @active_sync_session.present? %>"
        data-sync-widget-websocket-url-value="<%= Rails.application.config.action_cable.url %>"
+       data-sync-widget-messages-value='<%= sync_widget_messages.to_json %>'
        <% if @active_sync_session.present? %>data-sync-widget-enable-websocket-value="true"<% else %>data-sync-widget-enable-websocket-value="false"<% end %>>
 
     <template data-sync-widget-target="iconProcessing">

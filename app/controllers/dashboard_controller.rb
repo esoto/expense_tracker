@@ -5,6 +5,11 @@ class DashboardController < ApplicationController
     @period = VALID_PERIODS.include?(params[:period]) ? params[:period] : "month"
     @primary_email_account = EmailAccount.active.first
 
+    # Drives the shared "needs attention" alert banner when the linked
+    # external budget source (e.g., salary_calculator) is deactivated or its
+    # last scheduled sync failed.
+    @external_budget_source = @primary_email_account&.external_budget_source
+
     if @primary_email_account
       calculator_period, reference_date = period_calculator_args(@period)
 

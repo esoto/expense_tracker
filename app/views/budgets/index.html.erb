@@ -1,5 +1,7 @@
 <%# Budget management page %>
 <div class="container mx-auto px-4 py-8">
+  <%= render "shared/external_source_alert", source: @external_budget_source %>
+
   <div class="flex justify-between items-center mb-6">
     <h1 class="text-3xl font-bold text-slate-900"><%= t("budgets.index.title") %></h1>
     <%= link_to t("budgets.index.new_budget"), new_budget_path,

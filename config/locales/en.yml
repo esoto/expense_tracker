@@ -1094,3 +1094,9 @@ en:
     state_expired: "Link request expired — please try again"
     exchange_failed: "Could not exchange authorization — please reconnect"
     no_account: "Add an email account first"
+    alert:
+      reconnect_required_title: "Reconnect required"
+      reconnect_required_body: "Your salary_calc connection was disconnected. Reconnect to resume automatic budget syncing."
+      sync_failed_title: "Last sync failed"
+      sync_failed_body: "The last sync from salary_calc failed. It will retry automatically, or you can check the connection now."
+      cta: "Manage connection"

@@ -1098,3 +1098,9 @@ es:
     state_expired: "La solicitud expiró — intentá de nuevo"
     exchange_failed: "No se pudo intercambiar la autorización — reconectá por favor"
     no_account: "Agregá primero una cuenta de correo"
+    alert:
+      reconnect_required_title: "Requiere reconexión"
+      reconnect_required_body: "Tu conexión con salary_calc se desconectó. Reconectá para reanudar la sincronización automática del presupuesto."
+      sync_failed_title: "La última sincronización falló"
+      sync_failed_body: "La última sincronización con salary_calc falló. Se reintentará automáticamente, o podés revisar la conexión ahora."
+      cta: "Gestionar conexión"

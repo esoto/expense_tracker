@@ -22,6 +22,14 @@ class ExternalBudgetSource < ApplicationRecord
 
   scope :active, -> { where(active: true) }
 
+  # True when the source is silently broken and needs a human to look at it:
+  # either deactivated (e.g., revoked credentials) or the last scheduled sync
+  # failed while the source is still nominally active (transient error).
+  # Drives the dashboard/budgets alert banner (PER-365-follow-up).
+  def needs_attention?
+    !active? || last_sync_status == STATUSES[:failed]
+  end
+
   def mark_succeeded!
     update!(last_synced_at: Time.current, last_sync_status: STATUSES[:ok], last_sync_error: nil)
   end

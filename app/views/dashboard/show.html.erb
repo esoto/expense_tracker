@@ -2,6 +2,8 @@
   <%# === Header === %>
   <%= render "dashboard/header" %>
 
+  <%= render "shared/external_source_alert", source: @external_budget_source %>
+
   <%= turbo_frame_tag "dashboard-body" do %>
     <%# === Period Selector (inside frame so active state updates) === %>
     <%= render "dashboard/period_selector", period: @period %>

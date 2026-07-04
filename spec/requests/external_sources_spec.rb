@@ -52,7 +52,7 @@ RSpec.describe "ExternalSources", type: :request do
         get external_source_path
         expect(response).to have_http_status(:ok)
         expect(response.body).to include(I18n.t("external_sources.reconnect_required"))
-        expect(response.body).to match(/bg-amber-|text-amber-|border-amber-/)
+        expect(response.body).to match(/bg-rose-|text-rose-|border-rose-/)
       end
     end
   end

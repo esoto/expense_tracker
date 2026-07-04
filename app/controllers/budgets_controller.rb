@@ -21,9 +21,11 @@ class BudgetsController < ApplicationController
     @category_options = Category.all.distinct.to_a
 
     # Whether an active external budget source (e.g., salary_calculator) is linked.
-    # Drives the empty-state CTA and sync-in-progress messaging.
+    # Drives the empty-state CTA, sync-in-progress messaging, and the
+    # shared "needs attention" alert banner (deactivated / sync failed).
     email_account = scoping_user.email_accounts.first
-    @has_external_source = email_account&.external_budget_source&.active? || false
+    @external_budget_source = email_account&.external_budget_source
+    @has_external_source = @external_budget_source&.active? || false
 
     # Salary-bucket rollup (fixed / guilt_free / savings / investment).
     # Scoped to the user's first email_account to match the rest of the index.

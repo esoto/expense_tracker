@@ -339,6 +339,106 @@ RSpec.describe Services::ExternalBudgets::SyncService, :unit do
       end
     end
 
+    context "salary_bucket auto-mapping" do
+      %w[fixed guilt_free savings].each do |category|
+        it "maps remote category #{category.inspect} to the same salary_bucket on create" do
+          stub_request(:get, path)
+            .to_return(status: 200, body: payload([ rent_item.merge(category: category) ]),
+                       headers: { "Content-Type" => "application/json" })
+
+          service.call
+
+          budget = account.budgets.find_by(external_source: "salary_calculator", external_id: 101)
+          expect(budget.salary_bucket).to eq(category)
+        end
+      end
+
+      it "maps remote category \"investments\" to the singular salary_bucket \"investment\"" do
+        stub_request(:get, path)
+          .to_return(status: 200, body: payload([ rent_item.merge(category: "investments") ]),
+                     headers: { "Content-Type" => "application/json" })
+
+        service.call
+
+        budget = account.budgets.find_by(external_source: "salary_calculator", external_id: 101)
+        expect(budget.salary_bucket).to eq("investment")
+      end
+
+      it "backfills salary_bucket on an existing row that was never bucketed" do
+        existing = account.budgets.create!(
+          user: account.user,
+          name: "Rent",
+          amount: 800.0,
+          currency: "USD",
+          period: :monthly,
+          start_date: period_start,
+          end_date: period_end,
+          external_source: "salary_calculator",
+          external_id: 101,
+          salary_bucket: nil,
+          active: true,
+          external_synced_at: 1.day.ago
+        )
+
+        stub_request(:get, path)
+          .to_return(status: 200, body: payload([ rent_item.merge(category: "fixed") ]),
+                     headers: { "Content-Type" => "application/json" })
+
+        service.call
+
+        expect(existing.reload.salary_bucket).to eq("fixed")
+      end
+
+      it "preserves a manually set salary_bucket on re-sync even if the remote category differs" do
+        existing = account.budgets.create!(
+          user: account.user,
+          name: "Rent",
+          amount: 800.0,
+          currency: "USD",
+          period: :monthly,
+          start_date: period_start,
+          end_date: period_end,
+          external_source: "salary_calculator",
+          external_id: 101,
+          salary_bucket: :savings,
+          active: true,
+          external_synced_at: 1.day.ago
+        )
+
+        stub_request(:get, path)
+          .to_return(status: 200, body: payload([ rent_item.merge(category: "fixed") ]),
+                     headers: { "Content-Type" => "application/json" })
+
+        service.call
+
+        expect(existing.reload.salary_bucket).to eq("savings")
+      end
+
+      it "leaves salary_bucket nil for an unknown remote category, without raising" do
+        stub_request(:get, path)
+          .to_return(status: 200, body: payload([ rent_item.merge(category: "variable") ]),
+                     headers: { "Content-Type" => "application/json" })
+
+        expect { service.call }.not_to raise_error
+
+        budget = account.budgets.find_by(external_source: "salary_calculator", external_id: 101)
+        expect(budget.salary_bucket).to be_nil
+      end
+
+      it "leaves salary_bucket nil when the remote category is missing, without raising" do
+        item_without_category = rent_item.except(:category)
+
+        stub_request(:get, path)
+          .to_return(status: 200, body: payload([ item_without_category ]),
+                     headers: { "Content-Type" => "application/json" })
+
+        expect { service.call }.not_to raise_error
+
+        budget = account.budgets.find_by(external_source: "salary_calculator", external_id: 101)
+        expect(budget.salary_bucket).to be_nil
+      end
+    end
+
     context "when source.last_synced_at is present" do
       let(:since) { Time.parse("2026-04-10T00:00:00Z") }
 

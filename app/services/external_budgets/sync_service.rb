@@ -21,6 +21,17 @@ module Services
       SOURCE_KEY = "salary_calculator"
       ALLOWED_CURRENCIES = %w[CRC USD EUR].freeze
 
+      # Remote `category` values (salary_calculator enum) => local Budget#salary_bucket
+      # enum values. Note the singular/plural mismatch: remote "investments" maps to
+      # the local singular "investment". Unknown/missing remote values are intentionally
+      # left out — lookups miss and salary_bucket stays nil (see #upsert_budget).
+      SALARY_BUCKET_MAP = {
+        "fixed" => "fixed",
+        "guilt_free" => "guilt_free",
+        "savings" => "savings",
+        "investments" => "investment"
+      }.freeze
+
       class InvalidPayload < StandardError; end
 
       def initialize(source:)
@@ -105,6 +116,15 @@ module Services
           active: true,
           external_synced_at: Time.current
         )
+        # Auto-map the remote category to salary_bucket only when the local value
+        # is nil. Unlike category_id (which sync never writes at all), this WILL
+        # re-apply a bucket on the next sync if a user deliberately clears it on
+        # an external budget — accepted tradeoff so existing unmapped rows get
+        # backfilled automatically.
+        if budget.salary_bucket.nil?
+          mapped_bucket = SALARY_BUCKET_MAP[item["category"].to_s]
+          budget.salary_bucket = mapped_bucket if mapped_bucket
+        end
         budget.save!
       end
     end

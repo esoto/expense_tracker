@@ -116,11 +116,11 @@ module Services
           active: true,
           external_synced_at: Time.current
         )
-        # Only auto-map salary_bucket when it isn't already set — same
-        # never-overwrite property as category_id above, so manual bucket
-        # assignments (and buckets set by a prior sync) survive re-sync.
-        # Unknown/missing remote categories miss the lookup and are skipped,
-        # leaving salary_bucket nil rather than raising on an invalid enum value.
+        # Auto-map the remote category to salary_bucket only when the local value
+        # is nil. Unlike category_id (which sync never writes at all), this WILL
+        # re-apply a bucket on the next sync if a user deliberately clears it on
+        # an external budget — accepted tradeoff so existing unmapped rows get
+        # backfilled automatically.
         if budget.salary_bucket.nil?
           mapped_bucket = SALARY_BUCKET_MAP[item["category"].to_s]
           budget.salary_bucket = mapped_bucket if mapped_bucket

@@ -1,7 +1,7 @@
 <%# Settings → External Sources page. Renders one of three states:
     1. Not connected  — slate card with Connect CTA.
     2. Connected      — emerald accent with Sync now + Disconnect.
-    3. Reconnect req. — amber banner with Reconnect + Disconnect.
+    3. Reconnect req. — rose banner with Reconnect + Disconnect.
 %>
 <div class="container mx-auto px-4 py-8 max-w-3xl">
   <header class="mb-6">
@@ -53,14 +53,14 @@
     </section>
 
   <% else %>
-    <section class="bg-amber-50 border-l-4 border-amber-500 border border-amber-200 rounded-lg shadow-sm p-6"
+    <section class="bg-rose-50 border-l-4 border-rose-500 border border-rose-200 rounded-lg shadow-sm p-6"
              role="alert"
              aria-labelledby="external-source-reconnect">
       <h2 id="external-source-reconnect"
-          class="text-lg font-medium text-amber-900 mb-1">
+          class="text-lg font-medium text-rose-900 mb-1">
         <%= t("external_sources.reconnect_required") %>
       </h2>
-      <p class="text-sm text-amber-800 mb-4">
+      <p class="text-sm text-rose-800 mb-4">
         <%= t("external_sources.reconnect_required_body") %>
       </p>
       <div class="flex flex-wrap gap-3">

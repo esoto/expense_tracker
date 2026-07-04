@@ -1,0 +1,38 @@
+<%# Alert banner shown when the linked external budget source (salary_calc)
+    needs attention. Rendered on both the dashboard and the budgets index.
+
+    Local: source — an ExternalBudgetSource or nil.
+
+    Two variants:
+      - deactivated (active == false)        -> rose-*  "reconnect required"
+      - sync failed but still active         -> amber-* "last sync failed"
+%>
+<% if source&.needs_attention? %>
+  <% if source.active? %>
+    <div class="bg-amber-50 border-l-4 border-amber-500 border border-amber-200 rounded-lg shadow-sm p-4 mb-6"
+         role="alert"
+         aria-labelledby="external-source-alert-sync-failed">
+      <h2 id="external-source-alert-sync-failed" class="text-sm font-semibold text-amber-900 mb-1">
+        <%= t("external_sources.alert.sync_failed_title") %>
+      </h2>
+      <p class="text-sm text-amber-800 mb-2">
+        <%= t("external_sources.alert.sync_failed_body") %>
+      </p>
+      <%= link_to t("external_sources.alert.cta"), external_source_path,
+            class: "text-sm font-medium text-amber-900 underline hover:no-underline" %>
+    </div>
+  <% else %>
+    <div class="bg-rose-50 border-l-4 border-rose-500 border border-rose-200 rounded-lg shadow-sm p-4 mb-6"
+         role="alert"
+         aria-labelledby="external-source-alert-reconnect">
+      <h2 id="external-source-alert-reconnect" class="text-sm font-semibold text-rose-900 mb-1">
+        <%= t("external_sources.alert.reconnect_required_title") %>
+      </h2>
+      <p class="text-sm text-rose-800 mb-2">
+        <%= t("external_sources.alert.reconnect_required_body") %>
+      </p>
+      <%= link_to t("external_sources.alert.cta"), external_source_path,
+            class: "text-sm font-medium text-rose-900 underline hover:no-underline" %>
+    </div>
+  <% end %>
+<% end %>

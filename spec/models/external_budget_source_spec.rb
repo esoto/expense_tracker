@@ -234,4 +234,27 @@ RSpec.describe ExternalBudgetSource, type: :model, unit: true do
       }.to raise_error(ActiveRecord::RecordInvalid)
     end
   end
+
+  describe "#needs_attention?" do
+    it "is true when the source is deactivated" do
+      source = create(:external_budget_source, email_account: email_account, active: false)
+      expect(source.needs_attention?).to be(true)
+    end
+
+    it "is true when the last sync failed while the source is still active" do
+      source = create(:external_budget_source, email_account: email_account, active: true, last_sync_status: "failed")
+      expect(source.needs_attention?).to be(true)
+    end
+
+    it "is false when the source is active and the last sync succeeded" do
+      source = create(:external_budget_source, email_account: email_account, active: true, last_sync_status: "ok")
+      expect(source.needs_attention?).to be(false)
+    end
+
+    it "is true when both deactivated and the last recorded status is failed" do
+      source = create(:external_budget_source, email_account: email_account)
+      source.deactivate!(reason: "token revoked")
+      expect(source.needs_attention?).to be(true)
+    end
+  end
 end

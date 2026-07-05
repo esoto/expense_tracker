@@ -14,9 +14,17 @@ FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
 # Rails app lives here
 WORKDIR /rails
 
-# Install base packages
+# Install base packages.
+# postgresql-client-17 comes from the PGDG repo: PostgresBackupJob (PER-527)
+# shells out to pg_dump, which must be >= the PG 17 production server, while
+# bookworm's stock client is 15. gnupg provides gpg for the backup's AES256
+# encryption step (and dearmors the PGDG signing key below).
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl libjemalloc2 libvips sqlite3 && \
+    apt-get install --no-install-recommends -y curl gnupg libjemalloc2 libvips sqlite3 && \
+    curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/pgdg.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.gpg] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
+    apt-get update -qq && \
+    apt-get install --no-install-recommends -y postgresql-client-17 && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Set production environment

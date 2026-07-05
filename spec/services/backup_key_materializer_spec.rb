@@ -49,6 +49,16 @@ RSpec.describe Services::BackupKeyMaterializer, :unit do
     expect(File.exist?(root.join(described_class::DEFAULT_KEY_PATH))).to be(false)
   end
 
+  it "logs and leaves ENV untouched when the decoded payload is not a private key" do
+    env = { "STORAGE_BOX_SSH_KEY_CONTENT" => Base64.strict_encode64("garbage from a failed op read") }
+    allow(Rails.logger).to receive(:error)
+
+    expect(call(env)).to be_nil
+    expect(env).not_to have_key("STORAGE_BOX_SSH_KEY")
+    expect(File.exist?(root.join(described_class::DEFAULT_KEY_PATH))).to be(false)
+    expect(Rails.logger).to have_received(:error).with(/does not look like a private key/)
+  end
+
   it "logs and leaves ENV untouched when the payload is not valid base64" do
     env = { "STORAGE_BOX_SSH_KEY_CONTENT" => "not-base64!!!" }
     allow(Rails.logger).to receive(:error)

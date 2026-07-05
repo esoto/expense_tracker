@@ -24,6 +24,12 @@ module Services
       return nil if encoded.blank?
 
       key = Base64.strict_decode64(encoded.gsub(/\s+/, ""))
+
+      unless key.start_with?("-----BEGIN")
+        Rails.logger.error("[BackupKeyMaterializer] decoded STORAGE_BOX_SSH_KEY_CONTENT does not look like a private key (missing -----BEGIN header)")
+        return nil
+      end
+
       path = root.join(DEFAULT_KEY_PATH).to_s
 
       File.write(path, key, perm: 0o600)

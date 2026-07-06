@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_01_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_06_052320) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -44,6 +44,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_01_120000) do
     t.index ["category_id"], name: "index_budget_categories_on_category_id"
   end
 
+  create_table "budget_name_mappings", force: :cascade do |t|
+    t.bigint "category_id"
+    t.decimal "confidence", precision: 4, scale: 3
+    t.datetime "confirmed_at"
+    t.datetime "created_at", null: false
+    t.integer "kind", default: 0, null: false
+    t.string "normalized_name", null: false
+    t.integer "source", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["category_id"], name: "index_budget_name_mappings_on_category_id"
+    t.index ["user_id", "normalized_name"], name: "index_budget_name_mappings_on_user_id_and_normalized_name", unique: true
+    t.index ["user_id"], name: "index_budget_name_mappings_on_user_id"
+  end
+
   create_table "budgets", force: :cascade do |t|
     t.boolean "active", default: true, null: false
     t.decimal "amount", precision: 12, scale: 2, null: false
@@ -69,6 +84,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_01_120000) do
     t.decimal "rollover_amount", precision: 12, scale: 2, default: "0.0"
     t.boolean "rollover_enabled", default: false
     t.integer "salary_bucket"
+    t.boolean "spend_tracking", default: true, null: false
     t.date "start_date", null: false
     t.integer "times_exceeded", default: 0
     t.datetime "updated_at", null: false
@@ -818,6 +834,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_01_120000) do
   add_foreign_key "api_tokens", "users"
   add_foreign_key "budget_categories", "budgets"
   add_foreign_key "budget_categories", "categories"
+  add_foreign_key "budget_name_mappings", "categories", on_delete: :cascade
+  add_foreign_key "budget_name_mappings", "users"
   add_foreign_key "budgets", "categories"
   add_foreign_key "budgets", "email_accounts"
   add_foreign_key "budgets", "users"

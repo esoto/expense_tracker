@@ -52,6 +52,10 @@ class Budget < ApplicationRecord
   # or through the M2M budget_categories join. During the multi-category
   # rollout, the controller writes ONLY the M2M side, so keying on the
   # legacy column alone misses budgets mapped through the UI.
+  # WARNING: do not chain aggregates (.sum/.count) onto this scope — the
+  # DISTINCT emitted for the join fan-out becomes SUM(DISTINCT amount),
+  # silently collapsing different budgets that share the same amount.
+  # Load records first (or use a where(id: ...) subquery) before aggregating.
   scope :for_category, ->(category_id) {
     left_joins(:budget_categories)
       .where("budgets.category_id = :category_id OR budget_categories.category_id = :category_id", category_id: category_id)

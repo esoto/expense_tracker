@@ -122,9 +122,13 @@
 
     </div><!-- end bulk-actions wrapper -->
   </div>
-</div>
 
-<!-- Conflict Resolution Modal -->
-<div id="conflict_modal" class="hidden">
-  <!-- Modal content will be loaded here -->
+  <!-- Conflict Resolution Modal -->
+  <!-- Nested inside the conflict-modal controller scope (not a sibling after it
+       closes) so Stimulus actions on the dynamically-injected modal content
+       (close button, backdrop click, Escape key, turbo:submit-end) resolve to
+       the same controller instance that owns the "Resolver" open buttons. -->
+  <div id="conflict_modal" class="hidden">
+    <!-- Modal content will be loaded here -->
+  </div>
 </div>

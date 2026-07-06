@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_06_052107) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_06_052320) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -84,6 +84,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_06_052107) do
     t.decimal "rollover_amount", precision: 12, scale: 2, default: "0.0"
     t.boolean "rollover_enabled", default: false
     t.integer "salary_bucket"
+    t.boolean "spend_tracking", default: true, null: false
     t.date "start_date", null: false
     t.integer "times_exceeded", default: 0
     t.datetime "updated_at", null: false

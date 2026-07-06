@@ -72,7 +72,9 @@ class Budget < ApplicationRecord
   scope :native, -> { where(external_source: nil) }
   # External budgets with no claimed category — neither legacy nor M2M.
   # Mirrors #unmapped?; see TODO there about dropping the legacy leg.
-  scope :synced_unmapped, -> { external.general }
+  # Excludes spend_tracking: false rows — those are allocations, intentionally
+  # not matched to a category (see BudgetNameMapping / MappingSuggester).
+  scope :synced_unmapped, -> { external.general.where(spend_tracking: true) }
 
   # Callbacks
   before_validation :set_defaults, on: :create
@@ -155,7 +157,7 @@ class Budget < ApplicationRecord
   # TODO(multi-category-rollout): drop the legacy category_id leg once
   # budgets.category_id column is removed in the follow-up migration.
   def unmapped?
-    external? && category_id.nil? && budget_categories.empty?
+    spend_tracking? && external? && category_id.nil? && budget_categories.empty?
   end
 
   # Calculate actual spending for the current period.

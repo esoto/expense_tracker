@@ -424,6 +424,13 @@ RSpec.describe Budget, type: :model, integration: true do
       expect(results).to include(external_unmapped)
       expect(results).not_to include(external_mapped_via_m2m)
     end
+
+    it "excludes budgets with spend_tracking disabled" do
+      budget = create(:budget, email_account: email_account, category: nil, period: 'monthly',
+                               external_source: 'salary_calculator', external_id: 107)
+      budget.update!(spend_tracking: false)
+      expect(described_class.synced_unmapped).not_to include(budget)
+    end
   end
 
   describe 'external-source dedup (DB-level)', integration: true do
@@ -496,6 +503,12 @@ RSpec.describe Budget, type: :model, integration: true do
 
     it 'is false when native (no external_source) even without a category' do
       budget = build(:budget, external_source: nil, category: nil)
+      expect(budget.unmapped?).to be(false)
+    end
+
+    it 'is not unmapped when spend_tracking is disabled' do
+      budget = create(:budget, external_source: 'salary_calculator', category: nil, external_id: 108)
+      budget.update!(spend_tracking: false)
       expect(budget.unmapped?).to be(false)
     end
   end

@@ -5,7 +5,7 @@ require "rails_helper"
 RSpec.describe Services::Budgets::MappingSuggester, :unit do
   let(:user) { create(:user) }
   let(:email_account) { create(:email_account, user: user) }
-  let(:null_llm) { instance_double("LlmResolver", resolve: {}) }
+  let(:null_llm) { instance_double(Services::Budgets::MappingLlmResolver, resolve: {}) }
 
   def external_budget(name)
     create(:budget, email_account: email_account, user: user, name: name,
@@ -94,7 +94,7 @@ RSpec.describe Services::Budgets::MappingSuggester, :unit do
     it "passes only unresolved names, with the user's visible categories" do
       create(:category, name: "Mascotas", user: nil)
       budget = external_budget("Pets")
-      resolver = instance_double("LlmResolver")
+      resolver = instance_double(Services::Budgets::MappingLlmResolver)
       expect(resolver).to receive(:resolve) do |names:, categories:, user: u|
         expect(names).to eq([ "pets" ])
         expect(categories.map(&:name)).to include("Mascotas")
@@ -112,7 +112,7 @@ RSpec.describe Services::Budgets::MappingSuggester, :unit do
 
     it "records llm allocation verdicts as suggestions (spend_tracking untouched)" do
       budget = external_budget("Familia Mariana")
-      resolver = instance_double("LlmResolver",
+      resolver = instance_double(Services::Budgets::MappingLlmResolver,
         resolve: { "familia mariana" => { category: nil, kind: :allocation } })
 
       described_class.call([ budget ], llm_resolver: resolver)
@@ -124,12 +124,34 @@ RSpec.describe Services::Budgets::MappingSuggester, :unit do
 
     it "leaves names unresolved when the resolver returns nil for them" do
       budget = external_budget("Punta Leona")
-      resolver = instance_double("LlmResolver", resolve: {})
+      resolver = instance_double(Services::Budgets::MappingLlmResolver, resolve: {})
 
       result = described_class.call([ budget ], llm_resolver: resolver)
 
       expect(BudgetNameMapping.where(user: user).count).to eq(0)
       expect(result[:unresolved]).to eq([ "punta leona" ])
+    end
+  end
+
+  describe "concurrent upsert race" do
+    it "falls back to the winner's row instead of raising" do
+      cat = create(:category, name: "Agua", user: nil)
+      existing = create(:budget_name_mapping, user: user, normalized_name: "agua",
+                        category: cat, source: :exact, confidence: 1.0)
+      suggester = described_class.new([], llm_resolver: null_llm)
+      # Simulate the race: first_or_initialize returns an unsaved duplicate
+      # (as if the row did not exist yet), whose save trips the uniqueness
+      # validation because `existing` was committed by a concurrent run.
+      losing_duplicate = BudgetNameMapping.new(user: user, normalized_name: "agua")
+      relation = instance_double(ActiveRecord::Relation)
+      allow(BudgetNameMapping).to receive(:for_lookup).with(user, "agua").and_return(relation)
+      allow(relation).to receive(:first_or_initialize).and_return(losing_duplicate)
+      allow(relation).to receive(:first!).and_return(existing)
+
+      result = suggester.send(:upsert_mapping, user, "agua",
+                              category: cat, kind: :category, source: :exact, confidence: 1.0)
+
+      expect(result).to eq(existing)
     end
   end
 

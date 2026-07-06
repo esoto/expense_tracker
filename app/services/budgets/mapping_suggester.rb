@@ -116,6 +116,11 @@ module Services::Budgets
       mapping = BudgetNameMapping.for_lookup(user, normalized).first_or_initialize
       mapping.update!(attrs)
       mapping
+    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
+      # Concurrent suggester runs for the same user (one job per email
+      # account) can race on the unique (user_id, normalized_name) index.
+      # The winner's row stands — same never-raise posture as the LLM tier.
+      BudgetNameMapping.for_lookup(user, normalized).first!
     end
 
     def fuzzy_matcher

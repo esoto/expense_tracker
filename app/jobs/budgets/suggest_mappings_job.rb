@@ -8,6 +8,14 @@ module Budgets
   class SuggestMappingsJob < ApplicationJob
     queue_as :low
 
+    # Serialize per USER (not per account): two accounts of one user syncing
+    # concurrently would otherwise race MappingSuggester's cache upserts on
+    # the shared (user_id, normalized_name) unique index. Solid Queue native
+    # concurrency control instead of a hand-rolled lock.
+    limits_concurrency to: 1, key: ->(email_account_id) {
+      EmailAccount.find_by(id: email_account_id)&.user_id || email_account_id
+    }
+
     def perform(email_account_id)
       email_account = EmailAccount.find_by(id: email_account_id)
       return if email_account.nil?

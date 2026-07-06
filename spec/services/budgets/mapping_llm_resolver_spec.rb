@@ -42,6 +42,14 @@ RSpec.describe Services::Budgets::MappingLlmResolver, :unit do
     expect(result["luz"]).to eq(category: electricidad, kind: :category)
   end
 
+  it "re-normalizes echoed names so a non-verbatim echo still resolves" do
+    stub_llm_text('[{"name":"LUZ ","answer":"Electricidad"}]')
+
+    result = resolver.resolve(names: [ "luz" ], categories: categories, user: user)
+
+    expect(result["luz"]).to eq(category: electricidad, kind: :category)
+  end
+
   it "returns {} and logs on malformed JSON" do
     stub_llm_text("I think Luz is electricity related")
     allow(Rails.logger).to receive(:error)

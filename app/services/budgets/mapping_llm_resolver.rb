@@ -66,7 +66,7 @@ module Services::Budgets
 
       by_name = categories.index_by { |c| c.name }
       JSON.parse(json).each_with_object({}) do |row, acc|
-        name = row["name"].to_s
+        name = BudgetNameMapping.normalize(row["name"])
         answer = row["answer"].to_s
         next if answer == UNKNOWN || name.blank?
 

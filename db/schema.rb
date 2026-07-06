@@ -834,7 +834,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_06_052320) do
   add_foreign_key "api_tokens", "users"
   add_foreign_key "budget_categories", "budgets"
   add_foreign_key "budget_categories", "categories"
-  add_foreign_key "budget_name_mappings", "categories"
+  add_foreign_key "budget_name_mappings", "categories", on_delete: :cascade
   add_foreign_key "budget_name_mappings", "users"
   add_foreign_key "budgets", "categories"
   add_foreign_key "budgets", "email_accounts"

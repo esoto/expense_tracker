@@ -36,7 +36,7 @@ module Services::Budgets
       pending = {}
 
       user_budgets.each do |budget|
-        next if budget.categories.exists? || !budget.spend_tracking?
+        next if budget.categories.any? || !budget.spend_tracking?
 
         normalized = BudgetNameMapping.normalize(budget.name)
         next if try_cache(user, budget, normalized)
@@ -49,6 +49,12 @@ module Services::Budgets
       resolve_with_llm(user, pending, categories) if pending.any?
     end
 
+    # Any existing row short-circuits the pipeline — this is what bounds LLM
+    # cost to once per name, and guarantees a user-confirmed row can never be
+    # overwritten by a lower tier. Deliberate tradeoff: a name cached as a
+    # fuzzy/llm suggestion will NOT auto-upgrade if a new exactly-matching
+    # category appears later; the review UI (or deleting the mapping row)
+    # resolves it.
     def try_cache(user, budget, normalized)
       mapping = BudgetNameMapping.for_lookup(user, normalized).first
       return false unless mapping

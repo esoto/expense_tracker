@@ -90,7 +90,7 @@ class BudgetsController < ApplicationController
       # Recalculate spend after update
       @budget.calculate_current_spend!
 
-      redirect_to dashboard_expenses_path,
+      redirect_to budgets_path,
         notice: "Presupuesto actualizado exitosamente."
     else
       @categories = Category.all.order(:name)

@@ -106,9 +106,9 @@ RSpec.describe "Budgets", type: :request, integration: true do
         expect(budget.current_spend_updated_at).not_to eq(original_updated_at)
       end
 
-      it "redirects to the dashboard" do
+      it "redirects to the budgets list" do
         patch budget_path(budget), params: new_attributes
-        expect(response).to redirect_to(dashboard_expenses_path)
+        expect(response).to redirect_to(budgets_path)
         expect(flash[:notice]).to eq('Presupuesto actualizado exitosamente.')
       end
     end

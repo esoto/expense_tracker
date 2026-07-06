@@ -279,10 +279,10 @@ RSpec.describe BudgetsController, type: :controller, unit: true do
         patch :update, params: { id: budget.id, budget: budget_params }
       end
 
-      it "redirects to dashboard with success message" do
+      it "redirects to budgets list with success message" do
         patch :update, params: { id: budget.id, budget: budget_params }
 
-        expect(response).to redirect_to(dashboard_expenses_path)
+        expect(response).to redirect_to(budgets_path)
         expect(flash[:notice]).to eq("Presupuesto actualizado exitosamente.")
       end
     end

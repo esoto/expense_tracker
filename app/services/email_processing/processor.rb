@@ -41,6 +41,11 @@ module Services::EmailProcessing
     private
 
     def process_single_email(message_id, imap_service)
+      if ProcessedEmail.already_processed?(message_id, email_account)
+        Rails.logger.info "[SKIP] Already processed message: #{message_id}"
+        return { processed: false, expense_created: false }
+      end
+
       if @metrics_collector
         begin
           result = @metrics_collector.track_operation(:parse_email, @email_account, { message_id: message_id }) do
@@ -68,6 +73,7 @@ module Services::EmailProcessing
       # Check if this is a transaction email based on subject
       unless transaction_email?(subject)
         Rails.logger.info "[SKIP] Non-transaction email: #{subject}"
+        record_processed_email(message_id, subject: subject, from_address: build_from_address(envelope))
         return { processed: false, expense_created: false }
       end
 
@@ -81,7 +87,9 @@ module Services::EmailProcessing
       conflict_result = detect_and_handle_conflict(email_data)
 
       if conflict_result.nil?
-        # Conflict detected
+        # Conflict detected — this email will never be re-processed successfully,
+        # so record it now (terminal outcome).
+        record_processed_email(message_id, subject: email_data[:subject], from_address: email_data[:from])
         { processed: true, expense_created: false, conflict_detected: true }
       else
         # No conflict — pass pre-parsed data if available
@@ -316,6 +324,25 @@ module Services::EmailProcessing
     def add_error(message)
       @errors << message
       Rails.logger.error "[Services::EmailProcessing::Processor] #{email_account.email}: #{message}"
+    end
+
+    # Idempotently records that an email has reached a terminal outcome so a
+    # future re-sync (which only filters IMAP by SINCE-date) can skip it via
+    # the ProcessedEmail.already_processed? check instead of re-parsing it.
+    #
+    # Never allowed to break expense processing — any failure here (including
+    # the unique index race between concurrent jobs) is logged and swallowed.
+    def record_processed_email(message_id, subject: nil, from_address: nil)
+      return if message_id.blank?
+
+      ProcessedEmail.find_or_create_by!(message_id: message_id.to_s, email_account_id: email_account.id) do |processed_email|
+        processed_email.user = email_account.user
+        processed_email.processed_at = Time.current
+        processed_email.subject = subject
+        processed_email.from_address = from_address
+      end
+    rescue StandardError => e
+      Rails.logger.error "[Services::EmailProcessing::Processor] Failed to record processed email #{message_id}: #{e.message}"
     end
   end
 end

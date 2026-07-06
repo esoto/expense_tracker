@@ -49,8 +49,8 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
 
     context 'with transaction emails' do
       let(:message_ids) { [ 1, 2, 3 ] }
-      let(:transaction_envelope) { double('envelope', subject: 'BAC - Notificación de transacción') }
-      let(:non_transaction_envelope) { double('envelope', subject: 'Regular email') }
+      let(:transaction_envelope) { double('envelope', subject: 'BAC - Notificación de transacción', from: nil) }
+      let(:non_transaction_envelope) { double('envelope', subject: 'Regular email', from: nil) }
 
       before do
         allow(mock_imap_service).to receive(:fetch_envelope).with(1).and_return(transaction_envelope)
@@ -781,6 +781,133 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
 
         result = processor_with_session.send(:detect_and_handle_conflict, email_data)
         expect(result).to be false
+      end
+    end
+  end
+
+  describe '#process_single_email idempotent skip gate', integration: true do
+    let(:message_id) { 42 }
+
+    context 'when the message was already processed' do
+      before do
+        allow(ProcessedEmail).to receive(:already_processed?).with(message_id, email_account).and_return(true)
+      end
+
+      it 'returns the standard skip result without touching the imap service' do
+        expect(mock_imap_service).not_to receive(:fetch_envelope)
+
+        result = processor_without_metrics.send(:process_single_email, message_id, mock_imap_service)
+
+        expect(result).to eq(processed: false, expense_created: false)
+      end
+
+      it 'never invokes conflict detection' do
+        expect(Services::ConflictDetectionService).not_to receive(:new)
+
+        processor_without_metrics.send(:process_single_email, message_id, mock_imap_service)
+      end
+
+      it 'is counted as skipped (not processed) at the process_emails level' do
+        result = processor_without_metrics.process_emails([ message_id ], mock_imap_service)
+
+        expect(result[:processed_count]).to eq(0)
+        expect(result[:total_count]).to eq(1)
+        expect(result[:detected_expenses_count]).to eq(0)
+      end
+
+      it 'does not create a new ProcessedEmail record' do
+        expect {
+          processor_without_metrics.send(:process_single_email, message_id, mock_imap_service)
+        }.not_to change(ProcessedEmail, :count)
+      end
+    end
+
+    context 'when the message has not been processed yet' do
+      before do
+        allow(ProcessedEmail).to receive(:already_processed?).and_return(false)
+        allow(mock_imap_service).to receive(:fetch_envelope).and_return(nil)
+      end
+
+      it 'proceeds to fetch the envelope' do
+        processor_without_metrics.send(:process_single_email, message_id, mock_imap_service)
+
+        expect(mock_imap_service).to have_received(:fetch_envelope).with(message_id)
+      end
+    end
+  end
+
+  describe '#process_email_with_metrics recording at terminal outcomes', integration: true do
+    let(:message_id) { 55 }
+
+    before do
+      allow(ProcessedEmail).to receive(:already_processed?).and_return(false)
+    end
+
+    context 'when the email is not a transaction email' do
+      let(:non_transaction_envelope) do
+        double('envelope', subject: 'Newsletter', from: [ double('from', mailbox: 'news', host: 'example.com') ], date: Time.current)
+      end
+
+      before do
+        allow(mock_imap_service).to receive(:fetch_envelope).and_return(non_transaction_envelope)
+      end
+
+      it 'records a ProcessedEmail for the skipped message' do
+        expect {
+          processor_without_metrics.send(:process_email_with_metrics, message_id, mock_imap_service)
+        }.to change(ProcessedEmail, :count).by(1)
+
+        recorded = ProcessedEmail.last
+        expect(recorded.message_id).to eq(message_id.to_s)
+        expect(recorded.email_account).to eq(email_account)
+        expect(recorded.user).to eq(email_account.user)
+        expect(recorded.subject).to eq('Newsletter')
+      end
+
+      it 'does not raise when recording fails' do
+        allow(ProcessedEmail).to receive(:find_or_create_by!).and_raise(StandardError, 'boom')
+        allow(Rails.logger).to receive(:error)
+
+        expect {
+          processor_without_metrics.send(:process_email_with_metrics, message_id, mock_imap_service)
+        }.not_to raise_error
+
+        expect(Rails.logger).to have_received(:error).with(
+          a_string_matching(/Failed to record processed email/)
+        )
+      end
+    end
+
+    context 'when a conflict is detected for a transaction email' do
+      let(:sync_session_for_conflict) { instance_double(SyncSession, id: 1) }
+      let(:processor_with_session) { described_class.new(email_account, sync_session: sync_session_for_conflict) }
+      let(:transaction_envelope) do
+        double('envelope', subject: 'Notificación de transacción', from: [ double('from', mailbox: 'bank', host: 'bac.co.cr') ], date: Time.current)
+      end
+
+      before do
+        allow(mock_imap_service).to receive(:fetch_envelope).and_return(transaction_envelope)
+        allow(processor_with_session).to receive(:extract_email_data).and_return({
+          message_id: message_id,
+          from: 'bank@bac.co.cr',
+          subject: 'Notificación de transacción',
+          date: Time.current,
+          body: 'body'
+        })
+        allow(processor_with_session).to receive(:detect_and_handle_conflict).and_return(nil)
+        allow(ProcessEmailJob).to receive(:perform_later)
+      end
+
+      it 'records a ProcessedEmail for the conflict-skipped message' do
+        expect {
+          processor_with_session.send(:process_email_with_metrics, message_id, mock_imap_service)
+        }.to change(ProcessedEmail, :count).by(1)
+      end
+
+      it 'does not enqueue ProcessEmailJob' do
+        processor_with_session.send(:process_email_with_metrics, message_id, mock_imap_service)
+
+        expect(ProcessEmailJob).not_to have_received(:perform_later)
       end
     end
   end

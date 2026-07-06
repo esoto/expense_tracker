@@ -311,4 +311,58 @@ RSpec.describe ProcessEmailJob, type: :job, integration: true do
       end
     end
   end
+
+  describe 'idempotent recording via ProcessedEmail', integration: true do
+    let(:message_id) { 'msg-abc-123' }
+    let(:email_data_with_message_id) { email_data.merge(message_id: message_id) }
+
+    it 'records a ProcessedEmail when the expense is created successfully' do
+      expect {
+        ProcessEmailJob.new.perform(email_account.id, email_data_with_message_id)
+      }.to change(ProcessedEmail, :count).by(1)
+
+      recorded = ProcessedEmail.last
+      expect(recorded.message_id).to eq(message_id)
+      expect(recorded.email_account).to eq(email_account)
+      expect(recorded.user).to eq(email_account.user)
+      expect(recorded.subject).to eq(email_data_with_message_id[:subject])
+    end
+
+    it 'records a ProcessedEmail when the expense is marked as duplicate' do
+      ProcessEmailJob.new.perform(email_account.id, email_data_with_message_id)
+
+      expect {
+        ProcessEmailJob.new.perform(email_account.id, email_data_with_message_id.merge(message_id: "#{message_id}-dup"))
+      }.to change(Expense, :count).by(0).and change(ProcessedEmail, :count).by(1)
+
+      expect(Expense.last.status).to eq('duplicate')
+    end
+
+    it 'does not record a ProcessedEmail when parsing fails (non-terminal outcome)' do
+      invalid_email_data = { body: "Invalid email content", subject: "Random subject", message_id: message_id }
+
+      expect {
+        ProcessEmailJob.new.perform(email_account.id, invalid_email_data)
+      }.not_to change(ProcessedEmail, :count)
+    end
+
+    it 'does not record and does not raise when message_id is missing' do
+      expect {
+        ProcessEmailJob.new.perform(email_account.id, email_data)
+      }.not_to change(ProcessedEmail, :count)
+    end
+
+    it 'does not raise when recording fails' do
+      allow(ProcessedEmail).to receive(:find_or_create_by!).and_raise(StandardError, 'boom')
+      allow(Rails.logger).to receive(:error)
+
+      expect {
+        ProcessEmailJob.new.perform(email_account.id, email_data_with_message_id)
+      }.not_to raise_error
+
+      expect(Rails.logger).to have_received(:error).with(
+        a_string_matching(/Failed to record processed email/)
+      )
+    end
+  end
 end

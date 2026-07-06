@@ -51,6 +51,12 @@ class ProcessEmailJob < ApplicationJob
 
       # Optionally notify about new expense
       # NotificationJob.perform_later(expense.id) if expense.amount > 100
+
+      # Record the terminal outcome (success or marked-duplicate) so a future
+      # re-sync can skip this message via ProcessedEmail.already_processed?
+      # instead of re-parsing it. Enqueue time is NOT a terminal outcome — this
+      # job could still fail — so recording only happens once we get here.
+      record_processed_email(email_account, email_data)
     else
       Rails.logger.warn "Failed to create expense from email: #{parser.errors.join(", ")}"
 
@@ -81,5 +87,25 @@ class ProcessEmailJob < ApplicationJob
     )
   rescue StandardError => e
     Rails.logger.error "Failed to save parsing failure record: #{e.message}"
+  end
+
+  # Idempotently records that a message reached a terminal outcome (expense
+  # created or marked duplicate). See Services::EmailProcessing::Processor
+  # for the same pattern applied to non-transaction and conflict-skip outcomes.
+  #
+  # Never allowed to raise — a failure here just means one wasted re-process
+  # on the next sync, which is much cheaper than losing an already-saved expense.
+  def record_processed_email(email_account, email_data)
+    message_id = email_data&.dig(:message_id)
+    return if message_id.blank?
+
+    ProcessedEmail.find_or_create_by!(message_id: message_id.to_s, email_account_id: email_account.id) do |processed_email|
+      processed_email.user = email_account.user
+      processed_email.processed_at = Time.current
+      processed_email.subject = email_data[:subject]
+      processed_email.from_address = email_data[:from]
+    end
+  rescue StandardError => e
+    Rails.logger.error "Failed to record processed email #{message_id}: #{e.message}"
   end
 end

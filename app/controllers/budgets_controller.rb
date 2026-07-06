@@ -205,7 +205,10 @@ class BudgetsController < ApplicationController
   end
 
   def calculate_overall_budget_health
-    active_budgets = Budget.for_user(scoping_user).active.current
+    # includes(:email_account) — DedupSpend walks budget.email_account per
+    # budget; without preloading that's one query per budget outside the
+    # request-level query cache (background jobs, multi-account users).
+    active_budgets = Budget.for_user(scoping_user).active.current.includes(:email_account)
     return { status: :no_budgets, message: "Sin presupuestos activos" } if active_budgets.empty?
 
     total_budget = active_budgets.sum(:amount)

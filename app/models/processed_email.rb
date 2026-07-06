@@ -21,7 +21,7 @@ class ProcessedEmail < ApplicationRecord
   def self.normalize_message_id(raw)
     return nil if raw.blank?
 
-    raw.to_s.strip.delete_prefix("<").delete_suffix(">").strip.downcase.presence
+    raw.to_s.strip.gsub(/\A<+/, "").gsub(/>+\z/, "").strip.downcase.presence
   end
 
   # Blank/unparseable Message-IDs are never considered processed — the safe

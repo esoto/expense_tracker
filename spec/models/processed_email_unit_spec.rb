@@ -75,6 +75,10 @@ RSpec.describe ProcessedEmail, type: :model, unit: true do
       expect(described_class.normalize_message_id("Abc@Mail.example")).to eq("abc@mail.example")
     end
 
+    it "strips every layer of malformed nested brackets" do
+      expect(described_class.normalize_message_id("<<abc@mail.example>>")).to eq("abc@mail.example")
+    end
+
     it "returns nil for nil, blank, and bracket-only input" do
       expect(described_class.normalize_message_id(nil)).to be_nil
       expect(described_class.normalize_message_id("")).to be_nil

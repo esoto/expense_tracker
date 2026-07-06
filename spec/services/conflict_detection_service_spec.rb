@@ -89,6 +89,35 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
       end
     end
 
+    context 'when the incoming duplicate is an already-persisted expense (batch path sends :id)' do
+      before { existing_expense }
+
+      it 'marks the persisted row duplicate instead of inserting an audit copy' do
+        # Case-variant merchant_name: dodges the exact-string unique index
+        # (as real bank emails do) while normalizing/scoring identically.
+        persisted_dup = create(:expense, email_account: existing_expense.email_account,
+                                         user: existing_expense.user,
+                                         amount: existing_expense.amount,
+                                         transaction_date: existing_expense.transaction_date,
+                                         merchant_name: existing_expense.merchant_name.upcase,
+                                         merchant_normalized: existing_expense.merchant_normalized,
+                                         description: existing_expense.description,
+                                         status: 'processed')
+        data = persisted_dup.attributes.symbolize_keys
+
+        expect {
+          result = service.detect_conflict_for_expense(data)
+          expect(result).to be_duplicate_skipped
+          expect(result.duplicate_expense.id).to eq(persisted_dup.id)
+        }.not_to change { Expense.unscoped.count }
+
+        persisted_dup.reload
+        expect(persisted_dup.status).to eq('duplicate')
+        expect(persisted_dup.deleted_at).to be_present
+        expect(SyncConflict.count).to eq(0)
+      end
+    end
+
     context 'when conflict_type is similar' do
       before do
         existing_expense.update(amount: 95.00)

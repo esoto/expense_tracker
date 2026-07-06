@@ -396,15 +396,24 @@ module Services
   # noise (SyncConflict rows whose new_expense gets cleaned up later, leaving
   # an unresolvable "conflict" with nothing left to resolve).
   def skip_silent_duplicate(existing_expense:, new_expense_data:, similarity_score:)
-    expense_attrs = new_expense_data.merge(
-      status: "duplicate",
-      currency: new_expense_data[:currency] || "crc",
-      deleted_at: Time.current
-    )
+    # The batch path (SyncService#detect_conflicts) sends already-persisted
+    # expenses WITH their :id (needed upstream for self-match exclusion).
+    # Re-inserting those would raise a PK collision — mark the existing row
+    # instead of creating an audit copy.
+    if (persisted = new_expense_data[:id] && Expense.unscoped.find_by(id: new_expense_data[:id]))
+      persisted.update!(status: "duplicate", deleted_at: persisted.deleted_at || Time.current)
+      new_expense = persisted
+    else
+      expense_attrs = new_expense_data.merge(
+        status: "duplicate",
+        currency: new_expense_data[:currency] || "crc",
+        deleted_at: Time.current
+      )
 
-    new_expense = Expense.new(expense_attrs)
-    new_expense.user ||= new_expense.email_account&.user
-    new_expense.save!
+      new_expense = Expense.new(expense_attrs.except(:id))
+      new_expense.user ||= new_expense.email_account&.user
+      new_expense.save!
+    end
 
     Rails.logger.info "[ConflictDetection] Silently skipped duplicate (#{similarity_score}%): " \
                       "existing=##{existing_expense.id} new=##{new_expense.id} merchant=#{existing_expense.merchant_name}"

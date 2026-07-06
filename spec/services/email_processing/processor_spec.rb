@@ -715,15 +715,28 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
         allow(Services::ConflictDetectionService).to receive(:new).with(sync_session, metrics_collector: metrics_collector).and_return(conflict_detector)
       end
 
-      it 'returns nil when conflict is detected' do
-        allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(true)
+      it 'returns :conflict when a conflict is detected' do
+        allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(
+          Services::ConflictDetectionService::Result.new(outcome: :conflict)
+        )
 
         result = processor_with_session.send(:detect_and_handle_conflict, email_data)
-        expect(result).to be_nil
+        expect(result).to eq(:conflict)
+      end
+
+      it 'returns :duplicate_skipped when the service silently discards a duplicate' do
+        allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(
+          Services::ConflictDetectionService::Result.new(outcome: :duplicate_skipped)
+        )
+
+        result = processor_with_session.send(:detect_and_handle_conflict, email_data)
+        expect(result).to eq(:duplicate_skipped)
       end
 
       it 'returns expense data hash when no conflict' do
-        allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(false)
+        allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(
+          Services::ConflictDetectionService::Result.new(outcome: :no_conflict)
+        )
 
         result = processor_with_session.send(:detect_and_handle_conflict, email_data)
         expect(result).to be_a(Hash)
@@ -733,7 +746,9 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
       end
 
       it 'does not call SyncSession.active.last' do
-        allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(false)
+        allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(
+          Services::ConflictDetectionService::Result.new(outcome: :no_conflict)
+        )
         expect(SyncSession).not_to receive(:active)
 
         processor_with_session.send(:detect_and_handle_conflict, email_data)
@@ -949,7 +964,7 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
           date: Time.current,
           body: 'body'
         })
-        allow(processor_with_session).to receive(:detect_and_handle_conflict).and_return(nil)
+        allow(processor_with_session).to receive(:detect_and_handle_conflict).and_return(:conflict)
         allow(ProcessEmailJob).to receive(:perform_later)
       end
 
@@ -965,6 +980,48 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
         processor_with_session.send(:process_email_with_metrics, message_id, mock_imap_service)
 
         expect(ProcessEmailJob).not_to have_received(:perform_later)
+      end
+    end
+
+    context 'when a duplicate is silently skipped for a transaction email' do
+      let(:sync_session_for_conflict) { instance_double(SyncSession, id: 1) }
+      let(:processor_with_session) { described_class.new(email_account, sync_session: sync_session_for_conflict) }
+      let(:transaction_envelope) do
+        double('envelope', subject: 'Notificación de transacción', from: [ double('from', mailbox: 'bank', host: 'bac.co.cr') ], date: Time.current, message_id: rfc_message_id)
+      end
+
+      before do
+        allow(mock_imap_service).to receive(:fetch_envelope).and_return(transaction_envelope)
+        allow(processor_with_session).to receive(:extract_email_data).and_return({
+          message_id: message_id,
+          rfc_message_id: rfc_message_id,
+          from: 'bank@bac.co.cr',
+          subject: 'Notificación de transacción',
+          date: Time.current,
+          body: 'body'
+        })
+        allow(processor_with_session).to receive(:detect_and_handle_conflict).and_return(:duplicate_skipped)
+        allow(ProcessEmailJob).to receive(:perform_later)
+      end
+
+      it 'records a ProcessedEmail keyed on the normalized RFC822 Message-ID' do
+        expect {
+          processor_with_session.send(:process_email_with_metrics, message_id, mock_imap_service)
+        }.to change(ProcessedEmail, :count).by(1)
+
+        expect(ProcessedEmail.last.message_id).to eq('terminal-55@mail.bank.example')
+      end
+
+      it 'does not enqueue ProcessEmailJob (no new expense is created)' do
+        processor_with_session.send(:process_email_with_metrics, message_id, mock_imap_service)
+
+        expect(ProcessEmailJob).not_to have_received(:perform_later)
+      end
+
+      it 'reports duplicate_skipped: true and conflict_detected: false in the result' do
+        result = processor_with_session.send(:process_email_with_metrics, message_id, mock_imap_service)
+
+        expect(result).to include(processed: true, expense_created: false, conflict_detected: false, duplicate_skipped: true)
       end
     end
   end

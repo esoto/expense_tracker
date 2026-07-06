@@ -31,9 +31,9 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
     context 'when exact duplicate exists' do
       before { existing_expense }
 
-      it 'skips obvious duplicates with high similarity (>=95%)' do
-        conflict = service.detect_conflict_for_expense(new_expense_data)
-        expect(conflict).to be_nil
+      it 'silently skips obvious duplicates (>=90% similarity)' do
+        result = service.detect_conflict_for_expense(new_expense_data)
+        expect(result).to be_duplicate_skipped
       end
 
       it 'does not create a conflict record for obvious duplicates' do
@@ -41,19 +41,41 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
           service.detect_conflict_for_expense(new_expense_data)
         }.not_to change(SyncConflict, :count)
       end
+
+      it 'still soft-deletes and saves the incoming duplicate expense (audit trail)' do
+        # Expense has a default_scope excluding deleted_at rows (SoftDelete concern),
+        # so assert against .unscoped rather than the plain .count.
+        expect {
+          service.detect_conflict_for_expense(new_expense_data)
+        }.to change { Expense.unscoped.count }.by(1)
+
+        duplicate = Expense.unscoped.order(:created_at).last
+        expect(duplicate.status).to eq('duplicate')
+        expect(duplicate.deleted_at).to be_present
+      end
+
+      it 'logs the skip at info level with both expense ids and the score' do
+        allow(Rails.logger).to receive(:info).and_call_original
+        result = service.detect_conflict_for_expense(new_expense_data)
+
+        expect(Rails.logger).to have_received(:info).with(
+          a_string_matching(/Silently skipped duplicate.*existing=##{existing_expense.id}.*new=##{result.duplicate_expense.id}/)
+        )
+      end
     end
 
-    context 'when similar expense exists' do
+    context 'when similar expense exists (70-89% similarity)' do
       before do
         existing_expense.update(amount: 95.00) # Slightly different amount
       end
 
-      it 'creates a similar conflict' do
-        conflict = service.detect_conflict_for_expense(new_expense_data)
+      it 'creates a similar conflict for human review' do
+        result = service.detect_conflict_for_expense(new_expense_data)
 
-        expect(conflict).to be_present
-        expect(conflict.conflict_type).to eq('similar')
-        expect(conflict.similarity_score).to be_between(70, 90)
+        expect(result).to be_conflict
+        expect(result.conflict).to be_present
+        expect(result.conflict.conflict_type).to eq('similar')
+        expect(result.conflict.similarity_score).to be_between(70, 90)
       end
     end
 
@@ -61,8 +83,9 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
       before { existing_expense }
 
       it 'skips creating conflict for obvious duplicates' do
-        conflict = service.detect_conflict_for_expense(new_expense_data)
-        expect(conflict).to be_nil
+        result = service.detect_conflict_for_expense(new_expense_data)
+        expect(result).to be_duplicate_skipped
+        expect(result.conflict).to be_nil
       end
     end
 
@@ -72,11 +95,11 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
       end
 
       it 'saves the new expense with deleted_at set' do
-        conflict = service.detect_conflict_for_expense(new_expense_data)
+        result = service.detect_conflict_for_expense(new_expense_data)
 
-        expect(conflict).to be_present
-        expect(conflict.conflict_type).to eq('similar')
-        expect(conflict.new_expense.deleted_at).to be_present
+        expect(result).to be_conflict
+        expect(result.conflict.conflict_type).to eq('similar')
+        expect(result.conflict.new_expense.deleted_at).to be_present
       end
     end
 
@@ -89,9 +112,10 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
         )
       end
 
-      it 'returns nil' do
-        conflict = service.detect_conflict_for_expense(new_expense_data)
-        expect(conflict).to be_nil
+      it 'returns a no_conflict result' do
+        result = service.detect_conflict_for_expense(new_expense_data)
+        expect(result).to be_no_conflict
+        expect(result.conflict).to be_nil
       end
     end
 
@@ -117,8 +141,8 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
       end
 
       it 'selects the best match' do
-        conflict = service.detect_conflict_for_expense(new_expense_data)
-        expect(conflict.existing_expense).to eq(exact_match)
+        result = service.detect_conflict_for_expense(new_expense_data)
+        expect(result.existing_expense).to eq(exact_match)
       end
     end
   end
@@ -158,11 +182,12 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
         )
       end
 
-      it 'returns array (obvious duplicates are skipped)' do
+      it 'returns only persisted SyncConflict records (obvious duplicates are skipped)' do
         conflicts = service.detect_conflicts_batch(new_expenses_data)
 
         expect(conflicts).to be_an(Array)
-        # Obvious duplicates (>=95% similarity) are now skipped entirely
+        # Obvious duplicates (>=90% similarity) are silently skipped and never
+        # produce a SyncConflict, so they never show up in this array either.
         expect(conflicts.compact).to be_empty
       end
     end
@@ -220,6 +245,31 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
       service.auto_resolve_obvious_duplicates
 
       expect(high_confidence_conflict.reload.resolution_action).to eq('keep_existing')
+    end
+
+    context 'with a legacy conflict scored in the 90-94% band' do
+      let!(:existing_expense_for_boundary) { create(:expense, email_account: email_account) }
+      let!(:new_expense_for_boundary) { create(:expense, email_account: email_account, status: :pending) }
+
+      let!(:boundary_conflict) do
+        conflict = create(:sync_conflict,
+          sync_session: sync_session,
+          existing_expense: existing_expense_for_boundary,
+          new_expense: new_expense_for_boundary,
+          similarity_score: 92.0,
+          conflict_type: 'duplicate',
+          status: 'pending'
+        )
+        conflict.update_column(:similarity_score, 92.0)
+        conflict
+      end
+
+      it 'also resolves it (threshold now matches DUPLICATE_THRESHOLD, not the old 95% cutoff)' do
+        resolved_count = service.auto_resolve_obvious_duplicates
+
+        expect(boundary_conflict.reload.status).to eq('resolved')
+        expect(resolved_count).to eq(2) # high_confidence_conflict + boundary_conflict
+      end
     end
   end
 
@@ -321,20 +371,59 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
       }.not_to change(Expense, :count)
     end
 
-    it 'skips obvious duplicates (>=95% similarity) without creating records' do
+    it 'skips creating a SyncConflict for obvious duplicates (>=95% similarity) but still saves the soft-deleted duplicate' do
+      result = nil
+      # Expense has a default_scope excluding deleted_at rows (SoftDelete concern),
+      # so assert against .unscoped rather than the plain .count.
+      expect {
+        result = service.send(
+          :create_conflict,
+          existing_expense: existing_expense,
+          new_expense_data: new_expense_data,
+          conflict_type: 'duplicate',
+          similarity_score: 95.0,
+          differences: {}
+        )
+      }.to change { Expense.unscoped.count }.by(1)
+      expect(SyncConflict.count).to eq(0)
+
+      expect(result).to be_duplicate_skipped
+      expect(result.duplicate_expense.deleted_at).to be_present
+      expect(result.duplicate_expense.status).to eq('duplicate')
+    end
+
+    it 'skips creating a SyncConflict for duplicates right at the 90% boundary' do
       result = service.send(
         :create_conflict,
         existing_expense: existing_expense,
         new_expense_data: new_expense_data,
         conflict_type: 'duplicate',
-        similarity_score: 95.0,
+        similarity_score: 90.0,
         differences: {}
       )
 
-      expect(result).to be_nil
+      expect(result).to be_duplicate_skipped
+      expect(SyncConflict.count).to eq(0)
     end
 
-    it 'returns nil and adds an error when the transaction fails' do
+    it 'still creates a SyncConflict for the 70-89% "similar" band' do
+      result = nil
+      expect {
+        result = service.send(
+          :create_conflict,
+          existing_expense: existing_expense,
+          new_expense_data: new_expense_data,
+          conflict_type: 'similar',
+          similarity_score: 85.0,
+          differences: {}
+        )
+      }.to change(SyncConflict, :count).by(1)
+
+      expect(result).to be_conflict
+      expect(result.conflict.conflict_type).to eq('similar')
+    end
+
+    it 'returns a no_conflict result and adds an error when the transaction fails' do
       allow_any_instance_of(SyncConflict).to receive(:save!).and_raise(
         ActiveRecord::RecordInvalid.new(SyncConflict.new)
       )
@@ -349,7 +438,7 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
         differences: {}
       )
 
-      expect(result).to be_nil
+      expect(result).to be_no_conflict
       expect(service.errors).not_to be_empty
     end
   end

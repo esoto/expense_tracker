@@ -92,11 +92,20 @@ module Services::EmailProcessing
       # Check for conflicts before creating expense
       conflict_result = detect_and_handle_conflict(email_data)
 
-      if conflict_result.nil?
-        # Conflict detected — this email will never be re-processed successfully,
-        # so record it now (terminal outcome).
+      case conflict_result
+      when :conflict, :duplicate_skipped
+        # Both outcomes are terminal — a SyncConflict was persisted for human
+        # review (:conflict), or the incoming email was recognized as an
+        # already-seen duplicate and silently discarded (:duplicate_skipped).
+        # Either way this email will never be re-processed successfully, so
+        # record it now (terminal-outcome pattern from PR #548).
         record_processed_email(email_data[:rfc_message_id], subject: email_data[:subject], from_address: email_data[:from])
-        { processed: true, expense_created: false, conflict_detected: true }
+        {
+          processed: true,
+          expense_created: false,
+          conflict_detected: conflict_result == :conflict,
+          duplicate_skipped: conflict_result == :duplicate_skipped
+        }
       else
         # No conflict — pass pre-parsed data if available
         pre_parsed = if conflict_result.is_a?(Hash)
@@ -288,9 +297,10 @@ module Services::EmailProcessing
     end
 
     # Returns:
-    #   nil        — conflict detected, processing should stop
-    #   Hash       — no conflict, pre-parsed expense data for reuse
-    #   false      — parsing failed or no rule, continue without pre-parsed data
+    #   :conflict          — SyncConflict persisted for human review; stop, do NOT create the expense
+    #   :duplicate_skipped — exact/near-exact duplicate silently discarded (no SyncConflict); stop, do NOT create the expense
+    #   Hash               — no conflict, pre-parsed expense data for reuse
+    #   false              — parsing failed or no rule, continue without pre-parsed data
     def detect_and_handle_conflict(email_data)
       # Parse expense data from email to extract fields without creating expense
       parsing_rule = ParsingRule.active.for_bank(email_account.bank_name).first
@@ -317,9 +327,14 @@ module Services::EmailProcessing
       if sync_session
         # Use conflict detection service with metrics tracking
         detector = Services::ConflictDetectionService.new(sync_session, metrics_collector: @metrics_collector)
-        conflict = detector.detect_conflict_for_expense(expense_data)
+        result = detector.detect_conflict_for_expense(expense_data)
 
-        return nil if conflict # Conflict detected — stop processing
+        # Explicit outcome check — replaces the old `return nil if conflict`
+        # ambiguity, where a bare nil from the service could mean either
+        # "no conflict, proceed" or "duplicate silently skipped, stop" and
+        # the two were indistinguishable here.
+        return :conflict if result.conflict?
+        return :duplicate_skipped if result.duplicate_skipped?
       end
 
       expense_data # No conflict — return parsed data for reuse

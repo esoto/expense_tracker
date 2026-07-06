@@ -30,6 +30,7 @@ module Services
         return nil
       end
 
+      key = repair_pem_lines(key)
       path = root.join(DEFAULT_KEY_PATH).to_s
 
       File.write(path, key, perm: 0o600)
@@ -40,5 +41,21 @@ module Services
       Rails.logger.error("[BackupKeyMaterializer] STORAGE_BOX_SSH_KEY_CONTENT is not valid base64: #{e.message}")
       nil
     end
+
+    # 1Password single-line text fields flatten a pasted key's newlines into
+    # spaces, producing a one-line PEM net-ssh cannot parse (prod 2026-07-06).
+    # PEM structure is rigid — BEGIN header, base64 body, END footer — so the
+    # line breaks can be rebuilt deterministically. Keys that already contain
+    # newlines pass through untouched.
+    def self.repair_pem_lines(key)
+      return key if key.include?("\n")
+
+      match = key.match(/\A(-----BEGIN [A-Z0-9 ]+-----)(.*?)(-----END [A-Z0-9 ]+-----)\s*\z/m)
+      return key unless match
+
+      body = match[2].gsub(/\s+/, "")
+      "#{match[1]}\n#{body.scan(/.{1,70}/).join("\n")}\n#{match[3]}\n"
+    end
+    private_class_method :repair_pem_lines
   end
 end

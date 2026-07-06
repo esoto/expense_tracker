@@ -44,6 +44,7 @@ module Services
         )
         apply_payload(result.body) if result.ok?
         @source.mark_succeeded!
+        ::Budgets::SuggestMappingsJob.perform_later(@source.email_account_id)
         true
       rescue ApiClient::NotFoundError
         @source.mark_succeeded!

@@ -72,6 +72,11 @@ RSpec.describe Services::ExternalBudgets::SyncService, :unit do
         expect(source.last_sync_status).to eq("ok")
         expect(source.last_synced_at).to be_within(5.seconds).of(Time.current)
       end
+
+      it "enqueues a mapping suggestion job after a successful sync" do
+        expect { service.call }.to have_enqueued_job(Budgets::SuggestMappingsJob)
+          .with(source.email_account_id)
+      end
     end
 
     context "when an existing synced budget is updated" do
@@ -181,6 +186,10 @@ RSpec.describe Services::ExternalBudgets::SyncService, :unit do
         expect(source.active).to be false
         expect(source.last_sync_status).to eq("failed")
         expect(source.last_sync_error).to include("unauthorized")
+      end
+
+      it "does not enqueue the suggestion job when the sync fails" do
+        expect { service.call }.not_to have_enqueued_job(Budgets::SuggestMappingsJob)
       end
     end
 

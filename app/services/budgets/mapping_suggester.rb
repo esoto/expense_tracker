@@ -79,11 +79,22 @@ module Services::Budgets
       result = fuzzy_matcher.match(normalized, candidates)
       best = result.respond_to?(:matches) ? result.matches.first : nil
       return false unless best && best[:score].to_f >= FUZZY_MIN_CONFIDENCE
+      return false unless word_containment?(normalized, BudgetNameMapping.normalize(best[:object].display_name))
 
       upsert_mapping(user, normalized, category: best[:object], kind: :category,
                      source: :fuzzy, confidence: best[:score].to_f.round(3))
       @suggested += 1
       true
+    end
+
+    # Similarity scores alone cannot separate real matches from lookalike
+    # Spanish words at these lengths — prod run 2026-07-06 scored
+    # "comida"→"Compras" at 0.82 (garbage) while the correct
+    # "impuestos de la casa"→"Impuestos" scored 0.69. A fuzzy hit is only
+    # trusted when the two names share a whole word (≥4 chars); everything
+    # else falls through to the LLM tier, which handles semantics.
+    def word_containment?(a, b)
+      (a.split & b.split).any? { |w| w.length >= 4 }
     end
 
     def resolve_with_llm(user, pending, categories)

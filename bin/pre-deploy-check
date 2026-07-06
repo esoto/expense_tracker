@@ -174,9 +174,12 @@ if DEPLOY_YML.file?
   # Missing it makes the strategy 401 on every call and silently degrade to
   # pattern-only categorization (PER-548). Treated as a deploy gate so the
   # next contributor can't ship a deploy.yml that drops it.
-  # SENTRY_DSN: required for Sentry APM/error-tracking (PER-526). Without it
-  # the gem stays inert and no error events are sent to Sentry.
-  seen = { "ADMIN_EMAIL" => false, "ADMIN_PASSWORD" => false, "ANTHROPIC_API_KEY" => false, "SENTRY_DSN" => false }
+  # SENTRY_DSN: warn-only. Sentry (PER-526) is not provisioned — the entry is
+  # deliberately commented out of deploy.yml (PR #539) because Kamal
+  # hard-fails the whole deploy on any listed-but-missing secret. Promote to
+  # `seen` once the DSN exists in 1Password AND .kamal/secrets AND deploy.yml.
+  seen = { "ADMIN_EMAIL" => false, "ADMIN_PASSWORD" => false, "ANTHROPIC_API_KEY" => false }
+  recommended_seen = { "SENTRY_DSN" => false }
   yml.each_line do |line|
     stripped = line.strip
     if stripped.start_with?("secret:")
@@ -190,10 +193,14 @@ if DEPLOY_YML.file?
     if in_env_secret && stripped.start_with?("-")
       key = stripped.sub(/\A-\s*/, "").strip
       seen[key] = true if seen.key?(key)
+      recommended_seen[key] = true if recommended_seen.key?(key)
     end
   end
   seen.each do |key, found|
     failures << "config/deploy.yml env.secret is missing `#{key}` — the container will start without it" unless found
+  end
+  recommended_seen.each do |key, found|
+    info << "config/deploy.yml env.secret does not declare `#{key}` — its feature stays inert until provisioned (warn-only)" unless found
   end
 else
   failures << "config/deploy.yml not found at #{DEPLOY_YML.relative_path_from(ROOT)}"

@@ -93,19 +93,26 @@ class ProcessEmailJob < ApplicationJob
   # created or marked duplicate). See Services::EmailProcessing::Processor
   # for the same pattern applied to non-transaction and conflict-skip outcomes.
   #
+  # Keyed on the RFC822 Message-ID header (email_data[:rfc_message_id]) — the
+  # IMAP sequence number in email_data[:message_id] is unstable across
+  # sessions (RFC 3501) and must never be used as an idempotency key. A
+  # blank/missing header is simply not recorded; the email gets re-processed
+  # next sync, which is the safe direction.
+  #
   # Never allowed to raise — a failure here just means one wasted re-process
   # on the next sync, which is much cheaper than losing an already-saved expense.
   def record_processed_email(email_account, email_data)
-    message_id = email_data&.dig(:message_id)
-    return if message_id.blank?
+    rfc_message_id = email_data&.dig(:rfc_message_id)
+    normalized_id = ProcessedEmail.normalize_message_id(rfc_message_id)
+    return if normalized_id.nil?
 
-    ProcessedEmail.find_or_create_by!(message_id: message_id.to_s, email_account_id: email_account.id) do |processed_email|
+    ProcessedEmail.find_or_create_by!(message_id: normalized_id, email_account_id: email_account.id) do |processed_email|
       processed_email.user = email_account.user
       processed_email.processed_at = Time.current
       processed_email.subject = email_data[:subject]
       processed_email.from_address = email_data[:from]
     end
   rescue StandardError => e
-    Rails.logger.error "Failed to record processed email #{message_id}: #{e.message}"
+    Rails.logger.error "Failed to record processed email #{rfc_message_id}: #{e.message}"
   end
 end

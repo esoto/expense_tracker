@@ -23,7 +23,9 @@ RSpec.describe ProcessedEmail, type: :model, unit: true do
     subject { build(:processed_email) }
 
     it { should validate_presence_of(:message_id) }
-    it { should validate_uniqueness_of(:message_id).scoped_to(:email_account_id) }
+    # Normalization downcases message_id before validation, so uniqueness is
+    # effectively case-insensitive — tell the matcher not to probe case variants.
+    it { should validate_uniqueness_of(:message_id).scoped_to(:email_account_id).ignoring_case_sensitivity }
     it { should validate_presence_of(:email_account) }
   end
 
@@ -56,6 +58,46 @@ RSpec.describe ProcessedEmail, type: :model, unit: true do
     end
   end
 
+  describe ".normalize_message_id" do
+    it "strips surrounding angle brackets" do
+      expect(described_class.normalize_message_id("<abc@mail.gmail.com>")).to eq("abc@mail.gmail.com")
+    end
+
+    it "downcases" do
+      expect(described_class.normalize_message_id("<ABC@Mail.Gmail.Com>")).to eq("abc@mail.gmail.com")
+    end
+
+    it "strips surrounding whitespace, inside and outside the brackets" do
+      expect(described_class.normalize_message_id("  < abc@mail.gmail.com >  ")).to eq("abc@mail.gmail.com")
+    end
+
+    it "leaves bracket-less ids intact apart from case" do
+      expect(described_class.normalize_message_id("Abc@Mail.example")).to eq("abc@mail.example")
+    end
+
+    it "returns nil for nil, blank, and bracket-only input" do
+      expect(described_class.normalize_message_id(nil)).to be_nil
+      expect(described_class.normalize_message_id("")).to be_nil
+      expect(described_class.normalize_message_id("   ")).to be_nil
+      expect(described_class.normalize_message_id("<>")).to be_nil
+    end
+  end
+
+  describe "message_id normalization on write" do
+    it "persists the normalized form" do
+      record = create(:processed_email, message_id: "<Some-ID@Mail.Example>")
+      expect(record.reload.message_id).to eq("some-id@mail.example")
+    end
+
+    it "treats bracket/case variants as the same record for uniqueness" do
+      account = create(:email_account)
+      create(:processed_email, message_id: "<dup@mail.example>", email_account: account)
+
+      duplicate = build(:processed_email, message_id: "DUP@MAIL.EXAMPLE", email_account: account)
+      expect(duplicate).not_to be_valid
+    end
+  end
+
   describe ".already_processed?" do
     let(:account) { create(:email_account) }
     let(:message_id) { "msg_123" }
@@ -67,11 +109,23 @@ RSpec.describe ProcessedEmail, type: :model, unit: true do
       it "returns true" do
         expect(ProcessedEmail.already_processed?(message_id, account)).to be true
       end
+
+      it "returns true for a bracketed/uppercased variant of the same id (shared normalization)" do
+        expect(ProcessedEmail.already_processed?("<MSG_123>", account)).to be true
+      end
     end
 
     context "when email not processed" do
       it "returns false" do
         expect(ProcessedEmail.already_processed?(message_id, account)).to be false
+      end
+    end
+
+    context "when the message id is nil, blank, or bracket-only" do
+      it "returns false" do
+        expect(ProcessedEmail.already_processed?(nil, account)).to be false
+        expect(ProcessedEmail.already_processed?("", account)).to be false
+        expect(ProcessedEmail.already_processed?("<>", account)).to be false
       end
     end
   end

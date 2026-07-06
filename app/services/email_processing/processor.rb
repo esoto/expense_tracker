@@ -41,11 +41,6 @@ module Services::EmailProcessing
     private
 
     def process_single_email(message_id, imap_service)
-      if ProcessedEmail.already_processed?(message_id, email_account)
-        Rails.logger.info "[SKIP] Already processed message: #{message_id}"
-        return { processed: false, expense_created: false }
-      end
-
       if @metrics_collector
         begin
           result = @metrics_collector.track_operation(:parse_email, @email_account, { message_id: message_id }) do
@@ -68,12 +63,23 @@ module Services::EmailProcessing
       envelope = imap_service.fetch_envelope(message_id)
       return { processed: false, expense_created: false } unless envelope
 
+      # Idempotency is keyed on the RFC822 Message-ID header — NOT the IMAP
+      # sequence number in `message_id`, which RFC 3501 defines as unstable
+      # across sessions (expunges shift it, so a reused sequence number could
+      # silently drop a real expense). A nil/blank header never skips: one
+      # wasted re-process beats a dropped expense.
+      rfc_message_id = envelope.message_id
+      if ProcessedEmail.already_processed?(rfc_message_id, email_account)
+        Rails.logger.info "[SKIP] Already processed message: #{rfc_message_id}"
+        return { processed: false, expense_created: false }
+      end
+
       subject = decode_subject(envelope.subject || "")
 
       # Check if this is a transaction email based on subject
       unless transaction_email?(subject)
         Rails.logger.info "[SKIP] Non-transaction email: #{subject}"
-        record_processed_email(message_id, subject: subject, from_address: build_from_address(envelope))
+        record_processed_email(rfc_message_id, subject: subject, from_address: build_from_address(envelope))
         return { processed: false, expense_created: false }
       end
 
@@ -89,7 +95,7 @@ module Services::EmailProcessing
       if conflict_result.nil?
         # Conflict detected — this email will never be re-processed successfully,
         # so record it now (terminal outcome).
-        record_processed_email(message_id, subject: email_data[:subject], from_address: email_data[:from])
+        record_processed_email(email_data[:rfc_message_id], subject: email_data[:subject], from_address: email_data[:from])
         { processed: true, expense_created: false, conflict_detected: true }
       else
         # No conflict — pass pre-parsed data if available
@@ -137,6 +143,7 @@ module Services::EmailProcessing
 
       {
         message_id: message_id,
+        rfc_message_id: envelope.message_id,
         from: build_from_address(envelope),
         subject: decode_subject(envelope.subject || ""),
         date: envelope.date,
@@ -330,19 +337,24 @@ module Services::EmailProcessing
     # future re-sync (which only filters IMAP by SINCE-date) can skip it via
     # the ProcessedEmail.already_processed? check instead of re-parsing it.
     #
+    # Keyed on the RFC822 Message-ID header (normalized by the model — the
+    # find and the write must use the identical normalization or lookups
+    # would miss). Blank/missing headers are never recorded.
+    #
     # Never allowed to break expense processing — any failure here (including
     # the unique index race between concurrent jobs) is logged and swallowed.
-    def record_processed_email(message_id, subject: nil, from_address: nil)
-      return if message_id.blank?
+    def record_processed_email(rfc_message_id, subject: nil, from_address: nil)
+      normalized_id = ProcessedEmail.normalize_message_id(rfc_message_id)
+      return if normalized_id.nil?
 
-      ProcessedEmail.find_or_create_by!(message_id: message_id.to_s, email_account_id: email_account.id) do |processed_email|
+      ProcessedEmail.find_or_create_by!(message_id: normalized_id, email_account_id: email_account.id) do |processed_email|
         processed_email.user = email_account.user
         processed_email.processed_at = Time.current
         processed_email.subject = subject
         processed_email.from_address = from_address
       end
     rescue StandardError => e
-      Rails.logger.error "[Services::EmailProcessing::Processor] Failed to record processed email #{message_id}: #{e.message}"
+      Rails.logger.error "[Services::EmailProcessing::Processor] Failed to record processed email #{rfc_message_id}: #{e.message}"
     end
   end
 end

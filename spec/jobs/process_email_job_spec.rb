@@ -313,42 +313,56 @@ RSpec.describe ProcessEmailJob, type: :job, integration: true do
   end
 
   describe 'idempotent recording via ProcessedEmail', integration: true do
-    let(:message_id) { 'msg-abc-123' }
-    let(:email_data_with_message_id) { email_data.merge(message_id: message_id) }
+    # RFC822 Message-ID header as fetched from the ENVELOPE — the idempotency
+    # key. Deliberately mixed-case and bracketed to exercise normalization.
+    let(:rfc_message_id) { '<MSG-Abc-123@Mail.Gmail.Com>' }
+    let(:email_data_with_rfc_id) { email_data.merge(message_id: 7, rfc_message_id: rfc_message_id) }
 
-    it 'records a ProcessedEmail when the expense is created successfully' do
+    it 'records a ProcessedEmail keyed on the normalized RFC822 Message-ID when the expense is created' do
       expect {
-        ProcessEmailJob.new.perform(email_account.id, email_data_with_message_id)
+        ProcessEmailJob.new.perform(email_account.id, email_data_with_rfc_id)
       }.to change(ProcessedEmail, :count).by(1)
 
       recorded = ProcessedEmail.last
-      expect(recorded.message_id).to eq(message_id)
+      expect(recorded.message_id).to eq('msg-abc-123@mail.gmail.com')
       expect(recorded.email_account).to eq(email_account)
       expect(recorded.user).to eq(email_account.user)
-      expect(recorded.subject).to eq(email_data_with_message_id[:subject])
+      expect(recorded.subject).to eq(email_data_with_rfc_id[:subject])
+    end
+
+    it 'never uses the IMAP sequence number as the recorded key' do
+      ProcessEmailJob.new.perform(email_account.id, email_data_with_rfc_id)
+
+      expect(ProcessedEmail.where(message_id: '7')).to be_empty
     end
 
     it 'records a ProcessedEmail when the expense is marked as duplicate' do
-      ProcessEmailJob.new.perform(email_account.id, email_data_with_message_id)
+      ProcessEmailJob.new.perform(email_account.id, email_data_with_rfc_id)
 
       expect {
-        ProcessEmailJob.new.perform(email_account.id, email_data_with_message_id.merge(message_id: "#{message_id}-dup"))
+        ProcessEmailJob.new.perform(email_account.id, email_data_with_rfc_id.merge(rfc_message_id: '<resent-copy@mail.gmail.com>'))
       }.to change(Expense, :count).by(0).and change(ProcessedEmail, :count).by(1)
 
       expect(Expense.last.status).to eq('duplicate')
     end
 
     it 'does not record a ProcessedEmail when parsing fails (non-terminal outcome)' do
-      invalid_email_data = { body: "Invalid email content", subject: "Random subject", message_id: message_id }
+      invalid_email_data = { body: "Invalid email content", subject: "Random subject", rfc_message_id: rfc_message_id }
 
       expect {
         ProcessEmailJob.new.perform(email_account.id, invalid_email_data)
       }.not_to change(ProcessedEmail, :count)
     end
 
-    it 'does not record and does not raise when message_id is missing' do
+    it 'does not record and does not raise when the RFC822 Message-ID header is missing' do
       expect {
-        ProcessEmailJob.new.perform(email_account.id, email_data)
+        ProcessEmailJob.new.perform(email_account.id, email_data.merge(rfc_message_id: nil))
+      }.not_to change(ProcessedEmail, :count)
+    end
+
+    it 'does not record when the header is bracket-only garbage' do
+      expect {
+        ProcessEmailJob.new.perform(email_account.id, email_data.merge(rfc_message_id: '<>'))
       }.not_to change(ProcessedEmail, :count)
     end
 
@@ -357,7 +371,7 @@ RSpec.describe ProcessEmailJob, type: :job, integration: true do
       allow(Rails.logger).to receive(:error)
 
       expect {
-        ProcessEmailJob.new.perform(email_account.id, email_data_with_message_id)
+        ProcessEmailJob.new.perform(email_account.id, email_data_with_rfc_id)
       }.not_to raise_error
 
       expect(Rails.logger).to have_received(:error).with(

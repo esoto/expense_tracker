@@ -8,7 +8,8 @@ RSpec.describe 'IMAP connection reuse', type: :service, unit: true do
     double('envelope',
       subject: 'Notificacion de transaccion',
       from: [ double(mailbox: 'alerts', host: 'bac.net') ],
-      date: Time.current
+      date: Time.current,
+      message_id: '<connection-reuse@bac.net>'
     )
   end
 

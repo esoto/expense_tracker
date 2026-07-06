@@ -283,7 +283,8 @@ RSpec.describe 'Services::EmailProcessing::Processor - Metrics Tracking', type: 
       envelope = double('envelope',
         subject: 'BAC - Notificación de transacción',
         date: Time.current,
-        from: [ double('from', mailbox: 'bank', host: 'bac.co.cr') ]
+        from: [ double('from', mailbox: 'bank', host: 'bac.co.cr') ],
+        message_id: "<no-metrics-#{SecureRandom.hex(4)}@example.com>"
       )
 
       allow(mock_imap_service).to receive(:fetch_envelope).and_return(envelope)
@@ -299,7 +300,8 @@ RSpec.describe 'Services::EmailProcessing::Processor - Metrics Tracking', type: 
       envelope = double('envelope',
         subject: 'BAC - Notificación de transacción',
         date: Time.current,
-        from: [ double('from', mailbox: 'bank', host: 'bac.co.cr') ]
+        from: [ double('from', mailbox: 'bank', host: 'bac.co.cr') ],
+        message_id: "<no-metrics-#{SecureRandom.hex(4)}@example.com>"
       )
 
       allow(mock_imap_service).to receive(:fetch_envelope).and_return(envelope)

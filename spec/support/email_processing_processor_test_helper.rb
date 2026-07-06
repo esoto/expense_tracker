@@ -57,12 +57,16 @@ module EmailProcessingProcessorTestHelper
 
   # Mock envelope structure
   class MockEnvelope
-    attr_accessor :subject, :date, :from
+    attr_accessor :subject, :date, :from, :message_id
 
-    def initialize(subject:, date: Time.current, from: nil)
+    def initialize(subject:, date: Time.current, from: nil, message_id: :generate)
       @subject = subject
       @date = date
       @from = from || [ MockAddress.new("test", "example.com") ]
+      # RFC822 Message-ID header (Net::IMAP::Envelope#message_id). Defaults to
+      # a unique id per envelope instance; pass nil explicitly to simulate a
+      # malformed email missing the header.
+      @message_id = message_id == :generate ? "<mock-#{SecureRandom.hex(8)}@example.com>" : message_id
     end
   end
 
@@ -116,11 +120,12 @@ module EmailProcessingProcessorTestHelper
     create_imap_error(Net::IMAP::ByeResponseError, message)
   end
 
-  def create_transaction_envelope(subject = "Notificación de transacción")
+  def create_transaction_envelope(subject = "Notificación de transacción", message_id: :generate)
     MockEnvelope.new(
       subject: subject,
       date: 1.day.ago,
-      from: [ MockAddress.new("notificacion", "bank.com") ]
+      from: [ MockAddress.new("notificacion", "bank.com") ],
+      message_id: message_id
     )
   end
 

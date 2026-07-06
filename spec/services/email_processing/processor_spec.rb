@@ -49,8 +49,8 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
 
     context 'with transaction emails' do
       let(:message_ids) { [ 1, 2, 3 ] }
-      let(:transaction_envelope) { double('envelope', subject: 'BAC - Notificación de transacción') }
-      let(:non_transaction_envelope) { double('envelope', subject: 'Regular email') }
+      let(:transaction_envelope) { double('envelope', subject: 'BAC - Notificación de transacción', from: nil, message_id: '<txn@example.com>') }
+      let(:non_transaction_envelope) { double('envelope', subject: 'Regular email', from: nil, message_id: '<regular@example.com>') }
 
       before do
         allow(mock_imap_service).to receive(:fetch_envelope).with(1).and_return(transaction_envelope)
@@ -120,7 +120,7 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
 
     context 'with failed email data extraction' do
       let(:message_ids) { [ 1 ] }
-      let(:transaction_envelope) { double('envelope', subject: 'BAC - Notificación de transacción') }
+      let(:transaction_envelope) { double('envelope', subject: 'BAC - Notificación de transacción', message_id: '<failed-extraction@example.com>') }
 
       before do
         allow(mock_imap_service).to receive(:fetch_envelope).and_return(transaction_envelope)
@@ -161,7 +161,7 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
     let(:imap_service) { instance_double(Services::ImapConnectionService) }
 
     it 'passes 3 arguments to progress callback' do
-      envelope = double("envelope", subject: "Notificación de transacción", from: nil, date: Time.current)
+      envelope = double("envelope", subject: "Notificación de transacción", from: nil, date: Time.current, message_id: "<progress-1@example.com>")
       allow(imap_service).to receive(:fetch_envelope).and_return(envelope)
       allow(imap_service).to receive(:fetch_body_structure).and_return(nil)
       allow(imap_service).to receive(:fetch_text_body).and_return("Test body")
@@ -176,7 +176,7 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
     end
 
     it 'passes nil as third arg for non-expense emails' do
-      non_transaction_envelope = double("envelope", subject: "Newsletter", from: nil, date: Time.current)
+      non_transaction_envelope = double("envelope", subject: "Newsletter", from: nil, date: Time.current, message_id: "<progress-2@example.com>")
       allow(imap_service).to receive(:fetch_envelope).and_return(non_transaction_envelope)
 
       callback_args = []
@@ -265,7 +265,8 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
       double('envelope',
         subject: 'Test Transaction',
         date: Time.current,
-        from: [ double('from', mailbox: 'bank', host: 'bac.co.cr') ]
+        from: [ double('from', mailbox: 'bank', host: 'bac.co.cr') ],
+        message_id: '<extract-data@example.com>'
       )
     end
     let(:email_body) { 'Transaction details here' }
@@ -279,6 +280,7 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
 
       expect(result).to include(
         message_id: message_id,
+        rfc_message_id: '<extract-data@example.com>',
         from: 'bank@bac.co.cr',
         subject: 'Test Transaction',
         date: envelope.date,
@@ -662,7 +664,7 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
 
   describe 'metrics integration', integration: true do
     let(:message_id) { 123 }
-    let(:envelope) { double('envelope', subject: 'BAC - Notificación de transacción', date: Time.current, from: [ double('from', mailbox: 'bank', host: 'bac.co.cr') ]) }
+    let(:envelope) { double('envelope', subject: 'BAC - Notificación de transacción', date: Time.current, from: [ double('from', mailbox: 'bank', host: 'bac.co.cr') ], message_id: '<metrics@example.com>') }
 
     describe '#process_single_email with metrics' do
       it 'tracks operation with metrics collector when available' do
@@ -781,6 +783,188 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
 
         result = processor_with_session.send(:detect_and_handle_conflict, email_data)
         expect(result).to be false
+      end
+    end
+  end
+
+  describe 'idempotent skip gate keyed on RFC822 Message-ID', integration: true do
+    let(:message_id) { 42 } # IMAP sequence number — fetch mechanics only, never the idempotency key
+    let(:rfc_message_id) { '<abc-123@mail.bank.example>' }
+    let(:envelope) do
+      double('envelope',
+        subject: 'BAC - Notificación de transacción',
+        from: [ double('from', mailbox: 'bank', host: 'bac.co.cr') ],
+        date: Time.current,
+        message_id: rfc_message_id)
+    end
+
+    before do
+      allow(mock_imap_service).to receive(:fetch_envelope).with(message_id).and_return(envelope)
+    end
+
+    context 'when the RFC822 Message-ID was already processed' do
+      before do
+        create(:processed_email, message_id: rfc_message_id, email_account: email_account)
+      end
+
+      it 'skips with the standard result before any parsing or conflict work' do
+        expect(Services::ConflictDetectionService).not_to receive(:new)
+        expect(ProcessEmailJob).not_to receive(:perform_later)
+        expect(mock_imap_service).not_to receive(:fetch_body_structure)
+        expect(mock_imap_service).not_to receive(:fetch_text_body)
+
+        result = processor_without_metrics.send(:process_single_email, message_id, mock_imap_service)
+
+        expect(result).to eq(processed: false, expense_created: false)
+      end
+
+      it 'is counted as skipped (not processed) at the process_emails level' do
+        result = processor_without_metrics.process_emails([ message_id ], mock_imap_service)
+
+        expect(result[:processed_count]).to eq(0)
+        expect(result[:total_count]).to eq(1)
+        expect(result[:detected_expenses_count]).to eq(0)
+      end
+
+      it 'does not create a new ProcessedEmail record' do
+        expect {
+          processor_without_metrics.send(:process_single_email, message_id, mock_imap_service)
+        }.not_to change(ProcessedEmail, :count)
+      end
+
+      it 'matches bracket/case variants through the shared normalization' do
+        variant_envelope = double('envelope',
+          subject: 'BAC - Notificación de transacción',
+          from: nil, date: Time.current,
+          message_id: '  <ABC-123@MAIL.BANK.EXAMPLE>  ')
+        allow(mock_imap_service).to receive(:fetch_envelope).with(message_id).and_return(variant_envelope)
+
+        result = processor_without_metrics.send(:process_single_email, message_id, mock_imap_service)
+
+        expect(result).to eq(processed: false, expense_created: false)
+      end
+    end
+
+    # REGRESSION (architect): IMAP sequence numbers are unstable across
+    # sessions (RFC 3501 — expunges shift them). A reused sequence position
+    # carrying a DIFFERENT email must be processed, never skipped.
+    context 'when the same sequence number carries a different Message-ID' do
+      before do
+        create(:processed_email, message_id: '<some-other-email@mail.bank.example>', email_account: email_account)
+        allow(processor_without_metrics).to receive(:extract_email_data).and_return(nil)
+      end
+
+      it 'does not skip — proceeds into the transaction pipeline' do
+        processor_without_metrics.send(:process_single_email, message_id, mock_imap_service)
+
+        expect(processor_without_metrics).to have_received(:extract_email_data)
+      end
+    end
+
+    context 'when the Message-ID header is nil (malformed email)' do
+      let(:envelope) do
+        double('envelope',
+          subject: 'BAC - Notificación de transacción',
+          from: nil, date: Time.current,
+          message_id: nil)
+      end
+
+      before do
+        allow(processor_without_metrics).to receive(:extract_email_data).and_return(nil)
+      end
+
+      it 'never skips, even when a blank-keyed record could theoretically match' do
+        processor_without_metrics.send(:process_single_email, message_id, mock_imap_service)
+
+        expect(processor_without_metrics).to have_received(:extract_email_data)
+      end
+    end
+  end
+
+  describe '#process_email_with_metrics recording at terminal outcomes', integration: true do
+    let(:message_id) { 55 } # IMAP sequence number
+    let(:rfc_message_id) { '<Terminal-55@Mail.Bank.Example>' }
+
+    context 'when the email is not a transaction email' do
+      let(:non_transaction_envelope) do
+        double('envelope', subject: 'Newsletter', from: [ double('from', mailbox: 'news', host: 'example.com') ], date: Time.current, message_id: rfc_message_id)
+      end
+
+      before do
+        allow(mock_imap_service).to receive(:fetch_envelope).and_return(non_transaction_envelope)
+      end
+
+      it 'records a ProcessedEmail keyed on the normalized RFC822 Message-ID' do
+        expect {
+          processor_without_metrics.send(:process_email_with_metrics, message_id, mock_imap_service)
+        }.to change(ProcessedEmail, :count).by(1)
+
+        recorded = ProcessedEmail.last
+        expect(recorded.message_id).to eq('terminal-55@mail.bank.example')
+        expect(recorded.email_account).to eq(email_account)
+        expect(recorded.user).to eq(email_account.user)
+        expect(recorded.subject).to eq('Newsletter')
+      end
+
+      it 'does not raise when recording fails' do
+        allow(ProcessedEmail).to receive(:find_or_create_by!).and_raise(StandardError, 'boom')
+        allow(Rails.logger).to receive(:error)
+
+        expect {
+          processor_without_metrics.send(:process_email_with_metrics, message_id, mock_imap_service)
+        }.not_to raise_error
+
+        expect(Rails.logger).to have_received(:error).with(
+          a_string_matching(/Failed to record processed email/)
+        )
+      end
+
+      context 'with a nil Message-ID header' do
+        let(:non_transaction_envelope) do
+          double('envelope', subject: 'Newsletter', from: nil, date: Time.current, message_id: nil)
+        end
+
+        it 'records nothing and does not raise' do
+          expect {
+            processor_without_metrics.send(:process_email_with_metrics, message_id, mock_imap_service)
+          }.not_to change(ProcessedEmail, :count)
+        end
+      end
+    end
+
+    context 'when a conflict is detected for a transaction email' do
+      let(:sync_session_for_conflict) { instance_double(SyncSession, id: 1) }
+      let(:processor_with_session) { described_class.new(email_account, sync_session: sync_session_for_conflict) }
+      let(:transaction_envelope) do
+        double('envelope', subject: 'Notificación de transacción', from: [ double('from', mailbox: 'bank', host: 'bac.co.cr') ], date: Time.current, message_id: rfc_message_id)
+      end
+
+      before do
+        allow(mock_imap_service).to receive(:fetch_envelope).and_return(transaction_envelope)
+        allow(processor_with_session).to receive(:extract_email_data).and_return({
+          message_id: message_id,
+          rfc_message_id: rfc_message_id,
+          from: 'bank@bac.co.cr',
+          subject: 'Notificación de transacción',
+          date: Time.current,
+          body: 'body'
+        })
+        allow(processor_with_session).to receive(:detect_and_handle_conflict).and_return(nil)
+        allow(ProcessEmailJob).to receive(:perform_later)
+      end
+
+      it 'records a ProcessedEmail keyed on the normalized RFC822 Message-ID' do
+        expect {
+          processor_with_session.send(:process_email_with_metrics, message_id, mock_imap_service)
+        }.to change(ProcessedEmail, :count).by(1)
+
+        expect(ProcessedEmail.last.message_id).to eq('terminal-55@mail.bank.example')
+      end
+
+      it 'does not enqueue ProcessEmailJob' do
+        processor_with_session.send(:process_email_with_metrics, message_id, mock_imap_service)
+
+        expect(ProcessEmailJob).not_to have_received(:perform_later)
       end
     end
   end

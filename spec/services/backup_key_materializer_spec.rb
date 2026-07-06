@@ -25,6 +25,46 @@ RSpec.describe Services::BackupKeyMaterializer, :unit do
     expect(env["STORAGE_BOX_SSH_KEY"]).to eq(path)
   end
 
+  describe "PEM line repair (1Password single-line fields flatten newlines to spaces)" do
+    it "rebuilds a flattened one-line key into valid PEM structure" do
+      flattened = "-----BEGIN OPENSSH PRIVATE KEY----- abc123 -----END OPENSSH PRIVATE KEY-----"
+      env = { "STORAGE_BOX_SSH_KEY_CONTENT" => Base64.strict_encode64(flattened) }
+
+      path = call(env)
+
+      expect(File.read(path)).to eq(key_material)
+    end
+
+    it "re-wraps a long flattened body at 70 columns" do
+      body = "A" * 140
+      flattened = "-----BEGIN OPENSSH PRIVATE KEY----- #{body[0, 70]} #{body[70, 70]} -----END OPENSSH PRIVATE KEY-----"
+      env = { "STORAGE_BOX_SSH_KEY_CONTENT" => Base64.strict_encode64(flattened) }
+
+      path = call(env)
+
+      expect(File.read(path)).to eq(
+        "-----BEGIN OPENSSH PRIVATE KEY-----\n#{body[0, 70]}\n#{body[70, 70]}\n-----END OPENSSH PRIVATE KEY-----\n"
+      )
+    end
+
+    it "repairs a flattened key that kept only its trailing newline" do
+      flattened = "-----BEGIN OPENSSH PRIVATE KEY----- abc123 -----END OPENSSH PRIVATE KEY-----\n"
+      env = { "STORAGE_BOX_SSH_KEY_CONTENT" => Base64.strict_encode64(flattened) }
+
+      path = call(env)
+
+      expect(File.read(path)).to eq(key_material)
+    end
+
+    it "leaves a properly multiline key byte-identical" do
+      env = { "STORAGE_BOX_SSH_KEY_CONTENT" => encoded }
+
+      path = call(env)
+
+      expect(File.read(path)).to eq(key_material)
+    end
+  end
+
   it "tolerates whitespace and newlines inside the base64 payload" do
     wrapped = encoded.scan(/.{1,40}/).join("\n")
     env = { "STORAGE_BOX_SSH_KEY_CONTENT" => wrapped }

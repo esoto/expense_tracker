@@ -48,7 +48,10 @@ module Services
     # line breaks can be rebuilt deterministically. Keys that already contain
     # newlines pass through untouched.
     def self.repair_pem_lines(key)
-      return key if key.include?("\n")
+      # net-ssh requires the header be immediately followed by a newline —
+      # "contains a newline somewhere" is not enough (a flattened key often
+      # keeps its final trailing newline).
+      return key if key.match?(/\A-----BEGIN [A-Z0-9 ]+-----\r?\n/)
 
       match = key.match(/\A(-----BEGIN [A-Z0-9 ]+-----)(.*?)(-----END [A-Z0-9 ]+-----)\s*\z/m)
       return key unless match

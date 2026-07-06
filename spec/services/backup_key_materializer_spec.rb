@@ -47,6 +47,15 @@ RSpec.describe Services::BackupKeyMaterializer, :unit do
       )
     end
 
+    it "repairs a flattened key that kept only its trailing newline" do
+      flattened = "-----BEGIN OPENSSH PRIVATE KEY----- abc123 -----END OPENSSH PRIVATE KEY-----\n"
+      env = { "STORAGE_BOX_SSH_KEY_CONTENT" => Base64.strict_encode64(flattened) }
+
+      path = call(env)
+
+      expect(File.read(path)).to eq(key_material)
+    end
+
     it "leaves a properly multiline key byte-identical" do
       env = { "STORAGE_BOX_SSH_KEY_CONTENT" => encoded }
 

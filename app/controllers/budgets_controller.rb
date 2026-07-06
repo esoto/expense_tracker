@@ -209,7 +209,10 @@ class BudgetsController < ApplicationController
     return { status: :no_budgets, message: "Sin presupuestos activos" } if active_budgets.empty?
 
     total_budget = active_budgets.sum(:amount)
-    total_spend = active_budgets.sum(:current_spend)
+    # Dedup shared logic with Services::Budgets::BucketSummary: summing each
+    # budget's cached current_spend double-counts expenses claimed by more
+    # than one overlapping active budget.
+    total_spend = Services::Budgets::DedupSpend.call(active_budgets)
 
     usage_percentage = total_budget.zero? ? 0 : ((total_spend / total_budget) * 100).round(1)
 

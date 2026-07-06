@@ -43,36 +43,10 @@ module Services::Budgets
     end
 
     # Per-budget accurate routing, then union expense ids, then sum once.
+    # Delegates to the shared Services::Budgets::DedupSpend so the same
+    # dedup logic is used here and in BudgetsController#calculate_overall_budget_health.
     def dedup_spend(budgets)
-      expense_ids = budgets.flat_map do |b|
-        range = b.current_period_range
-        currency_enum = currency_to_expense_currency(b.currency)
-        base = @email_account.expenses
-          .where(transaction_date: range)
-          .where(currency: currency_enum)
-
-        conditions = [ "expenses.budget_id = :bid" ]
-        bindings = { bid: b.id }
-
-        if b.category_ids.any?
-          conditions << "(expenses.budget_id IS NULL AND expenses.category_id IN (:cats))"
-          bindings[:cats] = b.category_ids
-        end
-
-        base.where(conditions.join(" OR "), bindings).pluck(:id)
-      end.uniq
-
-      return 0.0 if expense_ids.empty?
-      @email_account.expenses.where(id: expense_ids).sum(:amount).to_f
-    end
-
-    def currency_to_expense_currency(code)
-      case code
-      when "CRC" then Expense.currencies[:crc]
-      when "USD" then Expense.currencies[:usd]
-      when "EUR" then Expense.currencies[:eur]
-      else Expense.currencies[:crc]
-      end
+      Services::Budgets::DedupSpend.call(budgets)
     end
   end
 end

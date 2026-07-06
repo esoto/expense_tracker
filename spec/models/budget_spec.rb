@@ -103,12 +103,37 @@ RSpec.describe Budget, type: :model, integration: true do
         expect(Budget.for_category(category.id)).to include(category_budget)
         expect(Budget.for_category(category.id)).not_to include(general_budget)
       end
+
+      it 'also matches budgets that claim the category only via the M2M join (legacy category_id nil)' do
+        m2m_budget = create(:budget, email_account: email_account, category: nil, period: 'weekly', active: true)
+        m2m_budget.categories << category
+
+        results = Budget.for_category(category.id)
+        expect(results).to include(category_budget, m2m_budget)
+        expect(results).not_to include(general_budget)
+      end
+
+      it 'does not return duplicate rows when a budget matches via both legacy and M2M columns' do
+        category_budget.categories << category
+
+        results = Budget.for_category(category.id)
+        expect(results.to_a.count { |b| b.id == category_budget.id }).to eq(1)
+      end
     end
 
     describe '.general', integration: true do
       it 'returns budgets without category' do
         expect(Budget.general).to include(general_budget)
         expect(Budget.general).not_to include(category_budget)
+      end
+
+      it 'excludes a budget with no legacy category_id but a category claimed via the M2M join' do
+        m2m_budget = create(:budget, email_account: email_account, category: nil, period: 'weekly', active: true)
+        m2m_budget.categories << category
+
+        results = Budget.general
+        expect(results).to include(general_budget)
+        expect(results).not_to include(m2m_budget)
       end
     end
   end
@@ -386,6 +411,18 @@ RSpec.describe Budget, type: :model, integration: true do
       results = described_class.synced_unmapped
       expect(results).to include(external_unmapped)
       expect(results).not_to include(native, external_mapped)
+    end
+
+    it 'excludes an external budget mapped through the M2M join even though legacy category_id is nil' do
+      external_mapped_via_m2m = create(:budget, email_account: email_account, category: nil, period: 'daily',
+                                                  external_source: 'salary_calculator', external_id: 105)
+      external_mapped_via_m2m.categories << category
+      external_unmapped = create(:budget, email_account: email_account, category: nil, period: 'yearly',
+                                          external_source: 'salary_calculator', external_id: 106)
+
+      results = described_class.synced_unmapped
+      expect(results).to include(external_unmapped)
+      expect(results).not_to include(external_mapped_via_m2m)
     end
   end
 

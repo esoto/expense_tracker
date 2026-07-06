@@ -106,9 +106,9 @@ RSpec.describe "Budgets", type: :request, integration: true do
         expect(budget.current_spend_updated_at).not_to eq(original_updated_at)
       end
 
-      it "redirects to the dashboard" do
+      it "redirects to the budgets list" do
         patch budget_path(budget), params: new_attributes
-        expect(response).to redirect_to(dashboard_expenses_path)
+        expect(response).to redirect_to(budgets_path)
         expect(flash[:notice]).to eq('Presupuesto actualizado exitosamente.')
       end
     end
@@ -232,6 +232,28 @@ RSpec.describe "Budgets", type: :request, integration: true do
 
       expect(Budget.last.categories).to contain_exactly(food)
       expect(Budget.last.categories).not_to include(stranger_category)
+    end
+  end
+
+  describe "GET /budgets overall health", integration: true do
+    let(:food) { create(:category, name: "Food Overall") }
+
+    it "does not double count an expense claimed by two overlapping active budgets" do
+      budget_a = create(:budget, email_account: email_account, amount: 100_000, active: true)
+      budget_b = create(:budget, email_account: email_account, amount: 100_000, active: true)
+      budget_a.categories << food
+      budget_b.categories << food
+
+      create(:expense, email_account: email_account, category: food, amount: 15_000,
+                        currency: :crc, status: :processed,
+                        transaction_date: Date.current.beginning_of_month + 3.days)
+
+      budget_a.calculate_current_spend!
+      budget_b.calculate_current_spend!
+
+      get budgets_path
+
+      expect(assigns(:overall_health)[:total_spend]).to eq(15_000.0)
     end
   end
 end

@@ -48,15 +48,31 @@ class Budget < ApplicationRecord
   scope :active, -> { where(active: true) }
   scope :inactive, -> { where(active: false) }
   scope :current, -> { active.where("start_date <= ? AND (end_date IS NULL OR end_date >= ?)", Date.current, Date.current) }
-  scope :for_category, ->(category_id) { where(category_id: category_id) }
-  scope :general, -> { where(category_id: nil) }
+  # Matches a budget claiming category_id either through the legacy column
+  # or through the M2M budget_categories join. During the multi-category
+  # rollout, the controller writes ONLY the M2M side, so keying on the
+  # legacy column alone misses budgets mapped through the UI.
+  # WARNING: do not chain aggregates (.sum/.count) onto this scope — the
+  # DISTINCT emitted for the join fan-out becomes SUM(DISTINCT amount),
+  # silently collapsing different budgets that share the same amount.
+  # Load records first (or use a where(id: ...) subquery) before aggregating.
+  scope :for_category, ->(category_id) {
+    left_joins(:budget_categories)
+      .where("budgets.category_id = :category_id OR budget_categories.category_id = :category_id", category_id: category_id)
+      .distinct
+  }
+  # A budget is "general" only when it claims no category at all — neither
+  # via the legacy column nor via the M2M join. Mirrors #unmapped?.
+  scope :general, -> { where(category_id: nil).where.missing(:budget_categories) }
   # Optimized scopes that use precomputed values instead of divisions in WHERE clause
   scope :exceeded, -> { where("current_spend > amount") }
   scope :warning, -> { where("current_spend >= (amount * warning_threshold / 100.0)") }
   scope :critical, -> { where("current_spend >= (amount * critical_threshold / 100.0)") }
   scope :external, -> { where.not(external_source: nil) }
   scope :native, -> { where(external_source: nil) }
-  scope :synced_unmapped, -> { external.where(category_id: nil) }
+  # External budgets with no claimed category — neither legacy nor M2M.
+  # Mirrors #unmapped?; see TODO there about dropping the legacy leg.
+  scope :synced_unmapped, -> { external.general }
 
   # Callbacks
   before_validation :set_defaults, on: :create

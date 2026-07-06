@@ -90,7 +90,7 @@ class BudgetsController < ApplicationController
       # Recalculate spend after update
       @budget.calculate_current_spend!
 
-      redirect_to dashboard_expenses_path,
+      redirect_to budgets_path,
         notice: "Presupuesto actualizado exitosamente."
     else
       @categories = Category.all.order(:name)
@@ -205,11 +205,17 @@ class BudgetsController < ApplicationController
   end
 
   def calculate_overall_budget_health
-    active_budgets = Budget.for_user(scoping_user).active.current
+    # includes(:email_account) — DedupSpend walks budget.email_account per
+    # budget; without preloading that's one query per budget outside the
+    # request-level query cache (background jobs, multi-account users).
+    active_budgets = Budget.for_user(scoping_user).active.current.includes(:email_account)
     return { status: :no_budgets, message: "Sin presupuestos activos" } if active_budgets.empty?
 
     total_budget = active_budgets.sum(:amount)
-    total_spend = active_budgets.sum(:current_spend)
+    # Dedup shared logic with Services::Budgets::BucketSummary: summing each
+    # budget's cached current_spend double-counts expenses claimed by more
+    # than one overlapping active budget.
+    total_spend = Services::Budgets::DedupSpend.call(active_budgets)
 
     usage_percentage = total_budget.zero? ? 0 : ((total_spend / total_budget) * 100).round(1)
 

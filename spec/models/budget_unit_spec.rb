@@ -159,9 +159,15 @@ RSpec.describe Budget, type: :model, unit: true do
     end
 
     context "category-based scopes" do
-      it "filters by category relationship" do
-        expect(described_class.for_category(5).to_sql).to include('"budgets"."category_id" = 5')
+      it "filters by category relationship, matching legacy category_id OR the M2M join" do
+        sql = described_class.for_category(5).to_sql
+        expect(sql).to include("LEFT OUTER JOIN \"budget_categories\"")
+        expect(sql).to include("budgets.category_id = 5 OR budget_categories.category_id = 5")
+      end
+
+      it "excludes budgets claimed via either the legacy column or the M2M join" do
         expect(described_class.general.to_sql).to include('"budgets"."category_id" IS NULL')
+        expect(described_class.general.to_sql).to include('"budget_categories"."id" IS NULL')
       end
     end
 

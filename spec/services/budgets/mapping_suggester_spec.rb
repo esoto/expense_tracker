@@ -88,6 +88,21 @@ RSpec.describe Services::Budgets::MappingSuggester, :unit do
       expect(mapping.confidence).to be > 0.6
       expect(result[:suggested]).to eq(1)
     end
+
+    it "rejects high-scoring lookalikes with no shared word and defers to the llm tier" do
+      create(:category, name: "Compras", user: nil)
+      budget = external_budget("Comida")
+      resolver = instance_double(Services::Budgets::MappingLlmResolver)
+      expect(resolver).to receive(:resolve) do |names:, categories:, user: nil|
+        expect(names).to eq([ "comida" ])
+        {}
+      end
+
+      result = described_class.call([ budget ], llm_resolver: resolver)
+
+      expect(BudgetNameMapping.where(user: user).count).to eq(0)
+      expect(result[:unresolved]).to eq([ "comida" ])
+    end
   end
 
   describe "tier 3 — delegation to llm resolver" do

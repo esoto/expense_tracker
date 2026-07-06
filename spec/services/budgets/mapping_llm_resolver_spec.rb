@@ -12,7 +12,9 @@ RSpec.describe Services::Budgets::MappingLlmResolver, :unit do
   subject(:resolver) { described_class.new(client: client) }
 
   def stub_llm_text(text)
-    content_block = double("content", type: "text", text: text)
+    # The anthropic gem returns block type as a Symbol — stub it faithfully
+    # (a string stub masked a prod bug where the text block was never found).
+    content_block = double("content", type: :text, text: text)
     response = double("response", content: [ content_block ], stop_reason: "end_turn")
     allow(messages_api).to receive(:create).and_return(response)
   end

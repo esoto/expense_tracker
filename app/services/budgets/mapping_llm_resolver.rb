@@ -37,7 +37,9 @@ module Services::Budgets
         temperature: 0.0,
         messages: [ { role: :user, content: prompt(names, categories) } ]
       )
-      response.content.find { |block| block.type == "text" }&.text.to_s
+      # block.type is a Symbol (:text) in the anthropic gem — compare
+      # loosely or the text block is silently never found (prod 2026-07-06).
+      response.content.find { |block| block.type.to_s == "text" }&.text.to_s
     end
 
     def prompt(names, categories)

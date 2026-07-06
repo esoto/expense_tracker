@@ -135,7 +135,7 @@ class SyncConflictsController < ApplicationController
               message: "Error: #{service.errors.join(', ')}",
               type: "error"
             }
-          )
+          ), status: :unprocessable_content
         }
       end
     end

@@ -1,12 +1,17 @@
 <div class="fixed inset-0 z-50 overflow-y-auto" data-controller="conflict-resolution" id="conflict_modal_content">
   <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
     <!-- Background overlay -->
-    <div class="fixed inset-0 transition-opacity" aria-hidden="true">
-      <div class="absolute inset-0 bg-slate-900 opacity-75"></div>
-    </div>
+    <!-- A single element (not the previous nested fixed+absolute pair) so it
+         paints as one layer behind the panel. It has no explicit z-index, so
+         the panel below must set its own (relative z-10) to stack above it —
+         without that, this positioned overlay paints above static-positioned
+         in-flow content per CSS stacking rules and swallows every click. -->
+    <div class="fixed inset-0 bg-slate-900 opacity-75 transition-opacity"
+         aria-hidden="true"
+         data-action="click->conflict-modal#closeOnBackdropClick"></div>
 
     <!-- Modal panel -->
-    <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full">
+    <div class="relative z-10 inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full">
       <!-- Header -->
       <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
         <div class="flex items-center justify-between">

@@ -1,5 +1,42 @@
 module Services
   class ConflictDetectionService
+  # Outcome of a single conflict-detection attempt.
+  #
+  # This replaces the old ambiguous return contract where `nil` meant BOTH
+  # "no matching expense found" (proceed with normal expense creation) AND,
+  # via create_conflict's high-confidence skip, "duplicate silently
+  # discarded" (must NOT proceed). Callers could not tell those apart —
+  # Services::EmailProcessing::Processor#detect_and_handle_conflict treated
+  # any nil as "no conflict" and let the caller create a brand-new Expense
+  # for what was actually an already-seen duplicate.
+  #
+  #   :no_conflict       — no matching expense found, or best match scored
+  #                         below SIMILAR_THRESHOLD. Caller should proceed
+  #                         with normal expense creation.
+  #   :duplicate_skipped — score >= DUPLICATE_THRESHOLD. This is not
+  #                         ambiguous — it's the same expense seen again.
+  #                         The incoming duplicate is soft-deleted and saved
+  #                         (for audit/history) but no SyncConflict row is
+  #                         created. Caller must stop and must NOT create a
+  #                         new expense for it.
+  #   :conflict          — SIMILAR_THRESHOLD <= score < DUPLICATE_THRESHOLD
+  #                         (or an "updated"/"needs_review" case). A
+  #                         SyncConflict row was persisted for human review.
+  #                         Caller must stop.
+  Result = Struct.new(:outcome, :conflict, :existing_expense, :duplicate_expense, :similarity_score, keyword_init: true) do
+    def no_conflict?
+      outcome == :no_conflict
+    end
+
+    def duplicate_skipped?
+      outcome == :duplicate_skipped
+    end
+
+    def conflict?
+      outcome == :conflict
+    end
+  end
+
   attr_reader :sync_session, :errors, :metrics_collector
 
   DUPLICATE_THRESHOLD = 90.0 # 90% similarity = duplicate
@@ -25,7 +62,7 @@ module Services
   def perform_conflict_detection(new_expense_data)
     # Find potential duplicates based on key fields
     candidates = find_candidate_expenses(new_expense_data)
-    return nil if candidates.empty?
+    return no_conflict_result if candidates.empty?
 
     # Calculate similarity scores and find best match
     best_match = nil
@@ -40,7 +77,7 @@ module Services
       end
     end
 
-    return nil unless best_match && highest_score >= SIMILAR_THRESHOLD
+    return no_conflict_result unless best_match && highest_score >= SIMILAR_THRESHOLD
 
     # Determine conflict type
     conflict_type = determine_conflict_type(highest_score, best_match, new_expense_data)
@@ -48,7 +85,7 @@ module Services
     # Calculate differences
     differences = calculate_differences(best_match, new_expense_data)
 
-    # Create conflict record
+    # Create conflict record (or silently skip, for obvious duplicates)
     create_conflict(
       existing_expense: best_match,
       new_expense_data: new_expense_data,
@@ -58,24 +95,31 @@ module Services
     )
   end
 
+  # Returns an Array of the SyncConflict records actually persisted.
+  # :duplicate_skipped and :no_conflict outcomes contribute nothing to the
+  # array — they were never conflicts a human needs to review.
   def detect_conflicts_batch(new_expenses_data)
-    conflicts = []
-
-    new_expenses_data.each do |expense_data|
-      conflict = detect_conflict_for_expense(expense_data)
-      conflicts << conflict if conflict
+    new_expenses_data.filter_map do |expense_data|
+      result = detect_conflict_for_expense(expense_data)
+      result.conflict if result.conflict?
     end
-
-    conflicts
   end
 
+  # Historically this resolved SyncConflict rows that create_conflict had
+  # created despite scoring >= DUPLICATE_THRESHOLD (an "obvious duplicate,
+  # auto-resolve later" pattern). Now that create_conflict silently skips
+  # duplicate creation altogether (see Result::duplicate_skipped), no new
+  # conflicts in this score range are ever created — this method is a
+  # defense-in-depth sweep for legacy rows (or any future path that
+  # bypasses the silent-skip logic) rather than a load-bearing part of the
+  # normal flow.
   def auto_resolve_obvious_duplicates
     resolved_count = 0
 
     # Find high-confidence duplicates
     high_confidence_duplicates = sync_session.sync_conflicts
       .unresolved
-      .where("similarity_score >= ?", 95.0)
+      .where("similarity_score >= ?", DUPLICATE_THRESHOLD)
       .where(conflict_type: "duplicate")
 
     high_confidence_duplicates.find_each do |conflict|
@@ -284,34 +328,51 @@ module Services
   end
 
   def create_conflict(existing_expense:, new_expense_data:, conflict_type:, similarity_score:, differences:)
-    # Skip creating conflict records for obvious duplicates (≥95% similarity).
-    # These are noise — the existing expense is always kept and the duplicate is discarded.
-    if conflict_type == "duplicate" && similarity_score >= 95.0
-      Rails.logger.info "[ConflictDetection] Skipped obvious duplicate (#{similarity_score}%): " \
-                        "existing=##{existing_expense.id} merchant=#{existing_expense.merchant_name}"
-      return nil
+    # determine_conflict_type only ever assigns "duplicate" when
+    # score >= DUPLICATE_THRESHOLD, so this is exactly the silent-skip range.
+    # An exact/duplicate re-detection is NOT a conflict for human review —
+    # it's the same expense seen again — so no SyncConflict row is created.
+    # Only genuinely ambiguous "similar" (70-89%) scores still create one.
+    if conflict_type == "duplicate"
+      return skip_silent_duplicate(
+        existing_expense: existing_expense,
+        new_expense_data: new_expense_data,
+        similarity_score: similarity_score
+      )
     end
 
-    # Create temporary expense for new data (will be saved if resolution keeps it)
-    # Ensure all required fields are present
-    expense_attrs = new_expense_data.merge(
-      status: "duplicate",
-      currency: new_expense_data[:currency] || "crc"
-    )
+    # The batch path (SyncService#detect_conflicts) sends already-persisted
+    # expenses WITH their :id (needed upstream for self-match exclusion).
+    # Reference that row as-is — resolution (keep_existing/keep_new) decides
+    # its fate — instead of inserting a copy that PK-collides on the
+    # carried-over :id (same landmine skip_silent_duplicate defuses).
+    persisted = new_expense_data[:id] && Expense.unscoped.find_by(id: new_expense_data[:id])
 
-    # Soft-delete duplicate expenses so they are excluded from the unique partial
-    # index on (email_account_id, amount, transaction_date, merchant_name)
-    # WHERE deleted_at IS NULL. The expense is retained for conflict resolution.
-    expense_attrs[:deleted_at] = Time.current if conflict_type.in?(%w[duplicate similar])
+    if persisted
+      new_expense = persisted
+    else
+      # Create temporary expense for new data (will be saved if resolution keeps it)
+      # Ensure all required fields are present
+      expense_attrs = new_expense_data.merge(
+        status: "duplicate",
+        currency: new_expense_data[:currency] || "crc"
+      )
 
-    new_expense = Expense.new(expense_attrs)
-    # PR 5: expenses require user_id (NOT NULL). Inherit from the target
-    # email_account so this service works both in the webhook flow (attrs
-    # carry email_account_id) and when a caller pre-sets user_id explicitly.
-    new_expense.user ||= new_expense.email_account&.user
+      # Soft-delete "similar" expenses so they are excluded from the unique partial
+      # index on (email_account_id, amount, transaction_date, merchant_name)
+      # WHERE deleted_at IS NULL. The expense is retained for conflict resolution.
+      # ("duplicate" never reaches here — it returns via skip_silent_duplicate above.)
+      expense_attrs[:deleted_at] = Time.current if conflict_type == "similar"
+
+      new_expense = Expense.new(expense_attrs.except(:id))
+      # PR 5: expenses require user_id (NOT NULL). Inherit from the target
+      # email_account so this service works both in the webhook flow (attrs
+      # carry email_account_id) and when a caller pre-sets user_id explicitly.
+      new_expense.user ||= new_expense.email_account&.user
+    end
 
     conflict = ActiveRecord::Base.transaction(requires_new: true) do
-      new_expense.save! if conflict_type == "duplicate" || conflict_type == "similar"
+      new_expense.save! if conflict_type == "similar" && !persisted
 
       sync_session.sync_conflicts.create!(
         user: sync_session.user,
@@ -331,11 +392,57 @@ module Services
     # Broadcast AFTER transaction commits to avoid sending stale IDs
     broadcast_conflict_detected(conflict)
 
-    conflict
+    Result.new(outcome: :conflict, conflict: conflict, existing_expense: existing_expense, similarity_score: similarity_score)
   rescue => e
     Rails.logger.error "[ConflictDetection] Failed to create conflict: #{e.message}"
     add_error("Failed to create conflict: #{e.message}")
-    nil
+    no_conflict_result
+  end
+
+  # Duplicate re-detection (>= DUPLICATE_THRESHOLD) is not ambiguous — it's
+  # the same expense seen again — so it is handled silently: the incoming
+  # duplicate is saved soft-deleted (same bookkeeping as the "similar" path,
+  # for audit/history and to satisfy the unique partial index), but no
+  # SyncConflict row is created. This is what eliminates the ghost-conflict
+  # noise (SyncConflict rows whose new_expense gets cleaned up later, leaving
+  # an unresolvable "conflict" with nothing left to resolve).
+  def skip_silent_duplicate(existing_expense:, new_expense_data:, similarity_score:)
+    # The batch path (SyncService#detect_conflicts) sends already-persisted
+    # expenses WITH their :id (needed upstream for self-match exclusion).
+    # Re-inserting those would raise a PK collision — mark the existing row
+    # instead of creating an audit copy.
+    if (persisted = new_expense_data[:id] && Expense.unscoped.find_by(id: new_expense_data[:id]))
+      persisted.update!(status: "duplicate", deleted_at: persisted.deleted_at || Time.current)
+      new_expense = persisted
+    else
+      expense_attrs = new_expense_data.merge(
+        status: "duplicate",
+        currency: new_expense_data[:currency] || "crc",
+        deleted_at: Time.current
+      )
+
+      new_expense = Expense.new(expense_attrs.except(:id))
+      new_expense.user ||= new_expense.email_account&.user
+      new_expense.save!
+    end
+
+    Rails.logger.info "[ConflictDetection] Silently skipped duplicate (#{similarity_score}%): " \
+                      "existing=##{existing_expense.id} new=##{new_expense.id} merchant=#{existing_expense.merchant_name}"
+
+    Result.new(
+      outcome: :duplicate_skipped,
+      existing_expense: existing_expense,
+      duplicate_expense: new_expense,
+      similarity_score: similarity_score
+    )
+  rescue => e
+    Rails.logger.error "[ConflictDetection] Failed to save silently-skipped duplicate: #{e.message}"
+    add_error("Failed to save silently-skipped duplicate: #{e.message}")
+    no_conflict_result
+  end
+
+  def no_conflict_result
+    Result.new(outcome: :no_conflict)
   end
 
   def broadcast_conflict_detected(conflict)

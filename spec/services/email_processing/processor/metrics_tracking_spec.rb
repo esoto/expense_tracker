@@ -133,7 +133,9 @@ RSpec.describe 'Services::EmailProcessing::Processor - Metrics Tracking', type: 
           metrics_collector: metrics_collector
         ).and_return(conflict_detector)
 
-        allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(false)
+        allow(conflict_detector).to receive(:detect_conflict_for_expense).and_return(
+          Services::ConflictDetectionService::Result.new(outcome: :no_conflict)
+        )
 
         processor.send(:detect_and_handle_conflict, email_data)
       end
@@ -148,7 +150,7 @@ RSpec.describe 'Services::EmailProcessing::Processor - Metrics Tracking', type: 
             email_account_id: email_account.id,
             raw_email_content: email_data[:body]
           )
-        )
+        ).and_return(Services::ConflictDetectionService::Result.new(outcome: :no_conflict))
 
         processor.send(:detect_and_handle_conflict, email_data)
       end

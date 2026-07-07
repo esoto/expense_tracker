@@ -341,27 +341,38 @@ module Services
       )
     end
 
-    # Create temporary expense for new data (will be saved if resolution keeps it)
-    # Ensure all required fields are present
-    expense_attrs = new_expense_data.merge(
-      status: "duplicate",
-      currency: new_expense_data[:currency] || "crc"
-    )
+    # The batch path (SyncService#detect_conflicts) sends already-persisted
+    # expenses WITH their :id (needed upstream for self-match exclusion).
+    # Reference that row as-is — resolution (keep_existing/keep_new) decides
+    # its fate — instead of inserting a copy that PK-collides on the
+    # carried-over :id (same landmine skip_silent_duplicate defuses).
+    persisted = new_expense_data[:id] && Expense.unscoped.find_by(id: new_expense_data[:id])
 
-    # Soft-delete "similar" expenses so they are excluded from the unique partial
-    # index on (email_account_id, amount, transaction_date, merchant_name)
-    # WHERE deleted_at IS NULL. The expense is retained for conflict resolution.
-    # ("duplicate" never reaches here — it returns via skip_silent_duplicate above.)
-    expense_attrs[:deleted_at] = Time.current if conflict_type == "similar"
+    if persisted
+      new_expense = persisted
+    else
+      # Create temporary expense for new data (will be saved if resolution keeps it)
+      # Ensure all required fields are present
+      expense_attrs = new_expense_data.merge(
+        status: "duplicate",
+        currency: new_expense_data[:currency] || "crc"
+      )
 
-    new_expense = Expense.new(expense_attrs)
-    # PR 5: expenses require user_id (NOT NULL). Inherit from the target
-    # email_account so this service works both in the webhook flow (attrs
-    # carry email_account_id) and when a caller pre-sets user_id explicitly.
-    new_expense.user ||= new_expense.email_account&.user
+      # Soft-delete "similar" expenses so they are excluded from the unique partial
+      # index on (email_account_id, amount, transaction_date, merchant_name)
+      # WHERE deleted_at IS NULL. The expense is retained for conflict resolution.
+      # ("duplicate" never reaches here — it returns via skip_silent_duplicate above.)
+      expense_attrs[:deleted_at] = Time.current if conflict_type == "similar"
+
+      new_expense = Expense.new(expense_attrs.except(:id))
+      # PR 5: expenses require user_id (NOT NULL). Inherit from the target
+      # email_account so this service works both in the webhook flow (attrs
+      # carry email_account_id) and when a caller pre-sets user_id explicitly.
+      new_expense.user ||= new_expense.email_account&.user
+    end
 
     conflict = ActiveRecord::Base.transaction(requires_new: true) do
-      new_expense.save! if conflict_type == "similar"
+      new_expense.save! if conflict_type == "similar" && !persisted
 
       sync_session.sync_conflicts.create!(
         user: sync_session.user,

@@ -118,6 +118,32 @@ RSpec.describe Services::ConflictDetectionService, integration: true do
       end
     end
 
+    context 'when a persisted expense scores in the similar band (batch path sends :id)' do
+      before { existing_expense.update(amount: 95.00) }
+
+      it 'creates the conflict referencing the persisted row without inserting a copy' do
+        persisted_similar = create(:expense, email_account: existing_expense.email_account,
+                                             user: existing_expense.user,
+                                             amount: 100.00,
+                                             transaction_date: existing_expense.transaction_date,
+                                             merchant_name: existing_expense.merchant_name.upcase,
+                                             merchant_normalized: existing_expense.merchant_normalized,
+                                             description: existing_expense.description,
+                                             status: 'processed')
+        data = persisted_similar.attributes.symbolize_keys
+
+        result = nil
+        expect {
+          result = service.detect_conflict_for_expense(data)
+        }.not_to change { Expense.unscoped.count }
+
+        expect(result).to be_conflict
+        expect(result.conflict.conflict_type).to eq('similar')
+        expect(result.conflict.new_expense_id).to eq(persisted_similar.id)
+        expect(persisted_similar.reload.status).to eq('processed') # live row untouched pending resolution
+      end
+    end
+
     context 'when conflict_type is similar' do
       before do
         existing_expense.update(amount: 95.00)

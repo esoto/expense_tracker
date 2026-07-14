@@ -24,41 +24,41 @@ RSpec.describe CoveragePolicyValidator, unit: true do
       stub_resultset(
         "integration-tests-100" => {
           "timestamp" => 100,
-          "coverage" => { "app/models/expense.rb" => { "lines" => [1, 0, nil, 2] } }
+          "coverage" => { "app/models/expense.rb" => { "lines" => [ 1, 0, nil, 2 ] } }
         }
       )
 
-      expect(load_data).to eq("app/models/expense.rb" => [1, 0, nil, 2])
+      expect(load_data).to eq("app/models/expense.rb" => [ 1, 0, nil, 2 ])
     end
 
     it "merges parallel worker entries by summing per-line hit counts" do
       stub_resultset(
         "integration-tests-100" => {
           "timestamp" => 100,
-          "coverage" => { "app/models/expense.rb" => { "lines" => [1, 0, nil, 2] } }
+          "coverage" => { "app/models/expense.rb" => { "lines" => [ 1, 0, nil, 2 ] } }
         },
         "integration-tests2-100" => {
           "timestamp" => 103,
-          "coverage" => { "app/models/expense.rb" => { "lines" => [0, 3, nil, 0] } }
+          "coverage" => { "app/models/expense.rb" => { "lines" => [ 0, 3, nil, 0 ] } }
         }
       )
 
-      expect(load_data).to eq("app/models/expense.rb" => [1, 3, nil, 2])
+      expect(load_data).to eq("app/models/expense.rb" => [ 1, 3, nil, 2 ])
     end
 
     it "keeps nil for lines not relevant in any entry" do
       stub_resultset(
         "integration-tests-100" => {
           "timestamp" => 100,
-          "coverage" => { "app/models/expense.rb" => { "lines" => [nil, 1] } }
+          "coverage" => { "app/models/expense.rb" => { "lines" => [ nil, 1 ] } }
         },
         "integration-tests2-100" => {
           "timestamp" => 101,
-          "coverage" => { "app/models/expense.rb" => { "lines" => [nil, 0] } }
+          "coverage" => { "app/models/expense.rb" => { "lines" => [ nil, 0 ] } }
         }
       )
 
-      expect(load_data).to eq("app/models/expense.rb" => [nil, 1])
+      expect(load_data).to eq("app/models/expense.rb" => [ nil, 1 ])
     end
 
     it "resolves relevance disagreement as not-relevant, like SimpleCov's combiner" do
@@ -68,30 +68,30 @@ RSpec.describe CoveragePolicyValidator, unit: true do
       stub_resultset(
         "integration-tests-100" => {
           "timestamp" => 100,
-          "coverage" => { "app/models/expense.rb" => { "lines" => [0, 0] } }
+          "coverage" => { "app/models/expense.rb" => { "lines" => [ 0, 0 ] } }
         },
         "integration-tests2-100" => {
           "timestamp" => 101,
-          "coverage" => { "app/models/expense.rb" => { "lines" => [nil, 5] } }
+          "coverage" => { "app/models/expense.rb" => { "lines" => [ nil, 5 ] } }
         }
       )
 
-      expect(load_data).to eq("app/models/expense.rb" => [nil, 5])
+      expect(load_data).to eq("app/models/expense.rb" => [ nil, 5 ])
     end
 
     it "treats a line as covered when only one worker exercised it" do
       stub_resultset(
         "integration-tests-100" => {
           "timestamp" => 100,
-          "coverage" => { "app/models/expense.rb" => { "lines" => [nil, nil] } }
+          "coverage" => { "app/models/expense.rb" => { "lines" => [ nil, nil ] } }
         },
         "integration-tests2-100" => {
           "timestamp" => 101,
-          "coverage" => { "app/models/expense.rb" => { "lines" => [nil, 4] } }
+          "coverage" => { "app/models/expense.rb" => { "lines" => [ nil, 4 ] } }
         }
       )
 
-      expect(load_data).to eq("app/models/expense.rb" => [nil, 4])
+      expect(load_data).to eq("app/models/expense.rb" => [ nil, 4 ])
     end
 
     it "excludes entries older than the same-run window" do
@@ -99,32 +99,32 @@ RSpec.describe CoveragePolicyValidator, unit: true do
       stub_resultset(
         "integration-tests-old" => {
           "timestamp" => 5_000,
-          "coverage" => { "app/models/stale.rb" => { "lines" => [9, 9] } }
+          "coverage" => { "app/models/stale.rb" => { "lines" => [ 9, 9 ] } }
         },
         "integration-tests-new" => {
           "timestamp" => 5_000 + stale,
-          "coverage" => { "app/models/expense.rb" => { "lines" => [1, 0] } }
+          "coverage" => { "app/models/expense.rb" => { "lines" => [ 1, 0 ] } }
         }
       )
 
-      expect(load_data).to eq("app/models/expense.rb" => [1, 0])
+      expect(load_data).to eq("app/models/expense.rb" => [ 1, 0 ])
     end
 
     it "merges files unique to a single worker" do
       stub_resultset(
         "integration-tests-100" => {
           "timestamp" => 100,
-          "coverage" => { "app/models/expense.rb" => { "lines" => [1] } }
+          "coverage" => { "app/models/expense.rb" => { "lines" => [ 1 ] } }
         },
         "integration-tests2-100" => {
           "timestamp" => 101,
-          "coverage" => { "app/services/sync.rb" => { "lines" => [2] } }
+          "coverage" => { "app/services/sync.rb" => { "lines" => [ 2 ] } }
         }
       )
 
       expect(load_data).to eq(
-        "app/models/expense.rb" => [1],
-        "app/services/sync.rb" => [2]
+        "app/models/expense.rb" => [ 1 ],
+        "app/services/sync.rb" => [ 2 ]
       )
     end
 
@@ -132,11 +132,11 @@ RSpec.describe CoveragePolicyValidator, unit: true do
       stub_resultset(
         "integration-tests-100" => {
           "timestamp" => 100,
-          "coverage" => { "app/models/expense.rb" => [1, nil, 0] }
+          "coverage" => { "app/models/expense.rb" => [ 1, nil, 0 ] }
         }
       )
 
-      expect(load_data).to eq("app/models/expense.rb" => [1, nil, 0])
+      expect(load_data).to eq("app/models/expense.rb" => [ 1, nil, 0 ])
     end
 
     it "returns nil when the resultset is missing" do

@@ -60,7 +60,12 @@ if ENV['TEST_TIER'] == 'integration'
   # Integration test coverage thresholds
   # After test restructuring, many specs moved to the unit tier.
   # Integration coverage currently sits around 30-35%.
-  minimum_coverage 30
+  #
+  # Per-worker enforcement is meaningless under parallel_rspec: each process
+  # exits seeing only its own file slice and would fail spuriously even when
+  # every example passed. Workers carry TEST_ENV_NUMBER (empty string for
+  # worker 1); serial and CI runs don't, and keep the threshold.
+  minimum_coverage ENV.key?('TEST_ENV_NUMBER') ? 0 : 30
   minimum_coverage_by_file 0
 
   # Format configurations

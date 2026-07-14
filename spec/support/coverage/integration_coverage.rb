@@ -74,7 +74,7 @@ if ENV['TEST_TIER'] == 'integration'
 
   # Merge policy for integration results
   merge_timeout 7200 # 2 hours (integration tests take longer)
-  command_name "integration-tests-#{Time.now.to_i}"
+  command_name "integration-tests#{ENV['TEST_ENV_NUMBER']}-#{Time.now.to_i}"
   end
 
   puts "🔗 Integration Test Coverage: Tracking service interactions and database operations"

@@ -11,14 +11,16 @@
 
 - `bin/rails server` — Start dev server
 - `bin/rails console` — Rails console
-- `bundle exec rspec` — Run RSpec tests
+- `bin/test-unit` — Run unit tests (parallel ×4 locally)
+- `bin/test-integration` — Run integration tests (parallel ×4 locally)
+- `bundle exec rspec` — Run RSpec directly (serial; prefer the bin/ runners)
 - `bin/rails db:migrate` — Run migrations
 - `bin/rails db:setup` — Create DB, load schema, seed
 - `bin/rails db:reset` — Drop and recreate DB
 - `tailwindcss:build` / `tailwindcss:watch` — Build/watch Tailwind CSS
 - `bundle exec rubocop`
 
-**Test command:** `bundle exec rspec --tag unit`
+**Test command:** `bin/test-unit` (parallel_rspec ×4 locally, ~30s for the full unit tier; `PARALLEL=0` forces serial. Raw `bundle exec rspec --tag unit` runs serial and takes ~2.5-3× longer — only use it for single files/examples.)
 
 **Lint command:** `bundle exec rubocop`
 
@@ -36,9 +38,10 @@ A pre-commit hook is available to automatically run code quality checks and secu
 **Setup:** Run `./bin/setup-git-hooks` after cloning the repository to install the hooks.
 
 The hook runs:
-1. **RuboCop** - Ensures code style compliance
-2. **Brakeman** - Security vulnerability scanner
-3. **RSpec unit tests** - Runs only tests tagged with `:unit` (uses `bundle exec rspec --tag unit`)
+1. **RSpec unit tests** - Runs only tests tagged with `:unit` (uses `bin/test-unit`, parallel ×4)
+2. **RuboCop** - Ensures code style compliance
+3. **Brakeman** - Security vulnerability scanner
+4. **Rails Best Practices** - Code quality checks
 
 ## Git Worktrees & Test Database Isolation
 

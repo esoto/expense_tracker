@@ -38,9 +38,10 @@ A pre-commit hook is available to automatically run code quality checks and secu
 **Setup:** Run `./bin/setup-git-hooks` after cloning the repository to install the hooks.
 
 The hook runs:
-1. **RuboCop** - Ensures code style compliance
-2. **Brakeman** - Security vulnerability scanner
-3. **RSpec unit tests** - Runs only tests tagged with `:unit` (uses `bin/test-unit`, parallel ×4)
+1. **RSpec unit tests** - Runs only tests tagged with `:unit` (uses `bin/test-unit`, parallel ×4)
+2. **RuboCop** - Ensures code style compliance
+3. **Brakeman** - Security vulnerability scanner
+4. **Rails Best Practices** - Code quality checks
 
 ## Git Worktrees & Test Database Isolation
 

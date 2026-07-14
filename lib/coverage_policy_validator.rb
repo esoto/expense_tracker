@@ -96,18 +96,58 @@ class CoveragePolicyValidator
 
   private
 
+  # Entries recorded within this window of the newest one are treated as the
+  # same run. Parallel workers of one run finish seconds apart; distinct runs
+  # are minutes-to-hours apart.
+  SAME_RUN_WINDOW_SECONDS = 600
+
   def load_coverage_data(tier)
     resultset_file = "coverage/#{tier}/.resultset.json"
     return nil unless File.exist?(resultset_file)
 
     begin
       resultset = JSON.parse(File.read(resultset_file))
-      # Use the latest group (last entry) — SimpleCov accumulates old runs
-      # in the resultset, and the most recent one reflects current coverage.
-      resultset.values.last["coverage"]
+      merge_latest_run(resultset)
     rescue JSON::ParserError, StandardError
       nil
     end
+  end
+
+  # SimpleCov accumulates one resultset entry per command_name. A serial run
+  # produces a single entry, but a parallel_rspec run (bin/test-unit,
+  # bin/test-integration) produces one entry PER WORKER — taking only the
+  # last entry would report a single worker's file slice as the whole run.
+  # Merge every entry from the latest run, summing per-line hit counts the
+  # same way SimpleCov's own result merger does. Returns {file => lines_array}
+  # (the pre-existing "old format" shape both validators already handle).
+  def merge_latest_run(resultset)
+    newest = resultset.values.map { |entry| entry["timestamp"].to_i }.max
+    same_run = resultset.values.select do |entry|
+      newest - entry["timestamp"].to_i <= SAME_RUN_WINDOW_SECONDS
+    end
+
+    merged = {}
+    same_run.each do |entry|
+      entry["coverage"].each do |file_path, file_data|
+        lines = file_data.is_a?(Array) ? file_data : file_data["lines"]
+        next unless lines
+
+        merged[file_path] = if merged.key?(file_path)
+          merged[file_path].zip(lines).map do |a, b|
+            # SimpleCov::Combine::LinesCombiner semantics: when entries
+            # disagree on relevance (0 in one, nil in another — bootsnap
+            # ISeq caching causes this across workers), the line is NOT
+            # relevant. Naive to_i summing would count it as uncovered
+            # and inflate the denominator.
+            sum = a.to_i + b.to_i
+            sum.zero? && (a.nil? || b.nil?) ? nil : sum
+          end
+        else
+          lines
+        end
+      end
+    end
+    merged
   end
 
   def validate_overall_coverage(tier, coverage_data, tier_policy)

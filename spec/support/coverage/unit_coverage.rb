@@ -67,7 +67,7 @@ if ENV['TEST_TIER'] == 'unit'
 
   # Merge policy - only merge results from same tier
   merge_timeout 3600 # 1 hour
-  command_name "unit-tests-#{Time.now.to_i}"
+  command_name "unit-tests#{ENV['TEST_ENV_NUMBER']}-#{Time.now.to_i}"
   end
 
   puts "📊 Unit Test Coverage: Tracking fast, focused test coverage"

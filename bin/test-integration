@@ -1,6 +1,16 @@
 #!/usr/bin/env ruby
 # Integration tests for comprehensive validation
 # Includes service integration, request tests, and component integration
+#
+# Local runs default to parallel_rspec across N worker processes for speed,
+# mirroring bin/test-unit. CI stays serial: GitHub Actions runners have
+# ~2 vCPUs and the parallel overhead (process boot + DB pool setup x N)
+# often eats the savings.
+#
+# Toggles:
+#   PARALLEL=1  forces parallel even in CI
+#   PARALLEL=0  forces serial even locally
+#   PARALLEL_TEST_PROCESSORS=N  override worker count (default 4; ignored when running serial)
 
 require 'fileutils'
 
@@ -11,32 +21,47 @@ Dir.chdir(File.expand_path('..', __dir__))
 ENV['RAILS_ENV'] = 'test'
 ENV['TEST_TIER'] = 'integration'
 
-# Build RSpec command for integration tests
-cmd_parts = [
-  'bundle exec rspec',
-  '--tag integration',
-  '--format documentation',
-  '--order random'
-]
+# Decide parallel vs serial.
+parallel = if ENV.key?('PARALLEL')
+  ENV['PARALLEL'] == '1'
+else
+  !ENV['CI']
+end
 
-# Add integration test paths
+workers = (ENV['PARALLEL_TEST_PROCESSORS'] || '4').to_i
+workers = 1 if workers < 1
+
+# Integration test paths (specs must also carry the :integration tag)
 test_paths = %w[
   spec/requests
-  spec/services --tag integration
+  spec/services
   spec/channels
   spec/jobs
-].join(' ')
+]
 
-# Also include any specs explicitly tagged as integration
-cmd = "#{cmd_parts.join(' ')} #{test_paths}"
+cmd = if parallel && workers > 1
+  # parallel_rspec splits files across N processes, each binding to its
+  # own DB suffix (TEST_ENV_NUMBER). Documentation format interleaves
+  # confusingly across workers, so the parallel path uses progress format.
+  # rspec_opts is interpolated into a single-quoted shell argument below;
+  # keep it free of single quotes / unescaped shell metacharacters.
+  rspec_opts = "--tag integration --format progress --order random"
+  "bundle exec parallel_rspec #{test_paths.join(' ')} -n #{workers} -o '#{rspec_opts}'"
+else
+  "bundle exec rspec --tag integration --format documentation --order random #{test_paths.join(' ')}"
+end
 
-puts "🔗 Running integration tests (may take 2-5 minutes)..."
+if parallel && workers > 1
+  puts "🔗 Running integration tests in parallel (#{workers} workers)..."
+else
+  puts "🔗 Running integration tests (serial)..."
+end
 puts "Command: #{cmd}"
 puts
 
 # Execute with proper exit code
 system(cmd)
-exit_code = $?.exitstatus
+exit_code = $?.exitstatus || 1
 
 if exit_code == 0
   puts

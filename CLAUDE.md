@@ -20,7 +20,7 @@
 - `tailwindcss:build` / `tailwindcss:watch` — Build/watch Tailwind CSS
 - `bundle exec rubocop`
 
-**Test command:** `bin/test-unit` (parallel_rspec ×4 locally, ~30s for the full unit tier; `PARALLEL=0` forces serial. Raw `bundle exec rspec --tag unit` runs serial and takes ~4× longer — only use it for single files/examples.)
+**Test command:** `bin/test-unit` (parallel_rspec ×4 locally, ~30s for the full unit tier; `PARALLEL=0` forces serial. Raw `bundle exec rspec --tag unit` runs serial and takes ~2.5-3× longer — only use it for single files/examples.)
 
 **Lint command:** `bundle exec rubocop`
 

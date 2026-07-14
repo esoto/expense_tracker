@@ -7,84 +7,88 @@ set -e
 echo "🔧 Setting up Git hooks..."
 echo ""
 
-# Create pre-commit hook
+# Create pre-commit hook.
+# Keep this in sync with CLAUDE.md's "Git Pre-commit Hook" section.
 cat > .git/hooks/pre-commit << 'EOF'
-#!/bin/bash
-# Pre-commit hook to ensure code quality and security before commits
-# This hook runs RuboCop linting, Brakeman security scanning, and RSpec unit tests
-
-set -e
+#!/bin/sh
+#
+# Pre-commit hook to ensure code quality by running fast unit tests, RuboCop,
+# Brakeman, and Rails Best Practices before allowing commits.
+#
 
 echo "🔍 Running pre-commit checks..."
-echo ""
 
-# Color codes for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# Exit on any command failure
+set -e
 
-# Function to print colored output
-print_status() {
-  if [ $1 -eq 0 ]; then
-    echo -e "${GREEN}✅ $2${NC}"
-  else
-    echo -e "${RED}❌ $2${NC}"
-  fi
+# Check if we're in a Rails project
+if [ ! -f "Gemfile" ] || [ ! -f "config/application.rb" ]; then
+    echo "❌ Not a Rails project, skipping pre-commit checks"
+    exit 0
+fi
+
+# Skip checks during merge/rebase
+if [ -f .git/MERGE_HEAD ] || [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; then
+    echo "⚠️ Merge/rebase in progress, skipping pre-commit checks"
+    exit 0
+fi
+
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
 }
 
-# Check if we're in a merge/rebase
-if [ -f .git/MERGE_HEAD ] || [ -d .git/rebase-merge ] || [ -d .git/rebase-apply ]; then
-  echo -e "${YELLOW}⚠️  Merge/rebase in progress, skipping pre-commit checks${NC}"
-  exit 0
+# Function to run command with proper error handling
+run_check() {
+    check_name="$1"
+    command="$2"
+
+    echo "🔄 Running $check_name..."
+
+    if eval "$command"; then
+        echo "✅ $check_name passed"
+    else
+        echo "❌ $check_name failed"
+        echo "💡 Please fix the issues above before committing"
+        exit 1
+    fi
+}
+
+# Check if bundle command exists
+if ! command_exists bundle; then
+    echo "❌ Bundle not found. Please install bundler."
+    exit 1
 fi
 
-# 1. Run RuboCop
-echo "📝 Running RuboCop linter..."
-if bundle exec rubocop --format simple; then
-  print_status 0 "RuboCop passed"
+# Run Unit Tests (fastest feedback; bin/test-unit is parallel_rspec x4 locally)
+if [ -f "bin/test-unit" ]; then
+    run_check "Unit Tests" "bin/test-unit"
 else
-  print_status 1 "RuboCop failed"
-  echo ""
-  echo -e "${YELLOW}💡 Tip: Run 'bundle exec rubocop -A' to auto-correct offenses${NC}"
-  echo -e "${YELLOW}💡 Or use 'git commit --no-verify' to skip this check (not recommended)${NC}"
-  exit 1
+    echo "⚠️ Unit test runner not found, skipping tests"
 fi
 
-echo ""
-
-# 2. Run Brakeman security scanner
-echo "🔒 Running Brakeman security scanner..."
-if bundle exec brakeman --no-pager --quiet --no-summary; then
-  print_status 0 "Brakeman security check passed"
+# Run RuboCop linting
+if bundle list | grep -q rubocop; then
+    run_check "RuboCop Linting" "bundle exec rubocop --fail-level error"
 else
-  print_status 1 "Brakeman found security issues"
-  echo ""
-  echo -e "${YELLOW}💡 Tip: Review and fix security issues before committing${NC}"
-  echo -e "${YELLOW}💡 Run 'bundle exec brakeman' for detailed report${NC}"
-  echo -e "${YELLOW}💡 Or use 'git commit --no-verify' to skip this check (not recommended)${NC}"
-  exit 1
+    echo "⚠️ RuboCop not found in Gemfile, skipping linting"
 fi
 
-echo ""
-
-# 3. Run RSpec unit tests only
-echo "🧪 Running RSpec unit tests..."
-if bundle exec rspec --tag unit --format progress; then
-  print_status 0 "RSpec unit tests passed"
+# Run Brakeman security scanning
+if bundle list | grep -q brakeman; then
+    run_check "Brakeman Security Scan" "bundle exec brakeman --exit-on-warn --quiet"
 else
-  print_status 1 "RSpec unit tests failed"
-  echo ""
-  echo -e "${YELLOW}💡 Tip: Fix failing tests before committing${NC}"
-  echo -e "${YELLOW}💡 Or use 'git commit --no-verify' to skip this check (not recommended)${NC}"
-  exit 1
+    echo "⚠️ Brakeman not found in Gemfile, skipping security scan"
 fi
 
-echo ""
-echo -e "${GREEN}✨ All pre-commit checks passed! Proceeding with commit...${NC}"
-echo ""
+# Run Rails Best Practices
+if bundle list | grep -q rails_best_practices; then
+    run_check "Rails Best Practices" "bundle exec rails_best_practices . --silent"
+else
+    echo "⚠️ Rails Best Practices not found in Gemfile, skipping best practices check"
+fi
 
-exit 0
+echo "🎉 All pre-commit checks passed! Proceeding with commit..."
 EOF
 
 # Make hook executable
@@ -93,8 +97,7 @@ chmod +x .git/hooks/pre-commit
 echo "✅ Pre-commit hook installed successfully!"
 echo ""
 echo "The following checks will run before each commit:"
-echo "  1. RuboCop linting"
-echo "  2. Brakeman security scanner"
-echo "  3. RSpec unit tests only (tagged with :unit)"
-echo ""
-echo "To bypass these checks (not recommended), use: git commit --no-verify"
+echo "  1. RSpec unit tests (bin/test-unit, parallel x4 locally)"
+echo "  2. RuboCop linting"
+echo "  3. Brakeman security scanner"
+echo "  4. Rails Best Practices"

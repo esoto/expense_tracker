@@ -508,6 +508,15 @@ RSpec.describe "Categories API", type: :request do
         expect(response.body).to include("StreamedName")
       end
 
+      it "restores the 'Category updated.' flash so users still get visual confirmation" do
+        patch category_path(own),
+              params: { category: { name: "FlashName" } },
+              headers: turbo_headers
+
+        expect(response.body).to include('target="flash"')
+        expect(response.body).to include("Category updated.")
+      end
+
       it "falls back to a redirect when parent_id changes (tree structure shifts)" do
         parent = create(:category, name: "NewParent", user: nil)
 

@@ -19,7 +19,7 @@ RSpec.describe "ExternalSources", type: :request do
 
   describe "GET /external_source" do
     context "when no external source is linked" do
-      before { create(:email_account) }
+      before { create(:email_account, user: admin_user) }
 
       it "renders the 'not connected' state with a Connect CTA" do
         get external_source_path
@@ -30,7 +30,7 @@ RSpec.describe "ExternalSources", type: :request do
     end
 
     context "when an active source is present" do
-      let!(:account) { create(:email_account) }
+      let!(:account) { create(:email_account, user: admin_user) }
       let!(:source) do
         create(:external_budget_source, email_account: account, active: true, last_synced_at: 5.minutes.ago)
       end
@@ -45,7 +45,7 @@ RSpec.describe "ExternalSources", type: :request do
     end
 
     context "when an inactive source is present" do
-      let!(:account) { create(:email_account) }
+      let!(:account) { create(:email_account, user: admin_user) }
       let!(:source) { create(:external_budget_source, email_account: account, active: false) }
 
       it "renders the 'reconnect required' banner" do
@@ -67,7 +67,7 @@ RSpec.describe "ExternalSources", type: :request do
     end
 
     context "when an active email account exists" do
-      let!(:account) { create(:email_account, active: true) }
+      let!(:account) { create(:email_account, active: true, user: admin_user) }
 
       it "stores state in the session and redirects to the authorize URL" do
         post connect_external_source_path
@@ -88,7 +88,7 @@ RSpec.describe "ExternalSources", type: :request do
   end
 
   describe "GET /external_source/callback" do
-    let!(:account) { create(:email_account, active: true) }
+    let!(:account) { create(:email_account, active: true, user: admin_user) }
 
     context "with missing state in session" do
       it "redirects with an alert" do
@@ -198,7 +198,7 @@ RSpec.describe "ExternalSources", type: :request do
   end
 
   describe "POST /external_source/sync_now" do
-    let!(:account) { create(:email_account, active: true) }
+    let!(:account) { create(:email_account, active: true, user: admin_user) }
     let!(:source) { create(:external_budget_source, email_account: account, active: true) }
 
     it "enqueues PullJob and redirects with a notice" do
@@ -212,7 +212,7 @@ RSpec.describe "ExternalSources", type: :request do
   end
 
   describe "DELETE /external_source" do
-    let!(:account) { create(:email_account, active: true) }
+    let!(:account) { create(:email_account, active: true, user: admin_user) }
     let!(:source) { create(:external_budget_source, email_account: account, active: true) }
 
     it "destroys the source and redirects with a notice" do

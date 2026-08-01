@@ -2,8 +2,8 @@
 
 # Manages the OAuth linkage between the user's email account and the
 # salary_calc external budget source. Phase 1 assumes a single active
-# email account per installation; the first active EmailAccount is used
-# as the "current" account.
+# email account per user; the first active EmailAccount belonging to the
+# authenticated user is used as the "current" account.
 class ExternalSourcesController < ApplicationController
   STATE_TTL = 10.minutes
   SESSION_KEY = :external_oauth_state
@@ -81,7 +81,11 @@ class ExternalSourcesController < ApplicationController
   private
 
   def set_email_account
-    @email_account = EmailAccount.active.order(:id).first
+    # Scoped to the authenticated user: require_authentication (UserAuthentication
+    # concern) guarantees current_user is present before this before_action runs.
+    # Previously this loaded the globally-first active EmailAccount, which let any
+    # signed-in user connect/sync/disconnect another user's external budget source.
+    @email_account = EmailAccount.for_user(current_user).active.order(:id).first
   end
 
   def base_url

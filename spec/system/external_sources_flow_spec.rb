@@ -4,7 +4,7 @@ require "rails_helper"
 
 RSpec.describe "ExternalSources flow", type: :system do
   let(:admin_user) { create(:user, :admin) }
-  let!(:email_account) { create(:email_account, active: true) }
+  let!(:email_account) { create(:email_account, active: true, user: admin_user) }
 
   before do
     driven_by(:rack_test)

@@ -35,6 +35,7 @@ RSpec.describe "Database Optimization Performance", type: :performance do
         transaction_date: rand(365).days.ago,
         merchant_name: [ "Amazon", "Walmart", "Target", "Costco", "Home Depot" ].sample,
         email_account_id: @email_account.id,
+        user_id: @email_account.user_id,
         category_id: (i % 3 == 0) ? nil : @categories.sample.id, # 33% uncategorized
         status: [ "pending", "processed", "failed" ].sample,
         bank_name: [ "BAC", "BCR", "BN" ].sample,
@@ -170,8 +171,14 @@ RSpec.describe "Database Optimization Performance", type: :performance do
     end
   end
 
+  # PER-505 (PR #512) dropped the structurally redundant single-purpose indexes
+  # (idx_expenses_list_covering, idx_expenses_amount_brin,
+  # idx_expenses_uncategorized_optimized, idx_expenses_pending_status) in favor
+  # of the consolidated idx_expenses_primary_filter. These examples verify the
+  # consolidated index actually serves the account-scoped access paths — not the
+  # planner's exact plan shape, which is data-volume dependent.
   describe "Index Usage Verification" do
-    it "uses idx_expenses_list_covering for dashboard queries" do
+    it "uses an index scan (idx_expenses_primary_filter) for dashboard queries" do
       plan = explain_query(
         Expense
           .select(:id, :amount, :description, :transaction_date, :merchant_name, :category_id, :status)
@@ -180,46 +187,31 @@ RSpec.describe "Database Optimization Performance", type: :performance do
           .limit(50)
       )
 
-      expect(plan).to include("idx_expenses_list_covering")
+      expect(plan).to include("idx_expenses_primary_filter")
+      expect(plan).not_to include("Seq Scan")
     end
 
-    it "uses idx_expenses_amount_brin for amount range queries" do
-      plan = explain_query(
-        Expense.where(amount: 1000..5000, deleted_at: nil).limit(50)
-      )
-
-      expect(plan).to include("idx_expenses_amount_brin")
-    end
-
-    it "uses idx_expenses_uncategorized_optimized for uncategorized queries" do
+    it "uses an index scan for uncategorized queries" do
       plan = explain_query(
         Expense.where(category_id: nil, deleted_at: nil, email_account_id: @email_account.id)
           .order(transaction_date: :desc)
           .limit(50)
       )
 
-      expect(plan).to include("idx_expenses_uncategorized_optimized")
+      expect(plan).to include("idx_expenses_primary_filter")
+      expect(plan).not_to include("Seq Scan")
     end
 
-    it "uses idx_expenses_pending_status for status filtering" do
+    it "uses an index scan for account-scoped status filtering" do
       plan = explain_query(
         Expense.where(status: "pending", deleted_at: nil, email_account_id: @email_account.id)
           .order(created_at: :desc)
           .limit(50)
       )
 
-      expect(plan).to include("idx_expenses_pending_status")
-    end
-
-    it "avoids sequential scans for dashboard queries" do
-      plan = explain_query(
-        Expense.where(
-          email_account_id: @email_account.id,
-          deleted_at: nil,
-          transaction_date: 30.days.ago..Time.current
-        ).limit(50)
-      )
-
+      # Planner may pick the primary filter or the created/transaction_date
+      # ordering index depending on statistics; either avoids a table scan.
+      expect(plan).to include("Index Scan")
       expect(plan).not_to include("Seq Scan")
     end
   end

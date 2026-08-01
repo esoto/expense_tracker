@@ -5,7 +5,7 @@ require "rails_helper"
 RSpec.describe "Dashboard Virtual Scrolling", type: :system, js: true, tier: :system do
   let(:admin_user) { create(:user, :admin) }
   # Create test data
-  let!(:email_account) { create(:email_account, :active) }
+  let!(:email_account) { create(:email_account) } # factory default is active: true
   let!(:categories) { create_list(:category, 5) }
 
   # Create a large dataset for virtual scrolling
@@ -245,7 +245,10 @@ RSpec.describe "Dashboard Virtual Scrolling", type: :system, js: true, tier: :sy
         wait_for_turbo
       end
 
-      it "maintains 60fps during scroll", :performance do
+      # No :performance tag: this is a manual-only browser check (the example
+      # body skips itself), and its login before-hook would still run — and
+      # fail — in the headless CI performance lane.
+      it "maintains 60fps during scroll" do
         skip "Performance test - requires manual verification"
 
         container = find(".virtual-scroll-viewport")

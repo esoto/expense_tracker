@@ -25,7 +25,12 @@ module Services::Categorization
 
     attr_reader :start_time
 
-    def initialize(logger: Rails.logger) # rubocop:disable Lint/MissingSuper
+    # Do NOT capture Rails.logger here: this class is a process-wide Singleton,
+    # and whatever logger exists at first-instance time would be frozen in for
+    # the process lifetime. In specs that stub Rails.logger with an
+    # instance_double, the dead double then leaks into every later example
+    # (order-dependent failures). The logger is resolved lazily instead.
+    def initialize(logger: nil) # rubocop:disable Lint/MissingSuper
       @logger = logger
 
       # Thread-safe collections using concurrent-ruby
@@ -177,7 +182,7 @@ module Services::Categorization
         @start_time = Time.current
       end
 
-      @logger.info "[PerformanceTracker] Metrics reset completed"
+      logger.info "[PerformanceTracker] Metrics reset completed"
     end
 
     # Export metrics for monitoring systems
@@ -210,8 +215,15 @@ module Services::Categorization
         avg_time <= CRITICAL_TIME_MS && error_rate_val < 50.0
       end
     rescue => e
-      @logger.error "[PerformanceTracker] Health check failed: #{e.message}"
+      logger.error "[PerformanceTracker] Health check failed: #{e.message}"
       false
+    end
+
+    # Lazy logger: honors an injected logger but never freezes Rails.logger
+    # into the Singleton (see initialize note). Public because
+    # ActiveSupport::Benchmarkable also resolves #logger.
+    def logger
+      @logger || Rails.logger
     end
 
     private
@@ -252,10 +264,10 @@ module Services::Categorization
 
     def log_performance_issue(duration_ms, expense_id, correlation_id)
       if duration_ms > CRITICAL_TIME_MS
-        @logger.error "[PerformanceTracker] Critical performance: #{duration_ms.round(2)}ms " \
+        logger.error "[PerformanceTracker] Critical performance: #{duration_ms.round(2)}ms " \
                      "for expense #{expense_id} (correlation_id: #{correlation_id})"
       elsif duration_ms > WARNING_TIME_MS
-        @logger.warn "[PerformanceTracker] Slow categorization: #{duration_ms.round(2)}ms " \
+        logger.warn "[PerformanceTracker] Slow categorization: #{duration_ms.round(2)}ms " \
                     "for expense #{expense_id} (correlation_id: #{correlation_id})"
       end
     end

@@ -70,9 +70,13 @@ if ENV['TEST_TIER'] == 'performance'
   add_filter '/app/assets/'
   add_filter '/app/helpers/'
 
-  # Performance test coverage expectations
-  minimum_coverage 50  # Performance tests target specific bottlenecks
-  minimum_coverage_by_file 40
+  # No coverage floor for the performance lane (2026-08-01): after the
+  # fold-and-prune (#553-#556) this lane holds only genuine benchmarks
+  # (~68 examples), which legitimately touch a narrow slice of the app.
+  # Coverage thresholds are enforced by the combined-coverage job
+  # (combined_coverage.rb: 75%), where they belong.
+  minimum_coverage 0
+  minimum_coverage_by_file 0
 
   # Performance tests are selective by nature
   # refuse_coverage_drop

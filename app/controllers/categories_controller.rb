@@ -84,6 +84,7 @@ class CategoriesController < ApplicationController
         format.html { redirect_to category_path(@category), notice: "Category updated." }
         format.turbo_stream do
           if @category.parent_id == previous_parent_id
+            flash.now[:notice] = "Category updated."
             render :update
           else
             redirect_to category_path(@category), notice: "Category updated."

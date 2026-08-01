@@ -5,7 +5,7 @@ import { shouldSuppressShortcut } from "utilities/keyboard_shortcut_helpers"
  * Batch Selection Controller
  * Manages batch selection of expenses with checkboxes, master selection, and keyboard navigation
  * Maintains selection state across filtering and pagination
- * Integrates with view toggle modes and prepares for bulk operations
+ * Prepares for bulk operations
  */
 export default class extends Controller {
   static targets = [
@@ -48,11 +48,7 @@ export default class extends Controller {
 
     // Initialize UI state
     this.updateUI()
-    
-    // Listen for view toggle changes
-    this.handleViewToggleChange = this.handleViewToggleChange.bind(this)
-    document.addEventListener('view-toggle:toggled', this.handleViewToggleChange)
-    
+
     // Listen for bulk operations completion
     this.handleBulkOperationsCompleted = this.handleBulkOperationsCompleted.bind(this)
     document.addEventListener('bulk-operations:completed', this.handleBulkOperationsCompleted)
@@ -60,7 +56,6 @@ export default class extends Controller {
 
   disconnect() {
     // Clean up event listeners
-    document.removeEventListener('view-toggle:toggled', this.handleViewToggleChange)
     document.removeEventListener('bulk-operations:completed', this.handleBulkOperationsCompleted)
 
     // Clean up keyboard navigation listeners
@@ -439,29 +434,6 @@ export default class extends Controller {
         selectedCount: this.selectedIdsValue.length
       }
     })
-  }
-
-  /**
-   * Handle view toggle changes
-   */
-  handleViewToggleChange(event) {
-    // Re-apply selection highlighting after view change
-    this.checkboxTargets.forEach(checkbox => {
-      const expenseId = parseInt(checkbox.dataset.expenseId)
-      const row = this.closestExpenseRow(checkbox)
-
-      if (this.selectedIdsValue.includes(expenseId)) {
-        checkbox.checked = true
-        if (row) {
-          row.classList.add('bg-teal-50', 'border-teal-200')
-          row.classList.remove('hover:bg-slate-50')
-          row.setAttribute('aria-selected', 'true')
-        }
-      }
-    })
-    
-    // Update UI to reflect current state
-    this.updateUI()
   }
 
   /**

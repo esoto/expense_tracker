@@ -333,8 +333,6 @@ es:
       summary_hide: "Ocultar resumen"
       list_title: "Lista de Gastos"
       selection_counter: "gastos seleccionados"
-      view_toggle_tooltip: "Cambiar modo de vista"
-      view_toggle_compact: "Vista Compacta"
       toggle_selection_tooltip: "Activar modo de selección"
       toggle_selection_label: "Selección Múltiple"
       period_day: "Hoy"

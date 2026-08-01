@@ -30,11 +30,6 @@ RSpec.describe "Inline Quick Actions", type: :system, js: true do
 
   describe "Actions visibility" do
     it "shows actions on hover in expanded view" do
-      # Ensure we're in expanded view
-      unless page.has_css?('[data-view-toggle-target="expandedIcon"].hidden')
-        find('[data-view-toggle-target="toggleButton"]').click
-      end
-
       # Find and hover over the expense row
       expense_row = find("tr.expense-row-with-actions", match: :first)
       expense_row.hover
@@ -49,16 +44,6 @@ RSpec.describe "Inline Quick Actions", type: :system, js: true do
       # Check if visible using computed styles
       opacity = page.evaluate_script("window.getComputedStyle(arguments[0]).opacity", actions_container.native)
       expect(opacity.to_f).to be > 0
-    end
-
-    it "hides actions in compact view mode" do
-      # Switch to compact view if not already
-      if page.has_css?('[data-view-toggle-target="compactIcon"]:not(.hidden)')
-        find('[data-view-toggle-target="toggleButton"]').click
-      end
-
-      # Actions should be hidden in compact mode
-      expect(page).not_to have_css('[data-inline-actions-target="actionsContainer"].opacity-100')
     end
   end
 

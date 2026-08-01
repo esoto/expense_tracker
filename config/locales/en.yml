@@ -346,8 +346,6 @@ en:
       summary_hide: "Hide summary"
       list_title: "Expense List"
       selection_counter: "expenses selected"
-      view_toggle_tooltip: "Change view mode"
-      view_toggle_compact: "Compact View"
       toggle_selection_tooltip: "Enable selection mode"
       toggle_selection_label: "Multiple Selection"
       period_day: "Today"

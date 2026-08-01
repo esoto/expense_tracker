@@ -140,7 +140,9 @@ class BulkCategorizationActionsController < ApplicationController
 
   def find_expenses_for_auto_categorize
     filters = auto_categorize_params
-    scope = Expense.includes(:category, :email_account)
+    # Scoped to the signed-in user like every other lookup in this controller —
+    # unscoped, auto-categorize would sweep other users' expenses too.
+    scope = Expense.for_user(current_user).includes(:category, :email_account)
 
     # Apply date filters using parameterized queries. transaction_date is a
     # timestamp column so bracket the day-aligned bound with beginning/end_of_day.

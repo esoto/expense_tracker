@@ -93,4 +93,16 @@ RSpec.describe "BulkCategorizationActions data isolation", type: :request, unit:
       expect(JSON.parse(response.body)["error"]).not_to eq("Operation not found")
     end
   end
+
+  describe "POST /bulk_categorizations/auto_categorize" do
+    it "does not sweep another user's expenses into user_b's auto-categorization" do
+      sign_in_as(user_b)
+
+      # No filters → the broadest possible scope; user_a's uncategorized
+      # expense must still be invisible to user_b's run.
+      post "/bulk_categorizations/auto_categorize", params: { dry_run: "false" }, as: :json
+
+      expect(expense_a.reload.category).to be_nil
+    end
+  end
 end

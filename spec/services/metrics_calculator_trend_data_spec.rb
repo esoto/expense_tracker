@@ -2,12 +2,12 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::MetricsCalculator, '#calculate_trend_data', performance: true do
+RSpec.describe Services::MetricsCalculator, '#calculate_trend_data' do
   let(:email_account) { create(:email_account) }
   let(:reference_date) { Date.current }
   let(:calculator) { described_class.new(email_account: email_account, reference_date: reference_date) }
 
-  describe 'trend data calculation', performance: true do
+  describe 'trend data calculation' do
     context 'with expenses over 7 days' do
       before do
         # Create expenses for each of the last 7 days
@@ -112,11 +112,15 @@ RSpec.describe Services::MetricsCalculator, '#calculate_trend_data', performance
 
     context 'with multiple expenses on same day' do
       before do
-        # Create multiple expenses on the same day
-        3.times do
+        # Create multiple expenses on the same day. Vary merchant_name so each
+        # row is distinct under idx_expenses_duplicate_check (unique on
+        # email_account_id, amount, transaction_date, merchant_name) —
+        # otherwise these three "intentional duplicates" collide.
+        3.times do |i|
           create(:expense,
                  email_account: email_account,
                  transaction_date: reference_date,
+                 merchant_name: "Same Day Merchant #{i}",
                  amount: 100)
         end
       end

@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 require "rails_helper"
+require "benchmark"
 
-RSpec.describe Services::ExpenseFilterService, type: :service, performance: true do
+RSpec.describe Services::ExpenseFilterService, type: :service do
   let(:email_account) { create(:email_account, provider: "gmail", email: "test@example.com", bank_name: "BAC", active: true) }
   let(:category) { Category.create!(name: "Food", color: "#FF0000") }
 
@@ -10,6 +11,7 @@ RSpec.describe Services::ExpenseFilterService, type: :service, performance: true
     # Create test expenses
     Expense.create!(
       email_account: email_account,
+      user: email_account.user,
       amount: 100.00,
       transaction_date: Date.current,
       merchant_name: "Test Store",
@@ -20,6 +22,7 @@ RSpec.describe Services::ExpenseFilterService, type: :service, performance: true
 
     Expense.create!(
       email_account: email_account,
+      user: email_account.user,
       amount: 200.00,
       transaction_date: 1.week.ago,
       merchant_name: "Another Store",
@@ -30,6 +33,7 @@ RSpec.describe Services::ExpenseFilterService, type: :service, performance: true
 
     Expense.create!(
       email_account: email_account,
+      user: email_account.user,
       amount: 50.00,
       transaction_date: 1.month.ago,
       merchant_name: "Old Store",
@@ -39,7 +43,7 @@ RSpec.describe Services::ExpenseFilterService, type: :service, performance: true
     )
   end
 
-  describe "#call", performance: true do
+  describe "#call" do
     context "with no filters" do
       let(:service) { described_class.new(account_ids: [ email_account.id ]) }
 
@@ -180,6 +184,7 @@ RSpec.describe Services::ExpenseFilterService, type: :service, performance: true
         50.times do |i|
           Expense.create!(
             email_account: email_account,
+            user: email_account.user,
             amount: rand(10..1000),
             transaction_date: rand(90).days.ago,
             merchant_name: "Store #{i}",
@@ -221,7 +226,7 @@ RSpec.describe Services::ExpenseFilterService, type: :service, performance: true
     end
   end
 
-  describe "#to_json", performance: true do
+  describe "#to_json" do
     let(:service) { described_class.new(account_ids: [ email_account.id ]) }
 
     it "returns JSON representation" do
@@ -249,6 +254,7 @@ RSpec.describe Services::ExpenseFilterService, type: :service, performance: true
       # to test page 2 with per_page: 2
       Expense.create!(
         email_account: email_account,
+        user: email_account.user,
         amount: 75.00,
         transaction_date: 2.weeks.ago,
         merchant_name: "Extra Store D",

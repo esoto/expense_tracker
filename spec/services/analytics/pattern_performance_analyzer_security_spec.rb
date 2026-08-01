@@ -2,14 +2,14 @@
 
 require "rails_helper"
 
-RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, performance: true do
+RSpec.describe Services::Analytics::PatternPerformanceAnalyzer do
   let(:category) { create(:category) }
   let(:pattern) { create(:categorization_pattern, category: category) }
   let(:expense) { create(:expense) }
   let(:analyzer) { described_class.new }
 
-  describe "Security Fixes", performance: true do
-    describe "#trend_analysis", performance: true do
+  describe "Security Fixes" do
+    describe "#trend_analysis" do
       context "SQL injection prevention" do
         it "sanitizes malicious interval input" do
           expect {
@@ -74,7 +74,7 @@ RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, performance: tru
       end
     end
 
-    describe "#usage_heatmap", performance: true do
+    describe "#usage_heatmap" do
       context "error handling" do
         it "returns empty hash on database error" do
           allow(PatternFeedback).to receive(:where).and_raise(ActiveRecord::StatementInvalid)
@@ -102,7 +102,7 @@ RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, performance: tru
       end
     end
 
-    describe "#category_performance", performance: true do
+    describe "#category_performance" do
       context "N+1 query prevention" do
         it "uses single query with aggregation" do
           create_list(:categorization_pattern, 5, category: category)
@@ -138,8 +138,8 @@ RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, performance: tru
     end
   end
 
-  describe "Performance Optimizations", performance: true do
-    describe "Constants", performance: true do
+  describe "Performance Optimizations" do
+    describe "Constants" do
       it "defines all required constants" do
         expect(described_class::DEFAULT_PAGE_SIZE).to eq(25)
         expect(described_class::MAX_PAGE_SIZE).to eq(100)
@@ -149,7 +149,7 @@ RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, performance: tru
       end
     end
 
-    describe "#top_patterns", performance: true do
+    describe "#top_patterns" do
       it "includes proper associations to prevent N+1" do
         create_list(:categorization_pattern, 5, category: category)
 
@@ -160,7 +160,7 @@ RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, performance: tru
       end
     end
 
-    describe "#bottom_patterns", performance: true do
+    describe "#bottom_patterns" do
       it "includes proper associations to prevent N+1" do
         create_list(:categorization_pattern, 5, category: category)
 
@@ -171,7 +171,7 @@ RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, performance: tru
       end
     end
 
-    describe "#recent_activity", performance: true do
+    describe "#recent_activity" do
       it "preloads all associations" do
         # Create different expenses to avoid unique constraint violation
         5.times do
@@ -202,28 +202,53 @@ RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, performance: tru
     end
   end
 
-  describe "Cache Invalidation", performance: true do
-    it "clears cache when patterns are updated" do
-      pattern = create(:categorization_pattern)
+  describe "Cache Invalidation" do
+    # The invalidation strategy moved from Rails.cache.delete_matched (not
+    # atomic, not supported by all cache stores) to an atomic version-key
+    # bump — see CacheVersioning and CategorizationPattern#invalidate_cache /
+    # PatternFeedback#invalidate_analytics_cache /
+    # PatternLearningEvent#invalidate_analytics_cache. Any cache entry keyed
+    # with the previous version becomes unreachable once the version
+    # increments, so these specs assert on the version bump instead of a
+    # delete_matched call that no longer happens.
+    let(:version_key) { Analytics::PatternDashboardController::ANALYTICS_VERSION_KEY }
 
-      expect(Rails.cache).to receive(:delete_matched).with("pattern_analytics/*")
-      pattern.update!(confidence_weight: 2.0)
+    # The unit tier swaps Rails.cache for a NullStore (see
+    # spec/support/configs/test_tiers.rb) for speed/isolation, so reads never
+    # observe what was written. These examples need a real, persistent store
+    # to observe the version bump, so swap in a MemoryStore just for this
+    # describe block.
+    around do |example|
+      original_cache = Rails.cache
+      Rails.cache = ActiveSupport::Cache::MemoryStore.new
+      example.run
+    ensure
+      Rails.cache = original_cache
     end
 
-    it "clears cache when feedback is created" do
-      # Allow both dashboard and pattern analytics cache clearing
-      expect(Rails.cache).to receive(:delete_matched).with("dashboard_*").at_least(:once)
-      expect(Rails.cache).to receive(:delete_matched).with("pattern_analytics/*").at_least(:once)
+    it "bumps the analytics cache version when patterns are updated" do
+      pattern = create(:categorization_pattern)
+      before_version = Rails.cache.read(version_key) || 0
+
+      pattern.update!(confidence_weight: 2.0)
+
+      expect(Rails.cache.read(version_key)).to be > before_version
+    end
+
+    it "bumps the analytics cache version when feedback is created" do
+      before_version = Rails.cache.read(version_key) || 0
 
       create(:pattern_feedback, expense: expense, category: category)
+
+      expect(Rails.cache.read(version_key)).to be > before_version
     end
 
-    it "clears cache when learning events are created" do
-      # Allow both dashboard and pattern analytics cache clearing
-      expect(Rails.cache).to receive(:delete_matched).with("dashboard_*").at_least(:once)
-      expect(Rails.cache).to receive(:delete_matched).with("pattern_analytics/*").at_least(:once)
+    it "bumps the analytics cache version when learning events are created" do
+      before_version = Rails.cache.read(version_key) || 0
 
       create(:pattern_learning_event, expense: expense, category: category)
+
+      expect(Rails.cache.read(version_key)).to be > before_version
     end
   end
 end

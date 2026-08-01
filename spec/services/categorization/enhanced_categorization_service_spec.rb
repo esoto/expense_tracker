@@ -1,15 +1,18 @@
 # frozen_string_literal: true
 
 require "rails_helper"
+require "benchmark"
 
-RSpec.describe Services::Categorization::EnhancedCategorizationService, performance: true do
+RSpec.describe Services::Categorization::EnhancedCategorizationService do
   let(:service) { described_class.new }
 
-  describe "#categorize", performance: true do
+  describe "#categorize" do
     let(:food_category) { create(:category, name: "Food & Dining") }
     let(:transport_category) { create(:category, name: "Transportation") }
+    let(:email_account) { create(:email_account) }
     let(:expense) do
       build(:expense,
+            email_account: email_account,
             merchant_name: "STARBUCKS COFFEE #123",
             description: "Coffee purchase",
             amount: 5.75,
@@ -18,7 +21,12 @@ RSpec.describe Services::Categorization::EnhancedCategorizationService, performa
 
     context "with user preferences" do
       before do
+        # PR 9 scopes user preferences by email_account_id (see
+        # EnhancedCategorizationService#find_user_preference_category), so the
+        # preference must share the expense's email_account or the lookup
+        # never matches.
         create(:user_category_preference,
+               email_account: email_account,
                context_type: "merchant",
                context_value: "starbucks coffee #123",
                category: food_category)
@@ -171,7 +179,7 @@ RSpec.describe Services::Categorization::EnhancedCategorizationService, performa
     end
   end
 
-  describe "#categorize_batch", performance: true do
+  describe "#categorize_batch" do
     let(:food_category) { create(:category, name: "Food & Dining") }
     let(:transport_category) { create(:category, name: "Transportation") }
 
@@ -222,7 +230,7 @@ RSpec.describe Services::Categorization::EnhancedCategorizationService, performa
     end
   end
 
-  describe "#find_matching_patterns", performance: true do
+  describe "#find_matching_patterns" do
     let(:category) { create(:category) }
 
     before do
@@ -272,7 +280,7 @@ RSpec.describe Services::Categorization::EnhancedCategorizationService, performa
     end
   end
 
-  describe "#suggest_categories", performance: true do
+  describe "#suggest_categories" do
     let(:food_category) { create(:category, name: "Food & Dining") }
     let(:shopping_category) { create(:category, name: "Shopping") }
 
@@ -339,7 +347,7 @@ RSpec.describe Services::Categorization::EnhancedCategorizationService, performa
     end
   end
 
-  describe "#learn_from_feedback", performance: true do
+  describe "#learn_from_feedback" do
     let(:category) { create(:category) }
     let(:email_account) { create(:email_account) }
     let(:expense) { create(:expense, merchant_name: "NEW MERCHANT", email_account: email_account) }
@@ -398,7 +406,7 @@ RSpec.describe Services::Categorization::EnhancedCategorizationService, performa
     end
   end
 
-  describe "#metrics", performance: true do
+  describe "#metrics" do
     it "returns comprehensive metrics" do
       # Perform some operations
       expense = build(:expense, merchant_name: "TEST")
@@ -418,7 +426,7 @@ RSpec.describe Services::Categorization::EnhancedCategorizationService, performa
     end
   end
 
-  describe "Spanish text handling", performance: true do
+  describe "Spanish text handling" do
     let(:category) { create(:category, name: "Restaurantes") }
 
     let(:expense) do
@@ -452,7 +460,7 @@ RSpec.describe Services::Categorization::EnhancedCategorizationService, performa
     end
   end
 
-  describe "performance", performance: true do
+  describe "performance" do
     it "categorizes within reasonable time" do
       expense = build(:expense, merchant_name: "STARBUCKS")
 

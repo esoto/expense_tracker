@@ -2,8 +2,8 @@
 
 require "rails_helper"
 
-RSpec.describe Services::Categorization::Matchers::FuzzyMatcher, type: :service, performance: true do
-  describe "Task 1.7.1 Fixes - ActiveRecord Object Handling", performance: true do
+RSpec.describe Services::Categorization::Matchers::FuzzyMatcher, type: :service do
+  describe "Task 1.7.1 Fixes - ActiveRecord Object Handling" do
     let(:matcher) { described_class.new }
     let(:category) { create(:category, name: "Food") }
 
@@ -51,7 +51,7 @@ RSpec.describe Services::Categorization::Matchers::FuzzyMatcher, type: :service,
     end
   end
 
-  describe "Task 1.7.1 Fixes - Jaro-Winkler Scoring Calibration", performance: true do
+  describe "Task 1.7.1 Fixes - Jaro-Winkler Scoring Calibration" do
     let(:matcher) { described_class.new }
 
     context "with dissimilar strings" do
@@ -84,7 +84,7 @@ RSpec.describe Services::Categorization::Matchers::FuzzyMatcher, type: :service,
     end
   end
 
-  describe "Task 1.7.1 Fixes - Text Normalization Configuration", performance: true do
+  describe "Task 1.7.1 Fixes - Text Normalization Configuration" do
     context "when normalization is disabled" do
       let(:matcher) { described_class.new(normalize_text: false) }
 
@@ -120,7 +120,7 @@ RSpec.describe Services::Categorization::Matchers::FuzzyMatcher, type: :service,
     end
   end
 
-  describe "Task 1.7.1 Fixes - Integration Tests", performance: true do
+  describe "Task 1.7.1 Fixes - Integration Tests" do
     let(:matcher) { described_class.new }
     let(:category) { create(:category, name: "Food") }
 
@@ -174,7 +174,7 @@ RSpec.describe Services::Categorization::Matchers::FuzzyMatcher, type: :service,
     end
   end
 
-  describe "Performance Requirements", performance: true do
+  describe "Performance Requirements" do
     let(:matcher) { described_class.new }
 
     it "completes matching within reasonable threshold" do

@@ -127,16 +127,24 @@ module Services
   # Pre-load and cache expense data for multiple periods to optimize batch calculations
   private_class_method def self.preload_data_for_batch(email_account, periods, reference_date)
     # Determine the widest date range needed
+    #
+    # NOTE: ranges must be built in the app's configured time zone (not the
+    # server/Postgres session zone). Bare Date#beginning_of_day/end_of_day
+    # convert via the system local zone, and Date..Date ranges get emitted
+    # as naive date literals that Postgres casts in its own session zone —
+    # both land expenses near local midnight on the wrong side of the
+    # boundary. See calculate_date_range for the same fix applied to the
+    # single-instance date range.
     date_ranges = periods.map do |period|
       case period.to_sym
       when :day
-        reference_date.beginning_of_day..reference_date.end_of_day
+        reference_date.in_time_zone.all_day
       when :week
-        reference_date.beginning_of_week..reference_date.end_of_week
+        reference_date.in_time_zone.beginning_of_week..reference_date.in_time_zone.end_of_week
       when :month
-        reference_date.beginning_of_month..reference_date.end_of_month
+        reference_date.in_time_zone.beginning_of_month..reference_date.in_time_zone.end_of_month
       when :year
-        reference_date.beginning_of_year..reference_date.end_of_year
+        reference_date.in_time_zone.beginning_of_year..reference_date.in_time_zone.end_of_year
       end
     end
 
@@ -207,16 +215,26 @@ module Services
     @previous_date_range ||= calculate_previous_date_range
   end
 
+  # Builds a tz-aware range for the current period.
+  #
+  # IMPORTANT: must NOT return a bare Date..Date range or a Time built via
+  # Date#to_time (which uses the system/local zone, not the app's
+  # configured Time.zone). ActiveRecord queries transaction_date (a
+  # tz-aware datetime column) with these ranges; a naive Date endpoint gets
+  # emitted as a naive date literal that Postgres casts in its own session
+  # time zone rather than the app's, so expenses near local midnight can
+  # land on the wrong side of the period boundary. Explicitly anchoring
+  # every endpoint in Time.zone via #in_time_zone avoids that ambiguity.
   def calculate_date_range
     case period
     when :day
-      reference_date.beginning_of_day..reference_date.end_of_day
+      reference_date.in_time_zone.all_day
     when :week
-      reference_date.beginning_of_week..reference_date.end_of_week
+      reference_date.in_time_zone.beginning_of_week..reference_date.in_time_zone.end_of_week
     when :month
-      reference_date.beginning_of_month..reference_date.end_of_month
+      reference_date.in_time_zone.beginning_of_month..reference_date.in_time_zone.end_of_month
     when :year
-      reference_date.beginning_of_year..reference_date.end_of_year
+      reference_date.in_time_zone.beginning_of_year..reference_date.in_time_zone.end_of_year
     end
   end
 
@@ -224,16 +242,16 @@ module Services
     case period
     when :day
       previous_date = reference_date - 1.day
-      previous_date.beginning_of_day..previous_date.end_of_day
+      previous_date.in_time_zone.all_day
     when :week
       previous_date = reference_date - 1.week
-      previous_date.beginning_of_week..previous_date.end_of_week
+      previous_date.in_time_zone.beginning_of_week..previous_date.in_time_zone.end_of_week
     when :month
       previous_date = reference_date - 1.month
-      previous_date.beginning_of_month..previous_date.end_of_month
+      previous_date.in_time_zone.beginning_of_month..previous_date.in_time_zone.end_of_month
     when :year
       previous_date = reference_date - 1.year
-      previous_date.beginning_of_year..previous_date.end_of_year
+      previous_date.in_time_zone.beginning_of_year..previous_date.in_time_zone.end_of_year
     end
   end
 
@@ -343,8 +361,12 @@ module Services
 
     # Get daily totals for the past 7 days
     # Group by date (not datetime) to ensure proper matching
+    #
+    # Range endpoints are anchored in the app's Time.zone (not the system/
+    # Postgres session zone) for the same reason as calculate_date_range —
+    # otherwise expenses near local midnight can fall outside the window.
     daily_totals = email_account.expenses
-      .where(transaction_date: start_date.beginning_of_day..end_date.end_of_day)
+      .where(transaction_date: start_date.in_time_zone.beginning_of_day..end_date.in_time_zone.end_of_day)
       .group("DATE(transaction_date)")
       .sum(:amount)
 

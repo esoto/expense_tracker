@@ -165,7 +165,7 @@ RSpec.describe "Services::Categorization::Orchestrator Integration", type: :serv
         ]
       end
 
-      it "processes multiple expenses efficiently" do
+      it "processes multiple expenses efficiently", performance: true do
         start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         results = orchestrator.batch_categorize(expenses)
         elapsed_ms = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000

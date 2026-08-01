@@ -204,7 +204,7 @@ RSpec.describe Services::MetricsCalculator, 'budget calculations' do
       end
     end
 
-    it 'calculates budget data within performance target' do
+    it 'calculates budget data within performance target', performance: true do
       time = Benchmark.realtime do
         calculator.calculate
       end

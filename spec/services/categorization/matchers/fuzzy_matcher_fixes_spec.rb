@@ -177,7 +177,9 @@ RSpec.describe Services::Categorization::Matchers::FuzzyMatcher, type: :service 
   describe "Performance Requirements" do
     let(:matcher) { described_class.new }
 
-    it "completes matching within reasonable threshold" do
+    # performance: wall-clock assertion — belongs in the benchmark lane, not
+    # the unit tier (flaked on a busy CI runner when folded to unit).
+    it "completes matching within reasonable threshold", performance: true do
       # Use 50 candidates for more realistic performance test
       candidates = 50.times.map { |i| "Merchant #{i}" }
 

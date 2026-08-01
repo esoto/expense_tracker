@@ -2,10 +2,10 @@
 
 require "rails_helper"
 
-RSpec.describe Services::Categorization::Monitoring::HealthCheck, performance: true do
+RSpec.describe Services::Categorization::Monitoring::HealthCheck do
   let(:health_check) { described_class.new }
 
-  describe "#check_all", performance: true do
+  describe "#check_all" do
     it "performs all health checks" do
       result = health_check.check_all
 
@@ -139,7 +139,7 @@ RSpec.describe Services::Categorization::Monitoring::HealthCheck, performance: t
     end
   end
 
-  describe "#check_database", performance: true do
+  describe "#check_database" do
     it "checks database connectivity and performance" do
       # Create some test data
       create(:category)
@@ -166,7 +166,7 @@ RSpec.describe Services::Categorization::Monitoring::HealthCheck, performance: t
     end
   end
 
-  describe "#check_pattern_cache", performance: true do
+  describe "#check_pattern_cache" do
     it "checks pattern cache status" do
       cache = instance_double(Services::Categorization::PatternCache)
       allow(Services::Categorization::PatternCache).to receive(:instance).and_return(cache)
@@ -224,7 +224,7 @@ RSpec.describe Services::Categorization::Monitoring::HealthCheck, performance: t
     end
   end
 
-  describe "#check_service_metrics", performance: true do
+  describe "#check_service_metrics" do
     before do
       create_list(:expense, 5, category: create(:category))
       create_list(:expense, 3, category: nil)
@@ -242,7 +242,7 @@ RSpec.describe Services::Categorization::Monitoring::HealthCheck, performance: t
     end
   end
 
-  describe "#healthy?", performance: true do
+  describe "#healthy?" do
     it "returns true when all critical checks pass" do
       health_check.instance_variable_set(:@checks, {
         database: { status: :healthy },
@@ -272,7 +272,7 @@ RSpec.describe Services::Categorization::Monitoring::HealthCheck, performance: t
     end
   end
 
-  describe "#ready?", performance: true do
+  describe "#ready?" do
     it "returns true when database and cache are available" do
       health_check.instance_variable_set(:@checks, {
         database: { status: :healthy },
@@ -301,7 +301,7 @@ RSpec.describe Services::Categorization::Monitoring::HealthCheck, performance: t
     end
   end
 
-  describe "#live?", performance: true do
+  describe "#live?" do
     it "always returns true unless there's an exception" do
       expect(health_check.live?).to be true
     end

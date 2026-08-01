@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Services::Categorization::PatternCache, performance: true do
+RSpec.describe Services::Categorization::PatternCache do
   let(:cache) { described_class.new }
   let(:category) { create(:category, name: "Food & Dining") }
   let(:pattern) do
@@ -43,7 +43,7 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
     Services::Categorization::PatternCache::MetricsCollector.reset_window!
   end
 
-  describe "#initialize", performance: true do
+  describe "#initialize" do
     it "initializes with memory cache" do
       expect(cache.instance_variable_get(:@memory_cache)).to be_present
     end
@@ -54,7 +54,7 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
     end
   end
 
-  describe "#get_pattern", performance: true do
+  describe "#get_pattern" do
     context "with no cached data" do
       it "fetches from database and caches result" do
         expect(CategorizationPattern).to receive(:active).and_call_original
@@ -98,7 +98,7 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
     end
   end
 
-  describe "#get_patterns", performance: true do
+  describe "#get_patterns" do
     let(:patterns) do
       3.times.map do |i|
         create(:categorization_pattern,
@@ -133,7 +133,7 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
     end
   end
 
-  describe "#get_patterns_by_type", performance: true do
+  describe "#get_patterns_by_type" do
     let!(:merchant_patterns) do
       2.times.map do |i|
         create(:categorization_pattern,
@@ -167,7 +167,7 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
     end
   end
 
-  describe "#get_composite_pattern", performance: true do
+  describe "#get_composite_pattern" do
     it "fetches and caches composite pattern" do
       result = cache.get_composite_pattern(composite.id)
 
@@ -186,7 +186,7 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
     end
   end
 
-  describe "#get_user_preference", performance: true do
+  describe "#get_user_preference" do
     it "fetches and caches user preference by merchant name" do
       # Ensure user_preference is created
       user_preference
@@ -225,7 +225,7 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
     end
   end
 
-  describe "#get_all_active_patterns", performance: true do
+  describe "#get_all_active_patterns" do
     let!(:active_patterns) do
       3.times.map { create(:categorization_pattern, active: true, category: category) }
     end
@@ -249,7 +249,7 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
     end
   end
 
-  describe "#invalidate", performance: true do
+  describe "#invalidate" do
     context "with CategorizationPattern" do
       before { cache.get_pattern(pattern.id) }
 
@@ -300,7 +300,7 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
     end
   end
 
-  describe "#invalidate_all", performance: true do
+  describe "#invalidate_all" do
     before do
       cache.get_pattern(pattern.id)
       cache.get_composite_pattern(composite.id)
@@ -326,7 +326,7 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
     end
   end
 
-  describe "#warm_cache", performance: true do
+  describe "#warm_cache" do
     let!(:frequently_used_patterns) do
       3.times.map do |i|
         create(:categorization_pattern,
@@ -371,7 +371,7 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
     end
   end
 
-  describe "#metrics", performance: true do
+  describe "#metrics" do
     before do
       cache.get_pattern(pattern.id)
       cache.get_pattern(pattern.id) # Hit
@@ -409,7 +409,7 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
     end
   end
 
-  describe "metrics behavior — PER-549 fixes", performance: true do
+  describe "metrics behavior — PER-549 fixes" do
     let(:fresh_cache) { described_class.new }
 
     before do
@@ -495,7 +495,7 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
     end
   end
 
-  describe "#preload_for_expenses", performance: true do
+  describe "#preload_for_expenses" do
     let(:preload_account) { create(:email_account) }
     let(:expenses) do
       [
@@ -567,7 +567,7 @@ RSpec.describe Services::Categorization::PatternCache, performance: true do
     end
   end
 
-  describe "TTL configuration", performance: true do
+  describe "TTL configuration" do
     it "respects configured TTL values" do
       allow(Rails.application.config).to receive(:pattern_cache_memory_ttl).and_return(10.seconds)
       allow(Rails.application.config).to receive(:pattern_cache_l2_ttl).and_return(1.hour)

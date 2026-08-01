@@ -42,11 +42,17 @@ class QueuedEmailPayload < ApplicationRecord
   end
 
   # @return [Hash, nil] the original hash passed to `payload_data=`, with
-  #   Symbol keys and Time/BigDecimal values restored.
+  #   Symbol keys and Time/BigDecimal values restored. Returns nil (instead of
+  #   raising) if the stored blob is corrupted or otherwise unreadable —
+  #   callers (see ProcessEmailJob#resolve_email_payload) treat a nil/blank
+  #   result as "nothing to process" rather than crash-looping a job retry.
   def payload_data
     return nil if encrypted_payload.blank?
 
     ActiveJob::Arguments.deserialize(JSON.parse(encrypted_payload)).first
+  rescue JSON::ParserError, ActiveJob::DeserializationError, ArgumentError => e
+    Rails.logger.error "[QueuedEmailPayload] Failed to deserialize payload_data for record #{id}: #{e.class}: #{e.message}"
+    nil
   end
 
   def mark_processed!

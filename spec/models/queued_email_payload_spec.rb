@@ -80,6 +80,25 @@ RSpec.describe QueuedEmailPayload, type: :model, unit: true do
       payload.encrypted_payload = nil
       expect(payload.payload_data).to be_nil
     end
+
+    # Review finding (2026-08 audit follow-up): a corrupted/unreadable blob
+    # used to raise out of the getter (JSON::ParserError, a decryption error,
+    # etc), which ProcessEmailJob had no rescue for. It must degrade to nil
+    # and be logged instead — see ProcessEmailJob#resolve_email_payload's
+    # blank-data branch for the caller-side half of this fix.
+    it 'returns nil and logs an error when the stored blob is corrupted/unreadable' do
+      payload = create(:queued_email_payload)
+      payload.update_column(:encrypted_payload, "not valid json or ciphertext")
+      allow(Rails.logger).to receive(:error)
+
+      result = nil
+      expect { result = payload.reload.payload_data }.not_to raise_error
+
+      expect(result).to be_nil
+      expect(Rails.logger).to have_received(:error).with(
+        a_string_matching(/Failed to deserialize payload_data for record #{payload.id}/)
+      )
+    end
   end
 
   describe 'scopes' do

@@ -494,4 +494,92 @@ RSpec.describe ProcessEmailJob, type: :job, integration: true do
       end
     end
   end
+
+  # Review findings (2026-08 audit follow-up): a failure in mark_processed!
+  # used to propagate all the way up through perform, which would re-trigger
+  # this job's own retry_on and re-parse an already-persisted expense —
+  # flipping it to status: :duplicate via Parser's duplicate branch. See the
+  # rescue around mark_processed! and the processed_at early exit in
+  # #resolve_email_payload.
+  describe 'retry-corruption hardening (review findings)', integration: true do
+    let!(:payload) do
+      QueuedEmailPayload.create!(
+        email_account: email_account,
+        payload_data: { email_data: email_data, pre_parsed: nil }
+      )
+    end
+
+    context 'when mark_processed! raises' do
+      it 'does not raise, leaves the expense processed, and logs the error' do
+        allow_any_instance_of(QueuedEmailPayload).to receive(:update!).and_raise(ActiveRecord::Deadlocked)
+        allow(Rails.logger).to receive(:error)
+
+        expense = nil
+        expect {
+          expense = ProcessEmailJob.new.perform(email_account.id, payload.id)
+        }.not_to raise_error
+
+        expect(expense.status).to eq('processed')
+        expect(Rails.logger).to have_received(:error).with(
+          a_string_matching(/Failed to mark QueuedEmailPayload #{payload.id} as processed.*ActiveRecord::Deadlocked/)
+        )
+      end
+    end
+
+    context 'when the same payload id is replayed after it was already processed' do
+      it 'does not invoke the parser again and leaves the expense unchanged' do
+        expect {
+          ProcessEmailJob.new.perform(email_account.id, payload.id)
+        }.to change(Expense, :count).by(1)
+
+        expense = Expense.last
+        expect(payload.reload.processed_at).to be_present
+
+        expect(Services::EmailProcessing::Parser).not_to receive(:new)
+
+        expect {
+          ProcessEmailJob.new.perform(email_account.id, payload.id)
+        }.not_to change(Expense, :count)
+
+        expect(expense.reload.status).to eq('processed')
+      end
+
+      it 'logs that the replayed enqueue was skipped' do
+        ProcessEmailJob.new.perform(email_account.id, payload.id)
+
+        allow(Rails.logger).to receive(:warn)
+        ProcessEmailJob.new.perform(email_account.id, payload.id)
+
+        expect(Rails.logger).to have_received(:warn).with(
+          a_string_matching(/QueuedEmailPayload #{payload.id} already processed at.*skipping re-parse/)
+        )
+      end
+    end
+
+    context 'when the stored payload is corrupted' do
+      let!(:corrupted_payload) do
+        QueuedEmailPayload.create!(email_account: email_account, payload_data: { email_data: email_data, pre_parsed: nil })
+      end
+
+      before { corrupted_payload.update_column(:encrypted_payload, "not valid json or ciphertext") }
+
+      it 'does not crash and logs a distinct corruption error' do
+        allow(Rails.logger).to receive(:error)
+
+        expect {
+          ProcessEmailJob.new.perform(email_account.id, corrupted_payload.id)
+        }.not_to raise_error
+
+        expect(Rails.logger).to have_received(:error).with(
+          a_string_matching(/QueuedEmailPayload #{corrupted_payload.id} found but payload_data is blank \(corrupted\/unreadable\)/)
+        )
+      end
+
+      it 'does not create an expense' do
+        expect {
+          ProcessEmailJob.new.perform(email_account.id, corrupted_payload.id)
+        }.not_to change(Expense, :count)
+      end
+    end
+  end
 end

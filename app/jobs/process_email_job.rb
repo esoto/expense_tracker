@@ -54,7 +54,18 @@ class ProcessEmailJob < ApplicationJob
     # handled parsing failure) — if anything above raises, execution never
     # gets here and the record is left unprocessed so a retry_on retry (or a
     # manual re-run) still has data to work with.
-    payload_record&.mark_processed!
+    begin
+      payload_record&.mark_processed!
+    rescue StandardError => e
+      # A processed-but-unmarked payload is harmless: QueuedEmailPayload's
+      # UNPROCESSED_RETENTION (30 days) purges it eventually regardless. But
+      # letting this raise escape would re-trigger this job's own retry_on
+      # (e.g. ActiveRecord::Deadlocked), which re-parses the email and, since
+      # the expense was already persisted above, flips it to status:
+      # :duplicate via Parser's duplicate branch — silent data corruption on
+      # an already-successful outcome. Log and swallow instead.
+      Rails.logger.error "[ProcessEmailJob] Failed to mark QueuedEmailPayload #{payload_record&.id.inspect} as processed: #{e.class}: #{e.message}"
+    end
 
     result
   end
@@ -86,9 +97,38 @@ class ProcessEmailJob < ApplicationJob
         return [ nil, nil, nil ]
       end
 
-      data = payload_record.payload_data || {}
+      # Replayed/duplicate enqueue of the same payload id (e.g. a retry_on
+      # retry after mark_processed! itself failed — see the rescue around
+      # mark_processed! in #perform). The record was already fully processed,
+      # so re-parsing here would call Parser again on an already-persisted
+      # expense, which flips it to status: :duplicate via Parser's duplicate
+      # branch. Skip straight to the "nothing to do" tuple instead.
+      if payload_record.processed_at.present?
+        Rails.logger.warn "[ProcessEmailJob] QueuedEmailPayload #{payload_record.id} already processed at #{payload_record.processed_at} — skipping re-parse on replayed enqueue."
+        return [ payload_record, nil, nil ]
+      end
+
+      data = payload_record.payload_data
+      if data.blank?
+        # Distinct from the "not found" branch above: the record exists but
+        # its payload came back unreadable (see
+        # QueuedEmailPayload#payload_data, which rescues deserialization
+        # failures and returns nil instead of raising). Corruption must be
+        # observable, not silently swallowed into an empty hash.
+        Rails.logger.error "[ProcessEmailJob] QueuedEmailPayload #{payload_record.id} found but payload_data is blank (corrupted/unreadable) — discarding."
+        return [ payload_record, nil, nil ]
+      end
+
       [ payload_record, data[:email_data], data[:pre_parsed] ]
     when Hash
+      # Legacy branch — deploy-window compatibility only, not a supported
+      # long-term argument shape. Removal condition: once Solid Queue's
+      # ready/scheduled/failed job tables show zero jobs whose second
+      # argument is a Hash (i.e. no pre-deploy enqueues left to drain) — in
+      # practice ~30 days post-deploy, matching
+      # QueuedEmailPayload::UNPROCESSED_RETENTION, since anything older would
+      # already be past its retry budget. Tracked as a follow-up; do not
+      # remove this branch until that check has been done.
       Rails.logger.warn "[ProcessEmailJob] Deprecated: received a legacy plaintext email_data Hash directly in job arguments (enqueued before the encrypted-payload fix shipped). Processing for deploy-window compatibility."
       [ nil, email_data_or_payload_id, legacy_pre_parsed_data ]
     else

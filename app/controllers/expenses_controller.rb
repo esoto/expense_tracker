@@ -729,10 +729,18 @@ class ExpensesController < ApplicationController
       scope = scope.where(transaction_date: date_range) if date_range
     elsif params[:date_from].present? && params[:date_to].present?
       # Handle explicit date range from dashboard
-      scope = scope.where(transaction_date: parse_date_param(params[:date_from]).beginning_of_day..parse_date_param(params[:date_to]).end_of_day)
+      #
+      # transaction_date is a timestamp column, so range endpoints must be
+      # anchored in the app's configured Time.zone (not the system/Postgres
+      # session zone). Bare Date#beginning_of_day/end_of_day convert via the
+      # system local zone, so expenses near local midnight can land on the
+      # wrong side of the boundary. Anchoring via #in_time_zone avoids that
+      # ambiguity (same fix as Services::MetricsCalculator#calculate_date_range,
+      # PR #561).
+      scope = scope.where(transaction_date: parse_date_param(params[:date_from]).in_time_zone.beginning_of_day..parse_date_param(params[:date_to]).in_time_zone.end_of_day)
     elsif date_range_present?
-      # Handle traditional date range filters
-      scope = scope.where(transaction_date: parse_date_param(params[:start_date]).beginning_of_day..parse_date_param(params[:end_date]).end_of_day)
+      # Handle traditional date range filters (see comment above)
+      scope = scope.where(transaction_date: parse_date_param(params[:start_date]).in_time_zone.beginning_of_day..parse_date_param(params[:end_date]).in_time_zone.end_of_day)
     end
 
     # Use left_joins instead of joins to maintain includes
@@ -752,18 +760,24 @@ class ExpensesController < ApplicationController
   end
 
   def calculate_period_range(period)
-    # transaction_date is a timestamp column, so boundaries must be Times
-    # (not Dates) to bracket the full day in the app's configured zone.
+    # transaction_date is a timestamp column, so boundaries must be anchored
+    # in the app's configured Time.zone (not the system/Postgres session
+    # zone). Bare Date#beginning_of_day/end_of_day convert via the system
+    # local zone, and Date..Date ranges get emitted as naive date literals
+    # that Postgres casts in its own session zone — both land expenses near
+    # local midnight on the wrong side of the period boundary. Anchoring
+    # every endpoint via #in_time_zone avoids that ambiguity (same fix as
+    # Services::MetricsCalculator#calculate_date_range, PR #561).
     today = Date.current
     case period
     when "day", "today"
-      today.beginning_of_day..today.end_of_day
+      today.in_time_zone.all_day
     when "week"
-      today.beginning_of_week.beginning_of_day..today.end_of_week.end_of_day
+      today.in_time_zone.beginning_of_week..today.in_time_zone.end_of_week
     when "month"
-      today.beginning_of_month.beginning_of_day..today.end_of_month.end_of_day
+      today.in_time_zone.beginning_of_month..today.in_time_zone.end_of_month
     when "year"
-      today.beginning_of_year.beginning_of_day..today.end_of_year.end_of_day
+      today.in_time_zone.beginning_of_year..today.in_time_zone.end_of_year
     else
       nil
     end

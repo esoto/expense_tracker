@@ -261,6 +261,131 @@ RSpec.describe ExpensesController, type: :controller, integration: true do
         expect(assigns(:from_dashboard)).to be false
       end
     end
+
+    # REGRESSION: twin of the MetricsCalculator timezone boundary bug (PR
+    # #561). #calculate_period_range and #apply_filters used to build
+    # transaction_date range endpoints via bare Date#beginning_of_day/
+    # end_of_day (or naive Date..Date ranges), which convert through the
+    # system/Postgres session time zone rather than the app's configured
+    # Time.zone ("Central America", -06:00) — so expenses exactly at local
+    # midnight could land on the wrong side of a period/filter boundary.
+    # Fixed by anchoring every endpoint via #in_time_zone. These specs pin
+    # the fix down at the summary-statistics level (@total_amount /
+    # @expense_count), which is what #calculate_period_range and
+    # #apply_filters actually drive — the @expenses list itself is built by
+    # Services::ExpenseFilterService, a separate call site.
+    context "with expenses exactly at local midnight boundaries" do
+      before do
+        PatternLearningEvent.destroy_all if defined?(PatternLearningEvent)
+        ConflictResolution.where.not(undone_by_resolution_id: nil).update_all(undone_by_resolution_id: nil) if defined?(ConflictResolution)
+        ConflictResolution.destroy_all if defined?(ConflictResolution)
+        SyncConflict.destroy_all if defined?(SyncConflict)
+        Expense.destroy_all
+      end
+
+      context "with a period filter" do
+        before do
+          # 00:00:00 local time on the first day of the current month — must count
+          create(:expense,
+            email_account: email_account,
+            category: category,
+            amount: 10.00,
+            transaction_date: Date.current.beginning_of_month.in_time_zone.beginning_of_day)
+
+          # 23:59:59 local time on the last day of the current month — must count
+          create(:expense,
+            email_account: email_account,
+            category: category,
+            amount: 20.00,
+            transaction_date: Date.current.end_of_month.in_time_zone.end_of_day)
+
+          # 00:00:00 local time the day AFTER the month ends — must NOT count
+          create(:expense,
+            email_account: email_account,
+            category: category,
+            amount: 999.00,
+            transaction_date: (Date.current.end_of_month + 1.day).in_time_zone.beginning_of_day)
+        end
+
+        it "includes both midnight-boundary expenses and excludes the one after the period ends" do
+          get :index, params: { period: "month", filter_type: "dashboard_metric" }
+
+          expect(assigns(:total_amount).to_f).to eq(30.00)
+          expect(assigns(:expense_count)).to eq(2)
+        end
+      end
+
+      context "with an explicit date_from/date_to range" do
+        let(:from_date) { Date.current - 5.days }
+        let(:to_date) { Date.current - 3.days }
+
+        before do
+          # 00:00:00 local time on the from-day — must count
+          create(:expense,
+            email_account: email_account,
+            category: category,
+            amount: 10.00,
+            transaction_date: from_date.in_time_zone.beginning_of_day)
+
+          # 23:59:59 local time on the to-day — must count
+          create(:expense,
+            email_account: email_account,
+            category: category,
+            amount: 20.00,
+            transaction_date: to_date.in_time_zone.end_of_day)
+
+          # 00:00:00 local time the day AFTER the range ends — must NOT count
+          create(:expense,
+            email_account: email_account,
+            category: category,
+            amount: 999.00,
+            transaction_date: (to_date + 1.day).in_time_zone.beginning_of_day)
+        end
+
+        it "includes both midnight-boundary expenses and excludes the one after the range ends" do
+          get :index, params: {
+            date_from: from_date.to_s,
+            date_to: to_date.to_s,
+            filter_type: "dashboard_metric"
+          }
+
+          expect(assigns(:total_amount).to_f).to eq(30.00)
+          expect(assigns(:expense_count)).to eq(2)
+        end
+      end
+
+      context "with traditional start_date/end_date filters" do
+        let(:start_date) { Date.current - 5.days }
+        let(:end_date) { Date.current - 3.days }
+
+        before do
+          create(:expense,
+            email_account: email_account,
+            category: category,
+            amount: 10.00,
+            transaction_date: start_date.in_time_zone.beginning_of_day)
+
+          create(:expense,
+            email_account: email_account,
+            category: category,
+            amount: 20.00,
+            transaction_date: end_date.in_time_zone.end_of_day)
+
+          create(:expense,
+            email_account: email_account,
+            category: category,
+            amount: 999.00,
+            transaction_date: (end_date + 1.day).in_time_zone.beginning_of_day)
+        end
+
+        it "includes both midnight-boundary expenses and excludes the one after the range ends" do
+          get :index, params: { start_date: start_date.to_s, end_date: end_date.to_s }
+
+          expect(assigns(:total_amount).to_f).to eq(30.00)
+          expect(assigns(:expense_count)).to eq(2)
+        end
+      end
+    end
   end
 
   describe "GET #dashboard", integration: true do

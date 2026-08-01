@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
 require "rails_helper"
+require "benchmark"
 
-RSpec.describe "Categorization Pattern Edge Cases", type: :model, performance: true do
+RSpec.describe "Categorization Pattern Edge Cases", type: :model do
   let(:category) { create(:category, name: "Test Category") }
 
-  describe CategorizationPattern, performance: true do
-    describe "concurrent updates", performance: true do
+  describe CategorizationPattern do
+    describe "concurrent updates" do
       it "handles race conditions with optimistic locking" do
         pattern = CategorizationPattern.create!(
           category: category,
@@ -29,7 +30,7 @@ RSpec.describe "Categorization Pattern Edge Cases", type: :model, performance: t
       end
     end
 
-    describe "boundary value testing", performance: true do
+    describe "boundary value testing" do
       it "handles maximum confidence weight" do
         pattern = CategorizationPattern.create!(
           category: category,
@@ -69,7 +70,7 @@ RSpec.describe "Categorization Pattern Edge Cases", type: :model, performance: t
       end
     end
 
-    describe "special characters and encoding", performance: true do
+    describe "special characters and encoding" do
       it "handles Unicode characters in pattern values" do
         pattern = CategorizationPattern.create!(
           category: category,
@@ -104,7 +105,7 @@ RSpec.describe "Categorization Pattern Edge Cases", type: :model, performance: t
       end
     end
 
-    describe "metadata handling", performance: true do
+    describe "metadata handling" do
       it "handles complex nested metadata" do
         metadata = {
           source: "user_input",
@@ -142,7 +143,7 @@ RSpec.describe "Categorization Pattern Edge Cases", type: :model, performance: t
       end
     end
 
-    describe "amount range edge cases", performance: true do
+    describe "amount range edge cases" do
       it "handles very small amounts" do
         pattern = CategorizationPattern.create!(
           category: category,
@@ -178,7 +179,7 @@ RSpec.describe "Categorization Pattern Edge Cases", type: :model, performance: t
       end
     end
 
-    describe "time pattern edge cases", performance: true do
+    describe "time pattern edge cases" do
       it "handles midnight boundary" do
         pattern = CategorizationPattern.create!(
           category: category,
@@ -204,19 +205,9 @@ RSpec.describe "Categorization Pattern Edge Cases", type: :model, performance: t
       end
     end
 
-    describe "regex pattern security", performance: true do
-      it "prevents ReDoS attacks" do
-        # Potentially dangerous regex
-        pattern = CategorizationPattern.new(
-          category: category,
-          pattern_type: "regex",
-          pattern_value: "(a+)+" # Catastrophic backtracking
-        )
-
-        expect(pattern).not_to be_valid
-        expect(pattern.errors[:pattern_value]).to include("contains potentially dangerous regex pattern (ReDoS vulnerability)")
-      end
-
+    describe "regex pattern security" do
+      # Note: ReDoS rejection itself is covered by
+      # categorization_pattern_unit_spec.rb "rejects dangerous ReDoS patterns"
       it "handles complex but safe regex patterns" do
         pattern = CategorizationPattern.create!(
           category: category,
@@ -230,41 +221,12 @@ RSpec.describe "Categorization Pattern Edge Cases", type: :model, performance: t
       end
     end
 
-    describe "deactivation thresholds", performance: true do
-      it "deactivates after consistent failures" do
-        pattern = CategorizationPattern.create!(
-          category: category,
-          pattern_type: "merchant",
-          pattern_value: "Test",
-          usage_count: 100,
-          success_count: 10,
-          active: true
-        )
-
-        pattern.check_and_deactivate_if_poor_performance
-
-        expect(pattern.active).to be false
-      end
-
-      it "preserves user-created patterns even with poor performance" do
-        pattern = CategorizationPattern.create!(
-          category: category,
-          pattern_type: "merchant",
-          pattern_value: "Test",
-          usage_count: 100,
-          success_count: 10,
-          user_created: true,
-          active: true
-        )
-
-        pattern.check_and_deactivate_if_poor_performance
-
-        expect(pattern.active).to be true # User patterns not auto-deactivated
-      end
-    end
+    # Note: deactivation-threshold behavior (poor performance, user-created
+    # exemption) is covered by categorization_pattern_unit_spec.rb
+    # "#check_and_deactivate_if_poor_performance"
   end
 
-  describe CompositePattern, performance: true do
+  describe CompositePattern do
     let!(:pattern1) do
       CategorizationPattern.create!(
         category: category,
@@ -281,7 +243,7 @@ RSpec.describe "Categorization Pattern Edge Cases", type: :model, performance: t
       )
     end
 
-    describe "circular reference prevention", performance: true do
+    describe "circular reference prevention" do
       it "prevents self-reference" do
         composite = CompositePattern.create!(
           category: category,
@@ -298,7 +260,7 @@ RSpec.describe "Categorization Pattern Edge Cases", type: :model, performance: t
       end
     end
 
-    describe "operator edge cases", performance: true do
+    describe "operator edge cases" do
       it "handles empty pattern_ids with OR operator" do
         composite = CompositePattern.new(
           category: category,
@@ -327,7 +289,7 @@ RSpec.describe "Categorization Pattern Edge Cases", type: :model, performance: t
       end
     end
 
-    describe "complex conditions", performance: true do
+    describe "complex conditions" do
       it "handles multiple condition types together" do
         conditions = {
           min_amount: 100,
@@ -392,7 +354,7 @@ RSpec.describe "Categorization Pattern Edge Cases", type: :model, performance: t
       end
     end
 
-    describe "description generation", performance: true do
+    describe "description generation" do
       it "handles very long pattern lists" do
         patterns = 10.times.map do |i|
           CategorizationPattern.create!(
@@ -417,7 +379,7 @@ RSpec.describe "Categorization Pattern Edge Cases", type: :model, performance: t
     end
   end
 
-  describe "Integration between patterns and composites", performance: true do
+  describe "Integration between patterns and composites" do
     it "handles pattern deletion with composite references" do
       pattern = CategorizationPattern.create!(
         category: category,

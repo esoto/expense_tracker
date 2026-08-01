@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe Services::Categorization::Matchers::MatchResult, performance: true do
+RSpec.describe Services::Categorization::Matchers::MatchResult do
   let(:matches) do
     [
       { id: 1, text: "Starbucks", score: 0.95 },
@@ -20,8 +20,8 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
     )
   end
 
-  describe "factory methods", performance: true do
-    describe ".empty", performance: true do
+  describe "factory methods" do
+    describe ".empty" do
       it "creates an empty result" do
         result = described_class.empty
 
@@ -31,7 +31,7 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
       end
     end
 
-    describe ".timeout", performance: true do
+    describe ".timeout" do
       it "creates a timeout result" do
         result = described_class.timeout
 
@@ -41,7 +41,7 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
       end
     end
 
-    describe ".error", performance: true do
+    describe ".error" do
       it "creates an error result" do
         result = described_class.error("Something went wrong")
 
@@ -52,8 +52,8 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
     end
   end
 
-  describe "query methods", performance: true do
-    describe "#success?", performance: true do
+  describe "query methods" do
+    describe "#success?" do
       it "returns true for successful results" do
         expect(result).to be_success
       end
@@ -64,13 +64,13 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
       end
     end
 
-    describe "#failure?", performance: true do
+    describe "#failure?" do
       it "returns opposite of success?" do
         expect(result.failure?).to eq(!result.success?)
       end
     end
 
-    describe "#empty?", performance: true do
+    describe "#empty?" do
       it "returns true when no matches" do
         empty_result = described_class.new(success: true, matches: [])
         expect(empty_result).to be_empty
@@ -81,7 +81,7 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
       end
     end
 
-    describe "#present?", performance: true do
+    describe "#present?" do
       it "returns true when matches exist" do
         expect(result).to be_present
       end
@@ -93,8 +93,8 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
     end
   end
 
-  describe "access methods", performance: true do
-    describe "#best_match", performance: true do
+  describe "access methods" do
+    describe "#best_match" do
       it "returns the first match" do
         expect(result.best_match).to eq(matches.first)
       end
@@ -105,7 +105,7 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
       end
     end
 
-    describe "#best_score", performance: true do
+    describe "#best_score" do
       it "returns the highest score" do
         expect(result.best_score).to eq(0.95)
       end
@@ -116,7 +116,7 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
       end
     end
 
-    describe "#count and #size", performance: true do
+    describe "#count and #size" do
       it "returns the number of matches" do
         expect(result.count).to eq(3)
         expect(result.size).to eq(3)
@@ -124,8 +124,8 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
     end
   end
 
-  describe "filter methods", performance: true do
-    describe "#above_threshold", performance: true do
+  describe "filter methods" do
+    describe "#above_threshold" do
       it "filters matches above threshold" do
         filtered = result.above_threshold(0.70)
 
@@ -141,7 +141,7 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
       end
     end
 
-    describe "#top", performance: true do
+    describe "#top" do
       it "returns top N matches" do
         top_2 = result.top(2)
 
@@ -157,8 +157,8 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
     end
   end
 
-  describe "confidence methods", performance: true do
-    describe "#high_confidence_matches", performance: true do
+  describe "confidence methods" do
+    describe "#high_confidence_matches" do
       it "returns matches with score >= 0.85" do
         high = result.high_confidence_matches
 
@@ -172,7 +172,7 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
       end
     end
 
-    describe "#medium_confidence_matches", performance: true do
+    describe "#medium_confidence_matches" do
       it "returns matches with 0.70 <= score < 0.85" do
         medium = result.medium_confidence_matches
 
@@ -180,7 +180,7 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
       end
     end
 
-    describe "#low_confidence_matches", performance: true do
+    describe "#low_confidence_matches" do
       it "returns matches with 0.50 <= score < 0.70" do
         low = result.low_confidence_matches
 
@@ -188,7 +188,7 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
       end
     end
 
-    describe "#confidence_level", performance: true do
+    describe "#confidence_level" do
       it "returns :exact for scores >= 0.95" do
         expect(result.confidence_level).to eq(:exact)
       end
@@ -232,7 +232,7 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
     end
   end
 
-  describe "pattern-specific methods", performance: true do
+  describe "pattern-specific methods" do
     let(:pattern) { create(:categorization_pattern) }
     let(:pattern_matches) do
       [
@@ -244,40 +244,40 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
       described_class.new(success: true, matches: pattern_matches)
     end
 
-    describe "#best_pattern", performance: true do
+    describe "#best_pattern" do
       it "returns the pattern from best match" do
         expect(pattern_result.best_pattern).to eq(pattern)
       end
     end
 
-    describe "#best_category_id", performance: true do
+    describe "#best_category_id" do
       it "returns category_id from best match" do
         expect(pattern_result.best_category_id).to eq(pattern.category_id)
       end
     end
 
-    describe "#patterns", performance: true do
+    describe "#patterns" do
       it "returns all patterns from matches" do
         expect(pattern_result.patterns).to eq([ pattern ])
       end
     end
 
-    describe "#category_ids", performance: true do
+    describe "#category_ids" do
       it "returns unique category IDs" do
         expect(pattern_result.category_ids).to eq([ pattern.category_id ])
       end
     end
   end
 
-  describe "transformation methods", performance: true do
-    describe "#map", performance: true do
+  describe "transformation methods" do
+    describe "#map" do
       it "maps over matches" do
         scores = result.map { |m| m[:score] }
         expect(scores).to eq([ 0.95, 0.75, 0.60 ])
       end
     end
 
-    describe "#select", performance: true do
+    describe "#select" do
       it "filters matches and returns new MatchResult" do
         filtered = result.select { |m| m[:score] > 0.70 }
 
@@ -286,7 +286,7 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
       end
     end
 
-    describe "#reject", performance: true do
+    describe "#reject" do
       it "rejects matches and returns new MatchResult" do
         filtered = result.reject { |m| m[:score] < 0.70 }
 
@@ -296,7 +296,7 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
     end
   end
 
-  describe "#merge", performance: true do
+  describe "#merge" do
     let(:other_matches) do
       [
         { id: 4, text: "Tea Shop", score: 0.85 },
@@ -339,8 +339,8 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
     end
   end
 
-  describe "enumerable-like methods", performance: true do
-    describe "#each", performance: true do
+  describe "enumerable-like methods" do
+    describe "#each" do
       it "iterates over matches" do
         texts = []
         result.each { |m| texts << m[:text] }
@@ -349,19 +349,19 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
       end
     end
 
-    describe "#first", performance: true do
+    describe "#first" do
       it "returns first match" do
         expect(result.first).to eq(matches.first)
       end
     end
 
-    describe "#last", performance: true do
+    describe "#last" do
       it "returns last match" do
         expect(result.last).to eq(matches.last)
       end
     end
 
-    describe "#[]", performance: true do
+    describe "#[]" do
       it "accesses matches by index" do
         expect(result[0]).to eq(matches[0])
         expect(result[1]).to eq(matches[1])
@@ -370,14 +370,14 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
     end
   end
 
-  describe "export methods", performance: true do
-    describe "#to_a", performance: true do
+  describe "export methods" do
+    describe "#to_a" do
       it "returns matches array" do
         expect(result.to_a).to eq(matches)
       end
     end
 
-    describe "#to_h", performance: true do
+    describe "#to_h" do
       it "returns hash representation" do
         hash = result.to_h
 
@@ -393,7 +393,7 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
       end
     end
 
-    describe "#to_json", performance: true do
+    describe "#to_json" do
       it "returns JSON representation" do
         json = result.to_json
         parsed = JSON.parse(json)
@@ -404,8 +404,8 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
     end
   end
 
-  describe "comparison operators", performance: true do
-    describe "#==", performance: true do
+  describe "comparison operators" do
+    describe "#==" do
       it "returns true for equal results" do
         other = described_class.new(
           success: true,
@@ -428,7 +428,7 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
     end
   end
 
-  describe "#match_details", performance: true do
+  describe "#match_details" do
     it "returns detailed match information" do
       details = result.match_details
 
@@ -442,8 +442,8 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
     end
   end
 
-  describe "debugging methods", performance: true do
-    describe "#inspect", performance: true do
+  describe "debugging methods" do
+    describe "#inspect" do
       it "returns concise representation" do
         expect(result.inspect).to include("MatchResult")
         expect(result.inspect).to include("success=true")
@@ -451,7 +451,7 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
       end
     end
 
-    describe "#to_s", performance: true do
+    describe "#to_s" do
       it "returns human-readable string for success" do
         expect(result.to_s).to include("3 match(es) found")
         expect(result.to_s).to include("best score: 0.95")
@@ -469,7 +469,7 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
     end
   end
 
-  describe "performance metrics", performance: true do
+  describe "performance metrics" do
     let(:result_with_metrics) do
       described_class.new(
         success: true,
@@ -481,13 +481,13 @@ RSpec.describe Services::Categorization::Matchers::MatchResult, performance: tru
       )
     end
 
-    describe "#processing_time", performance: true do
+    describe "#processing_time" do
       it "returns processing time from metadata" do
         expect(result_with_metrics.processing_time).to eq(5.2)
       end
     end
 
-    describe "#cache_hit?", performance: true do
+    describe "#cache_hit?" do
       it "returns true when cache was hit" do
         expect(result_with_metrics).to be_cache_hit
       end

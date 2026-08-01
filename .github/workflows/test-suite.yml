@@ -60,6 +60,12 @@ jobs:
 
       - name: Run Performance Tests
         run: bin/test-performance
+        env:
+          # PerformanceMonitor's default 30s auto-fail exists to catch
+          # accidentally slow unit tests. This lane runs deliberate load
+          # tests (1k-expense categorization ≈ 30s on CI runners), so give
+          # them explicit headroom instead of failing at the margin.
+          TEST_AUTO_FAIL_THRESHOLD: "120"
 
       - name: Upload Performance Report
         uses: actions/upload-artifact@v7

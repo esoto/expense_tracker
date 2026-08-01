@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_06_052320) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_01_133817) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_trgm"
@@ -548,6 +548,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_06_052320) do
     t.index ["user_id"], name: "index_processed_emails_on_user_id"
   end
 
+  create_table "queued_email_payloads", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "email_account_id", null: false
+    t.text "encrypted_payload", null: false
+    t.datetime "processed_at"
+    t.bigint "sync_session_id"
+    t.datetime "updated_at", null: false
+    t.index ["email_account_id"], name: "index_queued_email_payloads_on_email_account_id"
+    t.index ["processed_at"], name: "index_queued_email_payloads_on_processed_at"
+    t.index ["sync_session_id"], name: "index_queued_email_payloads_on_sync_session_id"
+  end
+
   create_table "solid_queue_blocked_executions", force: :cascade do |t|
     t.string "concurrency_key", null: false
     t.datetime "created_at", null: false
@@ -876,6 +888,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_06_052320) do
   add_foreign_key "pattern_learning_events", "users"
   add_foreign_key "processed_emails", "email_accounts"
   add_foreign_key "processed_emails", "users"
+  add_foreign_key "queued_email_payloads", "email_accounts"
+  add_foreign_key "queued_email_payloads", "sync_sessions"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade

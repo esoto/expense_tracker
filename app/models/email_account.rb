@@ -14,6 +14,7 @@ class EmailAccount < ApplicationRecord
   has_many :categories, through: :expenses
   has_many :sync_metrics, dependent: :destroy
   has_many :email_parsing_failures, dependent: :destroy
+  has_many :queued_email_payloads, dependent: :destroy
   has_one :external_budget_source, dependent: :destroy
 
   # Validations

@@ -12,13 +12,23 @@ class ProcessEmailJob < ApplicationJob
 
   TRUNCATE_SIZE = 10_000  # Store only 10KB for large emails
 
-  def perform(email_account_id, email_data, sync_session_id = nil, pre_parsed_data = nil)
+  # Security fix (2026-08 audit): `email_data_or_payload_id` is now either an
+  # Integer/String QueuedEmailPayload id (current producer path) or, for
+  # deploy-window compatibility, a legacy plaintext Hash (jobs already
+  # enqueued by Services::EmailProcessing::Processor before this fix
+  # shipped). See #resolve_email_payload for the branch. `legacy_pre_parsed_data`
+  # is only ever populated on that legacy Hash path — the current path folds
+  # pre_parsed data into the encrypted QueuedEmailPayload record instead.
+  def perform(email_account_id, email_data_or_payload_id, sync_session_id = nil, legacy_pre_parsed_data = nil)
     email_account = EmailAccount.find_by(id: email_account_id)
 
     unless email_account
       Rails.logger.error "EmailAccount not found: #{email_account_id}"
       return
     end
+
+    payload_record, email_data, pre_parsed_data = resolve_email_payload(email_data_or_payload_id, legacy_pre_parsed_data)
+    return if email_data.nil?
 
     Rails.logger.info "Processing individual email for: #{email_account.email}"
     # Do NOT log email_data.inspect — the :body contains plaintext bank PII and is
@@ -30,17 +40,102 @@ class ProcessEmailJob < ApplicationJob
     metrics_collector = Services::SyncMetricsCollector.new(sync_session) if sync_session
 
     # Track expense detection operation
-    if metrics_collector
-      metrics_collector.track_operation(:detect_expense, email_account, { email_subject: email_data&.dig(:subject) }) do
+    result = if metrics_collector
+      outcome = metrics_collector.track_operation(:detect_expense, email_account, { email_subject: email_data&.dig(:subject) }) do
         parse_and_save_expense(email_account, email_data, pre_parsed_data)
       end
       metrics_collector.flush_buffer
+      outcome
     else
       parse_and_save_expense(email_account, email_data, pre_parsed_data)
     end
+
+    # Only reached once processing has actually completed (success or a
+    # handled parsing failure) — if anything above raises, execution never
+    # gets here and the record is left unprocessed so a retry_on retry (or a
+    # manual re-run) still has data to work with.
+    begin
+      payload_record&.mark_processed!
+    rescue StandardError => e
+      # A processed-but-unmarked payload is harmless: QueuedEmailPayload's
+      # UNPROCESSED_RETENTION (30 days) purges it eventually regardless. But
+      # letting this raise escape would re-trigger this job's own retry_on
+      # (e.g. ActiveRecord::Deadlocked), which re-parses the email and, since
+      # the expense was already persisted above, flips it to status:
+      # :duplicate via Parser's duplicate branch — silent data corruption on
+      # an already-successful outcome. Log and swallow instead.
+      Rails.logger.error "[ProcessEmailJob] Failed to mark QueuedEmailPayload #{payload_record&.id.inspect} as processed: #{e.class}: #{e.message}"
+    end
+
+    result
   end
 
   private
+
+  # Resolves the (payload_record, email_data, pre_parsed_data) tuple the rest
+  # of #perform needs, supporting two argument shapes:
+  #
+  #   - Integer/String id (current path): looks up the encrypted
+  #     QueuedEmailPayload record created by
+  #     Services::EmailProcessing::Processor and unpacks its payload_data.
+  #   - Hash (legacy path, deploy-window compatibility): jobs enqueued by the
+  #     old signature — a plaintext email_data Hash plus pre_parsed_data as
+  #     the 4th positional argument — before this fix shipped. In-flight
+  #     Solid Queue jobs from before the deploy must still process
+  #     successfully, so this path stays supported (it's cheap to keep).
+  #
+  # A missing/deleted payload record (already processed + purged, or an
+  # invalid id) or an unrecognized argument type both return a nil email_data,
+  # which #perform treats as "log it, discard, don't crash-loop through the
+  # retry budget."
+  def resolve_email_payload(email_data_or_payload_id, legacy_pre_parsed_data)
+    case email_data_or_payload_id
+    when Integer, String
+      payload_record = QueuedEmailPayload.find_by(id: email_data_or_payload_id)
+      unless payload_record
+        Rails.logger.error "[ProcessEmailJob] QueuedEmailPayload #{email_data_or_payload_id.inspect} not found (already processed/purged, or invalid id) — discarding."
+        return [ nil, nil, nil ]
+      end
+
+      # Replayed/duplicate enqueue of the same payload id (e.g. a retry_on
+      # retry after mark_processed! itself failed — see the rescue around
+      # mark_processed! in #perform). The record was already fully processed,
+      # so re-parsing here would call Parser again on an already-persisted
+      # expense, which flips it to status: :duplicate via Parser's duplicate
+      # branch. Skip straight to the "nothing to do" tuple instead.
+      if payload_record.processed_at.present?
+        Rails.logger.warn "[ProcessEmailJob] QueuedEmailPayload #{payload_record.id} already processed at #{payload_record.processed_at} — skipping re-parse on replayed enqueue."
+        return [ payload_record, nil, nil ]
+      end
+
+      data = payload_record.payload_data
+      if data.blank?
+        # Distinct from the "not found" branch above: the record exists but
+        # its payload came back unreadable (see
+        # QueuedEmailPayload#payload_data, which rescues deserialization
+        # failures and returns nil instead of raising). Corruption must be
+        # observable, not silently swallowed into an empty hash.
+        Rails.logger.error "[ProcessEmailJob] QueuedEmailPayload #{payload_record.id} found but payload_data is blank (corrupted/unreadable) — discarding."
+        return [ payload_record, nil, nil ]
+      end
+
+      [ payload_record, data[:email_data], data[:pre_parsed] ]
+    when Hash
+      # Legacy branch — deploy-window compatibility only, not a supported
+      # long-term argument shape. Removal condition: once Solid Queue's
+      # ready/scheduled/failed job tables show zero jobs whose second
+      # argument is a Hash (i.e. no pre-deploy enqueues left to drain) — in
+      # practice ~30 days post-deploy, matching
+      # QueuedEmailPayload::UNPROCESSED_RETENTION, since anything older would
+      # already be past its retry budget. Tracked as a follow-up; do not
+      # remove this branch until that check has been done.
+      Rails.logger.warn "[ProcessEmailJob] Deprecated: received a legacy plaintext email_data Hash directly in job arguments (enqueued before the encrypted-payload fix shipped). Processing for deploy-window compatibility."
+      [ nil, email_data_or_payload_id, legacy_pre_parsed_data ]
+    else
+      Rails.logger.error "[ProcessEmailJob] Unrecognized argument type for email_data_or_payload_id: #{email_data_or_payload_id.class} — discarding."
+      [ nil, nil, nil ]
+    end
+  end
 
   def parse_and_save_expense(email_account, email_data, pre_parsed_data = nil)
     parser = Services::EmailProcessing::Parser.new(email_account, email_data, pre_parsed_data: pre_parsed_data)

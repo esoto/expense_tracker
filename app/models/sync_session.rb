@@ -7,6 +7,7 @@ class SyncSession < ApplicationRecord
   has_many :email_accounts, through: :sync_session_accounts
   has_many :sync_conflicts, dependent: :destroy
   has_many :sync_metrics, dependent: :destroy
+  has_many :queued_email_payloads, dependent: :nullify
 
   scope :for_user, ->(u) { where(user_id: u.id) }
 

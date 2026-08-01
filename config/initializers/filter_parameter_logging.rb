@@ -37,7 +37,11 @@ Rails.application.config.filter_parameters += [
 # email_parsing_failures (PER-496) — Rails `encrypts` decrypts transparently
 # on attribute read, so an unfiltered `Model#inspect` would leak decrypted
 # bank PII.
+#
+# `:encrypted_payload` protects QueuedEmailPayload (2026-08 audit fix) — the
+# same decrypt-on-read concern applies to the bank-email bodies formerly
+# passed as plaintext ProcessEmailJob arguments.
 ActiveRecord::Base.filter_attributes += [
   :passw, :encrypted_password, :encrypted_settings, :token, :secret,
-  :raw_email_content
+  :raw_email_content, :encrypted_payload
 ]

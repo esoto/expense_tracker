@@ -195,7 +195,7 @@ RSpec.describe Services::ExpenseFilterService, type: :service do
         end
       end
 
-      it "completes complex queries within 50ms" do
+      it "completes complex queries within 50ms", performance: true do
         service = described_class.new(
           account_ids: [ email_account.id ],
           start_date: 30.days.ago,

@@ -460,7 +460,7 @@ RSpec.describe Services::Categorization::ConfidenceCalculator do
   end
 
   describe "performance" do
-    it "completes calculation within reasonable threshold" do
+    it "completes calculation within reasonable threshold", performance: true do
       # Warm up to avoid first-run overhead
       calculator.calculate(expense, pattern, 0.85)
 
@@ -472,7 +472,7 @@ RSpec.describe Services::Categorization::ConfidenceCalculator do
       expect(duration_ms).to be < 5.0
     end
 
-    it "handles batch calculations efficiently" do
+    it "handles batch calculations efficiently", performance: true do
       patterns = create_list(:categorization_pattern, 10, category: category)
 
       # Warm up to avoid first-run overhead

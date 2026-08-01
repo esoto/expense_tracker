@@ -779,7 +779,7 @@ RSpec.describe Services::MetricsCalculator, type: :service do
       end
     end
 
-    it 'completes calculation within 100ms' do
+    it 'completes calculation within 100ms', performance: true do
       # Warm up
       calculator.calculate
       Rails.cache.clear

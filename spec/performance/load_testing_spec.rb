@@ -68,7 +68,7 @@ RSpec.describe "Categorization Load Testing", type: :performance do
         puts "  Total time: #{benchmark.round(2)}s"
         puts "  Average time per expense: #{avg_time_ms.round(2)}ms"
         puts "  Success rate: #{(success_rate * 100).round}%"
-        puts "  Max memory usage: #{max_memory_mb.round}MB"
+        puts "  Max memory usage: #{max_memory_mb.round}MB (grew #{memory_growth_mb.round}MB from #{baseline_memory_mb.round}MB baseline)"
         puts "  Categorized expenses: #{successful_results}"
       end
 

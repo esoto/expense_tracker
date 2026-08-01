@@ -2,7 +2,7 @@
 
 require "rails_helper"
 
-RSpec.describe "Api::V1::Patterns Performance", type: :request, performance: true do
+RSpec.describe "Api::V1::Patterns Performance", type: :request do
   let(:api_token) { create(:api_token) }
   let(:headers) do
     {
@@ -35,16 +35,30 @@ RSpec.describe "Api::V1::Patterns Performance", type: :request, performance: tru
     end
 
     it "efficiently loads patterns with includes" do
+      # `headers` (and the `api_token`/`user` it lazily creates) must be
+      # realized *before* the query-counting block below — otherwise their
+      # setup INSERTs (and one-time schema introspection queries on first
+      # touch of a table in the process) get counted as if they were part of
+      # the request, which is what inflated this count in CI-dependent ways.
+      # With setup warmed up first, the actual request is a stable ~7 queries:
+      # auth token lookup + last_used_at touch + user lookup (3), then the
+      # index action's MAX(updated_at)/COUNT for the ETag cache key, the main
+      # patterns+category join SELECT, and the pagination COUNT (4).
+      headers
+
       # Should not have N+1 queries
       expect {
         get "/api/v1/patterns", headers: headers
-      }.to make_database_queries(count: 3..15) # Increased for test environment overhead
+      }.to make_database_queries(count: 3..10)
 
       expect(response).to have_http_status(:ok)
     end
 
     it "efficiently filters patterns" do
       category = Category.first
+      # See the comment on the previous example — warm the lazy `headers`
+      # (and the user/api_token it creates) before counting queries.
+      headers
 
       expect {
         get "/api/v1/patterns",
@@ -56,7 +70,7 @@ RSpec.describe "Api::V1::Patterns Performance", type: :request, performance: tru
               min_usage_count: 10
             },
             headers: headers
-      }.to make_database_queries(count: 3..12)
+      }.to make_database_queries(count: 3..10)
 
       expect(response).to have_http_status(:ok)
     end
@@ -71,7 +85,7 @@ RSpec.describe "Api::V1::Patterns Performance", type: :request, performance: tru
     end
   end
 
-  describe "Caching", performance: true do
+  describe "Caching" do
     let!(:pattern) { create(:categorization_pattern) }
 
     it "returns cache headers for GET requests" do
@@ -106,7 +120,7 @@ RSpec.describe "Api::V1::Patterns Performance", type: :request, performance: tru
     end
   end
 
-  describe "Request/Response Headers", performance: true do
+  describe "Request/Response Headers" do
     it "includes API version header" do
       get "/api/v1/patterns", headers: headers
 
@@ -131,7 +145,7 @@ RSpec.describe "Api::V1::Patterns Performance", type: :request, performance: tru
     end
   end
 
-  describe "Pagination Performance", performance: true do
+  describe "Pagination Performance" do
     before do
       create_list(:categorization_pattern, 100)
     end

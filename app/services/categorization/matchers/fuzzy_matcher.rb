@@ -20,9 +20,13 @@ module Services::Categorization
       }.freeze
 
       # Default configuration
+      # min_confidence aligned with production callers: EnhancedCategorizationService
+      # passes 0.70, Orchestrator passes 0.5. Engine passes 0.75 explicitly so it is
+      # unaffected. The prior 0.75 default rejected near-misses like "starbucks" vs
+      # "starbucks coffee" (weighted score 0.7499) for any default-relying caller.
       DEFAULT_OPTIONS = {
         algorithms: [ :jaro_winkler, :trigram ],
-        min_confidence: 0.75,
+        min_confidence: 0.70,
         max_results: 5,
         timeout_ms: 10,
         enable_caching: true,
@@ -43,12 +47,17 @@ module Services::Categorization
       }.freeze
 
       # Pre-compiled noise patterns for better performance
+      # NOTE: order matters — the payment-processor prefix pattern must run
+      # before the generic asterisk-stripper below it, otherwise it strips the
+      # "*" first and the anchored "PAYPAL *"/"SQ *" prefix never matches,
+      # leaving the processor name in the normalized text (e.g. "PAYPAL
+      # *STARBUCKS" normalizing to "paypal starbucks" instead of "starbucks").
       NOISE_PATTERNS = [
+        /^(PAYPAL|SQ|SQUARE|TST|POS|CCD)\s*\*/i,
         /\b(INC|LLC|LTD|CORP|CO|S\.A\.|C\.V\.)\b/i,
         /\*+/,
         /\s+#\d+/,
-        /\s+\d{4,}$/,
-        /^(PAYPAL|SQ|SQUARE|TST|POS|CCD)\s*\*/i
+        /\s+\d{4,}$/
       ].freeze
 
       INSTANCE_MUTEX = Mutex.new

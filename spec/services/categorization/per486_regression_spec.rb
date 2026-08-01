@@ -241,9 +241,22 @@ RSpec.describe "PER-486 confidence gate regression", :unit do
       engine.shutdown! if engine&.respond_to?(:shutdown!)
     end
 
-    it "FuzzyMatcher default min_confidence is still 0.75" do
+    it "FuzzyMatcher default min_confidence aligns with production callers (0.70), not the raw PR #411 value" do
+      # PR #411 raised the class-level FuzzyMatcher::DEFAULT_OPTIONS[:min_confidence]
+      # to 0.75 as a blunt fix for this exact regression. As of the batch-3
+      # performance-lane fold, that default was retuned to 0.70 to match the
+      # production callers that actually rely on it (EnhancedCategorizationService
+      # passes 0.70, Orchestrator passes 0.5) — 0.75 was rejecting legitimate
+      # near-misses like "starbucks" vs "starbucks coffee" (score 0.7499).
+      #
+      # This does NOT reopen the PER-486 Bug 3 regression: Engine sets its own
+      # explicit min_confidence: 0.75 (engine.rb) and PatternStrategy defaults to
+      # 0.75 independently (options.fetch(:min_confidence, 0.75)) — neither reads
+      # FuzzyMatcher::DEFAULT_OPTIONS. The "Engine#default_options has
+      # min_confidence >= 0.75" example above is the test that actually protects
+      # the Bug 3 regression.
       expect(Services::Categorization::Matchers::FuzzyMatcher::DEFAULT_OPTIONS[:min_confidence])
-        .to eq(0.75)
+        .to eq(0.70)
     end
 
     it "Engine does not return fuzzy matches below 0.75 with default options" do

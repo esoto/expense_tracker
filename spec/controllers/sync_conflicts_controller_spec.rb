@@ -1,7 +1,23 @@
 require 'rails_helper'
 
-RSpec.describe SyncConflictsController, type: :controller, performance: true do
-  let(:sync_session) { create(:sync_session, :completed) }
+RSpec.describe SyncConflictsController, type: :controller do
+  # ApplicationController's UserAuthentication concern gates every action
+  # behind require_authentication (redirects to /login, or 401s for
+  # JSON/XHR, when nobody is signed in); this file previously ran with no
+  # session at all, so nearly every request never reached the controller
+  # logic under test. mock_user_authentication (see
+  # spec/support/authentication_test_helper.rb) stubs current_app_user, which
+  # is what both require_authentication and scoping_user (PR 12 prep; falls
+  # back to User.admin.first only when current_app_user is nil) key off —
+  # make every fixture in this file belong to the same admin_user, mirroring
+  # spec/requests/sync_conflicts_isolation_spec.rb.
+  let(:admin_user) { create(:user, :admin) }
+
+  before do
+    mock_user_authentication(admin_user)
+  end
+
+  let(:sync_session) { create(:sync_session, :completed, user: admin_user) }
   let(:existing_expense) { create(:expense, amount: 100.00, merchant_name: 'Original Store') }
   let(:new_expense) { create(:expense, amount: 150.00, merchant_name: 'Updated Store') }
   let(:sync_conflict) do
@@ -14,11 +30,19 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
   end
   let(:resolved_conflict) { create(:sync_conflict, :resolved, sync_session: sync_session) }
 
-  describe 'GET #index', performance: true do
-    let!(:pending_conflict1) { create(:sync_conflict, sync_session: sync_session, status: 'pending', conflict_type: 'duplicate') }
-    let!(:pending_conflict2) { create(:sync_conflict, sync_session: sync_session, status: 'pending', conflict_type: 'similar') }
-    let!(:resolved_conflict) { create(:sync_conflict, :resolved, sync_session: sync_session, conflict_type: 'duplicate') }
-    let!(:other_session_conflict) { create(:sync_conflict, status: 'pending', conflict_type: 'needs_review') }
+  describe 'GET #index' do
+    # None of these use conflict_type: 'duplicate' (the factory's implicit
+    # default via inheritance elsewhere) — the index action's `.actionable`
+    # scope unconditionally excludes conflict_type: "duplicate" rows (they're
+    # auto-handled and just noise), so a "duplicate" fixture would never
+    # appear in @conflicts or @stats regardless of any other filter.
+    let!(:pending_conflict1) { create(:sync_conflict, sync_session: sync_session, status: 'pending', conflict_type: 'similar') }
+    let!(:pending_conflict2) { create(:sync_conflict, sync_session: sync_session, status: 'pending', conflict_type: 'needs_review') }
+    let!(:resolved_conflict) { create(:sync_conflict, :resolved, sync_session: sync_session, conflict_type: 'similar') }
+    # Different sync_session, same scoping user — exercises session filtering
+    # (not user isolation, which spec/requests/sync_conflicts_isolation_spec.rb
+    # already covers).
+    let!(:other_session_conflict) { create(:sync_conflict, sync_session: create(:sync_session, user: admin_user), status: 'pending', conflict_type: 'updated') }
 
     context 'without sync_session_id filter' do
       before { get :index }
@@ -70,7 +94,7 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
     end
 
     context 'with type filter' do
-      before { get :index, params: { type: 'duplicate' } }
+      before { get :index, params: { type: 'similar' } }
 
       it 'filters conflicts by conflict_type' do
         conflicts = assigns(:conflicts)
@@ -80,7 +104,7 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
     end
 
     context 'with combined filters' do
-      before { get :index, params: { sync_session_id: sync_session.id, status: 'pending', type: 'duplicate' } }
+      before { get :index, params: { sync_session_id: sync_session.id, status: 'pending', type: 'similar' } }
 
       it 'applies all filters' do
         conflicts = assigns(:conflicts)
@@ -109,10 +133,11 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
 
       it 'calculates counts by type' do
         stats = assigns(:stats)
+        # 'duplicate' never appears here — .actionable excludes it entirely.
         expect(stats[:by_type]).to include(
-          'duplicate' => 2,
-          'similar' => 1,
-          'needs_review' => 1
+          'similar' => 2,
+          'needs_review' => 1,
+          'updated' => 1
         )
       end
     end
@@ -132,48 +157,55 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
 
     context 'pagination' do
       before do
-        # Create more conflicts to test pagination
-        create_list(:sync_conflict, 30, sync_session: sync_session, status: 'pending')
+        # Create more conflicts to test pagination. conflict_type must not be
+        # "duplicate" — see the note on the fixtures above.
+        create_list(:sync_conflict, 30, sync_session: sync_session, status: 'pending', conflict_type: 'similar')
       end
 
       it 'paginates results' do
+        # The controller pages via a separate @pagy (Pagy::Offset), not a
+        # paginated @conflicts relation (@conflicts is a plain
+        # ActiveRecord::Relation with .limit/.offset applied) — Kaminari-style
+        # current_page/total_pages on @conflicts itself was never real under
+        # the current Pagy-based pagination.
         get :index, params: { page: 1 }
-        conflicts = assigns(:conflicts)
-        expect(conflicts.respond_to?(:current_page)).to be true
-        expect(conflicts.respond_to?(:total_pages)).to be true
+        pagy = assigns(:pagy)
+        expect(pagy).to be_a(Pagy::Offset)
+        expect(pagy.respond_to?(:page)).to be true
+        expect(pagy.respond_to?(:last)).to be true
       end
 
       it 'handles page parameter' do
         get :index, params: { page: 2 }
         expect(response).to have_http_status(:success)
-        expect(assigns(:conflicts).current_page).to eq(2)
+        expect(assigns(:pagy).page).to eq(2)
       end
     end
   end
 
-  describe 'before_action callbacks', performance: true do
-    describe '#set_sync_conflict', performance: true do
+  describe 'before_action callbacks' do
+    describe '#set_sync_conflict' do
       it 'sets @sync_conflict for show action' do
         get :show, params: { id: sync_conflict.id }
         expect(assigns(:sync_conflict)).to eq(sync_conflict)
       end
 
       it 'sets @sync_conflict for resolve action' do
-        allow(ConflictResolutionService).to receive(:new).and_return(double(resolve: true))
+        allow(Services::ConflictResolutionService).to receive(:new).and_return(double(resolve: true))
         allow(sync_conflict).to receive(:reload).and_return(sync_conflict)
         post :resolve, params: { id: sync_conflict.id, action_type: 'keep_existing' }
         expect(assigns(:sync_conflict)).to eq(sync_conflict)
       end
 
       it 'sets @sync_conflict for undo action' do
-        allow(ConflictResolutionService).to receive(:new).and_return(double(undo_resolution: true))
+        allow(Services::ConflictResolutionService).to receive(:new).and_return(double(undo_resolution: true))
         allow(resolved_conflict).to receive(:reload).and_return(resolved_conflict)
         patch :undo, params: { id: resolved_conflict.id }
         expect(assigns(:sync_conflict)).to eq(resolved_conflict)
       end
 
       it 'sets @sync_conflict for preview_merge action' do
-        allow(ConflictResolutionService).to receive(:new).and_return(double(preview_merge: {}))
+        allow(Services::ConflictResolutionService).to receive(:new).and_return(double(preview_merge: {}))
         get :preview_merge, params: { id: sync_conflict.id }
         expect(assigns(:sync_conflict)).to eq(sync_conflict)
       end
@@ -185,7 +217,7 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
       end
     end
 
-    describe '#set_sync_session', performance: true do
+    describe '#set_sync_session' do
       it 'sets @sync_session when sync_session_id is provided' do
         get :index, params: { sync_session_id: sync_session.id }
         expect(assigns(:sync_session)).to eq(sync_session)
@@ -204,9 +236,10 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
     end
   end
 
-  describe 'GET #show', performance: true do
+  describe 'GET #show' do
     let(:conflict_with_resolutions) do
       conflict = create(:sync_conflict, :with_new_expense,
+                       sync_session: sync_session,
                        existing_expense: existing_expense,
                        differences: { 'amount' => { from: 100, to: 150 } })
       create_list(:conflict_resolution, 3, sync_conflict: conflict)
@@ -258,8 +291,6 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
 
     context 'XHR request (conflict modal fetch)' do
       before do
-        allow(controller).to receive(:require_authentication).and_return(true)
-        allow(controller).to receive(:current_user).and_return(create(:user, :admin))
         request.env['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest'
         request.env['HTTP_ACCEPT'] = 'text/html'
         get :show, params: { id: conflict_with_resolutions.id }
@@ -286,8 +317,6 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
 
     context 'Turbo-Frame request (conflict modal fetch)' do
       before do
-        allow(controller).to receive(:require_authentication).and_return(true)
-        allow(controller).to receive(:current_user).and_return(create(:user, :admin))
         request.headers['Turbo-Frame'] = 'conflict_modal'
         request.env['HTTP_ACCEPT'] = 'text/html'
         get :show, params: { id: conflict_with_resolutions.id }
@@ -304,12 +333,12 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
     end
   end
 
-  describe 'POST #resolve', performance: true do
-    let(:service_double) { instance_double(ConflictResolutionService) }
+  describe 'POST #resolve' do
+    let(:service_double) { instance_double(Services::ConflictResolutionService) }
     let(:resolve_params) { { resolved_by: 'test_user' } }
 
     before do
-      allow(ConflictResolutionService).to receive(:new).with(sync_conflict).and_return(service_double)
+      allow(Services::ConflictResolutionService).to receive(:new).with(sync_conflict).and_return(service_double)
     end
 
     context 'successful resolution' do
@@ -318,14 +347,14 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
         allow(sync_conflict).to receive(:reload).and_return(sync_conflict)
       end
 
-      it 'calls ConflictResolutionService with correct parameters' do
+      it 'calls Services::ConflictResolutionService with correct parameters' do
         post :resolve, params: {
           id: sync_conflict.id,
           action_type: 'keep_existing',
           resolved_by: 'test_user'
         }
 
-        expect(ConflictResolutionService).to have_received(:new).with(sync_conflict)
+        expect(Services::ConflictResolutionService).to have_received(:new).with(sync_conflict)
         expect(service_double).to have_received(:resolve).with('keep_existing', kind_of(ActionController::Parameters))
       end
 
@@ -447,15 +476,15 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
     end
   end
 
-  describe 'POST #bulk_resolve', performance: true do
+  describe 'POST #bulk_resolve' do
     let!(:conflict1) { create(:sync_conflict, sync_session: sync_session, status: 'pending') }
     let!(:conflict2) { create(:sync_conflict, sync_session: sync_session, status: 'pending') }
     let!(:conflict3) { create(:sync_conflict, sync_session: sync_session, status: 'pending') }
     let(:conflict_ids) { [ conflict1.id, conflict2.id, conflict3.id ] }
-    let(:service_double) { instance_double(ConflictResolutionService) }
+    let(:service_double) { instance_double(Services::ConflictResolutionService) }
 
     before do
-      allow(ConflictResolutionService).to receive(:new).and_return(service_double)
+      allow(Services::ConflictResolutionService).to receive(:new).and_return(service_double)
     end
 
     context 'with empty conflict_ids' do
@@ -489,7 +518,7 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
 
       before do
         allow(service_double).to receive(:bulk_resolve)
-          .with(conflict_ids.map(&:to_s), 'keep_existing', kind_of(ActionController::Parameters))
+          .with(conflict_ids, 'keep_existing', kind_of(ActionController::Parameters))
           .and_return(bulk_result)
       end
 
@@ -526,7 +555,7 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
 
       it 'passes resolve_params to bulk_resolve' do
         allow(service_double).to receive(:bulk_resolve)
-          .with(conflict_ids.map(&:to_s), 'keep_existing', kind_of(ActionController::Parameters))
+          .with(conflict_ids, 'keep_existing', kind_of(ActionController::Parameters))
           .and_return({ resolved_count: 3, failed_count: 0, failed_conflicts: [] })
 
         post :bulk_resolve, params: {
@@ -536,16 +565,16 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
         }, format: :json
 
         expect(service_double).to have_received(:bulk_resolve)
-          .with(conflict_ids.map(&:to_s), 'keep_existing', kind_of(ActionController::Parameters))
+          .with(conflict_ids, 'keep_existing', kind_of(ActionController::Parameters))
       end
     end
   end
 
-  describe 'PATCH #undo', performance: true do
-    let(:service_double) { instance_double(ConflictResolutionService) }
+  describe 'PATCH #undo' do
+    let(:service_double) { instance_double(Services::ConflictResolutionService) }
 
     before do
-      allow(ConflictResolutionService).to receive(:new).with(resolved_conflict).and_return(service_double)
+      allow(Services::ConflictResolutionService).to receive(:new).with(resolved_conflict).and_return(service_double)
     end
 
     context 'successful undo' do
@@ -605,19 +634,19 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
       end
     end
 
-    it 'calls ConflictResolutionService#undo_resolution' do
+    it 'calls Services::ConflictResolutionService#undo_resolution' do
       allow(service_double).to receive(:undo_resolution).and_return(true)
       allow(resolved_conflict).to receive(:reload).and_return(resolved_conflict)
 
       patch :undo, params: { id: resolved_conflict.id }
 
-      expect(ConflictResolutionService).to have_received(:new).with(resolved_conflict)
+      expect(Services::ConflictResolutionService).to have_received(:new).with(resolved_conflict)
       expect(service_double).to have_received(:undo_resolution)
     end
   end
 
-  describe 'GET #preview_merge', performance: true do
-    let(:service_double) { instance_double(ConflictResolutionService) }
+  describe 'GET #preview_merge' do
+    let(:service_double) { instance_double(Services::ConflictResolutionService) }
     let(:merge_fields) { { 'amount' => 'new', 'merchant_name' => 'existing' } }
     let(:preview_data) do
       {
@@ -629,17 +658,17 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
     end
 
     before do
-      allow(ConflictResolutionService).to receive(:new).with(sync_conflict).and_return(service_double)
+      allow(Services::ConflictResolutionService).to receive(:new).with(sync_conflict).and_return(service_double)
       allow(service_double).to receive(:preview_merge).with(kind_of(ActionController::Parameters)).and_return(preview_data)
     end
 
-    it 'calls ConflictResolutionService#preview_merge with merge_fields' do
+    it 'calls Services::ConflictResolutionService#preview_merge with merge_fields' do
       get :preview_merge, params: {
         id: sync_conflict.id,
         merge_fields: merge_fields
       }
 
-      expect(ConflictResolutionService).to have_received(:new).with(sync_conflict)
+      expect(Services::ConflictResolutionService).to have_received(:new).with(sync_conflict)
       expect(service_double).to have_received(:preview_merge).with(kind_of(ActionController::Parameters))
     end
 
@@ -720,8 +749,8 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
     end
   end
 
-  describe 'private methods', performance: true do
-    describe '#resolve_params', performance: true do
+  describe 'private methods' do
+    describe '#resolve_params' do
       let(:params_hash) do
         {
           resolved_by: 'test_user',
@@ -759,7 +788,7 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
       end
     end
 
-    describe '#calculate_merge_changes', performance: true do
+    describe '#calculate_merge_changes' do
       let(:preview_with_changes) do
         existing_expense.attributes.merge(
           'amount' => 250.00,
@@ -805,7 +834,7 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
     end
   end
 
-  describe 'error handling', performance: true do
+  describe 'error handling' do
     it 'handles ActiveRecord::RecordNotFound gracefully' do
       expect {
         get :show, params: { id: 99999 }
@@ -813,10 +842,10 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
     end
 
     context 'when service raises an exception' do
-      let(:service_double) { instance_double(ConflictResolutionService) }
+      let(:service_double) { instance_double(Services::ConflictResolutionService) }
 
       before do
-        allow(ConflictResolutionService).to receive(:new).and_return(service_double)
+        allow(Services::ConflictResolutionService).to receive(:new).and_return(service_double)
         allow(service_double).to receive(:resolve).and_raise(StandardError.new('Service error'))
       end
 
@@ -831,12 +860,12 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
     end
   end
 
-  describe 'integration scenarios', performance: true do
+  describe 'integration scenarios' do
     context 'complete resolution workflow' do
-      let(:service_double) { instance_double(ConflictResolutionService) }
+      let(:service_double) { instance_double(Services::ConflictResolutionService) }
 
       before do
-        allow(ConflictResolutionService).to receive(:new).and_return(service_double)
+        allow(Services::ConflictResolutionService).to receive(:new).and_return(service_double)
       end
 
       it 'handles preview -> resolve -> undo workflow' do
@@ -860,7 +889,7 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
 
     context 'bulk operations with mixed results' do
       let!(:conflicts) { create_list(:sync_conflict, 3, sync_session: sync_session, status: 'pending') }
-      let(:service_double) { instance_double(ConflictResolutionService) }
+      let(:service_double) { instance_double(Services::ConflictResolutionService) }
       let(:mixed_result) do
         {
           resolved_count: 2,
@@ -870,7 +899,7 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
       end
 
       before do
-        allow(ConflictResolutionService).to receive(:new).and_return(service_double)
+        allow(Services::ConflictResolutionService).to receive(:new).and_return(service_double)
         allow(service_double).to receive(:bulk_resolve).and_return(mixed_result)
       end
 
@@ -888,10 +917,10 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
     end
   end
 
-  describe 'controller integration and edge cases', performance: true do
-    context 'when ConflictResolutionService is unavailable' do
+  describe 'controller integration and edge cases' do
+    context 'when Services::ConflictResolutionService is unavailable' do
       before do
-        allow(ConflictResolutionService).to receive(:new).and_raise(StandardError.new('Service unavailable'))
+        allow(Services::ConflictResolutionService).to receive(:new).and_raise(StandardError.new('Service unavailable'))
       end
 
       it 'handles service initialization errors in resolve action' do
@@ -924,8 +953,8 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
 
     context 'parameter validation and edge cases' do
       it 'handles invalid action_type in resolve' do
-        service_double = instance_double(ConflictResolutionService)
-        allow(ConflictResolutionService).to receive(:new).and_return(service_double)
+        service_double = instance_double(Services::ConflictResolutionService)
+        allow(Services::ConflictResolutionService).to receive(:new).and_return(service_double)
         allow(service_double).to receive(:resolve).and_return(false)
         allow(service_double).to receive(:errors).and_return([ 'Invalid action type' ])
 
@@ -942,8 +971,8 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
       end
 
       it 'handles invalid merge_fields in preview_merge' do
-        service_double = instance_double(ConflictResolutionService)
-        allow(ConflictResolutionService).to receive(:new).and_return(service_double)
+        service_double = instance_double(Services::ConflictResolutionService)
+        allow(Services::ConflictResolutionService).to receive(:new).and_return(service_double)
         allow(service_double).to receive(:preview_merge).and_raise(ArgumentError.new('Invalid merge fields'))
 
         expect {
@@ -957,8 +986,8 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
 
     context 'concurrent access scenarios' do
       it 'handles conflict being resolved by another process during resolve action' do
-        service_double = instance_double(ConflictResolutionService)
-        allow(ConflictResolutionService).to receive(:new).and_return(service_double)
+        service_double = instance_double(Services::ConflictResolutionService)
+        allow(Services::ConflictResolutionService).to receive(:new).and_return(service_double)
         allow(service_double).to receive(:resolve).and_return(false)
         allow(service_double).to receive(:errors).and_return([ 'Conflict already resolved' ])
 
@@ -970,8 +999,8 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
 
       it 'handles conflict being deleted during bulk_resolve' do
         conflict_ids = [ sync_conflict.id, 99999 ] # Non-existent ID
-        service_double = instance_double(ConflictResolutionService)
-        allow(ConflictResolutionService).to receive(:new).and_return(service_double)
+        service_double = instance_double(Services::ConflictResolutionService)
+        allow(Services::ConflictResolutionService).to receive(:new).and_return(service_double)
         allow(service_double).to receive(:bulk_resolve).and_return({
           resolved_count: 1,
           failed_count: 1,
@@ -991,7 +1020,11 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
 
     context 'memory and performance considerations' do
       it 'efficiently loads associations in index action' do
-        create_list(:sync_conflict, 5, sync_session: sync_session)
+        # conflict_type must not be the factory default "duplicate" — the
+        # index action's `.actionable` scope excludes duplicate-type
+        # conflicts entirely (they're auto-handled elsewhere), which would
+        # otherwise make `conflicts` empty here regardless of eager loading.
+        create_list(:sync_conflict, 5, sync_session: sync_session, conflict_type: 'similar')
 
         # Test that associations are properly loaded by checking they're not causing N+1 queries
         get :index, params: { sync_session_id: sync_session.id }
@@ -1006,8 +1039,8 @@ RSpec.describe SyncConflictsController, type: :controller, performance: true do
         conflicts = create_list(:sync_conflict, 50, sync_session: sync_session, status: 'pending')
         conflict_ids = conflicts.map(&:id)
 
-        service_double = instance_double(ConflictResolutionService)
-        allow(ConflictResolutionService).to receive(:new).and_return(service_double)
+        service_double = instance_double(Services::ConflictResolutionService)
+        allow(Services::ConflictResolutionService).to receive(:new).and_return(service_double)
         allow(service_double).to receive(:bulk_resolve).and_return({
           resolved_count: 50,
           failed_count: 0,

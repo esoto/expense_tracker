@@ -17,7 +17,7 @@ RSpec.describe "Expense Write Performance", type: :model, performance: true do
                email_account: email_account,
                category: category,
                amount: rand(1..1000),
-               transaction_date: rand(30.days.ago..Date.today))
+               transaction_date: rand(0..30).days.ago.to_date)
 
         duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
         durations << duration * 1000 # Convert to milliseconds
@@ -34,10 +34,11 @@ RSpec.describe "Expense Write Performance", type: :model, performance: true do
       expenses_data = 100.times.map do |i|
         {
           email_account_id: email_account.id,
+          user_id: email_account.user_id,
           category_id: category.id,
           amount: rand(1..1000),
           description: "Test expense #{i}",
-          transaction_date: rand(30.days.ago..Date.today),
+          transaction_date: rand(0..30).days.ago.to_date,
           merchant_name: "Merchant #{i}",
           status: "pending",
           currency: 0,

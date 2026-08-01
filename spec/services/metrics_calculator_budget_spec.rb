@@ -2,12 +2,12 @@
 
 require 'rails_helper'
 
-RSpec.describe Services::MetricsCalculator, 'budget calculations', performance: true do
+RSpec.describe Services::MetricsCalculator, 'budget calculations' do
   let(:email_account) { create(:email_account) }
   let(:category) { create(:category) }
   let(:calculator) { described_class.new(email_account: email_account, period: :month) }
 
-  describe '#calculate_budget_data', performance: true do
+  describe '#calculate_budget_data' do
     context 'without any budgets' do
       it 'returns default budget data' do
         result = calculator.calculate
@@ -25,9 +25,16 @@ RSpec.describe Services::MetricsCalculator, 'budget calculations', performance: 
       let!(:budget) { create(:budget, email_account: email_account, period: 'monthly', amount: 1000000) }
 
       before do
-        # Create some expenses for the current month
-        create(:expense, email_account: email_account, amount: 250000, transaction_date: Date.current, currency: 'crc')
-        create(:expense, email_account: email_account, amount: 150000, transaction_date: Date.current, currency: 'crc')
+        # Create some expenses for the current month.
+        # This is a "general" (no claimed category) budget — per
+        # Budget#calculate_current_spend!'s routing rules, a budget with no
+        # claimed categories (via the M2M `categories` join) only counts
+        # expenses explicitly assigned to it via `budget:` (the per-expense
+        # override rule). See spec/models/budget_spend_calculation_spec.rb
+        # "#calculate_current_spend! — new rules" for the authoritative
+        # behavior this mirrors.
+        create(:expense, email_account: email_account, budget: budget, amount: 250000, transaction_date: Date.current, currency: 'crc')
+        create(:expense, email_account: email_account, budget: budget, amount: 150000, transaction_date: Date.current, currency: 'crc')
       end
 
       it 'includes budget information in metrics' do
@@ -50,9 +57,25 @@ RSpec.describe Services::MetricsCalculator, 'budget calculations', performance: 
     end
 
     context 'with category-specific budgets' do
-      let!(:food_budget) { create(:budget, email_account: email_account, category: category, period: 'monthly', amount: 300000) }
+      # `category:` alone only sets the legacy `budgets.category_id` column
+      # (which MetricsCalculator#calculate_budget_data's `category_budgets`
+      # lookup filters on), but Budget#calculate_current_spend! computes its
+      # claimed categories from the M2M `categories`/`budget_categories` join
+      # (see the "multi-category rollout" TODO in app/models/budget.rb). A
+      # budget claimed only via the legacy column has an empty M2M claim, so
+      # its spend never counts default-routed expenses. Populate both so the
+      # budget shows up in `category_budgets` AND accrues spend.
+      let!(:food_budget) do
+        b = create(:budget, email_account: email_account, category: category, period: 'monthly', amount: 300000)
+        b.categories << category
+        b
+      end
       let!(:transport_category) { create(:category, name: 'Transporte') }
-      let!(:transport_budget) { create(:budget, email_account: email_account, category: transport_category, period: 'monthly', amount: 200000) }
+      let!(:transport_budget) do
+        b = create(:budget, email_account: email_account, category: transport_category, period: 'monthly', amount: 200000)
+        b.categories << transport_category
+        b
+      end
 
       before do
         create(:expense, email_account: email_account, category: category, amount: 150000, transaction_date: Date.current, currency: 'crc')
@@ -102,8 +125,11 @@ RSpec.describe Services::MetricsCalculator, 'budget calculations', performance: 
         let!(:exceeded_budget) do
           good_budget.update!(active: false) # Deactivate conflicting budget
           budget = create(:budget, email_account: email_account, period: 'monthly', amount: 100000)
-          # Create expenses that exceed the budget
-          create(:expense, email_account: email_account, amount: 120000, transaction_date: Date.current, currency: 'crc')
+          # Create expenses that exceed the budget.
+          # General (no claimed category) budget — needs the per-expense
+          # `budget:` override to accrue spend; see the comment on the
+          # "with a general budget" context above.
+          create(:expense, email_account: email_account, budget: budget, amount: 120000, transaction_date: Date.current, currency: 'crc')
           budget.reload
           budget
         end
@@ -159,7 +185,7 @@ RSpec.describe Services::MetricsCalculator, 'budget calculations', performance: 
     end
   end
 
-  describe 'performance', performance: true do
+  describe 'performance' do
     before do
       # Create multiple budgets and expenses
       3.times do |i|

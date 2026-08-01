@@ -3,7 +3,7 @@
 require "rails_helper"
 require "benchmark"
 
-RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, type: :service, performance: true do
+RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, type: :service do
   let(:analyzer) { described_class.new(time_range: time_range, category_id: category_id, pattern_type: pattern_type) }
   let(:time_range) { 7.days.ago..Time.current }
   let(:category_id) { nil }
@@ -12,7 +12,7 @@ RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, type: :service, 
   let!(:category1) { create(:category, name: "Food") }
   let!(:category2) { create(:category, name: "Transport") }
 
-  describe "Constants", performance: true do
+  describe "Constants" do
     it "defines security and performance constants" do
       expect(described_class::MINIMUM_USAGE_THRESHOLD).to eq(5)
       expect(described_class::TARGET_SUCCESS_RATE).to eq(0.85)
@@ -30,7 +30,7 @@ RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, type: :service, 
     end
   end
 
-  describe "#category_performance", performance: true do
+  describe "#category_performance" do
     let(:category1) { create(:category, name: "Food") }
     let(:category2) { create(:category, name: "Transport") }
 
@@ -104,7 +104,7 @@ RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, type: :service, 
     end
   end
 
-  describe "#trend_analysis", performance: true do
+  describe "#trend_analysis" do
     before do
       # Create feedbacks with different dates and types
       create(:pattern_feedback,
@@ -178,7 +178,7 @@ RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, type: :service, 
     end
   end
 
-  describe "#usage_heatmap", performance: true do
+  describe "#usage_heatmap" do
     before do
       # Create expenses with pattern feedbacks at different times
       expense1 = create(:expense, transaction_date: Time.current.beginning_of_week + 9.hours)
@@ -227,7 +227,7 @@ RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, type: :service, 
     end
   end
 
-  describe "#top_patterns", performance: true do
+  describe "#top_patterns" do
     before do
       # Create patterns with varying performance
       create(:categorization_pattern,
@@ -288,7 +288,7 @@ RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, type: :service, 
     end
   end
 
-  describe "#recent_activity", performance: true do
+  describe "#recent_activity" do
     before do
       5.times do
         create(:pattern_feedback)
@@ -320,7 +320,7 @@ RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, type: :service, 
     end
   end
 
-  describe "#calculate_improvement_potential", performance: true do
+  describe "#calculate_improvement_potential" do
     it "uses TARGET_SUCCESS_RATE constant" do
       pattern = build(:categorization_pattern, success_rate: 0.5)
 
@@ -338,7 +338,7 @@ RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, type: :service, 
     end
   end
 
-  describe "#validate_interval", performance: true do
+  describe "#validate_interval" do
     it "returns valid interval symbols" do
       expect(analyzer.send(:validate_interval, :daily)).to eq(:daily)
       expect(analyzer.send(:validate_interval, "weekly")).to eq(:weekly)
@@ -351,7 +351,7 @@ RSpec.describe Services::Analytics::PatternPerformanceAnalyzer, type: :service, 
     end
   end
 
-  describe "Performance", performance: true do
+  describe "Performance" do
     before do
       # Create significant test data
       10.times do

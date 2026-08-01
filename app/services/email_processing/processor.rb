@@ -113,7 +113,21 @@ module Services::EmailProcessing
           # to avoid Float rounding on financial values
           conflict_result.merge(amount: conflict_result[:amount]&.to_s)
         end
-        ProcessEmailJob.perform_later(email_account.id, email_data, @sync_session&.id, pre_parsed)
+
+        # Security fix (2026-08 audit): email_data[:body] is the full decoded
+        # bank notification (transaction PII), and pre_parsed[:raw_email_content]
+        # is a copy of the same body. Neither may travel as a plain
+        # ProcessEmailJob argument — Active Job serializes job arguments into
+        # solid_queue_jobs.arguments (and ready/failed_executions) as
+        # plaintext text, readable by anyone with DB access on the shared
+        # personal-blog-db host. Persist both behind QueuedEmailPayload's
+        # `encrypts` column instead, and pass only its id.
+        payload = QueuedEmailPayload.create!(
+          email_account: email_account,
+          sync_session: @sync_session,
+          payload_data: { email_data: email_data, pre_parsed: pre_parsed }
+        )
+        ProcessEmailJob.perform_later(email_account.id, payload.id, @sync_session&.id)
 
         {
           processed: true,

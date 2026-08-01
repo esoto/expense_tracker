@@ -94,6 +94,17 @@ default: &default
     schedule: every day at 4:15am
     description: "Purge failed job executions older than 30 days (PER-503 retention)"
 
+  # Purge QueuedEmailPayload rows past their retention window (2026-08 audit
+  # fix). Processed rows purge after 7 days, unprocessed rows after 30 days
+  # (see QueuedEmailPayload for the split rationale). Offset to 4:30am to
+  # avoid colliding with the two cleanup jobs above.
+  cleanup_queued_email_payloads:
+    class: QueuedEmailPayloadCleanupJob
+    queue: low
+    priority: 10
+    schedule: every day at 4:30am
+    description: "Purge encrypted queued-email payloads past their retention window (2026-08 audit)"
+
   # Pull the latest monthly budget from each active external budget source
   # (e.g. salary_calculator). Deactivated sources are skipped automatically.
   external_budgets_daily_sync:

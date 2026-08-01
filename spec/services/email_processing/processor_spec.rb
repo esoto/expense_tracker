@@ -1025,4 +1025,82 @@ RSpec.describe Services::EmailProcessing::Processor, type: :service, unit: true 
       end
     end
   end
+
+  # Security fix (2026-08 audit): ProcessEmailJob.perform_later used to receive
+  # the full decoded bank-email body as a plain job argument. Active Job
+  # serializes job arguments into solid_queue_jobs.arguments as plaintext
+  # text — readable by anyone with DB access on the shared personal-blog-db
+  # host. This section proves that gap is closed: it exercises the real
+  # Solid Queue adapter (not Active Job's :test adapter) end-to-end and
+  # inspects the actual persisted row.
+  describe 'plaintext PII regression (2026-08 security audit)', integration: true do
+    let(:message_ids) { [ 1 ] }
+    let(:bank_pii_marker) { "BANK PII #{SecureRandom.hex(8)}: Comercio MERCHANT ABC monto $543.21" }
+    let(:transaction_envelope) do
+      double('envelope', subject: 'BAC - Notificación de transacción', from: nil, message_id: '<txn-regression@example.com>')
+    end
+
+    # Bypass Active Job's :test adapter (the suite default) so perform_later
+    # actually lands a row in solid_queue_jobs, matching how
+    # MetricsCalculationJob's dispatch spec proves Solid Queue behavior
+    # end-to-end (see spec/jobs/metrics_calculation_job_dispatch_spec.rb).
+    around do |example|
+      original_adapter = ActiveJob::Base.queue_adapter
+      ActiveJob::Base.queue_adapter = :solid_queue
+      SolidQueue::Job.delete_all
+      example.run
+      SolidQueue::Job.delete_all
+      ActiveJob::Base.queue_adapter = original_adapter
+    end
+
+    before do
+      allow(mock_imap_service).to receive(:fetch_envelope).with(1).and_return(transaction_envelope)
+      allow(processor_without_metrics).to receive(:extract_email_data).and_return({
+        message_id: 1,
+        rfc_message_id: '<txn-regression@example.com>',
+        from: 'bank@bac.co.cr',
+        subject: 'Transaction Alert',
+        date: Time.current,
+        body: bank_pii_marker
+      })
+    end
+
+    it 'does NOT persist the bank-email body anywhere in SolidQueue::Job#arguments' do
+      processor_without_metrics.process_emails(message_ids, mock_imap_service)
+
+      job = SolidQueue::Job.where(class_name: 'ProcessEmailJob').last
+      expect(job).to be_present
+      expect(job.arguments.to_s).not_to include(bank_pii_marker)
+    end
+
+    it 'passes only plain ids (email_account_id, payload_id, sync_session_id) as job arguments' do
+      processor_without_metrics.process_emails(message_ids, mock_imap_service)
+
+      job = SolidQueue::Job.where(class_name: 'ProcessEmailJob').last
+      serialized_args = job.arguments['arguments']
+
+      expect(serialized_args[0]).to eq(email_account.id)
+      expect(serialized_args[1]).to be_a(Integer) # QueuedEmailPayload id, never a Hash
+      expect(serialized_args.none? { |arg| arg.is_a?(Hash) }).to be true
+    end
+
+    it 'persists the bank-email body only inside an encrypted QueuedEmailPayload record' do
+      expect {
+        processor_without_metrics.process_emails(message_ids, mock_imap_service)
+      }.to change(QueuedEmailPayload, :count).by(1)
+
+      payload = QueuedEmailPayload.last
+      expect(payload.payload_data[:email_data][:body]).to eq(bank_pii_marker)
+    end
+
+    it 'does NOT store the bank-email body as plaintext in the queued_email_payloads column' do
+      processor_without_metrics.process_emails(message_ids, mock_imap_service)
+
+      payload = QueuedEmailPayload.last
+      raw_row = ActiveRecord::Base.connection.execute(
+        "SELECT encrypted_payload FROM queued_email_payloads WHERE id = #{payload.id}"
+      ).first
+      expect(raw_row['encrypted_payload']).not_to include(bank_pii_marker)
+    end
+  end
 end

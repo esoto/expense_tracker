@@ -379,4 +379,119 @@ RSpec.describe ProcessEmailJob, type: :job, integration: true do
       )
     end
   end
+
+  # Security fix (2026-08 audit): ProcessEmailJob's second argument used to
+  # always be the raw email_data Hash (plaintext bank PII, serialized into
+  # solid_queue_jobs.arguments). It is now a QueuedEmailPayload id, with a
+  # Hash still accepted for deploy-window compatibility (in-flight jobs
+  # enqueued before this fix shipped).
+  describe 'QueuedEmailPayload argument handling (2026-08 security fix)', integration: true do
+    context 'with a QueuedEmailPayload id (current path)' do
+      let!(:payload) do
+        QueuedEmailPayload.create!(
+          email_account: email_account,
+          payload_data: { email_data: email_data, pre_parsed: nil }
+        )
+      end
+
+      it 'creates an expense from the payload record data' do
+        expect {
+          ProcessEmailJob.new.perform(email_account.id, payload.id)
+        }.to change(Expense, :count).by(1)
+      end
+
+      it 'marks the payload record as processed' do
+        expect {
+          ProcessEmailJob.new.perform(email_account.id, payload.id)
+        }.to change { payload.reload.processed_at }.from(nil)
+      end
+
+      it 'passes the sync_session id through unchanged' do
+        sync_session = create(:sync_session, user: email_account.user)
+        payload_with_session = QueuedEmailPayload.create!(
+          email_account: email_account,
+          sync_session: sync_session,
+          payload_data: { email_data: email_data, pre_parsed: nil }
+        )
+
+        expect(Services::SyncMetricsCollector).to receive(:new).with(sync_session).and_call_original
+
+        ProcessEmailJob.new.perform(email_account.id, payload_with_session.id, sync_session.id)
+      end
+
+      it 'restores pre_parsed data (e.g. String amount) from the payload record' do
+        pre_parsed = {
+          amount: "95000.50",
+          transaction_date: Date.current.to_s,
+          merchant_name: "PTA LEONA SOC",
+          description: "Purchase",
+          email_account_id: email_account.id,
+          raw_email_content: sample_bac_email
+        }
+        payload_with_pre_parsed = QueuedEmailPayload.create!(
+          email_account: email_account,
+          payload_data: { email_data: email_data, pre_parsed: pre_parsed }
+        )
+
+        ProcessEmailJob.new.perform(email_account.id, payload_with_pre_parsed.id)
+
+        expect(Expense.last.amount).to eq(95000.50)
+      end
+    end
+
+    context 'with a legacy plaintext Hash (deploy-window compatibility)' do
+      it 'still creates an expense (in-flight pre-deploy jobs must keep working)' do
+        expect {
+          ProcessEmailJob.new.perform(email_account.id, email_data)
+        }.to change(Expense, :count).by(1)
+      end
+
+      it 'logs a deprecation warning' do
+        allow(Rails.logger).to receive(:warn)
+
+        ProcessEmailJob.new.perform(email_account.id, email_data)
+
+        expect(Rails.logger).to have_received(:warn).with(a_string_matching(/Deprecated.*legacy plaintext email_data Hash/))
+      end
+
+      it 'does not touch QueuedEmailPayload at all' do
+        expect {
+          ProcessEmailJob.new.perform(email_account.id, email_data)
+        }.not_to change(QueuedEmailPayload, :count)
+      end
+    end
+
+    context 'with a missing/deleted payload record' do
+      it 'does not raise and does not create an expense' do
+        expect {
+          ProcessEmailJob.new.perform(email_account.id, 999_999_999)
+        }.not_to change(Expense, :count)
+      end
+
+      it 'logs an error identifying the missing payload id' do
+        allow(Rails.logger).to receive(:error)
+
+        ProcessEmailJob.new.perform(email_account.id, 999_999_999)
+
+        expect(Rails.logger).to have_received(:error).with(a_string_matching(/QueuedEmailPayload 999999999 not found/))
+      end
+
+      it 'does not call the parser at all' do
+        expect(Services::EmailProcessing::Parser).not_to receive(:new)
+        ProcessEmailJob.new.perform(email_account.id, 999_999_999)
+      end
+    end
+
+    context 'with an unrecognized argument type' do
+      it 'logs an error and does not raise' do
+        allow(Rails.logger).to receive(:error)
+
+        expect {
+          ProcessEmailJob.new.perform(email_account.id, 3.14)
+        }.not_to raise_error
+
+        expect(Rails.logger).to have_received(:error).with(a_string_matching(/Unrecognized argument type/))
+      end
+    end
+  end
 end

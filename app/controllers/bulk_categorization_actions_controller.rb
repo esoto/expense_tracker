@@ -106,12 +106,13 @@ class BulkCategorizationActionsController < ApplicationController
       return
     end
 
-    # FIXME(PR-5b): globally loading expenses by id lets any authenticated
-    # admin apply categorizations to another user's expenses. Scope via
-    # `Expense.for_user(scoping_user)` once the shared UserScoping concern
-    # lands in PR 12.
+    # Scoped to the authenticated user: require_authentication (UserAuthentication
+    # concern) guarantees current_user is present before this before_action runs.
+    # Without this scope, any authenticated user could mutate another user's
+    # expenses by supplying their expense ids directly.
     # Find expenses with eager loading for performance
-    @expenses = Expense.includes(:category, :email_account)
+    @expenses = Expense.for_user(current_user)
+                       .includes(:category, :email_account)
                        .where(id: expense_ids)
 
     if @expenses.empty?
@@ -130,8 +131,9 @@ class BulkCategorizationActionsController < ApplicationController
   end
 
   def set_bulk_operation
-    # Find bulk operation by ID
-    @bulk_operation = BulkOperation.find(params[:id])
+    # Scoped to the authenticated user so undo cannot target another user's
+    # bulk operation by id.
+    @bulk_operation = BulkOperation.for_user(current_user).find(params[:id])
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Operation not found" }, status: :not_found
   end

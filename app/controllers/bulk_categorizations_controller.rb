@@ -44,12 +44,13 @@ class BulkCategorizationsController < ApplicationController
   private
 
   def load_uncategorized_expenses
-    # FIXME(PR-5b): this action currently exposes every user's uncategorized
-    # expenses. Scoping by `Expense.for_user(scoping_user)` is deferred to the
-    # shared UserScoping concern landing in PR 12. Acceptable while the app is
-    # effectively single-user.
+    # Scoped to the authenticated user: require_authentication (UserAuthentication
+    # concern, before_action on ApplicationController) guarantees current_user is
+    # present before any subclass before_action runs, so there is no nil-user
+    # fallback to guard against here.
     # Fix N+1 queries by including all necessary associations
     scope = Expense
+      .for_user(current_user)
       .uncategorized
       .includes(:email_account, :category, :bulk_operation_items)
       .order(transaction_date: :desc)
@@ -64,8 +65,11 @@ class BulkCategorizationsController < ApplicationController
   end
 
   def load_bulk_operation
-    # Fix N+1 queries for bulk operation
+    # Scoped to the authenticated user (BulkOperation#user_id via the
+    # for_user scope) so one user cannot view another user's operation by
+    # guessing/incrementing :id. Fix N+1 queries for bulk operation.
     @bulk_operation = BulkOperation
+      .for_user(current_user)
       .includes(:bulk_operation_items, expenses: [ :category, :email_account ])
       .find(params[:id])
   end

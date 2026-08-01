@@ -6,7 +6,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, integrati
   describe 'Security Tests' do
     let(:admin_user) { create(:user, :admin) }
     let(:category) { create(:category) }
-    let(:email_account) { create(:email_account) }
+    let(:email_account) { create(:email_account, user: admin_user) }
 
     let!(:expense) { create(:expense, email_account: email_account) }
 
@@ -31,7 +31,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, integrati
       end
 
       it 'handles bulk operations' do
-        bulk_operation = create(:bulk_operation)
+        bulk_operation = create(:bulk_operation, user: admin_user)
 
         # Mock the undo service to return success
         undo_service = instance_double(Services::BulkCategorization::UndoService)

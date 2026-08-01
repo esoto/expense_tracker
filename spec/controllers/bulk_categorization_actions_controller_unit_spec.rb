@@ -16,7 +16,15 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
     allow(controller).to receive(:require_authentication).and_return(true)
     mock_user_authentication(current_user)
 
-    # Mock Expense queries (since we no longer use user scoping)
+    # set_expenses/set_bulk_operation now scope through `for_user(current_user)`
+    # before the rest of the chain (cross-tenant IDOR fix). This spec exercises
+    # controller/service wiring against a mocked persistence layer, not real
+    # scoping (that's covered by the dedicated isolation spec), so make the
+    # scope a passthrough and keep the existing mock chains below intact.
+    allow(Expense).to receive(:for_user).with(current_user).and_return(Expense)
+    allow(BulkOperation).to receive(:for_user).with(current_user).and_return(BulkOperation)
+
+    # Mock Expense queries
     expenses_relation = instance_double("ActiveRecord::Relation")
     allow(Expense).to receive(:includes).with(:category, :email_account).and_return(expenses_relation)
     allow(expenses_relation).to receive(:where).and_return(expenses_relation)
@@ -438,7 +446,7 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
         allow(empty_relation).to receive(:empty?).and_return(true)
         allow(empty_relation).to receive(:count).and_return(0)
 
-        # Setup the mock chain without user scoping
+        # Setup the mock chain (for_user is stubbed to passthrough in the top-level before block)
         expenses_relation = instance_double("ActiveRecord::Relation")
         allow(Expense).to receive(:includes).with(:category, :email_account).and_return(expenses_relation)
         allow(expenses_relation).to receive(:where).with(id: [ 99999 ]).and_return(empty_relation)

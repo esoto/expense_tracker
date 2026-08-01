@@ -251,8 +251,10 @@ RSpec.describe Services::MetricsCalculator, type: :service do
           calculated_at: be_a(Time)
         )
 
+        # date_range is built via #in_time_zone (app tz), not bare Date
+        # boundaries — see calculate_date_range for why.
         expect(result[:date_range]).to eq(
-          current_date.beginning_of_month..current_date.end_of_month
+          current_date.in_time_zone.beginning_of_month..current_date.in_time_zone.end_of_month
         )
       end
 
@@ -297,24 +299,19 @@ RSpec.describe Services::MetricsCalculator, type: :service do
         })
       end
 
-      # PENDING: real bug found while folding this spec into the unit tier
-      # (batch 3). MetricsCalculator#calculate_date_range /
-      # #calculate_previous_date_range build Date..Date ranges (Date#end_of_month
-      # etc. on a Date stays a Date). ActiveRecord then emits a naive
-      # `BETWEEN 'YYYY-MM-DD' AND 'YYYY-MM-DD'` against the `transaction_date`
-      # datetime column instead of extending the upper bound to end-of-day.
-      # Postgres casts those literals in its own session time zone, which does
-      # not match the app's local zone (Costa Rica, -06:00) used to store
-      # midnight timestamps — so records land on the wrong side of the
-      # boundary depending on the UTC offset at that exact date. Not caused by
-      # or fixable via fixture/user-scoping changes; needs a real fix to the
-      # date-range construction (e.g. explicit `.end_of_day` cast in the app's
-      # time zone) with its own review, since it affects every period type and
-      # every MetricsCalculator consumer. See also the identical failures on
-      # ':month period calculates trends correctly', '.batch_calculate
-      # calculates metrics for each requested period', and 'edge cases with
-      # expenses on period boundaries' in this file.
-      it 'calculates trends correctly', pending: "real bug: date-range boundary excludes/includes records across local-vs-UTC midnight offset (see comment above); not a fixture issue" do
+      # REGRESSION (was pending): MetricsCalculator#calculate_date_range /
+      # #calculate_previous_date_range used to build Date..Date ranges
+      # (Date#end_of_month etc. on a Date stays a Date), which ActiveRecord
+      # emitted as a naive `BETWEEN 'YYYY-MM-DD' AND 'YYYY-MM-DD'` against the
+      # `transaction_date` datetime column instead of extending the upper
+      # bound to end-of-day. Postgres cast those literals in its own session
+      # time zone, which didn't match the app's local zone (Costa Rica,
+      # -06:00) used to store midnight timestamps — so records landed on the
+      # wrong side of the boundary depending on the UTC offset at that exact
+      # date. Fixed by anchoring every range endpoint via `#in_time_zone`.
+      # See also '.batch_calculate calculates metrics for each requested
+      # period' and 'edge cases with expenses on period boundaries' below.
+      it 'calculates trends correctly' do
         Rails.cache.clear
         result = calculator.calculate
         trends = result[:trends]
@@ -377,9 +374,9 @@ RSpec.describe Services::MetricsCalculator, type: :service do
         # Only 1 expense on August 10
         expect(metrics[:total_amount]).to eq(100.50)
         expect(metrics[:transaction_count]).to eq(1)
-        expect(result[:date_range]).to eq(
-          current_date.beginning_of_day..current_date.end_of_day
-        )
+        # date_range is built via #in_time_zone (app tz), not bare Date
+        # boundaries — see calculate_date_range for why.
+        expect(result[:date_range]).to eq(current_date.in_time_zone.all_day)
       end
 
       it 'does not include daily breakdown for day period' do
@@ -394,8 +391,10 @@ RSpec.describe Services::MetricsCalculator, type: :service do
       it 'calculates metrics for week' do
         result = calculator.calculate
 
+        # date_range is built via #in_time_zone (app tz), not bare Date
+        # boundaries — see calculate_date_range for why.
         expect(result[:date_range]).to eq(
-          current_date.beginning_of_week..current_date.end_of_week
+          current_date.in_time_zone.beginning_of_week..current_date.in_time_zone.end_of_week
         )
       end
 
@@ -412,8 +411,10 @@ RSpec.describe Services::MetricsCalculator, type: :service do
         Rails.cache.clear
         result = calculator.calculate
 
+        # date_range is built via #in_time_zone (app tz), not bare Date
+        # boundaries — see calculate_date_range for why.
         expect(result[:date_range]).to eq(
-          current_date.beginning_of_year..current_date.end_of_year
+          current_date.in_time_zone.beginning_of_year..current_date.in_time_zone.end_of_year
         )
 
         # Should include all 5 expenses (2 in August + 2 in July + 1 from 45 days ago which is still in 2025)
@@ -639,10 +640,10 @@ RSpec.describe Services::MetricsCalculator, type: :service do
       expect(result.keys).to match_array([ :day, :week, :month ])
     end
 
-    # PENDING: same date-range timezone boundary bug documented above
-    # '#calculate with month period calculates trends correctly' — see that
-    # comment for the root cause. Not a fixture/user-scoping issue.
-    it 'calculates metrics for each requested period', pending: "real bug: date-range boundary excludes/includes records across local-vs-UTC midnight offset; not a fixture issue" do
+    # REGRESSION (was pending): same date-range timezone boundary bug
+    # documented above '#calculate with month period calculates trends
+    # correctly' — see that comment for the root cause and fix.
+    it 'calculates metrics for each requested period' do
       Rails.cache.clear
 
       result = described_class.batch_calculate(
@@ -862,16 +863,51 @@ RSpec.describe Services::MetricsCalculator, type: :service do
                transaction_date: current_date.end_of_month)
       end
 
-      # PENDING: same date-range timezone boundary bug documented above
-      # '#calculate with month period calculates trends correctly' — see that
-      # comment for the root cause. Not a fixture/user-scoping issue.
-      it 'includes only expenses within period boundaries', pending: "real bug: date-range boundary excludes/includes records across local-vs-UTC midnight offset; not a fixture issue" do
+      # REGRESSION (was pending): same date-range timezone boundary bug
+      # documented above '#calculate with month period calculates trends
+      # correctly' — see that comment for the root cause and fix.
+      it 'includes only expenses within period boundaries' do
         Rails.cache.clear
         result = calculator.calculate
 
         # Should include expenses from beginning to end of month
         expect(result[:metrics][:transaction_count]).to eq(2)
         expect(result[:metrics][:total_amount]).to eq(500.00)
+      end
+    end
+
+    # New boundary regression coverage: exact midnight endpoints in the app's
+    # time zone, not just "near" the boundary. Pins down the tz-aware fix in
+    # calculate_date_range directly, independent of the other 3 specs above.
+    context 'with expenses exactly at local midnight boundaries' do
+      let(:period) { :month }
+
+      before do
+        # 00:00:00 local time on the period's first day — must count
+        create(:expense,
+               email_account: email_account,
+               amount: 10.00,
+               transaction_date: current_date.beginning_of_month.in_time_zone.beginning_of_day)
+
+        # 23:59:59 local time on the period's last day — must count
+        create(:expense,
+               email_account: email_account,
+               amount: 20.00,
+               transaction_date: current_date.end_of_month.in_time_zone.end_of_day)
+
+        # 00:00:00 local time the day AFTER the period ends — must NOT count
+        create(:expense,
+               email_account: email_account,
+               amount: 999.00,
+               transaction_date: (current_date.end_of_month + 1.day).in_time_zone.beginning_of_day)
+      end
+
+      it 'includes both midnight-boundary expenses and excludes the one after the period ends' do
+        Rails.cache.clear
+        result = calculator.calculate
+
+        expect(result[:metrics][:transaction_count]).to eq(2)
+        expect(result[:metrics][:total_amount]).to eq(30.00)
       end
     end
   end

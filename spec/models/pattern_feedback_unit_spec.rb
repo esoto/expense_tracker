@@ -58,7 +58,34 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
 
     describe "after_create :update_pattern_performance" do
       let(:pattern) { double("categorization_pattern") }
-      let(:feedback) { build_stubbed(:pattern_feedback, categorization_pattern: pattern) }
+      let(:feedback) { build_stubbed(:pattern_feedback) }
+
+      before { allow(feedback).to receive(:categorization_pattern).and_return(pattern) }
+
+      # Ported from pattern_feedback_spec.rb — this describe block previously
+      # had zero examples, leaving #update_pattern_performance uncovered here.
+      it "records successful usage for accepted feedback" do
+        feedback.feedback_type = "accepted"
+        expect(pattern).to receive(:record_usage).with(true)
+        feedback.send(:update_pattern_performance)
+      end
+
+      it "records unsuccessful usage for rejected feedback" do
+        feedback.feedback_type = "rejected"
+        expect(pattern).to receive(:record_usage).with(false)
+        feedback.send(:update_pattern_performance)
+      end
+
+      it "records unsuccessful usage for corrected feedback" do
+        feedback.feedback_type = "corrected"
+        expect(pattern).to receive(:record_usage).with(false)
+        feedback.send(:update_pattern_performance)
+      end
+
+      it "does not update pattern performance when no pattern is associated" do
+        allow(feedback).to receive(:categorization_pattern).and_return(nil)
+        expect { feedback.send(:update_pattern_performance) }.not_to raise_error
+      end
     end
 
     describe "after_create :create_pattern_from_correction" do
@@ -203,6 +230,54 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
       it "returns an empty collection when user has no feedbacks" do
         user = create(:user)
         expect(PatternFeedback.for_user(user)).to be_empty
+      end
+    end
+
+    # Ported from pattern_feedback_spec.rb — .accepted/.rejected/.corrected/
+    # .correction/.recent had zero coverage in this successor.
+    describe ".accepted, .rejected, .corrected, .correction, .recent" do
+      let(:user) { create(:user) }
+      let(:expense) { create(:expense, user: user) }
+      let(:category) { create(:category) }
+
+      let!(:accepted_feedback) do
+        create(:pattern_feedback, user: user, expense: expense, category: category, feedback_type: "accepted", was_correct: true)
+      end
+      let!(:rejected_feedback) do
+        create(:pattern_feedback, user: user, expense: create(:expense, user: user), category: category, feedback_type: "rejected", was_correct: false)
+      end
+      let!(:corrected_feedback) do
+        create(:pattern_feedback, user: user, expense: create(:expense, user: user), category: category, feedback_type: "corrected", was_correct: false)
+      end
+      let!(:correction_feedback) do
+        create(:pattern_feedback, user: user, expense: create(:expense, user: user), category: category, feedback_type: "correction", was_correct: false)
+      end
+
+      it "filters accepted feedback" do
+        expect(PatternFeedback.accepted).to include(accepted_feedback)
+        expect(PatternFeedback.accepted).not_to include(rejected_feedback, corrected_feedback, correction_feedback)
+      end
+
+      it "filters rejected feedback" do
+        expect(PatternFeedback.rejected).to include(rejected_feedback)
+        expect(PatternFeedback.rejected).not_to include(accepted_feedback, corrected_feedback, correction_feedback)
+      end
+
+      it "filters corrected feedback" do
+        expect(PatternFeedback.corrected).to include(corrected_feedback)
+        expect(PatternFeedback.corrected).not_to include(accepted_feedback, rejected_feedback, correction_feedback)
+      end
+
+      it "filters correction feedback" do
+        expect(PatternFeedback.correction).to include(correction_feedback)
+        expect(PatternFeedback.correction).not_to include(accepted_feedback, rejected_feedback, corrected_feedback)
+      end
+
+      it "orders by recent first" do
+        older_feedback = create(:pattern_feedback, user: user, expense: expense, category: category, feedback_type: "accepted", created_at: 1.day.ago)
+
+        expect(PatternFeedback.recent.first).to eq(correction_feedback)
+        expect(PatternFeedback.recent.last).to eq(older_feedback)
       end
     end
   end
@@ -392,6 +467,30 @@ RSpec.describe PatternFeedback, type: :model, unit: true do
           suggestion = feedback.improvement_suggestion
           expect(suggestion[:pattern_type]).to eq("merchant")
           expect(suggestion[:pattern_value]).to eq("Store Name")
+        end
+
+        # Ported from pattern_feedback_spec.rb: without a merchant name, the
+        # suggestion falls back to a description pattern.
+        it "uses description as pattern value when merchant name is absent" do
+          expense.merchant_name = nil
+          feedback.feedback_type = "correction"
+
+          suggestion = feedback.improvement_suggestion
+          expect(suggestion[:pattern_type]).to eq("description")
+          expect(suggestion[:pattern_value]).to eq("Purchase at store")
+        end
+
+        # Ported from pattern_feedback_spec.rb: without merchant name or
+        # description, the suggestion falls back to a keyword pattern with a
+        # nil value.
+        it "suggests keyword pattern type when merchant name and description are both absent" do
+          expense.merchant_name = nil
+          expense.description = nil
+          feedback.feedback_type = "correction"
+
+          suggestion = feedback.improvement_suggestion
+          expect(suggestion[:pattern_type]).to eq("keyword")
+          expect(suggestion[:pattern_value]).to be_nil
         end
       end
 

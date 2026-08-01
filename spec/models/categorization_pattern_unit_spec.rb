@@ -318,6 +318,72 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
         expect(CategorizationPattern.frequently_used.to_sql).to include("usage_count >= 10")
       end
     end
+
+    describe ".ordered_by_success" do
+      it "orders by success rate and usage count" do
+        category = Category.create!(name: "OrderedBySuccessSpecCat")
+
+        p1 = CategorizationPattern.create!(category: category, pattern_type: "merchant", pattern_value: "order1")
+        p1.update_columns(success_rate: 0.9, usage_count: 10)
+
+        p2 = CategorizationPattern.create!(category: category, pattern_type: "merchant", pattern_value: "order2")
+        p2.update_columns(success_rate: 0.9, usage_count: 20)
+
+        p3 = CategorizationPattern.create!(category: category, pattern_type: "merchant", pattern_value: "order3")
+        p3.update_columns(success_rate: 0.95, usage_count: 5)
+
+        # Scope only the patterns created here to avoid seed data interference
+        ordered = CategorizationPattern.where(id: [ p1.id, p2.id, p3.id ]).ordered_by_success
+        expect(ordered.first).to eq(p3) # Highest success rate
+        expect(ordered.second).to eq(p2) # Same success rate as p1 but more usage
+      end
+    end
+  end
+
+  # PR 9: .usable_by limits pattern candidates to those whose category the
+  # actor can see — shared (category.user_id NULL) or owned by the actor.
+  # Exercised against real records (not build_stubbed) because the
+  # fail-closed-on-nil guarantee depends on actual SQL NULL-comparison
+  # semantics, not just the generated SQL string.
+  describe ".usable_by" do
+    let!(:user_a) { create(:user, email: "cp_usable_a@example.com") }
+    let!(:user_b) { create(:user, email: "cp_usable_b@example.com") }
+
+    let!(:shared_cat)     { create(:category, name: "UsablesSharedUnit", user: nil) }
+    let!(:personal_a_cat) { create(:category, name: "UsablesPersonalAUnit", user: user_a) }
+    let!(:personal_b_cat) { create(:category, name: "UsablesPersonalBUnit", user: user_b) }
+
+    let!(:shared_pattern) do
+      CategorizationPattern.create!(category: shared_cat, pattern_type: "merchant", pattern_value: "usables_shared_unit")
+    end
+    let!(:a_pattern) do
+      CategorizationPattern.create!(category: personal_a_cat, pattern_type: "merchant", pattern_value: "usables_a_unit")
+    end
+    let!(:b_pattern) do
+      CategorizationPattern.create!(category: personal_b_cat, pattern_type: "merchant", pattern_value: "usables_b_unit")
+    end
+
+    it "returns shared patterns plus the user's own personal patterns" do
+      result = CategorizationPattern.usable_by(user_a)
+      expect(result).to include(shared_pattern, a_pattern)
+      expect(result).not_to include(b_pattern)
+    end
+
+    it "excludes other users' personal patterns" do
+      expect(CategorizationPattern.usable_by(user_b)).not_to include(a_pattern)
+    end
+
+    it "accepts a user id directly" do
+      result = CategorizationPattern.usable_by(user_a.id)
+      expect(result).to include(shared_pattern, a_pattern)
+      expect(result).not_to include(b_pattern)
+    end
+
+    it "returns only shared patterns when given nil (fail closed)" do
+      result = CategorizationPattern.usable_by(nil)
+      expect(result).to include(shared_pattern)
+      expect(result).not_to include(a_pattern, b_pattern)
+    end
   end
 
   describe "callbacks" do
@@ -546,6 +612,25 @@ RSpec.describe CategorizationPattern, type: :model, unit: true do
         allow(expense).to receive(:read_attribute).and_raise(StandardError)
         allow(expense).to receive(:merchant_name).and_return("Amazon.com")
         expect(pattern.matches?(expense)).to be true
+      end
+
+      # Ported from categorization_pattern_fixes_spec.rb (Task 1.7.1): description
+      # patterns must only ever consult the description attribute — a matching
+      # merchant_name must NOT cause a false-positive match. Uses a real (unsaved)
+      # Expense — build_stubbed's #attributes mock above can't isolate the
+      # read_attribute fallback that a nil-in-hash value would trigger.
+      it "does not fall back to merchant_name for description patterns" do
+        desc_pattern = build_categorization_pattern(pattern_type: "description", pattern_value: "coffee")
+        real_expense = build(:expense, merchant_name: "Coffee Shop", description: "Tea purchase")
+        expect(desc_pattern.matches?(real_expense)).to be false
+      end
+
+      # Ported from categorization_pattern_fixes_spec.rb (Task 1.7.1): keyword
+      # patterns fall back to merchant_name alone when description is blank.
+      it "falls back to merchant_name only when description is blank (keyword pattern)" do
+        keyword_pattern = build_categorization_pattern(pattern_type: "keyword", pattern_value: "lunch")
+        real_expense = build(:expense, merchant_name: "Lunch Box Cafe", description: nil)
+        expect(keyword_pattern.matches?(real_expense)).to be true
       end
     end
 

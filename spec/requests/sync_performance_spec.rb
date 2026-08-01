@@ -1,8 +1,11 @@
 require 'rails_helper'
 
-RSpec.describe "SyncPerformance", type: :request, performance: true do
-  describe "GET /sync_performance", performance: true do
+RSpec.describe "SyncPerformance", :unit, type: :request do
+  describe "GET /sync_performance", :unit do
     it "displays the performance dashboard" do
+      admin_user = create(:user, :admin)
+      sign_in_as(admin_user)
+
       # Create test data
       email_account = create(:email_account, active: true)
       sync_session = create(:sync_session, :completed)

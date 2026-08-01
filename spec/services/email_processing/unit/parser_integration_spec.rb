@@ -506,4 +506,152 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       parser.parse_expense
     end
   end
+
+  # Ported from parser_spec.rb (the pre-split performance-lane spec). Unlike the
+  # rest of this file, these exercise the REAL StrategyFactory/Regex strategy and
+  # persist a REAL Expense — none of the split unit/ files round-trip an actual
+  # bank email through real parsing + real ActiveRecord persistence, so this is
+  # genuinely uncovered surface (not just a differently-styled duplicate).
+  describe 'real database integration (regex strategy + persisted Expense)' do
+    # Override the outer (unconditional, any-args) ParsingRule stub so this
+    # block resolves the real, persisted :bac parsing rule instead.
+    before { allow(ParsingRule).to receive_message_chain(:active, :for_bank, :first) { real_parsing_rule } }
+
+    let(:real_parsing_rule) { create(:parsing_rule, :bac, bank_name: "TEST_BAC_UNIQUE_INTEGRATION") }
+    let(:real_email_account) { create(:email_account, :bac, bank_name: "TEST_BAC_UNIQUE_INTEGRATION") }
+    let(:real_email_data) do
+      {
+        message_id: 123,
+        from: 'notifications@bac.net',
+        subject: 'Notificación de transacción PTA LEONA SOC 01-08-2025 - 14:16',
+        date: 'Wed, 02 Aug 2025 14:16:00 +0000',
+        body: sample_bac_email
+      }
+    end
+    let(:sample_bac_email) do
+      <<~EMAIL
+        Hola ROGER ESTEBAN SOTO MADRIZ
+
+        Comercio: PTA LEONA SOC Ciudad: SAN JOSE
+        Fecha: Ago 1, 2025, 14:16
+        Monto: CRC 95,000.00
+        Tipo de Transacción: COMPRA
+
+        Si no reconoce esta transacción, comuníquese inmediatamente con BAC.
+      EMAIL
+    end
+    let(:real_parser) do
+      real_parsing_rule # ensure parsing rule exists first
+      Services::EmailProcessing::Parser.new(real_email_account, real_email_data)
+    end
+
+    it 'creates a persisted expense with the fields extracted by the real regex strategy' do
+      expect {
+        result = real_parser.parse_expense
+        expect(result).to be_a(Expense)
+        expect(result.amount).to eq(BigDecimal('95000.00'))
+        # Compare as a Date (not eq(Date...)) — transaction_date is stored as a
+        # time-bearing column, and `eq` does not coerce Time/Date for equality.
+        expect(result.transaction_date.to_date).to eq(Date.new(2025, 8, 1))
+        expect(result.merchant_name).to eq('PTA LEONA SOC')
+        expect(result.description).to eq('COMPRA')
+        expect(result.status).to eq('processed')
+        expect(result.currency).to eq('crc')
+      }.to change(Expense, :count).by(1)
+    end
+
+    it 'persists the raw email content and parsed_data JSON' do
+      expense = real_parser.parse_expense
+      expect(expense.raw_email_content).to include('PTA LEONA SOC')
+      expect(expense.parsed_data).to be_present
+      parsed_json = JSON.parse(expense.parsed_data)
+      expect(parsed_json['amount']).to eq('95000.0')
+      expect(parsed_json['merchant_name']).to eq('PTA LEONA SOC')
+    end
+
+    it 'auto-categorizes the expense when a matching CategorizationPattern exists' do
+      # NOTE: the original candidate test only created a bare Category with no
+      # CategorizationPattern, so the real Services::Categorization::Engine had
+      # nothing to match against and expense.category was always nil — a stale
+      # fixture, not a Parser/Engine regression (verified against the real
+      # engine directly). Fixed here by seeding the pattern the engine needs.
+      food_category = create(:category, name: 'Alimentación')
+      CategorizationPattern.create!(
+        category: food_category,
+        pattern_type: "merchant",
+        pattern_value: "restaurante",
+        confidence_weight: 3.0
+      )
+
+      food_email = real_email_data.merge(
+        body: <<~EMAIL
+          Comercio: RESTAURANTE LA COCINA Ciudad: SAN JOSE
+          Fecha: Ago 1, 2025, 14:16
+          Monto: CRC 50,000.00
+          Tipo de Transacción: COMPRA
+        EMAIL
+      )
+      real_parsing_rule # ensure parsing rule exists
+      food_parser = Services::EmailProcessing::Parser.new(real_email_account, food_email)
+
+      expense = food_parser.parse_expense
+      expect(expense).to be_a(Expense)
+      expect(expense.category&.name).to eq('Alimentación')
+    end
+
+    # Ported from parser_spec.rb — the pre_parsed_data kwarg (used when a job
+    # hands the Parser already-parsed data, e.g. after ActiveJob serialization)
+    # had zero coverage anywhere in the split unit/ files.
+    context 'with pre_parsed_data provided' do
+      let(:pre_parsed) do
+        {
+          amount: BigDecimal('95000.00'),
+          transaction_date: Date.new(2025, 8, 1),
+          merchant_name: 'PTA LEONA SOC',
+          description: 'COMPRA',
+          email_account_id: real_email_account.id,
+          raw_email_content: sample_bac_email
+        }
+      end
+
+      it 'skips StrategyFactory parsing when pre_parsed_data is available' do
+        real_parsing_rule
+        parser_with_pre_parsed = Services::EmailProcessing::Parser.new(
+          real_email_account, real_email_data, pre_parsed_data: pre_parsed
+        )
+
+        expect(Services::EmailProcessing::StrategyFactory).not_to receive(:create_strategy)
+
+        result = parser_with_pre_parsed.parse_expense
+        expect(result).to be_a(Expense)
+        expect(result.amount).to eq(BigDecimal('95000.00'))
+        expect(result.merchant_name).to eq('PTA LEONA SOC')
+      end
+
+      it 'falls back to StrategyFactory when pre_parsed_data is nil' do
+        real_parsing_rule
+        parser_without_pre_parsed = Services::EmailProcessing::Parser.new(
+          real_email_account, real_email_data, pre_parsed_data: nil
+        )
+
+        expect(Services::EmailProcessing::StrategyFactory).to receive(:create_strategy).and_call_original
+
+        result = parser_without_pre_parsed.parse_expense
+        expect(result).to be_a(Expense)
+      end
+
+      it 'converts String amount back to BigDecimal to preserve precision after ActiveJob serialization' do
+        string_amount_pre_parsed = pre_parsed.merge(amount: '95000.50')
+        real_parsing_rule
+        parser_with_string = Services::EmailProcessing::Parser.new(
+          real_email_account, real_email_data, pre_parsed_data: string_amount_pre_parsed
+        )
+
+        result = parser_with_string.parse_expense
+        expect(result).to be_a(Expense)
+        expect(result.amount).to eq(BigDecimal('95000.50'))
+        expect(result.amount).to be_a(BigDecimal)
+      end
+    end
+  end
 end

@@ -145,6 +145,39 @@ RSpec.describe SyncMetric, type: :model, unit: true do
 
         expect(metric).not_to be_valid # started_at is required
       end
+
+      # Ported from sync_metric_spec.rb — the positive computation path (and the
+      # "don't overwrite an already-set duration" guard) had no coverage here;
+      # only the nil-started_at invalid-record edge case was tested. Needs a
+      # real (persisted) sync_session since #save! hits the DB.
+      it "calculates duration in milliseconds when completed_at and started_at are present" do
+        real_sync_session = create(:sync_session)
+        metric = SyncMetric.new(
+          sync_session: real_sync_session,
+          user: real_sync_session.user,
+          metric_type: "email_fetch",
+          started_at: Time.current,
+          completed_at: Time.current + 5.seconds
+        )
+
+        metric.save!
+        expect(metric.duration).to be_within(10).of(5000) # 5 seconds = 5000ms
+      end
+
+      it "does not overwrite an already-set duration" do
+        real_sync_session = create(:sync_session)
+        metric = SyncMetric.new(
+          sync_session: real_sync_session,
+          user: real_sync_session.user,
+          metric_type: "email_fetch",
+          started_at: Time.current,
+          completed_at: Time.current + 5.seconds,
+          duration: 3000
+        )
+
+        metric.save!
+        expect(metric.duration).to eq(3000)
+      end
     end
   end
 
@@ -308,6 +341,33 @@ RSpec.describe SyncMetric, type: :model, unit: true do
       end
     end
 
+    # Ported from sync_metric_spec.rb — .error_distribution had zero coverage
+    # in this successor.
+    describe ".error_distribution" do
+      it "returns error types sorted by frequency" do
+        relation = double("relation")
+        failed = double("failed")
+        not_null = double("not_null")
+        grouped = double("grouped")
+        where_chain = double("where_chain")
+
+        expect(described_class).to receive(:last_24_hours).and_return(relation)
+        expect(relation).to receive(:failed).and_return(failed)
+        expect(failed).to receive(:where).with(no_args).and_return(where_chain)
+        expect(where_chain).to receive(:not).with(error_type: nil).and_return(not_null)
+        expect(not_null).to receive(:group).with(:error_type).and_return(grouped)
+        expect(grouped).to receive(:count).and_return({
+          "ParseError" => 1,
+          "ConnectionError" => 2
+        })
+
+        distribution = described_class.error_distribution
+
+        expect(distribution.keys.first).to eq("ConnectionError")
+        expect(distribution["ConnectionError"]).to eq(2)
+        expect(distribution["ParseError"]).to eq(1)
+      end
+    end
 
     describe ".hourly_performance" do
       it "groups metrics by hour" do

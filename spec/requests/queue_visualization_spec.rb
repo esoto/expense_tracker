@@ -4,14 +4,14 @@ require "rails_helper"
 
 RSpec.describe "Queue Visualization", type: :request, integration: true do
   # PR-12: Unified user.
+  # Session-based auth (security/queue-session-authz): queue API endpoints
+  # are now authorized via the signed-in admin session, not an X-Admin-Key
+  # header — auth_headers only needs Accept here.
   let(:admin_user) { create(:user, :admin) }
-  let(:admin_key) { "test_admin_key_for_queue" }
-  let(:auth_headers) { { "Accept" => "application/json", "X-Admin-Key" => admin_key } }
+  let(:auth_headers) { { "Accept" => "application/json" } }
 
   before do
     sign_in_admin(admin_user)
-    allow(Rails.application.credentials).to receive(:dig).and_call_original
-    allow(Rails.application.credentials).to receive(:dig).with(:admin_key).and_return(admin_key)
   end
 
   describe "Dashboard with queue visualization", integration: true do

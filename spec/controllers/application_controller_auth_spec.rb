@@ -87,7 +87,6 @@ RSpec.describe ApplicationController, type: :controller, unit: true do
         Api::BaseController,
         Api::WebhooksController,
         Api::HealthController,
-        Api::QueueController,
         Api::MonitoringController,
         Api::SyncSessionsController,
         Api::V1::CategoriesController
@@ -117,7 +116,10 @@ RSpec.describe ApplicationController, type: :controller, unit: true do
         SyncConflictsController,
         SyncSessionsController,
         BulkCategorizationsController,
-        BulkCategorizationActionsController
+        BulkCategorizationActionsController,
+        # security/queue-session-authz: queue mgmt now requires a real
+        # session (previously skipped in favor of ApiToken/admin_key/dev bypass).
+        Api::QueueController
       ]
     end
 

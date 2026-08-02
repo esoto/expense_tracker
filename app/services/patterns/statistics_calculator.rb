@@ -267,7 +267,13 @@ module Services::Patterns
     end
 
     def calculate_monthly_growth
-      current_month_count = base_scope.where(created_at: Date.current.beginning_of_month..).count
+      # created_at is a tz-aware timestamp column; Date.current must be
+      # anchored via #in_time_zone before beginning_of_month — a bare Date
+      # method converts via the system/server zone rather than the app's
+      # configured Time.zone (same fix as MetricsCalculator, PR #561).
+      # 1.month.ago is already TimeWithZone (Time.current-based), so it
+      # doesn't need it.
+      current_month_count = base_scope.where(created_at: Date.current.in_time_zone.beginning_of_month..).count
       last_month_count = base_scope.where(created_at: 1.month.ago.beginning_of_month..1.month.ago.end_of_month).count
 
       return 0 if last_month_count.zero?

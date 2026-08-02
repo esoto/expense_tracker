@@ -283,8 +283,11 @@ RSpec.describe Services::DashboardService, integration: true do
       end
 
       it 'does not include future expenses in current month' do
+        # Built via #in_time_zone (the app's configured Time.zone), NOT bare
+        # Date#beginning_of_month/end_of_day, to match how DashboardService
+        # actually anchors the boundary (twin of MetricsCalculator, PR #561).
         current_month_expenses = Expense.where(
-          transaction_date: Date.current.beginning_of_month..Date.current.end_of_month
+          transaction_date: Date.current.in_time_zone.beginning_of_month..Date.current.in_time_zone.end_of_month
         ).sum(:amount)
 
         analytics = service.analytics

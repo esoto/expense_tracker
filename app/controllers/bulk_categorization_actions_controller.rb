@@ -146,14 +146,19 @@ class BulkCategorizationActionsController < ApplicationController
 
     # Apply date filters using parameterized queries. transaction_date is a
     # timestamp column so bracket the day-aligned bound with beginning/end_of_day.
+    #
+    # IMPORTANT: parse_date returns a bare Date; anchor it via #in_time_zone
+    # before calling beginning_of_day/end_of_day — otherwise the boundary
+    # converts via the system/server zone rather than the app's configured
+    # Time.zone (same fix as MetricsCalculator, PR #561).
     if filters[:date_from].present?
       date_from = parse_date(filters[:date_from])
-      scope = scope.where("transaction_date >= ?", date_from.beginning_of_day) if date_from
+      scope = scope.where("transaction_date >= ?", date_from.in_time_zone.beginning_of_day) if date_from
     end
 
     if filters[:date_to].present?
       date_to = parse_date(filters[:date_to])
-      scope = scope.where("transaction_date <= ?", date_to.end_of_day) if date_to
+      scope = scope.where("transaction_date <= ?", date_to.in_time_zone.end_of_day) if date_to
     end
 
     # Use Arel for safe LIKE queries instead of string interpolation

@@ -13,10 +13,15 @@ class SyncSessionsController < ApplicationController
     @email_accounts = EmailAccount.active.order(:bank_name, :email)
     # Additional data for enhanced UI
     @active_accounts_count = EmailAccount.active.count
+    # created_at/completed_at are tz-aware timestamp columns; anchor via
+    # #in_time_zone — a bare Date#beginning_of_day/end_of_day chain (or a
+    # naive Date..Date range) converts/casts via the system/Postgres
+    # session zone rather than the app's configured Time.zone (same fix as
+    # MetricsCalculator, PR #561).
     @today_sync_count = SyncSession.for_user(scoping_user)
-                                   .where(created_at: Date.current.beginning_of_day..Date.current.end_of_day).count
+                                   .where(created_at: Date.current.in_time_zone.all_day).count
     @monthly_expenses_detected = SyncSession.for_user(scoping_user).completed
-                                            .where(completed_at: Date.current.beginning_of_month..Date.current.end_of_month)
+                                            .where(completed_at: Date.current.in_time_zone.beginning_of_month..Date.current.in_time_zone.end_of_month)
                                             .sum(:detected_expenses)
     @last_completed_session = SyncSession.for_user(scoping_user).completed.recent.first
   end

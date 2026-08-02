@@ -224,6 +224,149 @@ RSpec.describe Services::ExpenseFilterService, type: :service do
         expect(result.performance_metrics[:index_used]).to be true
       end
     end
+
+    # REGRESSION: twin of the MetricsCalculator timezone boundary bug (PR
+    # #561) / ExpensesController (PR #564). #calculate_period_range,
+    # #filter_by_dates, and #parse_date_range used to build transaction_date
+    # range endpoints via bare Date#beginning_of_day/end_of_day, which
+    # convert through the system/Postgres session time zone rather than the
+    # app's configured Time.zone ("Central America", -06:00) — so expenses
+    # exactly at local midnight could land on the wrong side of a
+    # period/filter boundary. Fixed by anchoring every endpoint via
+    # #in_time_zone.
+    context "with expenses exactly at local midnight boundaries" do
+      before { Expense.where(email_account: email_account).delete_all }
+
+      context "with a period filter" do
+        let(:service) do
+          described_class.new(account_ids: [ email_account.id ], period: "month")
+        end
+
+        before do
+          # 00:00:00 local time on the first day of the current month — must count
+          Expense.create!(
+            email_account: email_account,
+            user: email_account.user,
+            amount: 10.00,
+            transaction_date: Date.current.beginning_of_month.in_time_zone.beginning_of_day,
+            merchant_name: "Boundary Start",
+            currency: "crc"
+          )
+
+          # 23:59:59 local time on the last day of the current month — must count
+          Expense.create!(
+            email_account: email_account,
+            user: email_account.user,
+            amount: 20.00,
+            transaction_date: Date.current.end_of_month.in_time_zone.end_of_day,
+            merchant_name: "Boundary End",
+            currency: "crc"
+          )
+
+          # 00:00:00 local time the day AFTER the month ends — must NOT count
+          Expense.create!(
+            email_account: email_account,
+            user: email_account.user,
+            amount: 999.00,
+            transaction_date: (Date.current.end_of_month + 1.day).in_time_zone.beginning_of_day,
+            merchant_name: "Outside Boundary",
+            currency: "crc"
+          )
+        end
+
+        it "includes both midnight-boundary expenses and excludes the one after the period ends" do
+          result = service.call
+          expect(result.total_count).to eq(2)
+          expect(result.expenses.map(&:amount)).to contain_exactly(10.00, 20.00)
+        end
+      end
+
+      context "with an explicit date_from/date_to range" do
+        let(:from_date) { Date.current - 5.days }
+        let(:to_date) { Date.current - 3.days }
+        let(:service) do
+          described_class.new(account_ids: [ email_account.id ], date_from: from_date, date_to: to_date)
+        end
+
+        before do
+          Expense.create!(
+            email_account: email_account,
+            user: email_account.user,
+            amount: 10.00,
+            transaction_date: from_date.in_time_zone.beginning_of_day,
+            merchant_name: "Boundary Start",
+            currency: "crc"
+          )
+
+          Expense.create!(
+            email_account: email_account,
+            user: email_account.user,
+            amount: 20.00,
+            transaction_date: to_date.in_time_zone.end_of_day,
+            merchant_name: "Boundary End",
+            currency: "crc"
+          )
+
+          Expense.create!(
+            email_account: email_account,
+            user: email_account.user,
+            amount: 999.00,
+            transaction_date: (to_date + 1.day).in_time_zone.beginning_of_day,
+            merchant_name: "Outside Boundary",
+            currency: "crc"
+          )
+        end
+
+        it "includes both midnight-boundary expenses and excludes the one after the range ends" do
+          result = service.call
+          expect(result.total_count).to eq(2)
+          expect(result.expenses.map(&:amount)).to contain_exactly(10.00, 20.00)
+        end
+      end
+
+      context "with traditional start_date/end_date filters" do
+        let(:start_date) { Date.current - 5.days }
+        let(:end_date) { Date.current - 3.days }
+        let(:service) do
+          described_class.new(account_ids: [ email_account.id ], start_date: start_date, end_date: end_date)
+        end
+
+        before do
+          Expense.create!(
+            email_account: email_account,
+            user: email_account.user,
+            amount: 10.00,
+            transaction_date: start_date.in_time_zone.beginning_of_day,
+            merchant_name: "Boundary Start",
+            currency: "crc"
+          )
+
+          Expense.create!(
+            email_account: email_account,
+            user: email_account.user,
+            amount: 20.00,
+            transaction_date: end_date.in_time_zone.end_of_day,
+            merchant_name: "Boundary End",
+            currency: "crc"
+          )
+
+          Expense.create!(
+            email_account: email_account,
+            user: email_account.user,
+            amount: 999.00,
+            transaction_date: (end_date + 1.day).in_time_zone.beginning_of_day,
+            merchant_name: "Outside Boundary",
+            currency: "crc"
+          )
+        end
+
+        it "includes both midnight-boundary expenses and excludes the one after the range ends" do
+          result = service.call
+          expect(result.total_count).to eq(2)
+          expect(result.expenses.map(&:amount)).to contain_exactly(10.00, 20.00)
+        end
+      end
+    end
   end
 
   describe "#to_json" do

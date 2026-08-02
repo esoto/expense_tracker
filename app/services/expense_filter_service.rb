@@ -199,17 +199,23 @@ module Services
       return scope.where(transaction_date: date_range) if date_range
     end
 
-    # Handle dashboard date_from and date_to parameters. transaction_date
-    # is a timestamp column, so bracket by beginning/end of day in app zone.
+    # Handle dashboard date_from and date_to parameters.
+    #
+    # IMPORTANT: transaction_date is a tz-aware timestamp column. Bare
+    # Date#beginning_of_day/end_of_day convert via the system/server zone
+    # rather than the app's configured Time.zone, so expenses near local
+    # midnight could land on the wrong side of the boundary. Anchoring
+    # every endpoint via #in_time_zone avoids that ambiguity (same fix as
+    # MetricsCalculator#calculate_date_range, PR #561).
     if date_from.present? && date_to.present?
-      return scope.where(transaction_date: date_from.to_date.beginning_of_day..date_to.to_date.end_of_day)
+      return scope.where(transaction_date: date_from.to_date.in_time_zone.beginning_of_day..date_to.to_date.in_time_zone.end_of_day)
     end
 
     # Handle traditional start_date and end_date parameters
     return scope unless start_date.present? || end_date.present?
 
-    scope = scope.where("transaction_date >= ?", start_date.to_date.beginning_of_day) if start_date
-    scope = scope.where("transaction_date <= ?", end_date.to_date.end_of_day) if end_date
+    scope = scope.where("transaction_date >= ?", start_date.to_date.in_time_zone.beginning_of_day) if start_date
+    scope = scope.where("transaction_date <= ?", end_date.to_date.in_time_zone.end_of_day) if end_date
     scope
   end
 
@@ -251,16 +257,21 @@ module Services
   def calculate_period_range(period)
     # transaction_date is a timestamp column, so boundaries must be Times
     # (not Dates) to bracket the full day in the app's configured zone.
+    #
+    # IMPORTANT: must NOT chain bare Date#beginning_of_day/end_of_day —
+    # those convert via the system/server zone rather than the app's
+    # configured Time.zone. Anchoring via #in_time_zone first avoids that
+    # ambiguity (same fix as MetricsCalculator#calculate_date_range, PR #561).
     today = Date.current
     case period
     when "day", "today"
-      today.beginning_of_day..today.end_of_day
+      today.in_time_zone.all_day
     when "week"
-      today.beginning_of_week.beginning_of_day..today.end_of_week.end_of_day
+      today.in_time_zone.beginning_of_week..today.in_time_zone.end_of_week
     when "month"
-      today.beginning_of_month.beginning_of_day..today.end_of_month.end_of_day
+      today.in_time_zone.beginning_of_month..today.in_time_zone.end_of_month
     when "year"
-      today.beginning_of_year.beginning_of_day..today.end_of_year.end_of_day
+      today.in_time_zone.beginning_of_year..today.in_time_zone.end_of_year
     else
       nil
     end
@@ -323,20 +334,25 @@ module Services
   end
 
   def parse_date_range(range)
+    # IMPORTANT: anchor every Date-derived endpoint via #in_time_zone — bare
+    # Date#beginning_of_day/end_of_day convert via the system/server zone
+    # rather than the app's configured Time.zone (same fix as
+    # MetricsCalculator#calculate_date_range, PR #561). 30/90.days.ago are
+    # already TimeWithZone (Time.current-based), so they don't need it.
     today = Date.current
     case range.to_s
     when "today"
-      { start: today.beginning_of_day, end: today.end_of_day }
+      { start: today.in_time_zone.beginning_of_day, end: today.in_time_zone.end_of_day }
     when "week"
-      { start: today.beginning_of_week.beginning_of_day, end: today.end_of_week.end_of_day }
+      { start: today.in_time_zone.beginning_of_week, end: today.in_time_zone.end_of_week }
     when "month"
-      { start: today.beginning_of_month.beginning_of_day, end: today.end_of_month.end_of_day }
+      { start: today.in_time_zone.beginning_of_month, end: today.in_time_zone.end_of_month }
     when "year"
-      { start: today.beginning_of_year.beginning_of_day, end: today.end_of_year.end_of_day }
+      { start: today.in_time_zone.beginning_of_year, end: today.in_time_zone.end_of_year }
     when "last_30_days"
-      { start: 30.days.ago.beginning_of_day, end: today.end_of_day }
+      { start: 30.days.ago.beginning_of_day, end: today.in_time_zone.end_of_day }
     when "last_90_days"
-      { start: 90.days.ago.beginning_of_day, end: today.end_of_day }
+      { start: 90.days.ago.beginning_of_day, end: today.in_time_zone.end_of_day }
     else
       {}
     end

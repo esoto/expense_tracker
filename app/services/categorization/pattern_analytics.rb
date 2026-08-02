@@ -119,8 +119,11 @@ module Services::Categorization
     def fetch_feedback_counts(window_start, window_end)
       return {} unless defined?(PatternFeedback) && PatternFeedback.table_exists?
 
+      # created_at is a tz-aware timestamp column; anchor both endpoints via
+      # #in_time_zone so expenses near local midnight land on the correct
+      # side of the window (same fix as MetricsCalculator, PR #561).
       PatternFeedback
-        .where(created_at: window_start.beginning_of_day..window_end.end_of_day)
+        .where(created_at: window_start.in_time_zone.beginning_of_day..window_end.in_time_zone.end_of_day)
         .group(Arel.sql("DATE(created_at)"), :was_correct)
         .count
         .each_with_object({}) do |((date, was_correct), count), hash|

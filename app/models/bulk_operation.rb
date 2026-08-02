@@ -37,9 +37,13 @@ class BulkOperation < ApplicationRecord
   scope :undoable, -> { where(status: :completed, undone_at: nil).where("created_at > ?", 24.hours.ago) }
   scope :by_user, ->(user_id) { where(user_id: user_id) }
   scope :for_user, ->(u) { where(user_id: u.id) }
-  scope :today, -> { where(created_at: Date.current.all_day) }
-  scope :this_week, -> { where(created_at: Date.current.all_week) }
-  scope :this_month, -> { where(created_at: Date.current.all_month) }
+  # created_at is a tz-aware timestamp column; anchor via #in_time_zone —
+  # bare Date#all_day/all_week/all_month build boundaries via the
+  # system/server zone rather than the app's configured Time.zone (same
+  # fix as MetricsCalculator#calculate_date_range, PR #561).
+  scope :today, -> { where(created_at: Date.current.in_time_zone.all_day) }
+  scope :this_week, -> { where(created_at: Date.current.in_time_zone.all_week) }
+  scope :this_month, -> { where(created_at: Date.current.in_time_zone.all_month) }
 
   # Callbacks
   before_validation :set_defaults

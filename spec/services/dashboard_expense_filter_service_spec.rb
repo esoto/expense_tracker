@@ -60,10 +60,13 @@ RSpec.describe Services::DashboardExpenseFilterService, type: :service do
     it "handles period-based filtering" do
       service = described_class.new(base_params.merge(period: "week"))
 
-      # Period bounds are Times so range queries on the timestamp
-      # transaction_date column bracket the full day in the app zone.
-      expect(service.start_date).to eq(Date.current.beginning_of_week.beginning_of_day)
-      expect(service.end_date).to eq(Date.current.end_of_week.end_of_day)
+      # Period bounds are Times, anchored via #in_time_zone (the app's
+      # configured Time.zone) — NOT bare Date#beginning_of_day/end_of_day,
+      # which convert via the system/server zone (twin of MetricsCalculator,
+      # PR #561) — so range queries on the timestamp transaction_date
+      # column bracket the full day in the app zone.
+      expect(service.start_date).to eq(Date.current.in_time_zone.beginning_of_week)
+      expect(service.end_date).to eq(Date.current.in_time_zone.end_of_week)
     end
   end
 
@@ -316,15 +319,17 @@ RSpec.describe Services::DashboardExpenseFilterService, type: :service do
       # Comparing Time to a plain Date coerces the Date as 00:00 UTC, which
       # breaks at zone boundaries — e.g. a Sunday fixture at 00:00 -0600 is
       # 06:00 UTC, which is *after* end_of_week (Sun 00:00 UTC). Compare
-      # Time-to-Time using .beginning_of_day / .end_of_day so both sides
-      # share the configured zone.
+      # Time-to-Time using #in_time_zone so both sides share the app's
+      # configured Time.zone (twin of MetricsCalculator, PR #561) — a bare
+      # Date#beginning_of_day/end_of_day chain converts via the
+      # system/server zone instead.
       context "week filter" do
         let(:params) { base_params.merge(period: "week") }
 
         it "returns current week's expenses" do
           dates = result.expenses.map(&:transaction_date)
-          expect(dates.min).to be >= Date.current.beginning_of_week.beginning_of_day
-          expect(dates.max).to be <= Date.current.end_of_week.end_of_day
+          expect(dates.min).to be >= Date.current.in_time_zone.beginning_of_week
+          expect(dates.max).to be <= Date.current.in_time_zone.end_of_week
         end
       end
 
@@ -333,9 +338,48 @@ RSpec.describe Services::DashboardExpenseFilterService, type: :service do
 
         it "returns current month's expenses" do
           dates = result.expenses.map(&:transaction_date)
-          expect(dates.min).to be >= Date.current.beginning_of_month.beginning_of_day
-          expect(dates.max).to be <= Date.current.end_of_month.end_of_day
+          expect(dates.min).to be >= Date.current.in_time_zone.beginning_of_month
+          expect(dates.max).to be <= Date.current.in_time_zone.end_of_month
         end
+      end
+    end
+
+    # REGRESSION: twin of the MetricsCalculator timezone boundary bug (PR
+    # #561) / ExpensesController (PR #564). #calculate_period_dates used to
+    # build transaction_date range endpoints via bare Date#beginning_of_day/
+    # end_of_day, which convert through the system/Postgres session time
+    # zone rather than the app's configured Time.zone ("Central America",
+    # -06:00) — so expenses exactly at local midnight could land on the
+    # wrong side of the Recent Expenses period boundary. Fixed by anchoring
+    # every endpoint via #in_time_zone.
+    context "with expenses exactly at local midnight boundaries (Recent Expenses period filter)" do
+      before { Expense.where(email_account: email_account).delete_all }
+
+      let(:params) { base_params.merge(period: "month") }
+
+      before do
+        # 00:00:00 local time on the first day of the current month — must count
+        create(:expense,
+          email_account: email_account,
+          amount: 10.00,
+          transaction_date: Date.current.beginning_of_month.in_time_zone.beginning_of_day)
+
+        # 23:59:59 local time on the last day of the current month — must count
+        create(:expense,
+          email_account: email_account,
+          amount: 20.00,
+          transaction_date: Date.current.end_of_month.in_time_zone.end_of_day)
+
+        # 00:00:00 local time the day AFTER the month ends — must NOT count
+        create(:expense,
+          email_account: email_account,
+          amount: 999.00,
+          transaction_date: (Date.current.end_of_month + 1.day).in_time_zone.beginning_of_day)
+      end
+
+      it "includes both midnight-boundary expenses and excludes the one after the period ends" do
+        expect(result.total_count).to eq(2)
+        expect(result.expenses.map(&:amount).map(&:to_f)).to contain_exactly(10.00, 20.00)
       end
     end
 

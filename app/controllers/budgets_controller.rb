@@ -285,9 +285,12 @@ class BudgetsController < ApplicationController
       lookback_days = 30
     end
 
+    # transaction_date is a tz-aware timestamp column; anchor both endpoints
+    # via #in_time_zone so expenses near local midnight land on the
+    # correct side of the window (same fix as MetricsCalculator, PR #561).
     start_date = Date.current - lookback_days.days
     average_spend = email_account.expenses
-      .where(transaction_date: start_date.beginning_of_day..Date.current.end_of_day)
+      .where(transaction_date: start_date.in_time_zone.beginning_of_day..Date.current.in_time_zone.end_of_day)
       .average(:amount) || 0
 
     # Suggest 10% more than average to provide some buffer

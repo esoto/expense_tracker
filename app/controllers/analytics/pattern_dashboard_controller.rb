@@ -245,7 +245,12 @@ module Analytics
           start_date = max_range_date
         end
 
-        start_date..end_date
+        # created_at is a tz-aware timestamp column; a bare Date..Date range
+        # gets emitted as a naive date literal that Postgres casts in its
+        # own session zone rather than the app's configured Time.zone.
+        # Anchoring both endpoints via #in_time_zone avoids that ambiguity
+        # (same fix as MetricsCalculator#calculate_date_range, PR #561).
+        start_date.in_time_zone.beginning_of_day..end_date.in_time_zone.end_of_day
       rescue Date::Error, ArgumentError => e
         Rails.logger.error "Date parsing error in analytics dashboard: #{e.message}"
         flash.now[:alert] = "Invalid date format. Using default date range."

@@ -47,9 +47,14 @@ class Expense < ApplicationRecord
   scope :for_user, ->(u) { where(user_id: u.id) }
   scope :recent, -> { order(transaction_date: :desc) }
   scope :by_status, ->(status) { where(status: status) }
+  # transaction_date is a tz-aware timestamp column; anchor every endpoint
+  # via #in_time_zone — bare Date#beginning_of_day/end_of_day convert via
+  # the system/server zone rather than the app's configured Time.zone, so
+  # expenses near local midnight can land on the wrong side of the
+  # boundary (same fix as MetricsCalculator#calculate_date_range, PR #561).
   scope :by_date_range, ->(start_date, end_date) {
-    range_start = start_date&.to_date&.beginning_of_day
-    range_end   = end_date&.to_date&.end_of_day
+    range_start = start_date&.to_date&.in_time_zone&.beginning_of_day
+    range_end   = end_date&.to_date&.in_time_zone&.end_of_day
     if range_start && range_end
       where(transaction_date: range_start..range_end)
     elsif range_start
@@ -63,10 +68,10 @@ class Expense < ApplicationRecord
   scope :by_amount_range, ->(min, max) { where(amount: min..max) }
   scope :uncategorized, -> { where(category: nil) }
   scope :this_month, -> {
-    where(transaction_date: Date.current.beginning_of_month.beginning_of_day..Date.current.end_of_month.end_of_day)
+    where(transaction_date: Date.current.in_time_zone.beginning_of_month..Date.current.in_time_zone.end_of_month)
   }
   scope :this_year, -> {
-    where(transaction_date: Date.current.beginning_of_year.beginning_of_day..Date.current.end_of_year.end_of_day)
+    where(transaction_date: Date.current.in_time_zone.beginning_of_year..Date.current.in_time_zone.end_of_year)
   }
 
   # Instance methods

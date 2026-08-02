@@ -234,8 +234,11 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
       allow(Expense).to receive(:includes).with(:category, :email_account).and_return(scope)
       allow(scope).to receive(:where).with(category: nil).and_return(scope)
 
-      expect(scope).to receive(:where).with("transaction_date >= ?", Date.parse("2023-01-01").beginning_of_day).ordered.and_return(scope)
-      expect(scope).to receive(:where).with("transaction_date <= ?", Date.parse("2023-12-31").end_of_day).ordered.and_return(scope)
+      # Anchored via #in_time_zone (the app's configured Time.zone), NOT
+      # bare Date#beginning_of_day/end_of_day, which convert via the
+      # system/server zone (twin of MetricsCalculator, PR #561).
+      expect(scope).to receive(:where).with("transaction_date >= ?", Date.parse("2023-01-01").in_time_zone.beginning_of_day).ordered.and_return(scope)
+      expect(scope).to receive(:where).with("transaction_date <= ?", Date.parse("2023-12-31").in_time_zone.end_of_day).ordered.and_return(scope)
       expect(scope).to receive(:limit).with(1000).and_return(expenses)
 
       post :auto_categorize, params: {

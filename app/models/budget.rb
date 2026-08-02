@@ -106,18 +106,26 @@ class Budget < ApplicationRecord
   # Instance methods
 
   # Calculate the current period's date range based on budget period type
+  #
+  # IMPORTANT: must NOT chain bare Date#beginning_of_day/end_of_day — those
+  # convert via the system/server zone rather than the app's configured
+  # Time.zone. This range is queried against transaction_date (a tz-aware
+  # datetime column, see #calculate_current_spend!), so a naive endpoint
+  # can land expenses near local midnight on the wrong side of the period
+  # boundary. Anchoring every endpoint via #in_time_zone avoids that
+  # ambiguity (same fix as MetricsCalculator#calculate_date_range, PR #561).
   def current_period_range
     reference_date = Date.current
 
     case period.to_sym
     when :daily
-      reference_date.beginning_of_day..reference_date.end_of_day
+      reference_date.in_time_zone.all_day
     when :weekly
-      reference_date.beginning_of_week.beginning_of_day..reference_date.end_of_week.end_of_day
+      reference_date.in_time_zone.beginning_of_week..reference_date.in_time_zone.end_of_week
     when :monthly
-      reference_date.beginning_of_month.beginning_of_day..reference_date.end_of_month.end_of_day
+      reference_date.in_time_zone.beginning_of_month..reference_date.in_time_zone.end_of_month
     when :yearly
-      reference_date.beginning_of_year.beginning_of_day..reference_date.end_of_year.end_of_day
+      reference_date.in_time_zone.beginning_of_year..reference_date.in_time_zone.end_of_year
     else
       raise "Invalid period: #{period}"
     end

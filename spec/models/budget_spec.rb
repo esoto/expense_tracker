@@ -139,13 +139,18 @@ RSpec.describe Budget, type: :model, integration: true do
   end
 
   describe '#current_period_range', integration: true do
+    # NOTE: expectations are built via #in_time_zone (the app's configured
+    # Time.zone), NOT bare Date#beginning_of_day/end_of_day — the latter
+    # convert via the system/server zone and would drift from what
+    # #current_period_range actually returns after the timezone fix (twin
+    # of MetricsCalculator#calculate_date_range, PR #561).
     context 'for daily budget' do
       let(:budget) { build(:budget, period: 'daily') }
 
       it 'returns today\'s date range' do
         range = budget.current_period_range
-        expect(range.begin).to eq(Date.current.beginning_of_day)
-        expect(range.end).to eq(Date.current.end_of_day)
+        expect(range.begin).to eq(Date.current.in_time_zone.beginning_of_day)
+        expect(range.end).to eq(Date.current.in_time_zone.end_of_day)
       end
     end
 
@@ -154,8 +159,8 @@ RSpec.describe Budget, type: :model, integration: true do
 
       it 'returns current week\'s date range' do
         range = budget.current_period_range
-        expect(range.begin).to eq(Date.current.beginning_of_week.beginning_of_day)
-        expect(range.end).to eq(Date.current.end_of_week.end_of_day)
+        expect(range.begin).to eq(Date.current.in_time_zone.beginning_of_week)
+        expect(range.end).to eq(Date.current.in_time_zone.end_of_week)
       end
     end
 
@@ -164,8 +169,8 @@ RSpec.describe Budget, type: :model, integration: true do
 
       it 'returns current month\'s date range' do
         range = budget.current_period_range
-        expect(range.begin).to eq(Date.current.beginning_of_month.beginning_of_day)
-        expect(range.end).to eq(Date.current.end_of_month.end_of_day)
+        expect(range.begin).to eq(Date.current.in_time_zone.beginning_of_month)
+        expect(range.end).to eq(Date.current.in_time_zone.end_of_month)
       end
     end
 
@@ -174,8 +179,8 @@ RSpec.describe Budget, type: :model, integration: true do
 
       it 'returns current year\'s date range' do
         range = budget.current_period_range
-        expect(range.begin).to eq(Date.current.beginning_of_year.beginning_of_day)
-        expect(range.end).to eq(Date.current.end_of_year.end_of_day)
+        expect(range.begin).to eq(Date.current.in_time_zone.beginning_of_year)
+        expect(range.end).to eq(Date.current.in_time_zone.end_of_year)
       end
     end
   end

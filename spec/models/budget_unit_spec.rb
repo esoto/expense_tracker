@@ -264,11 +264,16 @@ RSpec.describe Budget, type: :model, unit: true do
       end
 
       it "returns correct ranges for different periods" do
+        # NOTE: expectations are built via #in_time_zone (the app's
+        # configured Time.zone), NOT bare Date#beginning_of_day/end_of_day —
+        # the latter convert via the system/server zone and would drift
+        # from what #current_period_range actually returns after the
+        # timezone fix (twin of MetricsCalculator, PR #561).
         expected_ranges = {
-          daily: [ Date.new(2025, 1, 15).beginning_of_day, Date.new(2025, 1, 15).end_of_day ],
-          weekly: [ Date.new(2025, 1, 13).beginning_of_day, Date.new(2025, 1, 19).end_of_day ], # Monday to Sunday
-          monthly: [ Date.new(2025, 1, 1).beginning_of_day, Date.new(2025, 1, 31).end_of_day ],
-          yearly: [ Date.new(2025, 1, 1).beginning_of_day, Date.new(2025, 12, 31).end_of_day ]
+          daily: [ Date.new(2025, 1, 15).in_time_zone.beginning_of_day, Date.new(2025, 1, 15).in_time_zone.end_of_day ],
+          weekly: [ Date.new(2025, 1, 13).in_time_zone.beginning_of_day, Date.new(2025, 1, 19).in_time_zone.end_of_day ], # Monday to Sunday
+          monthly: [ Date.new(2025, 1, 1).in_time_zone.beginning_of_day, Date.new(2025, 1, 31).in_time_zone.end_of_day ],
+          yearly: [ Date.new(2025, 1, 1).in_time_zone.beginning_of_day, Date.new(2025, 12, 31).in_time_zone.end_of_day ]
         }
 
         expected_ranges.each do |period, (expected_start, expected_end)|

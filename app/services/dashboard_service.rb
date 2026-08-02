@@ -55,11 +55,18 @@ module Services
     )
 
     # Single query for both monthly totals using conditional aggregation (was 2 queries)
+    #
+    # IMPORTANT: transaction_date is a tz-aware timestamp column. Bare
+    # Date#beginning_of_month/end_of_day convert via the system/server zone
+    # rather than the app's configured Time.zone, so expenses near local
+    # midnight could land on the wrong side of the boundary. Anchoring
+    # every endpoint via #in_time_zone avoids that ambiguity (same fix as
+    # MetricsCalculator#calculate_date_range, PR #561).
     today = Date.current
-    current_month_start  = today.beginning_of_month
-    current_month_end    = today.end_of_month.end_of_day
-    last_month_start     = 1.month.ago.to_date.beginning_of_month
-    last_month_end       = 1.month.ago.to_date.end_of_month.end_of_day
+    current_month_start  = today.in_time_zone.beginning_of_month
+    current_month_end    = today.in_time_zone.end_of_month
+    last_month_start     = 1.month.ago.to_date.in_time_zone.beginning_of_month
+    last_month_end       = 1.month.ago.to_date.in_time_zone.end_of_month
 
     current_filter_sql = ActiveRecord::Base.sanitize_sql_array([
       "COALESCE(SUM(amount) FILTER (WHERE transaction_date BETWEEN ? AND ?), 0)",
@@ -101,8 +108,11 @@ module Services
   end
 
   def monthly_trend
+    # Date.current.end_of_month must be anchored via #in_time_zone — a bare
+    # Date#end_of_day chain converts via the system/server zone rather than
+    # the app's configured Time.zone (see calculate_totals above).
     Expense.where(
-      transaction_date: 6.months.ago.beginning_of_month..Date.current.end_of_month.end_of_day
+      transaction_date: 6.months.ago.beginning_of_month..Date.current.in_time_zone.end_of_month
     ).group_by_month(:transaction_date)
      .sum(:amount)
      .transform_values(&:to_f)

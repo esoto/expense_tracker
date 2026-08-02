@@ -344,20 +344,27 @@ class DashboardExpenseFilterService < ExpenseFilterService
   def calculate_period_dates(period)
     # transaction_date is a timestamp column, so boundaries must be Times
     # (not Dates) to bracket the full day in the app's configured zone.
+    #
+    # IMPORTANT: must NOT chain bare Date#beginning_of_day/end_of_day —
+    # those convert via the system/server zone rather than the app's
+    # configured Time.zone. Anchoring via #in_time_zone first avoids that
+    # ambiguity (same fix as MetricsCalculator#calculate_date_range, PR
+    # #561). 7/30.days.ago are already TimeWithZone (Time.current-based),
+    # so they don't need it.
     today = Date.current
     case period.to_s
     when "today", "day"
-      { start: today.beginning_of_day, end: today.end_of_day }
+      { start: today.in_time_zone.beginning_of_day, end: today.in_time_zone.end_of_day }
     when "week"
-      { start: today.beginning_of_week.beginning_of_day, end: today.end_of_week.end_of_day }
+      { start: today.in_time_zone.beginning_of_week, end: today.in_time_zone.end_of_week }
     when "month"
-      { start: today.beginning_of_month.beginning_of_day, end: today.end_of_month.end_of_day }
+      { start: today.in_time_zone.beginning_of_month, end: today.in_time_zone.end_of_month }
     when "year"
-      { start: today.beginning_of_year.beginning_of_day, end: today.end_of_year.end_of_day }
+      { start: today.in_time_zone.beginning_of_year, end: today.in_time_zone.end_of_year }
     when "last_7_days"
-      { start: 7.days.ago.beginning_of_day, end: today.end_of_day }
+      { start: 7.days.ago.beginning_of_day, end: today.in_time_zone.end_of_day }
     when "last_30_days"
-      { start: 30.days.ago.beginning_of_day, end: today.end_of_day }
+      { start: 30.days.ago.beginning_of_day, end: today.in_time_zone.end_of_day }
     else
       {}
     end

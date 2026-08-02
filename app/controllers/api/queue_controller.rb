@@ -3,11 +3,17 @@
 module Api
   # API controller for queue monitoring and management
   # Provides endpoints for real-time queue status, control operations, and job management
+  #
+  # Authorization: standard session auth + CSRF apply (inherited from
+  # UserAuthentication via ApplicationController). Read-only endpoints
+  # (status, metrics, health) require any authenticated session user;
+  # state-changing endpoints require an admin session. This closes a
+  # security-audit finding where any valid ApiToken (or the dev-env bypass)
+  # could pause/resume queues and retry/clear arbitrary jobs.
   class QueueController < ApplicationController
-    skip_before_action :require_authentication
-    skip_before_action :check_session_expiry
-    skip_before_action :verify_authenticity_token
-    before_action :authenticate_queue_access!
+    ADMIN_ONLY_ACTIONS = %i[ pause resume retry_job clear_job retry_all_failed ].freeze
+
+    before_action :require_admin_json!, only: ADMIN_ONLY_ACTIONS
     before_action :set_job, only: [ :retry_job, :clear_job ]
 
     # GET /api/queue/status.json
@@ -264,41 +270,21 @@ module Api
       Rails.logger.error "Error al transmitir actualización de trabajo: #{e.message}"
     end
 
-    # Authentication for queue access - supports both API token and admin session
-    def authenticate_queue_access!
-      # Option 1: API token authentication (for automated systems)
-      token = request.headers["Authorization"]&.remove("Bearer ")
-      if token.present?
-        api_token = ApiToken.authenticate(token)
-        if api_token&.valid_token?
-          api_token.touch_last_used!
-          return true
-        end
-      end
+    # Admin-only authorization for state-changing queue actions. Renders JSON
+    # directly (not via respond_to) so the response shape/status is
+    # deterministic regardless of format negotiation — this is a JSON API
+    # consumed by fetch(), never an HTML client. Mirrors
+    # Api::ClientErrorsController#require_json_authentication, which returns
+    # JSON instead of redirecting to the login page.
+    def require_admin_json!
+      return if admin_signed_in?
 
-      # Option 2: Admin session authentication (for web interface)
-      # Check for admin access via environment variable or session
-      admin_key = Rails.application.credentials.dig(:admin_key) || ENV["ADMIN_KEY"]
+      Rails.logger.warn "[SECURITY] Intento de acceso no autorizado a la gestión de cola desde IP: #{request.remote_ip}, usuario: #{current_app_user&.id}"
 
-      if admin_key.present?
-        # Allow access if admin key matches (timing-safe comparison)
-        provided_key = params[:admin_key] || request.headers["X-Admin-Key"]
-        return true if provided_key.present? && ActiveSupport::SecurityUtils.secure_compare(provided_key, admin_key)
-      end
-
-      # Option 3: Development environment bypass
-      return true if Rails.env.development?
-
-      # Log unauthorized access attempt
-      Rails.logger.warn "[SECURITY] Intento de acceso no autorizado a la cola desde IP: #{request.remote_ip}, User-Agent: #{request.headers['User-Agent']}"
-
-      # Return error response
       render json: {
         success: false,
         error: "Acceso no autorizado. La gestión de cola requiere privilegios de administrador."
-      }, status: :unauthorized
-
-      false
+      }, status: :forbidden
     end
   end
 end

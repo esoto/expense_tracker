@@ -360,9 +360,10 @@ RSpec.describe BulkCategorizationActionsController, type: :controller, unit: tru
         post :undo, params: { id: operation_id }, format: :json
       end
 
-      it "creates undo service with operation" do
+      it "creates undo service with operation and current user" do
         expect(Services::BulkCategorization::UndoService).to receive(:new).with(
-          bulk_operation: bulk_operation
+          bulk_operation: bulk_operation,
+          undone_by: current_user
         )
         post :undo, params: { id: operation_id }, format: :json
       end

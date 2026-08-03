@@ -53,7 +53,7 @@ class BulkOperation < ApplicationRecord
     completed? && undone_at.nil? && created_at > 24.hours.ago
   end
 
-  def undo!
+  def undo!(undone_by: nil)
     return false unless undoable?
 
     transaction do
@@ -72,7 +72,7 @@ class BulkOperation < ApplicationRecord
       update!(
         status: :undone,
         undone_at: Time.current,
-        metadata: metadata.merge("undone_by" => Current.user_id || "system")
+        metadata: metadata.merge("undone_by" => undone_by&.id || "system")
       )
 
       # Create undo operation record

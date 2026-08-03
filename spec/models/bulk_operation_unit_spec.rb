@@ -241,6 +241,7 @@ RSpec.describe BulkOperation, type: :model, unit: true do
     let(:item2) { instance_double(BulkOperationItem) }
     let(:expense1) { instance_double(Expense) }
     let(:expense2) { instance_double(Expense) }
+    let(:undo_user) { instance_double(User, id: 200) }
 
     before do
       allow(operation).to receive(:undoable?).and_return(true)
@@ -248,14 +249,6 @@ RSpec.describe BulkOperation, type: :model, unit: true do
       allow(operation).to receive(:transaction).and_yield
       allow(operation).to receive(:update!).and_return(true)
       allow(BulkOperation).to receive(:create!).and_return(true)
-
-      # Mock Current.user_id
-      current_class = Class.new do
-        def self.user_id
-          200
-        end
-      end
-      stub_const("Current", current_class)
 
       # Setup items
       allow(item1).to receive(:expense).and_return(expense1)
@@ -286,24 +279,24 @@ RSpec.describe BulkOperation, type: :model, unit: true do
           categorization_method: nil
         )
 
-        operation.undo!
+        operation.undo!(undone_by: undo_user)
       end
 
       it "marks items as undone" do
         expect(item1).to receive(:update!).with(status: "undone")
         expect(item2).to receive(:update!).with(status: "undone")
 
-        operation.undo!
+        operation.undo!(undone_by: undo_user)
       end
 
-      it "updates operation status and undone_at" do
+      it "updates operation status and undone_at with provided user" do
         expect(operation).to receive(:update!) do |args|
           expect(args[:status]).to eq(:undone)
           expect(args[:undone_at]).to be_a(Time)
           expect(args[:metadata]).to eq({ "undone_by" => 200 })
         end
 
-        operation.undo!
+        operation.undo!(undone_by: undo_user)
       end
 
       it "creates undo operation record" do
@@ -316,11 +309,27 @@ RSpec.describe BulkOperation, type: :model, unit: true do
           expect(args[:metadata]).to have_key(:undone_at)
         end
 
-        operation.undo!
+        operation.undo!(undone_by: undo_user)
       end
 
       it "returns true on success" do
+        expect(operation.undo!(undone_by: undo_user)).to be true
+      end
+
+      it "succeeds with no arguments and records system as undo_by" do
+        expect(operation).to receive(:update!) do |args|
+          expect(args[:metadata]).to eq({ "undone_by" => "system" })
+        end
+
         expect(operation.undo!).to be true
+      end
+
+      it "records the acting user in metadata when provided" do
+        expect(operation).to receive(:update!) do |args|
+          expect(args[:metadata]).to eq({ "undone_by" => 200 })
+        end
+
+        operation.undo!(undone_by: undo_user)
       end
     end
 
@@ -334,7 +343,7 @@ RSpec.describe BulkOperation, type: :model, unit: true do
         expect(operation).not_to receive(:update!)
         expect(BulkOperation).not_to receive(:create!)
 
-        expect(operation.undo!).to be false
+        expect(operation.undo!(undone_by: undo_user)).to be false
       end
     end
 
@@ -346,11 +355,11 @@ RSpec.describe BulkOperation, type: :model, unit: true do
 
       it "logs the error" do
         expect(Rails.logger).to receive(:error).with(/Failed to undo bulk operation 1: Database error/)
-        operation.undo!
+        operation.undo!(undone_by: undo_user)
       end
 
       it "returns false" do
-        expect(operation.undo!).to be false
+        expect(operation.undo!(undone_by: undo_user)).to be false
       end
     end
   end

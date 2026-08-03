@@ -229,7 +229,7 @@ class BulkCategorizationActionsController < ApplicationController
   end
 
   def build_undo_service(bulk_operation:)
-    Services::BulkCategorization::UndoService.new(bulk_operation: bulk_operation)
+    Services::BulkCategorization::UndoService.new(bulk_operation: bulk_operation, undone_by: current_user)
   end
 
   # SQL sanitization helper to prevent injection attacks

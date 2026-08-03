@@ -79,18 +79,20 @@ RSpec.describe "BulkCategorizationActions data isolation", type: :request, unit:
       expect(bulk_operation_a.reload.status).to eq("completed")
     end
 
-    it "lets the owner's request reach the undo service, unblocked by scoping (happy path)" do
-      # NOTE: doesn't assert the undo actually succeeds — BulkOperation#undo!
-      # has a pre-existing, unrelated bug (references an undefined `Current`
-      # constant) that makes it always fail; out of scope for this IDOR fix.
-      # This only asserts set_bulk_operation's for_user scoping doesn't block
-      # the owner the way it correctly blocks a cross-tenant request above.
+    it "lets the owner's request reach the undo service and succeed (happy path)" do
+      # BulkOperation#undo! now takes an explicit undone_by: parameter, fixing
+      # the previous bug where it referenced an undefined `Current` constant.
+      # This test asserts that set_bulk_operation's for_user scoping doesn't
+      # block the owner the way it correctly blocks cross-tenant requests above,
+      # AND that the undo succeeds end-to-end.
       sign_in_as(user_a)
 
-      post undo_bulk_categorization_path(bulk_operation_a), as: :json
+      expect {
+        post undo_bulk_categorization_path(bulk_operation_a), as: :json
+      }.to change { bulk_operation_a.reload.status }.from("completed").to("undone")
 
-      expect(response).not_to have_http_status(:not_found)
-      expect(JSON.parse(response.body)["error"]).not_to eq("Operation not found")
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)["success"]).to be true
     end
   end
 

@@ -5,19 +5,20 @@ module Services::BulkCategorization
   class UndoService
     include ActiveModel::Model
 
-    attr_accessor :bulk_operation
+    attr_accessor :bulk_operation, :undone_by
 
     validates :bulk_operation, presence: true
 
-    def initialize(bulk_operation:)
+    def initialize(bulk_operation:, undone_by: nil)
       @bulk_operation = bulk_operation
+      @undone_by = undone_by
     end
 
     def call
       return failure_result("Operation cannot be undone") unless bulk_operation&.undoable?
 
       ActiveRecord::Base.transaction do
-        if bulk_operation.undo!
+        if bulk_operation.undo!(undone_by: undone_by)
           success_result
         else
           failure_result("Failed to undo operation")

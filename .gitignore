@@ -63,3 +63,6 @@
 # debugging sessions. Intentional keeps should live under docs/ or
 # tmp/ and be committed explicitly.
 /*.png
+
+# Personal per-machine Claude Code settings — never commit
+.claude/settings.local.json

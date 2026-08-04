@@ -61,10 +61,15 @@ RSpec.describe CoveragePolicyValidator, unit: true do
       expect(load_data).to eq("app/models/expense.rb" => [ nil, 1 ])
     end
 
-    it "resolves relevance disagreement as not-relevant, like SimpleCov's combiner" do
-      # bootsnap ISeq caching can make the same line report 0 (relevant,
-      # uncovered) in one worker and nil (not relevant) in another. SimpleCov
-      # merges that to nil; counting it as 0 would inflate the denominator.
+    it "resolves relevance disagreement as not-relevant (nil-wins)" do
+      # On SimpleCov <= 0.22, a worker that never loaded a tracked file gets
+      # its coverage fabricated by LinesClassifier — a regex line scanner
+      # (see simplecov-ruby/simplecov#654) that can't tell multi-line
+      # literals or bare `when`/`else`/`end` from real statements, roughly
+      # doubling the file's apparent line count with all-zero fabricated
+      # hits. nil-wins discards those fabricated stubs in favor of a worker
+      # that actually ran the file; an inclusive rule would union the
+      # fabricated lines in and understate coverage instead.
       stub_resultset(
         "integration-tests-100" => {
           "timestamp" => 100,

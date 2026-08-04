@@ -432,8 +432,8 @@ GEM
       concurrent-ruby (~> 1.0, >= 1.0.2)
       logger
     sexp_processor (4.17.5)
-    shoulda-matchers (7.0.1)
-      activesupport (>= 7.1)
+    shoulda-matchers (8.0.1)
+      activesupport (>= 7.2)
     simplecov (1.0.3)
     solid_cable (4.0.2)
       actioncable (>= 7.2)
@@ -568,7 +568,7 @@ DEPENDENCIES
   rubocop-rails-omakase
   selenium-webdriver
   sentry-rails (~> 6.6)
-  shoulda-matchers (~> 7.0)
+  shoulda-matchers (~> 8.0)
   simplecov (~> 1.0.3)
   solid_cable
   solid_cache

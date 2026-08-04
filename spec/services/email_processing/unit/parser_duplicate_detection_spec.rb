@@ -212,8 +212,8 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         allow(parser).to receive(:find_duplicate_expense).and_return(existing_expense)
       end
 
-      it 'updates existing expense status to duplicate' do
-        expect(existing_expense).to receive(:update).with(status: :duplicate)
+      it 'does NOT mutate the existing expense status — it is the survivor, not the duplicate' do
+        expect(existing_expense).not_to receive(:update)
         parser.send(:create_expense, parsed_data)
       end
 
@@ -240,42 +240,6 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       it 'does not call category guessing' do
         expect(parser).not_to receive(:categorize_expense)
         parser.send(:create_expense, parsed_data)
-      end
-
-      context 'when update fails' do
-        before do
-          allow(existing_expense).to receive(:update).and_return(false)
-        end
-
-        it 'still returns the existing expense' do
-          result = parser.send(:create_expense, parsed_data)
-          expect(result).to eq(existing_expense)
-        end
-
-        it 'still adds duplicate error' do
-          parser.send(:create_expense, parsed_data)
-          expect(parser.errors).to include('Duplicate expense found')
-        end
-      end
-
-      context 'when update raises error' do
-        before do
-          allow(existing_expense).to receive(:update).and_raise(StandardError, 'Update failed')
-        end
-
-        it 'rescues the error' do
-          # The error should bubble up since there's no rescue in the create_expense method for update failures
-          expect { parser.send(:create_expense, parsed_data) }.to raise_error(StandardError, 'Update failed')
-        end
-
-        it 'raises the error' do
-          expect { parser.send(:create_expense, parsed_data) }.to raise_error(StandardError, 'Update failed')
-        end
-
-        it 'does not add error message since exception is raised' do
-          expect { parser.send(:create_expense, parsed_data) }.to raise_error(StandardError)
-          # Errors are not added when exception is raised
-        end
       end
     end
 
@@ -550,26 +514,30 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         allow(parser).to receive(:find_duplicate_expense).and_return(existing_expense)
       end
 
-      it 'changes status from pending to duplicate' do
-        expect(existing_expense).to receive(:update).with(status: :duplicate)
+      # Regression coverage for the duplicate-status-flip bug: regardless of
+      # the survivor's prior status, create_expense must never mutate it —
+      # the pre-existing expense is legitimate and the incoming email is the
+      # duplicate, not the other way around.
+      it 'leaves a pending existing expense untouched' do
+        expect(existing_expense).not_to receive(:update)
         parser.send(:create_expense, parsed_data)
       end
 
-      it 'changes status from processed to duplicate' do
+      it 'leaves a processed existing expense untouched' do
         allow(existing_expense).to receive(:status).and_return('processed')
-        expect(existing_expense).to receive(:update).with(status: :duplicate)
+        expect(existing_expense).not_to receive(:update)
         parser.send(:create_expense, parsed_data)
       end
 
-      it 'changes status from error to duplicate' do
-        allow(existing_expense).to receive(:status).and_return('error')
-        expect(existing_expense).to receive(:update).with(status: :duplicate)
+      it 'leaves a failed existing expense untouched' do
+        allow(existing_expense).to receive(:status).and_return('failed')
+        expect(existing_expense).not_to receive(:update)
         parser.send(:create_expense, parsed_data)
       end
 
-      it 'updates already duplicate status' do
+      it 'leaves an already-duplicate existing expense untouched' do
         allow(existing_expense).to receive(:status).and_return('duplicate')
-        expect(existing_expense).to receive(:update).with(status: :duplicate)
+        expect(existing_expense).not_to receive(:update)
         parser.send(:create_expense, parsed_data)
       end
     end
@@ -664,13 +632,13 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         allow(new_expense).to receive(:save).and_raise(ActiveRecord::RecordNotUnique.new('duplicate key'))
       end
 
-      it 'rescues RecordNotUnique and returns existing duplicate' do
+      it 'rescues RecordNotUnique, returns the winner of the race, and does NOT mutate its status' do
         allow(Expense).to receive(:where).and_return(expense_relation)
         allow(expense_relation).to receive(:first).and_return(conflicting_expense)
 
         result = parser.send(:create_expense, parsed_data)
 
-        expect(conflicting_expense).to have_received(:update).with(status: :duplicate)
+        expect(conflicting_expense).not_to have_received(:update)
         expect(result).to eq(conflicting_expense)
       end
 
@@ -692,6 +660,77 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         expect(result).to be_nil
         expect(parser.errors).to include('Duplicate expense conflict but original not found')
       end
+    end
+  end
+
+  # Real-database regression coverage for the duplicate-status-flip bug
+  # (Obsidian follow-up #7, surfaced during the PR #562 review). Unlike the
+  # instance_double-based specs above, this round-trips a REAL persisted
+  # Expense through the parser so the assertions can't be satisfied by a
+  # mock that merely "isn't called" — they verify the actual DB row and the
+  # actual production scope (Expense.by_status) a dashboard/filter view
+  # would query. These fail on main today (main flips the survivor's status
+  # to :duplicate and drops it out of the `by_status(:processed)` scope).
+  describe 'real database integration — duplicate email does not corrupt the survivor', unit: true do
+    let(:real_parsing_rule) { create(:parsing_rule, :bac, bank_name: "TEST_DUPSEM_BANK") }
+    let(:real_email_account) { create(:email_account, :bac, bank_name: "TEST_DUPSEM_BANK") }
+    let(:real_email_data) do
+      {
+        message_id: 456,
+        from: 'notifications@bac.net',
+        subject: 'Notificación de transacción',
+        date: 'Wed, 02 Aug 2025 14:16:00 +0000',
+        body: 'irrelevant — pre_parsed_data bypasses the strategy parser'
+      }
+    end
+
+    let!(:existing_expense) do
+      real_parsing_rule # ensure the parsing rule exists before the account is used
+      create(:expense, :processed,
+        email_account: real_email_account,
+        user: real_email_account.user,
+        amount: BigDecimal('100.00'),
+        transaction_date: Date.current,
+        merchant_name: 'Test Merchant',
+        bank_name: "TEST_DUPSEM_BANK")
+    end
+
+    let(:duplicate_pre_parsed) do
+      {
+        amount: BigDecimal('100.00'),
+        transaction_date: Date.current,
+        merchant_name: 'Test Merchant',
+        description: 'Duplicate notification of the same purchase'
+      }
+    end
+
+    let(:duplicate_parser) do
+      Services::EmailProcessing::Parser.new(real_email_account, real_email_data, pre_parsed_data: duplicate_pre_parsed)
+    end
+
+    it 'does not create a new expense row for the duplicate email' do
+      expect { duplicate_parser.parse_expense }.not_to change(Expense, :count)
+    end
+
+    it 'keeps the pre-existing expense processed (does not flip it to duplicate)' do
+      duplicate_parser.parse_expense
+      expect(existing_expense.reload.status).to eq('processed')
+    end
+
+    it 'reports the duplicate via parser errors' do
+      duplicate_parser.parse_expense
+      expect(duplicate_parser.errors).to include('Duplicate expense found')
+    end
+
+    it 'returns the untouched existing expense from parse_expense' do
+      result = duplicate_parser.parse_expense
+      expect(result).to eq(existing_expense)
+    end
+
+    it 'still appears in the status-filtered scope a dashboard/filter view would use' do
+      duplicate_parser.parse_expense
+      expect(Expense.by_status(:processed)).to include(existing_expense)
+      expect(Expense.by_status(:duplicate)).not_to include(existing_expense)
     end
   end
 end

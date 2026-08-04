@@ -88,7 +88,13 @@ module Services::EmailProcessing
         end
 
         if existing_expense
-          existing_expense.update(status: :duplicate)
+          # Do NOT flip the pre-existing (legitimate, already-processed)
+          # expense's status here — it is the survivor, not the duplicate.
+          # The incoming email is the duplicate; it is discarded (no new
+          # Expense row is created) and recorded via add_error's log line
+          # instead of mutating data. See PR fixing duplicate-status
+          # semantics — flipping this record's status previously made a
+          # real expense silently vanish from any status-scoped total.
           add_error("Duplicate expense found")
           return existing_expense
         end
@@ -149,7 +155,9 @@ module Services::EmailProcessing
       ).first
 
       if existing
-        existing.update(status: :duplicate)
+        # Same rationale as the find_duplicate_expense branch above: `existing`
+        # is the legitimate, already-persisted expense that won the unique-
+        # index race — it is not the duplicate and must keep its own status.
         add_error("Duplicate expense detected via unique constraint")
         existing
       else

@@ -336,14 +336,17 @@ RSpec.describe ProcessEmailJob, type: :job, integration: true do
       expect(ProcessedEmail.where(message_id: '7')).to be_empty
     end
 
-    it 'records a ProcessedEmail when the expense is marked as duplicate' do
+    it 'records a ProcessedEmail for the duplicate email without corrupting the original expense status' do
       ProcessEmailJob.new.perform(email_account.id, email_data_with_rfc_id)
 
       expect {
         ProcessEmailJob.new.perform(email_account.id, email_data_with_rfc_id.merge(rfc_message_id: '<resent-copy@mail.gmail.com>'))
       }.to change(Expense, :count).by(0).and change(ProcessedEmail, :count).by(1)
 
-      expect(Expense.last.status).to eq('duplicate')
+      # The original expense is the survivor, not the duplicate — its status
+      # must stay `processed`. See fix(parser): stop flagging the existing
+      # expense as duplicate when a duplicate email arrives.
+      expect(Expense.last.status).to eq('processed')
     end
 
     it 'does not record a ProcessedEmail when parsing fails (non-terminal outcome)' do

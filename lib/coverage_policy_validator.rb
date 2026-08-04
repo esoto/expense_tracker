@@ -134,11 +134,20 @@ class CoveragePolicyValidator
 
         merged[file_path] = if merged.key?(file_path)
           merged[file_path].zip(lines).map do |a, b|
-            # SimpleCov::Combine::LinesCombiner semantics: when entries
-            # disagree on relevance (0 in one, nil in another — bootsnap
-            # ISeq caching causes this across workers), the line is NOT
-            # relevant. Naive to_i summing would count it as uncovered
-            # and inflate the denominator.
+            # When entries disagree on relevance (0 in one, nil in another), the
+            # line is NOT relevant ("nil-wins") — this is correct, not a mirror of
+            # SimpleCov's own combiner. On SimpleCov <= 0.22, the `rails` profile's
+            # track_files glob backfills any app/lib file a worker never `require`d
+            # via LinesClassifier, a regex line scanner that marks every non-blank,
+            # non-comment line "relevant" with 0 hits — unable to tell a multi-line
+            # hash/array literal or bare `end`/`else`/`when` from a real statement.
+            # Evidence: one file's 4-worker resultset had two workers that actually
+            # ran it report relevant=250 covered=243/177, and two that never loaded
+            # it fabricate relevant=528 covered=0; nil-wins discards those stubs.
+            # Bootsnap is NOT the cause — DISABLE_BOOTSNAP=1 produced identical
+            # results. SimpleCov >= 1.0 (PR #569) fixes this upstream via
+            # Coverage.line_stub, shrinking the effect to ~0.2% — nil-wins stays as
+            # defense-in-depth in case fabricated stubs reappear.
             sum = a.to_i + b.to_i
             sum.zero? && (a.nil? || b.nil?) ? nil : sum
           end

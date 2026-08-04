@@ -36,7 +36,7 @@ gem "jwt"
 gem "rack-attack"
 
 # APM and error tracking
-gem "sentry-rails", "~> 6.5"
+gem "sentry-rails", "~> 6.6"
 
 # Date and text parsing
 gem "chronic"

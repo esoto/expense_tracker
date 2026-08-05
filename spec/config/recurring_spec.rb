@@ -48,6 +48,36 @@ RSpec.describe "Recurring tasks configuration", :unit do
     end
   end
 
+  describe "time zone pinning" do
+    # solid_queue >= 1.5 added an engine initializer that defaults any entry
+    # missing time_zone: to config.time_zone ("Central America", UTC-6) via
+    # SolidQueue::RecurringTask. Before 1.5, unpinned schedules ran in
+    # process-local time (UTC in the container). We assert PRESENCE of an
+    # explicit time_zone rather than a specific value: a future job may
+    # legitimately want a different zone (e.g. "America/Costa_Rica"), and
+    # this guard only needs to catch entries that forgot to make that choice
+    # deliberately, not enforce which zone they picked.
+    it "declares an explicit time_zone for every production job entry" do
+      missing = production_recurring.select { |_name, cfg| cfg.is_a?(Hash) }
+        .reject { |_name, cfg| cfg.key?("time_zone") }
+        .keys
+
+      expect(missing).to be_empty,
+        "Recurring task entries missing an explicit time_zone (solid_queue >= 1.5 " \
+        "otherwise defaults to config.time_zone, silently shifting the schedule): " \
+        "#{missing.join(', ')}"
+    end
+
+    it "declares a non-blank time_zone value for every production job entry" do
+      blank = production_recurring.select { |_name, cfg| cfg.is_a?(Hash) && cfg.key?("time_zone") }
+        .select { |_name, cfg| cfg["time_zone"].nil? || cfg["time_zone"].to_s.strip.empty? }
+        .keys
+
+      expect(blank).to be_empty,
+        "Recurring task entries with a blank time_zone: #{blank.join(', ')}"
+    end
+  end
+
   describe "Solid Queue is the active scheduler" do
     it "recurring.yml exists with a production section" do
       expect(File.exist?(Rails.root.join("config", "recurring.yml"))).to be true

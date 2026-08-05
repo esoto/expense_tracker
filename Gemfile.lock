@@ -98,7 +98,7 @@ GEM
     benchmark-trend (0.4.0)
     bigdecimal (4.1.2)
     bindex (0.8.1)
-    bootsnap (1.24.5)
+    bootsnap (1.24.6)
       msgpack (~> 1.2)
     brakeman (8.0.5)
       racc
@@ -226,7 +226,7 @@ GEM
     minitest (6.0.6)
       drb (~> 2.0)
       prism (~> 1.5)
-    msgpack (1.8.0)
+    msgpack (1.8.4)
     multi_json (1.17.0)
     net-imap (0.6.6)
       date

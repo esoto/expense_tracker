@@ -1,5 +1,14 @@
 # Recurring jobs configuration for Solid Queue
 # These jobs run automatically on the specified schedules
+#
+# Every entry below pins an explicit time_zone. solid_queue >= 1.5 added an
+# engine initializer that defaults RecurringTask#time_zone to
+# config.time_zone ("Central America", UTC-6) for any entry that omits it.
+# Before 1.5, unpinned schedules were interpreted in process-local time
+# (UTC in the container). Pinning "UTC" here preserves today's behavior so
+# schedule changes stay deliberate rather than a side effect of a gem
+# upgrade; moving a job to Costa Rica local time later is then a one-line
+# intentional edit.
 
 default: &default
   # Calculate metrics for all email accounts every hour
@@ -9,12 +18,14 @@ default: &default
     queue: default
     priority: 5
     schedule: every hour at minute 5
+    time_zone: "UTC"
     description: "Pre-calculate expense metrics for all active email accounts"
 
   # Clean up old finished jobs periodically
   clear_solid_queue_finished_jobs:
     command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
     schedule: every 6 hours at minute 30
+    time_zone: "UTC"
     description: "Clean up completed Solid Queue jobs to prevent database bloat"
 
   # Clean up old broadcast analytics data and recovered failed broadcast records hourly
@@ -23,6 +34,7 @@ default: &default
     queue: low
     priority: 10
     schedule: every hour at minute 15
+    time_zone: "UTC"
     description: "Clean up old broadcast analytics data and recovered failed broadcast records"
 
   # Retry failed broadcasts from the dead letter queue every 30 minutes
@@ -31,6 +43,7 @@ default: &default
     queue: low
     priority: 10
     schedule: every 30 minutes
+    time_zone: "UTC"
     description: "Retry failed broadcasts from the dead letter queue"
 
   # Feed uncorrected categorizations into categorization vectors daily ("silence = acceptance")
@@ -39,6 +52,7 @@ default: &default
     queue: low
     priority: 10
     schedule: every day at 3am
+    time_zone: "UTC"
     description: "Learn from uncorrected categorizations to improve similarity-based matching"
 
   # Clean up stale categorization vectors monthly (last_seen_at > 6 months)
@@ -47,6 +61,7 @@ default: &default
     queue: low
     priority: 10
     schedule: every month
+    time_zone: "UTC"
     description: "Remove stale categorization vectors not seen in 6+ months"
 
   # Weekly categorization metrics summary with ONNX trigger warnings
@@ -55,6 +70,7 @@ default: &default
     queue: low
     priority: 10
     schedule: every Sunday at 6am
+    time_zone: "UTC"
     description: "Compute weekly categorization performance summary and evaluate ONNX trigger warnings"
 
   # Clean up expired LLM categorization cache entries monthly
@@ -63,6 +79,7 @@ default: &default
     queue: low
     priority: 10
     schedule: every month
+    time_zone: "UTC"
     description: "Remove expired LLM categorization cache entries"
 
   # Run data quality audit daily to check pattern coverage and detect issues
@@ -71,6 +88,7 @@ default: &default
     queue: low
     priority: 10
     schedule: every day at 3am
+    time_zone: "UTC"
     description: "Run data quality audit to check pattern coverage, detect duplicates, and identify issues"
 
   # Purge email parsing failures older than 30 days. raw_email_content holds
@@ -81,6 +99,7 @@ default: &default
     queue: low
     priority: 10
     schedule: every day at 4am
+    time_zone: "UTC"
     description: "Purge email parsing failures older than 30 days (PER-496 retention)"
 
   # Purge SolidQueue::FailedExecution rows older than 30 days. The existing
@@ -92,6 +111,7 @@ default: &default
     queue: low
     priority: 10
     schedule: every day at 4:15am
+    time_zone: "UTC"
     description: "Purge failed job executions older than 30 days (PER-503 retention)"
 
   # Purge QueuedEmailPayload rows past their retention window (2026-08 audit
@@ -103,6 +123,7 @@ default: &default
     queue: low
     priority: 10
     schedule: every day at 4:30am
+    time_zone: "UTC"
     description: "Purge encrypted queued-email payloads past their retention window (2026-08 audit)"
 
   # Pull the latest monthly budget from each active external budget source
@@ -111,6 +132,7 @@ default: &default
     command: "ExternalBudgetSource.active.find_each { |s| ExternalBudgets::PullJob.perform_later(s.id) }"
     queue: default
     schedule: every day at 6am
+    time_zone: "UTC"
     description: "Pull latest monthly budget from each active external source"
 
   # Nightly Postgres backup to Hetzner Storage Box.
@@ -137,14 +159,16 @@ development:
     queue: default
     priority: 5
     schedule: every 30 minutes
+    time_zone: "UTC"
     description: "Pre-calculate expense metrics for all active email accounts (dev mode)"
-  
+
   # Warm pattern cache more frequently in development for testing
   warm_pattern_cache:
     class: PatternCacheWarmerJob
     queue: low
     priority: 10
     schedule: every 5 minutes
+    time_zone: "UTC"
     description: "Pre-warm pattern cache with frequently used patterns (dev mode)"
 
 test:
@@ -161,4 +185,5 @@ production:
     queue: low
     priority: 10
     schedule: every 15 minutes
+    time_zone: "UTC"
     description: "Pre-warm pattern cache with frequently used patterns for optimal categorization performance"

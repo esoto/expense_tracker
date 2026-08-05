@@ -17,7 +17,10 @@ env:
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Suite runs ~3m17s-3m38s and keeps growing (8600+ examples). 5 min left almost no
+    # headroom and killed PR #572 mid-suite on a transient stall (silent timeout, no
+    # rspec summary, no test failures) rather than a real regression.
+    timeout-minutes: 12
 
     services:
       postgres:

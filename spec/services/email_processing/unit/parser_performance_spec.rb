@@ -345,12 +345,18 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         expect(query_count).to eq(1)
       end
 
-      it 'uses efficient date range query' do
+      it 'uses efficient same-calendar-day range query' do
+        # PER (data-loss fix): the +/-1-day range was replaced with a same-
+        # calendar-day range (anchored via #in_time_zone, matching the app's
+        # tz-aware date-range convention) as part of aligning the hard-
+        # discard duplicate matcher with the DB's unique partial index. See
+        # spec/services/email_processing/unit/parser_duplicate_detection_spec.rb
+        # for the full matching-rule coverage.
         parsed_data = { amount: BigDecimal('100'), transaction_date: Date.current }
 
         expense_relation = instance_double(ActiveRecord::Relation, first: nil)
         expect(Expense).to receive(:where).with(hash_including(
-          transaction_date: (Date.current - 1.day)..(Date.current + 1.day)
+          transaction_date: Date.current.in_time_zone.all_day
         )).and_return(expense_relation)
 
         parser.send(:find_duplicate_expense, parsed_data)

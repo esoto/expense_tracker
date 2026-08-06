@@ -43,14 +43,23 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       allow(expense_relation).to receive(:first).and_return(nil)
     end
 
-    describe 'date range calculation' do
-      it 'creates date range of ±1 day' do
-        expected_range = (base_date - 1.day)..(base_date + 1.day)
+    # PER (data-loss fix): the hard-discard matcher is now aligned with the
+    # DB's own idx_expenses_duplicate_check unique partial index (exact
+    # email_account_id + amount + merchant_name + transaction_date, WHERE
+    # deleted_at IS NULL) instead of a ±1-day/no-merchant fuzzy match. The
+    # old fuzzy match silently dropped legitimate same-amount expenses at
+    # different merchants — see 'duplicate detection scenarios' below for
+    # the regression coverage.
+    describe 'same-calendar-day range calculation' do
+      it 'creates a same-day range anchored via #in_time_zone' do
+        expected_range = base_date.in_time_zone.all_day
 
         expect(Expense).to receive(:where).with(
           email_account: email_account,
           amount: BigDecimal('100.00'),
-          transaction_date: expected_range
+          merchant_name: 'Test Merchant',
+          transaction_date: expected_range,
+          deleted_at: nil
         )
 
         parser.send(:find_duplicate_expense, parsed_data)
@@ -58,41 +67,40 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
 
       it 'handles dates at month boundaries' do
         parsed_data[:transaction_date] = Date.new(2025, 8, 1)
-        expected_range = Date.new(2025, 7, 31)..Date.new(2025, 8, 2)
+        expected_range = Date.new(2025, 8, 1).in_time_zone.all_day
 
-        expect(Expense).to receive(:where).with(
-          email_account: email_account,
-          amount: BigDecimal('100.00'),
-          transaction_date: expected_range
-        )
+        expect(Expense).to receive(:where).with(hash_including(transaction_date: expected_range))
 
         parser.send(:find_duplicate_expense, parsed_data)
       end
 
       it 'handles dates at year boundaries' do
         parsed_data[:transaction_date] = Date.new(2025, 1, 1)
-        expected_range = Date.new(2024, 12, 31)..Date.new(2025, 1, 2)
+        expected_range = Date.new(2025, 1, 1).in_time_zone.all_day
 
-        expect(Expense).to receive(:where).with(
-          email_account: email_account,
-          amount: BigDecimal('100.00'),
-          transaction_date: expected_range
-        )
+        expect(Expense).to receive(:where).with(hash_including(transaction_date: expected_range))
 
         parser.send(:find_duplicate_expense, parsed_data)
       end
 
       it 'handles leap year boundaries' do
         parsed_data[:transaction_date] = Date.new(2024, 2, 29)
-        expected_range = Date.new(2024, 2, 28)..Date.new(2024, 3, 1)
+        expected_range = Date.new(2024, 2, 29).in_time_zone.all_day
 
-        expect(Expense).to receive(:where).with(
-          email_account: email_account,
-          amount: BigDecimal('100.00'),
-          transaction_date: expected_range
-        )
+        expect(Expense).to receive(:where).with(hash_including(transaction_date: expected_range))
 
         parser.send(:find_duplicate_expense, parsed_data)
+      end
+
+      it 'does not span into the previous or next calendar day' do
+        expected_range = base_date.in_time_zone.all_day
+
+        expect(Expense).to receive(:where).with(hash_including(transaction_date: expected_range))
+
+        parser.send(:find_duplicate_expense, parsed_data)
+
+        expect(expected_range).not_to cover(base_date.in_time_zone.beginning_of_day - 1.second)
+        expect(expected_range).not_to cover(base_date.in_time_zone.end_of_day + 1.second)
       end
     end
 
@@ -107,13 +115,23 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         parser.send(:find_duplicate_expense, parsed_data)
       end
 
-      it 'uses transaction_date range' do
+      it 'uses a same-calendar-day transaction_date range' do
         expect(Expense).to receive(:where).with(hash_including(transaction_date: anything))
         parser.send(:find_duplicate_expense, parsed_data)
       end
 
-      it 'does not consider merchant_name for matching' do
-        expect(Expense).to receive(:where).with(hash_excluding(merchant_name: anything))
+      # This is the crux of the data-loss fix: merchant_name now MUST match.
+      # The removed test this replaces ("does not consider merchant_name for
+      # matching") encoded the bug — it asserted the exact condition that let
+      # a second, different-merchant purchase get silently discarded as a
+      # "duplicate" of an unrelated one.
+      it 'matches by exact merchant_name (was: ignored merchant_name entirely — the data-loss bug)' do
+        expect(Expense).to receive(:where).with(hash_including(merchant_name: 'Test Merchant'))
+        parser.send(:find_duplicate_expense, parsed_data)
+      end
+
+      it 'excludes soft-deleted expenses, mirroring the DB index WHERE clause' do
+        expect(Expense).to receive(:where).with(hash_including(deleted_at: nil))
         parser.send(:find_duplicate_expense, parsed_data)
       end
 
@@ -341,56 +359,73 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         allow(Expense).to receive(:where).and_return(expense_relation)
       end
 
-      it 'detects duplicate on same day' do
+      it 'detects duplicate on the same day, same merchant' do
         same_day = Date.new(2025, 8, 15)
         parsed_data[:transaction_date] = same_day
 
         expect(Expense).to receive(:where).with(
           email_account: email_account,
           amount: BigDecimal('100.00'),
-          transaction_date: (same_day - 1.day)..(same_day + 1.day)
+          merchant_name: 'Coffee Shop',
+          transaction_date: same_day.in_time_zone.all_day,
+          deleted_at: nil
         ).and_return(expense_relation)
 
         parser.send(:find_duplicate_expense, parsed_data)
       end
 
-      it 'detects duplicate one day before' do
+      # Regression coverage: the old ±1-day tolerance is GONE. A same-amount
+      # purchase one calendar day before/after is no longer matched at all —
+      # it is created as a brand-new expense (see 'duplicate detection
+      # scenarios' real-DB specs below for the end-to-end version of this).
+      it 'does not extend the query range to the day before' do
         parsed_data[:transaction_date] = Date.new(2025, 8, 15)
+        same_day_range = Date.new(2025, 8, 15).in_time_zone.all_day
 
-        range = Date.new(2025, 8, 14)..Date.new(2025, 8, 16)
-        expect(Expense).to receive(:where).with(
-          email_account: email_account,
-          amount: BigDecimal('100.00'),
-          transaction_date: range
-        ).and_return(expense_relation)
+        expect(Expense).to receive(:where).with(hash_including(transaction_date: same_day_range)).and_return(expense_relation)
 
         parser.send(:find_duplicate_expense, parsed_data)
+
+        expect(same_day_range).not_to cover(Date.new(2025, 8, 14).in_time_zone.end_of_day)
       end
 
-      it 'detects duplicate one day after' do
+      it 'does not extend the query range to the day after' do
         parsed_data[:transaction_date] = Date.new(2025, 8, 15)
+        same_day_range = Date.new(2025, 8, 15).in_time_zone.all_day
 
-        range = Date.new(2025, 8, 14)..Date.new(2025, 8, 16)
-        expect(Expense).to receive(:where).with(
-          email_account: email_account,
-          amount: BigDecimal('100.00'),
-          transaction_date: range
-        ).and_return(expense_relation)
+        expect(Expense).to receive(:where).with(hash_including(transaction_date: same_day_range)).and_return(expense_relation)
 
         parser.send(:find_duplicate_expense, parsed_data)
+
+        expect(same_day_range).not_to cover(Date.new(2025, 8, 16).in_time_zone.beginning_of_day)
       end
 
       it 'does not detect expense two days away' do
         parsed_data[:transaction_date] = Date.new(2025, 8, 15)
+        same_day_range = Date.new(2025, 8, 15).in_time_zone.all_day
 
-        # The range should be Aug 14-16, so Aug 13 or Aug 17 would not be included
-        range = Date.new(2025, 8, 14)..Date.new(2025, 8, 16)
-        expect(Expense).to receive(:where).with(
-          email_account: email_account,
-          amount: BigDecimal('100.00'),
-          transaction_date: range
-        ).and_return(expense_relation)
+        expect(Expense).to receive(:where).with(hash_including(transaction_date: same_day_range)).and_return(expense_relation)
 
+        parser.send(:find_duplicate_expense, parsed_data)
+      end
+    end
+
+    describe 'merchant-based duplicate detection' do
+      let(:expense_relation) { instance_double(ActiveRecord::Relation, first: nil) }
+
+      before do
+        allow(Expense).to receive(:where).and_return(expense_relation)
+      end
+
+      it 'requires exact merchant_name match' do
+        expect(Expense).to receive(:where).with(hash_including(merchant_name: 'Coffee Shop')).and_return(expense_relation)
+        parser.send(:find_duplicate_expense, parsed_data)
+      end
+
+      it 'passes through a different merchant_name unchanged (no fuzzy matching happens here)' do
+        parsed_data[:merchant_name] = 'Another Merchant'
+
+        expect(Expense).to receive(:where).with(hash_including(merchant_name: 'Another Merchant')).and_return(expense_relation)
         parser.send(:find_duplicate_expense, parsed_data)
       end
     end
@@ -404,18 +439,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
 
       it 'requires exact amount match' do
         expect(Expense).to receive(:where).with(
-          email_account: email_account,
-          amount: BigDecimal('100.00'),
-          transaction_date: anything
-        ).and_return(expense_relation)
-        parser.send(:find_duplicate_expense, parsed_data)
-      end
-
-      it 'does not match different amounts' do
-        expect(Expense).to receive(:where).with(
-          email_account: email_account,
-          amount: BigDecimal('100.00'),
-          transaction_date: anything
+          hash_including(email_account: email_account, amount: BigDecimal('100.00'))
         ).and_return(expense_relation)
         parser.send(:find_duplicate_expense, parsed_data)
       end
@@ -424,9 +448,7 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
         parsed_data[:amount] = BigDecimal('100.99')
 
         expect(Expense).to receive(:where).with(
-          email_account: email_account,
-          amount: BigDecimal('100.99'),
-          transaction_date: anything
+          hash_including(email_account: email_account, amount: BigDecimal('100.99'))
         ).and_return(expense_relation)
         parser.send(:find_duplicate_expense, parsed_data)
       end
@@ -441,20 +463,14 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
 
       it 'only checks same email account' do
         expect(Expense).to receive(:where).with(
-          email_account: email_account,
-          amount: BigDecimal('100.00'),
-          transaction_date: anything
+          hash_including(email_account: email_account, amount: BigDecimal('100.00'))
         ).and_return(expense_relation)
         parser.send(:find_duplicate_expense, parsed_data)
       end
 
       it 'uses exact email_account instance' do
-        different_account = instance_double(EmailAccount, email: 'other@example.com')
-
         expect(Expense).to receive(:where).with(
-          email_account: email_account,
-          amount: BigDecimal('100.00'),
-          transaction_date: anything
+          hash_including(email_account: email_account, amount: BigDecimal('100.00'))
         ).and_return(expense_relation)
         parser.send(:find_duplicate_expense, parsed_data)
       end
@@ -731,6 +747,96 @@ RSpec.describe Services::EmailProcessing::Parser, type: :service, unit: true do
       duplicate_parser.parse_expense
       expect(Expense.by_status(:processed)).to include(existing_expense)
       expect(Expense.by_status(:duplicate)).not_to include(existing_expense)
+    end
+  end
+
+  # Real-database regression coverage for the DATA-LOSS bug this PR fixes.
+  # These fail on main today: main's find_duplicate_expense ignores
+  # merchant_name and matches on email_account + amount + transaction_date
+  # within +/-1 day, so a second, different-merchant purchase of the same
+  # amount gets matched against the first and create_expense discards it —
+  # no second Expense row is ever created. This is the only duplicate guard
+  # on the iPhone Shortcuts webhook path (ProcessEmailJob with no
+  # sync_session skips Services::ConflictDetectionService entirely), so the
+  # bug is live in production for real users, e.g. two ₡5,000 lunches at
+  # different sodas on consecutive days.
+  describe 'real database integration — different merchants are never silently discarded (data-loss regression)', unit: true do
+    # Unlike the other describe blocks above, these specs go all the way
+    # through a real #expense.save (no pre-existing match short-circuits
+    # create_expense), which exercises categorize_expense ->
+    # Services::Categorization::Engine -> FuzzyMatcher, which calls
+    # ActiveRecord::Base.connection.extension_enabled?("pg_trgm"). The
+    # top-level `before` block stubs ActiveRecord::Base.connection to a
+    # bare instance_double (only #execute is stubbed, for the advisory
+    # lock) — restore the real connection here so the full save path works
+    # against the actual test database.
+    before do
+      allow(ActiveRecord::Base).to receive(:connection).and_call_original
+      # The full save path also fires Expense#trigger_metrics_refresh ->
+      # MetricsRefreshJob.enqueue_debounced -> Rails.logger.debug, which the
+      # top-level logger double (error/warn/info only) doesn't stub.
+      allow(logger).to receive(:debug)
+    end
+
+    let(:dl_parsing_rule) { create(:parsing_rule, :bac, bank_name: "TEST_DATALOSS_BANK") }
+    let(:dl_email_account) { create(:email_account, :bac, bank_name: "TEST_DATALOSS_BANK") }
+
+    let!(:first_expense) do
+      dl_parsing_rule
+      create(:expense, :processed,
+        email_account: dl_email_account,
+        user: dl_email_account.user,
+        amount: BigDecimal('5000.00'),
+        transaction_date: Date.new(2026, 1, 10),
+        merchant_name: 'Soda La Esquina',
+        bank_name: "TEST_DATALOSS_BANK")
+    end
+
+    def parser_for(pre_parsed)
+      Services::EmailProcessing::Parser.new(
+        dl_email_account,
+        { message_id: rand(1_000_000), from: 'notifications@bac.net', subject: 'x', date: 'Wed, 02 Aug 2025 14:16:00 +0000', body: 'irrelevant' },
+        pre_parsed_data: pre_parsed
+      )
+    end
+
+    it 'persists a same-amount purchase at a DIFFERENT merchant one day later' do
+      second_data = {
+        amount: BigDecimal('5000.00'),
+        transaction_date: Date.new(2026, 1, 11),
+        merchant_name: 'Restaurante El Patio',
+        description: 'Almuerzo'
+      }
+
+      expect { parser_for(second_data).parse_expense }.to change(Expense, :count).by(1)
+      expect(Expense.where(email_account: dl_email_account, amount: BigDecimal('5000.00')).count).to eq(2)
+    end
+
+    it 'persists a same-amount, same-day purchase at a DIFFERENT merchant' do
+      second_data = {
+        amount: BigDecimal('5000.00'),
+        transaction_date: Date.new(2026, 1, 10),
+        merchant_name: 'Restaurante El Patio',
+        description: 'Cena'
+      }
+
+      expect { parser_for(second_data).parse_expense }.to change(Expense, :count).by(1)
+      expect(Expense.where(email_account: dl_email_account, amount: BigDecimal('5000.00')).count).to eq(2)
+    end
+
+    it 'still discards a true duplicate: same amount, same merchant, same day' do
+      duplicate_data = {
+        amount: BigDecimal('5000.00'),
+        transaction_date: Date.new(2026, 1, 10),
+        merchant_name: 'Soda La Esquina',
+        description: 'Almuerzo, notificación repetida'
+      }
+
+      duplicate_parser = parser_for(duplicate_data)
+
+      expect { duplicate_parser.parse_expense }.not_to change(Expense, :count)
+      expect(duplicate_parser.errors).to include('Duplicate expense found')
+      expect(first_expense.reload.status).to eq('processed')
     end
   end
 end

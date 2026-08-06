@@ -192,13 +192,43 @@ module Services::EmailProcessing
     end
 
     def find_duplicate_expense(parsed_data)
-      # Look for expenses with same amount and date from same account within 1 day
-      date_range = (parsed_data[:transaction_date] - 1.day)..(parsed_data[:transaction_date] + 1.day)
+      # This is the ONLY duplicate guard on the iPhone Shortcuts webhook path
+      # (Api::WebhooksController#process_emails -> ProcessEmailJob with no
+      # sync_session): the smarter Services::ConflictDetectionService, which
+      # weighs amount/date/merchant/description/currency similarity, only
+      # runs when a sync_session is present. So this match must be precise
+      # enough to hard-discard the incoming expense on its own.
+      #
+      # Previously this matched on email_account + amount + transaction_date
+      # within +/-1 day and deliberately ignored merchant_name. That meant two
+      # genuinely different purchases of the same amount at different
+      # merchants within a day of each other silently lost the second one —
+      # find_duplicate_expense matched it against the first, and
+      # create_expense discarded it entirely (data loss).
+      #
+      # The rule now mirrors the DB's own idx_expenses_duplicate_check unique
+      # partial index: email_account_id + amount + merchant_name + exact
+      # transaction_date, WHERE deleted_at IS NULL. transaction_date is a
+      # datetime column, so "exact date" is expressed as a same-calendar-day
+      # range anchored via #in_time_zone (the app-wide convention for
+      # datetime-vs-Date comparisons — see Expense.by_date_range et al.)
+      # rather than a raw Date/Time equality check that could miss on a
+      # bare-midnight vs. real-timestamp mismatch.
+      #
+      # A same-amount/different-merchant (or different-day) email is no
+      # longer treated as a duplicate here at all — it is created normally.
+      # There is no near-duplicate/soft-conflict concept available outside a
+      # sync_session (SyncConflict requires one), so inventing one is out of
+      # scope for this fix; the DB unique index plus handle_record_not_unique
+      # below remain the last line of defense for true duplicates.
+      same_day_range = parsed_data[:transaction_date].in_time_zone.all_day
 
       Expense.where(
         email_account: email_account,
         amount: parsed_data[:amount],
-        transaction_date: date_range
+        merchant_name: parsed_data[:merchant_name],
+        transaction_date: same_day_range,
+        deleted_at: nil
       ).first
     end
 

@@ -192,8 +192,10 @@ module Services::Categorization
           return server_usage.web_search_requests if server_usage.respond_to?(:web_search_requests)
         end
 
-        # Fallback: count server_tool_use blocks in content
-        response.content.count { |b| b.respond_to?(:type) && b.type == "server_tool_use" }
+        # Fallback: count server_tool_use blocks in content.
+        # block.type is a Symbol (:server_tool_use) in the anthropic gem — compare
+        # loosely or this never matches (see app/services/budgets/mapping_llm_resolver.rb).
+        response.content.count { |b| b.respond_to?(:type) && b.type.to_s == "server_tool_use" }
       end
 
       def calculate_cost(input_tokens, output_tokens, search_count)

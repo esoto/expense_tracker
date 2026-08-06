@@ -133,7 +133,7 @@ RSpec.describe Services::Categorization::Llm::Client, :unit do
     let(:anthropic_client) { instance_double(Anthropic::Client) }
     let(:messages_api) { instance_double(Anthropic::Resources::Messages) }
     let(:usage) { double("Usage", input_tokens: 150, output_tokens: 10, server_tool_use: nil) }
-    let(:text_block) { double("TextBlock", text: "food", type: "text") }
+    let(:text_block) { double("TextBlock", text: "food", type: :text) }
     let(:response) do
       double("Message", content: [ text_block ], usage: usage, stop_reason: "end_turn")
     end
@@ -180,7 +180,7 @@ RSpec.describe Services::Categorization::Llm::Client, :unit do
     it "extracts category key from verbose response" do
       verbose_block = double("TextBlock",
         text: "Based on my search, this is a hardware_store in Costa Rica.",
-        type: "text")
+        type: :text)
       allow(verbose_block).to receive(:respond_to?).with(:text).and_return(true)
       allow(verbose_block).to receive(:respond_to?).with(:type).and_return(true)
       verbose_response = double("Message", content: [ verbose_block ], usage: usage, stop_reason: "end_turn")
@@ -194,7 +194,7 @@ RSpec.describe Services::Categorization::Llm::Client, :unit do
     it "prefers longer key matches to avoid substring collisions" do
       ambiguous_block = double("TextBlock",
         text: "This is a hardware_store, not a regular home store.",
-        type: "text")
+        type: :text)
       allow(ambiguous_block).to receive(:respond_to?).with(:text).and_return(true)
       allow(ambiguous_block).to receive(:respond_to?).with(:type).and_return(true)
       ambiguous_response = double("Message", content: [ ambiguous_block ], usage: usage, stop_reason: "end_turn")
@@ -206,7 +206,7 @@ RSpec.describe Services::Categorization::Llm::Client, :unit do
     end
 
     context "when stop_reason is pause_turn (web search in progress)" do
-      let(:search_block) { double("ServerToolUse", type: "server_tool_use") }
+      let(:search_block) { double("ServerToolUse", type: :server_tool_use) }
       let(:pause_response) do
         double("Message",
           content: [ search_block ],
@@ -231,6 +231,21 @@ RSpec.describe Services::Categorization::Llm::Client, :unit do
         expect(result[:response_text]).to eq("food")
         expect(result[:token_count][:input]).to eq(650) # 500 + 150
       end
+
+      it "counts the server_tool_use block via the content fallback (usage.server_tool_use unavailable)" do
+        # search_block.type is a Symbol (:server_tool_use), matching the real
+        # anthropic gem. Before the fix this fallback compared against the
+        # String "server_tool_use" and could never match, so search_count
+        # (and its cost contribution) was silently always zero here.
+        result = client.categorize(prompt_text: prompt_text)
+
+        # total_input: 500 + 150 = 650, total_output: 5 + 10 = 15,
+        # total_searches: 1 (from the pause_response fallback count)
+        expected_cost = (650 * Services::Categorization::Llm::Client::INPUT_COST_PER_TOKEN) +
+          (15 * Services::Categorization::Llm::Client::OUTPUT_COST_PER_TOKEN) +
+          (1 * Services::Categorization::Llm::Client::SEARCH_COST_PER_QUERY)
+        expect(result[:cost]).to be_within(0.0000001).of(expected_cost)
+      end
     end
 
     context "when search continuations are exhausted" do
@@ -244,7 +259,7 @@ RSpec.describe Services::Categorization::Llm::Client, :unit do
           content: [ double("Block").tap { |b|
             allow(b).to receive(:respond_to?).with(:text).and_return(false)
             allow(b).to receive(:respond_to?).with(:type).and_return(true)
-            allow(b).to receive(:type).and_return("server_tool_use")
+            allow(b).to receive(:type).and_return(:server_tool_use)
           } ],
           usage: pause_usage,
           stop_reason: "pause_turn")
@@ -264,7 +279,7 @@ RSpec.describe Services::Categorization::Llm::Client, :unit do
 
     context "when response contains no recognizable category key" do
       let(:gibberish_block) do
-        double("TextBlock", text: "I cannot determine what this merchant sells", type: "text").tap do |b|
+        double("TextBlock", text: "I cannot determine what this merchant sells", type: :text).tap do |b|
           allow(b).to receive(:respond_to?).with(:text).and_return(true)
           allow(b).to receive(:respond_to?).with(:type).and_return(true)
         end
@@ -284,7 +299,7 @@ RSpec.describe Services::Categorization::Llm::Client, :unit do
 
     context "when response starts with a valid key followed by explanation" do
       let(:first_word_block) do
-        double("TextBlock", text: "food - this is a local restaurant in Cartago", type: "text").tap do |b|
+        double("TextBlock", text: "food - this is a local restaurant in Cartago", type: :text).tap do |b|
           allow(b).to receive(:respond_to?).with(:text).and_return(true)
           allow(b).to receive(:respond_to?).with(:type).and_return(true)
         end

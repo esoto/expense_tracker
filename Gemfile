@@ -93,10 +93,6 @@ group :development, :test do
   # Test data factories
   gem "factory_bot_rails"
 
-  # Spring preloader for faster test startup
-  gem "spring"
-  gem "spring-commands-rspec"
-
   # Performance testing and profiling
   gem "memory_profiler"
   gem "benchmark-ips"
